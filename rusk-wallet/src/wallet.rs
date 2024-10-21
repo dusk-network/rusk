@@ -297,7 +297,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         profile_idx: u8,
     ) -> Result<Vec<DecodedNote>, Error> {
         let vk = self.derive_phoenix_vk(profile_idx);
-        let pk = self.shielded_addr(profile_idx)?;
+        let pk = self.shielded_key(profile_idx)?;
 
         let live_notes = self.state()?.fetch_notes(pk)?;
         let spent_notes = self.state()?.cache().spent_notes(pk)?;
@@ -333,7 +333,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     ) -> Result<BalanceInfo, Error> {
         let state = self.state()?;
 
-        let notes = state.fetch_notes(self.shielded_addr(profile_idx)?)?;
+        let notes = state.fetch_notes(self.shielded_key(profile_idx)?)?;
 
         Ok(phoenix_balance(
             &self.derive_phoenix_vk(profile_idx),
@@ -346,7 +346,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self,
         profile_idx: u8,
     ) -> Result<Dusk, Error> {
-        let pk = self.public_addr(profile_idx)?;
+        let pk = self.public_key(profile_idx)?;
         let state = self.state()?;
         let account = state.fetch_account(pk).await?;
 
@@ -368,15 +368,21 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         index
     }
 
+    /// Returns the default address for this wallet
+    pub fn default_address(&self) -> Address {
+        // TODO: let the user specify the default address using conf
+        self.default_public_address()
+    }
+
     /// Returns the default shielded address for this wallet
-    pub fn default_shielded_addr(&self) -> &PhoenixPublicKey {
-        self.shielded_addr(0)
+    pub fn default_shielded_address(&self) -> Address {
+        self.shielded_address(0)
             .expect("there to be an address at index 0")
     }
 
     /// Returns the default public account address for this wallet
-    pub fn default_public_addr(&self) -> &BlsPublicKey {
-        self.public_addr(0)
+    pub fn default_public_address(&self) -> Address {
+        self.public_address(0)
             .expect("there to be an address at index 0")
     }
 
@@ -397,12 +403,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         derive_phoenix_vk(seed, index)
     }
 
-    /// Returns the shielded address for a given index.
+    /// Returns the shielded key for a given index.
     ///
     /// # Errors
     /// This will error if the wallet doesn't have a profile stored for the
     /// given index.
-    pub fn shielded_addr(&self, index: u8) -> Result<&PhoenixPublicKey, Error> {
+    pub fn shielded_key(&self, index: u8) -> Result<&PhoenixPublicKey, Error> {
         let index = usize::from(index);
         if index >= self.profiles.len() {
             return Err(Error::Unauthorized);
@@ -417,18 +423,30 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         derive_bls_sk(seed, index)
     }
 
-    /// Returns the public account address for a given index.
+    /// Returns the public account key for a given index.
     ///
     /// # Errors
     /// This will error if the wallet doesn't have a profile stored for the
     /// given index.
-    pub fn public_addr(&self, index: u8) -> Result<&BlsPublicKey, Error> {
+    pub fn public_key(&self, index: u8) -> Result<&BlsPublicKey, Error> {
         let index = usize::from(index);
         if index >= self.profiles.len() {
             return Err(Error::Unauthorized);
         }
 
         Ok(&self.profiles()[index].public_addr)
+    }
+
+    /// Returns the public account address for a given index.
+    pub fn public_address(&self, index: u8) -> Result<Address, Error> {
+        let addr = *self.public_key(index)?;
+        Ok(addr.into())
+    }
+
+    /// Returns the shielded address for a given index.
+    pub fn shielded_address(&self, index: u8) -> Result<Address, Error> {
+        let addr = *self.shielded_key(index)?;
+        Ok(addr.into())
     }
 
     /// Executes a generic contract call, paying gas from a public account.
@@ -450,7 +468,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let deposit = *deposit;
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);
-        let sender = self.public_addr(sender_idx)?;
+        let sender = self.public_key(sender_idx)?;
 
         let account = state.fetch_account(sender).await?;
 
@@ -497,7 +515,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut sender_sk = self.derive_phoenix_sk(sender_idx);
         // in a contract execution or deployment, the sender and receiver are
         // the same
-        let receiver_pk = self.shielded_addr(sender_idx)?;
+        let receiver_pk = self.shielded_key(sender_idx)?;
 
         let inputs = state
             .inputs(sender_idx, deposit + gas.limit * gas.price)
@@ -512,7 +530,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let tx = phoenix(
             &mut rng,
             &sender_sk,
-            self.shielded_addr(sender_idx)?,
+            self.shielded_key(sender_idx)?,
             receiver_pk,
             inputs,
             root,
@@ -555,7 +573,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let amt = *amt;
 
         let mut sender_sk = self.derive_phoenix_sk(sender_idx);
-        let refund_pk = self.shielded_addr(sender_idx)?;
+        let refund_pk = self.shielded_key(sender_idx)?;
 
         let inputs = state
             .inputs(sender_idx, amt + gas.limit * gas.price)
@@ -608,7 +626,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         }
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);
-        let sender_pk = self.public_addr(sender_idx)?;
+        let sender_pk = self.public_key(sender_idx)?;
         let amt = *amt;
 
         let state = self.state()?;
@@ -655,7 +673,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut sender_sk = self.derive_phoenix_sk(profile_idx);
         let mut stake_sk = self.derive_bls_sk(profile_idx);
 
-        let stake_pk = self.public_addr(profile_idx)?;
+        let stake_pk = self.public_key(profile_idx)?;
         let current_stake = state.fetch_stake(stake_pk).await?;
         if let Some(stake) = current_stake {
             if stake.amount.is_some() {
@@ -705,7 +723,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
         let amt = *amt;
         let mut stake_sk = self.derive_bls_sk(profile_idx);
-        let stake_pk = self.public_addr(profile_idx)?;
+        let stake_pk = self.public_key(profile_idx)?;
         let chain_id = state.fetch_chain_id().await?;
         let moonlight_current_nonce =
             state.fetch_account(stake_pk).await?.nonce + 1;
@@ -741,7 +759,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         profile_idx: u8,
     ) -> Result<Option<StakeData>, Error> {
         self.state()?
-            .fetch_stake(self.public_addr(profile_idx)?)
+            .fetch_stake(self.public_key(profile_idx)?)
             .await
     }
 
@@ -803,7 +821,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
         let mut stake_sk = self.derive_bls_sk(profile_idx);
 
-        let pk = self.public_addr(profile_idx)?;
+        let pk = self.public_key(profile_idx)?;
 
         let chain_id = state.fetch_chain_id().await?;
         let account_nonce = state.fetch_account(pk).await?.nonce + 1;
@@ -926,7 +944,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
 
-        let moonlight_pk = self.public_addr(profile_idx)?;
+        let moonlight_pk = self.public_key(profile_idx)?;
 
         let nonce = state.fetch_account(moonlight_pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
@@ -960,7 +978,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
 
-        let pk = self.public_addr(sender_idx)?;
+        let pk = self.public_key(sender_idx)?;
         let nonce = state.fetch_account(pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
         let stake_info = state.fetch_stake(pk).await?;
@@ -990,7 +1008,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     ) -> Result<Transaction, Error> {
         let state = self.state()?;
 
-        let pk = self.public_addr(sender_idx)?;
+        let pk = self.public_key(sender_idx)?;
         let moonlight_nonce = state.fetch_account(pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
 
@@ -1031,7 +1049,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let inputs = state.inputs(sender_idx, gas.limit * gas.price).await?;
 
         let mut sender_sk = self.derive_phoenix_sk(sender_idx);
-        let owner_pk = self.public_addr(sender_idx)?;
+        let owner_pk = self.public_key(sender_idx)?;
 
         let deploy = phoenix_deployment(
             &mut rng,
@@ -1058,7 +1076,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self,
         index: u8,
     ) -> Result<(BlsPublicKey, BlsSecretKey), Error> {
-        let pk = *self.public_addr(index)?;
+        let pk = *self.public_key(index)?;
         let sk = self.derive_bls_sk(index);
 
         // make sure our internal addresses are not corrupted
@@ -1117,8 +1135,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         // found
         for (index, profile) in self.profiles().iter().enumerate() {
             if match addr {
-                Address::Shielded { addr } => *addr == profile.shielded_addr,
-                Address::Public { addr } => *addr == profile.public_addr,
+                Address::Shielded(addr) => addr == &profile.shielded_addr,
+                Address::Public(addr) => addr == &profile.public_addr,
             } {
                 return Ok(index as u8);
             }
@@ -1128,6 +1146,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         Err(Error::Unauthorized)
     }
 
+    /// Check if the address is stored in our profiles, return the address if
+    /// found
+    pub fn claim(&self, addr: Address) -> Result<Address, Error> {
+        self.find_index(&addr)?;
+        Ok(addr)
+    }
+
     /// Generate a contract id given bytes and nonce
     pub fn get_contract_id(
         &self,
@@ -1135,7 +1160,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         bytes: Vec<u8>,
         nonce: u64,
     ) -> Result<[u8; CONTRACT_ID_BYTES], Error> {
-        let owner = self.public_addr(profile_idx)?.to_bytes();
+        let owner = self.public_key(profile_idx)?.to_bytes();
 
         let mut hasher = blake2b_simd::Params::new()
             .hash_length(CONTRACT_ID_BYTES)
@@ -1237,25 +1262,16 @@ mod tests {
         }
     }
 
-    fn default_phoenix_address(wallet: &Wallet<WalletFile>) -> Address {
-        Address::Shielded {
-            addr: *wallet
-                .shielded_addr(0)
-                .expect("There to be a key at the index"),
-        }
-    }
-
     #[test]
     fn wallet_basics() -> Result<(), Box<dyn std::error::Error>> {
         // create a wallet from a mnemonic phrase
         let mut wallet: Wallet<WalletFile> = Wallet::new("uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic")?;
 
         // check address generation
-        let default_addr = default_phoenix_address(&wallet);
+        let default_addr = wallet.default_shielded_address();
         let other_addr_idx = wallet.add_profile();
-        let other_addr = Address::Shielded {
-            addr: *wallet.shielded_addr(other_addr_idx)?,
-        };
+        let other_addr =
+            Address::Shielded(*wallet.shielded_key(other_addr_idx)?);
 
         assert!(format!("{default_addr}").eq(TEST_ADDR));
         assert_ne!(default_addr, other_addr);
@@ -1265,7 +1281,7 @@ mod tests {
         let wallet: Wallet<WalletFile> = Wallet::new("demise monitor elegant cradle squeeze cheap parrot venture stereo humor scout denial action receive flat")?;
 
         // check addresses are different
-        let addr = default_phoenix_address(&wallet);
+        let addr = wallet.default_shielded_address();
         assert!(format!("{}", addr).ne(TEST_ADDR));
 
         // attempt to create a wallet from an invalid mnemonic
@@ -1294,8 +1310,8 @@ mod tests {
         // load from file and check
         let loaded_wallet = Wallet::from_file(file)?;
 
-        let original_addr = default_phoenix_address(&wallet);
-        let loaded_addr = default_phoenix_address(&loaded_wallet);
+        let original_addr = wallet.default_shielded_address();
+        let loaded_addr = loaded_wallet.default_shielded_address();
         assert!(original_addr.eq(&loaded_addr));
 
         Ok(())

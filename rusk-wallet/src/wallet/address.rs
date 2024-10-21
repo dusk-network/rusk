@@ -17,31 +17,40 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 #[allow(missing_docs)]
 pub enum Address {
     /// Shielded address for shielded transactions.
-    Shielded { addr: PhoenixPublicKey },
+    Shielded(PhoenixPublicKey),
     /// Public account address for public transactions and staking
     /// operations.
-    Public { addr: BlsPublicKey },
+    Public(BlsPublicKey),
 }
 
 impl Address {
-    /// Returns the inner shielded address, if present.
+    /// Check if the `other` Address uses the same transaction model
+    pub fn same_transaction_model(&self, other: &Address) -> Result<(), Error> {
+        match (self, other) {
+            (Address::Shielded(_), Address::Shielded(_)) => Ok(()),
+            (Address::Public(_), Address::Public(_)) => Ok(()),
+            _ => Err(Error::DifferentTransactionModels),
+        }
+    }
+
+    /// Returns the inner shielded key, if present.
     ///
     /// # Errors
-    /// If the inner address is a public one.
-    pub fn shielded_address(&self) -> Result<&PhoenixPublicKey, Error> {
-        if let Self::Shielded { addr } = self {
+    /// If the address is a public one.
+    pub fn shielded_key(&self) -> Result<&PhoenixPublicKey, Error> {
+        if let Self::Shielded(addr) = self {
             Ok(addr)
         } else {
             Err(Error::ExpectedPhoenixPublicKey)
         }
     }
 
-    /// Returns the inner public address, if present.
+    /// Returns the inner public key, if present.
     ///
     /// # Errors
-    /// If the inner address is a shielded one.
-    pub fn public_address(&self) -> Result<&BlsPublicKey, Error> {
-        if let Self::Public { addr } = self {
+    /// If the address is a shielded one.
+    pub fn public_key(&self) -> Result<&BlsPublicKey, Error> {
+        if let Self::Public(addr) = self {
             Ok(addr)
         } else {
             Err(Error::ExpectedBlsPublicKey)
@@ -50,8 +59,8 @@ impl Address {
 
     pub(crate) fn to_bytes(&self) -> Vec<u8> {
         match self {
-            Self::Shielded { addr } => addr.to_bytes().to_vec(),
-            Self::Public { addr } => addr.to_bytes().to_vec(),
+            Self::Shielded(addr) => addr.to_bytes().to_vec(),
+            Self::Public(addr) => addr.to_bytes().to_vec(),
         }
     }
 
@@ -66,34 +75,44 @@ impl Address {
     }
 }
 
+impl From<BlsPublicKey> for Address {
+    fn from(value: BlsPublicKey) -> Self {
+        Self::Public(value)
+    }
+}
+
+impl From<PhoenixPublicKey> for Address {
+    fn from(value: PhoenixPublicKey) -> Self {
+        Self::Shielded(value)
+    }
+}
+
 impl FromStr for Address {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let address_bytes = bs58::decode(s).into_vec()?;
-        let mut address_reader = &address_bytes[..];
 
-        match address_bytes.len() {
-            PhoenixPublicKey::SIZE => Ok(Self::Shielded {
-                addr: PhoenixPublicKey::from_reader(&mut address_reader)
-                    .map_err(Error::Bytes)?,
-            }),
-            BlsPublicKey::SIZE => Ok(Self::Public {
-                addr: BlsPublicKey::from_reader(&mut address_reader)
-                    .map_err(Error::Bytes)?,
-            }),
-            _ => Err(Error::Bytes(dusk_bytes::Error::InvalidData)),
-        }
+        let address = match address_bytes.len() {
+            PhoenixPublicKey::SIZE => {
+                PhoenixPublicKey::from_slice(&address_bytes)?.into()
+            }
+            BlsPublicKey::SIZE => {
+                BlsPublicKey::from_slice(&address_bytes)?.into()
+            }
+            _ => return Err(Error::Bytes(dusk_bytes::Error::InvalidData)),
+        };
+        Ok(address)
     }
 }
 
 impl From<&Address> for String {
     fn from(address: &Address) -> Self {
         match address {
-            Address::Shielded { addr } => {
+            Address::Shielded(addr) => {
                 bs58::encode(addr.to_bytes()).into_string()
             }
-            Address::Public { addr } => {
+            Address::Public(addr) => {
                 bs58::encode(addr.to_bytes()).into_string()
             }
         }
@@ -103,14 +122,12 @@ impl From<&Address> for String {
 impl PartialEq for Address {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (
-                Address::Shielded { addr: self_pk },
-                Address::Shielded { addr: other_pk },
-            ) => self_pk == other_pk,
-            (
-                Address::Public { addr: self_pk },
-                Address::Public { addr: other_pk },
-            ) => self_pk == other_pk,
+            (Address::Shielded(self_pk), Address::Shielded(other_pk)) => {
+                self_pk == other_pk
+            }
+            (Address::Public(self_pk), Address::Public(other_pk)) => {
+                self_pk == other_pk
+            }
             _ => false,
         }
     }
@@ -149,9 +166,7 @@ impl Profile {
         format!(
             "{} - {}",
             shielded_address_prefix(),
-            Address::Shielded {
-                addr: self.shielded_addr,
-            }
+            Address::Shielded(self.shielded_addr)
         )
     }
 
@@ -160,9 +175,7 @@ impl Profile {
         format!(
             "{} - {}",
             public_account_prefix(),
-            Address::Public {
-                addr: self.public_addr
-            }
+            Address::Public(self.public_addr)
         )
     }
 
@@ -171,9 +184,7 @@ impl Profile {
         format!(
             "{} - {}",
             staking_account_prefix(),
-            Address::Public {
-                addr: self.public_addr
-            }
+            Address::Public(self.public_addr)
         )
     }
 
@@ -182,10 +193,7 @@ impl Profile {
         format!(
             "{} - {}",
             shielded_address_prefix(),
-            Address::Shielded {
-                addr: self.shielded_addr,
-            }
-            .preview(),
+            Address::Shielded(self.shielded_addr).preview(),
         )
     }
 
@@ -194,10 +202,7 @@ impl Profile {
         format!(
             "{} - {}",
             public_account_prefix(),
-            Address::Public {
-                addr: self.public_addr
-            }
-            .preview()
+            Address::Public(self.public_addr).preview()
         )
     }
 
@@ -206,10 +211,7 @@ impl Profile {
         format!(
             "{} - {}",
             staking_account_prefix(),
-            Address::Public {
-                addr: self.public_addr
-            }
-            .preview()
+            Address::Public(self.public_addr).preview()
         )
     }
 

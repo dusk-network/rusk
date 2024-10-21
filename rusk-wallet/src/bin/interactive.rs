@@ -10,7 +10,7 @@ use rusk_wallet::{
     currency::Dusk,
     dat::{DatFileVersion, LATEST_VERSION},
     gas::{self},
-    Error, Profile, Wallet, WalletPath, MAX_PROFILES,
+    Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES,
 };
 
 use crate::io;
@@ -81,28 +81,30 @@ pub(crate) async fn run_loop(
             let profile = &wallet.profiles()[profile_idx as usize];
 
             // display profile information
-            println!();
-            println!();
             // display shielded balance and keys information
-            println!("{}\n", profile.shielded_address_string());
+            println!("{}", profile.shielded_address_string());
+
             if is_synced {
                 println!(
-                    "{0: <15} - Spendable: {phoenix_spendable}",
+                    "{0: <16} - Spendable: {phoenix_spendable}",
                     "Shielded Balance",
                 );
-                println!("{0: <16} - Total: {phoenix_total}", "",);
+                println!("{0: <16} - Total:     {phoenix_total}", "",);
+            } else {
+                println!("Syncing...");
             }
-
+            println!();
             // display public balance and keys information
-            println!("{}\n", profile.public_account_string());
-            if is_synced {
-                println!("{0: <16} - Total: {moonlight_bal}", "Public Balance",);
-            }
+            println!("{}", profile.public_account_string());
+            println!("{0: <16} - Total:     {moonlight_bal}", "Public Balance",);
+
+            println!();
 
             // request operation to perform
             let op = match wallet.is_online().await {
                 true => menu_op(
                     profile_idx,
+                    wallet,
                     phoenix_spendable,
                     moonlight_bal,
                     settings,
@@ -192,11 +194,11 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
         if let Ok(status) = rx.try_recv() {
             action_menu = action_menu
                 .separator()
-                .separator_msg(format!("Sync Status: {}", status));
+                .separator_msg(format!("Sync Status: {status}"));
         } else {
             action_menu = action_menu
                 .separator()
-                .separator_msg("Waiting for Sync to complete..".to_string());
+                .separator_msg("Waiting for Sync to complete..");
         }
     }
 
@@ -212,193 +214,6 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
     Ok(menu.answer(&answer).to_owned())
 }
 
-/// Allows the user to choose an operation to perform with the selected
-/// transaction type
-fn transaction_op_menu_moonlight(
-    profile_idx: u8,
-    moonlight_bal: Dusk,
-) -> anyhow::Result<ProfileOp> {
-    use TransactionOp::*;
-    let menu = Menu::title("Public Transaction Operations")
-        .add(Transfer, "Public Transfer")
-        .add(Memo, "Public Transfer with Memo")
-        .add(Stake, "Public Stake")
-        .add(Unstake, "Public Unstake")
-        .add(Withdraw, "Public Withdraw Stake Reward")
-        .add(ContractDeploy, "Public Contract Deploy")
-        .add(ContractCall, "Public Contract Call")
-        //.add(History, "Public Transaction History")
-        .separator()
-        .add(Back, "Back");
-
-    let questions = Question::select("theme")
-        .message("Please select an operation")
-        .choices(menu.clone())
-        .build();
-
-    let answer = requestty::prompt_one(questions)?;
-
-    let val = menu.answer(&answer).to_owned();
-
-    let x = match val {
-        Transfer => ProfileOp::Run(Box::new(Command::MoonlightTransfer {
-            profile_idx: Some(profile_idx),
-            rcvr: prompt::request_rcvr_addr("recipient")?,
-            amt: prompt::request_token_amt("transfer", moonlight_bal)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Memo => ProfileOp::Run(Box::new(Command::MoonlightMemo {
-            profile_idx: Some(profile_idx),
-            memo: prompt::request_str("memo")?,
-            rcvr: prompt::request_rcvr_addr("recipient")?,
-            amt: prompt::request_optional_token_amt("transfer", moonlight_bal)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Stake => ProfileOp::Run(Box::new(Command::MoonlightStake {
-            profile_idx: Some(profile_idx),
-            amt: prompt::request_stake_token_amt(moonlight_bal)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Unstake => ProfileOp::Run(Box::new(Command::MoonlightUnstake {
-            profile_idx: Some(profile_idx),
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Withdraw => ProfileOp::Run(Box::new(Command::MoonlightWithdraw {
-            profile_idx: Some(profile_idx),
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        ContractDeploy => {
-            ProfileOp::Run(Box::new(Command::MoonlightContractDeploy {
-                profile_idx: Some(profile_idx),
-                code: prompt::request_contract_code()?,
-                init_args: prompt::request_bytes("init arguments")?,
-                deploy_nonce: prompt::request_nonce()?,
-                gas_limit: prompt::request_gas_limit(
-                    gas::DEFAULT_LIMIT_DEPLOYMENT,
-                )?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        ContractCall => {
-            ProfileOp::Run(Box::new(Command::MoonlightContractCall {
-                profile_idx: Some(profile_idx),
-                contract_id: prompt::request_bytes("contract id")?,
-                fn_name: prompt::request_str("function name to call")?,
-                fn_args: prompt::request_bytes(
-                    "arguments of calling function",
-                )?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        History => ProfileOp::Back,
-        Back => ProfileOp::Back,
-    };
-
-    Ok(x)
-}
-
-/// Allows the user to choose an operation to perform with the selected
-/// transaction type
-fn transaction_op_menu_phoenix(
-    profile_idx: u8,
-    phoenix_balance: Dusk,
-) -> anyhow::Result<ProfileOp> {
-    use TransactionOp::*;
-    let menu = Menu::title("Shielded Transaction Operations")
-        .add(Transfer, "Shielded Transfer")
-        .add(Memo, "Shielded Transfer with Memo")
-        .add(Stake, "Shielded Stake")
-        .add(Unstake, "Shielded Unstake")
-        .add(Withdraw, "Shielded Withdraw Stake Reward")
-        .add(ContractDeploy, "Shielded Contract Deploy")
-        .add(ContractCall, "Shielded Contract Call")
-        .add(History, "Shielded Transaction History")
-        .separator()
-        .add(Back, "Back");
-
-    let questions = Question::select("theme")
-        .message("Please select an operation")
-        .choices(menu.clone())
-        .build();
-
-    let answer = requestty::prompt_one(questions)?;
-
-    let val = menu.answer(&answer).to_owned();
-
-    let x = match val {
-        Transfer => ProfileOp::Run(Box::new(Command::PhoenixTransfer {
-            profile_idx: Some(profile_idx),
-            rcvr: prompt::request_rcvr_addr("recipient")?,
-            amt: prompt::request_token_amt("transfer", phoenix_balance)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Memo => ProfileOp::Run(Box::new(Command::PhoenixMemo {
-            profile_idx: Some(profile_idx),
-            memo: prompt::request_str("memo")?,
-            rcvr: prompt::request_rcvr_addr("recipient")?,
-            amt: prompt::request_optional_token_amt(
-                "transfer",
-                phoenix_balance,
-            )?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_TRANSFER)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Stake => ProfileOp::Run(Box::new(Command::PhoenixStake {
-            profile_idx: Some(profile_idx),
-            amt: prompt::request_stake_token_amt(phoenix_balance)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Unstake => ProfileOp::Run(Box::new(Command::PhoenixUnstake {
-            profile_idx: Some(profile_idx),
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        Withdraw => ProfileOp::Run(Box::new(Command::PhoenixWithdraw {
-            profile_idx: Some(profile_idx),
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        ContractDeploy => {
-            ProfileOp::Run(Box::new(Command::PhoenixContractDeploy {
-                profile_idx: Some(profile_idx),
-                code: prompt::request_contract_code()?,
-                init_args: prompt::request_bytes("init arguments")?,
-                deploy_nonce: prompt::request_nonce()?,
-                gas_limit: prompt::request_gas_limit(
-                    gas::DEFAULT_LIMIT_DEPLOYMENT,
-                )?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        ContractCall => {
-            ProfileOp::Run(Box::new(Command::PhoenixContractCall {
-                profile_idx: Some(profile_idx),
-                contract_id: prompt::request_bytes("contract id")?,
-                fn_name: prompt::request_str("function name to call")?,
-                fn_args: prompt::request_bytes(
-                    "arguments of calling function",
-                )?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        History => ProfileOp::Run(Box::new(Command::PhoenixHistory {
-            profile_idx: Some(profile_idx),
-        })),
-        Back => ProfileOp::Back,
-    };
-
-    Ok(x)
-}
-
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 enum ProfileOp {
     Run(Box<Command>),
@@ -407,13 +222,23 @@ enum ProfileOp {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum CommandMenuItem {
-    // Phoenix
-    PhoenixTransactions,
-    // Moonlight
-    MoonlightTransactions,
+    // History
+    History,
+    // Transfer
+    Transfer,
+    // Stake
+    Stake,
+    // Unstake
+    Unstake,
+    // Withdraw
+    Withdraw,
+    // Contract Deploy
+    ContractDeploy,
+    // Contract Call
+    ContractCall,
     // Conversion
-    PhoenixToMoonlight,
-    MoonlightToPhoenix,
+    Unshield,
+    Shield,
     // Generate Contract ID.
     CalculateContractId,
     // Others
@@ -422,24 +247,11 @@ enum CommandMenuItem {
     Back,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
-enum TransactionOp {
-    Transfer,
-    Memo,
-    Stake,
-    Unstake,
-    Withdraw,
-    ContractDeploy,
-    ContractCall,
-    // nor a deployment or a call
-    History,
-    Back,
-}
-
 /// Allows the user to choose the operation to perform for the
 /// selected profile
 fn menu_op(
     profile_idx: u8,
+    wallet: &Wallet<WalletFile>,
     phoenix_balance: Dusk,
     moonlight_balance: Dusk,
     settings: &Settings,
@@ -448,17 +260,17 @@ fn menu_op(
     use CommandMenuItem as CMI;
 
     let mut cmd_menu = Menu::new()
+        .add(CMI::History, "Transactions History")
+        .add(CMI::Transfer, "Transfer")
+        .add(CMI::Unshield, "Convert shielded Dusk to public Dusk")
+        .add(CMI::Shield, "Convert public Dusk to shielded Dusk")
         .add(CMI::StakeInfo, "Check Existing Stake")
-        .add(CMI::PhoenixTransactions, "Shielded Transactions")
-        .add(CMI::MoonlightTransactions, "Public Transactions")
-        .add(
-            CMI::PhoenixToMoonlight,
-            "Convert shielded Dusk to public Dusk",
-        )
-        .add(
-            CMI::MoonlightToPhoenix,
-            "Convert public Dusk to shielded Dusk",
-        )
+        .add(CMI::Stake, "Stake")
+        .add(CMI::Unstake, "Unstake")
+        .add(CMI::Withdraw, "Withdraw Stake Reward")
+        .add(CMI::StakeInfo, "Check Existing Stake")
+        .add(CMI::ContractDeploy, "Contract Deploy")
+        .add(CMI::ContractCall, "Contract Call")
         .add(CMI::CalculateContractId, "Calculate Contract ID")
         .add(CMI::Export, "Export provisioner key-pair")
         .separator()
@@ -467,7 +279,6 @@ fn menu_op(
 
     let msg = if !is_synced {
         cmd_menu = Menu::new()
-            .add(CMI::StakeInfo, "Check Existing Stake")
             .add(CMI::Export, "Export provisioner key-pair")
             .separator()
             .add(CMI::Back, "Back")
@@ -487,32 +298,142 @@ fn menu_op(
     let cmd = cmd_menu.answer(&answer).to_owned();
 
     let res = match cmd {
-        CMI::PhoenixTransactions => {
-            transaction_op_menu_phoenix(profile_idx, phoenix_balance)?
+        CMI::Transfer => {
+            let rcvr = prompt::request_rcvr_addr("recipient")?;
+            let (sender, balance) = match &rcvr {
+                Address::Shielded(_) => {
+                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
+                }
+                Address::Public(_) => {
+                    (wallet.public_address(profile_idx)?, moonlight_balance)
+                }
+            };
+
+            let memo = Some(prompt::request_str("memo")?);
+            let amt = if memo.is_some() {
+                prompt::request_optional_token_amt("transfer", balance)
+            } else {
+                prompt::request_token_amt("transfer", balance)
+            }?;
+
+            ProfileOp::Run(Box::new(Command::Transfer {
+                sender: Some(sender),
+                rcvr,
+                amt,
+                gas_limit: prompt::request_gas_limit(
+                    gas::DEFAULT_LIMIT_TRANSFER,
+                )?,
+                memo,
+                gas_price: prompt::request_gas_price()?,
+            }))
         }
-        CMI::MoonlightTransactions => {
-            transaction_op_menu_moonlight(profile_idx, moonlight_balance)?
+        CMI::Stake => {
+            let (addr, balance) = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
+                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
+                }
+                prompt::TransactionModel::Public => {
+                    (wallet.public_address(profile_idx)?, moonlight_balance)
+                }
+            };
+            ProfileOp::Run(Box::new(Command::Stake {
+                address: Some(addr),
+                amt: prompt::request_stake_token_amt(balance)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::Unstake => {
+            let addr = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
+                    wallet.shielded_address(profile_idx)
+                }
+                prompt::TransactionModel::Public => {
+                    wallet.public_address(profile_idx)
+                }
+            }?;
+            ProfileOp::Run(Box::new(Command::Unstake {
+                address: Some(addr),
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+
+        CMI::Withdraw => {
+            let addr = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
+                    wallet.shielded_address(profile_idx)
+                }
+                prompt::TransactionModel::Public => {
+                    wallet.public_address(profile_idx)
+                }
+            }?;
+            ProfileOp::Run(Box::new(Command::Withdraw {
+                address: Some(addr),
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::ContractDeploy => {
+            let addr = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
+                    wallet.shielded_address(profile_idx)
+                }
+                prompt::TransactionModel::Public => {
+                    wallet.public_address(profile_idx)
+                }
+            }?;
+            ProfileOp::Run(Box::new(Command::ContractDeploy {
+                address: Some(addr),
+                code: prompt::request_contract_code()?,
+                init_args: prompt::request_bytes("init arguments")?,
+                deploy_nonce: prompt::request_nonce()?,
+                gas_limit: prompt::request_gas_limit(
+                    gas::DEFAULT_LIMIT_DEPLOYMENT,
+                )?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::ContractCall => {
+            let addr = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
+                    wallet.shielded_address(profile_idx)
+                }
+                prompt::TransactionModel::Public => {
+                    wallet.public_address(profile_idx)
+                }
+            }?;
+            ProfileOp::Run(Box::new(Command::ContractCall {
+                address: Some(addr),
+                contract_id: prompt::request_bytes("contract id")?,
+                fn_name: prompt::request_str("function name to call")?,
+                fn_args: prompt::request_bytes(
+                    "arguments of calling function",
+                )?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        CMI::History => {
+            let profile_idx = Some(profile_idx);
+            ProfileOp::Run(Box::new(Command::History { profile_idx }))
         }
         CMI::StakeInfo => ProfileOp::Run(Box::new(Command::StakeInfo {
             profile_idx: Some(profile_idx),
             reward: false,
         })),
-        CMI::MoonlightToPhoenix => {
-            ProfileOp::Run(Box::new(Command::MoonlightToPhoenix {
-                profile_idx: Some(profile_idx),
-                amt: prompt::request_token_amt("convert", moonlight_balance)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
-        CMI::PhoenixToMoonlight => {
-            ProfileOp::Run(Box::new(Command::PhoenixToMoonlight {
-                profile_idx: Some(profile_idx),
-                amt: prompt::request_token_amt("convert", phoenix_balance)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
-            }))
-        }
+        CMI::Shield => ProfileOp::Run(Box::new(Command::Shield {
+            profile_idx: Some(profile_idx),
+            amt: prompt::request_token_amt("convert", moonlight_balance)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
+        CMI::Unshield => ProfileOp::Run(Box::new(Command::Unshield {
+            profile_idx: Some(profile_idx),
+            amt: prompt::request_token_amt("convert", phoenix_balance)?,
+            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+            gas_price: prompt::request_gas_price()?,
+        })),
         CMI::CalculateContractId => {
             ProfileOp::Run(Box::new(Command::CalculateContractId {
                 profile_idx: Some(profile_idx),
@@ -687,235 +608,112 @@ fn menu_wallet(wallet_found: Option<WalletPath>) -> anyhow::Result<MainMenu> {
 /// Request user confirmation for a transfer transaction
 fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
     match cmd {
-        Command::PhoenixTransfer {
-            profile_idx,
+        Command::Transfer {
+            sender,
             rcvr,
             amt,
             gas_limit,
             gas_price,
+            memo,
         } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
+            let sender = sender.as_ref().expect("sender to be a valid address");
+            sender.same_transaction_model(rcvr)?;
             let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.shielded_address_preview());
+            println!("   > Pay with {}", sender.preview());
             println!("   > Recipient = {}", rcvr.preview());
             println!("   > Amount to transfer = {} DUSK", amt);
+            if let Some(memo) = memo {
+                println!("   > Memo = {memo}");
+            }
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            if let Address::Public(_) = sender {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
-        Command::MoonlightTransfer {
-            profile_idx,
-            rcvr,
+        Command::Stake {
+            address,
             amt,
             gas_limit,
             gas_price,
         } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
+            let sender =
+                address.as_ref().expect("address to be a valid address");
             let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.public_account_preview());
-            println!("   > Recipient = {}", rcvr.preview());
-            println!("   > Amount to transfer = {} DUSK", amt);
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
-            prompt::ask_confirm()
-        }
-        Command::PhoenixStake {
-            profile_idx,
-            amt,
-            gas_limit,
-            gas_price,
-        } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
-            let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.shielded_address_preview());
-            println!("   > Stake to {}", profile.staking_account_preview());
+            let stake_to = wallet.public_address(wallet.find_index(sender)?)?;
+            println!("   > Pay with {}", sender.preview());
+            println!("   > Stake to {}", stake_to.preview());
             println!("   > Amount to stake = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            if let Address::Public(_) = sender {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
-        Command::MoonlightStake {
-            profile_idx,
-            amt,
+        Command::Unstake {
+            address,
             gas_limit,
             gas_price,
         } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
+            let sender =
+                address.as_ref().expect("address to be a valid address");
+            let unstake_from =
+                wallet.public_address(wallet.find_index(sender)?)?;
             let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.public_account_preview());
-            println!("   > Stake to {}", profile.staking_account_preview());
-            println!("   > Amount to stake = {} DUSK", amt);
+
+            println!("   > Pay with {}", sender.preview());
+            println!("   > Unstake from {}", unstake_from.preview());
+            println!("   > Receive stake at {}", sender.preview());
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            if let Address::Public(_) = sender {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
-        Command::PhoenixUnstake {
-            profile_idx,
+
+        Command::Withdraw {
+            address,
             gas_limit,
             gas_price,
         } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
+            let sender =
+                address.as_ref().expect("address to be a valid address");
             let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.shielded_address_preview());
-            println!("   > Unstake from {}", profile.staking_account_preview());
-            println!(
-                "   > Receive stake at {}",
-                profile.shielded_address_preview()
-            );
+            let withdraw_from =
+                wallet.public_address(wallet.find_index(sender)?)?;
+
+            println!("   > Pay with {}", sender.preview());
+            println!("   > Withdraw rewards from {}", withdraw_from.preview());
+            println!("   > Receive rewards at {}", sender.preview());
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            if let Address::Public(_) = sender {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
-        Command::MoonlightUnstake {
-            profile_idx,
-            gas_limit,
-            gas_price,
-        } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
-            let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.public_account_preview());
-            println!("   > Unstake from {}", profile.staking_account_preview());
-            println!(
-                "   > Receive stake at {}",
-                profile.public_account_preview()
-            );
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
-            prompt::ask_confirm()
-        }
-        Command::PhoenixWithdraw {
-            profile_idx,
-            gas_limit,
-            gas_price,
-        } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
-            let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.shielded_address_preview());
-            println!(
-                "   > Withdraw rewards from {}",
-                profile.staking_account_preview()
-            );
-            println!(
-                "   > Receive rewards at {}",
-                profile.shielded_address_preview()
-            );
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            prompt::ask_confirm()
-        }
-        Command::MoonlightWithdraw {
-            profile_idx,
-            gas_limit,
-            gas_price,
-        } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
-            let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.public_account_preview());
-            println!(
-                "   > Withdraw rewards from {}",
-                profile.staking_account_preview()
-            );
-            println!(
-                "   > Receive rewards at {}",
-                profile.public_account_preview()
-            );
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
-            prompt::ask_confirm()
-        }
-        Command::PhoenixMemo {
-            profile_idx,
-            memo,
-            rcvr,
-            amt,
-            gas_limit,
-            gas_price,
-        } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
-            let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.shielded_address_preview());
-            println!("   > Recipient = {}", rcvr.preview());
-            println!("   > Amount to transfer = {} DUSK", amt);
-            println!("   > Memo = {}", memo);
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            prompt::ask_confirm()
-        }
-        Command::MoonlightMemo {
-            profile_idx,
-            memo,
-            rcvr,
-            amt,
-            gas_limit,
-            gas_price,
-        } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
-            let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.public_account_preview());
-            println!("   > Recipient = {}", rcvr.preview());
-            println!("   > Amount to transfer = {} DUSK", amt);
-            println!("   > Memo = {}", memo);
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
-            prompt::ask_confirm()
-        }
-        Command::PhoenixContractDeploy {
-            profile_idx,
+        Command::ContractDeploy {
+            address,
             code,
             init_args,
             deploy_nonce,
             gas_limit,
             gas_price,
         } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
+            let sender =
+                address.as_ref().expect("address to be a valid address");
             let code_len = code.metadata()?.len();
             let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.shielded_address_preview());
+
+            println!("   > Pay with {}", sender.preview());
             println!("   > Code len = {}", code_len);
             println!("   > Init args = {}", hex::encode(init_args));
             println!("   > Deploy nonce = {}", deploy_nonce);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            prompt::ask_confirm()
-        }
-        Command::MoonlightContractDeploy {
-            profile_idx,
-            code,
-            init_args,
-            deploy_nonce,
-            gas_limit,
-            gas_price,
-        } => {
-            let index = check_index(profile_idx, wallet.profiles().len())?;
-            let profile = &wallet.profiles()[index];
-            let code_len = code.metadata()?.len();
-            let max_fee = gas_limit * gas_price;
-            println!("   > Pay with {}", profile.public_account_preview());
-            println!("   > Code len = {}", code_len);
-            println!("   > Init args = {}", hex::encode(init_args));
-            println!("   > Deploy nonce = {}", deploy_nonce);
-            println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            if let Address::Public(_) = sender {
+                println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+            }
             prompt::ask_confirm()
         }
         _ => Ok(true),
     }
-}
-
-fn check_index(
-    index: &Option<u8>,
-    total_profiles: usize,
-) -> anyhow::Result<usize> {
-    // if an index is given, check that it is smaller the wallet's profile-count
-    if let Some(idx) = index {
-        if total_profiles > u8::MAX.into() || *idx >= total_profiles as u8 {
-            return Err(Error::Unauthorized.into());
-        }
-    }
-    Ok(index.unwrap_or_default() as usize)
 }
