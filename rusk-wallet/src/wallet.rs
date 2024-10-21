@@ -6,7 +6,6 @@
 
 mod address;
 mod file;
-pub mod gas;
 mod transaction;
 
 pub use address::{Address, Profile};

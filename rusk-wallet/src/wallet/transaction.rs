@@ -23,9 +23,9 @@ use wallet_core::transaction::{
     phoenix_stake, phoenix_stake_reward, phoenix_to_moonlight, phoenix_unstake,
 };
 
-use crate::{clients::Prover, currency::Dusk, Error};
+use crate::{clients::Prover, currency::Dusk, gas::Gas, Error};
 
-use super::{file::SecureWalletFile, gas::Gas, Wallet};
+use super::{file::SecureWalletFile, Wallet};
 
 impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Transfers funds between shielded addresses.

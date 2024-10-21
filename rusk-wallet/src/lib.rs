@@ -14,9 +14,6 @@
 
 #![deny(missing_docs)]
 
-/// module to help with currency conversions
-pub mod currency;
-
 mod cache;
 mod clients;
 mod crypto;
@@ -26,14 +23,14 @@ mod rusk;
 mod store;
 mod wallet;
 
-/// Methods for parsing/checking the DAT wallet file
+pub mod currency;
 pub mod dat;
+pub mod gas;
 
 pub use rues::RuesHttpClient;
 pub use rusk::{RuskHttpClient, RuskRequest};
 
 pub use error::Error;
-pub use wallet::gas;
 pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
 };
