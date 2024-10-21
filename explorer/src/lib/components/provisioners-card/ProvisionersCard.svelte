@@ -45,7 +45,7 @@
   data={provisioners}
   {error}
   {loading}
-  title="Provisioniers — {displayedProvisioner.length} Displayed Items"
+  title="Provisioners — {displayedProvisioner.length} Displayed Items"
   headerButtonDetails={{
     action: () => loadMoreItems(),
     disabled: isLoadMoreDisabled,
