@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! This library contains the primitive related to the gas used for transaction
+//! This module contains the primitive related to the gas used for transaction
 //! in the Dusk Network.
 
 use crate::currency::Lux;

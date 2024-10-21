@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Module to help with currency conversions.
+
 use core::cmp::Ordering;
 use std::fmt;
 use std::hash::{Hash, Hasher};

@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Methods for parsing/checking the DAT wallet file
+
 use std::fs;
 use std::io::Read;
 
