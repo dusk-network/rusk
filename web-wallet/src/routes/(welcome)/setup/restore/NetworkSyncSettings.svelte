@@ -1,14 +1,16 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { mdiAlertOutline, mdiCubeOutline } from "@mdi/js";
+  import { mdiCubeOutline } from "@mdi/js";
 
-  import { AppAnchor } from "$lib/components";
-  import { DOCUMENTATION_LINKS } from "$lib/constants";
-  import { ToggleableCard } from "$lib/containers/Cards";
-  import { Icon, Textbox } from "$lib/dusk/components";
+  import { Textbox } from "$lib/dusk/components";
   import { createNumberFormatter } from "$lib/dusk/number";
   import { makeClassName } from "$lib/dusk/string";
+
+  import { AppAnchor, Banner } from "$lib/components";
+  import { DOCUMENTATION_LINKS } from "$lib/constants";
+  import { ToggleableCard } from "$lib/containers/Cards";
+
   import { networkStore, settingsStore } from "$lib/stores";
 
   /** @type {string} */
@@ -77,18 +79,16 @@
   {/if}
 </ToggleableCard>
 
-<div class="notice">
-  <Icon path={mdiAlertOutline} size="large" />
+<Banner title="Syncing from a custom block height is optional." variant="info">
   <p>
-    Syncing from a custom block height is optional. Doing so can significantly
-    reduce sync times. However, setting a wrong block can lead to wrong balance
-    or missing transactions. Find out more in our <AppAnchor
+    Doing so can significantly reduce sync times. However, setting a wrong block
+    can lead to wrong balance or missing transactions. Find out more in our <AppAnchor
       href={DOCUMENTATION_LINKS.RESTORE_BLOCK_HEIGHT}
       rel="noopener noreferrer"
       target="_blank">documentation</AppAnchor
     >.
   </p>
-</div>
+</Banner>
 
 <style lang="postcss">
   :global {

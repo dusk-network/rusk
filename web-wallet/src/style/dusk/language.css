@@ -9,9 +9,10 @@
   --secondary-color-variant-dark: var(--cornflower-dark);
   --secondary-color-variant-light: var(--cornflower-light);
   --surface-color: var(--magnolia);
-  --danger-color: var(--error);
-  --error-color: var(--error);
-  --info-color: var(--info);
+  --error-color: var(--error-500);
+  --error-color-variant-dark: var(--error-700);
+  --info-color: var(--info-500);
+  --info-color-variant-dark: var(--info-700);
   --success-color: var(--success-500);
   --success-color-variant-dark: var(--success-700);
   --warning-color: var(--warning-500);
@@ -126,10 +127,11 @@
   --home-box-color: var(--silver-metallic);
   --home-grid-color: var(--light-grey);
 
-  /* Info Panel */
+  /* Banner */
 
-  --info-panel-border-color: var(--smokey-black);
-  --info-panel-icon-warning-color: var(--warning-color-variant-dark);
+  --banner-info-color: var(--info-color-variant-dark);
+  --banner-warning-color: var(--warning-color-variant-dark);
+  --banner-error-color: var(--error-color-variant-dark);
 }
 
 :root.dark {
@@ -179,8 +181,9 @@
 
   --home-grid-color: var(--smokey-black);
 
-  /* Info Panel */
+  /* Banner */
 
-  --info-panel-border-color: var(--light-grey);
-  --info-panel-icon-warning-color: var(--warning-color);
+  --banner-info-color: var(--info-color);
+  --banner-warning-color: var(--warning-color);
+  --banner-error-color: var(--error-color);
 }

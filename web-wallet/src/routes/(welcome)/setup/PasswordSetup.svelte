@@ -1,7 +1,8 @@
 <script>
-  import { Icon, Textbox } from "$lib/dusk/components";
+  import { mdiKeyOutline } from "@mdi/js";
+  import { Textbox } from "$lib/dusk/components";
   import { ToggleableCard } from "$lib/containers/Cards";
-  import { mdiAlertOutline, mdiKeyOutline } from "@mdi/js";
+  import { Banner } from "$lib/components";
 
   /** @type {string} */
   export let password = "";
@@ -57,15 +58,16 @@
   </div>
 </ToggleableCard>
 
-<div class="notice">
-  <Icon path={mdiAlertOutline} size="large" />
+<Banner
+  title="Setting a password for your web wallet is optional."
+  variant="info"
+>
   <p>
-    Setting a password for your web wallet is optional. Doing so allows you the
-    convenience of opening your wallet file using a password, but it weakens the
-    overall security. Not using a password requires you to input the full
-    mnemonic to open your wallet.
+    Doing so allows you the convenience of accessing your wallet using a
+    password, but it weakens the overall security. Not using a password requires
+    you to input the full mnemonic to open your wallet.
   </p>
-</div>
+</Banner>
 
 <style lang="postcss">
   .confirm-password {
@@ -77,7 +79,7 @@
       opacity: 0.5;
 
       &--error {
-        color: var(--danger-color);
+        color: var(--error-color);
         opacity: 1;
       }
     }

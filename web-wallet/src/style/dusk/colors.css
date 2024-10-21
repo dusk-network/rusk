@@ -27,6 +27,8 @@
   --success-700: #0f9363;
   --warning-500: #ffcf23;
   --warning-700: #d1a300;
-  --error: #ed254e;
-  --info: #71b1ff;
+  --error-500: #ed254e;
+  --error-700: #8e112c;
+  --info-500: #71b1ff;
+  --info-700: #0863d1;
 }

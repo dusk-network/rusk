@@ -3,6 +3,7 @@
 <script>
   import { fade } from "svelte/transition";
   import { Select } from "$lib/dusk/components";
+  import Banners from "./Banners.svelte";
   import Badges from "./Badges.svelte";
   import Balances from "./Balances.svelte";
   import Buttons from "./Buttons.svelte";
@@ -28,6 +29,7 @@
   const componentsMap = {
     Badges: Badges,
     Balances: Balances,
+    Banners: Banners,
     Buttons: Buttons,
     Cards: Cards,
     Checkboxes: Checkboxes,

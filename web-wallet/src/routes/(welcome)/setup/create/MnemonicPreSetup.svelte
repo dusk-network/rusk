@@ -1,7 +1,7 @@
 <script>
-  import { Agreement, Icon } from "$lib/dusk/components";
+  import { Agreement } from "$lib/dusk/components";
   import { IconHeadingCard } from "$lib/containers/Cards";
-  import { mdiAlertOutline } from "@mdi/js";
+  import { Banner } from "$lib/components";
 
   /** @type {boolean} */
   export let isValid = false;
@@ -29,10 +29,9 @@
   />
 </IconHeadingCard>
 
-<div class="notice">
-  <Icon path={mdiAlertOutline} size="large" />
-  <p>
-    To proceed, please check all the relevant boxes. Dusk will not save and
-    cannot retrieve your passphrase.
-  </p>
-</div>
+<Banner
+  title="Dusk will not save and cannot retrieve your passphrase."
+  variant="warning"
+>
+  <p>To proceed, please check all the relevant boxes.</p>
+</Banner>

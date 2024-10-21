@@ -304,7 +304,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
   
    
   <div
-    class="dusk-card dusk-card--gap-default"
+    class="dusk-card dusk-card--gap-medium"
   >
     <div
       class="dusk-card__header-container"
@@ -329,9 +329,7 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
     <div
       class="dusk-card__body-container"
     >
-      <p
-        class="mnemonic-notice svelte-omhov1"
-      >
+      <p>
         Ensure you have backed up the Mnemonic phrase.
       </p>
        
@@ -718,7 +716,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
   
    
   <div
-    class="dusk-card dusk-card--gap-default"
+    class="dusk-card dusk-card--gap-medium"
   >
     <div
       class="dusk-card__header-container"
@@ -743,9 +741,7 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
     <div
       class="dusk-card__body-container"
     >
-      <p
-        class="mnemonic-notice svelte-omhov1"
-      >
+      <p>
         Ensure you have backed up the Mnemonic phrase.
       </p>
        
@@ -1009,22 +1005,30 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       </div>
        
       <div
-        class="notice notice--error"
+        class="banner banner--error"
       >
         <svg
-          class="dusk-icon dusk-icon--size--large"
+          class="dusk-icon dusk-icon--size--large banner__icon banner__icon--error"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
           <path
-            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+            d="M23,12L20.56,14.78L20.9,18.46L17.29,19.28L15.4,22.46L12,21L8.6,22.47L6.71,19.29L3.1,18.47L3.44,14.78L1,12L3.44,9.21L3.1,5.53L6.71,4.72L8.6,1.54L12,3L15.4,1.54L17.29,4.72L20.9,5.54L20.56,9.22L23,12M20.33,12L18.5,9.89L18.74,7.1L16,6.5L14.58,4.07L12,5.18L9.42,4.07L8,6.5L5.26,7.09L5.5,9.88L3.67,12L5.5,14.1L5.26,16.9L8,17.5L9.42,19.93L12,18.81L14.58,19.92L16,17.5L18.74,16.89L18.5,14.1L20.33,12M11,15H13V17H11V15M11,7H13V13H11V7"
           />
         </svg>
         
          
-        <p>
-          Mnemonic does not match.
-        </p>
+        <div>
+          <strong
+            class="banner__title"
+          >
+            Mnemonic does not match.
+          </strong>
+           
+          <p>
+            Please ensure you have entered the mnemonic phrase in the correct order.
+          </p>
+        </div>
       </div>
       
     </div>
@@ -1161,7 +1165,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
   
    
   <div
-    class="dusk-card dusk-card--gap-default"
+    class="dusk-card dusk-card--gap-medium"
   >
     <div
       class="dusk-card__header-container"
@@ -1186,9 +1190,7 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
     <div
       class="dusk-card__body-container"
     >
-      <p
-        class="mnemonic-notice svelte-omhov1"
-      >
+      <p>
         Ensure you have backed up the Mnemonic phrase.
       </p>
        
@@ -1995,25 +1997,32 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
   
    
   <div
-    class="notice"
+    class="banner banner--info"
   >
     <svg
-      class="dusk-icon dusk-icon--size--large"
+      class="dusk-icon dusk-icon--size--large banner__icon banner__icon--info"
       role="graphics-symbol"
       viewBox="0 0 24 24"
     >
       <path
-        d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+        d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z"
       />
     </svg>
     
      
-    <p>
-      Setting a password for your web wallet is optional. Doing so allows you the
-    convenience of opening your wallet file using a password, but it weakens the
-    overall security. Not using a password requires you to input the full
-    mnemonic to open your wallet.
-    </p>
+    <div>
+      <strong
+        class="banner__title"
+      >
+        Setting a password for your web wallet is optional.
+      </strong>
+       
+      <p>
+        Doing so allows you the convenience of accessing your wallet using a
+    password, but it weakens the overall security. Not using a password requires
+    you to input the full mnemonic to open your wallet.
+      </p>
+    </div>
   </div>
    
   <div
@@ -2211,7 +2220,7 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
         
          
         <span
-          class="confirm-password--meta svelte-1itc1ku"
+          class="confirm-password--meta svelte-ww95yl"
         >
           Password must be at least 8 characters
         </span>
@@ -2223,25 +2232,32 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
   
    
   <div
-    class="notice"
+    class="banner banner--info"
   >
     <svg
-      class="dusk-icon dusk-icon--size--large"
+      class="dusk-icon dusk-icon--size--large banner__icon banner__icon--info"
       role="graphics-symbol"
       viewBox="0 0 24 24"
     >
       <path
-        d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+        d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z"
       />
     </svg>
     
      
-    <p>
-      Setting a password for your web wallet is optional. Doing so allows you the
-    convenience of opening your wallet file using a password, but it weakens the
-    overall security. Not using a password requires you to input the full
-    mnemonic to open your wallet.
-    </p>
+    <div>
+      <strong
+        class="banner__title"
+      >
+        Setting a password for your web wallet is optional.
+      </strong>
+       
+      <p>
+        Doing so allows you the convenience of accessing your wallet using a
+    password, but it weakens the overall security. Not using a password requires
+    you to input the full mnemonic to open your wallet.
+      </p>
+    </div>
   </div>
    
   <div
@@ -2528,7 +2544,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
   
    
   <div
-    class="dusk-card dusk-card--gap-default"
+    class="dusk-card dusk-card--gap-medium"
   >
     <div
       class="dusk-card__header-container"
@@ -2553,9 +2569,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
     <div
       class="dusk-card__body-container"
     >
-      <p
-        class="mnemonic-notice svelte-omhov1"
-      >
+      <p>
         Ensure you have backed up the Mnemonic phrase.
       </p>
        
@@ -3017,10 +3031,10 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
   
    
   <div
-    class="notice"
+    class="banner banner--warning"
   >
     <svg
-      class="dusk-icon dusk-icon--size--large"
+      class="dusk-icon dusk-icon--size--large banner__icon banner__icon--warning"
       role="graphics-symbol"
       viewBox="0 0 24 24"
     >
@@ -3030,10 +3044,17 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
     </svg>
     
      
-    <p>
-      To proceed, please check all the relevant boxes. Dusk will not save and
-    cannot retrieve your passphrase.
-    </p>
+    <div>
+      <strong
+        class="banner__title"
+      >
+        Dusk will not save and cannot retrieve your passphrase.
+      </strong>
+       
+      <p>
+        To proceed, please check all the relevant boxes.
+      </p>
+    </div>
   </div>
    
   <div

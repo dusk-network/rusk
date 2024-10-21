@@ -2,10 +2,10 @@
 
 exports[`Settings > Resetting the wallet > should show an error if clearing local data fails 1`] = `
 <section
-  class="settings svelte-1kathp5"
+  class="settings svelte-q8dyvk"
 >
   <header
-    class="settings__header svelte-1kathp5"
+    class="settings__header svelte-q8dyvk"
   >
     <h2>
       Settings
@@ -13,18 +13,18 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
   </header>
    
   <div
-    class="settings__content svelte-1kathp5"
+    class="settings__content svelte-q8dyvk"
   >
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header settings-group__header--network svelte-1kathp5"
+        class="settings-group__header settings-group__header--network svelte-q8dyvk"
       >
         <div
-          class="settings-group__header svelte-1kathp5"
+          class="settings-group__header svelte-q8dyvk"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -38,7 +38,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           
            
           <h3
-            class="h4 settings-group__heading svelte-1kathp5"
+            class="h4 settings-group__heading svelte-q8dyvk"
           >
             Network
           </h3>
@@ -74,10 +74,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header svelte-1kathp5"
+        class="settings-group__header svelte-q8dyvk"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -91,14 +91,14 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-1kathp5"
+          class="h4 settings-group__heading svelte-q8dyvk"
         >
           Gas
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1kathp5"
+        class="settings-group__multi-control-content svelte-q8dyvk"
       >
         <label
           class="gas-control svelte-1p4ekyk"
@@ -143,10 +143,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header svelte-1kathp5"
+        class="settings-group__header svelte-q8dyvk"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -160,17 +160,17 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-1kathp5"
+          class="h4 settings-group__heading svelte-q8dyvk"
         >
           Preferences
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1kathp5"
+        class="settings-group__multi-control-content svelte-q8dyvk"
       >
         <label
-          class="settings-group__control settings-group__control--switch svelte-1kathp5"
+          class="settings-group__control settings-group__control--switch svelte-q8dyvk"
         >
           <span>
             Dark mode
@@ -186,10 +186,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         </label>
          
         <label
-          class="settings-group__control settings-group__control--with-label svelte-1kathp5"
+          class="settings-group__control settings-group__control--with-label svelte-q8dyvk"
         >
           <span
-            class="svelte-1kathp5"
+            class="svelte-q8dyvk"
           >
             Currency
           </span>
@@ -476,10 +476,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header svelte-1kathp5"
+        class="settings-group__header svelte-q8dyvk"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -493,7 +493,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-1kathp5"
+          class="h4 settings-group__heading svelte-q8dyvk"
         >
           Danger zone
         </h3>
@@ -540,10 +540,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
 
 exports[`Settings > should render the settings page displaying the status of the network 1`] = `
 <section
-  class="settings svelte-1kathp5"
+  class="settings svelte-q8dyvk"
 >
   <header
-    class="settings__header svelte-1kathp5"
+    class="settings__header svelte-q8dyvk"
   >
     <h2>
       Settings
@@ -551,18 +551,18 @@ exports[`Settings > should render the settings page displaying the status of the
   </header>
    
   <div
-    class="settings__content svelte-1kathp5"
+    class="settings__content svelte-q8dyvk"
   >
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header settings-group__header--network svelte-1kathp5"
+        class="settings-group__header settings-group__header--network svelte-q8dyvk"
       >
         <div
-          class="settings-group__header svelte-1kathp5"
+          class="settings-group__header svelte-q8dyvk"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -576,7 +576,7 @@ exports[`Settings > should render the settings page displaying the status of the
           
            
           <h3
-            class="h4 settings-group__heading svelte-1kathp5"
+            class="h4 settings-group__heading svelte-q8dyvk"
           >
             Network
           </h3>
@@ -612,10 +612,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header svelte-1kathp5"
+        class="settings-group__header svelte-q8dyvk"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -629,14 +629,14 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1kathp5"
+          class="h4 settings-group__heading svelte-q8dyvk"
         >
           Gas
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1kathp5"
+        class="settings-group__multi-control-content svelte-q8dyvk"
       >
         <label
           class="gas-control svelte-1p4ekyk"
@@ -681,10 +681,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header svelte-1kathp5"
+        class="settings-group__header svelte-q8dyvk"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -698,17 +698,17 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1kathp5"
+          class="h4 settings-group__heading svelte-q8dyvk"
         >
           Preferences
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1kathp5"
+        class="settings-group__multi-control-content svelte-q8dyvk"
       >
         <label
-          class="settings-group__control settings-group__control--switch svelte-1kathp5"
+          class="settings-group__control settings-group__control--switch svelte-q8dyvk"
         >
           <span>
             Dark mode
@@ -724,10 +724,10 @@ exports[`Settings > should render the settings page displaying the status of the
         </label>
          
         <label
-          class="settings-group__control settings-group__control--with-label svelte-1kathp5"
+          class="settings-group__control settings-group__control--with-label svelte-q8dyvk"
         >
           <span
-            class="svelte-1kathp5"
+            class="svelte-q8dyvk"
           >
             Currency
           </span>
@@ -1014,10 +1014,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header svelte-1kathp5"
+        class="settings-group__header svelte-q8dyvk"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1031,7 +1031,7 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1kathp5"
+          class="h4 settings-group__heading svelte-q8dyvk"
         >
           Danger zone
         </h3>
@@ -1060,10 +1060,10 @@ exports[`Settings > should render the settings page displaying the status of the
 
 exports[`Settings > should render the settings page displaying the status of the network 2`] = `
 <section
-  class="settings svelte-1kathp5"
+  class="settings svelte-q8dyvk"
 >
   <header
-    class="settings__header svelte-1kathp5"
+    class="settings__header svelte-q8dyvk"
   >
     <h2>
       Settings
@@ -1071,18 +1071,18 @@ exports[`Settings > should render the settings page displaying the status of the
   </header>
    
   <div
-    class="settings__content svelte-1kathp5"
+    class="settings__content svelte-q8dyvk"
   >
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header settings-group__header--network svelte-1kathp5"
+        class="settings-group__header settings-group__header--network svelte-q8dyvk"
       >
         <div
-          class="settings-group__header svelte-1kathp5"
+          class="settings-group__header svelte-q8dyvk"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -1096,7 +1096,7 @@ exports[`Settings > should render the settings page displaying the status of the
           
            
           <h3
-            class="h4 settings-group__heading svelte-1kathp5"
+            class="h4 settings-group__heading svelte-q8dyvk"
           >
             Network
           </h3>
@@ -1132,10 +1132,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header svelte-1kathp5"
+        class="settings-group__header svelte-q8dyvk"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1149,14 +1149,14 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1kathp5"
+          class="h4 settings-group__heading svelte-q8dyvk"
         >
           Gas
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1kathp5"
+        class="settings-group__multi-control-content svelte-q8dyvk"
       >
         <label
           class="gas-control svelte-1p4ekyk"
@@ -1201,10 +1201,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header svelte-1kathp5"
+        class="settings-group__header svelte-q8dyvk"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1218,17 +1218,17 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1kathp5"
+          class="h4 settings-group__heading svelte-q8dyvk"
         >
           Preferences
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1kathp5"
+        class="settings-group__multi-control-content svelte-q8dyvk"
       >
         <label
-          class="settings-group__control settings-group__control--switch svelte-1kathp5"
+          class="settings-group__control settings-group__control--switch svelte-q8dyvk"
         >
           <span>
             Dark mode
@@ -1244,10 +1244,10 @@ exports[`Settings > should render the settings page displaying the status of the
         </label>
          
         <label
-          class="settings-group__control settings-group__control--with-label svelte-1kathp5"
+          class="settings-group__control settings-group__control--with-label svelte-q8dyvk"
         >
           <span
-            class="svelte-1kathp5"
+            class="svelte-q8dyvk"
           >
             Currency
           </span>
@@ -1534,10 +1534,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1kathp5"
+      class="settings-group svelte-q8dyvk"
     >
       <header
-        class="settings-group__header svelte-1kathp5"
+        class="settings-group__header svelte-q8dyvk"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1551,7 +1551,7 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1kathp5"
+          class="h4 settings-group__heading svelte-q8dyvk"
         >
           Danger zone
         </h3>
