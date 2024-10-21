@@ -81,23 +81,24 @@ pub(crate) async fn run_loop(
             let profile = &wallet.profiles()[profile_idx as usize];
 
             // display profile information
-            println!();
-            println!();
             // display shielded balance and keys information
-            println!("{}\n", profile.shielded_address_string());
+            println!("{}", profile.shielded_address_string());
+
             if is_synced {
                 println!(
-                    "{0: <15} - Spendable: {phoenix_spendable}",
+                    "{0: <16} - Spendable: {phoenix_spendable}",
                     "Shielded Balance",
                 );
-                println!("{0: <16} - Total: {phoenix_total}", "",);
+                println!("{0: <16} - Total:     {phoenix_total}", "",);
+            } else {
+                println!("Syncing...");
             }
-
+            println!();
             // display public balance and keys information
-            println!("{}\n", profile.public_account_string());
-            if is_synced {
-                println!("{0: <16} - Total: {moonlight_bal}", "Public Balance",);
-            }
+            println!("{}", profile.public_account_string());
+            println!("{0: <16} - Total:     {moonlight_bal}", "Public Balance",);
+
+            println!();
 
             // request operation to perform
             let op = match wallet.is_online().await {
