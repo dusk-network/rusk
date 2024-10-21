@@ -32,7 +32,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{cmp, env};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{RwLock, RwLockReadGuard};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, trace, warn};
 
 use super::consensus::Task;
 use crate::chain::header_validation::{verify_att, verify_faults, Validator};
@@ -296,30 +296,40 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         &self,
         msg: Message,
     ) -> Result<(), async_channel::TrySendError<Message>> {
-        let curr_tip = self.get_curr_height().await;
+        // Filter out non-consensus messages
+        if !msg.topic().is_consensus_msg() {
+            warn!("invalid inbound message");
+            return Ok(());
+        }
 
-        // Enqueue consensus msg only if local tip is close enough to the
-        // network tip.
-        let enable_enqueue =
-            msg.header.round >= curr_tip && msg.header.round < (curr_tip + 10);
+        let consensus_task = self.task.read().await;
+        // If we are syncing our chain, we blindly repropagate everything
+        // beacuse we cannot verify any future message but do not want to affect
+        // propagation
+        if !consensus_task.is_running() {
+            broadcast(&self.network, &msg).await;
+            // We return here because if Consensus is not running we can't
+            // process any Consensus message
+            return Ok(());
+        }
+
+        let tip_header = self.tip.read().await.inner().header().clone();
+        let tip_height = tip_header.height;
 
         match &msg.payload {
             Payload::Candidate(_)
             | Payload::Validation(_)
             | Payload::Ratification(_) => {
-                let task = self.task.read().await;
-                if !task.is_running() {
-                    broadcast(&self.network, &msg).await;
-                }
-
-                if enable_enqueue {
-                    task.main_inbound.try_send(msg);
+                // Process consensus msg only if they are for the current round
+                // or at most 10 rounds in the future
+                let msg_round = msg.header.round;
+                if msg_round > tip_height && msg_round < (tip_height + 10) {
+                    consensus_task.main_inbound.try_send(msg);
                 }
             }
-            Payload::Quorum(qmsg) => {
-                let tip_header = self.tip.read().await.inner().header().clone();
 
-                match msg.header.compare_round(tip_header.height + 1) {
+            Payload::Quorum(qmsg) => {
+                match msg.header.compare_round(tip_height + 1) {
                     // If Quorum is for the current round, we verify it,
                     // rebroadcast it, and reroute it to Consensus
                     Status::Present => {
@@ -348,15 +358,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                                 // INFO: rebroadcast of current-round Quorums is
                                 // delegated to Consensus. We do this to allow
                                 // iteration-based logic
-                                let task = self.task.read().await;
-                                if task.is_running() {
-                                    debug!(
-                                        event = "Rerouting Quorum to Consensus",
-                                        round = qmsg.header.round,
-                                        iter = qmsg.header.iteration,
-                                    );
-                                    task.main_inbound.try_send(msg);
-                                }
+                                trace!(
+                                    event = "Rerouting Quorum to Consensus",
+                                    round = qmsg.header.round,
+                                    iter = qmsg.header.iteration,
+                                );
+                                consensus_task.main_inbound.try_send(msg);
                             }
                             Err(err) => {
                                 error!("Attestation verification failed: {err}")
@@ -429,7 +436,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     }
                 }
             }
-            _ => warn!("invalid inbound message"),
+            _ => {}
         }
         Ok(())
     }
