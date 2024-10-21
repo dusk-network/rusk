@@ -28,7 +28,7 @@ use self::payload::{Candidate, Ratification, Validation};
 
 /// Topic field position in the message binary representation
 pub const TOPIC_FIELD_POS: usize = 1 + 2 + 2;
-pub const PROTOCOL_VERSION: Version = Version(1, 0, 0);
+pub const PROTOCOL_VERSION: Version = Version(1, 0, 1);
 
 /// Max value for iteration.
 pub const MESSAGE_MAX_ITER: u8 = 50;
