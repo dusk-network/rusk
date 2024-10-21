@@ -1,3 +1,5 @@
+type BannerVariant = "info" | "warning" | "error";
+
 type DashboardNavItem = {
   href: string;
   icons?: DashboardNavItemIconProp[];

@@ -323,7 +323,7 @@
   }
 
   :global(.dusk-button.settings-group__button--state--danger) {
-    background-color: var(--danger-color);
+    background-color: var(--error-color);
     color: var(--on-danger-color);
   }
 </style>
