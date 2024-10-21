@@ -45,11 +45,13 @@
   {error}
   {loading}
   title="Transactions — {displayedTxns.length} Displayed Items"
-  headerButtonDetails={{
-    action: () => loadMoreItems(),
-    disabled: isLoadMoreDisabled,
-    label: "Show More",
-  }}
+  headerButtonDetails={error
+    ? undefined
+    : {
+        action: () => loadMoreItems(),
+        disabled: isLoadMoreDisabled,
+        label: "Show More",
+      }}
 >
   {#if isSmallScreen}
     <div class="transactions-card__list">
