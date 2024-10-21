@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change the displayed value for average gas price to lux [#2416]
 - Change the blocks table header `FEE` to `GAS` and `AVG` to `AVG PRICE` and `TOTAL` to `USED` [#2416]
 - Change the tooltip info of the block rewards [#2166]
+- Hide "Show More" button if an error has occurred [#2585]
 - Update Footer layout [#2640]
 - Change WorldMap location [#2613]
 - Fetch network information locally [#2662]
@@ -85,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2389]: https://github.com/dusk-network/rusk/issues/2389
 [#2527]: https://github.com/dusk-network/rusk/issues/2527
 [#2166]: https://github.com/dusk-network/rusk/issues/2166
+[#2585]: https://github.com/dusk-network/rusk/issues/2585
 [#2640]: https://github.com/dusk-network/rusk/issues/2640
 [#2668]: https://github.com/dusk-network/rusk/issues/2668
 [#2613]: https://github.com/dusk-network/rusk/issues/2613

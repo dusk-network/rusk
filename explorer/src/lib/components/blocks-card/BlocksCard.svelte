@@ -41,11 +41,13 @@
   {error}
   {loading}
   title="Blocks — {displayedBlocks.length} Displayed Items"
-  headerButtonDetails={{
-    action: () => loadMoreItems(),
-    disabled: isLoadMoreDisabled,
-    label: "Show More",
-  }}
+  headerButtonDetails={error
+    ? undefined
+    : {
+        action: () => loadMoreItems(),
+        disabled: isLoadMoreDisabled,
+        label: "Show More",
+      }}
 >
   {#if isSmallScreen}
     <div class="blocks-card__list">
