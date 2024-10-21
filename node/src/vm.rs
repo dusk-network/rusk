@@ -12,6 +12,7 @@ use dusk_consensus::{
 use execution_core::signatures::bls::PublicKey as BlsPublicKey;
 use execution_core::transfer::data::ContractBytecode;
 use execution_core::transfer::moonlight::AccountData;
+use node_data::events::contract::ContractEvent;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
 #[derive(Default)]
@@ -38,7 +39,11 @@ pub trait VMExecution: Send + Sync + 'static {
         &self,
         blk: &Block,
         voters: &[Voter],
-    ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
+    ) -> anyhow::Result<(
+        Vec<SpentTransaction>,
+        VerificationOutput,
+        Vec<ContractEvent>,
+    )>;
 
     fn finalize_state(
         &self,

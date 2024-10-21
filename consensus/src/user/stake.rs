@@ -8,23 +8,14 @@
 pub struct Stake {
     value: u64,
 
-    pub reward: u64,
-    pub nonce: u64,
     pub eligible_since: u64,
 }
 
 impl Stake {
-    pub fn new(
-        value: u64,
-        reward: u64,
-        eligible_since: u64,
-        nonce: u64,
-    ) -> Self {
+    pub fn new(value: u64, eligible_since: u64) -> Self {
         Self {
             value,
-            reward,
             eligible_since,
-            nonce,
         }
     }
 
@@ -56,5 +47,9 @@ impl Stake {
             self.value -= sub;
             sub
         }
+    }
+
+    pub fn change_eligibility(&mut self, new_value: u64) {
+        self.eligible_since = new_value;
     }
 }

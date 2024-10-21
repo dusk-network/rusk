@@ -179,7 +179,7 @@ pub fn generator_procedure(
     let verify_output = rusk.verify_state_transition(&block, &voters)?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let (accept_txs, accept_output) = rusk.accept(&block, &voters)?;
+    let (accept_txs, accept_output, _) = rusk.accept(&block, &voters)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
@@ -285,7 +285,7 @@ pub fn generator_procedure2(
     let verify_output = rusk.verify_state_transition(&block, &voters)?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let (accept_txs, accept_output) = rusk.accept(&block, &voters)?;
+    let (accept_txs, accept_output, _) = rusk.accept(&block, &voters)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
