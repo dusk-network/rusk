@@ -57,11 +57,11 @@ pub const MIN_CONVERTIBLE: Dusk = Dusk::new(1);
 /// The length of an epoch in blocks
 pub const EPOCH: u64 = 2160;
 /// Max addresses the wallet can store
-pub const MAX_PROFILES: usize = get_max_addresses();
+pub const MAX_PROFILES: usize = get_max_profiles();
 
 const DEFAULT_MAX_PROFILES: usize = 2;
 
-const fn get_max_addresses() -> usize {
+const fn get_max_profiles() -> usize {
     match option_env!("WALLET_MAX_PROFILES") {
         Some(v) => match konst::primitive::parse_usize(v) {
             Ok(e) if e > 255 => {
