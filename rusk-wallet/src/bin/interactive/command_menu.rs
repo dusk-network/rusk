@@ -58,6 +58,7 @@ pub(crate) fn online(
     let q = Question::select("theme")
         .message("What do you like to do?")
         .choices(cmd_menu.clone())
+        .page_size(20)
         .build();
 
     let answer = requestty::prompt_one(q)?;
