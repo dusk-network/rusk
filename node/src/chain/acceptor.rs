@@ -429,10 +429,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     }
 
                     Status::Future => {
-                        //INFO: we currently rebroadcast future Quorums without
-                        // any check
-                        debug!("Rebroadcast Quorum for future round");
-                        broadcast(&self.network, &msg).await;
+                        // We do not rebroadcast future Quorum messages because
+                        // we cannot pre-verify them and we want to avoid
+                        // potential DoS attacks
                     }
                 }
             }
