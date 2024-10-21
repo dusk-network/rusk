@@ -54,9 +54,7 @@ dusk-merkle = "=0.5.3"
 dusk-plonk = { version = "=0.20.2", default-features = false }
 dusk-poseidon = "=0.40.0"
 jubjub-schnorr = { version = "=0.5.0", default-features = false }
-
-# we leave kadcast open until a stable release is out
-kadcast = "0.7.0-rc.11"
+kadcast = "=0.7.0"
 phoenix-circuits = { version = "=0.4.0", default-features = false }
 phoenix-core = { version = "=0.32.0", default-features = false }
 # we leave piecrust open until a stable release is out
