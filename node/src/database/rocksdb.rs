@@ -5,7 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{
-    Candidate, DatabaseOptions, Ledger, LightBlock, Metadata, Persist, DB,
+    ConsensusStorage, DatabaseOptions, Ledger, LightBlock, Metadata, Persist,
+    DB,
 };
 use anyhow::Result;
 use std::cell::RefCell;
@@ -13,6 +14,8 @@ use std::cell::RefCell;
 use node_data::ledger::{
     self, Fault, Header, Label, SpendingId, SpentTransaction,
 };
+use node_data::message::payload;
+use node_data::message::ConsensusHeader;
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -575,7 +578,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 }
 
 /// Implementation of the `Candidate` trait for `DBTransaction<'db, DB>`.
-impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
+impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     /// Stores a candidate block in the database.
     ///
     /// # Arguments
@@ -625,8 +628,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
 
     fn fetch_candidate_block_by_iteration(
         &self,
-        prev_block_hash: [u8; 32],
-        iteration: u8,
+        consensus_header: &ConsensusHeader,
     ) -> Result<Option<ledger::Block>> {
         let iter = self
             .inner
@@ -636,8 +638,8 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
             let b = ledger::Block::read(&mut &blob[..])?;
 
             let header = b.header();
-            if header.prev_block_hash == prev_block_hash
-                && header.iteration == iteration
+            if header.prev_block_hash == consensus_header.prev_block_hash
+                && header.iteration == consensus_header.iteration
             {
                 return Ok(Some(b));
             }
@@ -656,7 +658,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
-    fn delete<F>(&self, closure: F) -> Result<()>
+    fn delete_candidate<F>(&self, closure: F) -> Result<()>
     where
         F: FnOnce(u64) -> bool + std::marker::Copy,
     {
@@ -675,7 +677,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn count(&self) -> usize {
+    fn count_candidates(&self) -> usize {
         let iter = self
             .inner
             .iterator_cf(self.candidates_height_cf, IteratorMode::Start);
@@ -690,7 +692,74 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
     fn clear_candidates(&self) -> Result<()> {
-        self.delete(|_| true)
+        self.delete_candidate(|_| true)
+    }
+
+    /// Stores a ValidationResult in the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `vr` - The ValidationResult to store.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the ValidationResult is successfully stored, or an
+    /// error if the operation fails.
+    fn store_validation_result(
+        &self,
+        _vr: &payload::ValidationResult,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    /// Fetches a ValidationResult from the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `prev_block_hash` - The hash of the previous block.
+    /// * `iteration` - The iteration number.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(Some(ValidationResult))` if the ValidationResult is found,
+    /// `Ok(None)` if the ValidationResult is not found, or an error if the
+    /// operation fails.
+    fn fetch_validation_result(
+        &self,
+        _consensus_header: &ConsensusHeader,
+    ) -> Result<Option<payload::ValidationResult>> {
+        Ok(None)
+    }
+
+    /// Deletes all items from the `CF_VALIDATION_RESULTS` column family.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the deletion is successful, or an error if the
+    /// operation fails.
+    fn clear_validation_results(&self) -> Result<()> {
+        Ok(())
+    }
+
+    /// Deletes ValidationResult items from the database based on a closure.
+    ///
+    /// # Arguments
+    ///
+    /// * `closure` - If the closure returns `true`, the block will be deleted.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the deletion is successful, or an error if the
+    /// operation fails.
+    fn delete_validation_result<F>(&self, _closure: F) -> Result<()>
+    where
+        F: FnOnce(u64) -> bool + std::marker::Copy,
+    {
+        Ok(())
+    }
+
+    fn count_validation_results(&self) -> usize {
+        0
     }
 }
 

@@ -14,7 +14,7 @@ use crate::chain::fallback;
 use crate::database;
 use crate::{vm, Network};
 
-use crate::database::{Candidate, Ledger};
+use crate::database::{ConsensusStorage, Ledger};
 use metrics::counter;
 use node_data::ledger::{to_str, Attestation, Block};
 use node_data::message::payload::{
