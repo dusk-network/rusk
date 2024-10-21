@@ -11,9 +11,9 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[clap(version)]
-#[clap(name = "Dusk Wallet CLI")]
+#[clap(name = "Rusk Wallet")]
 #[clap(author = "Dusk Network B.V.")]
-#[clap(about = "A user-friendly, reliable command line interface to the Dusk wallet!", long_about = None)]
+#[clap(about = "A user-friendly, reliable command-line interface to interact with the Dusk blockchain.", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 pub(crate) struct WalletArgs {
     /// Directory to store user data [default: `$HOME/.dusk/rusk-wallet`]
