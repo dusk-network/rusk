@@ -1148,7 +1148,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Check if the address is stored in our profiles, return the address if
     /// found
-    pub fn claim_as_address(&self, addr: Address) -> Result<Address, Error> {
+    pub fn claim(&self, addr: Address) -> Result<Address, Error> {
         self.find_index(&addr)?;
         Ok(addr)
     }

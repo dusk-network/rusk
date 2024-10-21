@@ -303,7 +303,7 @@ impl Command {
         match self {
             Command::Balance { address, spendable } => {
                 let addr = match address {
-                    Some(addr) => wallet.claim_as_address(addr)?,
+                    Some(addr) => wallet.claim(addr)?,
                     None => wallet.default_address(),
                 };
                 let addr_idx = wallet.find_index(&addr)?;
@@ -399,7 +399,7 @@ impl Command {
                 gas_price,
             } => {
                 let address = match address {
-                    Some(addr) => wallet.claim_as_address(addr)?,
+                    Some(addr) => wallet.claim(addr)?,
                     None => wallet.default_address(),
                 };
                 let addr_idx = wallet.find_index(&address)?;
@@ -422,7 +422,7 @@ impl Command {
                 gas_price,
             } => {
                 let address = match address {
-                    Some(addr) => wallet.claim_as_address(addr)?,
+                    Some(addr) => wallet.claim(addr)?,
                     None => wallet.default_address(),
                 };
                 let profile_idx = wallet.find_index(&address)?;
@@ -445,7 +445,7 @@ impl Command {
                 gas_price,
             } => {
                 let address = match address {
-                    Some(addr) => wallet.claim_as_address(addr)?,
+                    Some(addr) => wallet.claim(addr)?,
                     None => wallet.default_address(),
                 };
                 let addr_idx = wallet.find_index(&address)?;
@@ -546,7 +546,7 @@ impl Command {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
                 let address = match address {
-                    Some(addr) => wallet.claim_as_address(addr)?,
+                    Some(addr) => wallet.claim(addr)?,
                     None => wallet.default_address(),
                 };
                 let addr_idx = wallet.find_index(&address)?;
@@ -595,7 +595,7 @@ impl Command {
                 gas_price,
             } => {
                 let address = match address {
-                    Some(addr) => wallet.claim_as_address(addr)?,
+                    Some(addr) => wallet.claim(addr)?,
                     None => wallet.default_address(),
                 };
                 let addr_idx = wallet.find_index(&address)?;
