@@ -58,8 +58,8 @@ kadcast = "=0.7.0"
 phoenix-circuits = { version = "=0.4.0", default-features = false }
 phoenix-core = { version = "=0.32.0", default-features = false }
 # we leave piecrust open until a stable release is out
-piecrust = "0.25.1-rc.0"
-piecrust-uplink = "0.17.1"
+piecrust = "=0.26.0"
+piecrust-uplink = "=0.17.1"
 poseidon-merkle = "=0.7.0"
 zk-citadel = "=0.14.0"
 
