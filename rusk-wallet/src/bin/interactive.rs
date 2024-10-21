@@ -307,14 +307,22 @@ fn menu_op(
                     (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
             };
+
+            let memo = Some(prompt::request_str("memo")?);
+            let amt = if memo.is_some() {
+                prompt::request_optional_token_amt("transfer", balance)
+            } else {
+                prompt::request_token_amt("transfer", balance)
+            }?;
+
             ProfileOp::Run(Box::new(Command::Transfer {
                 sender: Some(sender),
                 rcvr,
-                amt: prompt::request_token_amt("transfer", balance)?,
+                amt,
                 gas_limit: prompt::request_gas_limit(
                     gas::DEFAULT_LIMIT_TRANSFER,
                 )?,
-                memo: Some(prompt::request_str("memo")?),
+                memo,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
