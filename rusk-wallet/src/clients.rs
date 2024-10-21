@@ -110,6 +110,10 @@ impl State {
         })
     }
 
+    pub async fn check_connection(&self) -> bool {
+        self.client.check_connection().await.is_ok()
+    }
+
     pub(crate) fn cache(&self) -> Arc<Cache> {
         let state = self.cache.lock().unwrap();
 

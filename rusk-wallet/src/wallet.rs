@@ -279,7 +279,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Checks if the wallet has an active connection to the network
     pub async fn is_online(&self) -> bool {
-        self.state.is_some()
+        if let Some(state) = &self.state {
+            state.check_connection().await
+        } else {
+            false
+        }
     }
 
     /// Fetches the notes from the state.
@@ -567,7 +571,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Check if the wallet is synced
-    pub async fn is_synced(&mut self) -> Result<bool, Error> {
+    pub async fn is_synced(&self) -> Result<bool, Error> {
         let state = self.state()?;
         let db_pos = state.cache().last_pos()?.unwrap_or(0);
         let network_last_pos = state.fetch_num_notes().await? - 1;
