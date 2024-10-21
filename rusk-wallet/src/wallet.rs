@@ -53,7 +53,7 @@ use crate::{
         RESERVED,
     },
     store::LocalStore,
-    Error, RuskHttpClient,
+    Error,
 };
 use gas::Gas;
 
@@ -231,18 +231,15 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Connect the wallet to the network providing a callback for status
     /// updates
-    pub async fn connect_with_status<S>(
+    pub async fn connect_with_status<S: Into<String>>(
         &mut self,
         rusk_addr: S,
         prov_addr: S,
         status: fn(&str),
-    ) -> Result<(), Error>
-    where
-        S: Into<String>,
-    {
+    ) -> Result<(), Error> {
         // attempt connection
-        let http_state = RuesHttpClient::new(rusk_addr.into());
-        let http_prover = RuskHttpClient::new(prov_addr.into());
+        let http_state = RuesHttpClient::new(rusk_addr);
+        let http_prover = RuesHttpClient::new(prov_addr);
 
         let state_status = http_state.check_connection().await;
         let prover_status = http_prover.check_connection().await;

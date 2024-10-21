@@ -23,8 +23,8 @@ pub struct RuesHttpClient {
 
 impl RuesHttpClient {
     /// Create a new HTTP Client
-    pub fn new(uri: String) -> Self {
-        Self { uri }
+    pub fn new<S: Into<String>>(uri: S) -> Self {
+        Self { uri: uri.into() }
     }
 
     /// Utility for querying the rusk VM

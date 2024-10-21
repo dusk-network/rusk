@@ -22,7 +22,6 @@ mod clients;
 mod crypto;
 mod error;
 mod rues;
-mod rusk;
 mod store;
 mod wallet;
 
@@ -30,7 +29,6 @@ mod wallet;
 pub mod dat;
 
 pub use rues::RuesHttpClient;
-pub use rusk::{RuskHttpClient, RuskRequest};
 
 pub use error::Error;
 pub use wallet::gas;
