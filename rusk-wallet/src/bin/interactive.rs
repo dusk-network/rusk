@@ -319,11 +319,11 @@ fn menu_op(
             }))
         }
         CMI::Stake => {
-            let (addr, balance) = match prompt::request_protocol()? {
-                prompt::Protocol::Phoenix => {
+            let (addr, balance) = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
                     (wallet.shielded_address(profile_idx)?, phoenix_balance)
                 }
-                prompt::Protocol::Moonlight => {
+                prompt::TransactionModel::Public => {
                     (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
             };
@@ -335,11 +335,11 @@ fn menu_op(
             }))
         }
         CMI::Unstake => {
-            let addr = match prompt::request_protocol()? {
-                prompt::Protocol::Phoenix => {
+            let addr = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
                     wallet.shielded_address(profile_idx)
                 }
-                prompt::Protocol::Moonlight => {
+                prompt::TransactionModel::Public => {
                     wallet.public_address(profile_idx)
                 }
             }?;
@@ -351,11 +351,11 @@ fn menu_op(
         }
 
         CMI::Withdraw => {
-            let addr = match prompt::request_protocol()? {
-                prompt::Protocol::Phoenix => {
+            let addr = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
                     wallet.shielded_address(profile_idx)
                 }
-                prompt::Protocol::Moonlight => {
+                prompt::TransactionModel::Public => {
                     wallet.public_address(profile_idx)
                 }
             }?;
@@ -366,11 +366,11 @@ fn menu_op(
             }))
         }
         CMI::ContractDeploy => {
-            let addr = match prompt::request_protocol()? {
-                prompt::Protocol::Phoenix => {
+            let addr = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
                     wallet.shielded_address(profile_idx)
                 }
-                prompt::Protocol::Moonlight => {
+                prompt::TransactionModel::Public => {
                     wallet.public_address(profile_idx)
                 }
             }?;
@@ -386,11 +386,11 @@ fn menu_op(
             }))
         }
         CMI::ContractCall => {
-            let addr = match prompt::request_protocol()? {
-                prompt::Protocol::Phoenix => {
+            let addr = match prompt::request_transaction_model()? {
+                prompt::TransactionModel::Shielded => {
                     wallet.shielded_address(profile_idx)
                 }
-                prompt::Protocol::Moonlight => {
+                prompt::TransactionModel::Public => {
                     wallet.public_address(profile_idx)
                 }
             }?;
@@ -608,7 +608,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             memo,
         } => {
             let sender = sender.as_ref().expect("sender to be a valid address");
-            sender.same_protocol(rcvr)?;
+            sender.same_transaction_model(rcvr)?;
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", sender.preview());
             println!("   > Recipient = {}", rcvr.preview());

@@ -24,12 +24,12 @@ pub enum Address {
 }
 
 impl Address {
-    /// Check if the `other` Address uses the same protocol
-    pub fn same_protocol(&self, other: &Address) -> Result<(), Error> {
+    /// Check if the `other` Address uses the same transaction model
+    pub fn same_transaction_model(&self, other: &Address) -> Result<(), Error> {
         match (self, other) {
             (Address::Shielded(_), Address::Shielded(_)) => Ok(()),
             (Address::Public(_), Address::Public(_)) => Ok(()),
-            _ => Err(Error::DifferentProtocols),
+            _ => Err(Error::DifferentTransactionModels),
         }
     }
 

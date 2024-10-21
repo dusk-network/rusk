@@ -360,7 +360,7 @@ impl Command {
             } => {
                 let sender_idx = match sender {
                     Some(addr) => {
-                        addr.same_protocol(&rcvr)?;
+                        addr.same_transaction_model(&rcvr)?;
                         wallet.find_index(&addr)?
                     }
                     None => 0,
