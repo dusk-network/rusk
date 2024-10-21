@@ -140,6 +140,18 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
+    /// Check your stake information
+    StakeInfo {
+        /// Profile index for the public account address to stake from
+        /// [default: 0]
+        #[clap(long)]
+        profile_idx: Option<u8>,
+
+        /// Check accumulated reward
+        #[clap(long, action)]
+        reward: bool,
+    },
+
     /// Stake DUSK
     Stake {
         /// Address from which to stake DUSK [default: first address]
@@ -191,44 +203,6 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Deploy a contract
-    ContractDeploy {
-        /// Address from which to deploy the contract [default: first]
-        #[clap(short, long)]
-        address: Option<Address>,
-
-        /// Path to the WASM contract code
-        #[clap(short, long)]
-        code: PathBuf,
-
-        /// Arguments for init function
-        #[clap(short, long)]
-        init_args: Vec<u8>,
-
-        /// Nonce used for the deploy transaction
-        #[clap(short, long)]
-        deploy_nonce: u64,
-
-        /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_DEPLOYMENT)]
-        gas_limit: u64,
-
-        /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
-        gas_price: Lux,
-    },
-    /// Check your stake information
-    StakeInfo {
-        /// Profile index for the public account address to stake from
-        /// [default: 0]
-        #[clap(long)]
-        profile_idx: Option<u8>,
-
-        /// Check accumulated reward
-        #[clap(long, action)]
-        reward: bool,
-    },
-
     /// Call a contract
     ContractCall {
         /// Address from which to call the contract [default: first]
@@ -256,8 +230,34 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Command to calculate the contract id
-    /// given the contract code and deploy nonce
+    /// Deploy a contract
+    ContractDeploy {
+        /// Address from which to deploy the contract [default: first]
+        #[clap(short, long)]
+        address: Option<Address>,
+
+        /// Path to the WASM contract code
+        #[clap(short, long)]
+        code: PathBuf,
+
+        /// Arguments for init function
+        #[clap(short, long)]
+        init_args: Vec<u8>,
+
+        /// Nonce used for the deploy transaction
+        #[clap(short, long)]
+        deploy_nonce: u64,
+
+        /// Max amount of gas for this transaction
+        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_DEPLOYMENT)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
+    /// Calculate a contract id
     CalculateContractId {
         /// Profile index for the public account that will be listed as the
         /// owner of the contract [default: 0]

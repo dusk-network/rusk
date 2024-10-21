@@ -27,18 +27,15 @@ SUBCOMMANDS:
     profiles                 List your existing profiles and generate new ones
     history                  Show address transaction history
     transfer                 Send DUSK through the network
-    phoenix-to-moonlight     Convert shielded DUSK to public Dusk (the conversion will happen
-                                 between the shielded and public addresses of the same profile)
-    moonlight-to-phoenix     Convert public DUSK to shielded Dusk (the conversion will happen
-                                 between the shielded and public addresses of the same profile)
+    unshield                 Convert shielded DUSK to public Dusk
+    shield                   Convert public DUSK to shielded Dusk
     stake                    Stake DUSK
     unstake                  Unstake DUSK
     withdraw                 Withdraw accumulated rewards for a stake key
     contract-deploy          Deploy a contract
     stake-info               Check your stake information
     contract-call            Call a contract
-    calculate-contract-id    Command to calculate the contract id given the contract code and
-                                 deploy nonce
+    calculate-contract-id    Calculate a contract id
     export                   Export BLS provisioner key-pair
     settings                 Show current settings
     help                     Print this message or the help of the given subcommand(s)
