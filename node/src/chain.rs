@@ -146,21 +146,12 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     match msg.payload {
                         Payload::Candidate(_)
                         | Payload::Validation(_)
-                        | Payload::Ratification(_) => {
-                            // Re-route message to the Consensus
-                            let acc = self.acceptor.as_ref().expect("initialize is called");
-                            if let Err(e) = acc.read().await.reroute_msg(msg).await {
-                                warn!("Could not reroute msg to Consensus: {}", e);
-                            }
-                        },
-
-                        Payload::Quorum(ref quorum) => {
-                            debug!(
-                                event = "Quorum received",
-                                src = "wire",
-                                round = msg.header.round,
-                                iter = msg.header.iteration,
-                                vote = ?quorum.vote(),
+                        | Payload::Ratification(_)
+                        | Payload::Quorum(_) => {
+                              debug!(
+                                event = "Consensus message received",
+                                topic = ?msg.topic(),
+                                info = ?msg.header,
                                 metadata = ?msg.metadata,
                             );
 
@@ -173,8 +164,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
                         Payload::Block(blk) => {
                             info!(
-                                event = "Block received",
-                                src = "wire",
+                                event = "Block message received",
                                 blk_height = blk.header().height,
                                 blk_hash = to_str(&blk.header().hash),
                                 metadata = ?msg.metadata,
