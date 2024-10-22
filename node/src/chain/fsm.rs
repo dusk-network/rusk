@@ -401,10 +401,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             if let Some(mut blk) = quorum_blk {
                 // Candidate found. We can build the "full" block
                 info!(
-                    event = "New block from Quorum",
-                    blk_height = blk.header().height,
-                    blk_hash = to_str(&blk.header().hash),
-                    is_local = metadata.is_none(),
+                    event = "New block",
+                    src = "Quorum msg",
+                    height = blk.header().height,
+                    iter = blk.header().iteration,
+                    hash = to_str(&blk.header().hash)
                 );
 
                 // Attach the Attestation to the block
