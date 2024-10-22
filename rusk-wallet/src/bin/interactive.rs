@@ -65,51 +65,56 @@ pub(crate) async fn run_loop(
         };
 
         loop {
-            let is_synced = wallet.is_synced().await?;
-            // get balance for this profile
-            prompt::hide_cursor()?;
-            let moonlight_bal =
-                wallet.get_moonlight_balance(profile_idx).await?;
-            let phoenix_bal = wallet.get_phoenix_balance(profile_idx).await?;
-            let phoenix_spendable = phoenix_bal.spendable.into();
-            let phoenix_total: Dusk = phoenix_bal.value.into();
-
-            prompt::hide_cursor()?;
-
             let profile = &wallet.profiles()[profile_idx as usize];
+            prompt::hide_cursor()?;
 
-            // display profile information
-            // display shielded balance and keys information
-            println!("{}", profile.shielded_address_string());
+            let op = if !wallet.is_online().await {
+                println!("{}", profile.shielded_address_string());
+                println!("{}", profile.public_account_string());
+                println!();
 
-            if is_synced {
-                println!(
-                    "{0: <16} - Spendable: {phoenix_spendable}",
-                    "Shielded Balance",
-                );
-                println!("{0: <16} - Total:     {phoenix_total}", "",);
+                command_menu::offline(profile_idx, settings)
             } else {
-                println!("Syncing...");
-            }
-            println!();
-            // display public balance and keys information
-            println!("{}", profile.public_account_string());
-            println!("{0: <16} - Total:     {moonlight_bal}", "Public Balance",);
+                // get balance for this profile
+                let moonlight_bal =
+                    wallet.get_moonlight_balance(profile_idx).await?;
+                let phoenix_bal =
+                    wallet.get_phoenix_balance(profile_idx).await?;
+                let phoenix_spendable = phoenix_bal.spendable.into();
+                let phoenix_total: Dusk = phoenix_bal.value.into();
 
-            println!();
+                // display profile information
+                // display shielded balance and keys information
+                println!("{}", profile.shielded_address_string());
+                let is_synced = wallet.is_synced().await?;
+                if is_synced {
+                    println!(
+                        "{0: <16} - Spendable: {phoenix_spendable}",
+                        "Shielded Balance",
+                    );
+                    println!("{0: <16} - Total:     {phoenix_total}", "",);
+                } else {
+                    println!("Syncing...");
+                }
+                println!();
+                // display public balance and keys information
+                println!("{}", profile.public_account_string());
+                println!(
+                    "{0: <16} - Total:     {moonlight_bal}",
+                    "Public Balance",
+                );
+                println!();
 
-            // request operation to perform
-            let op = match wallet.is_online().await {
-                true => command_menu::online(
+                command_menu::online(
                     profile_idx,
                     wallet,
                     phoenix_spendable,
                     moonlight_bal,
                     settings,
-                    is_synced,
-                ),
-                false => command_menu::offline(profile_idx, settings),
+                )
             };
+
+            prompt::hide_cursor()?;
 
             // perform operations with this profile
             match op? {
