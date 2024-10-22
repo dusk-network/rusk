@@ -5,12 +5,12 @@
  * @returns {URL} nodeUrl
  */
 function makeNodeUrl(path = "") {
-  if (path && !path.startsWith("/")) {
+  if (path !== "" && !path.startsWith("/")) {
     throw new Error("A path must start with a '/'.");
   }
 
   const subDomains = window.location.hostname.split(".");
-  const hostedNodeDomain = subDomains.slice(1).join(".");
+  const hostedNodeDomain = subDomains.slice(-2).join(".");
   const nodeBaseUrl = import.meta.env.VITE_NODE_URL || "";
   const nodeBasePath = import.meta.env.VITE_RUSK_PATH || "";
 
@@ -23,24 +23,27 @@ function makeNodeUrl(path = "") {
       `${window.location.protocol}${base}${hostedNodeDomain}${nodeBasePath}${path}`
     );
 
-  let node;
+  let nodeUrl;
 
   switch (subDomains[0]) {
     case "apps": // mainnet
-      node = buildHostedNodeUrl("nodes.");
+      nodeUrl = buildHostedNodeUrl("nodes.");
       break;
     case "devnet":
-      node = buildHostedNodeUrl("devnet.nodes.");
+      nodeUrl = buildHostedNodeUrl("devnet.nodes.");
       break;
     case "testnet":
-      node = buildHostedNodeUrl("testnet.nodes.");
+      nodeUrl = buildHostedNodeUrl("testnet.nodes.");
       break;
     default:
-      node = new URL(`${nodeBaseUrl}${nodeBasePath}${path}`, import.meta.url);
+      nodeUrl = new URL(
+        `${nodeBaseUrl}${nodeBasePath}${path}`,
+        import.meta.url
+      );
       break;
   }
 
-  return node;
+  return nodeUrl;
 }
 
 export default makeNodeUrl;
