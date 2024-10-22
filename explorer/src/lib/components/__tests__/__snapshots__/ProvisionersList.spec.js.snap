@@ -18,7 +18,11 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
   <dd
     class="details-list__definition details-list__definition--table"
   >
-    m6dy2gz3jC3ifLpZmdTaZbgcptWxRr...UgMi1uSCne1ti5kgYeNHtW82FWtnpf
+    <span
+      class="provisioners-list__staking-address"
+    >
+      m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf
+    </span>
   </dd>
    
   <dt
@@ -28,7 +32,25 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="details-list__term-layout"
     >
        
-      staked amount
+      Locked Stake Amount
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    0
+     DUSK
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Reclaimable Stake Amount
     </div>
   </dt>
    
@@ -46,25 +68,7 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="details-list__term-layout"
     >
        
-      Reclaimable Staked Amount
-    </div>
-  </dt>
-   
-  <dd
-    class="details-list__definition details-list__definition--table"
-  >
-    0
-     DUSK
-  </dd>
-   
-  <dt
-    class="details-list__term details-list__term--table"
-  >
-    <div
-      class="details-list__term-layout"
-    >
-       
-      slashes
+      Soft Slashes
     </div>
   </dt>
    
@@ -81,7 +85,7 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="details-list__term-layout"
     >
        
-      hard slashes
+      Hard Slashes
     </div>
   </dt>
    

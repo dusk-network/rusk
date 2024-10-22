@@ -52,14 +52,7 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <th
               class="table__header-cell"
             >
-              Staked Amount (DUSK)
-            </th>
-            
-             
-            <th
-              class="table__header-cell"
-            >
-              Reclaimable Staked Amount (DUSK)
+              Stake Amount (DUSK)
             </th>
             
              
@@ -67,13 +60,6 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
               class="table__header-cell"
             >
               Slashes
-            </th>
-            
-             
-            <th
-              class="table__header-cell"
-            >
-              Hard Slashes
             </th>
             
              
@@ -103,13 +89,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               500,000
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -117,13 +112,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             
@@ -150,13 +154,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               500,000
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -164,13 +177,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             
@@ -197,13 +219,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               4,800
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -211,13 +242,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             
@@ -244,13 +284,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               1,234
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -258,13 +307,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             
@@ -291,13 +349,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               500,000
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -305,13 +372,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             
@@ -338,13 +414,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               4,800
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -352,13 +437,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             
@@ -385,13 +479,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               500,000
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -399,13 +502,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             
@@ -432,13 +544,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               1,000
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -446,13 +567,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             
@@ -479,13 +609,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               500,000
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -493,13 +632,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             
@@ -526,13 +674,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Reclaimable:
+              </b>
+               
               500,000
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__staked-amount-type-label"
+              >
+                Locked:
+              </b>
+               
               0
             </td>
             
@@ -540,13 +697,22 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Soft:
+              </b>
+               
               0
-            </td>
-            
-             
-            <td
-              class="table__data-cell"
-            >
+               
+              <br />
+               
+              <b
+                class="provisioners-table__slash-type-label"
+              >
+                Hard:
+              </b>
+               
               0
             </td>
             

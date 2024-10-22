@@ -57,7 +57,7 @@
         href={`/transactions/transaction?id=${data.txid}`}
         >{middleEllipsis(
           data.txid,
-          calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 30)
+          calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
         )}</AppAnchor
       >
     </svelte:fragment>

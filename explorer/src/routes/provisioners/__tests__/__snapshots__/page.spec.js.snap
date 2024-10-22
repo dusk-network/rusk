@@ -51,7 +51,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            m6dy2gz3jC3ifLpZmdTaZbgcptWxRr...UgMi1uSCne1ti5kgYeNHtW82FWtnpf
+            <span
+              class="provisioners-list__staking-address"
+            >
+              m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf
+            </span>
           </dd>
            
           <dt
@@ -61,7 +65,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -79,25 +101,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -114,7 +118,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -160,7 +164,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            m9dVuRgr3CQX5P5Fxh2t68QRhRFBZF...tCP7UmZ9qF734nJJhb2f94r33pFQyz
+            <span
+              class="provisioners-list__staking-address"
+            >
+              m9dVuRgr3CQX5P5Fxh2t68QRh...mZ9qF734nJJhb2f94r33pFQyz
+            </span>
           </dd>
            
           <dt
@@ -170,7 +178,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -188,25 +214,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -223,7 +231,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -269,7 +277,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mHGvQ9XdjzuGyixBGrMeeC7EdX9QZN...93rPux7H5V95Q3hPxdxHiTfxTvgn7f
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mHGvQ9XdjzuGyixBGrMeeC7Ed...x7H5V95Q3hPxdxHiTfxTvgn7f
+            </span>
           </dd>
            
           <dt
@@ -279,7 +291,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -297,25 +327,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -332,7 +344,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -378,7 +390,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mLx5HUo5PhsobwgMJhzL9j8TY7TjC1...q16NreXVk4jmfr3CEHqvBrRgEzoka8
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mLx5HUo5PhsobwgMJhzL9j8TY...eXVk4jmfr3CEHqvBrRgEzoka8
+            </span>
           </dd>
            
           <dt
@@ -388,7 +404,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -406,25 +440,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -441,7 +457,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -487,7 +503,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mTgXDqkyVacn7zCgoJfk7rKMVbvKhx...7cnz5nRE4uXaAhpCPPSjgAseybAsfU
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mTgXDqkyVacn7zCgoJfk7rKMV...nRE4uXaAhpCPPSjgAseybAsfU
+            </span>
           </dd>
            
           <dt
@@ -497,7 +517,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -515,25 +553,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -550,7 +570,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -596,7 +616,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mUJHMDEBiTUVJU5U76Krb5wwMXK6R7...y5PeqLyLvCCdgUnQ74FDFHNxRNhoAA
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mUJHMDEBiTUVJU5U76Krb5wwM...LyLvCCdgUnQ74FDFHNxRNhoAA
+            </span>
           </dd>
            
           <dt
@@ -606,7 +630,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -624,25 +666,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -659,7 +683,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -705,7 +729,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mUUpjnXow2LHwm8a65cJsckTeQz55m...kfq8pxrsre7jNbLdDocqSfzQcywzaW
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mUUpjnXow2LHwm8a65cJsckTe...xrsre7jNbLdDocqSfzQcywzaW
+            </span>
           </dd>
            
           <dt
@@ -715,7 +743,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -733,25 +779,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -768,7 +796,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -814,7 +842,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mWvq9EWD9b8gQw5uD4GnYaV8Wsn86y...p4m7pfsBMoDjbYzTTUxooU7BY2oEDe
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mWvq9EWD9b8gQw5uD4GnYaV8W...fsBMoDjbYzTTUxooU7BY2oEDe
+            </span>
           </dd>
            
           <dt
@@ -824,7 +856,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -842,25 +892,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -877,7 +909,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -923,7 +955,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mXKJ97xTtrSPzxWHBKPurUpehP1yPy...P3VDzeUPuXjqaC9dp6H7JgkCK2o7x4
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mXKJ97xTtrSPzxWHBKPurUpeh...eUPuXjqaC9dp6H7JgkCK2o7x4
+            </span>
           </dd>
            
           <dt
@@ -933,7 +969,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -951,25 +1005,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -986,7 +1022,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -1032,7 +1068,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mdXsA3Ee1YDt1aTcvUg7AKpzTKgJBo...qjDfvepuR9FPWCcJQfDwK8VZPimZ2J
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mdXsA3Ee1YDt1aTcvUg7AKpzT...epuR9FPWCcJQfDwK8VZPimZ2J
+            </span>
           </dd>
            
           <dt
@@ -1042,7 +1082,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -1060,25 +1118,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -1095,7 +1135,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -1141,7 +1181,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mdca2ea2KpRZaW6s6NkYAY29wbprGP...zo7uHBPg8MmRfxyBCUVRji7SxM2zBD
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mdca2ea2KpRZaW6s6NkYAY29w...BPg8MmRfxyBCUVRji7SxM2zBD
+            </span>
           </dd>
            
           <dt
@@ -1151,7 +1195,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -1169,25 +1231,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -1204,7 +1248,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -1250,7 +1294,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mgmcqkk1VFfsa1ko7ydBjhVuM9WuVF...BZHUcEWDB1wsvV5avoC2xddxLvEDVP
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mgmcqkk1VFfsa1ko7ydBjhVuM...EWDB1wsvV5avoC2xddxLvEDVP
+            </span>
           </dd>
            
           <dt
@@ -1260,7 +1308,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -1278,25 +1344,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -1313,7 +1361,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -1359,7 +1407,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mvft6AXjR1mDtg1Qo3GzGBKZAvvxY1...sY6HjCeDJ9pKfJLdjayAfrxEyudvx2
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mvft6AXjR1mDtg1Qo3GzGBKZA...CeDJ9pKfJLdjayAfrxEyudvx2
+            </span>
           </dd>
            
           <dt
@@ -1369,7 +1421,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
             </div>
           </dt>
            
@@ -1387,7 +1439,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -1405,7 +1457,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -1422,7 +1474,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -1468,7 +1520,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            mvsVWvCaiHtugFDx1VmDCX5Zeex1u1...zUMDyeWVgrE1CfbGCaYvcdeSzHCUUb
+            <span
+              class="provisioners-list__staking-address"
+            >
+              mvsVWvCaiHtugFDx1VmDCX5Ze...eWVgrE1CfbGCaYvcdeSzHCUUb
+            </span>
           </dd>
            
           <dt
@@ -1478,7 +1534,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -1496,25 +1570,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -1531,7 +1587,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -1577,7 +1633,11 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            n2DPucZgNznPCfhRfAS8aHQUktJYZ9...VogBzbDNKwS6GhaRRR9f95PUxRwtD1
+            <span
+              class="provisioners-list__staking-address"
+            >
+              n2DPucZgNznPCfhRfAS8aHQUk...bDNKwS6GhaRRR9f95PUxRwtD1
+            </span>
           </dd>
            
           <dt
@@ -1587,7 +1647,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              staked amount
+              Locked Stake Amount
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Reclaimable Stake Amount
             </div>
           </dt>
            
@@ -1605,25 +1683,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Staked Amount
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-               
-              slashes
+              Soft Slashes
             </div>
           </dt>
            
@@ -1640,7 +1700,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              hard slashes
+              Hard Slashes
             </div>
           </dt>
            
@@ -1774,14 +1834,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <th
                 class="table__header-cell"
               >
-                Staked Amount (DUSK)
-              </th>
-              
-               
-              <th
-                class="table__header-cell"
-              >
-                Reclaimable Staked Amount (DUSK)
+                Stake Amount (DUSK)
               </th>
               
                
@@ -1789,13 +1842,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__header-cell"
               >
                 Slashes
-              </th>
-              
-               
-              <th
-                class="table__header-cell"
-              >
-                Hard Slashes
               </th>
               
                
@@ -1825,13 +1871,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 500,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -1839,13 +1894,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -1872,13 +1936,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 500,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -1886,13 +1959,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -1919,13 +2001,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 4,800
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -1933,13 +2024,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -1966,13 +2066,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 1,234
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -1980,13 +2089,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2013,13 +2131,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 500,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2027,13 +2154,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2060,13 +2196,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 4,800
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2074,13 +2219,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2107,13 +2261,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 500,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2121,13 +2284,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2154,13 +2326,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 1,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2168,13 +2349,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2201,13 +2391,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 500,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2215,13 +2414,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2248,13 +2456,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 500,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2262,13 +2479,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2295,13 +2521,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 500,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2309,13 +2544,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2342,13 +2586,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 500,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2356,13 +2609,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2389,6 +2651,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2396,20 +2674,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
-                0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2436,13 +2716,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 4,550
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2450,13 +2739,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               
@@ -2483,13 +2781,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Reclaimable:
+                </b>
+                 
                 500,000
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__staked-amount-type-label"
+                >
+                  Locked:
+                </b>
+                 
                 0
               </td>
               
@@ -2497,13 +2804,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Soft:
+                </b>
+                 
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell"
-              >
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-type-label"
+                >
+                  Hard:
+                </b>
+                 
                 0
               </td>
               

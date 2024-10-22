@@ -7,6 +7,8 @@
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
   import { onMount } from "svelte";
 
+  import "./ProvisionersList.css";
+
   /** @type {HostProvisioner} */
   export let data;
 
@@ -36,34 +38,34 @@
   <ListItem tooltipText={displayTooltips ? "The staking address used" : ""}>
     <svelte:fragment slot="term">staking address</svelte:fragment>
     <svelte:fragment slot="definition"
-      >{middleEllipsis(
-        data.key,
-        calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 30)
-      )}</svelte:fragment
+      ><span class="provisioners-list__staking-address"
+        >{middleEllipsis(
+          data.key,
+          calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
+        )}</span
+      ></svelte:fragment
     >
   </ListItem>
 
-  <!-- STAKED AMOUNT -->
-  <ListItem tooltipText={displayTooltips ? "The staked amount" : ""}>
-    <svelte:fragment slot="term">staked amount</svelte:fragment>
+  <!-- LOCKED STAKED AMOUNT -->
+  <ListItem tooltipText={displayTooltips ? "The locked stake amount" : ""}>
+    <svelte:fragment slot="term">Locked Stake Amount</svelte:fragment>
+    <svelte:fragment slot="definition"
+      >{formatter(luxToDusk(data.locked_amt))} DUSK</svelte:fragment
+    >
+  </ListItem>
+
+  <!-- RECLAIMABLE STAKED AMOUNT -->
+  <ListItem tooltipText={displayTooltips ? "The reclaimable stake amount" : ""}>
+    <svelte:fragment slot="term">Reclaimable Stake Amount</svelte:fragment>
     <svelte:fragment slot="definition"
       >{formatter(luxToDusk(data.amount))} DUSK</svelte:fragment
     >
   </ListItem>
 
-  <!-- RECLAIMABLE STAKED AMOUNT -->
-  <ListItem
-    tooltipText={displayTooltips ? "The reclaimable staked amount" : ""}
-  >
-    <svelte:fragment slot="term">Reclaimable Staked Amount</svelte:fragment>
-    <svelte:fragment slot="definition"
-      >{formatter(data.locked_amt)} DUSK</svelte:fragment
-    >
-  </ListItem>
-
   <!-- SLASHES -->
-  <ListItem tooltipText={displayTooltips ? "Slashes" : ""}>
-    <svelte:fragment slot="term">slashes</svelte:fragment>
+  <ListItem tooltipText={displayTooltips ? "Soft slashes" : ""}>
+    <svelte:fragment slot="term">Soft Slashes</svelte:fragment>
     <svelte:fragment slot="definition">
       {formatter(data.faults)}
     </svelte:fragment>
@@ -71,7 +73,7 @@
 
   <!-- HARD SLASHES -->
   <ListItem tooltipText={displayTooltips ? "Hard slashes" : ""}>
-    <svelte:fragment slot="term">hard slashes</svelte:fragment>
+    <svelte:fragment slot="term">Hard Slashes</svelte:fragment>
     <svelte:fragment slot="definition">
       {formatter(data.hard_faults)}
     </svelte:fragment>
