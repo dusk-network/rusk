@@ -79,6 +79,13 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                 )
                 .await
             {
+                debug!(
+                    event = "send message",
+                    src = "proposal",
+                    msg_topic = ?msg.topic(),
+                    info = ?msg.header,
+                    ray_id = msg.ray_id()
+                );
                 ctx.outbound.try_send(msg.clone());
 
                 // register new candidate in local state
