@@ -88,10 +88,10 @@ exports[`Receive > should render the receive page 1`] = `
     </div>
      
     <div
-      class="receive svelte-rptlwf"
+      class="receive svelte-14g7par"
     >
       <figure
-        class="receive__address-qr-figure svelte-rptlwf"
+        class="receive__address-qr-figure svelte-14g7par"
       >
         <p>
           Unable to get QR code
@@ -103,7 +103,7 @@ exports[`Receive > should render the receive page 1`] = `
         
          
         <figcaption
-          class="receive__address svelte-rptlwf"
+          class="receive__address svelte-14g7par"
         >
           <samp>
             
@@ -112,7 +112,7 @@ exports[`Receive > should render the receive page 1`] = `
       </figure>
        
       <div
-        class="receive__buttons svelte-rptlwf"
+        class="receive__buttons svelte-14g7par"
       >
         <a
           aria-disabled="false"
@@ -161,19 +161,7 @@ exports[`Receive > should render the receive page 1`] = `
           </span>
           
         </button>
-        <iframe
-          aria-hidden="true"
-          src="about:blank"
-          style="display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; border: 0; opacity: 0; pointer-events: none; z-index: -1;"
-          tabindex="-1"
-        />
       </div>
-      <iframe
-        aria-hidden="true"
-        src="about:blank"
-        style="display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; border: 0; opacity: 0; pointer-events: none; z-index: -1;"
-        tabindex="-1"
-      />
     </div>
   </div>
    

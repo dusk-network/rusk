@@ -2,6 +2,7 @@
 
 <script>
   import { mdiArrowLeft, mdiContentCopy } from "@mdi/js";
+  import { onMount } from "svelte";
 
   import { AppAnchorButton } from "$lib/components";
   import { Button, QrCode } from "$lib/dusk/components";
@@ -13,19 +14,24 @@
   /** @type {boolean} */
   export let hideBackButton = false;
 
-  let offsetHeight = 0;
-  let buttonHeight = 0;
+  /** @type {HTMLElement} */
+  let figureElement;
 
-  const COLUMN_COUNT = 2;
-  const COLUMN_WIDTH = 16;
-  const BOTTOM_PADDING = 22;
+  let qrWidth = 0;
 
-  $: qrWidth =
-    offsetHeight - buttonHeight - COLUMN_COUNT * COLUMN_WIDTH - BOTTOM_PADDING;
+  onMount(() => {
+    const resizeObserver = new ResizeObserver((entries) => {
+      qrWidth = entries[0].contentRect.width;
+    });
+
+    resizeObserver.observe(figureElement);
+
+    return () => resizeObserver.disconnect();
+  });
 </script>
 
-<div class="receive" bind:offsetHeight>
-  <figure class="receive__address-qr-figure">
+<div class="receive">
+  <figure class="receive__address-qr-figure" bind:this={figureElement}>
     <QrCode value={address} className="receive__qr" width={qrWidth} />
 
     <figcaption class="receive__address">
@@ -33,7 +39,7 @@
     </figcaption>
   </figure>
 
-  <div class="receive__buttons" bind:offsetHeight={buttonHeight}>
+  <div class="receive__buttons">
     {#if !hideBackButton}
       <AppAnchorButton
         className="receive__button"
@@ -63,8 +69,6 @@
     justify-content: space-between;
     gap: var(--default-gap);
     z-index: 3;
-    height: 100%;
-    overflow: auto;
 
     &__address-qr-figure {
       display: flex;
@@ -76,8 +80,7 @@
     &__address,
     :global(&__qr) {
       border-radius: 1.5em;
-      max-width: 100%;
-      max-height: 100%;
+      width: 100%;
     }
 
     &__address {

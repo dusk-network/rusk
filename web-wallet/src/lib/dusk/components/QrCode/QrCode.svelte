@@ -43,14 +43,26 @@
     });
 </script>
 
-{#await dataUrlPromise then url}
+{#await dataUrlPromise}
+  <div style:height={`${width}px`} style:width={`${width}px`} />
+{:then url}
   <AppImage
     {...$$restProps}
     alt="Key QR code"
     className={makeClassName(["dusk-qr-code", className])}
+    height={width}
     src={url}
+    {width}
   />
 {:catch error}
   <p>Unable to get QR code</p>
   <p>{error}</p>
 {/await}
+
+<style lang="postcss">
+  :global {
+    .dusk-qr-code {
+      display: block;
+    }
+  }
+</style>
