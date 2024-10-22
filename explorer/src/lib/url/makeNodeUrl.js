@@ -1,42 +1,42 @@
 /**
  * Constructs a node URL based on the current subdomain
  *
+ * @param {string} path
  * @returns {URL} nodeUrl
  */
 function makeNodeUrl(path = "") {
-  const domains = window.location.hostname.split(".");
+  if (path && !path.startsWith("/")) {
+    throw new Error("A path must start with a '/'.");
+  }
+
+  const subDomains = window.location.hostname.split(".");
+  const hostedNodeDomain = subDomains.slice(1).join(".");
+  const nodeBaseUrl = import.meta.env.VITE_NODE_URL || "";
+  const nodeBasePath = import.meta.env.VITE_RUSK_PATH || "";
+
+  /**
+   * @param {string} base
+   * @returns {URL}
+   */
+  const buildHostedNodeUrl = (base) =>
+    new URL(
+      `${window.location.protocol}${base}${hostedNodeDomain}${nodeBasePath}${path}`
+    );
 
   let node;
 
-  switch (domains[0]) {
+  switch (subDomains[0]) {
     case "apps": // mainnet
-      node = new URL(
-        `${window.location.protocol}nodes.${window.location.host}${path}`
-      );
+      node = buildHostedNodeUrl("nodes.");
       break;
     case "devnet":
-      node = new URL(
-        `${window.location.protocol}devnet.nodes.${window.location.host}${path}`
-      );
+      node = buildHostedNodeUrl("devnet.nodes.");
       break;
     case "testnet":
-      node = new URL(
-        `${window.location.protocol}testnet.nodes.${window.location.host}${path}`
-      );
+      node = buildHostedNodeUrl("testnet.nodes.");
       break;
-    default: // localnet
-      if (import.meta.env.VITE_NODE_URL) {
-        node = new URL(
-          `${import.meta.env.VITE_NODE_URL}${path}`,
-          import.meta.url
-        );
-      } else {
-        node = new URL(
-          `${import.meta.env.VITE_RUSK_PATH || "/"}${path}`,
-          import.meta.url
-        );
-      }
-
+    default:
+      node = new URL(`${nodeBaseUrl}${nodeBasePath}${path}`, import.meta.url);
       break;
   }
 
