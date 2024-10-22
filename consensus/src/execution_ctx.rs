@@ -165,8 +165,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                 .await
                             {
                                 info!(
-                                    event = "step completed",
-                                    result = ?step_result.payload
+                                    event = "Step completed",
+                                    step = ?self.step_name(),
+                                    info = ?msg.header
                                 );
 
                                 // In the normal case, we just return the result
