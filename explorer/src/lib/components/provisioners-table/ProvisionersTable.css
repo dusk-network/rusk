@@ -1,3 +1,4 @@
-.provisioners-table .table__header-cell {
-  text-wrap: wrap;
+.provisioners-table__staked-amount-type-label,
+.provisioners-table__slash-type-label {
+  font-weight: 500;
 }

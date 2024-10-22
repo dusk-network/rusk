@@ -31,10 +31,8 @@
   <TableHead>
     <TableRow>
       <TableCell type="th">Staking Address</TableCell>
-      <TableCell type="th">Staked Amount (DUSK)</TableCell>
-      <TableCell type="th">Reclaimable Staked Amount (DUSK)</TableCell>
+      <TableCell type="th">Stake Amount (DUSK)</TableCell>
       <TableCell type="th">Slashes</TableCell>
-      <TableCell type="th">Hard Slashes</TableCell>
       <TableCell type="th">Accumulated Reward (DUSK)</TableCell>
     </TableRow>
   </TableHead>
@@ -45,15 +43,21 @@
           {middleEllipsis(provisioner.key, HASH_CHARS_LENGTH)}
         </TableCell>
         <TableCell>
+          <b class="provisioners-table__staked-amount-type-label"
+            >Reclaimable:</b
+          >
           {numberFormatter(luxToDusk(provisioner.amount))}
-        </TableCell>
-        <TableCell>
+          <br />
+          <b class="provisioners-table__staked-amount-type-label">Locked:</b>
           {numberFormatter(luxToDusk(provisioner.locked_amt))}
         </TableCell>
         <TableCell>
+          <b class="provisioners-table__slash-type-label">Soft:</b>
           {numberFormatter(provisioner.faults)}
+          <br />
+          <b class="provisioners-table__slash-type-label">Hard:</b>
+          {numberFormatter(provisioner.hard_faults)}
         </TableCell>
-        <TableCell>{numberFormatter(provisioner.hard_faults)}</TableCell>
         <TableCell>{numberFormatter(luxToDusk(provisioner.reward))}</TableCell>
       </TableRow>
     {/each}

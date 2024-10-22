@@ -22,7 +22,7 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
       class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
       href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
     >
-      4877687c2dbf154248d3ddee9ba0d8...31f39056f82a46819da041d4ac0e04
+      4877687c2dbf154248d3ddee9...056f82a46819da041d4ac0e04
     </a>
   </dd>
    
@@ -155,7 +155,7 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
       class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
       href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
     >
-      4877687c2dbf154248d3ddee9ba0d8...31f39056f82a46819da041d4ac0e04
+      4877687c2dbf154248d3ddee9...056f82a46819da041d4ac0e04
     </a>
   </dd>
    

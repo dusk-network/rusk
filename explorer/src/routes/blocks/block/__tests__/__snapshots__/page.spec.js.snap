@@ -1298,7 +1298,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
               href="/some-base-path/transactions/transaction?id=3a3f6f90a1012ae751b4448bcb8e98def0ba2b18170239bd69fcf8e2e37f0602"
             >
-              3a3f6f90a1012ae751b4448bcb8e98...ba2b18170239bd69fcf8e2e37f0602
+              3a3f6f90a1012ae751b4448bc...8170239bd69fcf8e2e37f0602
             </a>
           </dd>
            
@@ -1561,7 +1561,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="dusk-anchor dusk-anchor--on-surface transaction-details__list-link"
               href="/some-base-path/transactions/transaction?id=07bfabea1d94c16f2dc3697fa642f6cecea6e81bf76b9644efbb6e2723b76d00"
             >
-              07bfabea1d94c16f2dc3697fa642f6...a6e81bf76b9644efbb6e2723b76d00
+              07bfabea1d94c16f2dc3697fa...bf76b9644efbb6e2723b76d00
             </a>
           </dd>
            
