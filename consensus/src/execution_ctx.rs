@@ -129,6 +129,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     pub async fn event_loop<C: MsgHandler>(
         &mut self,
         phase: Arc<Mutex<C>>,
+        additional_timeout: Option<Duration>,
     ) -> Result<Message, ConsensusError> {
         let open_consensus_mode = self.last_step_running();
 
@@ -141,8 +142,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             dur
         } else {
             let dur = self.iter_ctx.get_timeout(self.step_name());
-            debug!(event = "run event_loop", ?dur);
-            dur
+            debug!(event = "run event_loop", ?dur, ?additional_timeout);
+            dur + additional_timeout.unwrap_or_default()
         };
 
         let deadline = Instant::now().checked_add(timeout).unwrap();
