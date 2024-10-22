@@ -53,4 +53,15 @@ describe("Provisioners Card", () => {
 
     expect(container.firstChild).toMatchSnapshot();
   });
+
+  it("should hide the `Show More` button if an error has occurred", async () => {
+    const props = { ...baseProps, error: new Error("error") };
+
+    const { container } = render(ProvisionersCard, {
+      ...baseOptions,
+      props: { ...props, error: new Error("error") },
+    });
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });
