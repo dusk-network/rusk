@@ -16,15 +16,14 @@ use criterion::measurement::WallTime;
 use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
-use execution_core::{
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    transfer::Transaction as ProtocolTransaction,
-};
+use execution_core::transfer::Transaction as ProtocolTransaction;
+use node_data::bls::PublicKey;
 use node_data::ledger::Transaction;
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
 use rusk::Rusk;
+use rusk_recovery_tools::state::DUSK_CONSENSUS_KEY;
 use tempfile::tempdir;
 
 use common::state::new_state;
@@ -116,11 +115,7 @@ fn bench_accept(
     const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
     const BLOCK_HASH: [u8; 32] = [0u8; 32];
 
-    let generator = {
-        let mut rng = StdRng::seed_from_u64(0xbeef);
-        let sk = BlsSecretKey::random(&mut rng);
-        BlsPublicKey::from(&sk)
-    };
+    let generator = PublicKey::new(*DUSK_CONSENSUS_KEY).into_inner();
 
     let txs = Arc::new(txs);
 
