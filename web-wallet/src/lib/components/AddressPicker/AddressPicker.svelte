@@ -21,14 +21,14 @@
 
   import "./AddressPicker.css";
 
-  /** @type {string} */
-  export let currentAddress;
+  /** @type {import("$lib/vendor/w3sper.js/src/mod").Profile | null} */
+  export let currentProfile;
 
-  /** @type {string[]} */
-  export let addresses = [currentAddress];
+  /** @type {import("$lib/vendor/w3sper.js/src/mod").Profile[]} */
+  export let profiles;
 
   /** @type {boolean} */
-  export let isAddingAddress = false;
+  export let isAddingProfile = false;
 
   /** @type {string|undefined} */
   export let className = undefined;
@@ -39,13 +39,14 @@
 
   let expanded = false;
 
+  /** @type {HTMLMenuElement} */
+  let addressOptionsMenu;
+
+  /** @type {number} */
+  let screenWidth = window.innerWidth;
+
   function closeDropDown() {
     expanded = false;
-  }
-
-  // Scrolls the address options menu to top on addresses change
-  $: if (addresses && addressOptionsMenu) {
-    addressOptionsMenu.scrollTo(0, 0);
   }
 
   /** @type {import("svelte/elements").KeyboardEventHandler<HTMLDivElement>} */
@@ -64,9 +65,6 @@
     toast("success", "Address copied", mdiContentCopy);
   }
 
-  /** @type {number} */
-  let screenWidth = window.innerWidth;
-
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -79,8 +77,11 @@
     return () => resizeObserver.disconnect();
   });
 
-  /** @type {HTMLMenuElement} */
-  let addressOptionsMenu;
+  // Scrolls the address options menu to top on addresses change
+  $: if (profiles && addressOptionsMenu) {
+    addressOptionsMenu.scrollTo(0, 0);
+  }
+  $: currentAddress = currentProfile ? currentProfile.address.toString() : "";
 </script>
 
 {#if expanded}
@@ -121,10 +122,10 @@
         class="address-picker__address-options"
         bind:this={addressOptionsMenu}
       >
-        {#each addresses as address (address)}
+        {#each profiles as profile (profile)}
           <li
             class="address-picker__address"
-            class:address-picker__address--selected={address === currentAddress}
+            class:address-picker__address--selected={profile === currentProfile}
           >
             <button
               class="address-picker__address-option-button"
@@ -132,15 +133,15 @@
               type="button"
               role="menuitem"
               on:click={() => {
-                currentAddress = address;
+                dispatch("setCurrentProfile");
                 closeDropDown();
-              }}>{address}</button
+              }}>{profile.address.toString()}</button
             >
           </li>
         {/each}
       </menu>
       <hr />
-      {#if isAddingAddress}
+      {#if isAddingProfile}
         <div class="address-picker__generating-address-wrapper">
           <Icon path={mdiTimerSand} />
           <p>Generating <b>Address</b></p>
@@ -154,7 +155,7 @@
           text="Generate Address"
           on:click={(event) => {
             event.preventDefault();
-            dispatch("generateAddress");
+            dispatch("generateProfile");
           }}
         />
       {/if}

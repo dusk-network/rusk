@@ -81,7 +81,8 @@
   let isInputDisabled = false;
 
   $: ({ address, chainId, isConnected } = $account);
-  $: ({ currentAddress } = $walletStore);
+  $: ({ currentProfile } = $walletStore);
+  $: currentAddress = currentProfile ? currentProfile.address.toString() : "";
   $: isAmountValid =
     !!amount &&
     parseUnits(amount.replace(",", "."), ercDecimals) >=

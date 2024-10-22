@@ -53,14 +53,12 @@ describe("Wallet store", async () => {
   const defaultProfile = await profileGenerator.default;
 
   const initialState = {
-    addresses: [],
     balance: {
       shielded: {
         spendable: 0n,
         value: 0n,
       },
     },
-    currentAddress: "",
     currentProfile: defaultProfile,
     initialized: false,
     profiles: [],
@@ -75,9 +73,8 @@ describe("Wallet store", async () => {
 
   const initializedStore = {
     ...initialState,
-    addresses: [address],
     balance: { shielded },
-    currentAddress: address,
+    currentProfile: defaultProfile,
     initialized: true,
     profiles: [defaultProfile],
   };
@@ -102,8 +99,6 @@ describe("Wallet store", async () => {
 
       expect(get(walletStore)).toStrictEqual({
         ...initialState,
-        addresses: [address],
-        currentAddress: address,
         currentProfile: defaultProfile,
         initialized: true,
         profiles: [defaultProfile],
@@ -226,7 +221,6 @@ describe("Wallet store", async () => {
     it("should expose a method to clear local data and init the wallet", async () => {
       const newGenerator = new ProfileGenerator(() => new Uint8Array());
       const newProfile = await newGenerator.default;
-      const newAddress = newProfile.address.toString();
 
       walletStore.clearLocalDataAndInit(newGenerator, 99n);
 
@@ -235,13 +229,43 @@ describe("Wallet store", async () => {
       expect(cacheClearSpy).toHaveBeenCalledTimes(1);
       expect(get(walletStore)).toStrictEqual({
         ...initializedStore,
-        addresses: [newAddress],
-        currentAddress: newAddress,
         currentProfile: newProfile,
         profiles: [newProfile],
       });
       expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
       expect(shieldedBalanceSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("should expose a method to set the current profile and update the balance afterwards", async () => {
+      vi.useRealTimers();
+
+      const fakeExtraProfile = {
+        address: {
+          toString() {
+            return "some-fake-address";
+          },
+        },
+      };
+
+      // nasty mutation for the sake of easy testing
+      // @ts-expect-error we don't care for it to be a real profile
+      get(walletStore).profiles.push(fakeExtraProfile);
+
+      await expect(
+        // @ts-expect-error we don't care to set a real profile
+        walletStore.setCurrentProfile(fakeExtraProfile)
+      ).resolves.toBeUndefined();
+
+      expect(get(walletStore).currentProfile).toBe(fakeExtraProfile);
+      expect(shieldedBalanceSpy).toHaveBeenCalledTimes(1);
+      expect(shieldedBalanceSpy).toHaveBeenCalledWith(fakeExtraProfile.address);
+
+      vi.useFakeTimers();
+    });
+
+    it("should reject with an error if the profile is not in the known list", async () => {
+      // @ts-expect-error we don't care to set a real profile
+      await expect(walletStore.setCurrentProfile({})).rejects.toThrow();
     });
 
     it("should expose a method to execute a phoenix transfer", async () => {

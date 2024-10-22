@@ -69,6 +69,9 @@ type WalletStoreContent = {
       value: bigint;
     };
   };
+  currentProfile: import("$lib/vendor/w3sper.js/src/mod").Profile | null;
+  initialized: boolean;
+  profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>;
   syncStatus: {
     isInProgress: boolean;
     current: bigint;
@@ -76,11 +79,6 @@ type WalletStoreContent = {
     error: Error | null;
     progress: number;
   };
-  currentAddress: string;
-  currentProfile: import("$lib/vendor/w3sper.js/src/mod").Profile | null;
-  initialized: boolean;
-  addresses: string[];
-  profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>;
 };
 
 type WalletStoreServices = {
@@ -104,7 +102,9 @@ type WalletStoreServices = {
 
   reset: () => void;
 
-  setCurrentAddress: (address: string) => Promise<void>;
+  setCurrentProfile: (
+    profile: import("$lib/vendor/w3sper.js/src/mod").Profile
+  ) => Promise<void>;
 
   stake: (amount: number, gasSettings: GasSettings) => Promise<any>;
 

@@ -14,7 +14,8 @@
   const gasLimits = $gasStore;
 
   $: [gasSettings, language] = collectSettings($settingsStore);
-  $: ({ balance, currentAddress } = $walletStore);
+  $: ({ balance, currentProfile } = $walletStore);
+  $: currentAddress = currentProfile ? currentProfile.address.toString() : "";
   $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
 </script>
 
