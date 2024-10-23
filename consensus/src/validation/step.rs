@@ -274,7 +274,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
             return Ok(m);
         }
 
-        ctx.event_loop(self.handler.clone()).await
+        ctx.event_loop(self.handler.clone(), None).await
     }
 
     pub fn name(&self) -> &'static str {

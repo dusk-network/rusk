@@ -60,6 +60,8 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             .get_current_committee()
             .expect("committee to be created before run");
 
+        let tip_timestamp = ctx.round_update.timestamp();
+
         if ctx.am_member(committee) {
             let iteration =
                 cmp::min(config::RELAX_ITERATION_THRESHOLD, ctx.iteration);
@@ -88,10 +90,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .await
                 {
                     Ok(HandleMsgOutput::Ready(msg)) => {
-                        Self::wait_until_next_slot(
-                            ctx.round_update.timestamp(),
-                        )
-                        .await;
+                        Self::wait_until_next_slot(tip_timestamp).await;
                         return Ok(msg);
                     }
                     Err(e) => {
@@ -106,14 +105,17 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
 
         // handle queued messages for current round and step.
         if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
-            Self::wait_until_next_slot(ctx.round_update.timestamp()).await;
+            Self::wait_until_next_slot(tip_timestamp).await;
             return Ok(m);
         }
 
-        match ctx.event_loop(self.handler.clone()).await {
+        let additional_timeout = Self::next_slot_in(tip_timestamp);
+        match ctx
+            .event_loop(self.handler.clone(), additional_timeout)
+            .await
+        {
             Ok(msg) => {
-                Self::wait_until_next_slot(ctx.round_update.timestamp()).await;
-
+                Self::wait_until_next_slot(tip_timestamp).await;
                 Ok(msg)
             }
             Err(err) => Err(err),
@@ -122,19 +124,23 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
 
     /// Waits until the next slot is reached
     async fn wait_until_next_slot(tip_timestamp: u64) {
+        if let Some(delay) = Self::next_slot_in(tip_timestamp) {
+            info!(event = "next_slot", ?delay);
+            tokio::time::sleep(delay).await;
+        }
+    }
+
+    /// Calculate the duration needed to the next slot
+    fn next_slot_in(tip_timestamp: u64) -> Option<Duration> {
         let current_time_secs = get_current_timestamp();
 
         let next_slot_timestamp = tip_timestamp + MINIMUM_BLOCK_TIME;
         if current_time_secs >= next_slot_timestamp {
-            return;
+            None
+        } else {
+            // block_timestamp - localtime
+            Some(Duration::from_secs(next_slot_timestamp - current_time_secs))
         }
-
-        // block_timestamp - localtime
-        let delay =
-            Duration::from_secs(next_slot_timestamp - current_time_secs);
-
-        info!(event = "next_slot", ?delay);
-        tokio::time::sleep(delay).await;
     }
 
     pub fn name(&self) -> &'static str {
