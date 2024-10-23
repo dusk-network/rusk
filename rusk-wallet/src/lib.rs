@@ -45,6 +45,8 @@ use execution_core::{
 
 use currency::Dusk;
 
+/// The maximum allowed size for function names, set to 64 bytes
+pub const MAX_FUNCTION_NAME_SIZE: usize = 64;
 /// The largest amount of Dusk that is possible to convert
 pub const MAX_CONVERTIBLE: Dusk = Dusk::MAX;
 /// The smallest amount of Dusk that is possible to convert

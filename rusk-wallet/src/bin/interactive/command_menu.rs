@@ -4,8 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use execution_core::transfer::data::MAX_MEMO_SIZE;
 use requestty::Question;
-use rusk_wallet::{currency::Dusk, gas, Address, Wallet};
+use rusk_wallet::{
+    currency::Dusk, gas, Address, Wallet, MAX_FUNCTION_NAME_SIZE,
+};
 
 use crate::{prompt, settings::Settings, Command, Menu, WalletFile};
 
@@ -76,7 +79,7 @@ pub(crate) fn online(
                 }
             };
 
-            let memo = Some(prompt::request_str("memo")?);
+            let memo = Some(prompt::request_str("memo", MAX_MEMO_SIZE)?);
             let amt = if memo.is_some() {
                 prompt::request_optional_token_amt("transfer", balance)
             } else {
@@ -173,7 +176,10 @@ pub(crate) fn online(
             ProfileOp::Run(Box::new(Command::ContractCall {
                 address: Some(addr),
                 contract_id: prompt::request_bytes("contract id")?,
-                fn_name: prompt::request_str("function name to call")?,
+                fn_name: prompt::request_str(
+                    "function name to call",
+                    MAX_FUNCTION_NAME_SIZE,
+                )?,
                 fn_args: prompt::request_bytes(
                     "arguments of calling function",
                 )?,
