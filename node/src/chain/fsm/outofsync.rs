@@ -19,6 +19,8 @@ use node_data::message::Metadata;
 use crate::chain::acceptor::Acceptor;
 use crate::{database, vm, Network};
 
+use super::PresyncInfo;
+
 const MAX_POOL_BLOCKS_SIZE: usize = 1000;
 const MAX_BLOCKS_TO_REQUEST: u64 = 100;
 const SYNC_TIMEOUT: Duration = Duration::from_secs(5);
@@ -181,11 +183,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     /// Handles the logic for entering the out-of-sync state. Sets the target
     /// block range, adds the `target_block` to the pool, updates the
     /// `remote_peer` address, and starts to request missing blocks
-    pub async fn on_entering(
-        &mut self,
-        target_block: Block,
-        peer_addr: SocketAddr,
-    ) {
+    pub async fn on_entering(&mut self, presync: PresyncInfo) {
+        let target_block = presync.target_blk;
+        let peer_addr = presync.peer_addr;
+        let pool = presync.pool;
         let curr_height = self.acc.read().await.get_curr_height().await;
 
         self.range = (curr_height + 1, target_block.header().height);
@@ -193,6 +194,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         // add target_block to the pool
         let key = target_block.header().height;
         self.drain_pool().await;
+        for b in &pool {
+            self.pool.insert(b.header().height, b.clone());
+        }
         self.pool.insert(key, target_block);
         self.remote_peer = peer_addr;
 
@@ -202,6 +206,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         let (from, to) = &self.range;
         info!(event = "entering out-of-sync", from, to, ?peer_addr);
+        let metadata = Some(Metadata {
+            height: 0,
+            src_addr: peer_addr,
+            ray_id: String::new(),
+        });
+        for (_, b) in self.pool.clone() {
+            let _ = self.on_block_event(&b, metadata.clone()).await;
+        }
     }
 
     /// performed when exiting the state

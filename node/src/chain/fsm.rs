@@ -47,6 +47,7 @@ struct PresyncInfo {
     start_height: u64,
     target_blk: Block,
     expiry: Instant,
+    pool: Vec<Block>,
 }
 
 impl PresyncInfo {
@@ -61,6 +62,7 @@ impl PresyncInfo {
             target_blk,
             expiry: Instant::now().checked_add(Self::DEFAULT_TIMEOUT).unwrap(),
             start_height,
+            pool: vec![],
         }
     }
 
@@ -148,7 +150,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         if let Some(blk) = blk.as_ref() {
             let fsm_res = match &mut self.curr {
                 State::InSync(ref mut curr) => {
-                    if let Some((target_block, peer_addr)) =
+                    if let Some(presync) =
                         curr.on_block_event(blk, metadata).await?
                     {
                         // Transition from InSync to OutOfSync state
@@ -160,7 +162,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                             self.network.clone(),
                         )
                         .await;
-                        next.on_entering(target_block, peer_addr).await;
+                        next.on_entering(presync).await;
                         self.curr = State::OutOfSync(next);
                     }
                     anyhow::Ok(())
@@ -498,7 +500,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     }
 
     /// performed when exiting the state
-    async fn on_exiting(&mut self) {}
+    async fn on_exiting(&mut self) {
+        self.presync = None
+    }
 
     /// Return Some if there is the need to switch to OutOfSync mode.
     /// This way the sync-up procedure to download all missing blocks from the
@@ -507,7 +511,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         &mut self,
         remote_blk: &Block,
         metadata: Option<Metadata>,
-    ) -> anyhow::Result<Option<(Block, SocketAddr)>> {
+    ) -> anyhow::Result<Option<PresyncInfo>> {
         let mut acc = self.acc.write().await;
         let tip_header = acc.tip_header().await;
         let remote_header = remote_blk.header();
@@ -679,15 +683,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             // If the accepted block is the one requested to presync peer,
             // switch to OutOfSync/Syncing mode
             if let Some(metadata) = &metadata {
-                if let Some(presync) = &mut self.presync {
-                    if metadata.src_addr == presync.peer_addr
-                        && remote_height == presync.start_height() + 1
-                    {
-                        let res =
-                            (presync.target_blk.clone(), presync.peer_addr);
-                        self.presync = None;
-                        return Ok(Some(res));
-                    }
+                let same = self
+                    .presync
+                    .as_ref()
+                    .map(|presync| {
+                        metadata.src_addr == presync.peer_addr
+                            && remote_height == presync.start_height() + 1
+                    })
+                    .unwrap_or_default();
+                if same {
+                    return Ok(self.presync.take());
                 }
             }
 
@@ -698,20 +703,27 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         // Before switching to outOfSync mode and download missing blocks,
         // we ensure that the peer has a valid successor of tip
         if let Some(metadata) = &metadata {
-            if self.presync.is_none() {
-                self.presync = Some(PresyncInfo::new(
-                    metadata.src_addr,
-                    remote_blk.clone(),
-                    tip_header.height,
-                ));
-            }
+            match self.presync.as_mut() {
+                None => {
+                    self.presync = Some(PresyncInfo::new(
+                        metadata.src_addr,
+                        remote_blk.clone(),
+                        tip_header.height,
+                    ));
 
-            Self::request_block_by_height(
-                &self.network,
-                tip_header.height + 1,
-                metadata.src_addr,
-            )
-            .await;
+                    Self::request_block_by_height(
+                        &self.network,
+                        tip_header.height + 1,
+                        metadata.src_addr,
+                    )
+                    .await;
+                }
+                Some(pre) => {
+                    if pre.peer_addr == metadata.src_addr {
+                        pre.pool.push(remote_blk.clone())
+                    }
+                }
+            }
         }
 
         Ok(None)
