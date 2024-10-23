@@ -13,7 +13,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use node_data::ledger::Block;
-use node_data::message::payload::{GetResource, Inv};
+use node_data::message::payload::{GetResource, Inv, Quorum};
 
 use crate::chain::acceptor::Acceptor;
 use crate::{database, vm, Network};
@@ -227,6 +227,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     pub async fn drain_pool(&mut self) {
         let curr_height = self.acc.read().await.get_curr_height().await;
         self.pool.retain(|h, _| h >= &curr_height);
+    }
+
+    pub fn on_quorum(&mut self, quorum: &Quorum) {
+        let prev_quorum_height = quorum.header.round;
+        if self.range.1 < prev_quorum_height {
+            self.range.1 = prev_quorum_height
+        }
     }
 
     /// Processes incoming blocks during the out-of-sync state. Determines

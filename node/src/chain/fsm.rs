@@ -118,6 +118,12 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         self.acc.write().await.restart_consensus().await;
     }
 
+    pub fn on_quorum(&mut self, quorum: &Quorum) {
+        if let State::OutOfSync(oos) = &mut self.curr {
+            oos.on_quorum(quorum)
+        }
+    }
+
     /// Handles an event of a block occurrence.
     ///
     /// A block event could originate from either local consensus execution, a
