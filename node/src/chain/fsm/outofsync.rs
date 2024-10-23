@@ -177,6 +177,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             attempts: 3,
         }
     }
+
     /// Performed when entering the OutOfSync state
     ///
     /// Handles the logic for entering the out-of-sync state. Sets the target
@@ -204,7 +205,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
 
         let (from, to) = &self.range;
-        info!(event = "entering out-of-sync", from, to, ?peer_addr);
+        info!(
+            event = "entering",
+            from,
+            to,
+            ?peer_addr,
+            mode = "out_of_sync"
+        );
         for (_, b) in self.pool.clone() {
             let _ = self.on_block_event(&b).await;
         }
@@ -279,7 +286,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                     self.start_time = SystemTime::now();
                     self.range.0 += 1;
                     debug!(
-                        event = "accepting next block",
+                        event = "accepted next block",
                         block_height = height,
                         last_request = self.last_request,
                         mode = "out_of_sync"
