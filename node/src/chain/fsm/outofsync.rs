@@ -202,13 +202,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
 
         let (from, to) = &self.range;
-        info!(
-            event = "entering",
-            from,
-            to,
-            ?peer_addr,
-            mode = "out_of_sync"
-        );
+        info!(event = "entering", from, to, ?peer_addr);
         for (_, b) in self.pool.clone() {
             let _ = self.on_block_event(&b).await;
         }
@@ -233,7 +227,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 event = "update sync target due to quorum",
                 prev = self.range.1,
                 new = prev_quorum_height,
-                mode = "out_of_sync"
             );
             self.range.1 = prev_quorum_height;
             self.request_pool_missing_blocks().await;
@@ -270,7 +263,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 event = "update sync target",
                 prev = self.range.1,
                 new = block_height,
-                mode = "out_of_sync"
             );
             self.range.1 = block_height
         }
@@ -282,9 +274,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             self.start_time = SystemTime::now();
             debug!(
                 event = "accepted block",
-                block_height = block_height,
+                block_height,
                 last_request = self.last_request,
-                mode = "out_of_sync"
             );
             self.range.0 = block_height + 1;
 
@@ -300,7 +291,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                         event = "accepted next block",
                         block_height = height,
                         last_request = self.last_request,
-                        mode = "out_of_sync"
                     );
                 } else {
                     // This means we accepted a block and the next block
@@ -327,17 +317,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 event = "pool drain",
                 pool_len = self.pool.len(),
                 last_request = self.last_request,
-                mode = "out_of_sync"
             );
 
             let tip = acc.get_curr_height().await;
             // Check target height is reached
             if tip >= self.range.1 {
-                debug!(
-                    event = "sync target reached",
-                    height = tip,
-                    mode = "out_of_sync"
-                );
+                debug!(event = "sync target reached", height = tip);
                 self.pool.clear();
 
                 // Block sync-up procedure manages to download all requested
@@ -356,9 +341,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         if self.pool.contains_key(&block_height) {
             debug!(
                 event = "block skipped (already present)",
-                block_height,
-                pool_len,
-                mode = "out_of_sync"
+                block_height, pool_len,
             );
             return Ok(false);
         }
@@ -378,19 +361,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 if stored_height > block_height {
                     debug!(
                         event = "block removed",
-                        block_height,
-                        stored_height,
-                        pool_len,
-                        mode = "out_of_sync"
+                        block_height, stored_height, pool_len,
                     );
                     entry.remove();
                 } else {
-                    debug!(
-                        event = "block skipped",
-                        block_height,
-                        pool_len,
-                        mode = "out_of_sync"
-                    );
+                    debug!(event = "block skipped", block_height, pool_len);
                     return Ok(false);
                 }
             }
@@ -403,7 +378,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             event = "block saved",
             block_height,
             pool_len = self.pool.len(),
-            mode = "out_of_sync"
         );
 
         Ok(false)
@@ -416,11 +390,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     pub async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
         if self.is_timeout_expired() {
             if self.attempts == 0 {
-                debug!(
-                    event = "out_of_sync timer expired",
-                    attempts = self.attempts,
-                    mode = "out_of_sync"
-                );
+                debug!(event = "timer expired", attempts = self.attempts);
                 // sync-up has timed out, recover consensus task
                 self.acc.write().await.restart_consensus().await;
 
@@ -448,7 +418,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         let get_resource =
             GetResource::new(inv, Some(self.local_peer), u64::MAX, 1);
 
-        debug!(event = "request block", height, mode = "out_of_sync",);
+        debug!(event = "request block", height);
         if let Err(e) = self
             .network
             .read()
@@ -456,11 +426,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             .send_to_alive_peers(get_resource.into(), 2)
             .await
         {
-            warn!(
-                event = "Unable to request missing block",
-                ?e,
-                mode = "out_of_sync",
-            );
+            warn!(event = "Unable to request missing block", ?e);
         }
     }
 
@@ -490,7 +456,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             debug!(
                 event = "request blocks",
                 target = last_request.unwrap_or_default(),
-                mode = "out_of_sync",
             );
 
             let get_resource =
@@ -503,11 +468,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
                 .send_to_peer(get_resource.into(), self.remote_peer)
                 .await
             {
-                debug!(
-                    event = "Unable to request missing blocks",
-                    ?e,
-                    mode = "out_of_sync",
-                );
+                debug!(event = "Unable to request missing blocks", ?e);
                 warn!("Unable to request missing blocks {e}");
                 return None;
             }
