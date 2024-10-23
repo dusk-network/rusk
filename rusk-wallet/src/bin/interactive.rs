@@ -153,6 +153,7 @@ pub(crate) async fn run_loop(
                     }
                 }
                 ProfileOp::Back => break,
+                ProfileOp::Stay => continue,
             }
         }
     }
@@ -221,6 +222,7 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
 enum ProfileOp {
     Run(Box<Command>),
     Back,
+    Stay,
 }
 
 /// Allows the user to load a wallet interactively
