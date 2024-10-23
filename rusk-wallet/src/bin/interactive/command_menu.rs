@@ -76,6 +76,11 @@ pub(crate) fn online(
                 }
             };
 
+            if balance == 0 {
+                println!("Balance too low to perform a transfer.");
+                return Ok(ProfileOp::Stay);
+            }
+
             let memo = Some(prompt::request_str("memo")?);
             let amt = if memo.is_some() {
                 prompt::request_optional_token_amt("transfer", balance)
@@ -103,6 +108,12 @@ pub(crate) fn online(
                     (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
             };
+
+            if balance == 0 {
+                println!("Balance too low to perform a stake.");
+                return Ok(ProfileOp::Stay);
+            }
+
             ProfileOp::Run(Box::new(Command::Stake {
                 address: Some(addr),
                 amt: prompt::request_stake_token_amt(balance)?,
@@ -125,7 +136,6 @@ pub(crate) fn online(
                 gas_price: prompt::request_gas_price()?,
             }))
         }
-
         MenuItem::Withdraw => {
             let addr = match prompt::request_transaction_model()? {
                 prompt::TransactionModel::Shielded => {
@@ -189,18 +199,36 @@ pub(crate) fn online(
             profile_idx: Some(profile_idx),
             reward: false,
         })),
-        MenuItem::Shield => ProfileOp::Run(Box::new(Command::Shield {
-            profile_idx: Some(profile_idx),
-            amt: prompt::request_token_amt("convert", moonlight_balance)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        MenuItem::Unshield => ProfileOp::Run(Box::new(Command::Unshield {
-            profile_idx: Some(profile_idx),
-            amt: prompt::request_token_amt("convert", phoenix_balance)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
+        MenuItem::Shield => {
+            if moonlight_balance == 0 {
+                println!(
+                    "Balance too low to convert DUSK from public to shielded."
+                );
+                return Ok(ProfileOp::Stay);
+            }
+
+            ProfileOp::Run(Box::new(Command::Shield {
+                profile_idx: Some(profile_idx),
+                amt: prompt::request_token_amt("convert", moonlight_balance)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        MenuItem::Unshield => {
+            if phoenix_balance == 0 {
+                println!(
+                    "Balance too low to convert DUSK from shielded to public."
+                );
+                return Ok(ProfileOp::Stay);
+            }
+
+            ProfileOp::Run(Box::new(Command::Unshield {
+                profile_idx: Some(profile_idx),
+                amt: prompt::request_token_amt("convert", phoenix_balance)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
         MenuItem::CalculateContractId => {
             ProfileOp::Run(Box::new(Command::CalculateContractId {
                 profile_idx: Some(profile_idx),
