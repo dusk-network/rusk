@@ -118,9 +118,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         self.acc.write().await.restart_consensus().await;
     }
 
-    pub fn on_quorum(&mut self, quorum: &Quorum) {
+    pub async fn on_quorum(&mut self, quorum: &Quorum) {
         if let State::OutOfSync(oos) = &mut self.curr {
-            oos.on_quorum(quorum)
+            oos.on_quorum(quorum).await;
         }
     }
 

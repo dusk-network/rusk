@@ -150,7 +150,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             self.reroute_acceptor(msg).await;
                         }
                         Payload::Quorum(ref q) => {
-                            fsm.on_quorum(q);
+                            fsm.on_quorum(q).await;
                             self.reroute_acceptor(msg).await;
 
                         }

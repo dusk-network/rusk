@@ -229,10 +229,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         self.pool.retain(|h, _| h >= &curr_height);
     }
 
-    pub fn on_quorum(&mut self, quorum: &Quorum) {
+    pub async fn on_quorum(&mut self, quorum: &Quorum) {
         let prev_quorum_height = quorum.header.round;
         if self.range.1 < prev_quorum_height {
-            self.range.1 = prev_quorum_height
+            debug!(
+                event = "update sync target due to quorum",
+                prev = self.range.1,
+                new = prev_quorum_height,
+                mode = "out_of_sync"
+            );
+            self.range.1 = prev_quorum_height;
+            self.request_pool_missing_blocks().await;
         }
     }
 
