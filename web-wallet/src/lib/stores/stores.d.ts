@@ -64,8 +64,10 @@ type NetworkStore = Readable<NetworkStoreContent> & NetworkStoreServices;
 
 type WalletStoreContent = {
   balance: {
-    maximum: bigint;
-    value: bigint;
+    shielded: {
+      spendable: bigint;
+      value: bigint;
+    };
   };
   syncStatus: {
     isInProgress: boolean;

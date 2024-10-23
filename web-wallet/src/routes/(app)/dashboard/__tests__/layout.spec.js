@@ -145,7 +145,7 @@ describe("Dashboard Layout", () => {
 
   const usdPrice = 0.5;
   const expectedFiat =
-    luxToDusk(get(mockedWalletStore).balance.value) * usdPrice;
+    luxToDusk(get(mockedWalletStore).balance.shielded.value) * usdPrice;
   const formatter = createCurrencyFormatter("en", "usd", 2);
   const baseProps = {
     data: { currentPrice: Promise.resolve({ usd: usdPrice }) },

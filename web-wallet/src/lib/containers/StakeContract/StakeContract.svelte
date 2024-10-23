@@ -146,7 +146,7 @@
       {/if}
     </svelte:fragment>
     <svelte:fragment slot="success-content" let:result={stakeInfo}>
-      {@const statuses = getStatuses(stakeInfo, balance.maximum)}
+      {@const statuses = getStatuses(stakeInfo, balance.shielded.spendable)}
       {@const operations = isSyncOK
         ? getOperations(descriptor.operations, stakeInfo)
         : disableAllOperations(descriptor.operations)}
@@ -161,7 +161,7 @@
           on:operationChange
           on:suppressStakingNotice
           rewards={stakeInfo.reward}
-          spendable={balance.maximum}
+          spendable={balance.shielded.spendable}
           staked={stakeInfo.amount}
           {statuses}
           {hideStakingNotice}

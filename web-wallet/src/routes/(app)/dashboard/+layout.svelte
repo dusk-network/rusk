@@ -71,7 +71,7 @@
       {fiatPrice}
       locale={language}
       tokenCurrency="DUSK"
-      tokens={luxToDusk(balance.value)}
+      tokens={luxToDusk(balance.shielded.value)}
       shieldedTokensPercentage={import.meta.env.VITE_FEATURE_ALLOCATE || false
         ? 100
         : undefined}

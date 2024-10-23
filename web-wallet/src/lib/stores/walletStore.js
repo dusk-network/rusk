@@ -24,8 +24,10 @@ let syncPromise = null;
 const initialState = {
   addresses: [],
   balance: {
-    maximum: 0n,
-    value: 0n,
+    shielded: {
+      spendable: 0n,
+      value: 0n,
+    },
   },
   currentAddress: "",
   currentProfile: null,
@@ -61,14 +63,11 @@ const updateBalance = async () => {
     return;
   }
 
-  const balance = await bookkeeper.balance(currentProfile.address);
+  const shielded = await bookkeeper.balance(currentProfile.address);
 
   update((currentStore) => ({
     ...currentStore,
-    balance: {
-      maximum: balance.spendable,
-      value: balance.value,
-    },
+    balance: { shielded },
   }));
 };
 
