@@ -1,3 +1,5 @@
+<svelte:options immutable={true} />
+
 <script>
   import * as QRCode from "qrcode";
   import { createEventDispatcher } from "svelte";
@@ -22,20 +24,18 @@
 
   const dispatch = createEventDispatcher();
 
-  /** @type {Promise<String>} */
-  let dataUrlPromise;
-
-  $: if (width || qrColor || bgColor) {
-    dataUrlPromise = getDataUrl();
-  }
-
-  const getDataUrl = () =>
-    QRCode.toDataURL(value, {
+  /**
+   * @param {string} text
+   * @param {{ bgColor: string, qrColor: string, width: number }} options
+   * @returns {Promise<string>}
+   */
+  const getDataUrl = (text, options) =>
+    QRCode.toDataURL(text, {
       color: {
-        dark: qrColor,
-        light: bgColor,
+        dark: options.qrColor,
+        light: options.bgColor,
       },
-      width,
+      width: options.width,
     }).catch((/** @type {String} */ error) => {
       dispatch("error", error);
 
@@ -43,7 +43,7 @@
     });
 </script>
 
-{#await dataUrlPromise}
+{#await getDataUrl(value, { bgColor, qrColor, width })}
   <div style:height={`${width}px`} style:width={`${width}px`} />
 {:then url}
   <AppImage
