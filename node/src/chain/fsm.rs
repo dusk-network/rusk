@@ -168,7 +168,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     anyhow::Ok(())
                 }
                 State::OutOfSync(ref mut curr) => {
-                    if curr.on_block_event(blk, metadata).await? {
+                    if curr.on_block_event(blk).await? {
                         // Transition from OutOfSync to InSync state
                         curr.on_exiting().await;
 

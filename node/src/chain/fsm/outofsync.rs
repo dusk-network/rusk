@@ -14,7 +14,6 @@ use tracing::{debug, info, warn};
 
 use node_data::ledger::Block;
 use node_data::message::payload::{GetResource, Inv};
-use node_data::message::Metadata;
 
 use crate::chain::acceptor::Acceptor;
 use crate::{database, vm, Network};
@@ -206,13 +205,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         let (from, to) = &self.range;
         info!(event = "entering out-of-sync", from, to, ?peer_addr);
-        let metadata = Some(Metadata {
-            height: 0,
-            src_addr: peer_addr,
-            ray_id: String::new(),
-        });
         for (_, b) in self.pool.clone() {
-            let _ = self.on_block_event(&b, metadata.clone()).await;
+            let _ = self.on_block_event(&b).await;
         }
     }
 
@@ -237,7 +231,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     pub async fn on_block_event(
         &mut self,
         blk: &Block,
-        metadata: Option<Metadata>,
     ) -> anyhow::Result<bool> {
         let mut acc = self.acc.write().await;
         let block_height = blk.header().height;
@@ -267,6 +260,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         // Try accepting consecutive block
         if block_height == current_height + 1 {
             acc.try_accept_block(blk, false).await?;
+            // reset expiry_time only if we receive a valid block
+            self.start_time = SystemTime::now();
             debug!(
                 event = "accepted block",
                 block_height = block_height,
@@ -275,19 +270,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             );
             self.range.0 = block_height + 1;
 
-            if let Some(metadata) = &metadata {
-                if metadata.src_addr == self.remote_peer {
-                    // reset expiry_time only if we receive a valid block from
-                    // the syncing peer.
-                    self.start_time = SystemTime::now();
-                }
-            }
-
             // Try to accept other consecutive blocks from the pool, if
             // available
             for height in self.range.0..=self.range.1 {
                 if let Some(blk) = self.pool.get(&height) {
                     acc.try_accept_block(blk, false).await?;
+                    // reset expiry_time only if we receive a valid block
+                    self.start_time = SystemTime::now();
                     self.range.0 += 1;
                     debug!(
                         event = "accepting next block",
