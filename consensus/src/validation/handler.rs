@@ -26,15 +26,13 @@ use node_data::message::{
     payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
 };
 
-fn final_result(
+fn build_validation_result(
     sv: StepVotes,
     vote: Vote,
     quorum: QuorumType,
-) -> HandleMsgOutput {
+) -> Message {
     let p = payload::ValidationResult::new(sv, vote, quorum);
-    let msg = Message::from(p);
-
-    HandleMsgOutput::Ready(msg)
+    Message::from(p)
 }
 
 pub struct ValidationHandler {
@@ -183,7 +181,9 @@ impl MsgHandler for ValidationHandler {
                 }
             };
             info!(event = "quorum reached", ?vote);
-            return Ok(final_result(sv, vote, quorum_type));
+
+            let msg = build_validation_result(sv, vote, quorum_type);
+            return Ok(HandleMsgOutput::Ready(msg));
         }
 
         Ok(HandleMsgOutput::Pending)
@@ -221,7 +221,9 @@ impl MsgHandler for ValidationHandler {
                 );
                 if p.vote.is_valid() && validation_quorum_reached {
                     // ValidationResult from past iteration is found
-                    return Ok(final_result(sv, p.vote, QuorumType::Valid));
+                    let msg =
+                        build_validation_result(sv, p.vote, QuorumType::Valid);
+                    return Ok(HandleMsgOutput::Ready(msg));
                 }
             }
             Err(error) => {
