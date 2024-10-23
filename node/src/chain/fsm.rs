@@ -45,7 +45,7 @@ type SharedHashSet = Arc<RwLock<HashSet<[u8; 32]>>>;
 struct PresyncInfo {
     peer_addr: SocketAddr,
     start_height: u64,
-    target_blk: Block,
+    target_height: u64,
     expiry: Instant,
     pool: Vec<Block>,
 }
@@ -54,15 +54,20 @@ impl PresyncInfo {
     const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
     fn new(
         peer_addr: SocketAddr,
-        target_blk: Block,
+        target_height: u64,
+        target_blk: Option<Block>,
         start_height: u64,
     ) -> Self {
+        let mut pool = vec![];
+        if let Some(blk) = target_blk {
+            pool.push(blk);
+        }
         Self {
             peer_addr,
-            target_blk,
+            target_height,
             expiry: Instant::now().checked_add(Self::DEFAULT_TIMEOUT).unwrap(),
             start_height,
-            pool: vec![],
+            pool,
         }
     }
 
@@ -118,9 +123,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         self.acc.write().await.restart_consensus().await;
     }
 
-    pub async fn on_quorum(&mut self, quorum: &Quorum) {
-        if let State::OutOfSync(oos) = &mut self.curr {
-            oos.on_quorum(quorum).await;
+    pub async fn on_quorum(
+        &mut self,
+        quorum: &Quorum,
+        metadata: Option<&Metadata>,
+    ) {
+        match &mut self.curr {
+            State::OutOfSync(oos) => oos.on_quorum(quorum).await,
+            State::InSync(is) => is.on_quorum(quorum, metadata).await,
         }
     }
 
@@ -510,6 +520,37 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         self.presync = None
     }
 
+    async fn on_quorum(
+        &mut self,
+        remote_quorum: &Quorum,
+        metadata: Option<&Metadata>,
+    ) {
+        // If remote_blk.height > tip.height+1, we might be out of sync.
+        // Before switching to outOfSync mode and download missing blocks,
+        // we ensure that the peer has a valid successor of tip
+        if let Some(metadata) = metadata {
+            if self.presync.is_none() {
+                let tip_height = self.acc.read().await.get_curr_height().await;
+                let prev_height_remote = remote_quorum.header.round - 1;
+                if prev_height_remote > tip_height + 1 {
+                    self.presync = Some(PresyncInfo::new(
+                        metadata.src_addr,
+                        prev_height_remote,
+                        None,
+                        tip_height,
+                    ));
+
+                    Self::request_block_by_height(
+                        &self.network,
+                        tip_height + 1,
+                        metadata.src_addr,
+                    )
+                    .await;
+                }
+            }
+        }
+    }
+
     /// Return Some if there is the need to switch to OutOfSync mode.
     /// This way the sync-up procedure to download all missing blocks from the
     /// main chain will be triggered
@@ -713,7 +754,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 None => {
                     self.presync = Some(PresyncInfo::new(
                         metadata.src_addr,
-                        remote_blk.clone(),
+                        remote_blk.header().height,
+                        Some(remote_blk.clone()),
                         tip_header.height,
                     ));
 

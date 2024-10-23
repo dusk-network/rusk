@@ -184,20 +184,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     /// block range, adds the `target_block` to the pool, updates the
     /// `remote_peer` address, and starts to request missing blocks
     pub async fn on_entering(&mut self, presync: PresyncInfo) {
-        let target_block = presync.target_blk;
         let peer_addr = presync.peer_addr;
         let pool = presync.pool;
         let curr_height = self.acc.read().await.get_curr_height().await;
 
-        self.range = (curr_height + 1, target_block.header().height);
+        self.range = (curr_height + 1, presync.target_height);
 
         // add target_block to the pool
-        let key = target_block.header().height;
         self.drain_pool().await;
         for b in &pool {
             self.pool.insert(b.header().height, b.clone());
         }
-        self.pool.insert(key, target_block);
         self.remote_peer = peer_addr;
 
         if let Some(last_request) = self.request_pool_missing_blocks().await {
@@ -230,7 +227,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     }
 
     pub async fn on_quorum(&mut self, quorum: &Quorum) {
-        let prev_quorum_height = quorum.header.round;
+        let prev_quorum_height = quorum.header.round - 1;
         if self.range.1 < prev_quorum_height {
             debug!(
                 event = "update sync target due to quorum",
