@@ -11,23 +11,27 @@ use dusk_consensus::commons::TimeoutSet;
 use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
 use dusk_consensus::errors::{ConsensusError, HeaderError};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
+use dusk_consensus::user::stake::Stake;
+use execution_core::signatures::bls;
 use node_data::bls::PublicKey;
+use node_data::events::contract::ContractEvent;
 use node_data::events::{
     BlockEvent, Event, TransactionEvent, BLOCK_CONFIRMED, BLOCK_FINALIZED,
 };
 use node_data::ledger::{
-    self, to_str, Block, BlockWithLabel, Label, Seed, Slash, SpentTransaction,
+    self, to_str, Block, BlockWithLabel, Label, Seed, Slash,
 };
 use node_data::message::{AsyncQueue, Payload, Status};
+use rkyv::{check_archived_root, Deserialize, Infallible};
 
 use core::panic;
 use dusk_consensus::operations::Voter;
-use execution_core::stake::{Withdraw, STAKE_CONTRACT};
+use execution_core::stake::{SlashEvent, StakeAmount, StakeEvent};
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::{GetBlocks, Vote};
 use node_data::{get_current_timestamp, Serializable, StepName};
 use std::collections::BTreeMap;
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{cmp, env};
 use tokio::sync::mpsc::Sender;
@@ -87,37 +91,67 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
     }
 }
 
-const STAKE: &str = "stake";
-const UNSTAKE: &str = "unstake";
-
 #[derive(Debug)]
 enum ProvisionerChange {
-    Stake(PublicKey),
-    Unstake(PublicKey),
-    Slash(PublicKey),
-    Reward(PublicKey),
+    Stake(StakeEvent),
+    Unstake(StakeEvent),
+    Slash(SlashEvent),
+    HardSlash(SlashEvent),
+}
+
+fn stake_event(data: &[u8]) -> StakeEvent {
+    let staking_event_data = check_archived_root::<StakeEvent>(data)
+        .expect("Stake event data should deserialize correctly");
+    let staking_event_data: StakeEvent = staking_event_data
+        .deserialize(&mut Infallible)
+        .expect("Infallible");
+    staking_event_data
+}
+
+fn slash_event(data: &[u8]) -> SlashEvent {
+    let staking_event_data = check_archived_root::<SlashEvent>(data)
+        .expect("Stake event data should deserialize correctly");
+    let staking_event_data: SlashEvent = staking_event_data
+        .deserialize(&mut Infallible)
+        .expect("Infallible");
+    staking_event_data
 }
 
 impl ProvisionerChange {
-    fn into_public_key(self) -> PublicKey {
-        match self {
-            ProvisionerChange::Slash(pk) => pk,
-            ProvisionerChange::Unstake(pk) => pk,
-            ProvisionerChange::Stake(pk) => pk,
-            ProvisionerChange::Reward(pk) => pk,
+    pub fn from_event(event: &ContractEvent) -> Option<ProvisionerChange> {
+        let event = match event.topic.as_str() {
+            "stake" => ProvisionerChange::Stake(stake_event(&event.data)),
+            "unstake" => ProvisionerChange::Unstake(stake_event(&event.data)),
+            "slash" => ProvisionerChange::Slash(slash_event(&event.data)),
+            "hard_slash" => {
+                ProvisionerChange::HardSlash(slash_event(&event.data))
+            }
+            _ => return None,
+        };
+        Some(event)
+    }
+    fn key(&self) -> &bls::PublicKey {
+        match &self {
+            ProvisionerChange::Stake(e) => &e.keys.account,
+            ProvisionerChange::Unstake(e) => &e.keys.account,
+            ProvisionerChange::Slash(e) => &e.account,
+            ProvisionerChange::HardSlash(e) => &e.account,
         }
     }
 
-    fn is_stake(&self) -> bool {
-        matches!(self, ProvisionerChange::Stake(_))
+    fn to_public_key(&self) -> PublicKey {
+        PublicKey::new(*self.key())
+    }
+
+    fn value(&self) -> u64 {
+        match &self {
+            ProvisionerChange::Stake(e) => e.value,
+            ProvisionerChange::Unstake(e) => e.value,
+            ProvisionerChange::Slash(e) => e.value,
+            ProvisionerChange::HardSlash(e) => e.value,
+        }
     }
 }
-
-pub static DUSK_KEY: LazyLock<PublicKey> = LazyLock::new(|| {
-    let dusk_cpk_bytes = include_bytes!("../../../rusk/src/assets/dusk.cpk");
-    PublicKey::try_from(*dusk_cpk_bytes)
-        .expect("Dusk consensus public key to be valid")
-});
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Initializes a new `Acceptor` struct,
@@ -441,39 +475,60 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     fn selective_update(
-        blk: &Block,
-        txs: &[SpentTransaction],
-        vm: &tokio::sync::RwLockWriteGuard<'_, VM>,
+        block_height: u64,
+        stake_events: &[ContractEvent],
         provisioners_list: &mut tokio::sync::RwLockWriteGuard<
             '_,
             ContextProvisioners,
         >,
     ) -> Result<()> {
         let src = "selective";
-        let changed_prov = Self::changed_provisioners(blk, txs)?;
+        let changed_prov: Vec<_> = stake_events
+            .iter()
+            .filter_map(ProvisionerChange::from_event)
+            .collect();
         if changed_prov.is_empty() {
             provisioners_list.remove_previous();
         } else {
             let mut new_prov = provisioners_list.current().clone();
             for change in changed_prov {
-                let is_stake = change.is_stake();
-                info!(event = "provisioner_update", src, ?change);
-                let pk = change.into_public_key();
-                let prov = pk.to_bs58();
-                match vm.get_provisioner(pk.inner())? {
-                    Some(stake) => {
-                        debug!(event = "new_stake", src, prov, ?stake);
-                        let replaced = new_prov.replace_stake(pk, stake);
-                        if replaced.is_none() && !is_stake {
-                            anyhow::bail!("Replaced a not existing stake")
-                        };
-                        debug!(event = "old_stake", src, prov, ?replaced);
+                let account = change.to_public_key();
+                let value = change.value();
+                info!(
+                    event = "provisioner_update",
+                    src,
+                    account = account.to_bs58(),
+                    value
+                );
+                match &change {
+                    ProvisionerChange::Stake(stake_event) => {
+                        let amount =
+                            StakeAmount::new(stake_event.value, block_height);
+                        let replaced = new_prov.replace_stake(
+                            account,
+                            Stake::new(amount.value, amount.eligibility),
+                        );
+                        if let Some(replaced) = replaced {
+                            if replaced.value() > 0 {
+                                anyhow::bail!("Staking to an existing stake")
+                            }
+                        }
                     }
-                    _ => {
-                        let removed = new_prov.remove_stake(&pk).ok_or(
-                            anyhow::anyhow!("Removed a not existing stake"),
+                    ProvisionerChange::Unstake(_) => {
+                        new_prov.remove_stake(&account).ok_or(
+                            anyhow::anyhow!("Unstake a not existing stake"),
                         )?;
-                        debug!(event = "removed_stake", src, prov, ?removed);
+                    }
+                    ProvisionerChange::Slash(slash_event)
+                    | ProvisionerChange::HardSlash(slash_event) => {
+                        let to_slash = new_prov
+                            .get_member_mut(&account)
+                            .ok_or(anyhow::anyhow!(
+                                "Slashing a not existing stake"
+                            ))?;
+                        to_slash.subtract(slash_event.value);
+                        to_slash
+                            .change_eligibility(slash_event.next_eligibility);
                     }
                 }
             }
@@ -481,72 +536,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             provisioners_list.update_and_swap(new_prov);
         }
         Ok(())
-    }
-
-    fn changed_provisioners(
-        blk: &Block,
-        txs: &[SpentTransaction],
-    ) -> Result<Vec<ProvisionerChange>> {
-        let generator = blk.header().generator_bls_pubkey.0;
-        let generator = generator
-            .try_into()
-            .map_err(|e| anyhow::anyhow!("Cannot deserialize bytes {e:?}"))?;
-        let reward = ProvisionerChange::Reward(generator);
-        let dusk_reward = ProvisionerChange::Reward(DUSK_KEY.clone());
-        let mut changed_provisioners = vec![reward, dusk_reward];
-
-        // Update provisioners if a slash has been applied
-        let slashed = Slash::from_block(blk)?
-            .into_iter()
-            .map(|f| ProvisionerChange::Slash(f.provisioner));
-        changed_provisioners.extend(slashed);
-
-        // FIX_ME: This relies on the stake contract being called only by the
-        // transfer contract. We should change this once third-party contracts
-        // hit the chain.
-        let stake_calls =
-            txs.iter().filter(|t| t.err.is_none()).filter_map(|t| {
-                match &t.inner.inner.call() {
-                    Some(call)
-                        if (call.contract == STAKE_CONTRACT
-                            && (call.fn_name == STAKE
-                                || call.fn_name == UNSTAKE)) =>
-                    {
-                        Some((&call.fn_name, &call.fn_args))
-                    }
-                    _ => None,
-                }
-            });
-
-        for (f, data) in stake_calls {
-            changed_provisioners.push(Self::parse_stake_call(f, data)?);
-        }
-
-        Ok(changed_provisioners)
-    }
-
-    fn parse_stake_call(
-        fn_name: &str,
-        calldata: &[u8],
-    ) -> Result<ProvisionerChange> {
-        let change = match fn_name {
-            UNSTAKE => {
-                let unstake: Withdraw =
-                    rkyv::from_bytes(calldata).map_err(|e| {
-                        anyhow::anyhow!("Cannot deserialize unstake rkyv {e:?}")
-                    })?;
-                ProvisionerChange::Unstake(PublicKey::new(*unstake.account()))
-            }
-            STAKE => {
-                let stake: execution_core::stake::Stake =
-                    rkyv::from_bytes(calldata).map_err(|e| {
-                        anyhow::anyhow!("Cannot deserialize stake rkyv {e:?}")
-                    })?;
-                ProvisionerChange::Stake(PublicKey::new(*stake.account()))
-            }
-            e => unreachable!("Parsing unexpected method: {e}"),
-        };
-        Ok(change)
     }
 
     /// Updates tip together with provisioners list.
@@ -653,8 +642,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let vm = self.vm.write().await;
 
-            let (txs, rolling_result) = self.db.read().await.update(|db| {
-                let (txs, verification_output) =
+            let (stakes, finality) = self.db.read().await.update(|db| {
+                let (txs, verification_output, stake_events) =
                     vm.accept(blk, &prev_block_voters[..])?;
                 for spent_tx in txs.iter() {
                     events.push(TransactionEvent::Executed(spent_tx).into());
@@ -664,15 +653,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 assert_eq!(header.state_hash, verification_output.state_root);
                 assert_eq!(header.event_bloom, verification_output.event_bloom);
 
-                let rolling_results =
+                let finality =
                     self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
 
-                let label = rolling_results.0;
+                let label = finality.0;
                 // Store block with updated transactions with Error and GasSpent
                 block_size_on_disk =
                     db.store_block(header, &txs, blk.faults(), label)?;
 
-                Ok((txs, rolling_results))
+                Ok((stake_events, finality))
             })?;
 
             self.log_missing_iterations(
@@ -692,8 +681,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 slashed_count += 1;
             }
 
-            let selective_update =
-                Self::selective_update(blk, &txs, &vm, &mut provisioners_list);
+            let selective_update = Self::selective_update(
+                header.height,
+                &stakes,
+                &mut provisioners_list,
+            );
 
             if let Err(e) = selective_update {
                 warn!("Resync provisioners due to {e:?}");
@@ -702,7 +694,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 provisioners_list.update_and_swap(new_prov)
             }
 
-            let (label, final_results) = rolling_result;
+            let (label, final_results) = finality;
             // Update tip
             *tip = BlockWithLabel::new_with_label(blk.clone(), label);
 
