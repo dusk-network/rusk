@@ -152,4 +152,20 @@ describe("makeNodeUrl", () => {
 
     expect(makeNodeUrl().hostname).toBe("nodes.dusk.network");
   });
+
+  it("should return the mainnet URL when the hostname starts with 'staging.apps'", () => {
+    global.window = Object.create(window);
+
+    const url = new URL("https://staging.apps.dusk.network");
+
+    Object.defineProperty(window, "location", {
+      value: {
+        hostname: url.hostname,
+        href: url.href,
+        protocol: url.protocol,
+      },
+    });
+
+    expect(makeNodeUrl().hostname).toBe("nodes.dusk.network");
+  });
 });
