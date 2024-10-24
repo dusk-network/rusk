@@ -21,7 +21,7 @@ use crate::{proposal, ratification, validation};
 use node_data::bls::PublicKeyBytes;
 
 use node_data::ledger::Seed;
-use node_data::message::{Message, Payload, Topics};
+use node_data::message::{Message, Topics};
 use std::collections::HashMap;
 use std::ops::Add;
 use std::sync::Arc;
@@ -293,7 +293,7 @@ impl<DB: Database> IterationCtx<DB> {
                 }
             }
 
-            Topics::Validation => {
+            Topics::Validation | Topics::ValidationQuorum => {
                 let mut handler = self.validation_handler.lock().await;
                 if let Ok(HandleMsgOutput::Ready(m)) = handler
                     .collect_from_past(msg, ru, committee, generator)
@@ -309,18 +309,6 @@ impl<DB: Database> IterationCtx<DB> {
                     .collect_from_past(msg, ru, committee, generator)
                     .await
                 {
-                    return Some(m);
-                }
-            }
-
-            Topics::ValidationQuorum => {
-                if let Payload::ValidationQuorum(p) = &msg.payload {
-                    if !p.result.vote().is_valid() {
-                        return None;
-                    }
-
-                    // Extract the ValidationResult and return it as msg
-                    let m = p.result.clone().into();
                     return Some(m);
                 }
             }
