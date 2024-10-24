@@ -149,11 +149,17 @@ impl Message {
     }
 
     pub fn get_iteration(&self) -> u8 {
-        self.header.iteration
+        match &self.payload {
+            Payload::Block(b) => b.header().iteration,
+            _ => self.header.iteration,
+        }
     }
 
     pub fn get_height(&self) -> u64 {
-        self.header.round
+        match &self.payload {
+            Payload::Block(b) => b.header().height,
+            _ => self.header.round,
+        }
     }
 
     pub fn version(&self) -> &Version {
