@@ -393,6 +393,25 @@ describe("Wallet cache", () => {
       );
     });
 
+    it("should leave the database as is if the received nullifiers aren't in the unspent list", async () => {
+      const currentPendingInfo = await walletCache.getPendingNotesInfo();
+      const currentSpentNotes = await walletCache.getSpentNotes();
+      const currentUnspentNotes = await walletCache.getUnspentNotes();
+      const nonExistingNullifiers = pluckFrom(currentSpentNotes, "nullifier");
+
+      await walletCache.spendNotes(nonExistingNullifiers);
+
+      await expect(walletCache.getPendingNotesInfo()).resolves.toStrictEqual(
+        currentPendingInfo
+      );
+      await expect(walletCache.getSpentNotes()).resolves.toStrictEqual(
+        currentSpentNotes
+      );
+      await expect(walletCache.getUnspentNotes()).resolves.toStrictEqual(
+        currentUnspentNotes
+      );
+    });
+
     it("should leave the database as is if an error occurs during the spend procedure", async () => {
       const currentPendingInfo = await walletCache.getPendingNotesInfo();
       const currentSpentNotes = await walletCache.getSpentNotes();
@@ -400,6 +419,92 @@ describe("Wallet cache", () => {
 
       // @ts-expect-error We are passing an invalid value on purpose
       await walletCache.spendNotes(() => {});
+
+      await expect(walletCache.getPendingNotesInfo()).resolves.toStrictEqual(
+        currentPendingInfo
+      );
+      await expect(walletCache.getSpentNotes()).resolves.toStrictEqual(
+        currentSpentNotes
+      );
+      await expect(walletCache.getUnspentNotes()).resolves.toStrictEqual(
+        currentUnspentNotes
+      );
+    });
+  });
+
+  describe("Unspending notes", () => {
+    it("should expose a method to move a group of notes from the spent to the unspent table", async () => {
+      const currentPendingInfo = await walletCache.getPendingNotesInfo();
+      const [notesToUnspend, expectedSpentNotes] = await walletCache
+        .getSpentNotes()
+        .then(sortByNullifier)
+        .then(collect([take(2), drop(2)]));
+      const expectedUnspentNotes = await walletCache
+        .getUnspentNotes()
+        .then((notes) => notes.concat(notesToUnspend))
+        .then(sortByNullifier);
+
+      // checks to ensure we have enough meaningful data for the test
+      expect(notesToUnspend.length).toBeGreaterThan(0);
+      expect(expectedSpentNotes.length).toBeGreaterThan(0);
+
+      await walletCache.unspendNotes(pluckFrom(notesToUnspend, "nullifier"));
+
+      await expect(walletCache.getPendingNotesInfo()).resolves.toStrictEqual(
+        currentPendingInfo
+      );
+      await expect(
+        walletCache.getUnspentNotes().then(sortByNullifier)
+      ).resolves.toStrictEqual(expectedUnspentNotes);
+      await expect(
+        walletCache.getSpentNotes().then(sortByNullifier)
+      ).resolves.toStrictEqual(expectedSpentNotes);
+    });
+
+    it("should leave the database as is if the array of nullifiers to unspend is empty", async () => {
+      const currentPendingInfo = await walletCache.getPendingNotesInfo();
+      const currentSpentNotes = await walletCache.getSpentNotes();
+      const currentUnspentNotes = await walletCache.getUnspentNotes();
+
+      await walletCache.unspendNotes([]);
+
+      await expect(walletCache.getPendingNotesInfo()).resolves.toStrictEqual(
+        currentPendingInfo
+      );
+      await expect(walletCache.getSpentNotes()).resolves.toStrictEqual(
+        currentSpentNotes
+      );
+      await expect(walletCache.getUnspentNotes()).resolves.toStrictEqual(
+        currentUnspentNotes
+      );
+    });
+
+    it("should leave the database as is if the received nullifiers aren't in the spent list", async () => {
+      const currentPendingInfo = await walletCache.getPendingNotesInfo();
+      const currentSpentNotes = await walletCache.getSpentNotes();
+      const currentUnspentNotes = await walletCache.getUnspentNotes();
+      const nonExistingNullifiers = pluckFrom(currentUnspentNotes, "nullifier");
+
+      await walletCache.unspendNotes(nonExistingNullifiers);
+
+      await expect(walletCache.getPendingNotesInfo()).resolves.toStrictEqual(
+        currentPendingInfo
+      );
+      await expect(walletCache.getSpentNotes()).resolves.toStrictEqual(
+        currentSpentNotes
+      );
+      await expect(walletCache.getUnspentNotes()).resolves.toStrictEqual(
+        currentUnspentNotes
+      );
+    });
+
+    it("should leave the database as is if an error occurs during the unspend procedure", async () => {
+      const currentPendingInfo = await walletCache.getPendingNotesInfo();
+      const currentSpentNotes = await walletCache.getSpentNotes();
+      const currentUnspentNotes = await walletCache.getUnspentNotes();
+
+      // @ts-expect-error We are passing an invalid value on purpose
+      await walletCache.unspendNotes(() => {});
 
       await expect(walletCache.getPendingNotesInfo()).resolves.toStrictEqual(
         currentPendingInfo

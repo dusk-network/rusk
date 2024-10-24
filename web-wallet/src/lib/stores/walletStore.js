@@ -1,5 +1,5 @@
 import { get, writable } from "svelte/store";
-import { setKey } from "lamb";
+import { map, setKey } from "lamb";
 import {
   Bookkeeper,
   Bookmark,
@@ -8,6 +8,7 @@ import {
 import * as b58 from "$lib/vendor/w3sper.js/src/b58";
 
 import walletCache from "$lib/wallet-cache";
+import { nullifiersDifference } from "$lib/wallet";
 
 import { transactions } from "$lib/mock-data";
 
@@ -223,6 +224,39 @@ async function sync(fromBlock) {
 
         // update the cache with the spent nullifiers info
         await walletCache.spendNotes(spentNullifiers);
+
+        // gather all spent nullifiers in the cache
+        const currentSpentNullifiers =
+          await walletCache.getUnspentNotesNullifiers();
+
+        /**
+         * Retrieving the nullifiers that are really spent given our
+         * list of spent nullifiers.
+         * We make this check because a block can be rejected and
+         * we may end up having some notes marked as spent in the
+         * cache, while they really aren't.
+         *
+         * Currently `w3sper.js` returns an array of `ArrayBuffer`s
+         * instead of one of `Uint8Array`s.
+         * @type {ArrayBuffer[]}
+         */
+        const reallySpentNullifiers = await addressSyncer.spent(
+          currentSpentNullifiers
+        );
+
+        /**
+         * As the previous `addressSyncer.spent` call returns a subset of
+         * our spent nullifiers, we can skip this operation if the lengths
+         * are the same.
+         */
+        if (reallySpentNullifiers.length !== currentSpentNullifiers.length) {
+          const nullifiersToUnspend = nullifiersDifference(
+            currentSpentNullifiers,
+            map(reallySpentNullifiers, (buf) => new Uint8Array(buf))
+          );
+
+          await walletCache.unspendNotes(nullifiersToUnspend);
+        }
       })
       .then(() => {
         if (syncController?.signal.aborted) {
