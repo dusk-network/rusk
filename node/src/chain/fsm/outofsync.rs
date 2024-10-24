@@ -188,7 +188,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         let pool = presync.pool;
         let curr_height = self.acc.read().await.get_curr_height().await;
 
-        self.range = (curr_height + 1, presync.target_height);
+        self.range = (curr_height + 1, presync.remote_height);
 
         // add target_block to the pool
         self.drain_pool().await;
