@@ -273,6 +273,28 @@ class WalletCache {
   }
 
   /**
+   * @param {Uint8Array[]} nullifiers
+   * @returns {Promise<void>}
+   */
+  async unspendNotes(nullifiers) {
+    return this.#db
+      .open()
+      .then(async (db) =>
+        db.transaction("rw", ["spentNotes", "unspentNotes"], async () => {
+          const notesToUnspend = await db
+            .table("spentNotes")
+            .where("nullifier")
+            .anyOf(nullifiers)
+            .toArray();
+
+          await this.#db.table("spentNotes").bulkDelete(nullifiers);
+          await this.#db.table("unspentNotes").bulkAdd(notesToUnspend);
+        })
+      )
+      .finally(() => this.#db.close());
+  }
+
+  /**
    * @param {Array<Map<Uint8Array, Uint8Array>>} syncerNotes
    * @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles
    * @returns {WalletCacheNote[]}
