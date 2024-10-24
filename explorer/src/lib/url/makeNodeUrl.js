@@ -27,6 +27,7 @@ function makeNodeUrl(path = "") {
 
   switch (subDomains[0]) {
     case "apps": // mainnet
+    case "staging": // mainnet staging
       nodeUrl = buildHostedNodeUrl("nodes.");
       break;
     case "devnet":
