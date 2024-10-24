@@ -302,12 +302,10 @@ impl Command {
     ) -> anyhow::Result<RunResult<'a>> {
         match self {
             Command::Balance { address, spendable } => {
-                let addr = match address {
-                    Some(addr) => wallet.claim(addr)?,
-                    None => wallet.default_address(),
-                };
-                let addr_idx = wallet.find_index(&addr)?;
-                match addr {
+                let address = address.unwrap_or(wallet.default_address());
+                let addr_idx = wallet.find_index(&address)?;
+
+                match address {
                     Address::Public(_) => Ok(RunResult::MoonlightBalance(
                         wallet.get_moonlight_balance(addr_idx).await?,
                     )),
@@ -398,11 +396,9 @@ impl Command {
                 gas_limit,
                 gas_price,
             } => {
-                let address = match address {
-                    Some(addr) => wallet.claim(addr)?,
-                    None => wallet.default_address(),
-                };
+                let address = address.unwrap_or(wallet.default_address());
                 let addr_idx = wallet.find_index(&address)?;
+
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let tx = match address {
                     Address::Shielded(_) => {
@@ -421,19 +417,17 @@ impl Command {
                 gas_limit,
                 gas_price,
             } => {
-                let address = match address {
-                    Some(addr) => wallet.claim(addr)?,
-                    None => wallet.default_address(),
-                };
-                let profile_idx = wallet.find_index(&address)?;
+                let address = address.unwrap_or(wallet.default_address());
+                let addr_idx = wallet.find_index(&address)?;
+
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let tx = match address {
                     Address::Shielded(_) => {
                         wallet.sync().await?;
-                        wallet.phoenix_unstake(profile_idx, gas).await
+                        wallet.phoenix_unstake(addr_idx, gas).await
                     }
                     Address::Public(_) => {
-                        wallet.moonlight_unstake(profile_idx, gas).await
+                        wallet.moonlight_unstake(addr_idx, gas).await
                     }
                 }?;
 
@@ -444,11 +438,9 @@ impl Command {
                 gas_limit,
                 gas_price,
             } => {
-                let address = match address {
-                    Some(addr) => wallet.claim(addr)?,
-                    None => wallet.default_address(),
-                };
+                let address = address.unwrap_or(wallet.default_address());
                 let addr_idx = wallet.find_index(&address)?;
+
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let tx = match address {
                     Address::Shielded(_) => {
@@ -545,10 +537,7 @@ impl Command {
             } => {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
-                let address = match address {
-                    Some(addr) => wallet.claim(addr)?,
-                    None => wallet.default_address(),
-                };
+                let address = address.unwrap_or(wallet.default_address());
                 let addr_idx = wallet.find_index(&address)?;
 
                 let contract_id: [u8; CONTRACT_ID_BYTES] = contract_id
@@ -594,10 +583,7 @@ impl Command {
                 gas_limit,
                 gas_price,
             } => {
-                let address = match address {
-                    Some(addr) => wallet.claim(addr)?,
-                    None => wallet.default_address(),
-                };
+                let address = address.unwrap_or(wallet.default_address());
                 let addr_idx = wallet.find_index(&address)?;
 
                 if code.extension().unwrap_or_default() != "wasm" {
