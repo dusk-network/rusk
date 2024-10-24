@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::aggregator::{Aggregator, StepVote};
-use crate::commons::RoundUpdate;
+use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
@@ -26,6 +26,9 @@ use node_data::message::{
     payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
 };
 
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
 fn build_validation_result(
     sv: StepVotes,
     vote: Vote,
@@ -35,11 +38,12 @@ fn build_validation_result(
     Message::from(p)
 }
 
-pub struct ValidationHandler {
+pub struct ValidationHandler<D: Database> {
     pub(crate) aggr: Aggregator<Validation>,
     pub(crate) candidate: Option<Block>,
     sv_registry: SafeAttestationInfoRegistry,
     curr_iteration: u8,
+    pub(crate) db: Arc<Mutex<D>>,
 }
 
 // Implement the required trait to use Aggregator
@@ -49,42 +53,44 @@ impl StepVote for Validation {
     }
 }
 
-impl ValidationHandler {
-    pub fn verify_stateless(
-        msg: &Message,
-        round_committees: &RoundCommittees,
-    ) -> Result<(), ConsensusError> {
-        match &msg.payload {
-            Payload::Validation(p) => {
-                p.verify_signature()?;
+pub fn verify_stateless(
+    msg: &Message,
+    round_committees: &RoundCommittees,
+) -> Result<(), ConsensusError> {
+    match &msg.payload {
+        Payload::Validation(p) => {
+            p.verify_signature()?;
 
-                let signer = &p.sign_info.signer;
-                let committee = round_committees
-                    .get_committee(msg.get_step())
-                    .expect("committee to be created before run");
+            let signer = &p.sign_info.signer;
+            let committee = round_committees
+                .get_committee(msg.get_step())
+                .expect("committee to be created before run");
 
-                committee
-                    .votes_for(signer)
-                    .ok_or(ConsensusError::NotCommitteeMember)?;
-            }
-            Payload::Empty => (),
-            _ => {
-                info!("cannot verify in validation handler");
-                Err(ConsensusError::InvalidMsgType)?
-            }
+            committee
+                .votes_for(signer)
+                .ok_or(ConsensusError::NotCommitteeMember)?;
         }
-
-        Ok(())
+        Payload::Empty => (),
+        _ => {
+            info!("cannot verify in validation handler");
+            Err(ConsensusError::InvalidMsgType)?
+        }
     }
+
+    Ok(())
 }
 
-impl ValidationHandler {
-    pub(crate) fn new(sv_registry: SafeAttestationInfoRegistry) -> Self {
+impl<D: Database> ValidationHandler<D> {
+    pub(crate) fn new(
+        sv_registry: SafeAttestationInfoRegistry,
+        db: Arc<Mutex<D>>,
+    ) -> Self {
         Self {
             sv_registry,
             aggr: Aggregator::default(),
             candidate: None,
             curr_iteration: 0,
+            db,
         }
     }
 
@@ -102,7 +108,7 @@ impl ValidationHandler {
 }
 
 #[async_trait]
-impl MsgHandler for ValidationHandler {
+impl<D: Database> MsgHandler for ValidationHandler<D> {
     /// Verifies if a msg is a valid validation message.
     fn verify(
         &self,

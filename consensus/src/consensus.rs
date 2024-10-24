@@ -148,6 +148,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             let validation_handler = Arc::new(Mutex::new(
                 validation::handler::ValidationHandler::new(
                     sv_registry.clone(),
+                    db.clone(),
                 ),
             ));
 

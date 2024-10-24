@@ -379,7 +379,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     .iter_ctx
                     .get_generator(msg_iteration)
                     .expect("generator to exists");
-                ValidationStep::try_vote(
+                ValidationStep::<_, DB>::try_vote(
                     msg_iteration,
                     Some(candidate),
                     &self.round_update,

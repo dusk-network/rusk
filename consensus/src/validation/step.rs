@@ -22,12 +22,12 @@ use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, Instrument};
 
-pub struct ValidationStep<T> {
-    handler: Arc<Mutex<handler::ValidationHandler>>,
+pub struct ValidationStep<T, D: Database> {
+    handler: Arc<Mutex<handler::ValidationHandler<D>>>,
     executor: Arc<T>,
 }
 
-impl<T: Operations + 'static> ValidationStep<T> {
+impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn spawn_try_vote(
         join_set: &mut JoinSet<()>,
@@ -201,10 +201,10 @@ pub fn build_validation_payload(
     validation
 }
 
-impl<T: Operations + 'static> ValidationStep<T> {
+impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     pub(crate) fn new(
         executor: Arc<T>,
-        handler: Arc<Mutex<handler::ValidationHandler>>,
+        handler: Arc<Mutex<handler::ValidationHandler<D>>>,
     ) -> Self {
         Self { handler, executor }
     }
