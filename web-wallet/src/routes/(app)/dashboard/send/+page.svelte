@@ -21,7 +21,7 @@
   $: statuses = [
     {
       label: "Spendable",
-      value: duskFormatter(luxToDusk(balance.maximum)),
+      value: duskFormatter(luxToDusk(balance.shielded.spendable)),
     },
   ];
 </script>
@@ -32,7 +32,7 @@
     formatter={duskFormatter}
     {gasLimits}
     {gasSettings}
-    spendable={balance.maximum}
+    spendable={balance.shielded.spendable}
     {statuses}
     enableAllocateButton={import.meta.env.VITE_FEATURE_ALLOCATE === "true"}
   />

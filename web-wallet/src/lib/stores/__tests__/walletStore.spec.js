@@ -32,17 +32,13 @@ describe("Wallet store", async () => {
 
   // setting up a predictable address and balance
   const address = cacheUnspentNotes[0].address;
-  const bookkeeperBalance = {
+  const shielded = {
     spendable: 400000000000000n,
     value: 1026179647718621n,
   };
-  const balance = {
-    maximum: bookkeeperBalance.spendable,
-    value: bookkeeperBalance.value,
-  };
-  const balanceSpy = vi
+  const shieldedBalanceSpy = vi
     .spyOn(Bookkeeper.prototype, "balance")
-    .mockResolvedValue(bookkeeperBalance);
+    .mockResolvedValue(shielded);
   const defaultProfileSpy = vi
     .spyOn(ProfileGenerator.prototype, "default", "get")
     .mockResolvedValue({
@@ -59,8 +55,10 @@ describe("Wallet store", async () => {
   const initialState = {
     addresses: [],
     balance: {
-      maximum: 0n,
-      value: 0n,
+      shielded: {
+        spendable: 0n,
+        value: 0n,
+      },
     },
     currentAddress: "",
     currentProfile: defaultProfile,
@@ -78,7 +76,7 @@ describe("Wallet store", async () => {
   const initializedStore = {
     ...initialState,
     addresses: [address],
-    balance,
+    balance: { shielded },
     currentAddress: address,
     initialized: true,
     profiles: [defaultProfile],
@@ -94,7 +92,7 @@ describe("Wallet store", async () => {
     vi.useRealTimers();
     abortControllerSpy.mockRestore();
     addressSyncerNotesSpy.mockRestore();
-    balanceSpy.mockRestore();
+    shieldedBalanceSpy.mockRestore();
     defaultProfileSpy.mockRestore();
   });
 
@@ -122,7 +120,7 @@ describe("Wallet store", async () => {
 
       expect(get(walletStore)).toStrictEqual(initializedStore);
       expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
-      expect(balanceSpy).toHaveBeenCalledTimes(1);
+      expect(shieldedBalanceSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -200,7 +198,7 @@ describe("Wallet store", async () => {
       );
 
       addressSyncerNotesSpy.mockClear();
-      balanceSpy.mockClear();
+      shieldedBalanceSpy.mockClear();
     });
 
     afterEach(async () => {
@@ -243,7 +241,7 @@ describe("Wallet store", async () => {
         profiles: [newProfile],
       });
       expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
-      expect(balanceSpy).toHaveBeenCalledTimes(1);
+      expect(shieldedBalanceSpy).toHaveBeenCalledTimes(1);
     });
 
     it("should expose a method to execute a phoenix transfer", async () => {
@@ -272,11 +270,11 @@ describe("Wallet store", async () => {
 
       // check that we made a sync before the transfer and the balance update afterwards
       expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
-      expect(balanceSpy).toHaveBeenCalledTimes(1);
+      expect(shieldedBalanceSpy).toHaveBeenCalledTimes(1);
       expect(addressSyncerNotesSpy.mock.invocationCallOrder[0]).toBeLessThan(
         executeSpy.mock.invocationCallOrder[0]
       );
-      expect(balanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
+      expect(shieldedBalanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
         executeSpy.mock.invocationCallOrder[0]
       );
 
