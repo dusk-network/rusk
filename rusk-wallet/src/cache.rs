@@ -233,8 +233,7 @@ impl Cache {
         Ok(notes)
     }
 
-    pub fn close(&self) -> Result<(), Error> {
+    pub fn close(&self) {
         self.db.cancel_all_background_work(false);
-        Ok(())
     }
 }

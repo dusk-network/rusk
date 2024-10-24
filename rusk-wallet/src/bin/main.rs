@@ -14,12 +14,10 @@ mod settings;
 pub(crate) use command::{Command, RunResult};
 pub(crate) use menu::Menu;
 
-use std::fs::{self, File};
-use std::io::Write;
-
 use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Parser;
-use tracing::{warn, Level};
+use rocksdb::ErrorKind;
+use tracing::{error, info, warn, Level};
 
 use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
@@ -33,6 +31,9 @@ use rusk_wallet::{
 use config::Config;
 use io::{prompt, status};
 use io::{GraphQL, WalletArgs};
+
+use std::fs::{self, File};
+use std::io::Write;
 
 #[derive(Debug, Clone)]
 pub(crate) struct WalletFile {
@@ -71,7 +72,7 @@ async fn connect<F>(
     mut wallet: Wallet<F>,
     settings: &Settings,
     status: fn(&str),
-) -> Wallet<F>
+) -> anyhow::Result<Wallet<F>>
 where
     F: SecureWalletFile + std::fmt::Debug,
 {
@@ -85,12 +86,44 @@ where
 
     // check for connection errors
     match con {
-        Err(Error::RocksDB(e)) => panic!{"Please reset the cache! {e}"},
-        Err(e) => warn!("[OFFLINE MODE]: Unable to connect to Rusk, limited functionality available: {e}"),
-        _ => {}
-    }
+        Err(Error::RocksDB(e)) => {
+            wallet.close();
 
-    wallet
+            let msg = match e.kind() {
+                ErrorKind::InvalidArgument => {
+                    format!("You seem to try access a wallet with a different seed-phrase \n\r\n\r{0: <1} delete the cache? (Alternatively specify the --profile flag to add a new wallet under the given path)", "[ALERT]")
+                },
+                ErrorKind::Corruption => {
+                       format!("The database appears to be corrupted \n\r\n\r{0: <1} delete the cache?", "[ALERT]")
+                },
+                _ => {
+                    format!("Unknown database error {:?} \n\r\n\r{1: <1} delete the cache?", e, "[ALERT]")
+                }
+            };
+
+             match prompt::ask_confirm_erase_cache(&msg)? {
+                true => {
+                    if let Some(io_err) = wallet.delete_cache().err() {
+                        error!("Error while deleting the cache: {io_err}");
+                    }
+
+                    info!("Restart the application to create new wallet.");
+                },
+                false => {
+                    info!("Wallet cannot proceed will now exit");
+                },
+
+            }
+
+            // Exit because we cannot proceed because of db error
+            // wallet is already closed
+            std::process::exit(1);
+        },
+        Err(ref e) => warn!("[OFFLINE MODE]: Unable to connect to Rusk, limited functionality available: {e}"),
+        _ => {}
+    };
+
+    Ok(wallet)
 }
 
 async fn exec() -> anyhow::Result<()> {
@@ -284,7 +317,7 @@ async fn exec() -> anyhow::Result<()> {
         false => status::interactive,
     };
 
-    wallet = connect(wallet, &settings, status_cb).await;
+    wallet = connect(wallet, &settings, status_cb).await?;
 
     // run command
     match cmd {
@@ -382,6 +415,9 @@ async fn exec() -> anyhow::Result<()> {
             }
         }
     }
+
+    // Gracefully close the wallet
+    wallet.close();
 
     Ok(())
 }
