@@ -1,6 +1,174 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Receive > should render the receive page 1`] = `
+exports[`Receive > should change the icon to "unshielded" and show the unshielded address when the user makes such choice 1`] = `
+<div
+  class="dusk-card dusk-card--gap-medium"
+>
+  <div
+    class="dusk-card__header-container"
+  >
+    <header
+      class="dusk-card__header"
+      slot="header"
+    >
+      <div
+        class="dusk-card__heading-container"
+      >
+        <h3
+          class="h4"
+        >
+          Receive
+        </h3>
+         
+        <div
+          class="dusk-card__heading-icons"
+        >
+          
+          <svg
+            class="dusk-icon dusk-icon--size--default"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12.07 19L9.24 16.18L19 6.42L17.58 5L7.82 14.76L5 11.94V19Z"
+            />
+          </svg>
+          
+          
+          <svg
+            class="dusk-icon dusk-icon--size--default"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 1L3 5V11C3 16.5 6.8 21.7 12 23C17.2 21.7 21 16.5 21 11V5L12 1M16 15.8C16 16.4 15.4 17 14.7 17H9.2C8.6 17 8 16.4 8 15.7V12.2C8 11.6 8.6 11 9.2 11V8.5C9.2 7.1 10.6 6 12 6S14.8 7.1 14.8 8.5V9H13.5V8.5C13.5 7.7 12.8 7.2 12 7.2S10.5 7.7 10.5 8.5V11H14.8C15.4 11 16 11.6 16 12.3V15.8Z"
+            />
+          </svg>
+          
+        </div>
+      </div>
+    </header>
+  </div>
+   
+  <div
+    class="dusk-card__body-container"
+  >
+    <div
+      class="dusk-exclusive-choice"
+      role="radiogroup"
+    >
+      <input
+        class="dusk-exclusive-choice__radio"
+        id="some-generated-id-shielded"
+        name="some-generated-id"
+        type="radio"
+        value="shielded"
+      />
+       
+      <label
+        class="dusk-exclusive-choice__label"
+        for="some-generated-id-shielded"
+      >
+        Shielded
+      </label>
+      <input
+        class="dusk-exclusive-choice__radio"
+        id="some-generated-id-unshielded"
+        name="some-generated-id"
+        type="radio"
+        value="unshielded"
+      />
+       
+      <label
+        class="dusk-exclusive-choice__label"
+        for="some-generated-id-unshielded"
+      >
+        Unshielded
+      </label>
+    </div>
+     
+    <div
+      class="receive svelte-14g7par"
+    >
+      <figure
+        class="receive__address-qr-figure svelte-14g7par"
+      >
+        <img
+          alt="Key QR code"
+          class="dusk-qr-code receive__qr"
+          height="0"
+          src="data:image/png;base64,00"
+          width="0"
+        />
+        
+         
+        <figcaption
+          class="receive__address svelte-14g7par"
+        >
+          <samp>
+            bEjRbupbXK9SFT43T4H46nvD2hC7hhsQM1BGKqM5sHxzBzATF4swNEbjJympWpiWufQ5qw9xPErsxnQcHicp8XKoYiYbGv1DFTK5zJV4yQ1VzMM8H3uXvqbZKiBwmzGeJ8J
+          </samp>
+        </figcaption>
+      </figure>
+       
+      <div
+        class="receive__buttons svelte-14g7par"
+      >
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled receive__button"
+          href="/some-base-path/dashboard"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-anchor-button__text"
+          >
+            Back
+          </span>
+          
+          
+        </a>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled receive__button"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-button__text"
+          >
+            Copy
+          </span>
+          
+        </button>
+      </div>
+    </div>
+  </div>
+   
+</div>
+`;
+
+exports[`Receive > should render the receive page with a double icon and a choice to switch from shielded to unshielded address 1`] = `
 <div
   class="dusk-card dusk-card--gap-medium"
 >
@@ -93,20 +261,144 @@ exports[`Receive > should render the receive page 1`] = `
       <figure
         class="receive__address-qr-figure svelte-14g7par"
       >
-        <p>
-          Unable to get QR code
-        </p>
-         
-        <p>
-          Error: No input text
-        </p>
+        <img
+          alt="Key QR code"
+          class="dusk-qr-code receive__qr"
+          height="0"
+          src="data:image/png;base64,00"
+          width="0"
+        />
         
          
         <figcaption
           class="receive__address svelte-14g7par"
         >
           <samp>
-            
+            2zFZwXf4JEvD2Vmd4kqx5tHDv73LkRr2Ydb84Knr2gmFJJoEEpZPtTbuQCrojM85QDHAvosxoZdnpLPSNRqzqmai
+          </samp>
+        </figcaption>
+      </figure>
+       
+      <div
+        class="receive__buttons svelte-14g7par"
+      >
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled receive__button"
+          href="/some-base-path/dashboard"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-anchor-button__text"
+          >
+            Back
+          </span>
+          
+          
+        </a>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled receive__button"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-button__text"
+          >
+            Copy
+          </span>
+          
+        </button>
+      </div>
+    </div>
+  </div>
+   
+</div>
+`;
+
+exports[`Receive > should render the receive page with a single icon and no choice for shielded / unshielded if the feature flag is not true 1`] = `
+<div
+  class="dusk-card dusk-card--gap-medium"
+>
+  <div
+    class="dusk-card__header-container"
+  >
+    <header
+      class="dusk-card__header"
+      slot="header"
+    >
+      <div
+        class="dusk-card__heading-container"
+      >
+        <h3
+          class="h4"
+        >
+          Receive
+        </h3>
+         
+        <div
+          class="dusk-card__heading-icons"
+        >
+          
+          <svg
+            class="dusk-icon dusk-icon--size--default"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12.07 19L9.24 16.18L19 6.42L17.58 5L7.82 14.76L5 11.94V19Z"
+            />
+          </svg>
+          
+        </div>
+      </div>
+    </header>
+  </div>
+   
+  <div
+    class="dusk-card__body-container"
+  >
+     
+    <div
+      class="receive svelte-14g7par"
+    >
+      <figure
+        class="receive__address-qr-figure svelte-14g7par"
+      >
+        <img
+          alt="Key QR code"
+          class="dusk-qr-code receive__qr"
+          height="0"
+          src="data:image/png;base64,00"
+          width="0"
+        />
+        
+         
+        <figcaption
+          class="receive__address svelte-14g7par"
+        >
+          <samp>
+            2zFZwXf4JEvD2Vmd4kqx5tHDv73LkRr2Ydb84Knr2gmFJJoEEpZPtTbuQCrojM85QDHAvosxoZdnpLPSNRqzqmai
           </samp>
         </figcaption>
       </figure>

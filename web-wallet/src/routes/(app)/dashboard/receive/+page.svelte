@@ -1,18 +1,16 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { walletStore } from "$lib/stores";
-  import { Receive } from "$lib/components";
-  import { ExclusiveChoice } from "$lib/dusk/components";
-  import { IconHeadingCard } from "$lib/containers/Cards";
   import {
     mdiArrowBottomLeftThin,
     mdiShieldLock,
     mdiShieldLockOpen,
   } from "@mdi/js";
 
-  $: ({ currentProfile } = $walletStore);
-  $: currentAddress = currentProfile ? currentProfile.address.toString() : "";
+  import { walletStore } from "$lib/stores";
+  import { Receive } from "$lib/components";
+  import { ExclusiveChoice } from "$lib/dusk/components";
+  import { IconHeadingCard } from "$lib/containers/Cards";
 
   let addressToShow = "shielded";
 
@@ -20,27 +18,26 @@
     { disabled: false, label: "Shielded", value: "shielded" },
     { disabled: false, label: "Unshielded", value: "unshielded" },
   ];
+
+  /** @type {"address" | "account"} */
+  $: addressProp = addressToShow === "shielded" ? "address" : "account";
+  $: ({ currentProfile } = $walletStore);
+  $: currentAddress = currentProfile
+    ? currentProfile[addressProp].toString()
+    : "";
+  $: icons =
+    import.meta.env.VITE_FEATURE_ALLOCATE === "true"
+      ? [
+          mdiArrowBottomLeftThin,
+          addressToShow === "shielded" ? mdiShieldLock : mdiShieldLockOpen,
+        ]
+      : [mdiArrowBottomLeftThin];
 </script>
 
-{#if import.meta.env.VITE_FEATURE_ALLOCATE || false}
-  <IconHeadingCard
-    gap="medium"
-    heading="Receive"
-    icons={[
-      mdiArrowBottomLeftThin,
-      addressToShow === "shielded" ? mdiShieldLock : mdiShieldLockOpen,
-    ]}
-  >
+<IconHeadingCard gap="medium" heading="Receive" {icons}>
+  {#if import.meta.env.VITE_FEATURE_ALLOCATE === "true"}
     <ExclusiveChoice {options} bind:value={addressToShow} />
+  {/if}
 
-    <Receive address={currentAddress} />
-  </IconHeadingCard>
-{:else}
-  <IconHeadingCard
-    gap="medium"
-    heading="Receive"
-    icons={[mdiArrowBottomLeftThin]}
-  >
-    <Receive address={currentAddress} />
-  </IconHeadingCard>
-{/if}
+  <Receive address={currentAddress} />
+</IconHeadingCard>

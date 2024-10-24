@@ -1,3 +1,11 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`QrCode > should render the QrCode component 1`] = ``;
+exports[`QrCode > should render the QrCode component and update it when any of the prop change 1`] = `
+<img
+  alt="Key QR code"
+  class="dusk-qr-code"
+  height="200"
+  src="data:image/png;base64,00"
+  width="200"
+/>
+`;
