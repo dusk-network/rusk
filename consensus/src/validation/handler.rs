@@ -29,15 +29,6 @@ use node_data::message::{
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-fn build_validation_result(
-    sv: StepVotes,
-    vote: Vote,
-    quorum: QuorumType,
-) -> Message {
-    let p = payload::ValidationResult::new(sv, vote, quorum);
-    Message::from(p)
-}
-
 pub struct ValidationHandler<D: Database> {
     pub(crate) aggr: Aggregator<Validation>,
     pub(crate) candidate: Option<Block>,
@@ -104,6 +95,28 @@ impl<D: Database> ValidationHandler<D> {
             Payload::Validation(r) => Ok(r),
             _ => Err(ConsensusError::InvalidMsgType),
         }
+    }
+
+    async fn build_validation_result(
+        &self,
+        sv: StepVotes,
+        vote: Vote,
+        quorum: QuorumType,
+        consensus_header: &ConsensusHeader,
+    ) -> Message {
+        let vr = payload::ValidationResult::new(sv, vote, quorum);
+
+        // In Emergency Mode, we store ValidationResult in case some peer
+        // requests it
+        if is_emergency_iter(consensus_header.iteration) {
+            self.db
+                .lock()
+                .await
+                .store_validation_result(consensus_header, &vr)
+                .await;
+        }
+
+        Message::from(vr)
     }
 }
 
@@ -188,8 +201,11 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
             };
             info!(event = "quorum reached", ?vote);
 
-            let msg = build_validation_result(sv, vote, quorum_type);
-            return Ok(HandleMsgOutput::Ready(msg));
+            let vrmsg = self
+                .build_validation_result(sv, vote, quorum_type, &p.header())
+                .await;
+
+            return Ok(HandleMsgOutput::Ready(vrmsg));
         }
 
         Ok(HandleMsgOutput::Pending)
@@ -225,11 +241,19 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                     validation_quorum_reached,
                     &generator.expect("There must be a valid generator"),
                 );
+
                 if p.vote.is_valid() && validation_quorum_reached {
                     // ValidationResult from past iteration is found
-                    let msg =
-                        build_validation_result(sv, p.vote, QuorumType::Valid);
-                    return Ok(HandleMsgOutput::Ready(msg));
+                    let vr = self
+                        .build_validation_result(
+                            sv,
+                            p.vote,
+                            QuorumType::Valid,
+                            &p.header(),
+                        )
+                        .await;
+
+                    return Ok(HandleMsgOutput::Ready(vr));
                 }
             }
             Err(error) => {

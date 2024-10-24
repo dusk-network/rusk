@@ -14,7 +14,9 @@ use std::time::Duration;
 
 use execution_core::signatures::bls::SecretKey as BlsSecretKey;
 use node_data::bls::PublicKey;
-use node_data::message::{AsyncQueue, Message, Payload};
+use node_data::message::{
+    payload, AsyncQueue, ConsensusHeader, Message, Payload,
+};
 use node_data::StepName;
 
 use crate::operations::Voter;
@@ -85,6 +87,11 @@ impl RoundUpdate {
 #[async_trait::async_trait]
 pub trait Database: Send + Sync {
     async fn store_candidate_block(&mut self, b: Block);
+    async fn store_validation_result(
+        &mut self,
+        ch: &ConsensusHeader,
+        vr: &payload::ValidationResult,
+    );
     async fn get_last_iter(&self) -> (Hash, u8);
     async fn store_last_iter(&mut self, data: (Hash, u8));
 }
