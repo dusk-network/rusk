@@ -135,6 +135,7 @@ pub trait ConsensusStorage {
     /// ValidationResult Storage
     fn store_validation_result(
         &self,
+        ch: &ConsensusHeader,
         vr: &payload::ValidationResult,
     ) -> Result<()>;
 
@@ -145,9 +146,9 @@ pub trait ConsensusStorage {
 
     fn clear_validation_results(&self) -> Result<()>;
 
-    fn delete_validation_result<F>(&self, closure: F) -> Result<()>
+    fn delete_validation_results<F>(&self, closure: F) -> Result<()>
     where
-        F: FnOnce(u64) -> bool + std::marker::Copy;
+        F: FnOnce([u8; 32]) -> bool + std::marker::Copy;
 
     fn count_validation_results(&self) -> usize;
 }
