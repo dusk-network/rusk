@@ -314,9 +314,22 @@ pub(crate) fn request_gas_price() -> anyhow::Result<Lux> {
     Ok(*price)
 }
 
-pub(crate) fn request_str(name: &str) -> anyhow::Result<String> {
+pub(crate) fn request_str(
+    name: &str,
+    max_length: usize,
+) -> anyhow::Result<String> {
     let question = requestty::Question::input("string")
         .message(format!("Introduce string for {}:", name))
+        .validate(|input, _| {
+            if input.len() > max_length {
+                Err(format!(
+                    "Input exceeds the maximum length of {} characters",
+                    max_length
+                ))
+            } else {
+                Ok(())
+            }
+        })
         .build();
 
     let a = requestty::prompt_one(question)?;
