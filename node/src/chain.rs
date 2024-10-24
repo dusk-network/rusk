@@ -146,21 +146,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     match msg.payload {
                         Payload::Candidate(_)
                         | Payload::Validation(_)
-                        | Payload::Ratification(_)
-                        | Payload::Quorum(_) => {
-                              debug!(
-                                event = "Consensus message received",
-                                topic = ?msg.topic(),
-                                info = ?msg.header,
-                                metadata = ?msg.metadata,
-                            );
+                        | Payload::Ratification(_) => {
+                            self.reroute_acceptor(msg).await;
+                        }
+                        Payload::Quorum(ref q) => {
+                            fsm.on_quorum(q, msg.metadata.as_ref()).await;
+                            self.reroute_acceptor(msg).await;
 
-                            // Re-route message to the Consensus
-                            let acc = self.acceptor.as_ref().expect("initialize is called");
-                            if let Err(e) = acc.read().await.reroute_msg(msg).await {
-                                warn!("Could not reroute msg to Consensus: {}", e);
-                            }
-                        },
+                        }
 
                         Payload::Block(blk) => {
                             info!(
@@ -317,5 +310,20 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             .await
             .try_revert(acceptor::RevertTarget::LastFinalizedState)
             .await
+    }
+
+    async fn reroute_acceptor(&self, msg: Message) {
+        debug!(
+            event = "Consensus message received",
+            topic = ?msg.topic(),
+            info = ?msg.header,
+            metadata = ?msg.metadata,
+        );
+
+        // Re-route message to the Consensus
+        let acc = self.acceptor.as_ref().expect("initialize is called");
+        if let Err(e) = acc.read().await.reroute_msg(msg).await {
+            warn!("Could not reroute msg to Consensus: {}", e);
+        }
     }
 }
