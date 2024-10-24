@@ -15,19 +15,19 @@ use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
-    AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, StepMessage,
+    AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, Instrument};
 
-pub struct ValidationStep<T> {
-    handler: Arc<Mutex<handler::ValidationHandler>>,
+pub struct ValidationStep<T, D: Database> {
+    handler: Arc<Mutex<handler::ValidationHandler<D>>>,
     executor: Arc<T>,
 }
 
-impl<T: Operations + 'static> ValidationStep<T> {
+impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn spawn_try_vote(
         join_set: &mut JoinSet<()>,
@@ -201,10 +201,10 @@ pub fn build_validation_payload(
     validation
 }
 
-impl<T: Operations + 'static> ValidationStep<T> {
+impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     pub(crate) fn new(
         executor: Arc<T>,
-        handler: Arc<Mutex<handler::ValidationHandler>>,
+        handler: Arc<Mutex<handler::ValidationHandler<D>>>,
     ) -> Self {
         Self { handler, executor }
     }

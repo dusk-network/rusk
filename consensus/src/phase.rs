@@ -27,7 +27,7 @@ macro_rules! await_phase {
 
 pub enum Phase<T: Operations, D: Database> {
     Proposal(proposal::step::ProposalStep<T, D>),
-    Validation(validation::step::ValidationStep<T>),
+    Validation(validation::step::ValidationStep<T, D>),
     Ratification(ratification::step::RatificationStep),
 }
 

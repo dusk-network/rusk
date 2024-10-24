@@ -21,7 +21,7 @@ use crate::{proposal, ratification, validation};
 use node_data::bls::PublicKeyBytes;
 
 use node_data::ledger::Seed;
-use node_data::message::Message;
+use node_data::message::{Message, Topics};
 use std::collections::HashMap;
 use std::ops::Add;
 use std::sync::Arc;
@@ -65,7 +65,7 @@ impl RoundCommittees {
 /// Represents a shared state within a context of the execution of a single
 /// iteration.
 pub struct IterationCtx<DB: Database> {
-    validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
+    validation_handler: Arc<Mutex<validation::handler::ValidationHandler<DB>>>,
     ratification_handler:
         Arc<Mutex<ratification::handler::RatificationHandler>>,
     proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<DB>>>,
@@ -87,7 +87,9 @@ impl<DB: Database> IterationCtx<DB> {
     pub fn new(
         round: u64,
         iter: u8,
-        validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
+        validation_handler: Arc<
+            Mutex<validation::handler::ValidationHandler<DB>>,
+        >,
         ratification_handler: Arc<
             Mutex<ratification::handler::RatificationHandler>,
         >,
@@ -272,7 +274,7 @@ impl<DB: Database> IterationCtx<DB> {
     }
 
     /// Collects a message from a past iteration
-    pub(crate) async fn collect_past_event(
+    pub(crate) async fn process_past_msg(
         &self,
         ru: &RoundUpdate,
         msg: Message,
@@ -281,7 +283,17 @@ impl<DB: Database> IterationCtx<DB> {
         let generator = self.get_generator(msg.header.iteration);
 
         match msg.topic() {
-            node_data::message::Topics::Validation => {
+            Topics::Candidate => {
+                let mut handler = self.proposal_handler.lock().await;
+                if let Ok(HandleMsgOutput::Ready(m)) = handler
+                    .collect_from_past(msg, ru, committee, generator)
+                    .await
+                {
+                    return Some(m);
+                }
+            }
+
+            Topics::Validation | Topics::ValidationQuorum => {
                 let mut handler = self.validation_handler.lock().await;
                 if let Ok(HandleMsgOutput::Ready(m)) = handler
                     .collect_from_past(msg, ru, committee, generator)
@@ -290,17 +302,9 @@ impl<DB: Database> IterationCtx<DB> {
                     return Some(m);
                 }
             }
-            node_data::message::Topics::Ratification => {
+
+            Topics::Ratification => {
                 let mut handler = self.ratification_handler.lock().await;
-                if let Ok(HandleMsgOutput::Ready(m)) = handler
-                    .collect_from_past(msg, ru, committee, generator)
-                    .await
-                {
-                    return Some(m);
-                }
-            }
-            node_data::message::Topics::Candidate => {
-                let mut handler = self.proposal_handler.lock().await;
                 if let Ok(HandleMsgOutput::Ready(m)) = handler
                     .collect_from_past(msg, ru, committee, generator)
                     .await
