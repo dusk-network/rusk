@@ -185,8 +185,8 @@ describe("Dashboard Layout", () => {
       mockedWalletStore.setMockedStoreValue({
         ...initialState,
         syncStatus: {
-          current: 0n,
           error: null,
+          from: 0n,
           isInProgress: true,
           last: 0n,
           progress: 0,
@@ -213,8 +213,8 @@ describe("Dashboard Layout", () => {
       mockedWalletStore.setMockedStoreValue({
         ...initialState,
         syncStatus: {
-          current: 100n,
           error: null,
+          from: 100n,
           isInProgress: true,
           last: 200n,
           progress: 0.5,
@@ -244,8 +244,8 @@ describe("Dashboard Layout", () => {
       mockedWalletStore.setMockedStoreValue({
         ...initialState,
         syncStatus: {
-          current: 0n,
           error: new Error(),
+          from: 0n,
           isInProgress: false,
           last: 0n,
           progress: 0,

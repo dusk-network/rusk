@@ -1,11 +1,15 @@
 <svelte:options immutable={true} />
 
 <script>
-  import IconHeadingCard from "$lib/containers/Cards/IconHeadingCard.svelte";
-  import { ErrorAlert, ProgressBar } from "$lib/dusk/components";
-  import { walletStore } from "$lib/stores";
-  import { mdiCubeOutline } from "@mdi/js";
   import { onDestroy } from "svelte";
+  import { mdiCubeOutline } from "@mdi/js";
+
+  import { ErrorAlert } from "$lib/dusk/components";
+
+  import { SyncBar } from "$lib/components";
+  import IconHeadingCard from "$lib/containers/Cards/IconHeadingCard.svelte";
+
+  import { walletStore } from "$lib/stores";
 
   $: ({ syncStatus } = $walletStore);
 
@@ -28,12 +32,12 @@
   {#if !syncStarted || (syncStatus.isInProgress && !syncStatus.progress)}
     <span>Syncing...</span>
   {:else if syncStatus.isInProgress}
-    <span>
-      Syncing: <b
-        >{syncStatus.current.toLocaleString()}/{syncStatus.last.toLocaleString()}</b
-      >
-    </span>
-    <ProgressBar currentPercentage={syncStatus.progress * 100} />
+    <span>Syncing... <b>{syncStatus.progress * 100}%</b></span>
+    <SyncBar
+      from={syncStatus.from}
+      last={syncStatus.last}
+      progress={syncStatus.progress}
+    />
   {:else if syncStatus.error}
     <ErrorAlert error={syncStatus.error} summary="Sync failed" />
   {:else}

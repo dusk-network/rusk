@@ -20,8 +20,8 @@ const content = {
   initialized: true,
   profiles,
   syncStatus: {
-    current: 0n,
     error: null,
+    from: 0n,
     isInProgress: false,
     last: 0n,
     progress: 0,
