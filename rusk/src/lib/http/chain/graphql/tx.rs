@@ -8,9 +8,16 @@ use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{Mempool, Metadata};
 #[cfg(feature = "archive")]
 use {
+    data::deserialized_archive_data::*,
     dusk_bytes::Serializable,
     execution_core::signatures::bls::PublicKey as AccountPublicKey,
+    execution_core::transfer::{
+        ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
+        CONVERT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, TRANSFER_CONTRACT,
+        WITHDRAW_TOPIC,
+    },
     node::archive::MoonlightGroup,
+    node_data::events::contract::ContractEvent,
 };
 
 use super::*;
@@ -88,9 +95,7 @@ pub async fn mempool_by_hash<'a>(
 pub(super) async fn full_moonlight_history(
     ctx: &Context<'_>,
     address: String,
-) -> OptResult<MoonlightTransactions> {
-    use dusk_bytes::ParseHexStr;
-
+) -> OptResult<DeserializedMoonlightGroups> {
     let (_, archive) = ctx.data::<DBContext>()?;
     let v = bs58::decode(address).into_vec()?;
 
@@ -101,12 +106,32 @@ pub(super) async fn full_moonlight_history(
     let pk = AccountPublicKey::from_bytes(&pk_bytes)
         .map_err(|_| anyhow::anyhow!("Failed to serialize given public key"))?;
 
-    let moonlight_events = archive.full_moonlight_history(pk)?;
+    let moonlight_groups = archive.full_moonlight_history(pk)?;
 
-    if let Some(moonlight_events) = moonlight_events {
-        Ok(Some(MoonlightTransactions(moonlight_events)))
-    } else {
+    let mut deser_moonlight_groups = Vec::new();
+
+    if let Some(moonlight_groups) = moonlight_groups {
+        for moonlight_group in moonlight_groups {
+            let deser_events = moonlight_group
+                .events()
+                .iter()
+                .map(|event| event.clone().into())
+                .collect::<Vec<DeserializedContractEvent>>();
+
+            let deserialized_moonlight_group = DeserializedMoonlightGroup {
+                events: serde_json::to_value(deser_events)?,
+                origin: *moonlight_group.origin(),
+                block_height: moonlight_group.block_height(),
+            };
+
+            deser_moonlight_groups.push(deserialized_moonlight_group);
+        }
+    }
+
+    if deser_moonlight_groups.is_empty() {
         Ok(None)
+    } else {
+        Ok(Some(DeserializedMoonlightGroups(deser_moonlight_groups)))
     }
 }
 

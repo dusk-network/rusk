@@ -14,10 +14,13 @@ use tx::*;
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
 use execution_core::{transfer::TRANSFER_CONTRACT, ContractId};
-#[cfg(feature = "archive")]
-use node::archive::{Archive, MoonlightGroup};
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, DB};
+#[cfg(feature = "archive")]
+use {
+    deserialized_archive_data::DeserializedMoonlightGroups,
+    node::archive::{Archive, MoonlightGroup},
+};
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -141,7 +144,7 @@ impl Query {
         &self,
         ctx: &Context<'_>,
         address: String,
-    ) -> OptResult<MoonlightTransactions> {
+    ) -> OptResult<DeserializedMoonlightGroups> {
         full_moonlight_history(ctx, address).await
     }
 
