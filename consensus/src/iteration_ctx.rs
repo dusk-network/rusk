@@ -65,7 +65,7 @@ impl RoundCommittees {
 /// Represents a shared state within a context of the execution of a single
 /// iteration.
 pub struct IterationCtx<DB: Database> {
-    validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
+    validation_handler: Arc<Mutex<validation::handler::ValidationHandler<DB>>>,
     ratification_handler:
         Arc<Mutex<ratification::handler::RatificationHandler>>,
     proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<DB>>>,
@@ -87,7 +87,9 @@ impl<DB: Database> IterationCtx<DB> {
     pub fn new(
         round: u64,
         iter: u8,
-        validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
+        validation_handler: Arc<
+            Mutex<validation::handler::ValidationHandler<DB>>,
+        >,
         ratification_handler: Arc<
             Mutex<ratification::handler::RatificationHandler>,
         >,

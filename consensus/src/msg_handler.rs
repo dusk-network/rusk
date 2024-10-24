@@ -7,10 +7,9 @@
 use crate::commons::RoundUpdate;
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
-use crate::proposal;
 use crate::ratification::handler::RatificationHandler;
 use crate::user::committee::Committee;
-use crate::validation::handler::ValidationHandler;
+use crate::{proposal, validation};
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::message::{Message, Payload, Status};
@@ -127,7 +126,7 @@ pub trait MsgHandler {
                         )?;
                     }
                     node_data::message::Payload::Validation(_) => {
-                        ValidationHandler::verify_stateless(
+                        validation::handler::verify_stateless(
                             msg,
                             round_committees,
                         )?;
