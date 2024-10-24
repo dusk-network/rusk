@@ -199,6 +199,13 @@ pub(crate) fn ask_confirm() -> anyhow::Result<bool> {
     Ok(a.as_bool().expect("answer to be a bool"))
 }
 
+/// Asks the user for confirmation before deleting cache
+pub(crate) fn ask_confirm_erase_cache(msg: &str) -> anyhow::Result<bool> {
+    let q = requestty::Question::confirm("confirm").message(msg).build();
+    let a = requestty::prompt_one(q)?;
+    Ok(a.as_bool().expect("answer to be a bool"))
+}
+
 /// Request a receiver address
 pub(crate) fn request_rcvr_addr(addr_for: &str) -> anyhow::Result<Address> {
     // let the user input the receiver address

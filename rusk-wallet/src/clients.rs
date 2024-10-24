@@ -400,9 +400,7 @@ impl State {
     }
 
     pub fn close(&mut self) {
-        // UNWRAP: its okay to panic here because we're closing the database
-        // if there's an error we want an exception to happen
-        self.cache().close().unwrap();
+        self.cache().close();
         let store = &mut self.store;
 
         // if there's sync handle we abort it
