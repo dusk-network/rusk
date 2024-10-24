@@ -1,14 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
+import { get } from "svelte/store";
 
-import { addresses } from "$lib/mock-data";
+import mockedWalletStore from "../../../__mocks__/mockedWalletStore";
 
 import { AddressPicker } from "..";
 
 describe("AddressPicker", () => {
-  const currentAddress = addresses[0];
+  const { currentProfile, profiles } = get(mockedWalletStore);
 
-  const props = { addresses, currentAddress };
+  const props = { currentProfile, profiles };
 
   beforeEach(() => {
     Object.assign(navigator, {
@@ -26,6 +27,15 @@ describe("AddressPicker", () => {
     expect(container.firstElementChild).toMatchSnapshot();
   });
 
+  it("should be able to render the component if the current profile is `null`", () => {
+    const { container } = render(AddressPicker, {
+      ...props,
+      currentProfile: null,
+    });
+
+    expect(container.firstElementChild).toMatchSnapshot();
+  });
+
   it("copies the current address on Copy button click", async () => {
     const { getByRole } = render(AddressPicker, props);
 
@@ -33,6 +43,8 @@ describe("AddressPicker", () => {
 
     await fireEvent.click(component);
 
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(currentAddress);
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      currentProfile.address.toString()
+    );
   });
 });

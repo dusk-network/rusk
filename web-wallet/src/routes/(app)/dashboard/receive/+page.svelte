@@ -11,7 +11,8 @@
     mdiShieldLockOpen,
   } from "@mdi/js";
 
-  $: ({ currentAddress } = $walletStore);
+  $: ({ currentProfile } = $walletStore);
+  $: currentAddress = currentProfile ? currentProfile.address.toString() : "";
 
   let addressToShow = "shielded";
 

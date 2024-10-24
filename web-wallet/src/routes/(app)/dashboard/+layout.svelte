@@ -38,7 +38,7 @@
   const { currency, language } = $settingsStore;
 
   $: ({ network } = $settingsStore);
-  $: ({ balance, currentAddress, addresses, syncStatus } = $walletStore);
+  $: ({ balance, currentProfile, profiles, syncStatus } = $walletStore);
   $: if (syncStatus.isInProgress) {
     iconVariant = "warning";
     networkStatusIconPath = mdiTimerSand;
@@ -64,7 +64,7 @@
   <div class="dashboard-content">
     <h2 class="sr-only">Dashboard</h2>
 
-    <AddressPicker {addresses} {currentAddress} />
+    <AddressPicker {currentProfile} {profiles} />
 
     <Balance
       fiatCurrency={currency}

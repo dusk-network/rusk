@@ -47,7 +47,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
           <p
             class="address-picker__current-address"
           >
-            2087290d3dc213d43e493f03f5435f99
+            2zFZwXf4JEvD2Vmd4k...sxoZdnpLPSNRqzqmai
           </p>
            
           <button
@@ -265,7 +265,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
         <p
           class="address-picker__current-address"
         >
-          2087290d3dc213d43e493f03f5435f99
+          2zFZwXf4JEvD2Vmd4k...sxoZdnpLPSNRqzqmai
         </p>
          
         <button
@@ -483,7 +483,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
           <p
             class="address-picker__current-address"
           >
-            2087290d3dc213d43e493f03f5435f99
+            2zFZwXf4JEvD2Vmd4k...sxoZdnpLPSNRqzqmai
           </p>
            
           <button
@@ -722,7 +722,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         <p
           class="address-picker__current-address"
         >
-          2087290d3dc213d43e493f03f5435f99
+          2zFZwXf4JEvD2Vmd4k...sxoZdnpLPSNRqzqmai
         </p>
          
         <button
@@ -941,7 +941,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
           <p
             class="address-picker__current-address"
           >
-            2087290d3dc213d43e493f03f5435f99
+            2zFZwXf4JEvD2Vmd4k...sxoZdnpLPSNRqzqmai
           </p>
            
           <button

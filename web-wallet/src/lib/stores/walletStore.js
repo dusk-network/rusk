@@ -22,14 +22,12 @@ let syncPromise = null;
 
 /** @type {WalletStoreContent} */
 const initialState = {
-  addresses: [],
   balance: {
     shielded: {
       spendable: 0n,
       value: 0n,
     },
   },
-  currentAddress: "",
   currentProfile: null,
   initialized: false,
   profiles: [],
@@ -103,8 +101,6 @@ async function init(profileGenerator, syncFromBlock) {
 
   set({
     ...initialState,
-    addresses: [currentAddress],
-    currentAddress,
     currentProfile,
     initialized: true,
     profiles: [currentProfile],
@@ -123,15 +119,17 @@ function reset() {
   set(initialState);
 }
 
-/** @type {WalletStoreServices["setCurrentAddress"]} */
-async function setCurrentAddress(address) {
+/** @type {WalletStoreServices["setCurrentProfile"]} */
+async function setCurrentProfile(profile) {
   const store = get(walletStore);
 
-  return store.addresses.includes(address)
-    ? Promise.resolve(set({ ...store, currentAddress: address })).then(() =>
-        sync()
+  return store.profiles.includes(profile)
+    ? Promise.resolve(set({ ...store, currentProfile: profile })).then(
+        updateBalance
       )
-    : Promise.reject(new Error("The received address is not in the list"));
+    : Promise.reject(
+        new Error("The received profile is not in the known list")
+      );
 }
 
 /** @type {WalletStoreServices["stake"]} */
@@ -308,7 +306,7 @@ export default {
   getTransactionsHistory,
   init,
   reset,
-  setCurrentAddress,
+  setCurrentProfile,
   stake,
   subscribe,
   sync,

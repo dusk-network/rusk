@@ -38,7 +38,7 @@ describe("Dashboard Layout", () => {
    */
   const getStatusWrapper = (container, status) =>
     container.querySelector(`.footer__network-status-icon--${status}`);
-  const initialState = structuredClone(mockedWalletStore.getMockedStoreValue());
+  const initialState = mockedWalletStore.getMockedStoreValue();
 
   beforeEach(() => {
     mockedWalletStore.setMockedStoreValue(initialState);
