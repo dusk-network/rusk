@@ -220,22 +220,22 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
         generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         if is_emergency_iter(msg.header.iteration) {
-            if let Payload::ValidationQuorum(vq) = &msg.payload {
+            if let Payload::ValidationQuorum(vq) = msg.payload {
                 if !vq.result.vote().is_valid() {
                     return Err(ConsensusError::InvalidMsgType);
                 };
 
-                let vr = &vq.result;
+                let vr = vq.result;
 
                 // Store ValidationResult
                 self.db
                     .lock()
                     .await
-                    .store_validation_result(&vq.header, vr)
+                    .store_validation_result(&vq.header, &vr)
                     .await;
 
                 // Extract the ValidationResult and return it as msg
-                let vr_msg = vr.clone().into();
+                let vr_msg = vr.into();
                 return Ok(HandleMsgOutput::Ready(vr_msg));
             }
         }
