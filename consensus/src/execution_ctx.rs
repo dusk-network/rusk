@@ -650,11 +650,11 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// Handles all messages stored in future_msgs queue that belongs to the
     /// current round and step.
     ///
-    /// Returns Some(msg) if the step is finalized.
+    /// Returns the step result if the step is finalized.
     pub async fn handle_future_msgs<C: MsgHandler>(
         &self,
         phase: Arc<Mutex<C>>,
-    ) -> Option<Message> {
+    ) -> HandleMsgOutput {
         let committee = self
             .get_current_committee()
             .expect("committee to be created before run");
@@ -686,19 +686,23 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
                     self.outbound.try_send(msg.clone());
 
-                    if let Ok(HandleMsgOutput::Ready(msg)) = phase
+                    match phase
                         .lock()
                         .await
                         .collect(msg, &self.round_update, committee, generator)
                         .await
                     {
-                        return Some(msg);
+                        Ok(HandleMsgOutput::Ready(msg)) => {
+                            return HandleMsgOutput::Ready(msg)
+                        }
+                        Ok(_) => {}
+                        Err(e) => warn!("error in collecting message {e:?}"),
                     }
                 }
             }
         }
 
-        None
+        HandleMsgOutput::Pending
     }
 
     /// Reports step elapsed time to the client

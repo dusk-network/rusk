@@ -106,16 +106,14 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             }
         }
 
-        // handle queued messages for current round and step.
-        if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
-            Self::wait_until_next_slot(tip_timestamp).await;
-            return m;
-        }
-
         let additional_timeout = Self::next_slot_in(tip_timestamp);
-        let msg = ctx
-            .event_loop(self.handler.clone(), additional_timeout)
-            .await;
+        let msg = match ctx.handle_future_msgs(self.handler.clone()).await {
+            HandleMsgOutput::Ready(m) => m,
+            HandleMsgOutput::Pending => {
+                ctx.event_loop(self.handler.clone(), additional_timeout)
+                    .await
+            }
+        };
         Self::wait_until_next_slot(tip_timestamp).await;
         msg
     }

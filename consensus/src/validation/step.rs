@@ -7,6 +7,7 @@
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
 use crate::execution_ctx::ExecutionCtx;
+use crate::msg_handler::HandleMsgOutput;
 use crate::operations::{Operations, Voter};
 use crate::validation::handler;
 use anyhow::anyhow;
@@ -269,11 +270,12 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
-            return m;
+        match ctx.handle_future_msgs(self.handler.clone()).await {
+            HandleMsgOutput::Ready(m) => m,
+            HandleMsgOutput::Pending => {
+                ctx.event_loop(self.handler.clone(), None).await
+            }
         }
-
-        ctx.event_loop(self.handler.clone(), None).await
     }
 
     pub fn name(&self) -> &'static str {
