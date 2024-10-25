@@ -75,6 +75,7 @@ pub(crate) fn online(
     let res = match cmd {
         MenuItem::Transfer => {
             let rcvr = prompt::request_rcvr_addr("recipient")?;
+
             let (sender, balance) = match &rcvr {
                 Address::Shielded(_) => {
                     (wallet.shielded_address(profile_idx)?, phoenix_balance)
@@ -84,8 +85,13 @@ pub(crate) fn online(
                 }
             };
 
-            if balance < DEFAULT_LIMIT_TRANSFER {
-                println!("Balance too low to perform a transfer transaction.");
+            if check_balance(
+                balance,
+                DEFAULT_LIMIT_TRANSFER,
+                "a transfer transaction",
+            )
+            .is_err()
+            {
                 return Ok(ProfileOp::Stay);
             }
 
@@ -108,17 +114,20 @@ pub(crate) fn online(
             }))
         }
         MenuItem::Stake => {
-            let (addr, balance) = match prompt::request_transaction_model()? {
-                prompt::TransactionModel::Shielded => {
-                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
-                }
-                prompt::TransactionModel::Public => {
-                    (wallet.public_address(profile_idx)?, moonlight_balance)
-                }
-            };
+            let (addr, balance) = fetch_address_and_balance(
+                wallet,
+                profile_idx,
+                phoenix_balance,
+                moonlight_balance,
+            )?;
 
-            if balance < DEFAULT_LIMIT_STAKE {
-                println!("Balance too low to perform a stake transaction.");
+            if check_balance(
+                balance,
+                DEFAULT_LIMIT_STAKE,
+                "a stake transaction",
+            )
+            .is_err()
+            {
                 return Ok(ProfileOp::Stay);
             }
 
@@ -130,17 +139,20 @@ pub(crate) fn online(
             }))
         }
         MenuItem::Unstake => {
-            let (addr, balance) = match prompt::request_transaction_model()? {
-                prompt::TransactionModel::Shielded => {
-                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
-                }
-                prompt::TransactionModel::Public => {
-                    (wallet.public_address(profile_idx)?, moonlight_balance)
-                }
-            };
+            let (addr, balance) = fetch_address_and_balance(
+                wallet,
+                profile_idx,
+                phoenix_balance,
+                moonlight_balance,
+            )?;
 
-            if balance < DEFAULT_LIMIT_STAKE {
-                println!("Balance too low to perform an unstake transaction.");
+            if check_balance(
+                balance,
+                DEFAULT_LIMIT_STAKE,
+                "an unstake transaction",
+            )
+            .is_err()
+            {
                 return Ok(ProfileOp::Stay);
             }
 
@@ -151,17 +163,20 @@ pub(crate) fn online(
             }))
         }
         MenuItem::Withdraw => {
-            let (addr, balance) = match prompt::request_transaction_model()? {
-                prompt::TransactionModel::Shielded => {
-                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
-                }
-                prompt::TransactionModel::Public => {
-                    (wallet.public_address(profile_idx)?, moonlight_balance)
-                }
-            };
+            let (addr, balance) = fetch_address_and_balance(
+                wallet,
+                profile_idx,
+                phoenix_balance,
+                moonlight_balance,
+            )?;
 
-            if balance < DEFAULT_LIMIT_STAKE {
-                println!("Balance too low to perform a withdraw transaction.");
+            if check_balance(
+                balance,
+                DEFAULT_LIMIT_STAKE,
+                "a withdraw transaction",
+            )
+            .is_err()
+            {
                 return Ok(ProfileOp::Stay);
             }
 
@@ -172,17 +187,20 @@ pub(crate) fn online(
             }))
         }
         MenuItem::ContractDeploy => {
-            let (addr, balance) = match prompt::request_transaction_model()? {
-                prompt::TransactionModel::Shielded => {
-                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
-                }
-                prompt::TransactionModel::Public => {
-                    (wallet.public_address(profile_idx)?, moonlight_balance)
-                }
-            };
+            let (addr, balance) = fetch_address_and_balance(
+                wallet,
+                profile_idx,
+                phoenix_balance,
+                moonlight_balance,
+            )?;
 
-            if balance < DEFAULT_LIMIT_DEPLOYMENT {
-                println!("Balance too low to perform a deploy transaction.");
+            if check_balance(
+                balance,
+                DEFAULT_LIMIT_DEPLOYMENT,
+                "a deploy transaction",
+            )
+            .is_err()
+            {
                 return Ok(ProfileOp::Stay);
             }
 
@@ -198,17 +216,16 @@ pub(crate) fn online(
             }))
         }
         MenuItem::ContractCall => {
-            let (addr, balance) = match prompt::request_transaction_model()? {
-                prompt::TransactionModel::Shielded => {
-                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
-                }
-                prompt::TransactionModel::Public => {
-                    (wallet.public_address(profile_idx)?, moonlight_balance)
-                }
-            };
+            let (addr, balance) = fetch_address_and_balance(
+                wallet,
+                profile_idx,
+                phoenix_balance,
+                moonlight_balance,
+            )?;
 
-            if balance < DEFAULT_LIMIT_CALL {
-                println!("Balance too low to perform a contract call.");
+            if check_balance(balance, DEFAULT_LIMIT_CALL, "a contract call")
+                .is_err()
+            {
                 return Ok(ProfileOp::Stay);
             }
 
@@ -235,10 +252,13 @@ pub(crate) fn online(
             reward: false,
         })),
         MenuItem::Shield => {
-            if moonlight_balance == 0 {
-                println!(
-                    "Balance too low to convert DUSK from public to shielded."
-                );
+            if check_balance(
+                moonlight_balance,
+                DEFAULT_LIMIT_CALL,
+                "convert DUSK from public to shielded",
+            )
+            .is_err()
+            {
                 return Ok(ProfileOp::Stay);
             }
 
@@ -250,10 +270,13 @@ pub(crate) fn online(
             }))
         }
         MenuItem::Unshield => {
-            if phoenix_balance == 0 {
-                println!(
-                    "Balance too low to convert DUSK from shielded to public."
-                );
+            if check_balance(
+                phoenix_balance,
+                DEFAULT_LIMIT_CALL,
+                "convert DUSK from shielded to public",
+            )
+            .is_err()
+            {
                 return Ok(ProfileOp::Stay);
             }
 
@@ -311,4 +334,40 @@ pub(crate) fn offline(
         _ => unreachable!(),
     };
     Ok(res)
+}
+
+/// Prompts the user to select a transaction model (Shielded or Public), and
+/// retrieves the corresponding address and balance for the specific profile
+fn fetch_address_and_balance(
+    wallet: &Wallet<WalletFile>,
+    profile_idx: u8,
+    phoenix_balance: Dusk,
+    moonlight_balance: Dusk,
+) -> anyhow::Result<(Address, Dusk)> {
+    match prompt::request_transaction_model()? {
+        prompt::TransactionModel::Shielded => {
+            let addr = wallet.shielded_address(profile_idx)?;
+            Ok((addr, phoenix_balance))
+        }
+        prompt::TransactionModel::Public => {
+            let addr = wallet.public_address(profile_idx)?;
+            Ok((addr, moonlight_balance))
+        }
+    }
+}
+
+/// Verifies that the provide balance meets the required balance for a given
+/// action
+fn check_balance(
+    balance: Dusk,
+    required_balance: u64,
+    action: &str,
+) -> anyhow::Result<()> {
+    let required_balance: Dusk = required_balance.into();
+    if balance < required_balance {
+        println!("Balance too low to perform {}.", action);
+        Err(anyhow::anyhow!("Balance too low to perform {}.", action))
+    } else {
+        Ok(())
+    }
 }
