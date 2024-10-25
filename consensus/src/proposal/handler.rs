@@ -11,7 +11,7 @@ use crate::config::{
 };
 use crate::errors::ConsensusError;
 use crate::merkle::merkle_root;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::user::committee::Committee;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
@@ -56,7 +56,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         _ru: &RoundUpdate,
         _committee: &Committee,
         _generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
         // store candidate block
         let p = Self::unwrap_msg(&msg)?;
         self.db
@@ -65,7 +65,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
             .store_candidate_block(p.candidate.clone())
             .await;
 
-        Ok(HandleMsgOutput::Ready(msg))
+        Ok(StepOutcome::Ready(msg))
     }
 
     async fn collect_from_past(
@@ -73,7 +73,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         msg: Message,
         _committee: &Committee,
         _generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(&msg)?;
 
         self.db
@@ -82,7 +82,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
             .store_candidate_block(p.candidate.clone())
             .await;
 
-        Ok(HandleMsgOutput::Ready(msg))
+        Ok(StepOutcome::Ready(msg))
     }
 
     /// Handles of an event of step execution timeout

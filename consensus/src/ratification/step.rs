@@ -9,7 +9,7 @@ use crate::config::is_emergency_iter;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::ratification::handler;
 use node_data::message::payload::{self, QuorumType, ValidationResult};
 use node_data::message::{AsyncQueue, Message, Payload, SignedStepMessage};
@@ -138,7 +138,7 @@ impl RatificationStep {
                 .collect(vote_msg, &ctx.round_update, committee, generator)
                 .await
             {
-                Ok(HandleMsgOutput::Ready(m)) => return m,
+                Ok(StepOutcome::Ready(m)) => return m,
                 Ok(_) => {}
                 Err(e) => warn!("Error collecting own vote: {e:?}"),
             }
@@ -146,8 +146,8 @@ impl RatificationStep {
 
         // handle queued messages for current round and step.
         match ctx.handle_future_msgs(self.handler.clone()).await {
-            HandleMsgOutput::Ready(m) => m,
-            HandleMsgOutput::Pending => {
+            StepOutcome::Ready(m) => m,
+            StepOutcome::Pending => {
                 ctx.event_loop(self.handler.clone(), None).await
             }
         }

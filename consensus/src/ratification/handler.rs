@@ -6,7 +6,7 @@
 
 use crate::commons::RoundUpdate;
 use crate::errors::ConsensusError;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
@@ -106,7 +106,7 @@ impl MsgHandler for RatificationHandler {
         ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
         let iteration = p.header().iteration;
 
@@ -144,7 +144,7 @@ impl MsgHandler for RatificationHandler {
         );
 
         if quorum_reached {
-            return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
+            return Ok(StepOutcome::Ready(self.build_quorum_msg(
                 ru,
                 iteration,
                 p.vote,
@@ -153,7 +153,7 @@ impl MsgHandler for RatificationHandler {
             )));
         }
 
-        Ok(HandleMsgOutput::Pending)
+        Ok(StepOutcome::Pending)
     }
 
     /// Collects the ratification message from former iteration.
@@ -162,7 +162,7 @@ impl MsgHandler for RatificationHandler {
         msg: Message,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
         // Collect vote, if msg payload is ratification type
@@ -181,7 +181,7 @@ impl MsgHandler for RatificationHandler {
                         &generator.expect("There must be a valid generator"),
                     )
                 {
-                    return Ok(HandleMsgOutput::Ready(quorum_msg));
+                    return Ok(StepOutcome::Ready(quorum_msg));
                 }
             }
             Err(error) => {
@@ -197,7 +197,7 @@ impl MsgHandler for RatificationHandler {
             }
         };
 
-        Ok(HandleMsgOutput::Pending)
+        Ok(StepOutcome::Pending)
     }
 
     /// Handle of an event of step execution timeout

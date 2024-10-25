@@ -10,8 +10,8 @@ use std::cmp;
 use crate::config::{
     exclude_next_generator, MAX_STEP_TIMEOUT, TIMEOUT_INCREASE,
 };
-use crate::msg_handler::HandleMsgOutput;
 use crate::msg_handler::MsgHandler;
+use crate::msg_handler::StepOutcome;
 
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -284,7 +284,7 @@ impl<DB: Database> IterationCtx<DB> {
         match msg.topic() {
             Topics::Candidate => {
                 let mut handler = self.proposal_handler.lock().await;
-                if let Ok(HandleMsgOutput::Ready(m)) =
+                if let Ok(StepOutcome::Ready(m)) =
                     handler.collect_from_past(msg, committee, generator).await
                 {
                     return Some(m);
@@ -293,7 +293,7 @@ impl<DB: Database> IterationCtx<DB> {
 
             Topics::Validation | Topics::ValidationQuorum => {
                 let mut handler = self.validation_handler.lock().await;
-                if let Ok(HandleMsgOutput::Ready(m)) =
+                if let Ok(StepOutcome::Ready(m)) =
                     handler.collect_from_past(msg, committee, generator).await
                 {
                     return Some(m);
@@ -302,7 +302,7 @@ impl<DB: Database> IterationCtx<DB> {
 
             Topics::Ratification => {
                 let mut handler = self.ratification_handler.lock().await;
-                if let Ok(HandleMsgOutput::Ready(m)) =
+                if let Ok(StepOutcome::Ready(m)) =
                     handler.collect_from_past(msg, committee, generator).await
                 {
                     return Some(m);

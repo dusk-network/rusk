@@ -19,7 +19,7 @@ use tracing::{debug, warn};
 /// Indicates whether an output value is available for current step execution
 /// (Step is Ready) or needs to collect data (Step is Pending)
 #[allow(clippy::large_enum_variant)]
-pub enum HandleMsgOutput {
+pub enum StepOutcome {
     Pending,
     Ready(Message),
 }
@@ -166,7 +166,7 @@ pub trait MsgHandler {
         ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError>;
+    ) -> Result<StepOutcome, ConsensusError>;
 
     /// collect allows each Phase to process a verified message from a former
     /// iteration
@@ -175,7 +175,7 @@ pub trait MsgHandler {
         msg: Message,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError>;
+    ) -> Result<StepOutcome, ConsensusError>;
 
     /// handle_timeout allows each Phase to handle a timeout event.
     /// Returned Message here is sent to outboud queue.

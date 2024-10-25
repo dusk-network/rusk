@@ -6,7 +6,7 @@
 
 use crate::commons::Database;
 use crate::execution_ctx::ExecutionCtx;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::operations::Operations;
 use node_data::get_current_timestamp;
 use node_data::ledger::IterationsInfo;
@@ -92,7 +92,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .collect(msg, &ctx.round_update, committee, None)
                     .await
                 {
-                    Ok(HandleMsgOutput::Ready(msg)) => {
+                    Ok(StepOutcome::Ready(msg)) => {
                         Self::wait_until_next_slot(tip_timestamp).await;
                         return msg;
                     }
@@ -108,8 +108,8 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
 
         let additional_timeout = Self::next_slot_in(tip_timestamp);
         let msg = match ctx.handle_future_msgs(self.handler.clone()).await {
-            HandleMsgOutput::Ready(m) => m,
-            HandleMsgOutput::Pending => {
+            StepOutcome::Ready(m) => m,
+            StepOutcome::Pending => {
                 ctx.event_loop(self.handler.clone(), additional_timeout)
                     .await
             }

@@ -8,7 +8,7 @@ use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
 
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::IterationCtx;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::operations::Operations;
 use crate::queue::{MsgRegistry, MsgRegistryError};
 
@@ -618,9 +618,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         match collected {
             // Fully valid state reached on this step. Return it as an output to
             // populate next step with it.
-            Ok(HandleMsgOutput::Ready(m)) => Some(m),
+            Ok(StepOutcome::Ready(m)) => Some(m),
             // Message collected but phase didn't reach a final result
-            Ok(HandleMsgOutput::Pending) => None,
+            Ok(StepOutcome::Pending) => None,
             Err(err) => {
                 let event = "failed collect";
                 error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_height,);
@@ -654,7 +654,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     pub async fn handle_future_msgs<C: MsgHandler>(
         &self,
         phase: Arc<Mutex<C>>,
-    ) -> HandleMsgOutput {
+    ) -> StepOutcome {
         let committee = self
             .get_current_committee()
             .expect("committee to be created before run");
@@ -692,8 +692,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         .collect(msg, &self.round_update, committee, generator)
                         .await
                     {
-                        Ok(HandleMsgOutput::Ready(msg)) => {
-                            return HandleMsgOutput::Ready(msg)
+                        Ok(StepOutcome::Ready(msg)) => {
+                            return StepOutcome::Ready(msg)
                         }
                         Ok(_) => {}
                         Err(e) => warn!("error in collecting message {e:?}"),
@@ -702,7 +702,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             }
         }
 
-        HandleMsgOutput::Pending
+        StepOutcome::Pending
     }
 
     /// Reports step elapsed time to the client

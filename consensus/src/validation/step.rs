@@ -7,7 +7,7 @@
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
 use crate::execution_ctx::ExecutionCtx;
-use crate::msg_handler::HandleMsgOutput;
+use crate::msg_handler::StepOutcome;
 use crate::operations::{Operations, Voter};
 use crate::validation::handler;
 use anyhow::anyhow;
@@ -271,8 +271,8 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
 
         // handle queued messages for current round and step.
         match ctx.handle_future_msgs(self.handler.clone()).await {
-            HandleMsgOutput::Ready(m) => m,
-            HandleMsgOutput::Pending => {
+            StepOutcome::Ready(m) => m,
+            StepOutcome::Pending => {
                 ctx.event_loop(self.handler.clone(), None).await
             }
         }

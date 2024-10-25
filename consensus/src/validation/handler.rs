@@ -8,7 +8,7 @@ use crate::aggregator::{Aggregator, StepVote};
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
@@ -150,7 +150,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
         _ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
         // NoQuorum cannot be cast from validation committee
@@ -205,10 +205,10 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                 .build_validation_result(sv, vote, quorum_type, &p.header())
                 .await;
 
-            return Ok(HandleMsgOutput::Ready(vrmsg));
+            return Ok(StepOutcome::Ready(vrmsg));
         }
 
-        Ok(HandleMsgOutput::Pending)
+        Ok(StepOutcome::Pending)
     }
 
     /// Collects the validation message from former iteration.
@@ -217,7 +217,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
         msg: Message,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
         if is_emergency_iter(msg.header.iteration) {
             if let Payload::ValidationQuorum(vq) = msg.payload {
                 if !vq.result.vote().is_valid() {
@@ -235,7 +235,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
 
                 // Extract the ValidationResult and return it as msg
                 let vr_msg = vr.into();
-                return Ok(HandleMsgOutput::Ready(vr_msg));
+                return Ok(StepOutcome::Ready(vr_msg));
             }
         }
 
@@ -273,7 +273,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                         )
                         .await;
 
-                    return Ok(HandleMsgOutput::Ready(vr));
+                    return Ok(StepOutcome::Ready(vr));
                 }
             }
             Err(error) => {
@@ -288,7 +288,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                 );
             }
         }
-        Ok(HandleMsgOutput::Pending)
+        Ok(StepOutcome::Pending)
     }
 
     /// Handles of an event of step execution timeout
