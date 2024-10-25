@@ -8,7 +8,6 @@ import {
 import * as b58 from "$lib/vendor/w3sper.js/src/b58";
 
 import walletCache from "$lib/wallet-cache";
-import { nullifiersDifference } from "$lib/wallet";
 
 import { transactions } from "$lib/mock-data";
 
@@ -258,7 +257,7 @@ async function sync(fromBlock) {
          * are the same.
          */
         if (reallySpentNullifiers.length !== currentSpentNullifiers.length) {
-          const nullifiersToUnspend = nullifiersDifference(
+          const nullifiersToUnspend = walletCache.nullifiersDifference(
             currentSpentNullifiers,
             map(reallySpentNullifiers, (buf) => new Uint8Array(buf))
           );

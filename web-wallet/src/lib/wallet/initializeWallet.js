@@ -1,5 +1,7 @@
 import { settingsStore, walletStore } from "$lib/stores";
-import { getSeedFromMnemonic, profileGeneratorFrom } from "$lib/wallet";
+
+import getSeedFromMnemonic from "./getSeedFromMnemonic";
+import profileGeneratorFrom from "./profileGeneratorFrom";
 
 /**
  * @param {string} mnemonic

@@ -9,6 +9,7 @@ import {
   mapValues,
   mapWith,
   partitionWith,
+  pluck,
   pluckFrom,
   setKey,
   take,
@@ -598,6 +599,22 @@ describe("Wallet cache", () => {
   });
 
   describe("Utilities", () => {
+    it("should expose a method that returns the array of unique nullifiers contained only in the first of the two given sets of nullifiers", () => {
+      /** @type {(source: WalletCacheNote[]) => Uint8Array[]} */
+      const getNullifiers = pluck("nullifier");
+      const a = getNullifiers(cacheUnspentNotes);
+      const b = getNullifiers(cacheUnspentNotes.slice(0, a.length - 2));
+
+      // ensure we have meaningful data for the test
+      expect(a.length).toBeGreaterThan(0);
+      expect(b.length).toBeGreaterThan(1);
+
+      expect(walletCache.nullifiersDifference(a, b)).toStrictEqual(a.slice(-2));
+      expect(walletCache.nullifiersDifference(b, a)).toStrictEqual([]);
+      expect(walletCache.nullifiersDifference(a, [])).toStrictEqual(a);
+      expect(walletCache.nullifiersDifference([], b)).toStrictEqual([]);
+    });
+
     it("should expose a method to update the last block height", async () => {
       const currentSyncInfo = await walletCache.getSyncInfo();
       const newBlockHeight = currentSyncInfo.blockHeight * 2n;
