@@ -6,7 +6,6 @@
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
-use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 
@@ -18,7 +17,7 @@ use node_data::{get_current_timestamp, message};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use tracing::{info, Instrument};
+use tracing::{info, warn, Instrument};
 
 pub struct RatificationStep {
     handler: Arc<Mutex<handler::RatificationHandler>>,
@@ -114,7 +113,7 @@ impl RatificationStep {
     pub async fn run<T: Operations + 'static, DB: Database>(
         &mut self,
         mut ctx: ExecutionCtx<'_, T, DB>,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Message {
         let committee = ctx
             .get_current_committee()
             .expect("committee to be created before run");
@@ -135,17 +134,19 @@ impl RatificationStep {
             .await;
 
             // Collect my own vote
-            let res = handler
+            match handler
                 .collect(vote_msg, &ctx.round_update, committee, generator)
-                .await?;
-            if let HandleMsgOutput::Ready(m) = res {
-                return Ok(m);
+                .await
+            {
+                Ok(HandleMsgOutput::Ready(m)) => return m,
+                Ok(_) => {}
+                Err(e) => warn!("Error collecting own vote: {e:?}"),
             }
         }
 
         // handle queued messages for current round and step.
         if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
-            return Ok(m);
+            return m;
         }
 
         ctx.event_loop(self.handler.clone(), None).await

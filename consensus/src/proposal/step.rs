@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::Database;
-use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
@@ -52,10 +51,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         debug!(event = "init", name = self.name(), round, iter = iteration,)
     }
 
-    pub async fn run(
-        &mut self,
-        mut ctx: ExecutionCtx<'_, T, D>,
-    ) -> Result<Message, ConsensusError> {
+    pub async fn run(&mut self, mut ctx: ExecutionCtx<'_, T, D>) -> Message {
         let committee = ctx
             .get_current_committee()
             .expect("committee to be created before run");
@@ -98,7 +94,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                 {
                     Ok(HandleMsgOutput::Ready(msg)) => {
                         Self::wait_until_next_slot(tip_timestamp).await;
-                        return Ok(msg);
+                        return msg;
                     }
                     Err(e) => {
                         error!("invalid candidate generated due to {:?}", e)
@@ -113,20 +109,15 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         // handle queued messages for current round and step.
         if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
             Self::wait_until_next_slot(tip_timestamp).await;
-            return Ok(m);
+            return m;
         }
 
         let additional_timeout = Self::next_slot_in(tip_timestamp);
-        match ctx
+        let msg = ctx
             .event_loop(self.handler.clone(), additional_timeout)
-            .await
-        {
-            Ok(msg) => {
-                Self::wait_until_next_slot(tip_timestamp).await;
-                Ok(msg)
-            }
-            Err(err) => Err(err),
-        }
+            .await;
+        Self::wait_until_next_slot(tip_timestamp).await;
+        msg
     }
 
     /// Waits until the next slot is reached

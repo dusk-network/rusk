@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::Database;
-use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 use crate::{proposal, ratification, validation};
@@ -51,10 +50,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         await_phase!(self, reinitialize(msg, round, iteration))
     }
 
-    pub async fn run(
-        &mut self,
-        mut ctx: ExecutionCtx<'_, T, D>,
-    ) -> Result<Message, ConsensusError> {
+    pub async fn run(&mut self, mut ctx: ExecutionCtx<'_, T, D>) -> Message {
         ctx.set_start_time();
 
         let timeout = ctx.iter_ctx.get_timeout(ctx.step_name());

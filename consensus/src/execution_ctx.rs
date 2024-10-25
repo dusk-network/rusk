@@ -131,7 +131,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         &mut self,
         phase: Arc<Mutex<C>>,
         additional_timeout: Option<Duration>,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Message {
         let open_consensus_mode = self.last_step_running();
 
         // When consensus is in open_consensus_mode then it keeps Ratification
@@ -175,7 +175,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                 // to Consensus
                                 if !open_consensus_mode {
                                     self.report_elapsed_time().await;
-                                    return Ok(step_result);
+                                    return step_result;
                                 }
 
                                 // In Open Consensus, we only broadcast Success
@@ -333,7 +333,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             // terminate the iteration.
                             // Messages for different iterations are discarded.
                             if qiter == iter {
-                                return Ok(msg);
+                                return msg;
                             } else {
                                 debug!(
                                   event = "Quorum discarded",
@@ -360,7 +360,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         error!("Timeout detected during last step running. This should never happen")
                     } else {
                         self.process_timeout_event(phase).await;
-                        return Ok(Message::empty());
+                        return Message::empty();
                     }
                 }
             }

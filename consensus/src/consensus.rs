@@ -253,7 +253,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                             name = ?step_name,
                             pk = ru.pubkey_bls.to_bs58(),
                         ))
-                        .await?;
+                        .await;
 
                     // Handle Quorum messages produced by Consensus or received
                     // from the network. A Quorum for the current iteration
