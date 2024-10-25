@@ -23,7 +23,7 @@
   shieldedAddress={currentAddress}
   unshieldedAddress={currentAddress}
   shieldedBalance={balance.shielded.spendable}
-  unshieldedBalance={balance.shielded.spendable}
+  unshieldedBalance={balance.unshielded.value}
   execute={executeSend}
   formatter={duskFormatter}
   {gasLimits}

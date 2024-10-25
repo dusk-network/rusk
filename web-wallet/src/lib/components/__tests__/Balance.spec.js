@@ -8,6 +8,7 @@ describe("Balance", () => {
     fiatCurrency: "USD",
     fiatPrice: 10,
     locale: "en",
+    shieldedTokensPercentage: 35,
     tokenCurrency: "DUSK",
     tokens: 2_000_000,
   };
@@ -21,6 +22,7 @@ describe("Balance", () => {
   it("renders the Balance component", () => {
     const { container } = render(Balance, baseOptions);
 
+    expect(container.querySelector(".dusk-balance__usage")).toBeInTheDocument();
     expect(container.firstChild).toMatchSnapshot();
   });
 
@@ -77,11 +79,10 @@ describe("Balance", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should display the usage indicator if there are shielded tokens", () => {
+  it("should display the usage indicator if the shielded percentage is zero", () => {
     const props = {
       ...baseProps,
-      shieldedTokensPercentage: 50,
-      tokens: 100,
+      shieldedTokensPercentage: 0,
     };
     const { container } = render(Balance, { ...baseOptions, props });
 
@@ -89,8 +90,8 @@ describe("Balance", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should not display the usage indicator if there are no shielded tokens", () => {
-    const props = { ...baseProps, tokens: 100 };
+  it("should not display the usage indicator if the shielded percentage is `undefined`", () => {
+    const props = { ...baseProps, shieldedTokensPercentage: undefined };
     const { container } = render(Balance, { ...baseOptions, props });
 
     expect(

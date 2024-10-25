@@ -29,6 +29,7 @@ vi.mock("./src/lib/vendor/w3sper.js/src/protocol-driver/mod", async () => ({
 
 vi.mock("./src/lib/vendor/w3sper.js/src/mod", async (importOriginal) => ({
   ...(await importOriginal()),
+  AccountSyncer: (await import("./src/__mocks__/AccountSyncer.js")).default,
   AddressSyncer: (await import("./src/__mocks__/AddressSyncer.js")).default,
   Network: (await import("./src/__mocks__/Network.js")).default,
 }));
