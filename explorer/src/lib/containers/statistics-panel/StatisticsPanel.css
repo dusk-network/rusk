@@ -91,6 +91,16 @@
     gap: var(--desktop-gap);
   }
 
+  .statistics-panel__statistics-column:nth-child(5) {
+    grid-column: span 2;
+    text-align: center;
+  }
+
+  .statistics-panel__statistics-column:nth-child(5)
+    .statistics-panel__statistics-item-value-container {
+    justify-content: center;
+  }
+
   .statistics-panel__statistics-item-value {
     display: flex;
     align-items: center;
@@ -110,5 +120,15 @@
   .statistics-panel__statistics {
     grid-template-columns: repeat(5, 1fr);
     align-items: center;
+  }
+
+  .statistics-panel__statistics-column:nth-child(5) {
+    grid-column: span 1;
+    text-align: start;
+  }
+
+  .statistics-panel__statistics-column:nth-child(5)
+    .statistics-panel__statistics-item-value-container {
+    justify-content: start;
   }
 }
