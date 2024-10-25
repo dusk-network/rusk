@@ -95,19 +95,18 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
         // Usually this select will be terminated due to cancel signal however
         // it may also be terminated due to unrecoverable error in the main loop
-        let result;
-        tokio::select! {
+        let result = tokio::select! {
             recv = &mut handle => {
-                result = recv.map_err(|_| ConsensusError::Canceled(round))?;
-                if let Err(ref err) = result {
+                recv.map_err(|err| {
                     tracing::error!(event = "consensus failed", ?err);
-                }
+                    ConsensusError::Canceled(round)
+                })
             },
             _ = cancel_rx => {
-                result = Err(ConsensusError::Canceled(round));
                 tracing::debug!(event = "consensus canceled", round);
+                Err(ConsensusError::Canceled(round))
             }
-        }
+        };
 
         // Tear-down procedure
         abort(&mut handle).await;
@@ -126,7 +125,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         ru: RoundUpdate,
         provisioners: Arc<Provisioners>,
         sender: QuorumMsgSender,
-    ) -> JoinHandle<Result<(), ConsensusError>> {
+    ) -> JoinHandle<()> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
         let future_msgs = self.future_msgs.clone();
