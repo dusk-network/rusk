@@ -368,34 +368,31 @@ async fn exec() -> anyhow::Result<()> {
                     println!("{tx_id}");
                 }
                 RunResult::StakeInfo(info, reward) => {
+                    let rewards = Dusk::from(info.reward);
                     if reward {
-                        println!("{}", Dusk::from(info.reward));
+                        println!("{rewards}");
                     } else {
-                        match info.amount {
-                            Some(amt) => {
-                                let amount = Dusk::from(amt.value);
-                                let locked = Dusk::from(amt.locked);
-                                let faults = info.faults;
-                                let hard_faults = info.hard_faults;
-                                let eligibility = amt.eligibility;
-                                let epoch = amt.eligibility / EPOCH;
-                                let rewards = Dusk::from(info.reward);
+                        if let Some(amt) = info.amount {
+                            let amount = Dusk::from(amt.value);
+                            let locked = Dusk::from(amt.locked);
+                            let eligibility = amt.eligibility;
+                            let epoch = amt.eligibility / EPOCH;
 
-                                println!("Eligible stake: {amount} DUSK");
-                                println!(
-                                    "Reclaimable slashed stake: {locked} DUSK"
-                                );
-                                println!("Slashes: {faults}");
-                                println!("Hard Slashes: {hard_faults}");
-                                println!("Stake active from block #{eligibility} (Epoch {epoch})");
-                                println!(
-                                    "Accumulated rewards is: {rewards} DUSK"
-                                );
-                            }
-                            None => {
-                                println!("No active stake found for this key");
-                            }
+                            println!("Eligible stake: {amount} DUSK");
+                            println!(
+                                "Reclaimable slashed stake: {locked} DUSK"
+                            );
+                            println!("Stake active from block #{eligibility} (Epoch {epoch})");
+                        } else {
+                            println!("No active stake found for this key");
                         }
+                        let faults = info.faults;
+                        let hard_faults = info.hard_faults;
+                        let rewards = Dusk::from(info.reward);
+
+                        println!("Slashes: {faults}");
+                        println!("Hard Slashes: {hard_faults}");
+                        println!("Accumulated rewards is: {rewards} DUSK");
                     }
                 }
                 RunResult::ExportedKeys(pub_key, key_pair) => {
