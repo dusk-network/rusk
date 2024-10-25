@@ -7,7 +7,12 @@
 use execution_core::transfer::data::MAX_MEMO_SIZE;
 use requestty::Question;
 use rusk_wallet::{
-    currency::Dusk, gas, Address, Wallet, MAX_FUNCTION_NAME_SIZE,
+    currency::Dusk,
+    gas::{
+        self, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT,
+        DEFAULT_LIMIT_STAKE, DEFAULT_LIMIT_TRANSFER,
+    },
+    Address, Wallet, MAX_FUNCTION_NAME_SIZE,
 };
 
 use crate::{prompt, settings::Settings, Command, Menu, WalletFile};
@@ -79,6 +84,11 @@ pub(crate) fn online(
                 }
             };
 
+            if balance < DEFAULT_LIMIT_TRANSFER {
+                println!("Balance too low to perform a transfer transaction.");
+                return Ok(ProfileOp::Stay);
+            }
+
             let memo = Some(prompt::request_str("memo", MAX_MEMO_SIZE)?);
             let amt = if memo.is_some() {
                 prompt::request_optional_token_amt("transfer", balance)
@@ -106,6 +116,12 @@ pub(crate) fn online(
                     (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
             };
+
+            if balance < DEFAULT_LIMIT_STAKE {
+                println!("Balance too low to perform a stake transaction.");
+                return Ok(ProfileOp::Stay);
+            }
+
             ProfileOp::Run(Box::new(Command::Stake {
                 address: Some(addr),
                 amt: prompt::request_stake_token_amt(balance)?,
@@ -114,30 +130,41 @@ pub(crate) fn online(
             }))
         }
         MenuItem::Unstake => {
-            let addr = match prompt::request_transaction_model()? {
+            let (addr, balance) = match prompt::request_transaction_model()? {
                 prompt::TransactionModel::Shielded => {
-                    wallet.shielded_address(profile_idx)
+                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
                 }
                 prompt::TransactionModel::Public => {
-                    wallet.public_address(profile_idx)
+                    (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
-            }?;
+            };
+
+            if balance < DEFAULT_LIMIT_STAKE {
+                println!("Balance too low to perform an unstake transaction.");
+                return Ok(ProfileOp::Stay);
+            }
+
             ProfileOp::Run(Box::new(Command::Unstake {
                 address: Some(addr),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price()?,
             }))
         }
-
         MenuItem::Withdraw => {
-            let addr = match prompt::request_transaction_model()? {
+            let (addr, balance) = match prompt::request_transaction_model()? {
                 prompt::TransactionModel::Shielded => {
-                    wallet.shielded_address(profile_idx)
+                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
                 }
                 prompt::TransactionModel::Public => {
-                    wallet.public_address(profile_idx)
+                    (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
-            }?;
+            };
+
+            if balance < DEFAULT_LIMIT_STAKE {
+                println!("Balance too low to perform a withdraw transaction.");
+                return Ok(ProfileOp::Stay);
+            }
+
             ProfileOp::Run(Box::new(Command::Withdraw {
                 address: Some(addr),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
@@ -145,14 +172,20 @@ pub(crate) fn online(
             }))
         }
         MenuItem::ContractDeploy => {
-            let addr = match prompt::request_transaction_model()? {
+            let (addr, balance) = match prompt::request_transaction_model()? {
                 prompt::TransactionModel::Shielded => {
-                    wallet.shielded_address(profile_idx)
+                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
                 }
                 prompt::TransactionModel::Public => {
-                    wallet.public_address(profile_idx)
+                    (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
-            }?;
+            };
+
+            if balance < DEFAULT_LIMIT_DEPLOYMENT {
+                println!("Balance too low to perform a deploy transaction.");
+                return Ok(ProfileOp::Stay);
+            }
+
             ProfileOp::Run(Box::new(Command::ContractDeploy {
                 address: Some(addr),
                 code: prompt::request_contract_code()?,
@@ -165,14 +198,20 @@ pub(crate) fn online(
             }))
         }
         MenuItem::ContractCall => {
-            let addr = match prompt::request_transaction_model()? {
+            let (addr, balance) = match prompt::request_transaction_model()? {
                 prompt::TransactionModel::Shielded => {
-                    wallet.shielded_address(profile_idx)
+                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
                 }
                 prompt::TransactionModel::Public => {
-                    wallet.public_address(profile_idx)
+                    (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
-            }?;
+            };
+
+            if balance < DEFAULT_LIMIT_CALL {
+                println!("Balance too low to perform a contract call.");
+                return Ok(ProfileOp::Stay);
+            }
+
             ProfileOp::Run(Box::new(Command::ContractCall {
                 address: Some(addr),
                 contract_id: prompt::request_bytes("contract id")?,
@@ -195,18 +234,36 @@ pub(crate) fn online(
             profile_idx: Some(profile_idx),
             reward: false,
         })),
-        MenuItem::Shield => ProfileOp::Run(Box::new(Command::Shield {
-            profile_idx: Some(profile_idx),
-            amt: prompt::request_token_amt("convert", moonlight_balance)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
-        MenuItem::Unshield => ProfileOp::Run(Box::new(Command::Unshield {
-            profile_idx: Some(profile_idx),
-            amt: prompt::request_token_amt("convert", phoenix_balance)?,
-            gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-            gas_price: prompt::request_gas_price()?,
-        })),
+        MenuItem::Shield => {
+            if moonlight_balance == 0 {
+                println!(
+                    "Balance too low to convert DUSK from public to shielded."
+                );
+                return Ok(ProfileOp::Stay);
+            }
+
+            ProfileOp::Run(Box::new(Command::Shield {
+                profile_idx: Some(profile_idx),
+                amt: prompt::request_token_amt("convert", moonlight_balance)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
+        MenuItem::Unshield => {
+            if phoenix_balance == 0 {
+                println!(
+                    "Balance too low to convert DUSK from shielded to public."
+                );
+                return Ok(ProfileOp::Stay);
+            }
+
+            ProfileOp::Run(Box::new(Command::Unshield {
+                profile_idx: Some(profile_idx),
+                amt: prompt::request_token_amt("convert", phoenix_balance)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price()?,
+            }))
+        }
         MenuItem::CalculateContractId => {
             ProfileOp::Run(Box::new(Command::CalculateContractId {
                 profile_idx: Some(profile_idx),
