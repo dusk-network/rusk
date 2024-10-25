@@ -1,10 +1,16 @@
+const scaleFactor = BigInt(1e9);
+
 /**
- * Temporary conversion function until
- * `dusk-wallet-js` exposes its own.
- *
  * @param {number} n
- * @returns {number}
+ * @returns {bigint}
  */
-const duskToLux = (n) => n * 1e9;
+function duskToLux(n) {
+  const [integerPart, decimalPart] = n.toString().split(".");
+
+  return (
+    BigInt(integerPart) * scaleFactor +
+    (decimalPart ? BigInt(decimalPart.padEnd(9, "0")) : 0n)
+  );
+}
 
 export default duskToLux;
