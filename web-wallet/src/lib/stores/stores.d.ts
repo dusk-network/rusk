@@ -25,11 +25,6 @@ type SettingsStoreContent = {
 
 type SettingsStore = Writable<SettingsStoreContent> & { reset: () => void };
 
-type GasSettings = {
-  limit: number;
-  price: number;
-};
-
 type TransactionInfo = {
   hash: string;
   nullifiers: Uint8Array[];
@@ -106,7 +101,10 @@ type WalletStoreServices = {
     profile: import("$lib/vendor/w3sper.js/src/mod").Profile
   ) => Promise<void>;
 
-  stake: (amount: number, gasSettings: GasSettings) => Promise<any>;
+  stake: (
+    amount: number,
+    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
+  ) => Promise<any>;
 
   sync: (fromBlock?: bigint) => Promise<void>;
 
@@ -116,9 +114,11 @@ type WalletStoreServices = {
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<any>;
 
-  unstake: (gasSettings: GasSettings) => Promise<any>;
+  unstake: (gas: import("$lib/vendor/w3sper.js/src/mod").Gas) => Promise<any>;
 
-  withdrawReward: (gasSettings: GasSettings) => Promise<any>;
+  withdrawReward: (
+    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
+  ) => Promise<any>;
 };
 
 type WalletStore = Readable<WalletStoreContent> & WalletStoreServices;
