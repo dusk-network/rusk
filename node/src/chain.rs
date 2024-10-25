@@ -12,7 +12,6 @@ mod genesis;
 
 mod header_validation;
 mod metrics;
-mod stall_chain_fsm;
 
 use self::acceptor::Acceptor;
 use self::fsm::SimpleFSM;

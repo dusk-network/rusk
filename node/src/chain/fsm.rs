@@ -6,12 +6,13 @@
 
 mod insync;
 mod outofsync;
+mod stalled;
 
 use insync::InSyncImpl;
 use outofsync::OutOfSyncImpl;
+use stalled::StalledChainFSM;
 
 use super::acceptor::{Acceptor, RevertTarget};
-use super::stall_chain_fsm::{self, StalledChainFSM};
 use crate::database;
 use crate::{vm, Network};
 
@@ -27,7 +28,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::Instant;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, trace, warn};
 
 const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 
@@ -237,7 +238,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
             let res = self.stalled_sm.on_block_received(blk).await.clone();
             match res {
-                stall_chain_fsm::State::StalledOnFork(
+                stalled::State::StalledOnFork(
                     local_hash_at_fork,
                     remote_blk,
                 ) => {
@@ -305,7 +306,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         }
                     }
                 }
-                stall_chain_fsm::State::Stalled(_) => {
+                stalled::State::Stalled(_) => {
                     self.blacklisted_blocks.write().await.clear();
                 }
                 _ => {}
