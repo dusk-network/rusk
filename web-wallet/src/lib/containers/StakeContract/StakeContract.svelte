@@ -12,6 +12,7 @@
     when,
   } from "lamb";
   import { mdiArrowLeft } from "@mdi/js";
+  import { Gas } from "$lib/vendor/w3sper.js/src/mod";
 
   import { createCurrencyFormatter } from "$lib/dusk/currency";
   import { getLastTransactionHash } from "$lib/transactions";
@@ -55,17 +56,17 @@
 
   /** @type {Record<StakeType, (...args: any[]) => Promise<string>>} */
   const executeOperations = {
-    stake: (amount, gasPrice, gasLimit) =>
+    stake: (amount, gasLimit, gasPrice) =>
       walletStore
-        .stake(amount, { limit: gasLimit, price: gasPrice })
+        .stake(amount, new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getLastTransactionHash),
     unstake: (gasPrice, gasLimit) =>
       walletStore
-        .unstake({ limit: gasLimit, price: gasPrice })
+        .unstake(new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getLastTransactionHash),
     "withdraw-rewards": (gasPrice, gasLimit) =>
       walletStore
-        .withdrawReward({ limit: gasLimit, price: gasPrice })
+        .withdrawReward(new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getLastTransactionHash),
   };
 
