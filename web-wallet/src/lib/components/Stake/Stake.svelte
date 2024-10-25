@@ -125,7 +125,7 @@
   });
 
   $: luxFee = gasLimit * gasPrice;
-  $: fee = formatter(luxToDusk(luxFee));
+  $: fee = formatter(luxToDusk(BigInt(luxFee)));
   $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), luxFee);
   $: minStake =
     maxSpendable > 0
@@ -133,8 +133,8 @@
       : minAllowedStake;
   $: isStakeAmountValid =
     stakeAmount >= minStake && stakeAmount <= maxSpendable;
-  $: totalLuxFee = luxFee + duskToLux(stakeAmount);
-  $: isFeeWithinLimit = BigInt(totalLuxFee) <= spendable;
+  $: totalLuxFee = BigInt(luxFee) + duskToLux(stakeAmount);
+  $: isFeeWithinLimit = totalLuxFee <= spendable;
   $: isNextButtonDisabled =
     flow === "stake"
       ? !(isStakeAmountValid && isGasValid && isFeeWithinLimit)

@@ -84,7 +84,7 @@
   });
 
   $: luxFee = gasLimit * gasPrice;
-  $: fee = formatter(luxToDusk(luxFee));
+  $: fee = formatter(luxToDusk(BigInt(luxFee)));
   $: isFromUnshielded = shieldedAmount > shieldedBalance;
   $: isFromShielded = unshieldedAmount > unshieldedBalance;
   $: isNextButtonDisabled = !(isFromUnshielded || isFromShielded);
@@ -229,8 +229,8 @@
           <dd class="review-transaction__value operation__review-amount">
             <span>
               {isFromUnshielded
-                ? `${formatter(luxToDusk(unshieldedBalance - BigInt(duskToLux(unshieldedAmount))))} DUSK`
-                : `${formatter(luxToDusk(shieldedBalance - BigInt(duskToLux(shieldedAmount))))} DUSK`}
+                ? `${formatter(luxToDusk(unshieldedBalance - duskToLux(unshieldedAmount)))} DUSK`
+                : `${formatter(luxToDusk(shieldedBalance - duskToLux(shieldedAmount)))} DUSK`}
             </span>
             <Icon
               className="dusk-amount__icon"

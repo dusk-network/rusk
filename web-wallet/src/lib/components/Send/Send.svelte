@@ -90,11 +90,11 @@
   });
 
   $: luxFee = gasLimit * gasPrice;
-  $: fee = formatter(luxToDusk(luxFee));
+  $: fee = formatter(luxToDusk(BigInt(luxFee)));
   $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), luxFee);
   $: isAmountValid = amount >= minAmount && amount <= maxSpendable;
-  $: totalLuxFee = luxFee + (amount ? duskToLux(amount) : 0);
-  $: isFeeWithinLimit = BigInt(totalLuxFee) <= spendable;
+  $: totalLuxFee = BigInt(luxFee) + (amount ? duskToLux(amount) : 0n);
+  $: isFeeWithinLimit = totalLuxFee <= spendable;
   $: isNextButtonDisabled = !(isAmountValid && isGasValid && isFeeWithinLimit);
   $: addressValidationResult = validateAddress(address);
 
