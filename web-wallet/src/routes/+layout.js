@@ -1,5 +1,8 @@
 import "$lib/dusk/polyfill/asyncIterator";
 
+// eslint-disable-next-line import/no-unresolved
+import "web-streams-polyfill/polyfill";
+
 import { networkStore } from "$lib/stores";
 
 export const csr = true;
