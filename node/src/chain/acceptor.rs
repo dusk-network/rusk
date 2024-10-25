@@ -1014,13 +1014,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip after reverting
-        let (blk, (_, label)) = self.db.read().await.update(|t| {
+        let (blk, label) = self.db.read().await.update(|t| {
             let mut height = curr_height;
             loop {
                 let b = Ledger::fetch_block_by_height(t, height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
                 let h = b.header();
-                let label =
+                let (_, label) =
                     t.fetch_block_label_by_height(h.height)?.ok_or_else(
                         || anyhow::anyhow!("could not fetch block label"),
                     )?;
