@@ -24,7 +24,9 @@ use node_data::message::payload::{
 use node_data::message::{AsyncQueue, Message, Payload};
 use node_data::StepName;
 
-use crate::config::{is_emergency_iter, CONSENSUS_MAX_ITER};
+use crate::config::{
+    is_emergency_iter, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
+};
 use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
 use std::sync::Arc;
@@ -510,7 +512,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         // generate the committees so that we can pre-verify its validity.
         // We do it here because we need the IterationCtx
 
-        let same_prev_hash = msg.header.round == self.round_update.round
+        let current_round = self.round_update.round;
+
+        let same_prev_hash = msg.header.round == current_round
             && msg.header.prev_block_hash == self.round_update.hash();
 
         if same_prev_hash && msg.header.iteration > self.iteration {
@@ -562,7 +566,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     }
                 }
 
-                if msg.header.round > self.round_update.round + 10 {
+                // We verify message signatures only for the next 10 round
+                // messages. Removing this check will lead to
+                // repropagate everything only according to the signer pk
+                if msg.header.round > current_round + MAX_ROUND_DISTANCE {
                     log_msg(
                         "discarded msg (round too far from now)",
                         SRC,
