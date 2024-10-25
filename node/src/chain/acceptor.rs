@@ -8,7 +8,9 @@ use crate::database::{self, ConsensusStorage, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::TimeoutSet;
-use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
+use dusk_consensus::config::{
+    MAX_ROUND_DISTANCE, MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
+};
 use dusk_consensus::errors::{ConsensusError, HeaderError};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_consensus::user::stake::Stake;
@@ -357,7 +359,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // Process consensus msg only if they are for the current round
                 // or at most 10 rounds in the future
                 let msg_round = msg.header.round;
-                if msg_round > tip_height && msg_round < (tip_height + 10) {
+                if msg_round > tip_height
+                    && msg_round <= (tip_height + MAX_ROUND_DISTANCE)
+                {
                     consensus_task.main_inbound.try_send(msg);
                 }
             }
