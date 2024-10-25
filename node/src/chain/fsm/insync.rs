@@ -7,15 +7,11 @@
 use std::cmp::Ordering;
 use std::ops::Deref;
 
-use metrics::counter;
-use node_data::ledger::{to_str, Block};
 use node_data::message::payload::{GetResource, Inv, Quorum};
 use node_data::message::Message;
 
 use super::*;
 use crate::chain::fallback;
-use crate::database::Ledger;
-use crate::{database, vm, Network};
 
 pub(super) struct InSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network>
 {
