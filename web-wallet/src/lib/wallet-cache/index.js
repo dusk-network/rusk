@@ -27,11 +27,13 @@ import notesArrayToMap from "$lib/wallet/notesArrayToMap";
 /** @typedef {{ nullifiers?: Uint8Array[] } | { addresses?: string[] }} RawCriteria */
 /** @typedef {{ field: "nullifier", values: Uint8Array[] } | { field: "address", values: string[]} | undefined} Criteria */
 
+/** @type {(buffer: ArrayBuffer) => Uint8Array} */
+const bufferToUint8Array = (buffer) => new Uint8Array(buffer);
+
 /** @type {(profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>) => string[]} */
 const getAddressesFrom = mapWith(compose(String, getKey("address")));
 
-/** @type {(buffer: ArrayBuffer) => Uint8Array} */
-const bufferToUint8Array = (buffer) => new Uint8Array(buffer);
+const nullifiersToString = mapWith(String);
 
 /** @type {(source: WalletCacheDbNote) => Omit<WalletCacheDbNote, "note"> & { note: Uint8Array }} */
 const updateNote = updateKey("note", bufferToUint8Array);
@@ -207,6 +209,33 @@ class WalletCache {
     return this.#getEntriesFrom("unspentNotes", true, { addresses }).then(
       restoreNullifiers
     );
+  }
+
+  /**
+   * Returns the array of unique nullifiers contained only
+   * in the first of the two given nullifiers arrays.
+   *
+   * @see {@link https://en.wikipedia.org/wiki/Complement_(set_theory)#Relative_complement}
+   *
+   * @param {Uint8Array[]} a
+   * @param {Uint8Array[]} b
+   * @returns {Uint8Array[]}
+   */
+  nullifiersDifference(a, b) {
+    if (a.length === 0 || b.length === 0) {
+      return a;
+    }
+
+    const result = [];
+    const lookup = new Set(nullifiersToString(b));
+
+    for (const entry of a) {
+      if (!lookup.has(entry.toString())) {
+        result.push(entry);
+      }
+    }
+
+    return result;
   }
 
   /**

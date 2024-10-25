@@ -1,7 +1,7 @@
 import { redirect } from "$lib/navigation";
 import { get } from "svelte/store";
 
-import walletStore from "$lib/stores/walletStore";
+import { walletStore } from "$lib/stores";
 
 /** @type {import("./$types").LayoutLoad} */
 export async function load() {
