@@ -41,11 +41,11 @@ pub trait MsgHandler {
         committee: &Committee,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
-        let signer = msg.get_signer().map(|s| s.to_bs58()).unwrap_or_default();
+        let signer = msg.get_signer();
 
         debug!(
             event = "validating msg",
-            signer,
+            signer = signer.as_ref().map(|s| s.to_bs58()),
             src_addr = ?msg.metadata.as_ref().map(|m| m.src_addr),
             topic = ?msg.topic(),
             step = msg.get_step(),
@@ -64,9 +64,8 @@ pub trait MsgHandler {
                 if msg_tip != ru.hash() {
                     return Err(ConsensusError::InvalidPrevBlockHash(msg_tip));
                 }
-                let signer =
-                    msg.get_signer().ok_or(ConsensusError::InvalidMsgType)?;
 
+                let signer = signer.ok_or(ConsensusError::InvalidMsgType)?;
                 // Ensure the message originates from a committee member.
                 if !committee.is_member(&signer) {
                     return Err(ConsensusError::NotCommitteeMember);
