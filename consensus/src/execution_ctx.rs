@@ -165,8 +165,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                 .await
                             {
                                 info!(
-                                    event = "step completed",
-                                    result = ?step_result.payload
+                                    event = "Step completed",
+                                    step = ?self.step_name(),
+                                    info = ?msg.header
                                 );
 
                                 // In the normal case, we just return the result
@@ -426,7 +427,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         // Repropagate past iteration messages (they have been already
         // validated)
 
-        log_msg("outbound send", "process_past_events", &msg);
+        log_msg("send message", "process_past_events", &msg);
         self.outbound.try_send(msg.clone());
 
         if is_emergency_iter(msg.header.iteration) {
@@ -535,7 +536,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 // Repropagate past iteration messages (they have been already
                 // validated)
 
-                log_msg("outbound send", "inbound message", &msg);
+                log_msg("send message", "inbound message", &msg);
                 // Re-publish the returned message
                 self.outbound.try_send(msg.clone());
             }
@@ -565,7 +566,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 // TODO: add additional Error to discard future messages too far
                 match self.future_msgs.lock().await.put_msg(msg) {
                     Ok(msg) => {
-                        log_msg("outbound send", SRC, &msg);
+                        log_msg("send message", SRC, &msg);
                         self.outbound.try_send(msg);
                     }
                     Err(MsgRegistryError::NoSigner(msg)) => {
@@ -633,7 +634,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             .await
             .handle_timeout(&self.round_update, self.iteration)
         {
-            log_msg("outbound send", "process timeout event", &msg);
+            log_msg("send message", "process timeout event", &msg);
             self.outbound.try_send(msg.clone());
         }
     }
@@ -673,7 +674,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 );
                 if ret.is_ok() {
                     // Re-publish a drained message
-                    log_msg("outbound send", "future_msgs", &msg);
+                    log_msg("send message", "future_msgs", &msg);
 
                     self.outbound.try_send(msg.clone());
 
@@ -720,10 +721,8 @@ fn log_msg(event: &str, src: &str, msg: &Message) {
     debug!(
         event,
         src,
-        msg_step = msg.get_step(),
-        msg_iter = msg.get_iteration(),
-        msg_height = msg.get_height(),
-        msg_topic = ?msg.topic(),
+        topic = ?msg.topic(),
+        info = ?msg.header,
         ray_id = msg.ray_id()
     );
 }

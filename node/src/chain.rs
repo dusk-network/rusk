@@ -157,9 +157,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
                         Payload::Block(blk) => {
                             info!(
-                                event = "Block message received",
-                                blk_height = blk.header().height,
-                                blk_hash = to_str(&blk.header().hash),
+                                event = "New block",
+                                src = "Block msg",
+                                height = blk.header().height,
+                                iter = blk.header().iteration,
+                                hash = to_str(&blk.header().hash),
                                 metadata = ?msg.metadata,
                             );
 
