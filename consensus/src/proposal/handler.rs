@@ -71,7 +71,6 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
     async fn collect_from_past(
         &mut self,
         msg: Message,
-        _ru: &RoundUpdate,
         _committee: &Committee,
         _generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {

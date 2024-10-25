@@ -160,7 +160,6 @@ impl MsgHandler for RatificationHandler {
     async fn collect_from_past(
         &mut self,
         msg: Message,
-        _ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {

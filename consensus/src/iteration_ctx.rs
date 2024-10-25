@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Database, RoundUpdate, TimeoutSet};
+use crate::commons::{Database, TimeoutSet};
 use std::cmp;
 
 use crate::config::{
@@ -276,7 +276,6 @@ impl<DB: Database> IterationCtx<DB> {
     /// Collects a message from a past iteration
     pub(crate) async fn process_past_msg(
         &self,
-        ru: &RoundUpdate,
         msg: Message,
     ) -> Option<Message> {
         let committee = self.committees.get_committee(msg.get_step())?;
@@ -285,9 +284,8 @@ impl<DB: Database> IterationCtx<DB> {
         match msg.topic() {
             Topics::Candidate => {
                 let mut handler = self.proposal_handler.lock().await;
-                if let Ok(HandleMsgOutput::Ready(m)) = handler
-                    .collect_from_past(msg, ru, committee, generator)
-                    .await
+                if let Ok(HandleMsgOutput::Ready(m)) =
+                    handler.collect_from_past(msg, committee, generator).await
                 {
                     return Some(m);
                 }
@@ -295,9 +293,8 @@ impl<DB: Database> IterationCtx<DB> {
 
             Topics::Validation | Topics::ValidationQuorum => {
                 let mut handler = self.validation_handler.lock().await;
-                if let Ok(HandleMsgOutput::Ready(m)) = handler
-                    .collect_from_past(msg, ru, committee, generator)
-                    .await
+                if let Ok(HandleMsgOutput::Ready(m)) =
+                    handler.collect_from_past(msg, committee, generator).await
                 {
                     return Some(m);
                 }
@@ -305,9 +302,8 @@ impl<DB: Database> IterationCtx<DB> {
 
             Topics::Ratification => {
                 let mut handler = self.ratification_handler.lock().await;
-                if let Ok(HandleMsgOutput::Ready(m)) = handler
-                    .collect_from_past(msg, ru, committee, generator)
-                    .await
+                if let Ok(HandleMsgOutput::Ready(m)) =
+                    handler.collect_from_past(msg, committee, generator).await
                 {
                     return Some(m);
                 }

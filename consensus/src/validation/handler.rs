@@ -215,7 +215,6 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
     async fn collect_from_past(
         &mut self,
         msg: Message,
-        _ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError> {

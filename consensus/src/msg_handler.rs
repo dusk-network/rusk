@@ -173,7 +173,6 @@ pub trait MsgHandler {
     async fn collect_from_past(
         &mut self,
         msg: Message,
-        ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
     ) -> Result<HandleMsgOutput, ConsensusError>;

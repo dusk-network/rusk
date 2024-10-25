@@ -447,11 +447,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         }
 
         // Process message from a previous iteration/step.
-        if let Some(m) = self
-            .iter_ctx
-            .process_past_msg(&self.round_update, msg)
-            .await
-        {
+        if let Some(m) = self.iter_ctx.process_past_msg(msg).await {
             match &m.payload {
                 Payload::Candidate(p) => {
                     self.try_cast_validation_vote(&p.candidate).await;
