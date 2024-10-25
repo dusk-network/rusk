@@ -114,10 +114,10 @@ impl VMExecution for Rusk {
     fn finalize_state(
         &self,
         commit: [u8; 32],
-        to_delete: Vec<[u8; 32]>,
+        to_merge: Vec<[u8; 32]>,
     ) -> anyhow::Result<()> {
         info!("Received finalize request");
-        self.finalize_state(commit, to_delete)
+        self.finalize_state(commit, to_merge)
             .map_err(|e| anyhow::anyhow!("Cannot finalize state: {e}"))
     }
 
