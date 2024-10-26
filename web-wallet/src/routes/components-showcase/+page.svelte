@@ -6,6 +6,7 @@
   import Banners from "./Banners.svelte";
   import Badges from "./Badges.svelte";
   import Balances from "./Balances.svelte";
+  import BigIntInput from "./BigIntInput.svelte";
   import Buttons from "./Buttons.svelte";
   import Cards from "./Cards.svelte";
   import Checkboxes from "./Checkboxes.svelte";
@@ -30,6 +31,7 @@
     Badges: Badges,
     Balances: Balances,
     Banners: Banners,
+    BigIntInput: BigIntInput,
     Buttons: Buttons,
     Cards: Cards,
     Checkboxes: Checkboxes,
