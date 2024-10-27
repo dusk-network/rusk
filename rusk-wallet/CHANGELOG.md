@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Split `prove_and_propagate` into `prove` and `propagate` [#2708]
 - Unify `sndr_idx` and `profile_idx` fields in `Command` enum [#2702]
 - Change Rusk wallet name and version information [#2647]
+- Update Clap from v3 to workspace v4 [#2489]
 
 ### Fix
 
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2647]: https://github.com/dusk-network/rusk/issues/2647
 [#2566]: https://github.com/dusk-network/rusk/issues/2566
 [#2523]: https://github.com/dusk-network/rusk/issues/2523
+[#2489]: https://github.com/dusk-network/rusk/issues/2489
 [#2402]: https://github.com/dusk-network/rusk/issues/2402
 [#2401]: https://github.com/dusk-network/rusk/issues/2401
 [#2400]: https://github.com/dusk-network/rusk/issues/2400

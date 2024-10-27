@@ -36,107 +36,107 @@ pub(crate) enum Command {
     /// Create a new wallet
     Create {
         /// Skip wallet recovery phrase (useful for headless wallet creation)
-        #[clap(long, action)]
+        #[arg(long)]
         skip_recovery: bool,
 
         /// Save recovery phrase to file (useful for headless wallet creation)
-        #[clap(long)]
+        #[arg(long)]
         seed_file: Option<PathBuf>,
     },
 
     /// Restore a lost wallet
     Restore {
         /// Set the wallet .dat file to restore from
-        #[clap(short, long)]
+        #[arg(short, long)]
         file: Option<WalletPath>,
     },
 
     /// Check your current balance
     Balance {
         /// Address
-        #[clap(long)]
+        #[arg(long)]
         address: Option<Address>,
         /// Check maximum spendable balance
-        #[clap(long)]
+        #[arg(long)]
         spendable: bool,
     },
 
     /// List your existing profiles and generate new ones
     Profiles {
         /// Create new profile
-        #[clap(short, long, action)]
+        #[arg(short, long)]
         new: bool,
     },
 
     /// Show address transaction history
     History {
         /// Profile index for which you want to see the history
-        #[clap(long)]
+        #[arg(long)]
         profile_idx: Option<u8>,
     },
 
     /// Send DUSK through the network
     Transfer {
         /// Address from which to send DUSK [default: first address]
-        #[clap(long)]
+        #[arg(long)]
         sender: Option<Address>,
 
         /// Receiver address
-        #[clap(short, long)]
+        #[arg(short, long)]
         rcvr: Address,
 
         /// Amount of DUSK to send
-        #[clap(short, long)]
+        #[arg(short, long)]
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_TRANSFER)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
 
         /// Optional memo to attach to the transaction
-        #[clap(long)]
+        #[arg(long)]
         memo: Option<String>,
     },
 
     /// Convert shielded DUSK to public DUSK
     Unshield {
         /// Profile index for the DUSK conversion [default: 0]
-        #[clap(long)]
+        #[arg(long)]
         profile_idx: Option<u8>,
 
         /// Amount of DUSK to transfer to your public account
-        #[clap(short, long)]
+        #[arg(short, long)]
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
     /// Convert public DUSK to shielded DUSK
     Shield {
         /// Profile index for the DUSK conversion [default: 0]
-        #[clap(long)]
+        #[arg(long)]
         profile_idx: Option<u8>,
 
         /// Amount of DUSK to transfer to your shielded account
-        #[clap(short, long)]
+        #[arg(short, long)]
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -144,30 +144,30 @@ pub(crate) enum Command {
     StakeInfo {
         /// Profile index for the public account address to stake from
         /// [default: 0]
-        #[clap(long)]
+        #[arg(long)]
         profile_idx: Option<u8>,
 
         /// Check accumulated reward
-        #[clap(long, action)]
+        #[arg(long)]
         reward: bool,
     },
 
     /// Stake DUSK
     Stake {
         /// Address from which to stake DUSK [default: first address]
-        #[clap(long)]
+        #[arg(long)]
         address: Option<Address>,
 
         /// Amount of DUSK to stake
-        #[clap(short, long)]
+        #[arg(short, long)]
         amt: Dusk,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -175,15 +175,15 @@ pub(crate) enum Command {
     Unstake {
         /// Address from which to make the unstake request [default: first
         /// address]
-        #[clap(short, long)]
+        #[arg(short, long)]
         address: Option<Address>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -191,42 +191,42 @@ pub(crate) enum Command {
     Withdraw {
         /// Address from which to make the withdraw request [default:
         /// first address]
-        #[clap(short, long)]
+        #[arg(short, long)]
         address: Option<Address>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
     /// Call a contract
     ContractCall {
         /// Address that pays the gas for the contract call [default: first]
-        #[clap(short, long)]
+        #[arg(short, long)]
         address: Option<Address>,
 
         /// Contract id of the contract to call
-        #[clap(short, long)]
+        #[arg(short, long)]
         contract_id: Vec<u8>,
 
         /// Function name to call
-        #[clap(short = 'n', long)]
+        #[arg(short = 'n', long)]
         fn_name: String,
 
         /// Function arguments for this call
-        #[clap(short = 'f', long)]
+        #[arg(short = 'f', long)]
         fn_args: Vec<u8>,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -234,27 +234,27 @@ pub(crate) enum Command {
     ContractDeploy {
         /// Address that will pay for the gas to deploy the contract [default:
         /// first]
-        #[clap(short, long)]
+        #[arg(short, long)]
         address: Option<Address>,
 
         /// Path to the WASM contract code
-        #[clap(short, long)]
+        #[arg(short, long)]
         code: PathBuf,
 
         /// Arguments for init function
-        #[clap(short, long)]
+        #[arg(short, long)]
         init_args: Vec<u8>,
 
         /// Nonce used for the deploy transaction
-        #[clap(short, long)]
+        #[arg(short, long)]
         deploy_nonce: u64,
 
         /// Max amount of gas for this transaction
-        #[clap(short = 'l', long, default_value_t = DEFAULT_LIMIT_DEPLOYMENT)]
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_DEPLOYMENT)]
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[clap(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
     },
 
@@ -262,30 +262,30 @@ pub(crate) enum Command {
     CalculateContractId {
         /// Profile index for the public account that will be listed as the
         /// owner of the contract [default: 0]
-        #[clap(long)]
+        #[arg(long)]
         profile_idx: Option<u8>,
 
         /// Path to the WASM contract code
-        #[clap(short, long)]
+        #[arg(short, long)]
         code: PathBuf,
 
         /// Nonce used for the deploy transaction
-        #[clap(short, long)]
+        #[arg(short, long)]
         deploy_nonce: u64,
     },
 
     /// Export BLS provisioner key-pair
     Export {
         /// Profile index for which you want the exported keys [default: 0]
-        #[clap(long)]
+        #[arg(long)]
         profile_idx: Option<u8>,
 
         /// Output directory for the exported keys
-        #[clap(short, long)]
+        #[arg(short, long)]
         dir: PathBuf,
 
         /// Name of the files exported [default: staking-address]
-        #[clap(short, long)]
+        #[arg(short, long)]
         name: Option<String>,
     },
 

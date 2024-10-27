@@ -15,7 +15,7 @@ name = "rusk-wallet"
 path = "src/bin/main.rs"
 
 [dependencies]
-clap = { version = "=3.2.25", features = ["derive", "env"] }
+clap = { workspace = true, features = ["derive", "env"] }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
