@@ -91,7 +91,7 @@ where
 
             let msg = match e.kind() {
                 ErrorKind::InvalidArgument => {
-                    format!("You seem to try access a wallet with a different seed-phrase \n\r\n\r{0: <1} delete the cache? (Alternatively specify the --profile flag to add a new wallet under the given path)", "[ALERT]")
+                    format!("You seem to try access a wallet with a different seed-phrase \n\r\n\r{0: <1} delete the cache? (Alternatively specify the --wallet-dir flag to add a new wallet under the given path)", "[ALERT]")
                 },
                 ErrorKind::Corruption => {
                        format!("The database appears to be corrupted \n\r\n\r{0: <1} delete the cache?", "[ALERT]")
@@ -139,17 +139,17 @@ async fn exec() -> anyhow::Result<()> {
     // Get the initial settings from the args
     let settings_builder = Settings::args(args);
 
-    // Obtain the profile dir from the settings
-    let profile_folder = settings_builder.profile().clone();
+    // Obtain the wallet dir from the settings
+    let wallet_dir = settings_builder.wallet_dir().clone();
 
-    fs::create_dir_all(profile_folder.as_path())?;
+    fs::create_dir_all(wallet_dir.as_path())?;
 
     // prepare wallet path
     let mut wallet_path =
-        WalletPath::from(profile_folder.as_path().join("wallet.dat"));
+        WalletPath::from(wallet_dir.as_path().join("wallet.dat"));
 
     // load configuration (or use default)
-    let cfg = Config::load(&profile_folder)?;
+    let cfg = Config::load(&wallet_dir)?;
 
     wallet_path.set_network_name(settings_builder.args.network.clone());
 

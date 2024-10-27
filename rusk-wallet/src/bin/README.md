@@ -7,7 +7,7 @@ USAGE:
     rusk-wallet [OPTIONS] [SUBCOMMAND]
 
 OPTIONS:
-    -p, --profile <PROFILE>        Directory to store user data [default: `$HOME/.dusk/rusk-wallet`]
+    -w, --wallet-dir <WALLET_PATH> Directory to store user data [default: `$HOME/.dusk/rusk-wallet`]
     -n, --network <NETWORK>        Network to connect to
         --password <PASSWORD>      Set the password for wallet's creation [env:
                                    RUSK_WALLET_PWD=password]
@@ -71,12 +71,12 @@ The default settings can be seen [here](https://github.com/dusk-network/rusk/blo
 It's possible to override those settings by create a `config.toml` file with the same structure, in one of the following
 directory:
 
-- The profile folder (provided via the `--profile` argument, defaults to `$HOME/.dusk/rusk-wallet/`)
+- The wallet directory (provided via the `--wallet-dir` argument, defaults to `$HOME/.dusk/rusk-wallet/`)
 - The global configuration folder (`$HOME/.config/rusk-wallet/`)
 
-Having the `config.toml` in the global configuration folder is useful in case of multiple wallets (each one with its own profile folder) that shares the same settings.
+Having the `config.toml` in the global configuration folder is useful in case of multiple wallets (each one with its own wallet directory) that shares the same settings.
 
-If a `config.toml` exists in both locations, the one found in the profile folder will be used.
+If a `config.toml` exists in both locations, the one found in the specified wallet directory will be used.
 
 The CLI arguments takes precedence and overrides any configuration present in the configuration file.
 

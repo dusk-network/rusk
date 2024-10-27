@@ -52,18 +52,18 @@ pub(crate) struct Settings {
 
     pub(crate) logging: Logging,
 
-    pub(crate) profile: PathBuf,
+    pub(crate) wallet_dir: PathBuf,
     pub(crate) password: Option<String>,
 }
 
 pub(crate) struct SettingsBuilder {
-    profile: PathBuf,
+    wallet_dir: PathBuf,
     pub(crate) args: WalletArgs,
 }
 
 impl SettingsBuilder {
-    pub fn profile(&self) -> &PathBuf {
-        &self.profile
+    pub fn wallet_dir(&self) -> &PathBuf {
+        &self.wallet_dir
     }
 
     pub fn network(self, network: Network) -> Result<Settings, Error> {
@@ -101,7 +101,8 @@ impl SettingsBuilder {
 
         let explorer = network.explorer;
 
-        let profile = args.profile.as_ref().cloned().unwrap_or(self.profile);
+        let wallet_dir =
+            args.wallet_dir.as_ref().cloned().unwrap_or(self.wallet_dir);
 
         let password = args.password;
 
@@ -115,7 +116,7 @@ impl SettingsBuilder {
             prover,
             explorer,
             logging,
-            profile,
+            wallet_dir,
             password,
         })
     }
@@ -123,7 +124,7 @@ impl SettingsBuilder {
 
 impl Settings {
     pub fn args(args: WalletArgs) -> SettingsBuilder {
-        let profile = if let Some(path) = &args.profile {
+        let wallet_dir = if let Some(path) = &args.wallet_dir {
             path.clone()
         } else {
             let mut path = dirs::home_dir().expect("OS not supported");
@@ -132,7 +133,7 @@ impl Settings {
             path
         };
 
-        SettingsBuilder { profile, args }
+        SettingsBuilder { wallet_dir, args }
     }
 }
 
@@ -190,7 +191,7 @@ impl fmt::Display for Settings {
         writeln!(f, "{separator}")?;
         writeln!(f, "Settings")?;
         writeln!(f, "{separator}")?;
-        writeln!(f, "Profile: {}", self.profile.display())?;
+        writeln!(f, "Wallet directory: {}", self.wallet_dir.display())?;
         writeln!(
             f,
             "Password: {}",

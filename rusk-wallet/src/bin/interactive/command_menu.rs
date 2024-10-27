@@ -217,7 +217,10 @@ pub(crate) fn online(
         MenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
             profile_idx: Some(profile_idx),
             name: None,
-            dir: prompt::request_dir("export keys", settings.profile.clone())?,
+            dir: prompt::request_dir(
+                "export keys",
+                settings.wallet_dir.clone(),
+            )?,
         })),
         MenuItem::Back => ProfileOp::Back,
     };
@@ -248,7 +251,10 @@ pub(crate) fn offline(
         MenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
             profile_idx: Some(profile_idx),
             name: None,
-            dir: prompt::request_dir("export keys", settings.profile.clone())?,
+            dir: prompt::request_dir(
+                "export keys",
+                settings.wallet_dir.clone(),
+            )?,
         })),
         MenuItem::Back => ProfileOp::Back,
         _ => unreachable!(),
