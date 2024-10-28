@@ -376,6 +376,14 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
+                debug!(
+                    event = "Cast past vote",
+                    step = "Validation",
+                    mode = "emergency",
+                    round = candidate.header().height,
+                    iter = msg_iteration
+                );
+
                 let expected_generator = self
                     .iter_ctx
                     .get_generator(msg_iteration)
@@ -405,6 +413,14 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
+                debug!(
+                    event = "Cast past vote",
+                    step = "Ratification",
+                    mode = "emergency",
+                    round = self.round_update.round,
+                    iter = msg_iteration
+                );
+
                 // Should we collect our own vote?
                 let _msg = RatificationStep::try_vote(
                     &self.round_update,
@@ -461,10 +477,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 Payload::ValidationResult(result) => {
                     info!(
                       event = "New ValidationResult",
-                      src = "emergency_iter",
-                      msg_iteration,
+                      mode = "emergency",
+                      info = ?m.header,
                       vote = ?result.vote(),
-                      quorum = ?result.quorum(),
                     );
 
                     if let QuorumType::Valid = result.quorum() {
@@ -479,8 +494,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     if let Vote::Valid(_) = &q.vote() {
                         info!(
                             event = "New Quorum",
-                            src = "emergency_iter",
-                            msg_iteration,
+                            mode = "emergency",
+                            inf = ?m.header,
                             vote = ?q.vote(),
                         );
 
