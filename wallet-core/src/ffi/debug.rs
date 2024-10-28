@@ -17,7 +17,7 @@
 //! generating unnecessary debug information, as the WASM host environment is
 //! expected to handle errors by aborting on panic, rather than logging.
 
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, feature = "debug"))]
 #[allow(unused_macros)]
 #[macro_use]
 pub mod enabled {
@@ -74,7 +74,7 @@ pub mod enabled {
     }
 }
 
-#[cfg(not(debug_assertions))]
+#[cfg(not(any(debug_assertions, feature = "debug")))]
 #[allow(unused_macros)]
 #[macro_use]
 pub mod disabled {

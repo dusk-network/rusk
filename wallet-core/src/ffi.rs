@@ -21,26 +21,35 @@ pub mod mem;
 pub mod panic;
 
 use crate::keys::{
-    derive_bls_pk, derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
+    derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
+    derive_phoenix_vk,
 };
-use crate::notes::{self, owned, pick};
-use crate::phoenix_balance;
+use crate::notes::{self, balance, owned, pick};
 use crate::Seed;
 use error::ErrorCode;
 
 use alloc::vec::Vec;
 use core::{ptr, slice};
-use dusk_bytes::Serializable;
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    transfer::phoenix::{
-        ArchivedNoteLeaf, NoteLeaf, PublicKey as PhoenixPublicKey,
-    },
-    BlsScalar,
+use dusk_bytes::{DeserializableSlice, Serializable};
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::transfer::data::TransactionData;
+use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use execution_core::transfer::phoenix;
+use execution_core::transfer::phoenix::{
+    ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
+    PublicKey as PhoenixPublicKey,
 };
+
+use execution_core::transfer::Transaction;
+use execution_core::BlsScalar;
+
 use zeroize::Zeroize;
 
 use rkyv::to_bytes;
+
+use rand_chacha::{rand_core::SeedableRng, ChaCha12Rng};
+
+use alloc::string::String;
 
 #[no_mangle]
 static KEY_SIZE: usize = BlsScalar::SIZE;
@@ -49,6 +58,17 @@ static ITEM_SIZE: usize = core::mem::size_of::<ArchivedNoteLeaf>();
 
 /// The size of the scratch buffer used for parsing the notes.
 const NOTES_BUFFER_SIZE: usize = 96 * 1024;
+
+fn revert(value: &BlsScalar) -> String {
+    // Unfortunately, the BlsScalar type had a display implementation that
+    // does not follow the raw bytes format. Therefore the `tx.hash` display
+    // DOES NOT match the `tx.hash` of the network.
+    let displayed = alloc::format!("{}", &value);
+    let displayed = displayed.chars().skip(2).collect::<Vec<_>>();
+    let displayed = displayed.chunks(2).rev().flatten().collect::<String>();
+
+    displayed
+}
 
 /// Map a list of indexes into keys using the provided seed and callback.
 unsafe fn indexes_into_keys<T, F>(
@@ -145,6 +165,53 @@ pub unsafe fn map_owned(
     ErrorCode::Ok
 }
 
+#[no_mangle]
+pub unsafe fn display_scalar(
+    scalar_ptr: &[u8; 32],
+    output: &mut [u8; 64],
+) -> ErrorCode {
+    let scalar: BlsScalar =
+        rkyv::from_bytes(scalar_ptr).or(Err(ErrorCode::UnarchivingError))?;
+    let displayed = alloc::format!("{}", scalar);
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes[2..].as_ptr(), output.as_mut_ptr(), 64);
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn accounts_into_raw(
+    accounts_ptr: *const u8,
+    raws_ptr: *mut *mut u8,
+) -> ErrorCode {
+    let bytes: Vec<u8> = mem::read_buffer(accounts_ptr)
+        .chunks(BlsPublicKey::SIZE)
+        .map(BlsPublicKey::from_slice)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| ErrorCode::DeserializationError)?
+        .into_iter()
+        .map(|bpk| to_bytes::<_, 256>(&bpk))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| ErrorCode::ArchivingError)?
+        .iter()
+        .fold(Vec::new(), |mut vec, aligned| {
+            vec.extend_from_slice(aligned.as_slice());
+            vec
+        });
+
+    let len = bytes.len().to_le_bytes();
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *raws_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    ErrorCode::Ok
+}
+
 /// Calculate the balance info for the phoenix address at the given index for
 /// the given seed.
 #[no_mangle]
@@ -158,7 +225,7 @@ pub unsafe fn balance(
 
     let notes: Vec<NoteLeaf> = mem::from_buffer(notes_ptr)?;
 
-    let info = phoenix_balance(&vk, notes.iter());
+    let info = balance::calculate_unchecked(&vk, notes.iter());
 
     ptr::copy_nonoverlapping(
         info.to_bytes().as_ptr(),
@@ -196,10 +263,215 @@ pub unsafe fn pick_notes(
 
 /// Gets the bookmark from the given note.
 #[no_mangle]
-pub unsafe fn bookmark(leaf_ptr: *const u8, bookmark: *mut u64) -> ErrorCode {
-    let leaf: NoteLeaf = mem::from_buffer(leaf_ptr)?;
+pub unsafe fn bookmarks(
+    notes_ptr: *const u8,
+    bookmarks_ptr: *mut *mut u8,
+) -> ErrorCode {
+    let notes: Vec<NoteLeaf> = mem::from_buffer(notes_ptr)?;
 
-    *bookmark = *leaf.note.pos();
+    let bookmarks: Vec<u64> =
+        notes.into_iter().map(|leaf| *leaf.note.pos()).collect();
+
+    let bytes: Vec<u8> = bookmarks
+        .iter()
+        .flat_map(|&num| num.to_le_bytes())
+        .collect();
+
+    let ptr = mem::malloc(bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *bookmarks_ptr = ptr;
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr, bytes.len());
+
+    ErrorCode::Ok
+}
+
+#[derive(Default)]
+struct NoOpProver {
+    circuits: core::cell::RefCell<Vec<u8>>,
+}
+
+impl Prove for NoOpProver {
+    fn prove(&self, circuits: &[u8]) -> Result<Vec<u8>, execution_core::Error> {
+        *self.circuits.borrow_mut() = circuits.to_vec();
+
+        Ok(circuits.to_vec())
+    }
+}
+
+#[no_mangle]
+pub unsafe fn into_proved(
+    tx_ptr: *const u8,
+    proof_ptr: *const u8,
+    proved_ptr: *mut *mut u8,
+    hash_ptr: &mut [u8; 64],
+) -> ErrorCode {
+    let tx = mem::read_buffer(tx_ptr);
+    let mut tx: phoenix::Transaction = mem::parse_buffer(tx)?;
+    let proof = mem::read_buffer(proof_ptr);
+
+    tx.set_proof(proof.to_vec());
+
+    let bytes = Transaction::Phoenix(tx.clone()).to_var_bytes();
+
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *proved_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    let displayed = revert(&tx.hash());
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), hash_ptr.as_mut_ptr(), 64);
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn phoenix(
+    rng: &[u8; 32],
+    seed: &Seed,
+    sender_index: u8,
+    receiver: &[u8; PhoenixPublicKey::SIZE],
+    inputs: *const u8,
+    openings: *const u8,
+    root: &[u8; BlsScalar::SIZE],
+    transfer_value: *const u64,
+    obfuscated_transaction: bool, // ?
+    deposit: *const u64,          // ?
+    gas_limit: *const u64,
+    gas_price: *const u64,
+    chain_id: u8,    // ?
+    data: *const u8, // ?
+    tx_ptr: *mut *mut u8,
+    proof_ptr: *mut *mut u8,
+) -> ErrorCode {
+    let mut rng = ChaCha12Rng::from_seed(*rng);
+
+    let sender_sk = derive_phoenix_sk(&seed, sender_index);
+    let change_pk = PhoenixPublicKey::from(&sender_sk);
+    let receiver_pk = PhoenixPublicKey::from_bytes(receiver)
+        .or(Err(ErrorCode::DeserializationError))?;
+
+    let root: BlsScalar =
+        rkyv::from_bytes(root).or(Err(ErrorCode::UnarchivingError))?;
+
+    let openings: Vec<Option<NoteOpening>> = mem::from_buffer(openings)?;
+
+    let notes: Vec<NoteLeaf> = mem::from_buffer(inputs)?;
+
+    let inputs: Vec<(Note, NoteOpening)> = notes
+        .into_iter()
+        .map(|note_leaf| note_leaf.note)
+        .zip(openings.into_iter())
+        .filter_map(|(note, opening)| opening.map(|op| (note, op)))
+        .collect();
+
+    let data: Option<TransactionData> =
+        if data.is_null() { None } else { todo!() };
+
+    let prover = NoOpProver::default();
+
+    let tx = phoenix::Transaction::new(
+        &mut rng,
+        &sender_sk,
+        &change_pk,
+        &receiver_pk,
+        inputs,
+        root,
+        *transfer_value,
+        obfuscated_transaction,
+        *deposit,
+        *gas_limit,
+        *gas_price,
+        chain_id,
+        data,
+        &prover,
+    )
+    .or(Err(ErrorCode::PhoenixTransactionError))?;
+
+    let bytes = to_bytes::<_, 4096>(&tx).or(Err(ErrorCode::ArchivingError))?;
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *tx_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    let bytes = prover.circuits.into_inner();
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *proof_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn moonlight(
+    seed: &Seed,
+    sender_index: u8,
+    receiver: &[u8; BlsPublicKey::SIZE],
+    transfer_value: *const u64,
+    deposit: *const u64, // ?
+    gas_limit: *const u64,
+    gas_price: *const u64,
+    nonce: *const u64,
+    chain_id: u8,    // ?
+    data: *const u8, // ?
+    tx_ptr: *mut *mut u8,
+    hash_ptr: &mut [u8; 64],
+) -> ErrorCode {
+    let sender_sk = derive_bls_sk(&seed, sender_index);
+
+    let receiver_pk = BlsPublicKey::from_bytes(receiver)
+        .or(Err(ErrorCode::DeserializationError))?;
+
+    let data: Option<TransactionData> =
+        if data.is_null() { None } else { todo!() };
+
+    let tx = MoonlightTransaction::new(
+        &sender_sk,
+        Some(receiver_pk),
+        *transfer_value,
+        *deposit,
+        *gas_limit,
+        *gas_price,
+        *nonce,
+        chain_id,
+        data,
+    )
+    .or(Err(ErrorCode::MoonlightTransactionError))?;
+
+    let bytes = Transaction::Moonlight(tx.clone()).to_var_bytes();
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *tx_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    let displayed = revert(&tx.hash());
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), hash_ptr.as_mut_ptr(), 64);
 
     ErrorCode::Ok
 }

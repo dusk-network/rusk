@@ -99,25 +99,26 @@ fn test_map_owned() {
     // notes with idx 0, 1 and 4 are owned by owner_1
     let notes_by_1 = map_owned(&owner_1_sks, &note_leaves);
     assert_eq!(notes_by_1.len(), 3);
+
     let note = &note_leaves[0].note;
     let nullifier = note.gen_nullifier(&owner_1_sks[0]);
-    assert_eq!(&notes_by_1[&nullifier].note, note);
+    assert_eq!(&notes_by_1[0][&nullifier].note, note);
     let note = &note_leaves[1].note;
     let nullifier = note.gen_nullifier(&owner_1_sks[1]);
-    assert_eq!(&notes_by_1[&nullifier].note, note);
+    assert_eq!(&notes_by_1[1][&nullifier].note, note);
     let note = &note_leaves[4].note;
     let nullifier = note.gen_nullifier(&owner_1_sks[2]);
-    assert_eq!(&notes_by_1[&nullifier].note, note);
+    assert_eq!(&notes_by_1[2][&nullifier].note, note);
 
     // notes with idx 2 and 3 are owned by owner_2
     let notes_by_2 = map_owned(&owner_2_sks, &note_leaves);
     assert_eq!(notes_by_2.len(), 2);
     let note = &note_leaves[2].note;
     let nullifier = note.gen_nullifier(&owner_2_sks[0]);
-    assert_eq!(&notes_by_2[&nullifier].note, note);
+    assert_eq!(&notes_by_2[0][&nullifier].note, note);
     let note = &note_leaves[3].note;
     let nullifier = note.gen_nullifier(&owner_2_sks[1]);
-    assert_eq!(&notes_by_2[&nullifier].note, note);
+    assert_eq!(&notes_by_2[1][&nullifier].note, note);
 }
 
 #[test]
@@ -131,8 +132,8 @@ fn test_balance() {
 
     // create the notes
     for value in 0..=10 {
-        // we want to test with a mix of transparent and obfuscated notes so we
-        // make every 10th note transparent
+        // we want to test with a mix of transparent and obfuscated notes so
+        // we make every 10th note transparent
         let obfuscated_note = value % 10 != 0;
 
         notes.push(gen_note(&mut rng, obfuscated_note, &owner_pk, value));
