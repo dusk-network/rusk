@@ -1,6 +1,7 @@
 import { get, writable } from "svelte/store";
 import { map, setKey } from "lamb";
 import {
+  AccountSyncer,
   Bookkeeper,
   Bookmark,
   ProfileGenerator,
@@ -25,6 +26,10 @@ const initialState = {
   balance: {
     shielded: {
       spendable: 0n,
+      value: 0n,
+    },
+    unshielded: {
+      nonce: 0n,
       value: 0n,
     },
   },
@@ -61,11 +66,19 @@ const updateBalance = async () => {
     return;
   }
 
+  const accountSyncer = new AccountSyncer(await networkStore.connect());
   const shielded = await bookkeeper.balance(currentProfile.address);
+
+  /*
+   * Temporary access to the AccountSyncer here until we move
+   * the treasury out of the cache and implement its interface
+   * correctly.
+   */
+  const [unshielded] = await accountSyncer.balances([currentProfile]);
 
   update((currentStore) => ({
     ...currentStore,
-    balance: { shielded },
+    balance: { shielded, unshielded },
   }));
 };
 

@@ -28,8 +28,6 @@ vi.mock("$lib/stores", async (importOriginal) => {
   };
 });
 
-vi.useFakeTimers();
-
 describe("Dashboard Layout", () => {
   /**
    * @param {Element} container
@@ -158,14 +156,44 @@ describe("Dashboard Layout", () => {
     expect(container).toMatchSnapshot();
   });
 
+  it("should show the correct shielded percentage", async () => {
+    const { getByRole } = render(Layout, baseProps);
+    const { balance } = mockedWalletStore.getMockedStoreValue();
+    const [shielded, unshielded] = [
+      balance.shielded.value,
+      balance.unshielded.value,
+    ];
+    const expectedPercentage = (
+      (luxToDusk(shielded) * 100) /
+      luxToDusk(shielded + unshielded)
+    ).toFixed(2);
+    const meter = getByRole("meter");
+
+    expect(meter).toHaveAttribute("aria-valuenow", expectedPercentage);
+
+    await act(() => {
+      mockedWalletStore.setMockedStoreValue({
+        ...initialState,
+        balance: {
+          shielded: { spendable: 0n, value: 0n },
+          unshielded: { nonce: 0n, value: 0n },
+        },
+      });
+    });
+
+    expect(meter).toHaveAttribute("aria-valuenow", "0");
+  });
+
   it("should render the dashboard layout and show a throbber while balance is loading", async () => {
+    vi.useFakeTimers();
+
     const { container } = render(Layout, baseProps);
 
     expect(container.querySelector(".dusk-balance__fiat--visible")).toBeNull();
 
     expect(container.firstChild).toMatchSnapshot();
 
-    await vi.advanceTimersToNextTimerAsync();
+    await vi.runAllTimersAsync();
 
     expect(
       container.querySelector(".dusk-balance__fiat--visible")
@@ -174,6 +202,8 @@ describe("Dashboard Layout", () => {
     expect(container.querySelector(".dusk-balance__fiat")).toHaveTextContent(
       formatter(expectedFiat)
     );
+
+    vi.useRealTimers();
   });
 
   it("should render the dashboard layout in the sync state when no progress is reported", async () => {

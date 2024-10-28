@@ -63,6 +63,10 @@ type WalletStoreContent = {
       spendable: bigint;
       value: bigint;
     };
+    unshielded: {
+      nonce: bigint;
+      value: bigint;
+    };
   };
   currentProfile: import("$lib/vendor/w3sper.js/src/mod").Profile | null;
   initialized: boolean;

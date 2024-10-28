@@ -50,7 +50,7 @@
       {fiatFormatter(fiatPrice ? fiatPrice * tokens : 0)}
     </strong>
   </p>
-  {#if shieldedTokensPercentage}
+  {#if shieldedTokensPercentage !== undefined}
     <UsageIndicator
       className="dusk-balance__usage"
       value={shieldedTokensPercentage}

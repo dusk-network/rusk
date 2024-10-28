@@ -57,6 +57,15 @@
     networkStatusIconPath = mdiLink;
     syncStatusLabel = `Dusk ${network}`;
   }
+  $: totalBalance = luxToDusk(
+    balance.shielded.value + balance.unshielded.value
+  );
+  $: shieldedTokensPercentage =
+    import.meta.env.VITE_FEATURE_ALLOCATE === "true"
+      ? totalBalance > 0
+        ? +((luxToDusk(balance.shielded.value) * 100) / totalBalance).toFixed(2)
+        : 0
+      : undefined;
 </script>
 
 <svelte:window
@@ -77,9 +86,7 @@
       locale={language}
       tokenCurrency="DUSK"
       tokens={luxToDusk(balance.shielded.value)}
-      shieldedTokensPercentage={import.meta.env.VITE_FEATURE_ALLOCATE || false
-        ? 100
-        : undefined}
+      {shieldedTokensPercentage}
     />
 
     <slot />

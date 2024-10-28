@@ -63,7 +63,9 @@ describe("Create", async () => {
     .mockReturnValue(mnemonicShuffled);
   const gotoSpy = vi.spyOn(navigation, "goto");
   const settingsResetSpy = vi.spyOn(settingsStore, "reset");
-  const clearAndInitSpy = vi.spyOn(walletStore, "clearLocalDataAndInit");
+  const clearAndInitSpy = vi
+    .spyOn(walletStore, "clearLocalDataAndInit")
+    .mockResolvedValue(undefined);
   const initWalletSpy = vi.spyOn(walletLib, "initializeWallet");
 
   afterEach(async () => {

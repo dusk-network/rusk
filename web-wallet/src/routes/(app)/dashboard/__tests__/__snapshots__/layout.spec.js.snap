@@ -111,7 +111,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
           <svg
             class="dusk-icon dusk-icon--size--default usage-indicator__icon"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="You have put 100% of your funds in your shielded account"
+            data-tooltip-text="You have put 66.67% of your funds in your shielded account"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -124,22 +124,22 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
           <div
             aria-valuemax="100"
             aria-valuemin="0"
-            aria-valuenow="100"
-            aria-valuetext="You have put 100% of your funds in your shielded account"
+            aria-valuenow="66.67"
+            aria-valuetext="You have put 66.67% of your funds in your shielded account"
             class="usage-indicator__meter"
             role="meter"
           >
             <div
               aria-hidden="true"
               class="usage-indicator__meter-bar"
-              style="width: 100%;"
+              style="width: 66.67%;"
             />
           </div>
            
           <svg
             class="dusk-icon dusk-icon--size--default usage-indicator__icon"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="You have put 0% of your funds in your unshielded account"
+            data-tooltip-text="You have put 33.33% of your funds in your unshielded account"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -329,7 +329,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
         <svg
           class="dusk-icon dusk-icon--size--default usage-indicator__icon"
           data-tooltip-id="main-tooltip"
-          data-tooltip-text="You have put 100% of your funds in your shielded account"
+          data-tooltip-text="You have put 66.67% of your funds in your shielded account"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -342,22 +342,22 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
         <div
           aria-valuemax="100"
           aria-valuemin="0"
-          aria-valuenow="100"
-          aria-valuetext="You have put 100% of your funds in your shielded account"
+          aria-valuenow="66.67"
+          aria-valuetext="You have put 66.67% of your funds in your shielded account"
           class="usage-indicator__meter"
           role="meter"
         >
           <div
             aria-hidden="true"
             class="usage-indicator__meter-bar"
-            style="width: 100%;"
+            style="width: 66.67%;"
           />
         </div>
          
         <svg
           class="dusk-icon dusk-icon--size--default usage-indicator__icon"
           data-tooltip-id="main-tooltip"
-          data-tooltip-text="You have put 0% of your funds in your unshielded account"
+          data-tooltip-text="You have put 33.33% of your funds in your unshielded account"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -547,7 +547,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
           <svg
             class="dusk-icon dusk-icon--size--default usage-indicator__icon"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="You have put 100% of your funds in your shielded account"
+            data-tooltip-text="You have put 66.67% of your funds in your shielded account"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -560,22 +560,22 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
           <div
             aria-valuemax="100"
             aria-valuemin="0"
-            aria-valuenow="100"
-            aria-valuetext="You have put 100% of your funds in your shielded account"
+            aria-valuenow="66.67"
+            aria-valuetext="You have put 66.67% of your funds in your shielded account"
             class="usage-indicator__meter"
             role="meter"
           >
             <div
               aria-hidden="true"
               class="usage-indicator__meter-bar"
-              style="width: 100%;"
+              style="width: 66.67%;"
             />
           </div>
            
           <svg
             class="dusk-icon dusk-icon--size--default usage-indicator__icon"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="You have put 0% of your funds in your unshielded account"
+            data-tooltip-text="You have put 33.33% of your funds in your unshielded account"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -786,7 +786,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         <svg
           class="dusk-icon dusk-icon--size--default usage-indicator__icon"
           data-tooltip-id="main-tooltip"
-          data-tooltip-text="You have put 100% of your funds in your shielded account"
+          data-tooltip-text="You have put 66.67% of your funds in your shielded account"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -799,22 +799,22 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         <div
           aria-valuemax="100"
           aria-valuemin="0"
-          aria-valuenow="100"
-          aria-valuetext="You have put 100% of your funds in your shielded account"
+          aria-valuenow="66.67"
+          aria-valuetext="You have put 66.67% of your funds in your shielded account"
           class="usage-indicator__meter"
           role="meter"
         >
           <div
             aria-hidden="true"
             class="usage-indicator__meter-bar"
-            style="width: 100%;"
+            style="width: 66.67%;"
           />
         </div>
          
         <svg
           class="dusk-icon dusk-icon--size--default usage-indicator__icon"
           data-tooltip-id="main-tooltip"
-          data-tooltip-text="You have put 0% of your funds in your unshielded account"
+          data-tooltip-text="You have put 33.33% of your funds in your unshielded account"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
@@ -1012,7 +1012,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
           <svg
             class="dusk-icon dusk-icon--size--default usage-indicator__icon"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="You have put 100% of your funds in your shielded account"
+            data-tooltip-text="You have put 66.67% of your funds in your shielded account"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -1025,22 +1025,22 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
           <div
             aria-valuemax="100"
             aria-valuemin="0"
-            aria-valuenow="100"
-            aria-valuetext="You have put 100% of your funds in your shielded account"
+            aria-valuenow="66.67"
+            aria-valuetext="You have put 66.67% of your funds in your shielded account"
             class="usage-indicator__meter"
             role="meter"
           >
             <div
               aria-hidden="true"
               class="usage-indicator__meter-bar"
-              style="width: 100%;"
+              style="width: 66.67%;"
             />
           </div>
            
           <svg
             class="dusk-icon dusk-icon--size--default usage-indicator__icon"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="You have put 0% of your funds in your unshielded account"
+            data-tooltip-text="You have put 33.33% of your funds in your unshielded account"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >

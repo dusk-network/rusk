@@ -12,10 +12,11 @@ const profiles = [
 ];
 const currentProfile = profiles[0];
 const shielded = { spendable: 50_000_000_000_000n, value: 2_345_000_000_000n };
+const unshielded = { nonce: 1234n, value: shielded.value / 2n };
 
 /** @type {WalletStoreContent} */
 const content = {
-  balance: { shielded },
+  balance: { shielded, unshielded },
   currentProfile,
   initialized: true,
   profiles,
