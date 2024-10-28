@@ -158,7 +158,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     match msg.payload {
                         Payload::Candidate(_)
                         | Payload::Validation(_)
-                        | Payload::Ratification(_) => {
+                        | Payload::Ratification(_)
+                        | Payload::ValidationQuorum(_) => {
                             // If we received a Step Message, we pass it on to
                             // the running step for processing.
                             if let Some(step_result) = self
