@@ -353,7 +353,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         match &msg.payload {
             Payload::Candidate(_)
             | Payload::Validation(_)
-            | Payload::Ratification(_) => {
+            | Payload::Ratification(_)
+            | Payload::ValidationQuorum(_) => {
                 // Process consensus msg only if they are for the current round
                 // or at most 10 rounds in the future
                 let msg_round = msg.header.round;
