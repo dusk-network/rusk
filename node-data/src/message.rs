@@ -1370,6 +1370,7 @@ impl Topics {
                 | Topics::Validation
                 | Topics::Ratification
                 | Topics::Quorum
+                | Topics::ValidationQuorum
         )
     }
 }
@@ -1386,6 +1387,7 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::Validation);
         map_topic!(v, Topics::Ratification);
         map_topic!(v, Topics::Quorum);
+        map_topic!(v, Topics::ValidationQuorum);
 
         Topics::Unknown
     }
