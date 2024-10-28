@@ -18,7 +18,7 @@ use std::path::PathBuf;
 pub(crate) struct WalletArgs {
     /// Directory to store user data [default: `$HOME/.dusk/rusk-wallet`]
     #[arg(short, long)]
-    pub profile: Option<PathBuf>,
+    pub wallet_dir: Option<PathBuf>,
 
     /// Network to connect to
     #[arg(short, long)]
