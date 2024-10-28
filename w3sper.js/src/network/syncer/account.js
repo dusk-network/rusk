@@ -41,18 +41,19 @@ export class AccountSyncer extends EventTarget {
     const rawUsers = await ProtocolDriver.accountsIntoRaw(profiles);
 
     let balances = rawUsers.map(async (body) => {
-      const url = new URL(
-        `/on/contracts:${TRANSFER}/account`,
-        this.#network.url,
-      );
+      // const url = new URL(
+      //   `/on/contracts:${TRANSFER}/account`,
+      //   this.#network.url,
+      // );
 
-      const req = new Request(url, {
-        headers: { "Content-Type": "application/octet-stream" },
-        method: "POST",
-        body,
-      });
+      // const req = new Request(url, {
+      //   headers: { "Content-Type": "application/octet-stream" },
+      //   method: "POST",
+      //   body,
+      // });
 
-      return this.#network.dispatch(req);
+      // return this.#network.dispatch(req);
+      return this.#network.contracts.withId(TRANSFER).call.account(body);
     });
 
     return await Promise.all(balances)

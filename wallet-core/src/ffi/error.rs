@@ -25,8 +25,10 @@ pub enum ErrorCode {
     DeserializationError = 253,
     // Phoenix Transaction error
     PhoenixTransactionError = 252,
+    // Moonlight Transaction error
+    MoonlightTransactionError = 251,
     // Opening error
-    NoneOpeningError = 251,
+    NoneOpeningError = 250,
     // Success
     Ok = 0,
 }

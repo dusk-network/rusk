@@ -21,7 +21,8 @@ pub mod mem;
 pub mod panic;
 
 use crate::keys::{
-    derive_bls_pk, derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
+    derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
+    derive_phoenix_vk,
 };
 use crate::notes::{self, balance, owned, pick};
 use crate::Seed;
@@ -32,11 +33,13 @@ use core::{ptr, slice};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use execution_core::signatures::bls::PublicKey as BlsPublicKey;
 use execution_core::transfer::data::TransactionData;
+use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use execution_core::transfer::phoenix;
 use execution_core::transfer::phoenix::{
     ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
     PublicKey as PhoenixPublicKey,
 };
+
 use execution_core::transfer::Transaction;
 use execution_core::BlsScalar;
 
@@ -424,6 +427,75 @@ pub unsafe fn phoenix(
 
     ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
     ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn moonlight(
+    seed: &Seed,
+    sender_index: u8,
+    receiver: &[u8; BlsPublicKey::SIZE],
+    transfer_value: *const u64,
+    deposit: *const u64, // ?
+    gas_limit: *const u64,
+    gas_price: *const u64,
+    nonce: *const u64,
+    chain_id: u8,    // ?
+    data: *const u8, // ?
+    tx_ptr: *mut *mut u8,
+    hash_ptr: &mut [u8; 64],
+) -> ErrorCode {
+    let sender_sk = derive_bls_sk(&seed, sender_index);
+
+    let receiver_pk = BlsPublicKey::from_bytes(receiver)
+        .or(Err(ErrorCode::DeserializationError))?;
+
+    let data: Option<TransactionData> =
+        if data.is_null() { None } else { todo!() };
+
+    let tx = MoonlightTransaction::new(
+        &sender_sk,
+        Some(receiver_pk),
+        *transfer_value,
+        *deposit,
+        *gas_limit,
+        *gas_price,
+        *nonce,
+        chain_id,
+        data,
+    )
+    .or(Err(ErrorCode::MoonlightTransactionError))?;
+
+    // let bytes = to_bytes::<_, 4096>(&tx).or(Err(ErrorCode::ArchivingError))?;
+    let bytes = Transaction::Moonlight(tx.clone()).to_var_bytes();
+    eprintln!("[{}] {:?}", bytes.len(), bytes);
+    let bytes_len = bytes.len();
+
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *tx_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    // Unfortunately, the BlsScalar type had a display implementation that
+    // does not follow the raw bytes format. Therefore the `tx.hash` display
+    // DOES NOT match the `tx.hash` of the network.
+    let displayed = alloc::format!("{}", &tx.hash());
+    let displayed = displayed.chars().skip(2).collect::<Vec<_>>();
+    let displayed = displayed
+        .chunks(2)
+        .rev()
+        .flatten()
+        .collect::<alloc::string::String>();
+
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), hash_ptr.as_mut_ptr(), 64);
 
     ErrorCode::Ok
 }

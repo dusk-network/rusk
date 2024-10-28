@@ -10,6 +10,7 @@ export const TRANSFER =
 import { AddressSyncer } from "./network/syncer/address.js";
 import { Gas } from "./network/gas.js";
 import * as ProtocolDriver from "./protocol-driver/mod.js";
+import { ProfileGenerator } from "./profile.js";
 
 export class TransactionBuilder {
   #bookkeeper;
@@ -51,7 +52,7 @@ export class TransactionBuilder {
     return this;
   }
 
-  async build(network) {
+  async #addressBuild(network) {
     // Pick notes to spend from the treasury
     const picked = await this.#bookkeeper.pick(
       this.#from,
@@ -74,7 +75,7 @@ export class TransactionBuilder {
     const nullifiers = [...picked.keys()];
 
     // Get the chain id from the network
-    const { chainId } = network.nodeInfo;
+    const { chainId } = await network.node.info();
 
     // Create the unproven transaction
     let [tx, circuits] = await ProtocolDriver.phoenix({
@@ -103,5 +104,43 @@ export class TransactionBuilder {
       hash,
       nullifiers,
     });
+  }
+
+  async #accountBuild(network) {
+    const sender = this.#from;
+    const receiver = this.#to;
+
+    // Get the chain id from the network
+    const { chainId } = await network.node.info();
+
+    // Get the nonce
+    let { nonce } = await this.#bookkeeper.balance(sender);
+    nonce += 1n;
+
+    let [buffer, hash] = await ProtocolDriver.moonlight({
+      sender,
+      receiver,
+      transfer_value: this.#amount,
+      deposit: 0n,
+      gas_limit: this.#gas.limit,
+      gas_price: this.#gas.price,
+      nonce,
+      chainId,
+      data: null,
+    });
+
+    return Object.freeze({
+      buffer,
+      hash,
+    });
+  }
+
+  async build(network) {
+    switch (ProfileGenerator.typeOf(this.#from.toString())) {
+      case "account":
+        return this.#accountBuild(network);
+      case "address":
+        return this.#addressBuild(network);
+    }
   }
 }

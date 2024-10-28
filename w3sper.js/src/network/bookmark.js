@@ -10,6 +10,7 @@ export class Bookmark {
   #data = new Uint8Array(8).fill(0xff);
 
   constructor(data) {
+    console.log(data);
     if (data instanceof Uint8Array && data.byteLength === 8) {
       this.#data = data;
     } else {

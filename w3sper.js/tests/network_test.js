@@ -20,21 +20,14 @@ test("Network connection", async () => {
   const network = new Network("http://localhost:8080/");
 
   assert.ok(!network.connected);
-  assert.equal(network.nodeInfo, null);
 
-  await network.connect();
-  assert.ok(network.connected);
-  assert.equal(Object.keys(network.nodeInfo), [
+  assert.equal(Object.keys(await network.node.info()), [
     "bootstrappingNodes",
     "chainId",
     "kadcastAddress",
     "version",
     "versionBuild",
   ]);
-
-  await network.disconnect();
-  assert.ok(!network.connected);
-  assert.equal(network.nodeInfo, null);
 });
 
 test("Network block height", async () => {

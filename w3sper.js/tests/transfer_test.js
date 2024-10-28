@@ -19,49 +19,65 @@ import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 
 test.withLocalWasm = "release";
 
-test("balances", async () => {
+// test("addresses", async () => {
+//   const network = await Network.connect("http://localhost:8080/");
+//   const profiles = new ProfileGenerator(seeder);
+
+//   const users = await Promise.all([profiles.default, profiles.next()]);
+
+//   const addresses = new AddressSyncer(network);
+
+//   const treasury = new Treasury(users);
+//   const from = Bookmark.from(0n);
+
+//   await treasury.update({ addresses, from });
+
+//   const bookkeeper = new Bookkeeper(treasury);
+
+//   let addressBalances = await Promise.all(
+//     users.map((user) => bookkeeper.balance(user.address)),
+//   );
+
+//   console.log(addressBalances[0].value, addressBalances[1].value);
+
+//   const transfer = bookkeeper
+//     .transfer(1n)
+//     .obfuscated()
+//     .from(users[1].address)
+//     .to(users[0].address)
+//     .gas(new Gas({ limit: 500_000_000n }));
+
+//   await network.execute(transfer);
+
+//   await network.disconnect();
+// });
+
+test("accounts", async () => {
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
 
   const users = await Promise.all([profiles.default, profiles.next()]);
 
-  let url = new URL("on/transactions/executed", network.url);
-
-  let response = await fetch(url, {
-    headers: {
-      "rusk-version": "0.8.0",
-      "rusk-session-id": network.sessionId,
-    },
-  }).catch(console.error);
-  console.log(response);
-
-  const addresses = new AddressSyncer(network);
+  const accounts = new AccountSyncer(network);
 
   const treasury = new Treasury(users);
-  const from = Bookmark.from(0n);
 
-  await treasury.update({ addresses, from });
+  await treasury.update({ accounts });
 
   const bookkeeper = new Bookkeeper(treasury);
 
-  let addressBalances = await Promise.all(
-    users.map((user) => bookkeeper.balance(user.address)),
+  console.log(
+    await bookkeeper.balance(users[0].account),
+    await bookkeeper.balance(users[1].account),
   );
-
-  console.log(addressBalances[0].value, addressBalances[1].value);
 
   const transfer = bookkeeper
     .transfer(1n)
-    .obfuscated()
-    .from(users[1].address)
-    .to(users[0].address)
+    .from(users[1].account)
+    .to(users[0].account)
     .gas(new Gas({ limit: 500_000_000n }));
 
-  const tx = await network.execute(transfer);
+  await network.execute(transfer);
 
-  console.log("hash:", tx.hash);
-  console.log("nullifier", tx.nullifiers);
-
-  await new Promise((r) => setTimeout(r, 30_000));
   await network.disconnect();
 });
