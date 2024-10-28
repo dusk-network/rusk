@@ -1,0 +1,879 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
+use std::sync::mpsc;
+
+pub mod common;
+
+use crate::common::utils::{
+    account, chain_id, contract_balance, execute, filter_notes_owned_by,
+    leaves_from_height, owned_notes_value, update_root,
+};
+
+use dusk_bytes::Serializable;
+use ff::Field;
+use rand::rngs::StdRng;
+use rand::{CryptoRng, RngCore, SeedableRng};
+
+use execution_core::{
+    dusk,
+    signatures::bls::{
+        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
+    },
+    transfer::{
+        data::{ContractCall, TransactionData},
+        phoenix::{
+            Note, NoteLeaf, NoteOpening, NoteTreeItem,
+            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            Transaction as PhoenixTransaction, ViewKey as PhoenixViewKey,
+        },
+        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
+        TRANSFER_CONTRACT,
+    },
+    BlsScalar, ContractId, JubJubScalar, LUX,
+};
+use rusk_abi::{ContractData, PiecrustError, Session};
+use rusk_prover::LocalProver;
+
+const PHOENIX_GENESIS_VALUE: u64 = dusk(1_000.0);
+const ALICE_GENESIS_VALUE: u64 = dusk(2_000.0);
+
+const GAS_LIMIT: u64 = 0x10000000;
+
+const ALICE_ID: ContractId = {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 0xFA;
+    ContractId::from_bytes(bytes)
+};
+const BOB_ID: ContractId = {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 0xFB;
+    ContractId::from_bytes(bytes)
+};
+
+const OWNER: [u8; 32] = [0; 32];
+const CHAIN_ID: u8 = 0xFA;
+
+/// Instantiate the virtual machine with the transfer contract deployed, with a
+/// single note carrying the `PHOENIX_GENESIS_VALUE` owned by the given public
+/// key and alice and bob contracts deployed with alice contract owning
+/// `ALICE_GENESIS_VALUE`.
+fn instantiate<Rng: RngCore + CryptoRng>(
+    rng: &mut Rng,
+    phoenix_sk: &PhoenixSecretKey,
+) -> Session {
+    let transfer_bytecode = include_bytes!(
+        "../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
+    );
+    let alice_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+    );
+    let bob_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+    );
+
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
+
+    let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
+
+    session
+        .deploy(
+            transfer_bytecode,
+            ContractData::builder()
+                .owner(OWNER)
+                .contract_id(TRANSFER_CONTRACT),
+            GAS_LIMIT,
+        )
+        .expect("Deploying the transfer contract should succeed");
+
+    session
+        .deploy(
+            alice_bytecode,
+            ContractData::builder().owner(OWNER).contract_id(ALICE_ID),
+            GAS_LIMIT,
+        )
+        .expect("Deploying the alice contract should succeed");
+
+    session
+        .deploy(
+            bob_bytecode,
+            ContractData::builder()
+                .owner(OWNER)
+                .contract_id(BOB_ID)
+                .init_arg(&1u8),
+            GAS_LIMIT,
+        )
+        .expect("Deploying the bob contract should succeed");
+
+    let phoenix_pk = PhoenixPublicKey::from(phoenix_sk);
+    let phoenix_vk = PhoenixViewKey::from(phoenix_sk);
+    let sender_blinder = [
+        JubJubScalar::random(&mut *rng),
+        JubJubScalar::random(&mut *rng),
+    ];
+    let genesis_note = Note::transparent(
+        rng,
+        &phoenix_pk,
+        &phoenix_pk,
+        PHOENIX_GENESIS_VALUE,
+        sender_blinder,
+    );
+
+    // push genesis phoenix note to the contract
+    session
+        .call::<_, Note>(
+            TRANSFER_CONTRACT,
+            "push_note",
+            &(0u64, genesis_note),
+            GAS_LIMIT,
+        )
+        .expect("Pushing genesis note should succeed");
+
+    update_root(&mut session).expect("Updating the root should succeed");
+
+    // insert genesis value to alice contract
+    session
+        .call::<_, ()>(
+            TRANSFER_CONTRACT,
+            "add_contract_balance",
+            &(ALICE_ID, ALICE_GENESIS_VALUE),
+            GAS_LIMIT,
+        )
+        .expect("Inserting genesis account should succeed");
+
+    // commit the first block, this sets the block height for all subsequent
+    // operations to 1
+    let base = session.commit().expect("Committing should succeed");
+    // start a new session from that base-commit
+    let mut session = rusk_abi::new_session(vm, base, CHAIN_ID, 1)
+        .expect("Instantiating new session should succeed");
+
+    // check that the genesis state is correct:
+
+    // one leaf at genesis block
+    let leaves = leaves_from_height(&mut session, 0)
+        .expect("Getting leaves from the genesis block should succeed");
+    assert_eq!(leaves.len(), 1, "There should be one note at genesis state");
+
+    let total_num_notes =
+        num_notes(&mut session).expect("Getting num_notes should succeed");
+    assert_eq!(
+        total_num_notes,
+        leaves.last().expect("note to exists").note.pos() + 1,
+        "num_notes should match position of last note + 1"
+    );
+
+    // the genesis note is owned by the given key and has genesis value
+    let ownded_notes = filter_notes_owned_by(
+        phoenix_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    assert_eq!(
+        owned_notes_value(phoenix_vk, &ownded_notes),
+        PHOENIX_GENESIS_VALUE,
+        "the genesis note should hold the genesis-value"
+    );
+
+    // the alice contract is instantiated with the expected value
+    let alice_balance = contract_balance(&mut session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+    assert_eq!(
+        alice_balance, ALICE_GENESIS_VALUE,
+        "alice contract should have its genesis value"
+    );
+
+    // chain-id is as expected
+    let chain_id =
+        chain_id(&mut session).expect("Getting the chain ID should succeed");
+    assert_eq!(chain_id, CHAIN_ID, "the chain id should be as expected");
+
+    session
+}
+
+/// Perform a simple transfer of funds between two phoenix addresses.
+#[test]
+fn transfer() {
+    const TRANSFER_FEE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
+    let phoenix_receiver_pk =
+        PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let session = &mut instantiate(rng, &phoenix_sender_sk);
+
+    // create the transaction
+    let gas_limit = TRANSFER_FEE;
+    let gas_price = LUX;
+    let input_note_pos = 0;
+    let transfer_value = 42;
+    let obfuscate_transfer_note = true;
+    let deposit = 0;
+    let contract_call: Option<ContractCall> = None;
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_receiver_pk,
+        gas_limit,
+        gas_price,
+        [input_note_pos],
+        transfer_value,
+        obfuscate_transfer_note,
+        deposit,
+        contract_call,
+    );
+
+    let gas_spent = execute(session, tx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
+    update_root(session).expect("Updating the root should succeed");
+
+    println!("EXECUTE_1_2 : {} gas", gas_spent);
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("Getting the notes should succeed");
+    assert_eq!(
+        leaves.len(),
+        3,
+        "There should be three notes in the tree at this block height"
+    );
+
+    let amount_notes =
+        num_notes(session).expect("Getting num_notes should succeed");
+    assert_eq!(
+        amount_notes,
+        leaves.last().expect("note to exists").note.pos() + 1,
+        "num_notes should match position of last note + 1"
+    );
+
+    let leaves = leaves_from_pos(session, input_note_pos + 1)
+        .expect("Getting the notes should succeed");
+    assert_eq!(
+        leaves.len(),
+        3,
+        "There should be three notes in the tree at this block height"
+    );
+}
+
+/// Checks if a transaction fails when the gas-price is 0.
+#[test]
+fn transfer_gas_fails() {
+    const TRANSFER_FEE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
+    let phoenix_receiver_pk =
+        PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
+
+    let session = &mut instantiate(rng, &phoenix_sender_sk);
+
+    let gas_limit = TRANSFER_FEE;
+    let gas_price = 0;
+    let input_note_pos = 0;
+    let transfer_value = 42;
+    let obfuscate_transfer_note = true;
+    let deposit = 0;
+    let contract_call: Option<ContractCall> = None;
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_receiver_pk,
+        gas_limit,
+        gas_price,
+        [input_note_pos],
+        transfer_value,
+        obfuscate_transfer_note,
+        deposit,
+        contract_call,
+    );
+
+    let total_num_notes_before_tx =
+        num_notes(session).expect("Getting num_notes should succeed");
+
+    let result = execute(session, tx);
+
+    assert!(
+        result.is_err(),
+        "Transaction should fail due to zero gas price"
+    );
+
+    // After the failed transaction, verify the state is unchanged
+    let leaves_after_fail = leaves_from_height(session, 0)
+        .expect("Getting the leaves should succeed after failed transaction");
+
+    assert_eq!(
+        leaves_after_fail.len(),
+        1, // The number of leaves should remain the same
+        "There should still be one note after the failed transaction"
+    );
+
+    let total_num_notes_after_tx =
+        num_notes(session).expect("Getting num_notes should succeed");
+
+    assert_eq!(
+        total_num_notes_after_tx, total_num_notes_before_tx,
+        "num_notes should not increase due to the failed transaction"
+    );
+}
+
+/// Performs a simple contract-call.
+#[test]
+fn alice_ping() {
+    const PING_FEE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
+    let session = &mut instantiate(rng, &phoenix_sender_sk);
+
+    // create the transaction
+    let gas_limit = PING_FEE;
+    let gas_price = LUX;
+    let input_note_pos = 0;
+    let transfer_value = 0;
+    let obfuscate_transfer_note = false;
+    let deposit = 0;
+    let contract_call = Some(ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("ping"),
+        fn_args: vec![],
+    });
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_sender_pk,
+        gas_limit,
+        gas_price,
+        [input_note_pos],
+        transfer_value,
+        obfuscate_transfer_note,
+        deposit,
+        contract_call,
+    );
+
+    let gas_spent = execute(session, tx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
+    update_root(session).expect("Updating the root should succeed");
+
+    println!("EXECUTE_PING: {} gas", gas_spent);
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("Getting the notes should succeed");
+    assert_eq!(
+        leaves.len(),
+        // since the transfer value is a transparent note with value 0 there is
+        // only the change note added to the tree
+        2,
+        "There should be two notes in the tree after the transaction"
+    );
+}
+
+/// Deposit funds into a contract and withdraw them again.
+#[test]
+fn deposit_and_withdraw() {
+    const DEPOSIT_FEE: u64 = dusk(1.0);
+    const WITHDRAW_FEE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
+    let session = &mut instantiate(rng, &phoenix_sender_sk);
+
+    // create the deposit transaction
+    let gas_limit = DEPOSIT_FEE;
+    let gas_price = LUX;
+    let input_note_pos = 0;
+    let transfer_value = 0;
+    let obfuscate_transfer_note = false;
+    let deposit_value = PHOENIX_GENESIS_VALUE / 2;
+    let contract_call = Some(ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("deposit"),
+        fn_args: deposit_value.to_bytes().into(),
+    });
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_sender_pk,
+        gas_limit,
+        gas_price,
+        [input_note_pos],
+        transfer_value,
+        obfuscate_transfer_note,
+        deposit_value,
+        contract_call,
+    );
+
+    let gas_spent = execute(session, tx.clone())
+        .expect("Executing TX should succeed")
+        .gas_spent;
+    update_root(session).expect("Updating the root should succeed");
+
+    println!("EXECUTE_DEPOSIT: {} gas", gas_spent);
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    assert_eq!(
+        PHOENIX_GENESIS_VALUE,
+        transfer_value
+            + tx.deposit()
+            + tx.max_fee()
+            + tx.outputs()[1]
+                .value(Some(&PhoenixViewKey::from(&phoenix_sender_sk)))
+                .unwrap()
+    );
+    assert_eq!(
+        leaves.len(),
+        // since the transfer value is a transparent note with value 0 there is
+        // only the change note added to the tree
+        2,
+        "There should be two notes in the tree at this block height"
+    );
+
+    // the alice contract has the correct balance
+
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+    assert_eq!(
+        alice_balance,
+        deposit_value + ALICE_GENESIS_VALUE,
+        "Alice's balance should have increased by the value of the deposit"
+    );
+
+    let input_notes = filter_notes_owned_by(
+        phoenix_sender_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+
+    assert_eq!(
+        input_notes.len(),
+        2,
+        "All new notes should be owned by our view key"
+    );
+
+    let gas_limit = WITHDRAW_FEE;
+    let gas_price = LUX;
+    let input_notes_pos = [*input_notes[0].pos(), *input_notes[1].pos()];
+    let transfer_value = 0;
+    let obfuscate_transfer_note = false;
+    let deposit_value = 0;
+
+    // start withdrawing the amount just transferred to the alice contract
+    // this is done by calling the alice contract directly, which then calls the
+    // transfer contract
+    let address =
+        phoenix_sender_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
+    let note_sk = phoenix_sender_sk.gen_note_sk(&address);
+
+    let contract_call = Some(ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("withdraw"),
+        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+            rng,
+            &note_sk,
+            ALICE_ID,
+            ALICE_GENESIS_VALUE + PHOENIX_GENESIS_VALUE / 2,
+            WithdrawReceiver::Phoenix(address),
+            WithdrawReplayToken::Phoenix(vec![
+                input_notes[0].gen_nullifier(&phoenix_sender_sk),
+                input_notes[1].gen_nullifier(&phoenix_sender_sk),
+            ]),
+        ))
+        .expect("should serialize Mint correctly")
+        .to_vec(),
+    });
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_sender_pk,
+        gas_limit,
+        gas_price,
+        input_notes_pos.try_into().unwrap(),
+        transfer_value,
+        obfuscate_transfer_note,
+        deposit_value,
+        contract_call,
+    );
+
+    let gas_spent = execute(session, tx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
+    update_root(session).expect("Updating the root should succeed");
+
+    println!("EXECUTE_WITHDRAW: {} gas", gas_spent);
+
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+    assert_eq!(
+        alice_balance, 0,
+        "Alice should have no balance after it is withdrawn"
+    );
+}
+
+/// Convert phoenix DUSK into moonlight DUSK.
+#[test]
+fn convert_to_moonlight() {
+    const CONVERSION_VALUE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
+
+    let mut session = &mut instantiate(rng, &phoenix_sender_sk);
+
+    // make sure the moonlight account doesn't own any funds before the
+    // conversion
+    let moonlight_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+    assert_eq!(
+        moonlight_account.balance, 0,
+        "The moonlight account should have 0 dusk before the conversion"
+    );
+
+    // we need to retrieve the genesis-note to generate its nullifier
+    let leaves = leaves_from_height(session, 0)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_sender_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    assert_eq!(notes.len(), 1, "There should be one note at this height");
+
+    // a conversion is a deposit into the transfer-contract paired with a
+    // withdrawal
+    let contract_call = ContractCall {
+        contract: TRANSFER_CONTRACT,
+        fn_name: String::from("convert"),
+        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+            rng,
+            &moonlight_sk,
+            TRANSFER_CONTRACT,
+            // set the conversion-value as a withdrawal
+            CONVERSION_VALUE,
+            WithdrawReceiver::Moonlight(moonlight_pk),
+            WithdrawReplayToken::Phoenix(vec![
+                notes[0].gen_nullifier(&phoenix_sender_sk)
+            ]),
+        ))
+        .expect("should serialize conversion correctly")
+        .to_vec(),
+    };
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_sender_pk,
+        GAS_LIMIT,
+        LUX,
+        [0],
+        0,
+        false,
+        // set the conversion-value as the deposit
+        CONVERSION_VALUE,
+        Some(contract_call),
+    );
+
+    let gas_spent = execute(session, tx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
+    update_root(session).expect("Updating the root should succeed");
+
+    println!("CONVERT phoenix to moonlight: {} gas", gas_spent);
+
+    let moonlight_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+
+    assert_eq!(
+        moonlight_account.balance, CONVERSION_VALUE,
+        "The moonlight account should have conversion value added"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_sender_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    let notes_value = owned_notes_value(phoenix_sender_vk, &notes);
+
+    assert_eq!(
+        notes.len(),
+        2,
+        "New notes should have been created as change and refund (transparent notes with the value 0 are not appended to the tree)"
+    );
+    assert_eq!(
+        notes_value,
+        PHOENIX_GENESIS_VALUE - gas_spent - CONVERSION_VALUE,
+        "The new notes should have the original value minus the conversion value and gas spent"
+    );
+}
+
+/// Attempts to convert phoenix DUSK into moonlight DUSK but fails due to not
+/// targeting the correct contract for the conversion.
+#[test]
+fn convert_wrong_contract_targeted() {
+    const CONVERSION_VALUE: u64 = dusk(1.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
+
+    let mut session = &mut instantiate(rng, &phoenix_sender_sk);
+
+    // make sure the moonlight account doesn't own any funds before the
+    // conversion
+    let moonlight_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+    assert_eq!(
+        moonlight_account.balance, 0,
+        "The moonlight account should have 0 dusk before the conversion"
+    );
+
+    // we need to retrieve the genesis-note to generate its nullifier
+    let leaves = leaves_from_height(session, 0)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_sender_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    assert_eq!(
+        notes.len(),
+        1,
+        "There should be the genesis note at height 0"
+    );
+
+    let contract_call = ContractCall {
+        contract: TRANSFER_CONTRACT,
+        fn_name: String::from("convert"),
+        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+            rng,
+            &moonlight_sk,
+            // this should be the transfer contract, but we're testing the
+            // "wrong target" case
+            ALICE_ID,
+            CONVERSION_VALUE,
+            WithdrawReceiver::Moonlight(moonlight_pk),
+            WithdrawReplayToken::Phoenix(vec![
+                notes[0].gen_nullifier(&phoenix_sender_sk)
+            ]),
+        ))
+        .expect("should serialize conversion correctly")
+        .to_vec(),
+    };
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_sender_pk,
+        GAS_LIMIT,
+        LUX,
+        [0],
+        0,
+        false,
+        CONVERSION_VALUE,
+        Some(contract_call),
+    );
+
+    let receipt = execute(&mut session, tx)
+        .expect("Executing transaction should succeed");
+    update_root(session).expect("Updating the root should succeed");
+
+    let res = receipt.data;
+    let gas_spent = receipt.gas_spent;
+
+    println!(
+        "CONVERSION phoenix to moonlight wrong contract targeted: {} gas",
+        gas_spent
+    );
+
+    assert!(matches!(res, Err(_)), "The contract call should error");
+
+    let moonlight_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+
+    assert_eq!(
+        moonlight_account.balance, 0,
+        "The moonlight account should not have received funds"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_sender_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    let notes_value = owned_notes_value(phoenix_sender_vk, &notes);
+
+    assert_eq!(
+        notes.len(),
+        2,
+        "New notes should have been created as change and refund (transparent notes with the value 0 are not appended to the tree)"
+    );
+    assert_eq!(
+        notes_value,
+        PHOENIX_GENESIS_VALUE - gas_spent,
+        "The new notes should have the original value minus gas spent"
+    );
+}
+
+// ----------------
+// helper functions
+
+fn leaves_from_pos(
+    session: &mut Session,
+    pos: u64,
+) -> Result<Vec<NoteLeaf>, PiecrustError> {
+    let (feeder, receiver) = mpsc::channel();
+
+    session.feeder_call::<_, ()>(
+        TRANSFER_CONTRACT,
+        "leaves_from_pos",
+        &pos,
+        GAS_LIMIT,
+        feeder,
+    )?;
+
+    Ok(receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return leaves"))
+        .collect())
+}
+
+fn num_notes(session: &mut Session) -> Result<u64, PiecrustError> {
+    session
+        .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
+        .map(|r| r.data)
+}
+
+fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
+    session
+        .call(TRANSFER_CONTRACT, "root", &(), GAS_LIMIT)
+        .map(|r| r.data)
+}
+
+fn opening(
+    session: &mut Session,
+    pos: u64,
+) -> Result<Option<NoteOpening>, PiecrustError> {
+    session
+        .call(TRANSFER_CONTRACT, "opening", &pos, GAS_LIMIT)
+        .map(|r| r.data)
+}
+
+/// Generate a TxCircuit given the sender secret-key, receiver public-key, the
+/// input note positions in the transaction tree and the new output-notes.
+fn create_phoenix_transaction<const I: usize>(
+    rng: &mut StdRng,
+    session: &mut Session,
+    sender_sk: &PhoenixSecretKey,
+    refund_pk: &PhoenixPublicKey,
+    receiver_pk: &PhoenixPublicKey,
+    gas_limit: u64,
+    gas_price: u64,
+    input_pos: [u64; I],
+    transfer_value: u64,
+    obfuscated_transaction: bool,
+    deposit: u64,
+    data: Option<impl Into<TransactionData>>,
+) -> PhoenixTransaction {
+    // Get the root of the tree of phoenix-notes.
+    let root = root(session).expect("Getting the anchor should be successful");
+
+    // Get input notes and their openings
+    let mut inputs = Vec::with_capacity(I);
+    for pos in input_pos {
+        // fetch the note and opening for the given position
+        let leaves = leaves_from_pos(session, pos)
+            .expect("Getting leaves in the given range should succeed");
+        assert!(
+            leaves.len() > 0,
+            "There should be a note at the given position"
+        );
+        let note = &leaves[0].note;
+        let opening = opening(session, pos)
+            .expect(
+                "Querying the opening for the given position should succeed",
+            )
+            .expect("An opening should exist for a note in the tree");
+
+        // sanity check of the merkle opening
+        assert!(opening.verify(NoteTreeItem::new(note.hash(), ())));
+
+        inputs.push((note.clone(), opening));
+    }
+
+    PhoenixTransaction::new(
+        rng,
+        sender_sk,
+        refund_pk,
+        receiver_pk,
+        inputs,
+        root,
+        transfer_value,
+        obfuscated_transaction,
+        deposit,
+        gas_limit,
+        gas_price,
+        CHAIN_ID,
+        data.map(Into::into),
+        &LocalProver,
+    )
+    .expect("creating the creation shouldn't fail")
+}
