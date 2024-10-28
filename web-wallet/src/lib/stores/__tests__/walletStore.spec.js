@@ -9,8 +9,6 @@ import {
 } from "vitest";
 import { get } from "svelte/store";
 import {
-  AccountSyncer,
-  AddressSyncer,
   Bookkeeper,
   Gas,
   Network,
@@ -19,8 +17,8 @@ import {
 import * as b58 from "$lib/vendor/w3sper.js/src/b58";
 import { generateMnemonic } from "bip39";
 
-import { cacheUnspentNotes } from "$lib/mock-data";
 import walletCache from "$lib/wallet-cache";
+import WalletTreasury from "$lib/wallet-treasury";
 import { getSeedFromMnemonic } from "$lib/wallet";
 
 import { walletStore } from "..";
@@ -28,8 +26,6 @@ import { walletStore } from "..";
 describe("Wallet store", async () => {
   vi.useFakeTimers();
 
-  // setting up a predictable address and balance
-  const address = cacheUnspentNotes[0].address;
   const shielded = {
     spendable: 400000000000000n,
     value: 1026179647718621n,
@@ -40,22 +36,16 @@ describe("Wallet store", async () => {
   };
 
   const abortControllerSpy = vi.spyOn(AbortController.prototype, "abort");
-  const accountSyncerBalancesSpy = vi
-    .spyOn(AccountSyncer.prototype, "balances")
-    .mockResolvedValue([unshielded]);
-  const addressSyncerNotesSpy = vi.spyOn(AddressSyncer.prototype, "notes");
-  const shieldedBalanceSpy = vi
+  const balanceSpy = vi
     .spyOn(Bookkeeper.prototype, "balance")
-    .mockResolvedValue(shielded);
-  const defaultProfileSpy = vi
-    .spyOn(ProfileGenerator.prototype, "default", "get")
-    .mockResolvedValue({
-      address: {
-        toString() {
-          return address;
-        },
-      },
+    .mockImplementation(async (identifier) => {
+      return ProfileGenerator.typeOf(identifier.toString()) === "address"
+        ? shielded
+        : unshielded;
     });
+  const setProfilesSpy = vi.spyOn(WalletTreasury.prototype, "setProfiles");
+  const treasuryUpdateSpy = vi.spyOn(WalletTreasury.prototype, "update");
+
   const seed = getSeedFromMnemonic(generateMnemonic());
   const profileGenerator = new ProfileGenerator(async () => seed);
   const defaultProfile = await profileGenerator.default;
@@ -94,17 +84,16 @@ describe("Wallet store", async () => {
   afterEach(async () => {
     await vi.runAllTimersAsync();
     abortControllerSpy.mockClear();
-    accountSyncerBalancesSpy.mockClear();
-    addressSyncerNotesSpy.mockClear();
+    setProfilesSpy.mockClear();
+    treasuryUpdateSpy.mockClear();
   });
 
   afterAll(() => {
     vi.useRealTimers();
     abortControllerSpy.mockRestore();
-    accountSyncerBalancesSpy.mockRestore();
-    addressSyncerNotesSpy.mockRestore();
-    shieldedBalanceSpy.mockRestore();
-    defaultProfileSpy.mockRestore();
+    balanceSpy.mockRestore();
+    setProfilesSpy.mockRestore();
+    treasuryUpdateSpy.mockRestore();
   });
 
   describe("Initialization and sync", () => {
@@ -128,11 +117,15 @@ describe("Wallet store", async () => {
       await vi.runAllTimersAsync();
 
       expect(get(walletStore)).toStrictEqual(initializedStore);
-      expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
-      expect(shieldedBalanceSpy).toHaveBeenCalledTimes(1);
-      expect(shieldedBalanceSpy).toHaveBeenCalledWith(defaultProfile.address);
-      expect(accountSyncerBalancesSpy).toHaveBeenCalledTimes(1);
-      expect(accountSyncerBalancesSpy).toHaveBeenCalledWith([defaultProfile]);
+      expect(setProfilesSpy).toHaveBeenCalledTimes(1);
+      expect(setProfilesSpy).toHaveBeenCalledWith([defaultProfile]);
+      expect(setProfilesSpy.mock.invocationCallOrder[0]).toBeLessThan(
+        treasuryUpdateSpy.mock.invocationCallOrder[0]
+      );
+      expect(treasuryUpdateSpy).toHaveBeenCalledTimes(1);
+      expect(balanceSpy).toHaveBeenCalledTimes(2);
+      expect(balanceSpy).toHaveBeenNthCalledWith(1, defaultProfile.address);
+      expect(balanceSpy).toHaveBeenNthCalledWith(2, defaultProfile.account);
     });
   });
 
@@ -146,13 +139,13 @@ describe("Wallet store", async () => {
 
       // somewhere else (dexie?) the abort is called already six times
       abortControllerSpy.mockClear();
-      addressSyncerNotesSpy.mockClear();
+      treasuryUpdateSpy.mockClear();
     });
 
     it("should expose a method to abort a sync that is in progress and set the current sync promise to `null` so that a new sync can be started", async () => {
       walletStore.sync();
 
-      await vi.waitUntil(() => addressSyncerNotesSpy.mock.calls.length === 1);
+      await vi.waitUntil(() => treasuryUpdateSpy.mock.calls.length === 1);
 
       walletStore.abortSync();
 
@@ -209,9 +202,8 @@ describe("Wallet store", async () => {
         get(walletStore).currentProfile?.address.toString()
       );
 
-      addressSyncerNotesSpy.mockClear();
-      shieldedBalanceSpy.mockClear();
-      accountSyncerBalancesSpy.mockClear();
+      treasuryUpdateSpy.mockClear();
+      balanceSpy.mockClear();
     });
 
     afterEach(async () => {
@@ -250,17 +242,21 @@ describe("Wallet store", async () => {
         currentProfile: newProfile,
         profiles: [newProfile],
       });
-      expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
-      expect(shieldedBalanceSpy).toHaveBeenCalledTimes(1);
-      expect(shieldedBalanceSpy).toHaveBeenCalledWith(newProfile.address);
-      expect(accountSyncerBalancesSpy).toHaveBeenCalledTimes(1);
-      expect(accountSyncerBalancesSpy).toHaveBeenCalledWith([newProfile]);
+      expect(treasuryUpdateSpy).toHaveBeenCalledTimes(1);
+      expect(balanceSpy).toHaveBeenCalledTimes(2);
+      expect(balanceSpy).toHaveBeenNthCalledWith(1, newProfile.address);
+      expect(balanceSpy).toHaveBeenNthCalledWith(2, newProfile.account);
     });
 
     it("should expose a method to set the current profile and update the balance afterwards", async () => {
       vi.useRealTimers();
 
       const fakeExtraProfile = {
+        account: {
+          toString() {
+            return "some-fake-account";
+          },
+        },
         address: {
           toString() {
             return "some-fake-address";
@@ -278,10 +274,9 @@ describe("Wallet store", async () => {
       ).resolves.toBeUndefined();
 
       expect(get(walletStore).currentProfile).toBe(fakeExtraProfile);
-      expect(shieldedBalanceSpy).toHaveBeenCalledTimes(1);
-      expect(shieldedBalanceSpy).toHaveBeenCalledWith(fakeExtraProfile.address);
-      expect(accountSyncerBalancesSpy).toHaveBeenCalledTimes(1);
-      expect(accountSyncerBalancesSpy).toHaveBeenCalledWith([fakeExtraProfile]);
+      expect(balanceSpy).toHaveBeenCalledTimes(2);
+      expect(balanceSpy).toHaveBeenNthCalledWith(1, fakeExtraProfile.address);
+      expect(balanceSpy).toHaveBeenNthCalledWith(2, fakeExtraProfile.account);
 
       vi.useFakeTimers();
     });
@@ -316,20 +311,19 @@ describe("Wallet store", async () => {
       expect(result).toBe(txResult);
 
       // check that we made a sync before the transfer and the balance update afterwards
-      expect(addressSyncerNotesSpy).toHaveBeenCalledTimes(1);
-      expect(shieldedBalanceSpy).toHaveBeenCalledTimes(1);
-      expect(shieldedBalanceSpy).toHaveBeenCalledWith(defaultProfile.address);
-      expect(accountSyncerBalancesSpy).toHaveBeenCalledTimes(1);
-      expect(accountSyncerBalancesSpy).toHaveBeenCalledWith([defaultProfile]);
-      expect(addressSyncerNotesSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      expect(treasuryUpdateSpy).toHaveBeenCalledTimes(1);
+      expect(balanceSpy).toHaveBeenCalledTimes(2);
+      expect(balanceSpy).toHaveBeenNthCalledWith(1, defaultProfile.address);
+      expect(balanceSpy).toHaveBeenNthCalledWith(2, defaultProfile.account);
+      expect(treasuryUpdateSpy.mock.invocationCallOrder[0]).toBeLessThan(
         executeSpy.mock.invocationCallOrder[0]
       );
-      expect(shieldedBalanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
+      expect(balanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
         executeSpy.mock.invocationCallOrder[0]
       );
-      expect(
-        accountSyncerBalancesSpy.mock.invocationCallOrder[0]
-      ).toBeGreaterThan(executeSpy.mock.invocationCallOrder[0]);
+      expect(balanceSpy.mock.invocationCallOrder[1]).toBeGreaterThan(
+        executeSpy.mock.invocationCallOrder[0]
+      );
 
       setPendingNotesSpy.mockRestore();
 

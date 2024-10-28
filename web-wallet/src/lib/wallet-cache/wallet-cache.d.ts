@@ -55,9 +55,3 @@ type WalletCacheTableName =
   | "syncInfo"
   | "spentNotes"
   | "unspentNotes";
-
-type WalletCacheTreasury = {
-  address: (
-    identifier: import("$lib/vendor/w3sper.js/src/mod").Profile["address"]
-  ) => Promise<Map<Uint8Array, Uint8Array>>;
-};

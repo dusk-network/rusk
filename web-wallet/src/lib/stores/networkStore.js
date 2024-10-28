@@ -1,5 +1,9 @@
 import { writable } from "svelte/store";
-import { AddressSyncer, Network } from "$lib/vendor/w3sper.js/src/mod";
+import {
+  AccountSyncer,
+  AddressSyncer,
+  Network,
+} from "$lib/vendor/w3sper.js/src/mod";
 
 /** @type {Network} */
 const network = new Network(import.meta.env.VITE_WALLET_NETWORK);
@@ -23,6 +27,10 @@ const disconnect = () => network.disconnect();
 /** @type {NetworkStoreServices["getCurrentBlockHeight"]} */
 const getCurrentBlockHeight = () => network.blockHeight;
 
+/** @type {(options?: NetworkSyncerOptions) => Promise<AccountSyncer>} */
+const getAccountSyncer = (options) =>
+  network.connect().then(() => new AccountSyncer(network, options));
+
 /** @type {(options?: NetworkSyncerOptions) => Promise<AddressSyncer>} */
 const getAddressSyncer = (options) =>
   network.connect().then(() => new AddressSyncer(network, options));
@@ -31,6 +39,7 @@ const getAddressSyncer = (options) =>
 export default {
   connect,
   disconnect,
+  getAccountSyncer,
   getAddressSyncer,
   getCurrentBlockHeight,
   subscribe,

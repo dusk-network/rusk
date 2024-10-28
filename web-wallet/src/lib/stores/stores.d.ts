@@ -49,6 +49,9 @@ type NetworkSyncerOptions = {
 type NetworkStoreServices = {
   connect: () => Promise<import("$lib/vendor/w3sper.js/src/mod").Network>;
   disconnect: () => Promise<void>;
+  getAccountSyncer: (
+    options?: NetworkSyncerOptions
+  ) => Promise<import("$lib/vendor/w3sper.js/src/mod").AccountSyncer>;
   getAddressSyncer: (
     options?: NetworkSyncerOptions
   ) => Promise<import("$lib/vendor/w3sper.js/src/mod").AddressSyncer>;
@@ -59,14 +62,8 @@ type NetworkStore = Readable<NetworkStoreContent> & NetworkStoreServices;
 
 type WalletStoreContent = {
   balance: {
-    shielded: {
-      spendable: bigint;
-      value: bigint;
-    };
-    unshielded: {
-      nonce: bigint;
-      value: bigint;
-    };
+    shielded: AddressBalance;
+    unshielded: AccountBalance;
   };
   currentProfile: import("$lib/vendor/w3sper.js/src/mod").Profile | null;
   initialized: boolean;
