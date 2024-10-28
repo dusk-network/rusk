@@ -140,21 +140,51 @@ pub(super) fn group_by_origins_filter_and_convert(
                             &event.data,
                         )
                     {
+                        // An outflow from the sender address is always the case
                         address_outflow_mappings
                             .push((moonlight_event.sender, moonlight_tx));
-                        if let Some(receiver) = moonlight_event.receiver {
-                            address_inflow_mappings
-                                .push((receiver, moonlight_tx));
-                        } else {
-                            // Note: Tx sent to self are also recorded as
-                            // inflows.
-                            // If a group only has one event & the event is
-                            // "moonlight", it has to be a transaction to self.
-                            if group.len() == 1 {
-                                address_inflow_mappings.push((
-                                    moonlight_event.sender,
-                                    moonlight_tx,
-                                ));
+
+                        // Exhaustively handle all inflow cases
+                        match (
+                            moonlight_event.receiver,
+                            moonlight_event.refund_info,
+                        ) {
+                            (None, refund) => {
+                                // Note: Tx sent to self are also recorded as
+                                // inflows.
+                                // If a group only has one event & the event is
+                                // "moonlight", it has to be a transaction to
+                                // self.
+                                if group.len() == 1 {
+                                    address_inflow_mappings.push((
+                                        moonlight_event.sender,
+                                        moonlight_tx,
+                                    ));
+                                }
+
+                                // addr != moonlight_event.sender to not record
+                                // an inflow twice for the same tx
+                                if let Some((addr, amt)) = refund {
+                                    if amt > 0 && addr != moonlight_event.sender
+                                    {
+                                        address_inflow_mappings
+                                            .push((addr, moonlight_tx));
+                                    }
+                                }
+                            }
+                            (Some(receiver), None) => address_inflow_mappings
+                                .push((receiver, moonlight_tx)),
+                            (Some(receiver), Some((addr, amt))) => {
+                                address_inflow_mappings
+                                    .push((receiver, moonlight_tx));
+
+                                if amt > 0
+                                    && addr != receiver
+                                    && addr != moonlight_event.sender
+                                {
+                                    address_inflow_mappings
+                                        .push((addr, moonlight_tx));
+                                }
                             }
                         }
 
