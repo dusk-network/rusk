@@ -42,7 +42,7 @@ enum MenuItem {
 pub(crate) fn online(
     profile_idx: u8,
     wallet: &Wallet<WalletFile>,
-    phoenix_balance: Dusk,
+    phoenix_spendable: Dusk,
     moonlight_balance: Dusk,
     settings: &Settings,
 ) -> anyhow::Result<ProfileOp> {
@@ -78,14 +78,14 @@ pub(crate) fn online(
 
             let (sender, balance) = match &rcvr {
                 Address::Shielded(_) => {
-                    (wallet.shielded_address(profile_idx)?, phoenix_balance)
+                    (wallet.shielded_address(profile_idx)?, phoenix_spendable)
                 }
                 Address::Public(_) => {
                     (wallet.public_address(profile_idx)?, moonlight_balance)
                 }
             };
 
-            if check_balance(
+            if check_min_gas_balance(
                 balance,
                 DEFAULT_LIMIT_TRANSFER,
                 "a transfer transaction",
@@ -114,14 +114,14 @@ pub(crate) fn online(
             }))
         }
         MenuItem::Stake => {
-            let (addr, balance) = fetch_address_and_balance(
+            let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
-                phoenix_balance,
+                phoenix_spendable,
                 moonlight_balance,
             )?;
 
-            if check_balance(
+            if check_min_gas_balance(
                 balance,
                 DEFAULT_LIMIT_STAKE,
                 "a stake transaction",
@@ -139,14 +139,14 @@ pub(crate) fn online(
             }))
         }
         MenuItem::Unstake => {
-            let (addr, balance) = fetch_address_and_balance(
+            let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
-                phoenix_balance,
+                phoenix_spendable,
                 moonlight_balance,
             )?;
 
-            if check_balance(
+            if check_min_gas_balance(
                 balance,
                 DEFAULT_LIMIT_STAKE,
                 "an unstake transaction",
@@ -163,17 +163,17 @@ pub(crate) fn online(
             }))
         }
         MenuItem::Withdraw => {
-            let (addr, balance) = fetch_address_and_balance(
+            let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
-                phoenix_balance,
+                phoenix_spendable,
                 moonlight_balance,
             )?;
 
-            if check_balance(
+            if check_min_gas_balance(
                 balance,
                 DEFAULT_LIMIT_STAKE,
-                "a withdraw transaction",
+                "a stake reward withdrawal transaction",
             )
             .is_err()
             {
@@ -187,14 +187,14 @@ pub(crate) fn online(
             }))
         }
         MenuItem::ContractDeploy => {
-            let (addr, balance) = fetch_address_and_balance(
+            let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
-                phoenix_balance,
+                phoenix_spendable,
                 moonlight_balance,
             )?;
 
-            if check_balance(
+            if check_min_gas_balance(
                 balance,
                 DEFAULT_LIMIT_DEPLOYMENT,
                 "a deploy transaction",
@@ -216,15 +216,19 @@ pub(crate) fn online(
             }))
         }
         MenuItem::ContractCall => {
-            let (addr, balance) = fetch_address_and_balance(
+            let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
-                phoenix_balance,
+                phoenix_spendable,
                 moonlight_balance,
             )?;
 
-            if check_balance(balance, DEFAULT_LIMIT_CALL, "a contract call")
-                .is_err()
+            if check_min_gas_balance(
+                balance,
+                DEFAULT_LIMIT_CALL,
+                "a contract call",
+            )
+            .is_err()
             {
                 return Ok(ProfileOp::Stay);
             }
@@ -252,7 +256,7 @@ pub(crate) fn online(
             reward: false,
         })),
         MenuItem::Shield => {
-            if check_balance(
+            if check_min_gas_balance(
                 moonlight_balance,
                 DEFAULT_LIMIT_CALL,
                 "convert DUSK from public to shielded",
@@ -270,8 +274,8 @@ pub(crate) fn online(
             }))
         }
         MenuItem::Unshield => {
-            if check_balance(
-                phoenix_balance,
+            if check_min_gas_balance(
+                phoenix_spendable,
                 DEFAULT_LIMIT_CALL,
                 "convert DUSK from shielded to public",
             )
@@ -282,7 +286,7 @@ pub(crate) fn online(
 
             ProfileOp::Run(Box::new(Command::Unshield {
                 profile_idx: Some(profile_idx),
-                amt: prompt::request_token_amt("convert", phoenix_balance)?,
+                amt: prompt::request_token_amt("convert", phoenix_spendable)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price()?,
             }))
@@ -338,16 +342,16 @@ pub(crate) fn offline(
 
 /// Prompts the user to select a transaction model (Shielded or Public), and
 /// retrieves the corresponding address and balance for the specific profile
-fn fetch_address_and_balance(
+fn pick_transaction_model(
     wallet: &Wallet<WalletFile>,
     profile_idx: u8,
-    phoenix_balance: Dusk,
+    phoenix_spendable: Dusk,
     moonlight_balance: Dusk,
 ) -> anyhow::Result<(Address, Dusk)> {
     match prompt::request_transaction_model()? {
         prompt::TransactionModel::Shielded => {
             let addr = wallet.shielded_address(profile_idx)?;
-            Ok((addr, phoenix_balance))
+            Ok((addr, phoenix_spendable))
         }
         prompt::TransactionModel::Public => {
             let addr = wallet.public_address(profile_idx)?;
@@ -356,17 +360,23 @@ fn fetch_address_and_balance(
     }
 }
 
-/// Verifies that the provide balance meets the required balance for a given
+/// Verifies that the user's balance meets the minimum required gas for a given
 /// action
-fn check_balance(
+fn check_min_gas_balance(
     balance: Dusk,
-    required_balance: u64,
+    min_required_gas: u64,
     action: &str,
 ) -> anyhow::Result<()> {
-    let required_balance: Dusk = required_balance.into();
-    if balance < required_balance {
-        println!("Balance too low to perform {}.", action);
-        Err(anyhow::anyhow!("Balance too low to perform {}.", action))
+    let min_required_gas: Dusk = min_required_gas.into();
+    if balance < min_required_gas {
+        println!(
+            "Balance too low to cover the minimum gas cost for {}.",
+            action
+        );
+        Err(anyhow::anyhow!(
+            "Balance too low to cover the minimum gas cost for {}.",
+            action
+        ))
     } else {
         Ok(())
     }
