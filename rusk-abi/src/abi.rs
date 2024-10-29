@@ -10,7 +10,7 @@ use dusk_bytes::Serializable;
 use execution_core::{
     signatures::{
         bls::{
-            PublicKey as BlsPublicKey, PublicKeyAndSignature,
+            MultisigSignature, PublicKey as BlsPublicKey,
             Signature as BlsSignature,
         },
         schnorr::{
@@ -72,9 +72,10 @@ pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
 /// Verify a BLS signature is valid for the given public key and message
 pub fn verify_bls_multisig(
     msg: Vec<u8>,
-    kas: Vec<PublicKeyAndSignature>,
+    keys: Vec<BlsPublicKey>,
+    sig: MultisigSignature,
 ) -> bool {
-    host_query(Query::VERIFY_BLS_MULTISIG, (msg, kas))
+    host_query(Query::VERIFY_BLS_MULTISIG, (msg, keys, sig))
 }
 
 /// Get the chain ID.

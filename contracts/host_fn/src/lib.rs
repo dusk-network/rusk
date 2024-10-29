@@ -15,7 +15,7 @@ use dusk_bytes::Serializable;
 use execution_core::{
     signatures::{
         bls::{
-            PublicKey as BlsPublicKey, PublicKeyAndSignature,
+            MultisigSignature, PublicKey as BlsPublicKey,
             Signature as BlsSignature,
         },
         schnorr::{
@@ -78,9 +78,10 @@ impl HostFnTest {
     pub fn verify_bls_multisig(
         &self,
         msg: Vec<u8>,
-        kas: Vec<PublicKeyAndSignature>,
+        keys: Vec<BlsPublicKey>,
+        sig: MultisigSignature,
     ) -> bool {
-        rusk_abi::verify_bls_multisig(msg, kas)
+        rusk_abi::verify_bls_multisig(msg, keys, sig)
     }
 
     pub fn chain_id(&self) -> u8 {
@@ -140,8 +141,8 @@ unsafe fn verify_bls(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn verify_bls_multisig(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(msg, kas)| {
-        STATE.verify_bls_multisig(msg, kas)
+    rusk_abi::wrap_call(arg_len, |(msg, keys, sig)| {
+        STATE.verify_bls_multisig(msg, keys, sig)
     })
 }
 

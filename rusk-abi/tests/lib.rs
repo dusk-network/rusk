@@ -30,10 +30,7 @@ use execution_core::{
         PublicParameters,
     },
     signatures::{
-        bls::{
-            PublicKey as BlsPublicKey, PublicKeyAndSignature,
-            SecretKey as BlsSecretKey,
-        },
+        bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
         schnorr::{
             PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
         },
@@ -245,24 +242,11 @@ fn bls_multisig_signature() {
     let pk1 = BlsPublicKey::from(&sk1);
     let sig1 = sk1.sign_multisig(&pk1, &message);
 
-    let arg = vec![
-        PublicKeyAndSignature {
-            public_key: pk0,
-            signature: sig0,
-        },
-        PublicKeyAndSignature {
-            public_key: pk1,
-            signature: sig1,
-        },
-    ];
+    let sig = sig0.aggregate(&[sig1]);
+    let mut arg = (message, vec![pk0, pk1], sig);
 
     let valid: bool = session
-        .call(
-            contract_id,
-            "verify_bls_multisig",
-            &(message.clone(), arg),
-            POINT_LIMIT,
-        )
+        .call(contract_id, "verify_bls_multisig", &arg, POINT_LIMIT)
         .expect("Query should succeed")
         .data;
 
@@ -271,24 +255,10 @@ fn bls_multisig_signature() {
     let wrong_sk = BlsSecretKey::random(&mut OsRng);
     let wrong_pk = BlsPublicKey::from(&wrong_sk);
 
-    let arg = vec![
-        PublicKeyAndSignature {
-            public_key: pk0,
-            signature: sig0,
-        },
-        PublicKeyAndSignature {
-            public_key: wrong_pk,
-            signature: sig1,
-        },
-    ];
+    arg.1[1] = wrong_pk;
 
     let valid: bool = session
-        .call(
-            contract_id,
-            "verify_bls_multisig",
-            &(message, arg),
-            POINT_LIMIT,
-        )
+        .call(contract_id, "verify_bls_multisig", &arg, POINT_LIMIT)
         .expect("Query should succeed")
         .data;
 

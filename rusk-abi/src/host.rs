@@ -18,8 +18,8 @@ use execution_core::{
     plonk::{Proof as PlonkProof, Verifier},
     signatures::{
         bls::{
-            MultisigPublicKey, PublicKey as BlsPublicKey,
-            PublicKeyAndSignature, Signature as BlsSignature,
+            MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
+            Signature as BlsSignature,
         },
         schnorr::{
             PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
@@ -164,8 +164,8 @@ fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 fn host_verify_bls_multisig(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg, kas)| {
-        verify_bls_multisig(msg, kas)
+    wrap_host_query(arg_buf, arg_len, |(msg, keys, sig)| {
+        verify_bls_multisig(msg, keys, sig)
     })
 }
 
@@ -237,26 +237,16 @@ pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
 /// Verify a BLS signature is valid for the given public key and message
 pub fn verify_bls_multisig(
     msg: Vec<u8>,
-    keys_and_sigs: Vec<PublicKeyAndSignature>,
+    keys: Vec<BlsPublicKey>,
+    sig: MultisigSignature,
 ) -> bool {
-    let len = keys_and_sigs.len();
+    let len = keys.len();
     if len < 1 {
-        panic!("must have at least one key and signature");
-    }
-
-    let mut keys = Vec::with_capacity(keys_and_sigs.len());
-    let mut sigs = Vec::with_capacity(keys_and_sigs.len());
-
-    for kas in keys_and_sigs {
-        keys.push(kas.public_key);
-        sigs.push(kas.signature);
+        panic!("must have at least one key");
     }
 
     let akey = MultisigPublicKey::aggregate(&keys)
         .expect("aggregation should succeed");
 
-    let mut asig = sigs.pop().unwrap();
-    asig = asig.aggregate(&sigs);
-
-    akey.verify(&asig, &msg).is_ok()
+    akey.verify(&sig, &msg).is_ok()
 }
