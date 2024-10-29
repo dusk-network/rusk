@@ -42,6 +42,22 @@ pub mod signatures {
             Error, MultisigPublicKey, MultisigSignature, PublicKey, SecretKey,
             Signature,
         };
+
+        use bytecheck::CheckBytes;
+        use rkyv::{Archive, Deserialize, Serialize};
+
+        /// A public key and a signature, used to interact with
+        /// [`rusk_abi::verify_bls_multisig`].
+        #[derive(
+            Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize,
+        )]
+        #[archive_attr(derive(CheckBytes))]
+        pub struct PublicKeyAndSignature {
+            /// The public key.
+            pub public_key: PublicKey,
+            /// The signature.
+            pub signature: MultisigSignature,
+        }
     }
 
     /// Types for the schnorr-signature scheme operating on the `jubjub` curve.

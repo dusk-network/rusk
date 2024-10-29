@@ -30,7 +30,10 @@ use execution_core::{
         PublicParameters,
     },
     signatures::{
-        bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
+        bls::{
+            PublicKey as BlsPublicKey, PublicKeyAndSignature,
+            SecretKey as BlsSecretKey,
+        },
         schnorr::{
             PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
         },
@@ -224,6 +227,72 @@ fn bls_signature() {
         .data;
 
     assert!(!valid, "Stake Signature verification expected to fail");
+}
+
+#[test]
+fn bls_multisig_signature() {
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
+
+    let message = b"some-message".to_vec();
+
+    let sk0 = BlsSecretKey::random(&mut OsRng);
+    let pk0 = BlsPublicKey::from(&sk0);
+    let sig0 = sk0.sign_multisig(&pk0, &message);
+
+    let sk1 = BlsSecretKey::random(&mut OsRng);
+    let pk1 = BlsPublicKey::from(&sk1);
+    let sig1 = sk1.sign_multisig(&pk1, &message);
+
+    let arg = vec![
+        PublicKeyAndSignature {
+            public_key: pk0,
+            signature: sig0,
+        },
+        PublicKeyAndSignature {
+            public_key: pk1,
+            signature: sig1,
+        },
+    ];
+
+    let valid: bool = session
+        .call(
+            contract_id,
+            "verify_bls_multisig",
+            &(message.clone(), arg),
+            POINT_LIMIT,
+        )
+        .expect("Query should succeed")
+        .data;
+
+    assert!(valid, "Stake Signature verification expected to succeed");
+
+    let wrong_sk = BlsSecretKey::random(&mut OsRng);
+    let wrong_pk = BlsPublicKey::from(&wrong_sk);
+
+    let arg = vec![
+        PublicKeyAndSignature {
+            public_key: pk0,
+            signature: sig0,
+        },
+        PublicKeyAndSignature {
+            public_key: wrong_pk,
+            signature: sig1,
+        },
+    ];
+
+    let valid: bool = session
+        .call(
+            contract_id,
+            "verify_bls_multisig",
+            &(message, arg),
+            POINT_LIMIT,
+        )
+        .expect("Query should succeed")
+        .data;
+
+    assert!(!valid, "Multisig Signature verification expected to fail");
 }
 
 #[derive(Debug, Default)]
