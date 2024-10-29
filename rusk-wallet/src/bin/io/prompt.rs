@@ -306,10 +306,10 @@ pub(crate) fn request_gas_limit(default_gas_limit: u64) -> anyhow::Result<u64> {
 }
 
 /// Request gas price
-pub(crate) fn request_gas_price() -> anyhow::Result<Lux> {
+pub(crate) fn request_gas_price(default_gas_price: Lux) -> anyhow::Result<Lux> {
     let question = requestty::Question::float("amt")
         .message("Introduce the gas price for this transaction:")
-        .default(Dusk::from(gas::DEFAULT_PRICE).into())
+        .default(Dusk::from(default_gas_price).into())
         .validate_on_key(|f, _| {
             check_valid_denom(f, MIN_CONVERTIBLE, MAX_CONVERTIBLE).is_ok()
         })

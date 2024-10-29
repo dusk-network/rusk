@@ -16,7 +16,7 @@ pub const MIN_LIMIT: u64 = 500_000;
 pub const DEFAULT_LIMIT_TRANSFER: u64 = 2_000_000;
 
 /// The default gas limit for a contract deployment
-pub const DEFAULT_LIMIT_DEPLOYMENT: u64 = 50_000_000;
+pub const DEFAULT_LIMIT_DEPLOYMENT: u64 = 5_000_000;
 
 /// The default gas limit for contract calls
 pub const DEFAULT_LIMIT_CALL: u64 = 2_000_000_000;
@@ -24,8 +24,14 @@ pub const DEFAULT_LIMIT_CALL: u64 = 2_000_000_000;
 /// The default gas limit for stake/unstake/withdraw calls
 pub const DEFAULT_LIMIT_STAKE: u64 = 50_000_000;
 
+/// The gas cost per deployed byte
+pub const GAS_PER_DEPLOY_BYTE: u64 = 100;
+
 /// The default gas price
 pub const DEFAULT_PRICE: Lux = 1;
+
+/// The minimum gas price for a contract deployment
+pub const MIN_DEPLOYMENT_GAS_PRICE: Lux = 2_000;
 
 #[derive(Debug)]
 /// Gas price and limit for any transaction
