@@ -21,7 +21,7 @@ use node_data::ledger::Block;
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
 };
-use node_data::message::{AsyncQueue, Message, Payload};
+use node_data::message::{AsyncQueue, Message, Payload, Topics};
 use node_data::StepName;
 
 use crate::config::{is_emergency_iter, CONSENSUS_MAX_ITER};
@@ -447,8 +447,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         // Repropagate past iteration messages
         // INFO: messages are previously validate by is_valid
-        log_msg("send message", "handle_past_msg", &msg);
-        self.outbound.try_send(msg.clone());
+        if msg.topic() != Topics::ValidationQuorum {
+            log_msg("send message", "handle_past_msg", &msg);
+            self.outbound.try_send(msg.clone());
+        }
 
         let msg_iteration = msg.header.iteration;
 
