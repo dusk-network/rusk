@@ -445,9 +445,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             return;
         }
 
+        let msg_topic = msg.topic();
         // Repropagate past iteration messages
         // INFO: messages are previously validate by is_valid
-        if msg.topic() != Topics::ValidationQuorum {
+        if msg_topic != Topics::ValidationQuorum {
             log_msg("send message", "handle_past_msg", &msg);
             self.outbound.try_send(msg.clone());
         }
@@ -482,6 +483,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                       mode = "emergency",
                       info = ?m.header,
                       vote = ?result.vote(),
+                      src = ?msg_topic
                     );
 
                     if let QuorumType::Valid = result.quorum() {
