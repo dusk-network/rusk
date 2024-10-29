@@ -14,11 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add contract deploy and contract calling [#2402]
 - Add support for RUES [#2401]
 - Add Moonlight stake, unstake and withdraw [#2400]
+- Add balance validation for any given transaction action [#2396]
 - Add Moonlight-Phoenix conversion [#2340]
 - Add Moonlight transactions [#2288]
 
 ### Changed
 
+- Changed default gas limits
 - Split `prove_and_propagate` into `prove` and `propagate` [#2708]
 - Unify `sndr_idx` and `profile_idx` fields in `Command` enum [#2702]
 - Rename `--profile` flag to `--wallet-dir` [#2682]
@@ -27,8 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fix
 
+- Fix stake info for inactive stakes with rewards [#2766]
 - Fix Moonlight stake reward withdrawal [#2523]
 
+[#2766]: https://github.com/dusk-network/rusk/issues/2766
 [#2708]: https://github.com/dusk-network/rusk/issues/2708
 [#2702]: https://github.com/dusk-network/rusk/issues/2702
 [#2682]: https://github.com/dusk-network/rusk/issues/2682
@@ -40,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2402]: https://github.com/dusk-network/rusk/issues/2402
 [#2401]: https://github.com/dusk-network/rusk/issues/2401
 [#2400]: https://github.com/dusk-network/rusk/issues/2400
+[#2396]: https://github.com/dusk-network/rusk/issues/2396
 [#2340]: https://github.com/dusk-network/rusk/issues/2340
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
 
