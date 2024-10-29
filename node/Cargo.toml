@@ -35,7 +35,12 @@ metrics-exporter-prometheus = { workspace = true }
 memory-stats = { workspace = true }
 
 # archive feature dependencies
-sqlx = { version = "=0.7.4", features = [ "runtime-tokio", "tls-native-tls", "sqlite", "migrate"], optional = true }
+sqlx = { workspace = true, features = [
+    "runtime-tokio",
+    "tls-native-tls",
+    "sqlite",
+    "migrate",
+], optional = true }
 serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, features = ["hex"], optional = true }
 
