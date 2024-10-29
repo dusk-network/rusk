@@ -55,8 +55,8 @@ const OWNER: [u8; 32] = [0; 32];
 const CHAIN_ID: u8 = 0xFA;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
-/// moonlight account owning the `GENESIS_VALUE` and alice and bob contracts
-/// deployed with alice contract owning `ALICE_GENESIS_VALUE`.
+/// moonlight account owning the `MOONLIGHT_GENESIS_VALUE` and alice and bob
+/// contracts deployed with alice contract owning `ALICE_GENESIS_VALUE`.
 fn instantiate(moonlight_pk: &AccountPublicKey) -> Session {
     let transfer_bytecode = include_bytes!(
         "../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
@@ -189,7 +189,7 @@ fn transfer() {
         .expect("Transaction should succeed")
         .gas_spent;
 
-    println!("MOONLIGHT TRANSFER: {} gas", gas_spent);
+    println!("TRANSFER: {} gas", gas_spent);
 
     let sender_account = account(session, &moonlight_sender_pk)
         .expect("Getting the sender account should succeed");
@@ -254,7 +254,7 @@ fn transfer_with_refund() {
         .gas_spent;
     let gas_refund = max_gas - gas_spent;
 
-    println!("MOONLIGHT TRANSFER: {} gas", gas_spent);
+    println!("TRANSFER WITH REFUND: {} gas", gas_spent);
 
     let sender_account = account(session, &moonlight_sender_pk)
         .expect("Getting the sender account should succeed");
@@ -370,7 +370,7 @@ fn alice_ping() {
         .expect("Transaction should succeed")
         .gas_spent;
 
-    println!("MOONLIGHT PING: {} gas", gas_spent);
+    println!("CONTRACT PING: {} gas", gas_spent);
 
     let moonlight_account = account(session, &moonlight_pk)
         .expect("Getting the account should succeed");
@@ -452,7 +452,7 @@ fn convert_to_phoenix() {
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
 
-    println!("CONVERT moonlight to phoenix: {} gas", gas_spent);
+    println!("CONVERT TO PHOENIX: {} gas", gas_spent);
 
     let moonlight_account = account(&mut session, &moonlight_pk)
         .expect("Getting account should succeed");
@@ -618,8 +618,8 @@ fn contract_to_contract() {
         execute(session, transaction).expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
-    println!("MOONLIGHT SEND_TO_CONTRACT: {:?}", receipt.data);
-    println!("MOONLIGHT SEND_TO_CONTRACT: {gas_spent} gas");
+    println!("SEND TO CONTRACT: {:?}", receipt.data);
+    println!("SEND TO CONTRACT: {gas_spent} gas");
 
     let moonlight_account = account(session, &moonlight_pk)
         .expect("Getting the account should succeed");
@@ -685,8 +685,8 @@ fn contract_to_account() {
         execute(session, transaction).expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
-    println!("MOONLIGHT SEND_TO_ACCOUNT: {:?}", receipt.data);
-    println!("MOONLIGHT SEND_TO_ACCOUNT: {gas_spent} gas");
+    println!("SEND TO ACCOUNT: {:?}", receipt.data);
+    println!("SEND TO ACCOUNT: {gas_spent} gas");
 
     let moonlight_account = account(session, &moonlight_pk)
         .expect("Getting the account should succeed");
@@ -749,11 +749,8 @@ fn contract_to_account_insufficient_funds() {
         execute(session, transaction).expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
-    println!(
-        "MOONLIGHT SEND_TO_ACCOUNT INSUFFICIENT FUNDS: {:?}",
-        receipt.data
-    );
-    println!("MOONLIGHT SEND_TO_ACCOUNT INSUFFICIENT_FUNDS: {gas_spent} gas");
+    println!("SEND TO ACCOUNT (insufficient funds): {:?}", receipt.data);
+    println!("SEND TO ACCOUNT (insufficient funds): {gas_spent} gas");
 
     let moonlight_account = account(session, &moonlight_pk)
         .expect("Getting the account should succeed");
@@ -823,8 +820,11 @@ fn contract_to_account_direct_call() {
         execute(session, transaction).expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
-    println!("MOONLIGHT SEND_TO_ACCOUNT DIRECTLY: {:?}", receipt.data);
-    println!("MOONLIGHT SEND_TO_ACCOUNT DIRECTLY: {gas_spent} gas");
+    println!(
+        "SEND TO ACCOUNT (transfer-contract targeted): {:?}",
+        receipt.data
+    );
+    println!("SEND TO ACCOUNT (transfer-contract targeted): {gas_spent} gas");
 
     let moonlight_account = account(session, &moonlight_pk)
         .expect("Getting the account should succeed");

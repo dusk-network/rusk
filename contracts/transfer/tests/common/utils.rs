@@ -81,6 +81,18 @@ pub fn account(
 
 // phoenix helper functions
 
+pub fn new_owned_notes_value(
+    session: &mut Session,
+    height: u64,
+    vk: PhoenixViewKey,
+) -> u64 {
+    let leaves = leaves_from_height(session, height)
+        .expect("fetching notes from the height should work");
+    let owned_notes =
+        filter_notes_owned_by(vk, leaves.into_iter().map(|leaf| leaf.note));
+    owned_notes_value(vk, &owned_notes)
+}
+
 pub fn owned_notes_value<'a, I: IntoIterator<Item = &'a Note>>(
     vk: PhoenixViewKey,
     notes: I,
