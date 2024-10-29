@@ -188,7 +188,7 @@ impl DataBrokerSrv {
             .map(|m| m.src_addr)
             .ok_or_else(|| anyhow::anyhow!("invalid metadata src_addr"))?;
 
-        debug!(event = "handle_request", ?msg);
+        debug!(event = "request received", ?msg.payload, ?msg.metadata);
         let this_peer = *network.read().await.public_addr();
 
         match &msg.payload {
