@@ -1,0 +1,3 @@
+.dusk-textbox.invalid-input {
+  color: var(--error-color);
+}
