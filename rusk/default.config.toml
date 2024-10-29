@@ -9,7 +9,7 @@
 #key = <path_of_key>
 
 # The default max cost for feeder calls is the maximum representable. Put in a
-# a string wrapped number up to u64
+# a string wrapped number up to u64::MAX
 #feeder_call_gas = "18446744073709551615" 
 
 #ws_sub_channel_cap = 16,

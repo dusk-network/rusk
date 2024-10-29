@@ -233,4 +233,18 @@ mod tests {
         let result = toml::from_str::<HttpConfig>(config_str);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn deserialize_large_feeder_call_gas() {
+        // A feeder_call_gas value beyond i64::MAX, but within u64 limits
+        let config_str = r#"feeder_call_gas = "9999999999999999999""#;
+        let config: HttpConfig = toml::from_str(config_str)
+            .expect("parsing large u64 value should succeed");
+        assert_eq!(config.feeder_call_gas, 9999999999999999999);
+
+        let config_str = r#"feeder_call_gas = "18446744073709551615""#; // u64::MAX
+        let config: HttpConfig = toml::from_str(config_str)
+            .expect("parsing u64::MAX should succeed");
+        assert_eq!(config.feeder_call_gas, u64::MAX);
+    }
 }
