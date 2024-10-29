@@ -31,7 +31,7 @@ use execution_core::{
             Transaction as PhoenixTransaction, ViewKey as PhoenixViewKey,
         },
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        TRANSFER_CONTRACT,
+        ContractToAccount, TRANSFER_CONTRACT,
     },
     BlsScalar, ContractId, JubJubScalar, LUX,
 };
@@ -765,6 +765,99 @@ fn convert_wrong_contract_targeted() {
         notes.len(),
         2,
         "New notes should have been created as change and refund (transparent notes with the value 0 are not appended to the tree)"
+    );
+    assert_eq!(
+        notes_value,
+        PHOENIX_GENESIS_VALUE - gas_spent,
+        "The new notes should have the original value minus gas spent"
+    );
+}
+
+/// In this test we call the Alice contract to trigger a transfer of funds into
+/// a moonlight account, while the gas will be paid with phoenix.
+#[test]
+fn contract_to_account() {
+    const TRANSFER_VALUE: u64 = ALICE_GENESIS_VALUE / 2;
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
+
+    let mut session = &mut instantiate(rng, &phoenix_sender_sk);
+
+    // make sure the moonlight account doesn't own any funds before the
+    // conversion
+    let moonlight_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+    assert_eq!(
+        moonlight_account.balance, 0,
+        "The moonlight account should have 0 dusk before the transfer"
+    );
+
+    let contract_call = ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("contract_to_account"),
+        fn_args: rkyv::to_bytes::<_, 256>(&ContractToAccount {
+            account: moonlight_pk,
+            value: TRANSFER_VALUE,
+        })
+        .expect("Serializing should succeed")
+        .to_vec(),
+    };
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_sender_pk,
+        GAS_LIMIT,
+        LUX,
+        [0],
+        0,
+        false,
+        0,
+        Some(contract_call),
+    );
+
+    let receipt = execute(session, tx).expect("Transaction should succeed");
+    let gas_spent = receipt.gas_spent;
+
+    println!("PHOENIX CONTRACT_TO_ACCOUNT: {gas_spent} gas");
+
+    let moonlight_account = account(session, &moonlight_pk)
+        .expect("Getting the account should succeed");
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        moonlight_account.balance, TRANSFER_VALUE,
+        "The account's balance should have increased by the transfer value"
+    );
+    assert_eq!(
+        alice_balance,
+        ALICE_GENESIS_VALUE - TRANSFER_VALUE,
+        "Alice's balance should have decreased by the transfer value"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_sender_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    let notes_value = owned_notes_value(phoenix_sender_vk, &notes);
+    assert_eq!(
+        notes.len(),
+        2,
+        "New notes should have been created as change and refund"
     );
     assert_eq!(
         notes_value,
