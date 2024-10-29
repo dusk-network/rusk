@@ -26,7 +26,7 @@ semver = { workspace = true }
 anyhow = { workspace = true }
 rustc_tools_util = { workspace = true }
 rand = { workspace = true }
-toml = "=0.5.11"
+toml = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_with = { workspace = true, features = ["hex"] }
@@ -92,7 +92,14 @@ criterion = { workspace = true }
 rustc_tools_util = { workspace = true }
 
 [features]
-default = ["ephemeral", "recovery-state", "recovery-keys", "prover", "chain", "http-wasm"]
+default = [
+    "ephemeral",
+    "recovery-state",
+    "recovery-keys",
+    "prover",
+    "chain",
+    "http-wasm",
+]
 ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state", "chain"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]

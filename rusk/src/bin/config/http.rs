@@ -7,7 +7,8 @@
 use std::path::PathBuf;
 
 use hyper::HeaderMap;
-use serde::{Deserialize, Serialize};
+use serde::de::{self, Unexpected};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::args::Args;
 
@@ -17,7 +18,11 @@ pub struct HttpConfig {
     pub key: Option<PathBuf>,
     #[serde(default = "default_listen")]
     pub listen: bool,
-    #[serde(default = "default_feeder_call_gas")]
+    #[serde(
+        default = "default_feeder_call_gas",
+        deserialize_with = "deserialize_feeder_call_gas",
+        serialize_with = "serialize_feeder_call_gas"
+    )]
     pub feeder_call_gas: u64,
     listen_address: Option<String>,
     #[serde(default = "default_ws_sub_channel_cap")]
@@ -26,6 +31,36 @@ pub struct HttpConfig {
     pub ws_event_channel_cap: usize,
     #[serde(with = "vec_header_map", default = "default_http_headers")]
     pub headers: HeaderMap,
+}
+
+// Custom deserialization function for `feeder_call_gas`.
+// TOML values are limited to `i64::MAX` in `toml-rs`, so we parse `u64` as a
+// string.
+fn deserialize_feeder_call_gas<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    String::deserialize(deserializer)?
+        .parse::<u64>()
+        .map_err(|_| {
+            de::Error::invalid_value(
+                Unexpected::Str("a valid u64 as a string"),
+                &"a u64 integer",
+            )
+        })
+}
+
+// Custom serialization function for `feeder_call_gas`.
+// Serializes `u64` as a string to bypass `i64::MAX` limitations in TOML
+// parsing.
+fn serialize_feeder_call_gas<S>(
+    value: &u64,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str(&value.to_string())
 }
 
 impl Default for HttpConfig {
@@ -119,7 +154,7 @@ mod vec_header_map {
         struct TupleVecVisitor;
 
         impl<'de> Visitor<'de> for TupleVecVisitor {
-            type Value = Vec<(&'de str, &'de str)>;
+            type Value = Vec<(String, String)>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("a tuple header name and value")
@@ -146,7 +181,7 @@ mod vec_header_map {
         for (k, v) in tuple_vec {
             let name = HeaderName::from_bytes(k.as_bytes())
                 .map_err(D::Error::custom)?;
-            let value = HeaderValue::from_str(v).map_err(D::Error::custom)?;
+            let value = HeaderValue::from_str(&v).map_err(D::Error::custom)?;
             headers.insert(name, value);
         }
 
@@ -179,12 +214,37 @@ mod tests {
     #[test]
     fn deserialize_config() {
         let config_str = r#"listen = true
-                            feeder_call_gas = 18446744
+                            feeder_call_gas = "18446744"
                             ws_sub_channel_cap = 16
                             ws_event_channel_cap = 1024
                             headers = [["name1", "value1"], ["name2", "value2"]]"#;
 
         toml::from_str::<HttpConfig>(config_str)
             .expect("deserializing config should succeed");
+    }
+
+    #[test]
+    fn deserialize_invalid_feeder_call_gas() {
+        let config_str = r#"feeder_call_gas = "invalid_number""#;
+        let result = toml::from_str::<HttpConfig>(config_str);
+        assert!(result.is_err());
+
+        let config_str = r#"feeder_call_gas = 18446744"#;
+        let result = toml::from_str::<HttpConfig>(config_str);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn deserialize_large_feeder_call_gas() {
+        // A feeder_call_gas value beyond i64::MAX, but within u64 limits
+        let config_str = r#"feeder_call_gas = "9999999999999999999""#;
+        let config: HttpConfig = toml::from_str(config_str)
+            .expect("parsing large u64 value should succeed");
+        assert_eq!(config.feeder_call_gas, 9999999999999999999);
+
+        let config_str = r#"feeder_call_gas = "18446744073709551615""#; // u64::MAX
+        let config: HttpConfig = toml::from_str(config_str)
+            .expect("parsing u64::MAX should succeed");
+        assert_eq!(config.feeder_call_gas, u64::MAX);
     }
 }
