@@ -31,7 +31,7 @@ use execution_core::{
             Transaction as PhoenixTransaction, ViewKey as PhoenixViewKey,
         },
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        ContractToAccount, TRANSFER_CONTRACT,
+        ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
     },
     BlsScalar, ContractId, JubJubScalar, LUX,
 };
@@ -41,7 +41,8 @@ use rusk_prover::LocalProver;
 const PHOENIX_GENESIS_VALUE: u64 = dusk(1_000.0);
 const ALICE_GENESIS_VALUE: u64 = dusk(2_000.0);
 
-const GAS_LIMIT: u64 = 0x10000000;
+const GAS_LIMIT: u64 = 100_000_000;
+const GAS_PRICE: u64 = 1;
 
 const ALICE_ID: ContractId = {
     let mut bytes = [0u8; 32];
@@ -197,8 +198,6 @@ fn instantiate<Rng: RngCore + CryptoRng>(
 /// Perform a simple transfer of funds between two phoenix addresses.
 #[test]
 fn transfer() {
-    const TRANSFER_FEE: u64 = dusk(1.0);
-
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
     let phoenix_sender_sk = PhoenixSecretKey::random(rng);
@@ -212,8 +211,6 @@ fn transfer() {
     let session = &mut instantiate(rng, &phoenix_sender_sk);
 
     // create the transaction
-    let gas_limit = TRANSFER_FEE;
-    let gas_price = LUX;
     let input_note_pos = 0;
     let transfer_value = 42;
     let obfuscate_transfer_note = true;
@@ -226,8 +223,8 @@ fn transfer() {
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_receiver_pk,
-        gas_limit,
-        gas_price,
+        GAS_LIMIT,
+        GAS_PRICE,
         [input_note_pos],
         transfer_value,
         obfuscate_transfer_note,
@@ -270,8 +267,6 @@ fn transfer() {
 /// Checks if a transaction fails when the gas-price is 0.
 #[test]
 fn transfer_gas_fails() {
-    const TRANSFER_FEE: u64 = dusk(1.0);
-
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
     let phoenix_sender_sk = PhoenixSecretKey::random(rng);
@@ -284,7 +279,6 @@ fn transfer_gas_fails() {
 
     let session = &mut instantiate(rng, &phoenix_sender_sk);
 
-    let gas_limit = TRANSFER_FEE;
     let gas_price = 0;
     let input_note_pos = 0;
     let transfer_value = 42;
@@ -298,7 +292,7 @@ fn transfer_gas_fails() {
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_receiver_pk,
-        gas_limit,
+        GAS_LIMIT,
         gas_price,
         [input_note_pos],
         transfer_value,
@@ -339,8 +333,6 @@ fn transfer_gas_fails() {
 /// Performs a simple contract-call.
 #[test]
 fn alice_ping() {
-    const PING_FEE: u64 = dusk(1.0);
-
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
     let phoenix_sender_sk = PhoenixSecretKey::random(rng);
@@ -351,8 +343,6 @@ fn alice_ping() {
     let session = &mut instantiate(rng, &phoenix_sender_sk);
 
     // create the transaction
-    let gas_limit = PING_FEE;
-    let gas_price = LUX;
     let input_note_pos = 0;
     let transfer_value = 0;
     let obfuscate_transfer_note = false;
@@ -369,8 +359,8 @@ fn alice_ping() {
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_sender_pk,
-        gas_limit,
-        gas_price,
+        GAS_LIMIT,
+        GAS_PRICE,
         [input_note_pos],
         transfer_value,
         obfuscate_transfer_note,
@@ -399,9 +389,6 @@ fn alice_ping() {
 /// Deposit funds into a contract and withdraw them again.
 #[test]
 fn deposit_and_withdraw() {
-    const DEPOSIT_FEE: u64 = dusk(1.0);
-    const WITHDRAW_FEE: u64 = dusk(1.0);
-
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
     let phoenix_sender_sk = PhoenixSecretKey::random(rng);
@@ -413,8 +400,6 @@ fn deposit_and_withdraw() {
     let session = &mut instantiate(rng, &phoenix_sender_sk);
 
     // create the deposit transaction
-    let gas_limit = DEPOSIT_FEE;
-    let gas_price = LUX;
     let input_note_pos = 0;
     let transfer_value = 0;
     let obfuscate_transfer_note = false;
@@ -431,8 +416,8 @@ fn deposit_and_withdraw() {
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_sender_pk,
-        gas_limit,
-        gas_price,
+        GAS_LIMIT,
+        GAS_PRICE,
         [input_note_pos],
         transfer_value,
         obfuscate_transfer_note,
@@ -487,8 +472,6 @@ fn deposit_and_withdraw() {
         "All new notes should be owned by our view key"
     );
 
-    let gas_limit = WITHDRAW_FEE;
-    let gas_price = LUX;
     let input_notes_pos = [*input_notes[0].pos(), *input_notes[1].pos()];
     let transfer_value = 0;
     let obfuscate_transfer_note = false;
@@ -525,8 +508,8 @@ fn deposit_and_withdraw() {
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_sender_pk,
-        gas_limit,
-        gas_price,
+        GAS_LIMIT,
+        GAS_PRICE,
         input_notes_pos.try_into().unwrap(),
         transfer_value,
         obfuscate_transfer_note,
@@ -761,6 +744,94 @@ fn convert_wrong_contract_targeted() {
     );
     let notes_value = owned_notes_value(phoenix_sender_vk, &notes);
 
+    assert_eq!(
+        notes.len(),
+        2,
+        "New notes should have been created as change and refund (transparent notes with the value 0 are not appended to the tree)"
+    );
+    assert_eq!(
+        notes_value,
+        PHOENIX_GENESIS_VALUE - gas_spent,
+        "The new notes should have the original value minus gas spent"
+    );
+}
+
+/// In this test we call Alice's `contract_to_contract` function, targeting Bob
+/// as the receiver of the transfer. The gas will be paid in phoenix.
+#[test]
+fn contract_to_contract() {
+    const TRANSFER_VALUE: u64 = ALICE_GENESIS_VALUE / 2;
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sender_sk = PhoenixSecretKey::random(rng);
+    let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
+    let phoenix_sender_pk = PhoenixPublicKey::from(&phoenix_sender_sk);
+
+    let phoenix_change_pk = phoenix_sender_pk.clone();
+
+    let session = &mut instantiate(rng, &phoenix_sender_sk);
+
+    // make sure bob contract has no balance prior to the tx
+    let bob_balance = contract_balance(session, BOB_ID)
+        .expect("Querying the contract balance should succeed");
+    assert_eq!(bob_balance, 0, "Bob must have an initial balance of zero");
+
+    let contract_call = ContractCall {
+        contract: ALICE_ID,
+        fn_name: String::from("contract_to_contract"),
+        fn_args: rkyv::to_bytes::<_, 256>(&ContractToContract {
+            contract: BOB_ID,
+            value: TRANSFER_VALUE,
+            fn_name: String::from("recv_transfer"),
+            data: vec![],
+        })
+        .expect("Serializing should succeed")
+        .to_vec(),
+    };
+
+    let tx = create_phoenix_transaction(
+        rng,
+        session,
+        &phoenix_sender_sk,
+        &phoenix_change_pk,
+        &phoenix_sender_pk,
+        GAS_LIMIT,
+        LUX,
+        [0],
+        0,
+        false,
+        0,
+        Some(contract_call),
+    );
+
+    let receipt = execute(session, tx).expect("Transaction should succeed");
+    let gas_spent = receipt.gas_spent;
+
+    println!("PHOENIX CONTRACT_TO_CONTRACT: {gas_spent} gas");
+
+    let alice_balance = contract_balance(session, ALICE_ID)
+        .expect("Querying the contract balance should succeed");
+    let bob_balance = contract_balance(session, BOB_ID)
+        .expect("Querying the contract balance should succeed");
+
+    assert_eq!(
+        alice_balance,
+        ALICE_GENESIS_VALUE - TRANSFER_VALUE,
+        "Alice's balance should have decreased by the transfer value"
+    );
+    assert_eq!(
+        bob_balance, TRANSFER_VALUE,
+        "Bob's balance must have increased by the transfer value"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_sender_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    let notes_value = owned_notes_value(phoenix_sender_vk, &notes);
     assert_eq!(
         notes.len(),
         2,
