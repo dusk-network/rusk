@@ -9,9 +9,8 @@ use requestty::Question;
 use rusk_wallet::{
     currency::Dusk,
     gas::{
-        self, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT,
-        DEFAULT_LIMIT_STAKE, DEFAULT_LIMIT_TRANSFER, DEFAULT_PRICE,
-        GAS_PER_DEPLOY_BYTE, MIN_DEPLOYMENT_GAS_PRICE,
+        self, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_STAKE, DEFAULT_LIMIT_TRANSFER,
+        DEFAULT_PRICE, GAS_PER_DEPLOY_BYTE, MIN_PRICE_DEPLOYMENT,
     },
     Address, Wallet, MAX_FUNCTION_NAME_SIZE,
 };
@@ -195,10 +194,19 @@ pub(crate) fn online(
                 moonlight_balance,
             )?;
 
+            // Request the contract code and determine its length
+            let code = prompt::request_contract_code()?;
+            let code_len = code.metadata()?.len() as u64;
+
+            // Calculate the effective cost for the deployment
+            let gas_price = prompt::request_gas_price(MIN_PRICE_DEPLOYMENT)?;
+            let gas_limit =
+                (code_len * GAS_PER_DEPLOY_BYTE) + DEFAULT_LIMIT_TRANSFER;
+
             if check_min_gas_balance(
                 balance,
-                DEFAULT_LIMIT_DEPLOYMENT,
-                "a deploy transaction",
+                gas_limit * gas_price,
+                "the deployment of the given contract",
             )
             .is_err()
             {
@@ -207,13 +215,11 @@ pub(crate) fn online(
 
             ProfileOp::Run(Box::new(Command::ContractDeploy {
                 address: Some(addr),
-                code: prompt::request_contract_code()?,
+                code,
                 init_args: prompt::request_bytes("init arguments")?,
                 deploy_nonce: prompt::request_nonce()?,
-                gas_limit: prompt::request_gas_limit(
-                    gas::DEFAULT_LIMIT_DEPLOYMENT,
-                )?,
-                gas_price: prompt::request_gas_price(MIN_DEPLOYMENT_GAS_PRICE)?,
+                gas_limit: prompt::request_gas_limit(gas_limit)?,
+                gas_price,
             }))
         }
         MenuItem::ContractCall => {

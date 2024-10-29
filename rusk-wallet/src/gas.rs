@@ -10,10 +10,10 @@
 use crate::currency::Lux;
 
 /// The minimum gas limit
-pub const MIN_LIMIT: u64 = 500_000;
+pub const MIN_LIMIT: u64 = 100_000;
 
 /// The default gas limit for transfer transactions
-pub const DEFAULT_LIMIT_TRANSFER: u64 = 2_000_000;
+pub const DEFAULT_LIMIT_TRANSFER: u64 = 750_000;
 
 /// The default gas limit for a contract deployment
 pub const DEFAULT_LIMIT_DEPLOYMENT: u64 = 5_000_000;
@@ -31,7 +31,7 @@ pub const GAS_PER_DEPLOY_BYTE: u64 = 100;
 pub const DEFAULT_PRICE: Lux = 1;
 
 /// The minimum gas price for a contract deployment
-pub const MIN_DEPLOYMENT_GAS_PRICE: Lux = 2_000;
+pub const MIN_PRICE_DEPLOYMENT: Lux = 2_000;
 
 #[derive(Debug)]
 /// Gas price and limit for any transaction
