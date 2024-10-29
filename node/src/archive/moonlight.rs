@@ -824,6 +824,7 @@ mod tests {
         sender: AccountPublicKey,
         receiver: Option<AccountPublicKey>,
         memo: Vec<u8>,
+        refund_info: Option<(AccountPublicKey, u64)>,
     ) -> ContractTxEvent {
         let moonlight_tx_event = MoonlightTransactionEvent {
             sender,
@@ -831,7 +832,7 @@ mod tests {
             value: 500,
             memo,
             gas_spent: 500,
-            refund_info: Some((AccountPublicKey::default(), 0u64)),
+            refund_info,
         };
 
         ContractTxEvent {
@@ -925,11 +926,23 @@ mod tests {
             deposit_event_moonlight([4; 32]),
             // should count (5 in total)
             convert_event_moonlight(),
-            moonlight_event([2; 32], pk, Some(pk), vec![0, 1, 1, 0]),
-            moonlight_event([9; 32], pk, Some(pk), vec![0, 1, 1, 0]),
+            moonlight_event([2; 32], pk, Some(pk), vec![0, 1, 1, 0], None),
+            moonlight_event([9; 32], pk, Some(pk), vec![0, 1, 1, 0], None),
+            moonlight_event(
+                [6; 32],
+                pk,
+                Some(pk),
+                vec![],
+                Some((
+                    AccountPublicKey::from(&SecretKey::random(
+                        &mut StdRng::seed_from_u64(1),
+                    )),
+                    100,
+                )),
+            ),
             withdraw_event_moonlight(),
             // belongs together with deposit_event_phoenix
-            moonlight_event([5; 32], pk, None, vec![0, 1, 1, 0]),
+            moonlight_event([5; 32], pk, None, vec![0, 1, 1, 0], None),
             deposit_event_phoenix(),
         ]
     }
@@ -965,6 +978,7 @@ mod tests {
                 sender,
                 Some(receiver),
                 vec![0],
+                None,
             )];
             events.push(event);
         }
@@ -974,11 +988,11 @@ mod tests {
     fn memo_txs() -> Vec<ContractTxEvent> {
         let pk = AccountPublicKey::default();
         vec![
-            moonlight_event([0; 32], pk, None, vec![0, 1, 1, 0]),
-            moonlight_event([1; 32], pk, None, vec![0, 1, 1, 0]),
-            moonlight_event([2; 32], pk, None, vec![0, 1, 1, 0]),
-            moonlight_event([3; 32], pk, None, vec![0, 1, 1, 0]),
-            moonlight_event([4; 32], pk, None, vec![1, 1, 1, 1]),
+            moonlight_event([0; 32], pk, None, vec![0, 1, 1, 0], None),
+            moonlight_event([1; 32], pk, None, vec![0, 1, 1, 0], None),
+            moonlight_event([2; 32], pk, None, vec![0, 1, 1, 0], None),
+            moonlight_event([3; 32], pk, None, vec![0, 1, 1, 0], None),
+            moonlight_event([4; 32], pk, None, vec![1, 1, 1, 1], None),
         ]
     }
 
@@ -987,25 +1001,31 @@ mod tests {
         let block_events = block_events();
 
         let TransormerResult {
-            mut address_outflow_mappings,
+            address_outflow_mappings,
             address_inflow_mappings,
             memo_mappings,
             moonlight_tx_mappings,
         } = group_by_origins_filter_and_convert(block_events, 1);
 
-        assert_eq!(address_outflow_mappings.len(), 3);
-        assert_eq!(address_inflow_mappings.len(), 4);
-        // combine both, 3+4 = 7 moonlight transactions
-        address_outflow_mappings.extend(address_inflow_mappings);
-        address_outflow_mappings.sort_by_key(|(_, mtx)| mtx.origin().clone());
-        address_outflow_mappings.dedup();
-        // Now it should be 5, 2 less because 2 transactions were the same (to
-        // self)
-        assert_eq!(address_outflow_mappings.len(), 5);
+        assert_eq!(address_outflow_mappings.len(), 4);
+        assert_eq!(address_inflow_mappings.len(), 6);
+        // combine both, 4+6 = 10 moonlight transactions
+        let mut address_flow_mappings = address_outflow_mappings;
+        address_flow_mappings.extend(address_inflow_mappings);
+        address_flow_mappings.sort_by_key(|(_, mtx)| mtx.origin().clone());
+
+        address_flow_mappings.dedup();
+
+        // Now it should be 6, 3 less because 3 transactions were the sent to
+        // self and are now duplicates in the inflow & outflow list
+        assert_eq!(address_flow_mappings.len(), 7);
+
+        println!("{:?}", memo_mappings);
         assert_eq!(memo_mappings.len(), 3);
-        // 5 moonlight groups means 5 transactions containing moonlight related
+
+        // 6 moonlight groups means 6 transactions containing moonlight related
         // events
-        assert_eq!(moonlight_tx_mappings.len(), 5);
+        assert_eq!(moonlight_tx_mappings.len(), 6);
     }
 
     #[tokio::test]
@@ -1030,14 +1050,16 @@ mod tests {
             .into_iter()
             .chain(outflows.unwrap())
             .collect::<Vec<MoonlightTx>>();
-        assert_eq!(fetched_moonlight_tx.len(), 7);
+
+        assert_eq!(fetched_moonlight_tx.len(), 9);
+
         fetched_moonlight_tx.sort_by_key(|mtx| mtx.origin().clone());
         fetched_moonlight_tx.dedup();
-        assert_eq!(fetched_moonlight_tx.len(), 5);
+        assert_eq!(fetched_moonlight_tx.len(), 6);
 
         let fetched_events =
             archive.full_moonlight_history(pk).unwrap().unwrap();
-        assert_eq!(fetched_events.len(), 5);
+        assert_eq!(fetched_events.len(), 6);
 
         for moonlight_events in fetched_events {
             assert_eq!(moonlight_events.block_height(), 1);
@@ -1055,6 +1077,25 @@ mod tests {
                 [3, 3, ..] => {
                     assert_eq!(moonlight_events.events().len(), 1);
                     assert_eq!(moonlight_events.events()[0].topic, "withdraw");
+                }
+                [6, 6, ..] => {
+                    assert_eq!(moonlight_events.events().len(), 1);
+                    assert_eq!(moonlight_events.events()[0].topic, "moonlight");
+
+                    let data = rkyv::from_bytes::<MoonlightTransactionEvent>(
+                        &moonlight_events.events()[0].data,
+                    )
+                    .unwrap();
+
+                    assert_eq!(
+                        data.refund_info.unwrap(),
+                        (
+                            AccountPublicKey::from(&SecretKey::random(
+                                &mut StdRng::seed_from_u64(1),
+                            )),
+                            100
+                        )
+                    );
                 }
                 [5, 5, ..] => {
                     assert_eq!(moonlight_events.events().len(), 2);
