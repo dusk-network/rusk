@@ -7,20 +7,19 @@
 use crate::commons::RoundUpdate;
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
-use crate::proposal;
 use crate::ratification::handler::RatificationHandler;
 use crate::user::committee::Committee;
-use crate::validation::handler::ValidationHandler;
+use crate::{proposal, validation};
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
-use node_data::message::{Message, Status};
+use node_data::message::{Message, Payload, Status};
 use node_data::StepName;
 use tracing::{debug, warn};
 
 /// Indicates whether an output value is available for current step execution
 /// (Step is Ready) or needs to collect data (Step is Pending)
 #[allow(clippy::large_enum_variant)]
-pub enum HandleMsgOutput {
+pub enum StepOutcome {
     Pending,
     Ready(Message),
 }
@@ -42,10 +41,12 @@ pub trait MsgHandler {
         committee: &Committee,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
-        let signer = msg.get_signer().ok_or(ConsensusError::InvalidMsgType)?;
+        let signer = msg.get_signer();
+
         debug!(
             event = "validating msg",
-            signer = signer.to_bs58(),
+            signer = signer.as_ref().map(|s| s.to_bs58()),
+            src_addr = ?msg.metadata.as_ref().map(|m| m.src_addr),
             topic = ?msg.topic(),
             step = msg.get_step(),
             ray_id = msg.ray_id(),
@@ -64,6 +65,7 @@ pub trait MsgHandler {
                     return Err(ConsensusError::InvalidPrevBlockHash(msg_tip));
                 }
 
+                let signer = signer.ok_or(ConsensusError::InvalidMsgType)?;
                 // Ensure the message originates from a committee member.
                 if !committee.is_member(&signer) {
                     return Err(ConsensusError::NotCommitteeMember);
@@ -93,8 +95,7 @@ pub trait MsgHandler {
         round_committees: &RoundCommittees,
         status: Status,
     ) -> Result<(), ConsensusError> {
-        let signer = msg.get_signer().expect("signer to exist");
-
+        // Pre-verify messages for the current round with different iteration
         if msg.header.round == ru.round {
             let msg_tip = msg.header.prev_block_hash;
             if msg_tip != ru.hash() {
@@ -103,21 +104,26 @@ pub trait MsgHandler {
 
             let step = msg.get_step();
             if let Some(committee) = round_committees.get_committee(step) {
-                // Ensure the message originates from a committee
-                // member.
-                if !committee.is_member(&signer) {
-                    return Err(ConsensusError::NotCommitteeMember);
+                // Ensure msg is signed by a committee member.
+                // We skip ValidationQuorum, since it has no signer
+                if !matches!(msg.payload, Payload::ValidationQuorum(_)) {
+                    let signer = msg.get_signer().expect("signer to exist");
+
+                    if !committee.is_member(&signer) {
+                        return Err(ConsensusError::NotCommitteeMember);
+                    }
                 }
 
                 match &msg.payload {
-                    node_data::message::Payload::Ratification(_) => {
+                    node_data::message::Payload::Ratification(_)
+                    | node_data::message::Payload::ValidationQuorum(_) => {
                         RatificationHandler::verify_stateless(
                             msg,
                             round_committees,
                         )?;
                     }
                     node_data::message::Payload::Validation(_) => {
-                        ValidationHandler::verify_stateless(
+                        validation::handler::verify_stateless(
                             msg,
                             round_committees,
                         )?;
@@ -157,17 +163,16 @@ pub trait MsgHandler {
         ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError>;
+    ) -> Result<StepOutcome, ConsensusError>;
 
     /// collect allows each Phase to process a verified message from a former
     /// iteration
     async fn collect_from_past(
         &mut self,
         msg: Message,
-        ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError>;
+    ) -> Result<StepOutcome, ConsensusError>;
 
     /// handle_timeout allows each Phase to handle a timeout event.
     /// Returned Message here is sent to outboud queue.

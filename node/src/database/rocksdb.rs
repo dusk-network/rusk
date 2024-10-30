@@ -5,7 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{
-    Candidate, DatabaseOptions, Ledger, LightBlock, Metadata, Persist, DB,
+    ConsensusStorage, DatabaseOptions, Ledger, LightBlock, Metadata, Persist,
+    DB,
 };
 use anyhow::Result;
 use std::cell::RefCell;
@@ -13,6 +14,8 @@ use std::cell::RefCell;
 use node_data::ledger::{
     self, Fault, Header, Label, SpendingId, SpentTransaction,
 };
+use node_data::message::payload;
+use node_data::message::ConsensusHeader;
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -40,6 +43,7 @@ const CF_LEDGER_FAULTS: &str = "cf_ledger_faults";
 const CF_LEDGER_HEIGHT: &str = "cf_ledger_height";
 const CF_CANDIDATES: &str = "cf_candidates";
 const CF_CANDIDATES_HEIGHT: &str = "cf_candidates_height";
+const CF_VALIDATION_RESULTS: &str = "cf_validation_results";
 const CF_MEMPOOL: &str = "cf_mempool";
 const CF_MEMPOOL_SPENDING_ID: &str = "cf_mempool_spending_id";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
@@ -92,7 +96,12 @@ impl Backend {
         let candidates_height_cf = self
             .rocksdb
             .cf_handle(CF_CANDIDATES_HEIGHT)
-            .expect("candidates column family must exist");
+            .expect("candidates_height column family must exist");
+
+        let validation_results_cf = self
+            .rocksdb
+            .cf_handle(CF_VALIDATION_RESULTS)
+            .expect("validation result column family must exist");
 
         let mempool_cf = self
             .rocksdb
@@ -125,6 +134,7 @@ impl Backend {
             inner,
             candidates_cf,
             candidates_height_cf,
+            validation_results_cf,
             ledger_cf,
             ledger_txs_cf,
             ledger_faults_cf,
@@ -204,6 +214,10 @@ impl DB for Backend {
                 CF_CANDIDATES_HEIGHT,
                 blocks_cf_opts.clone(),
             ),
+            ColumnFamilyDescriptor::new(
+                CF_VALIDATION_RESULTS,
+                blocks_cf_opts.clone(),
+            ),
             ColumnFamilyDescriptor::new(CF_METADATA, blocks_cf_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
             ColumnFamilyDescriptor::new(
@@ -276,6 +290,8 @@ pub struct DBTransaction<'db, DB: DBAccess> {
     // Candidates column family
     candidates_cf: &'db ColumnFamily,
     candidates_height_cf: &'db ColumnFamily,
+    // ValidationResults column family
+    validation_results_cf: &'db ColumnFamily,
 
     // Ledger column families
     ledger_cf: &'db ColumnFamily,
@@ -310,12 +326,8 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             let mut buf = vec![];
             LightBlock {
                 header: header.clone(),
-                transactions_ids: txs
-                    .iter()
-                    .map(|t| t.inner.id())
-                    .collect::<Vec<[u8; 32]>>(),
-
-                faults_ids: faults.iter().map(|f| f.hash()).collect::<Vec<_>>(),
+                transactions_ids: txs.iter().map(|t| t.inner.id()).collect(),
+                faults_ids: faults.iter().map(|f| f.hash()).collect(),
             }
             .write(&mut buf)?;
 
@@ -575,7 +587,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 }
 
 /// Implementation of the `Candidate` trait for `DBTransaction<'db, DB>`.
-impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
+impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     /// Stores a candidate block in the database.
     ///
     /// # Arguments
@@ -625,8 +637,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
 
     fn fetch_candidate_block_by_iteration(
         &self,
-        prev_block_hash: [u8; 32],
-        iteration: u8,
+        consensus_header: &ConsensusHeader,
     ) -> Result<Option<ledger::Block>> {
         let iter = self
             .inner
@@ -636,8 +647,8 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
             let b = ledger::Block::read(&mut &blob[..])?;
 
             let header = b.header();
-            if header.prev_block_hash == prev_block_hash
-                && header.iteration == iteration
+            if header.prev_block_hash == consensus_header.prev_block_hash
+                && header.iteration == consensus_header.iteration
             {
                 return Ok(Some(b));
             }
@@ -656,7 +667,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
-    fn delete<F>(&self, closure: F) -> Result<()>
+    fn delete_candidate<F>(&self, closure: F) -> Result<()>
     where
         F: FnOnce(u64) -> bool + std::marker::Copy,
     {
@@ -675,7 +686,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn count(&self) -> usize {
+    fn count_candidates(&self) -> usize {
         let iter = self
             .inner
             .iterator_cf(self.candidates_height_cf, IteratorMode::Start);
@@ -690,7 +701,108 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
     fn clear_candidates(&self) -> Result<()> {
-        self.delete(|_| true)
+        self.delete_candidate(|_| true)
+    }
+
+    /// Stores a ValidationResult in the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `vr` - The ValidationResult to store.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the ValidationResult is successfully stored, or an
+    /// error if the operation fails.
+    fn store_validation_result(
+        &self,
+        consensus_header: &ConsensusHeader,
+        validation_result: &payload::ValidationResult,
+    ) -> Result<()> {
+        let mut serialized = vec![];
+        validation_result.write(&mut serialized)?;
+
+        let key = serialize_iter_key(consensus_header)?;
+        self.inner
+            .put_cf(self.validation_results_cf, key, serialized)?;
+
+        Ok(())
+    }
+
+    /// Fetches a ValidationResult from the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `consensus_header` - The ConsensusHeader of the ValidationResult.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(Some(ValidationResult))` if the ValidationResult is found,
+    /// `Ok(None)` if the ValidationResult is not found, or an error if the
+    /// operation fails.
+    fn fetch_validation_result(
+        &self,
+        consensus_header: &ConsensusHeader,
+    ) -> Result<Option<payload::ValidationResult>> {
+        let key = serialize_iter_key(consensus_header)?;
+        if let Some(blob) =
+            self.snapshot.get_cf(self.validation_results_cf, key)?
+        {
+            let validation_result =
+                payload::ValidationResult::read(&mut &blob[..])?;
+            return Ok(Some(validation_result));
+        }
+
+        // ValidationResult not found
+        Ok(None)
+    }
+
+    /// Deletes ValidationResult items from the database based on a closure.
+    ///
+    /// # Arguments
+    ///
+    /// * `closure` - If the closure returns `true`, the ValidationResult will
+    ///   be deleted.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the deletion is successful, or an error if the
+    /// operation fails.
+    fn delete_validation_results<F>(&self, closure: F) -> Result<()>
+    where
+        F: FnOnce([u8; 32]) -> bool + std::marker::Copy,
+    {
+        let iter = self
+            .inner
+            .iterator_cf(self.validation_results_cf, IteratorMode::Start);
+
+        for (key, _) in iter.map(Result::unwrap) {
+            let (prev_block_hash, _) =
+                deserialize_iter_key(&mut &key.to_vec()[..])?;
+            if closure(prev_block_hash) {
+                self.inner.delete_cf(self.validation_results_cf, key)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn count_validation_results(&self) -> usize {
+        let iter = self
+            .inner
+            .iterator_cf(self.validation_results_cf, IteratorMode::Start);
+
+        iter.count()
+    }
+
+    /// Deletes all items from the `CF_VALIDATION_RESULTS` column family.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the deletion is successful, or an error if the
+    /// operation fails.
+    fn clear_validation_results(&self) -> Result<()> {
+        self.delete_validation_results(|_| true)
     }
 }
 
@@ -706,6 +818,7 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
         }
 
         self.clear_candidates()?;
+        self.clear_validation_results()?;
         Ok(())
     }
 
@@ -1066,6 +1179,24 @@ fn deserialize_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
     r.read_exact(&mut hash[..])?;
 
     Ok((value, hash))
+}
+
+fn serialize_iter_key(ch: &ConsensusHeader) -> std::io::Result<Vec<u8>> {
+    let mut w = vec![];
+    std::io::Write::write_all(&mut w, &ch.prev_block_hash)?;
+    std::io::Write::write_all(&mut w, &[ch.iteration])?;
+    Ok(w)
+}
+
+fn deserialize_iter_key<R: Read>(r: &mut R) -> Result<([u8; 32], u8)> {
+    let mut prev_block_hash = [0u8; 32];
+    r.read_exact(&mut prev_block_hash)?;
+
+    let mut iter_byte = [0u8; 1];
+    r.read_exact(&mut iter_byte)?;
+    let iteration = u8::from_be_bytes(iter_byte);
+
+    Ok((prev_block_hash, iteration))
 }
 
 impl node_data::Serializable for LightBlock {

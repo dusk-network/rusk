@@ -6,7 +6,7 @@
 
 use crate::commons::RoundUpdate;
 use crate::errors::ConsensusError;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
@@ -19,7 +19,9 @@ use crate::aggregator::{Aggregator, StepVote};
 use crate::iteration_ctx::RoundCommittees;
 use crate::quorum::verifiers::verify_votes;
 use node_data::message::payload::{Ratification, ValidationResult, Vote};
-use node_data::message::{payload, Message, Payload, StepMessage};
+use node_data::message::{
+    payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
+};
 
 use crate::user::committee::Committee;
 
@@ -55,6 +57,12 @@ impl RatificationHandler {
                     .votes_for(signer)
                     .ok_or(ConsensusError::NotCommitteeMember)?;
             }
+
+            Payload::ValidationQuorum(q) => Self::verify_validation_result(
+                &q.header,
+                &q.result,
+                round_committees,
+            )?,
             Payload::Empty => (),
             _ => {
                 info!("cannot verify in validation handler");
@@ -79,7 +87,11 @@ impl MsgHandler for RatificationHandler {
             }
 
             p.verify_signature()?;
-            Self::verify_validation_result(p, round_committees)?;
+            Self::verify_validation_result(
+                &p.header,
+                &p.validation_result,
+                round_committees,
+            )?;
 
             return Ok(());
         }
@@ -94,7 +106,7 @@ impl MsgHandler for RatificationHandler {
         ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
         let iteration = p.header().iteration;
 
@@ -132,7 +144,7 @@ impl MsgHandler for RatificationHandler {
         );
 
         if quorum_reached {
-            return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
+            return Ok(StepOutcome::Ready(self.build_quorum_msg(
                 ru,
                 iteration,
                 p.vote,
@@ -141,17 +153,16 @@ impl MsgHandler for RatificationHandler {
             )));
         }
 
-        Ok(HandleMsgOutput::Pending)
+        Ok(StepOutcome::Pending)
     }
 
     /// Collects the ratification message from former iteration.
     async fn collect_from_past(
         &mut self,
         msg: Message,
-        _ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
         // Collect vote, if msg payload is ratification type
@@ -170,7 +181,7 @@ impl MsgHandler for RatificationHandler {
                         &generator.expect("There must be a valid generator"),
                     )
                 {
-                    return Ok(HandleMsgOutput::Ready(quorum_msg));
+                    return Ok(StepOutcome::Ready(quorum_msg));
                 }
             }
             Err(error) => {
@@ -186,7 +197,7 @@ impl MsgHandler for RatificationHandler {
             }
         };
 
-        Ok(HandleMsgOutput::Pending)
+        Ok(StepOutcome::Pending)
     }
 
     /// Handle of an event of step execution timeout
@@ -252,12 +263,11 @@ impl RatificationHandler {
     }
 
     /// Verifies either valid or nil quorum of validation output
-    fn verify_validation_result(
-        ratification: &Ratification,
+    pub(crate) fn verify_validation_result(
+        header: &ConsensusHeader,
+        result: &ValidationResult,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
-        let header = &ratification.header;
-        let result = &ratification.validation_result;
         let iter = header.iteration;
         let validation_committee = round_committees
             .get_validation_committee(iter)

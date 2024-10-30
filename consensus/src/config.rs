@@ -30,6 +30,12 @@ pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);
 pub const TIMEOUT_INCREASE: Duration = Duration::from_secs(2);
 pub const MINIMUM_BLOCK_TIME: u64 = 10;
 
+/// Maximum allowable round difference for message signature verification and
+/// for determining if a consensus message is close enough to the network tip
+/// for enqueuing.
+/// Controls the range of rounds considered relevant to current operations.
+pub const MAX_ROUND_DISTANCE: u64 = 10;
+
 // Returns `floor(value/2) + 1`
 pub fn majority(value: usize) -> usize {
     value / 2 + 1

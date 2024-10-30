@@ -6,8 +6,8 @@
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
-use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
+use crate::msg_handler::StepOutcome;
 use crate::operations::{Operations, Voter};
 use crate::validation::handler;
 use anyhow::anyhow;
@@ -15,19 +15,19 @@ use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
-    AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, StepMessage,
+    AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, Instrument};
 
-pub struct ValidationStep<T> {
-    handler: Arc<Mutex<handler::ValidationHandler>>,
+pub struct ValidationStep<T, D: Database> {
+    handler: Arc<Mutex<handler::ValidationHandler<D>>>,
     executor: Arc<T>,
 }
 
-impl<T: Operations + 'static> ValidationStep<T> {
+impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn spawn_try_vote(
         join_set: &mut JoinSet<()>,
@@ -132,10 +132,17 @@ impl<T: Operations + 'static> ValidationStep<T> {
     ) {
         // Sign and construct validation message
         let validation = self::build_validation_payload(vote, ru, iteration);
-        info!(event = "send_vote", vote = ?validation.vote);
+        let vote = validation.vote;
         let msg = Message::from(validation);
 
         if vote.is_valid() || !is_emergency_iter(iteration) {
+            info!(
+              event = "Cast vote",
+              step = "Validation",
+              info = ?msg.header,
+              vote = ?vote
+            );
+
             // Publish
             outbound.try_send(msg.clone());
 
@@ -201,10 +208,10 @@ pub fn build_validation_payload(
     validation
 }
 
-impl<T: Operations + 'static> ValidationStep<T> {
+impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     pub(crate) fn new(
         executor: Arc<T>,
-        handler: Arc<Mutex<handler::ValidationHandler>>,
+        handler: Arc<Mutex<handler::ValidationHandler<D>>>,
     ) -> Self {
         Self { handler, executor }
     }
@@ -240,7 +247,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
     pub async fn run<DB: Database>(
         &mut self,
         mut ctx: ExecutionCtx<'_, T, DB>,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Message {
         let committee = ctx
             .get_current_committee()
             .expect("committee to be created before run");
@@ -270,11 +277,12 @@ impl<T: Operations + 'static> ValidationStep<T> {
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
-            return Ok(m);
+        match ctx.handle_future_msgs(self.handler.clone()).await {
+            StepOutcome::Ready(m) => m,
+            StepOutcome::Pending => {
+                ctx.event_loop(self.handler.clone(), None).await
+            }
         }
-
-        ctx.event_loop(self.handler.clone(), None).await
     }
 
     pub fn name(&self) -> &'static str {

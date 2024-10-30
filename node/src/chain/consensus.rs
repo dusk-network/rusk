@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{self, Candidate, Mempool, Metadata};
+use crate::database::{self, ConsensusStorage, Mempool, Metadata};
 use crate::{vm, Message};
 use async_trait::async_trait;
 use dusk_consensus::commons::{RoundUpdate, TimeoutSet};
@@ -17,7 +17,7 @@ use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block, Fault, Hash, Header};
-use node_data::message::AsyncQueue;
+use node_data::message::{payload, AsyncQueue, ConsensusHeader};
 
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
@@ -214,6 +214,15 @@ impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
             .read()
             .await
             .update(|txn| txn.store_candidate_block(b));
+    }
+    async fn store_validation_result(
+        &mut self,
+        consensus_header: &ConsensusHeader,
+        validation_result: &payload::ValidationResult,
+    ) {
+        let _ = self.db.read().await.update(|db| {
+            db.store_validation_result(consensus_header, validation_result)
+        });
     }
     async fn get_last_iter(&self) -> (Hash, u8) {
         let data = self

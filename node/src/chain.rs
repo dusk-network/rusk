@@ -12,7 +12,6 @@ mod genesis;
 
 mod header_validation;
 mod metrics;
-mod stall_chain_fsm;
 
 use self::acceptor::Acceptor;
 use self::fsm::SimpleFSM;
@@ -43,6 +42,7 @@ const TOPICS: &[u8] = &[
     Topics::Validation as u8,
     Topics::Ratification as u8,
     Topics::Quorum as u8,
+    Topics::ValidationQuorum as u8,
 ];
 
 const HEARTBEAT_SEC: Duration = Duration::from_secs(3);
@@ -146,9 +146,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     match msg.payload {
                         Payload::Candidate(_)
                         | Payload::Validation(_)
-                        | Payload::Ratification(_) => {
+                        | Payload::Ratification(_)
+                        | Payload::ValidationQuorum(_) => {
                             self.reroute_acceptor(msg).await;
                         }
+
                         Payload::Quorum(ref q) => {
                             fsm.on_quorum(q, msg.metadata.as_ref()).await;
                             self.reroute_acceptor(msg).await;

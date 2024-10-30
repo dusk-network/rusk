@@ -8,9 +8,10 @@ use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
 
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::IterationCtx;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::operations::Operations;
 use crate::queue::{MsgRegistry, MsgRegistryError};
+
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -20,10 +21,12 @@ use node_data::ledger::Block;
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
 };
-use node_data::message::{AsyncQueue, Message, Payload};
+use node_data::message::{AsyncQueue, Message, Payload, Topics};
 use node_data::StepName;
 
-use crate::config::{is_emergency_iter, CONSENSUS_MAX_ITER};
+use crate::config::{
+    is_emergency_iter, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
+};
 use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
 use std::sync::Arc;
@@ -130,7 +133,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         &mut self,
         phase: Arc<Mutex<C>>,
         additional_timeout: Option<Duration>,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Message {
         let open_consensus_mode = self.last_step_running();
 
         // When consensus is in open_consensus_mode then it keeps Ratification
@@ -157,7 +160,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     match msg.payload {
                         Payload::Candidate(_)
                         | Payload::Validation(_)
-                        | Payload::Ratification(_) => {
+                        | Payload::Ratification(_)
+                        | Payload::ValidationQuorum(_) => {
                             // If we received a Step Message, we pass it on to
                             // the running step for processing.
                             if let Some(step_result) = self
@@ -174,7 +178,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                 // to Consensus
                                 if !open_consensus_mode {
                                     self.report_elapsed_time().await;
-                                    return Ok(step_result);
+                                    return step_result;
                                 }
 
                                 // In Open Consensus, we only broadcast Success
@@ -332,7 +336,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             // terminate the iteration.
                             // Messages for different iterations are discarded.
                             if qiter == iter {
-                                return Ok(msg);
+                                return msg;
                             } else {
                                 debug!(
                                   event = "Quorum discarded",
@@ -359,7 +363,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         error!("Timeout detected during last step running. This should never happen")
                     } else {
                         self.process_timeout_event(phase).await;
-                        return Ok(Message::empty());
+                        return Message::empty();
                     }
                 }
             }
@@ -374,11 +378,19 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
+                debug!(
+                    event = "Cast past vote",
+                    step = "Validation",
+                    mode = "emergency",
+                    round = candidate.header().height,
+                    iter = msg_iteration
+                );
+
                 let expected_generator = self
                     .iter_ctx
                     .get_generator(msg_iteration)
                     .expect("generator to exists");
-                ValidationStep::try_vote(
+                ValidationStep::<_, DB>::try_vote(
                     msg_iteration,
                     Some(candidate),
                     &self.round_update,
@@ -403,7 +415,16 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
-                RatificationStep::try_vote(
+                debug!(
+                    event = "Cast past vote",
+                    step = "Ratification",
+                    mode = "emergency",
+                    round = self.round_update.round,
+                    iter = msg_iteration
+                );
+
+                // Should we collect our own vote?
+                let _msg = RatificationStep::try_vote(
                     &self.round_update,
                     msg_iteration,
                     validation,
@@ -418,60 +439,49 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     ///
     /// Ignores messages that do not originate from emergency iteration of
     /// current round
-    async fn process_past_events(&mut self, msg: Message) {
+    async fn handle_past_msg(&mut self, msg: Message) {
+        // Discard past-round messages
         if msg.header.round != self.round_update.round {
-            log_msg("discarded message", "process_past_events", &msg);
+            log_msg("discarded message (past round)", "handle_past_msg", &msg);
             // should we send current tip to the msg sender?
             return;
         }
-        // Repropagate past iteration messages (they have been already
-        // validated)
 
-        log_msg("send message", "process_past_events", &msg);
-        self.outbound.try_send(msg.clone());
-
-        if is_emergency_iter(msg.header.iteration) {
-            self.on_emergency_mode(msg).await;
+        let msg_topic = msg.topic();
+        // Repropagate past iteration messages
+        // INFO: messages are previously validate by is_valid
+        if msg_topic != Topics::ValidationQuorum {
+            log_msg("send message", "handle_past_msg", &msg);
+            self.outbound.try_send(msg.clone());
         }
-    }
 
-    /// Handles a consensus message in emergency mode
-    async fn on_emergency_mode(&mut self, msg: Message) {
-        // Try to vote for a candidate block from former iteration
-        if let Payload::Candidate(p) = &msg.payload {
-            self.try_cast_validation_vote(&p.candidate).await;
-        }
         let msg_iteration = msg.header.iteration;
 
-        // Collect message from a previous iteration/step.
-        if let Some(m) = self
-            .iter_ctx
-            .collect_past_event(&self.round_update, msg)
-            .await
-        {
-            match &m.payload {
-                Payload::Quorum(q) => {
-                    // When collecting votes from a past iteration, only
-                    // quorum for Vote::Valid should be propagated
-                    if let Vote::Valid(_) = &q.vote() {
-                        info!(
-                            event = "Quorum",
-                            src = "emergency_iter",
-                            msg_iteration,
-                            vote = ?q.vote(),
-                        );
+        // Past-iteration messages are only handled in emergency mode
+        if !is_emergency_iter(msg_iteration) {
+            log_msg(
+                "discarded message (past iter in normal mode)",
+                "handle_past_msg",
+                &msg,
+            );
+            // TODO: send Inv(Tip) to peer
+            return;
+        }
 
-                        self.quorum_sender.send_quorum(m).await;
-                    }
+        // Process message from a previous iteration/step.
+        if let Some(m) = self.iter_ctx.process_past_msg(msg).await {
+            match &m.payload {
+                Payload::Candidate(p) => {
+                    self.try_cast_validation_vote(&p.candidate).await;
                 }
 
                 Payload::ValidationResult(result) => {
                     info!(
-                      event = "Validation result",
-                      src = "emergency_iter",
-                      msg_iteration,
+                      event = "New ValidationResult",
+                      mode = "emergency",
+                      info = ?m.header,
                       vote = ?result.vote(),
-                      quorum = ?result.quorum(),
+                      src = ?msg_topic
                     );
 
                     if let QuorumType::Valid = result.quorum() {
@@ -479,8 +489,27 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             .await
                     }
                 }
+
+                Payload::Quorum(q) => {
+                    // When collecting votes from a past iteration, only
+                    // quorum for Vote::Valid should be propagated
+                    if let Vote::Valid(_) = &q.vote() {
+                        info!(
+                            event = "New Quorum",
+                            mode = "emergency",
+                            inf = ?m.header,
+                            vote = ?q.vote(),
+                        );
+
+                        // Broadcast Quorum
+                        self.quorum_sender.send_quorum(m).await;
+                    }
+                }
+
                 _ => {
-                    // Not supported.
+                    // Validation and Ratification messages should never be
+                    // returned by process_past_msg
+                    warn!("Invalid message returned by process_past_msg. This should be a bug.")
                 }
             }
         }
@@ -503,7 +532,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         // generate the committees so that we can pre-verify its validity.
         // We do it here because we need the IterationCtx
 
-        let same_prev_hash = msg.header.round == self.round_update.round
+        let current_round = self.round_update.round;
+
+        let same_prev_hash = msg.header.round == current_round
             && msg.header.prev_block_hash == self.round_update.hash();
 
         if same_prev_hash && msg.header.iteration > self.iteration {
@@ -533,9 +564,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         match valid {
             Ok(_) => {
-                // Repropagate past iteration messages (they have been already
-                // validated)
-
                 log_msg("send message", "inbound message", &msg);
                 // Re-publish the returned message
                 self.outbound.try_send(msg.clone());
@@ -558,8 +586,15 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     }
                 }
 
-                if msg.header.round > self.round_update.round + 10 {
-                    log_msg("discarded msg (signer not eligible)", SRC, &msg);
+                // We verify message signatures only for the next 10 round
+                // messages. Removing this check will lead to
+                // repropagate everything only according to the signer pk
+                if msg.header.round > current_round + MAX_ROUND_DISTANCE {
+                    log_msg(
+                        "discarded msg (round too far from now)",
+                        SRC,
+                        &msg,
+                    );
                     return None;
                 }
 
@@ -580,7 +615,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 return None;
             }
             Err(ConsensusError::PastEvent) => {
-                self.process_past_events(msg).await;
+                self.handle_past_msg(msg).await;
                 return None;
             }
             Err(ConsensusError::InvalidValidation(QuorumType::NoQuorum)) => {
@@ -610,9 +645,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         match collected {
             // Fully valid state reached on this step. Return it as an output to
             // populate next step with it.
-            Ok(HandleMsgOutput::Ready(m)) => Some(m),
+            Ok(StepOutcome::Ready(m)) => Some(m),
             // Message collected but phase didn't reach a final result
-            Ok(HandleMsgOutput::Pending) => None,
+            Ok(StepOutcome::Pending) => None,
             Err(err) => {
                 let event = "failed collect";
                 error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_height,);
@@ -642,11 +677,11 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// Handles all messages stored in future_msgs queue that belongs to the
     /// current round and step.
     ///
-    /// Returns Some(msg) if the step is finalized.
+    /// Returns the step result if the step is finalized.
     pub async fn handle_future_msgs<C: MsgHandler>(
         &self,
         phase: Arc<Mutex<C>>,
-    ) -> Option<Message> {
+    ) -> StepOutcome {
         let committee = self
             .get_current_committee()
             .expect("committee to be created before run");
@@ -678,19 +713,23 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
                     self.outbound.try_send(msg.clone());
 
-                    if let Ok(HandleMsgOutput::Ready(msg)) = phase
+                    match phase
                         .lock()
                         .await
                         .collect(msg, &self.round_update, committee, generator)
                         .await
                     {
-                        return Some(msg);
+                        Ok(StepOutcome::Ready(msg)) => {
+                            return StepOutcome::Ready(msg)
+                        }
+                        Ok(_) => {}
+                        Err(e) => warn!("error in collecting message {e:?}"),
                     }
                 }
             }
         }
 
-        None
+        StepOutcome::Pending
     }
 
     /// Reports step elapsed time to the client

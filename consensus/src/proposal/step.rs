@@ -5,9 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::Database;
-use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::operations::Operations;
 use node_data::get_current_timestamp;
 use node_data::ledger::IterationsInfo;
@@ -52,10 +51,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         debug!(event = "init", name = self.name(), round, iter = iteration,)
     }
 
-    pub async fn run(
-        &mut self,
-        mut ctx: ExecutionCtx<'_, T, D>,
-    ) -> Result<Message, ConsensusError> {
+    pub async fn run(&mut self, mut ctx: ExecutionCtx<'_, T, D>) -> Message {
         let committee = ctx
             .get_current_committee()
             .expect("committee to be created before run");
@@ -96,9 +92,9 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .collect(msg, &ctx.round_update, committee, None)
                     .await
                 {
-                    Ok(HandleMsgOutput::Ready(msg)) => {
+                    Ok(StepOutcome::Ready(msg)) => {
                         Self::wait_until_next_slot(tip_timestamp).await;
-                        return Ok(msg);
+                        return msg;
                     }
                     Err(e) => {
                         error!("invalid candidate generated due to {:?}", e)
@@ -110,23 +106,16 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             }
         }
 
-        // handle queued messages for current round and step.
-        if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
-            Self::wait_until_next_slot(tip_timestamp).await;
-            return Ok(m);
-        }
-
         let additional_timeout = Self::next_slot_in(tip_timestamp);
-        match ctx
-            .event_loop(self.handler.clone(), additional_timeout)
-            .await
-        {
-            Ok(msg) => {
-                Self::wait_until_next_slot(tip_timestamp).await;
-                Ok(msg)
+        let msg = match ctx.handle_future_msgs(self.handler.clone()).await {
+            StepOutcome::Ready(m) => m,
+            StepOutcome::Pending => {
+                ctx.event_loop(self.handler.clone(), additional_timeout)
+                    .await
             }
-            Err(err) => Err(err),
-        }
+        };
+        Self::wait_until_next_slot(tip_timestamp).await;
+        msg
     }
 
     /// Waits until the next slot is reached

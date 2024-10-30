@@ -5,39 +5,36 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::aggregator::{Aggregator, StepVote};
-use crate::commons::RoundUpdate;
+use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Block, StepVotes};
+use node_data::ledger::{to_str, Block, StepVotes};
 use node_data::StepName;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::user::committee::Committee;
 
 use crate::iteration_ctx::RoundCommittees;
-use node_data::message::payload::{QuorumType, Validation, Vote};
-use node_data::message::{payload, Message, Payload, StepMessage};
+use node_data::message::payload::{
+    GetResource, Inv, QuorumType, Validation, Vote,
+};
+use node_data::message::{
+    payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
+};
 
-fn final_result(
-    sv: StepVotes,
-    vote: Vote,
-    quorum: QuorumType,
-) -> HandleMsgOutput {
-    let p = payload::ValidationResult::new(sv, vote, quorum);
-    let msg = Message::from(p);
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
-    HandleMsgOutput::Ready(msg)
-}
-
-pub struct ValidationHandler {
+pub struct ValidationHandler<D: Database> {
     pub(crate) aggr: Aggregator<Validation>,
     pub(crate) candidate: Option<Block>,
     sv_registry: SafeAttestationInfoRegistry,
     curr_iteration: u8,
+    pub(crate) db: Arc<Mutex<D>>,
 }
 
 // Implement the required trait to use Aggregator
@@ -47,42 +44,44 @@ impl StepVote for Validation {
     }
 }
 
-impl ValidationHandler {
-    pub fn verify_stateless(
-        msg: &Message,
-        round_committees: &RoundCommittees,
-    ) -> Result<(), ConsensusError> {
-        match &msg.payload {
-            Payload::Validation(p) => {
-                p.verify_signature()?;
+pub fn verify_stateless(
+    msg: &Message,
+    round_committees: &RoundCommittees,
+) -> Result<(), ConsensusError> {
+    match &msg.payload {
+        Payload::Validation(p) => {
+            p.verify_signature()?;
 
-                let signer = &p.sign_info.signer;
-                let committee = round_committees
-                    .get_committee(msg.get_step())
-                    .expect("committee to be created before run");
+            let signer = &p.sign_info.signer;
+            let committee = round_committees
+                .get_committee(msg.get_step())
+                .expect("committee to be created before run");
 
-                committee
-                    .votes_for(signer)
-                    .ok_or(ConsensusError::NotCommitteeMember)?;
-            }
-            Payload::Empty => (),
-            _ => {
-                info!("cannot verify in validation handler");
-                Err(ConsensusError::InvalidMsgType)?
-            }
+            committee
+                .votes_for(signer)
+                .ok_or(ConsensusError::NotCommitteeMember)?;
         }
-
-        Ok(())
+        Payload::Empty => (),
+        _ => {
+            info!("cannot verify in validation handler");
+            Err(ConsensusError::InvalidMsgType)?
+        }
     }
+
+    Ok(())
 }
 
-impl ValidationHandler {
-    pub(crate) fn new(sv_registry: SafeAttestationInfoRegistry) -> Self {
+impl<D: Database> ValidationHandler<D> {
+    pub(crate) fn new(
+        sv_registry: SafeAttestationInfoRegistry,
+        db: Arc<Mutex<D>>,
+    ) -> Self {
         Self {
             sv_registry,
             aggr: Aggregator::default(),
             candidate: None,
             curr_iteration: 0,
+            db,
         }
     }
 
@@ -97,10 +96,38 @@ impl ValidationHandler {
             _ => Err(ConsensusError::InvalidMsgType),
         }
     }
+
+    async fn build_validation_result(
+        &self,
+        sv: StepVotes,
+        vote: Vote,
+        quorum: QuorumType,
+        consensus_header: &ConsensusHeader,
+    ) -> Message {
+        let vr = payload::ValidationResult::new(sv, vote, quorum);
+
+        // In Emergency Mode, we store ValidationResult in case some peer
+        // requests it
+        if is_emergency_iter(consensus_header.iteration) {
+            debug!(
+              event = "Store ValidationResult",
+              info = ?consensus_header,
+              src = "Validation"
+            );
+
+            self.db
+                .lock()
+                .await
+                .store_validation_result(consensus_header, &vr)
+                .await;
+        }
+
+        Message::from(vr)
+    }
 }
 
 #[async_trait]
-impl MsgHandler for ValidationHandler {
+impl<D: Database> MsgHandler for ValidationHandler<D> {
     /// Verifies if a msg is a valid validation message.
     fn verify(
         &self,
@@ -129,7 +156,7 @@ impl MsgHandler for ValidationHandler {
         _ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
         // NoQuorum cannot be cast from validation committee
@@ -179,20 +206,51 @@ impl MsgHandler for ValidationHandler {
                 }
             };
             info!(event = "quorum reached", ?vote);
-            return Ok(final_result(sv, vote, quorum_type));
+
+            let vrmsg = self
+                .build_validation_result(sv, vote, quorum_type, &p.header())
+                .await;
+
+            return Ok(StepOutcome::Ready(vrmsg));
         }
 
-        Ok(HandleMsgOutput::Pending)
+        Ok(StepOutcome::Pending)
     }
 
     /// Collects the validation message from former iteration.
     async fn collect_from_past(
         &mut self,
         msg: Message,
-        _ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    ) -> Result<StepOutcome, ConsensusError> {
+        if is_emergency_iter(msg.header.iteration) {
+            if let Payload::ValidationQuorum(vq) = msg.payload {
+                if !vq.result.vote().is_valid() {
+                    return Err(ConsensusError::InvalidMsgType);
+                };
+
+                let vr = vq.result;
+
+                // Store ValidationResult
+                debug!(
+                  event = "Store ValidationResult",
+                  info = ?vq.header,
+                  src = "ValidationQuorum"
+                );
+
+                self.db
+                    .lock()
+                    .await
+                    .store_validation_result(&vq.header, &vr)
+                    .await;
+
+                // Extract the ValidationResult and return it as msg
+                let vr_msg = vr.into();
+                return Ok(StepOutcome::Ready(vr_msg));
+            }
+        }
+
         let p = Self::unwrap_msg(msg)?;
 
         // NoQuorum cannot be cast from validation committee
@@ -215,9 +273,19 @@ impl MsgHandler for ValidationHandler {
                     validation_quorum_reached,
                     &generator.expect("There must be a valid generator"),
                 );
+
                 if p.vote.is_valid() && validation_quorum_reached {
                     // ValidationResult from past iteration is found
-                    return Ok(final_result(sv, p.vote, QuorumType::Valid));
+                    let vr = self
+                        .build_validation_result(
+                            sv,
+                            p.vote,
+                            QuorumType::Valid,
+                            &p.header(),
+                        )
+                        .await;
+
+                    return Ok(StepOutcome::Ready(vr));
                 }
             }
             Err(error) => {
@@ -232,22 +300,37 @@ impl MsgHandler for ValidationHandler {
                 );
             }
         }
-        Ok(HandleMsgOutput::Pending)
+        Ok(StepOutcome::Pending)
     }
 
     /// Handles of an event of step execution timeout
     fn handle_timeout(
         &self,
-        _ru: &RoundUpdate,
+        ru: &RoundUpdate,
         curr_iteration: u8,
     ) -> Option<Message> {
         if is_emergency_iter(curr_iteration) {
-            // While we are in Emergency mode but still the candidate is missing
-            // then we request it
+            // In Emergency Mode we request the ValidationResult from our peers
+            // in case we arrived late and missed the votes
 
-            // TODO: Request ValidationResult by prev_block_hash, iteration
-            // lockup key TODO: Should we also request the candidate
-            // block, if it's still missing?
+            let prev_block_hash = ru.hash();
+            let round = ru.round;
+
+            debug!(
+                event = "Request ValidationResult",
+                round,
+                iteration = curr_iteration,
+                prev_block = to_str(&prev_block_hash)
+            );
+
+            let mut inv = Inv::new(1);
+            inv.add_validation_result(ConsensusHeader {
+                prev_block_hash,
+                round,
+                iteration: curr_iteration,
+            });
+            let msg = GetResource::new(inv, None, u64::MAX, 0);
+            return Some(msg.into());
         }
 
         None

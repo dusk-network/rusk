@@ -6,10 +6,11 @@
 
 pub mod conf;
 
-use crate::database::{Candidate, Ledger, Mempool};
+use crate::database::{ConsensusStorage, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::{anyhow, Result};
+
 use std::cmp::min;
 
 use node_data::message::payload::{self, GetResource, InvParam, InvType};
@@ -187,7 +188,7 @@ impl DataBrokerSrv {
             .map(|m| m.src_addr)
             .ok_or_else(|| anyhow::anyhow!("invalid metadata src_addr"))?;
 
-        debug!(event = "handle_request", ?msg);
+        debug!(event = "request received", ?msg.payload, ?msg.metadata);
         let this_peer = *network.read().await.public_addr();
 
         match &msg.payload {
@@ -340,7 +341,7 @@ impl DataBrokerSrv {
     /// items that the node state is missing, puts these items in a GetResource
     /// wire message, and sends it back to request the items in full.
     ///
-    /// An item is a block or a transaction.
+    /// An item is a block, a transaction, or a ValidationResult.
     async fn handle_inv<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::Inv,
@@ -375,7 +376,7 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            if Candidate::fetch_candidate_block(&t, hash)?
+                            if ConsensusStorage::fetch_candidate_block(&t, hash)?
                                 .is_none()
                             {
                                 inv.add_candidate_from_hash(*hash);
@@ -390,22 +391,24 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::CandidateFromIteration => {
-                        if let InvParam::HashAndIteration(
-                            prev_block_hash,
-                            iteration,
-                        ) = &i.param
-                        {
-                            if Candidate::fetch_candidate_block_by_iteration(
-                                &t,
-                                *prev_block_hash,
-                                *iteration,
+                        if let InvParam::Iteration(ch) = &i.param {
+                            if ConsensusStorage::fetch_candidate_block_by_iteration(
+                                &t, ch,
                             )?
                             .is_none()
                             {
-                                inv.add_candidate_from_iteration(
-                                    *prev_block_hash,
-                                    *iteration,
-                                );
+                                inv.add_candidate_from_iteration(*ch);
+                            }
+                        }
+                    }
+                    InvType::ValidationResult => {
+                        if let InvParam::Iteration(ch) = &i.param {
+                            if ConsensusStorage::fetch_validation_result(
+                                &t, ch,
+                            )?
+                            .is_none()
+                            {
+                                inv.add_validation_result(*ch);
                             }
                         }
                     }
@@ -475,7 +478,7 @@ impl DataBrokerSrv {
                                 .ok()
                                 .flatten()
                                 .or_else(|| {
-                                    Candidate::fetch_candidate_block(&t, hash)
+                                    ConsensusStorage::fetch_candidate_block(&t, hash)
                                         .ok()
                                         .flatten()
                                 })
@@ -495,21 +498,30 @@ impl DataBrokerSrv {
                         }
                     }
                     InvType::CandidateFromIteration => {
-                        if let InvParam::HashAndIteration(
-                            prev_block_hash,
-                            iter,
-                        ) = &i.param
-                        {
-                            Candidate::fetch_candidate_block_by_iteration(
-                                &t,
-                                *prev_block_hash,
-                                *iter,
+                        if let InvParam::Iteration(ch) = &i.param {
+                            ConsensusStorage::fetch_candidate_block_by_iteration(
+                                &t, ch,
                             )
                             .ok()
                             .flatten()
                             .map(|candidate| {
                                 Message::from(payload::Candidate { candidate })
                             })
+                        } else {
+                            None
+                        }
+                    }
+                    InvType::ValidationResult => {
+                        if let InvParam::Iteration(ch) = &i.param {
+                            ConsensusStorage::fetch_validation_result(&t, ch)
+                                .ok()
+                                .flatten()
+                                .map(|vr| {
+                                    Message::from(payload::ValidationQuorum {
+                                        header: *ch,
+                                        result: vr,
+                                    })
+                                })
                         } else {
                             None
                         }

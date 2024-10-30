@@ -10,7 +10,7 @@ use execution_core::signatures::bls::{
     MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
     SecretKey as BlsSecretKey,
 };
-use payload::Nonce;
+use payload::{Nonce, ValidationQuorum};
 use tracing::{error, warn};
 
 use crate::bls::PublicKey;
@@ -208,6 +208,7 @@ impl Serializable for Message {
             Payload::GetBlocks(p) => p.write(w),
             Payload::GetResource(p) => p.write(w),
             Payload::Ratification(p) => p.write(w),
+            Payload::ValidationQuorum(p) => p.write(w),
             Payload::Empty | Payload::ValidationResult(_) => Ok(()), /* internal message, not sent on the wire */
         }
     }
@@ -225,6 +226,9 @@ impl Serializable for Message {
             Topics::Validation => payload::Validation::read(r)?.into(),
             Topics::Ratification => payload::Ratification::read(r)?.into(),
             Topics::Quorum => payload::Quorum::read(r)?.into(),
+            Topics::ValidationQuorum => {
+                payload::ValidationQuorum::read(r)?.into()
+            }
             Topics::Block => ledger::Block::read(r)?.into(),
             Topics::Tx => ledger::Transaction::read(r)?.into(),
             Topics::GetResource => payload::GetResource::read(r)?.into(),
@@ -257,28 +261,35 @@ impl<W: WireMessage> From<W> for Message {
 impl WireMessage for Candidate {
     const TOPIC: Topics = Topics::Candidate;
     fn consensus_header(&self) -> ConsensusHeader {
-        self.header().clone()
+        self.header()
     }
 }
 
 impl WireMessage for Validation {
     const TOPIC: Topics = Topics::Validation;
     fn consensus_header(&self) -> ConsensusHeader {
-        self.header.clone()
+        self.header
     }
 }
 
 impl WireMessage for Ratification {
     const TOPIC: Topics = Topics::Ratification;
     fn consensus_header(&self) -> ConsensusHeader {
-        self.header.clone()
+        self.header
     }
 }
 
 impl WireMessage for payload::Quorum {
     const TOPIC: Topics = Topics::Quorum;
     fn consensus_header(&self) -> ConsensusHeader {
-        self.header.clone()
+        self.header
+    }
+}
+
+impl WireMessage for payload::ValidationQuorum {
+    const TOPIC: Topics = Topics::ValidationQuorum;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header
     }
 }
 
@@ -325,7 +336,7 @@ impl Message {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq)]
+#[derive(Default, Clone, PartialEq, Eq, Copy)]
 #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
 pub struct ConsensusHeader {
     pub prev_block_hash: Hash,
@@ -403,6 +414,7 @@ pub enum Payload {
     Validation(payload::Validation),
     Candidate(Box<payload::Candidate>),
     Quorum(payload::Quorum),
+    ValidationQuorum(Box<payload::ValidationQuorum>),
 
     Block(Box<ledger::Block>),
     Transaction(Box<ledger::Transaction>),
@@ -479,6 +491,12 @@ impl From<payload::GetBlocks> for Payload {
 impl From<payload::GetResource> for Payload {
     fn from(value: payload::GetResource) -> Self {
         Self::GetResource(value)
+    }
+}
+
+impl From<payload::ValidationQuorum> for Payload {
+    fn from(value: payload::ValidationQuorum) -> Self {
+        Self::ValidationQuorum(Box::new(value))
     }
 }
 
@@ -694,6 +712,16 @@ pub mod payload {
                 _ => QuorumType::NoQuorum,
             }
         }
+    }
+
+    #[derive(Debug, Clone, Default)]
+    #[cfg_attr(
+        any(feature = "faker", test),
+        derive(fake::Dummy, Eq, PartialEq)
+    )]
+    pub struct ValidationQuorum {
+        pub header: ConsensusHeader,
+        pub result: ValidationResult,
     }
 
     #[derive(Debug, Clone, Default)]
@@ -937,13 +965,15 @@ pub mod payload {
         CandidateFromHash,
         /// A candidate block fetched by (prev_block_hash, iteration)
         CandidateFromIteration,
+        /// A ValidationResult fetched by (prev_block_hash, round, iteration)
+        ValidationResult,
     }
 
     #[derive(Clone, Copy)]
     pub enum InvParam {
         Hash([u8; 32]),
         Height(u64),
-        HashAndIteration([u8; 32], u8),
+        Iteration(ConsensusHeader),
     }
 
     impl Default for InvParam {
@@ -957,12 +987,13 @@ pub mod payload {
             match self {
                 InvParam::Hash(hash) => write!(f, "Hash: {}", to_str(hash)),
                 InvParam::Height(height) => write!(f, "Height: {}", height),
-                InvParam::HashAndIteration(hash, iteration) => {
+                InvParam::Iteration(ch) => {
                     write!(
                         f,
-                        "Hash: {}, Iteration: {}",
-                        to_str(hash),
-                        iteration
+                        "PrevBlock: {}, Round: {}, Iteration: {}",
+                        to_str(&ch.prev_block_hash),
+                        ch.round,
+                        ch.iteration
                     )
                 }
             }
@@ -1016,14 +1047,24 @@ pub mod payload {
                 param: InvParam::Hash(hash),
             });
         }
+
         pub fn add_candidate_from_iteration(
             &mut self,
-            prev_block_hash: [u8; 32],
-            iteration: u8,
+            consensus_header: ConsensusHeader,
         ) {
             self.inv_list.push(InvVect {
                 inv_type: InvType::CandidateFromIteration,
-                param: InvParam::HashAndIteration(prev_block_hash, iteration),
+                param: InvParam::Iteration(consensus_header),
+            });
+        }
+
+        pub fn add_validation_result(
+            &mut self,
+            consensus_header: ConsensusHeader,
+        ) {
+            self.inv_list.push(InvVect {
+                inv_type: InvType::ValidationResult,
+                param: InvParam::Iteration(consensus_header),
             });
         }
     }
@@ -1041,9 +1082,8 @@ pub mod payload {
                     InvParam::Height(height) => {
                         w.write_all(&height.to_le_bytes())?
                     }
-                    InvParam::HashAndIteration(hash, iteration) => {
-                        w.write_all(&hash[..])?;
-                        w.write_all(&[*iteration])?;
+                    InvParam::Iteration(ch) => {
+                        ch.write(w)?;
                     }
                 };
             }
@@ -1068,6 +1108,7 @@ pub mod payload {
                     2 => InvType::BlockFromHeight,
                     3 => InvType::CandidateFromHash,
                     4 => InvType::CandidateFromIteration,
+                    5 => InvType::ValidationResult,
                     _ => {
                         return Err(io::Error::from(io::ErrorKind::InvalidData))
                     }
@@ -1089,12 +1130,12 @@ pub mod payload {
                         inv.add_candidate_from_hash(Self::read_bytes(r)?);
                     }
                     InvType::CandidateFromIteration => {
-                        let prev_block_hash = Self::read_bytes(r)?;
-                        let iteration = Self::read_u8(r)?;
-                        inv.add_candidate_from_iteration(
-                            prev_block_hash,
-                            iteration,
-                        );
+                        let ch = ConsensusHeader::read(r)?;
+                        inv.add_candidate_from_iteration(ch);
+                    }
+                    InvType::ValidationResult => {
+                        let ch = ConsensusHeader::read(r)?;
+                        inv.add_validation_result(ch);
                     }
                 }
             }
@@ -1324,6 +1365,7 @@ pub enum Topics {
     Validation = 17,
     Ratification = 18,
     Quorum = 19,
+    ValidationQuorum = 20,
 
     #[default]
     Unknown = 255,
@@ -1337,6 +1379,7 @@ impl Topics {
                 | Topics::Validation
                 | Topics::Ratification
                 | Topics::Quorum
+                | Topics::ValidationQuorum
         )
     }
 }
@@ -1353,6 +1396,7 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::Validation);
         map_topic!(v, Topics::Ratification);
         map_topic!(v, Topics::Quorum);
+        map_topic!(v, Topics::ValidationQuorum);
 
         Topics::Unknown
     }
@@ -1410,16 +1454,19 @@ impl<M: Clone> AsyncQueue<M> {
 }
 
 pub trait StepMessage {
-    const SIGN_SEED: &'static [u8];
     const STEP_NAME: StepName;
-    fn signable(&self) -> Vec<u8>;
     fn header(&self) -> ConsensusHeader;
-    fn sign_info(&self) -> SignInfo;
-    fn sign_info_mut(&mut self) -> &mut SignInfo;
 
     fn get_step(&self) -> u8 {
         Self::STEP_NAME.to_step(self.header().iteration)
     }
+}
+
+pub trait SignedStepMessage: StepMessage {
+    const SIGN_SEED: &'static [u8];
+    fn signable(&self) -> Vec<u8>;
+    fn sign_info(&self) -> SignInfo;
+    fn sign_info_mut(&mut self) -> &mut SignInfo;
 
     fn verify_signature(&self) -> Result<(), BlsSigError> {
         let signature = self.sign_info().signature;
@@ -1442,8 +1489,15 @@ pub trait StepMessage {
 }
 
 impl StepMessage for Validation {
-    const SIGN_SEED: &'static [u8] = &[1u8];
     const STEP_NAME: StepName = StepName::Validation;
+
+    fn header(&self) -> ConsensusHeader {
+        self.header
+    }
+}
+
+impl SignedStepMessage for Validation {
+    const SIGN_SEED: &'static [u8] = &[1u8];
 
     fn sign_info(&self) -> SignInfo {
         self.sign_info.clone()
@@ -1458,15 +1512,19 @@ impl StepMessage for Validation {
             .write(&mut signable)
             .expect("Writing to vec should succeed");
         signable
-    }
-    fn header(&self) -> ConsensusHeader {
-        self.header.clone()
     }
 }
 
 impl StepMessage for Ratification {
-    const SIGN_SEED: &'static [u8] = &[2u8];
     const STEP_NAME: StepName = StepName::Ratification;
+
+    fn header(&self) -> ConsensusHeader {
+        self.header
+    }
+}
+
+impl SignedStepMessage for Ratification {
+    const SIGN_SEED: &'static [u8] = &[2u8];
     fn sign_info(&self) -> SignInfo {
         self.sign_info.clone()
     }
@@ -1481,14 +1539,22 @@ impl StepMessage for Ratification {
             .expect("Writing to vec should succeed");
         signable
     }
-    fn header(&self) -> ConsensusHeader {
-        self.header.clone()
-    }
 }
 
 impl StepMessage for Candidate {
-    const SIGN_SEED: &'static [u8] = &[];
     const STEP_NAME: StepName = StepName::Proposal;
+
+    fn header(&self) -> ConsensusHeader {
+        ConsensusHeader {
+            iteration: self.candidate.header().iteration,
+            prev_block_hash: self.candidate.header().prev_block_hash,
+            round: self.candidate.header().height,
+        }
+    }
+}
+
+impl SignedStepMessage for Candidate {
+    const SIGN_SEED: &'static [u8] = &[];
     fn sign_info(&self) -> SignInfo {
         let header = self.candidate.header();
         SignInfo {
@@ -1503,18 +1569,19 @@ impl StepMessage for Candidate {
     fn signable(&self) -> Vec<u8> {
         self.candidate.header().hash.to_vec()
     }
-    fn header(&self) -> ConsensusHeader {
-        ConsensusHeader {
-            iteration: self.candidate.header().iteration,
-            prev_block_hash: self.candidate.header().prev_block_hash,
-            round: self.candidate.header().height,
-        }
-    }
 
     fn sign(&mut self, sk: &BlsSecretKey, pk: &BlsPublicKey) {
         let msg = self.signable();
         let signature = sk.sign_multisig(pk, &msg).to_bytes();
         self.candidate.set_signature(signature.into());
+    }
+}
+
+impl StepMessage for ValidationQuorum {
+    const STEP_NAME: StepName = StepName::Validation;
+
+    fn header(&self) -> ConsensusHeader {
+        self.header
     }
 }
 

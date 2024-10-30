@@ -14,7 +14,7 @@ use execution_core::signatures::bls::{
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::{to_str, StepVotes};
 use node_data::message::payload::Vote;
-use node_data::message::StepMessage;
+use node_data::message::SignedStepMessage;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use thiserror::Error;
@@ -61,7 +61,7 @@ impl<V> From<BlsSigError> for AggregatorError<V> {
     }
 }
 
-pub trait StepVote: Clone + StepMessage {
+pub trait StepVote: Clone + SignedStepMessage {
     fn vote(&self) -> &Vote;
 }
 
@@ -242,6 +242,7 @@ mod tests {
     };
     use hex::FromHex;
     use node_data::ledger::{Header, Seed};
+    use node_data::message::StepMessage;
     use std::collections::HashMap;
 
     impl<V> Aggregator<V> {

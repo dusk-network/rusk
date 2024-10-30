@@ -354,9 +354,9 @@ impl Rusk {
     pub fn finalize_state(
         &self,
         commit: [u8; 32],
-        to_delete: Vec<[u8; 32]>,
+        to_merge: Vec<[u8; 32]>,
     ) -> Result<()> {
-        self.set_base_and_delete(commit, to_delete)?;
+        self.set_base_and_merge(commit, to_merge)?;
 
         let commit_id_path = to_rusk_state_id_path(&self.dir);
         fs::write(commit_id_path, commit)?;
@@ -486,13 +486,18 @@ impl Rusk {
         tip.current = commit;
     }
 
-    pub(crate) fn set_base_and_delete(
+    pub(crate) fn set_base_and_merge(
         &self,
         base: [u8; 32],
-        to_delete: Vec<[u8; 32]>,
+        to_merge: Vec<[u8; 32]>,
     ) -> Result<()> {
         self.tip.write().base = base;
-        for d in to_delete {
+        for d in to_merge {
+            if d == base {
+                // Don't finalize the new tip, otherwise it will not be
+                // aceessible anymore
+                continue;
+            };
             self.vm.finalize_commit(d)?;
         }
         Ok(())

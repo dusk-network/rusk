@@ -48,7 +48,7 @@ pub trait VMExecution: Send + Sync + 'static {
     fn finalize_state(
         &self,
         commit: [u8; 32],
-        to_delete: Vec<[u8; 32]>,
+        to_merge: Vec<[u8; 32]>,
     ) -> anyhow::Result<()>;
 
     fn preverify(

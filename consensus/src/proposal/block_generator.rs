@@ -14,7 +14,7 @@ use crate::merkle::merkle_root;
 use crate::config::{MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MINIMUM_BLOCK_TIME};
 use dusk_bytes::Serializable;
 use node_data::message::payload::Candidate;
-use node_data::message::{Message, StepMessage, BLOCK_HEADER_VERSION};
+use node_data::message::{Message, SignedStepMessage, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger};
 use std::sync::Arc;
 use std::time::Instant;
@@ -55,20 +55,20 @@ impl<T: Operations> Generator<T> {
             .await?;
 
         info!(
-            event = "gen_candidate",
+            event = "Candidate generated",
             hash = &to_str(&candidate.header().hash),
             gas_limit = candidate.header().gas_limit,
             state_hash = &to_str(&candidate.header().state_hash),
             dur = format!("{:?}ms", start.elapsed().as_millis()),
         );
 
-        let mut candidate = Candidate { candidate };
+        let mut candidate_msg = Candidate { candidate };
 
-        candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
+        candidate_msg.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
-        debug!(event = "candidate signed", header = ?candidate.header());
+        debug!(event = "Candidate signed", header = ?candidate_msg.candidate.header());
 
-        Ok(candidate.into())
+        Ok(candidate_msg.into())
     }
 
     async fn generate_block(
