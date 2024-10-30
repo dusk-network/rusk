@@ -112,7 +112,7 @@
               {syncStatusLabel} –
               <b
                 >Syncing... {syncStatus.progress
-                  ? `${syncStatus.progress * 100}%`
+                  ? `${(syncStatus.progress * 100).toFixed(0)}%`
                   : ""}</b
               >
             </span>
