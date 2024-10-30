@@ -283,27 +283,29 @@ impl<DB: Database> IterationCtx<DB> {
 
         match msg.topic() {
             Topics::Candidate => {
-                let mut handler = self.proposal_handler.lock().await;
+                let mut proposal = self.proposal_handler.lock().await;
                 if let Ok(StepOutcome::Ready(m)) =
-                    handler.collect_from_past(msg, committee, generator).await
+                    proposal.collect_from_past(msg, committee, generator).await
                 {
                     return Some(m);
                 }
             }
 
             Topics::Validation | Topics::ValidationQuorum => {
-                let mut handler = self.validation_handler.lock().await;
-                if let Ok(StepOutcome::Ready(m)) =
-                    handler.collect_from_past(msg, committee, generator).await
+                let mut validation = self.validation_handler.lock().await;
+                if let Ok(StepOutcome::Ready(m)) = validation
+                    .collect_from_past(msg, committee, generator)
+                    .await
                 {
                     return Some(m);
                 }
             }
 
             Topics::Ratification => {
-                let mut handler = self.ratification_handler.lock().await;
-                if let Ok(StepOutcome::Ready(m)) =
-                    handler.collect_from_past(msg, committee, generator).await
+                let mut ratification = self.ratification_handler.lock().await;
+                if let Ok(StepOutcome::Ready(m)) = ratification
+                    .collect_from_past(msg, committee, generator)
+                    .await
                 {
                     return Some(m);
                 }
