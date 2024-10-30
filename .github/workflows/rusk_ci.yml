@@ -63,20 +63,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dsherret/rust-toolchain-file@v1
-      - name: Build WASM
-        run: make wasm
-      - name: Run Clippy
-        run: >
-          RUSK_KEEP_KEYS="1"
-          RUSK_BUILD_STATE="1"
-          RUSK_FORCE_STATE="1"
-          make clippy
-      - name: "Upload Rusk Artifact"
-        uses: actions/upload-artifact@v4
-        with:
-          name: rusk-artifact
-          path: ./target/release/rusk
-          retention-days: 5
+      - uses: Swatinem/rust-cache@v2
+      - run: make wasm
+      - run: make clippy
 
   test_nightly:
     needs: changes
@@ -86,4 +75,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dsherret/rust-toolchain-file@v1
+      - uses: Swatinem/rust-cache@v2
       - run: make test
