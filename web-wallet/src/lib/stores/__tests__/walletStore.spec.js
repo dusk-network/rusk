@@ -176,7 +176,10 @@ describe("Wallet store", async () => {
     const cacheClearSpy = vi.spyOn(walletCache, "clear");
 
     /** @type {string} */
-    let from;
+    let fromAddress;
+
+    /** @type {string} */
+    let fromAccount;
 
     const toPhoenix =
       "4ZH3oyfTuMHyWD1Rp4e7QKp5yK6wLrWvxHneufAiYBAjvereFvfjtDvTbBcZN5ZCsaoMo49s1LKPTwGpowik6QJG";
@@ -198,9 +201,10 @@ describe("Wallet store", async () => {
       await walletStore.init(profileGenerator);
       await vi.runAllTimersAsync();
 
-      from = /** @type {string} */ (
-        get(walletStore).currentProfile?.address.toString()
-      );
+      const { currentProfile } = get(walletStore);
+
+      fromAccount = /** @type {string} */ (currentProfile?.account.toString());
+      fromAddress = /** @type {string} */ (currentProfile?.address.toString());
 
       treasuryUpdateSpy.mockClear();
       balanceSpy.mockClear();
@@ -286,13 +290,13 @@ describe("Wallet store", async () => {
       await expect(walletStore.setCurrentProfile({})).rejects.toThrow();
     });
 
-    it("should expose a method to execute a phoenix transfer", async () => {
+    it("should expose a method to execute a phoenix transfer, if the receiver is a phoenix address", async () => {
       vi.useRealTimers();
 
       const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
       const expectedTx = {
         amount,
-        from,
+        from: fromAddress,
         gas,
         obfuscated: true,
         to: b58.decode(toPhoenix),
@@ -330,12 +334,12 @@ describe("Wallet store", async () => {
       vi.useFakeTimers();
     });
 
-    it("shouldn't obfuscate the transaction if the receiver is a moonlight account", async () => {
+    it("should use the moonlight account and shouldn't obfuscate the transaction if the receiver is a moonlight account", async () => {
       vi.useRealTimers();
 
       const expectedTx = {
         amount,
-        from,
+        from: fromAccount,
         gas,
         obfuscated: false,
         to: b58.decode(toMoonlight),

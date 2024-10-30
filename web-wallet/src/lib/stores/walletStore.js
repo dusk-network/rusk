@@ -54,6 +54,7 @@ const bookkeeper = new Bookkeeper(treasury);
 /** @type {<T>(action: (...args: any[]) => Promise<T>) => Promise<T>} */
 const effectfulAction = (action) => sync().then(action).finally(updateBalance);
 
+const getCurrentAccount = () => get(walletStore).currentProfile?.account;
 const getCurrentAddress = () => get(walletStore).currentProfile?.address;
 
 /** @type {(...args: any) => Promise<void>} */
@@ -247,14 +248,12 @@ const transfer = async (to, amount, gas) =>
     networkStore
       .connect()
       .then((network) => {
-        const tx = bookkeeper
-          .transfer(amount)
-          .from(getCurrentAddress())
-          .to(b58.decode(to))
-          .gas(gas);
+        const tx = bookkeeper.transfer(amount).to(b58.decode(to)).gas(gas);
 
         return network.execute(
-          ProfileGenerator.typeOf(to) === "address" ? tx.obfuscated() : tx
+          ProfileGenerator.typeOf(to) === "address"
+            ? tx.from(getCurrentAddress()).obfuscated()
+            : tx.from(getCurrentAccount())
         );
       })
       .then(
