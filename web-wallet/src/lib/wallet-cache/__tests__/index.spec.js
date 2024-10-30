@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   add,
   collect,
@@ -516,85 +516,6 @@ describe("Wallet cache", () => {
       await expect(walletCache.getUnspentNotes()).resolves.toStrictEqual(
         currentUnspentNotes
       );
-    });
-  });
-
-  describe("Treasury", async () => {
-    /** @type {string} */
-    let addressWithPendingNotes;
-
-    /** @type {WalletCacheNote[]} */
-    let expectedNotes;
-
-    const nullifierToExclude = cachePendingNotesInfo[1].nullifier;
-    const pendingNullifiersAsStrings = pluckFrom(
-      cachePendingNotesInfo,
-      "nullifier"
-    ).map(String);
-    const fakeKey = {
-      toString() {
-        return addressWithPendingNotes;
-      },
-    };
-
-    beforeAll(async () => {
-      await db.open();
-
-      addressWithPendingNotes = (
-        await db
-          .table("unspentNotes")
-          .where("nullifier")
-          .equals(nullifierToExclude)
-          .first()
-      )?.address;
-
-      if (!addressWithPendingNotes) {
-        throw new Error(
-          "A pending note with a nullifier present in unspent notes is missing"
-        );
-      }
-
-      expectedNotes = await db
-        .table("unspentNotes")
-        .where("address")
-        .equals(addressWithPendingNotes)
-        .and(
-          (note) =>
-            !pendingNullifiersAsStrings.includes(
-              new Uint8Array(note.nullifier).toString()
-            )
-        )
-        .toArray()
-        .then(
-          mapWith((entry) => ({
-            ...entry,
-            note: new Uint8Array(entry.note),
-            nullifier: new Uint8Array(entry.nullifier),
-          }))
-        );
-
-      db.close();
-    });
-
-    it("should expose a treasury interface that allows to retrieve all non-pending unspent notes for a given profile", async () => {
-      // @ts-expect-error We don't care to pass a real `Key` object
-      const unspentNotesMapA = await walletCache.treasury.address(fakeKey);
-
-      // @ts-expect-error We don't care to pass a real `Key` object
-      const unspentNotesMapB = await walletCache.treasury.address({
-        toString() {
-          return "non-existent address";
-        },
-      });
-
-      expect(expectedNotes.length).toBe(unspentNotesMapA.size);
-      expect(sortNullifiers(Array.from(unspentNotesMapA.keys()))).toStrictEqual(
-        sortNullifiers(pluckFrom(expectedNotes, "nullifier"))
-      );
-      expect(
-        sortNullifiers(Array.from(unspentNotesMapA.values()))
-      ).toStrictEqual(sortNullifiers(pluckFrom(expectedNotes, "note")));
-      expect(unspentNotesMapB).toStrictEqual(new Map());
     });
   });
 

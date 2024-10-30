@@ -1,4 +1,4 @@
-import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
+import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/profile";
 
 import { mockReadableStore } from "$lib/dusk/test-helpers";
 

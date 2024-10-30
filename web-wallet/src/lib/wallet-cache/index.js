@@ -14,16 +14,6 @@ import {
   when,
 } from "lamb";
 
-/**
- * Not importing from "$lib/wallet" because for some reason
- * while running tests the export of `initializeWallet` there
- * causes this bug to happen in Node 22:
- * https://github.com/nodejs/undici/issues/2663
- *
- * Update: possibly a circular dependency case during tests.
- */
-import notesArrayToMap from "$lib/wallet/notesArrayToMap";
-
 /** @typedef {{ nullifiers?: Uint8Array[] } | { addresses?: string[] }} RawCriteria */
 /** @typedef {{ field: "nullifier", values: Uint8Array[] } | { field: "address", values: string[]} | undefined} Criteria */
 
@@ -62,27 +52,6 @@ const toCriteria = pipe([
 class WalletCache {
   /** @type {Dexie} */
   #db;
-
-  /** @type {WalletCacheTreasury} */
-  #treasury = {
-    address: async (identifier) => {
-      const address = identifier.toString();
-      const result = [];
-      const notes = await this.getUnspentNotes([address]);
-
-      for (const note of notes) {
-        if ((await this.getPendingNotesInfo([note.nullifier])).length === 0) {
-          result.push(note);
-        }
-      }
-
-      return result.length
-        ? /** @type {Map<Uint8Array, Uint8Array>} */ (
-            notesArrayToMap(result).get(address)
-          )
-        : new Map();
-    },
-  };
 
   /**
    * @template {WalletCacheTableName} TName
@@ -142,11 +111,6 @@ class WalletCache {
         await this.#db.table("unspentNotes").bulkPut(notes);
       })
       .finally(() => this.#db.close());
-  }
-
-  /** @type {WalletCacheTreasury} */
-  get treasury() {
-    return this.#treasury;
   }
 
   /** @returns {Promise<void>} */

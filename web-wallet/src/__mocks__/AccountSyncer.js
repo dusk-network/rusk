@@ -13,7 +13,7 @@ class AccountSyncerMock extends AccountSyncer {
    *
    * @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles
    * @param {Record<string, any>} [options={}]
-   * @returns {Promise<Array<{ nonce: bigint, value: bigint }>>}
+   * @returns {Promise<AccountBalance[]>}
    */
   // eslint-disable-next-line no-unused-vars
   async balances(profiles, options = {}) {
