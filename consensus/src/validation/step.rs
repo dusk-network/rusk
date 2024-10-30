@@ -132,10 +132,17 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     ) {
         // Sign and construct validation message
         let validation = self::build_validation_payload(vote, ru, iteration);
-        info!(event = "send_vote", vote = ?validation.vote);
+        let vote = validation.vote;
         let msg = Message::from(validation);
 
         if vote.is_valid() || !is_emergency_iter(iteration) {
+            info!(
+              event = "Cast vote",
+              step = "Validation",
+              info = ?msg.header,
+              vote = ?vote
+            );
+
             // Publish
             outbound.try_send(msg.clone());
 

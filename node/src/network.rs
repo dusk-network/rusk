@@ -273,7 +273,13 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             .map_err(|err| anyhow::anyhow!("failed to send_to_peer: {err}"))?;
         let topic = msg.topic();
 
-        info!("sending msg ({topic:?}) to peer {recv_addr}");
+        debug!(
+          event = "Sending msg",
+          topic = ?topic,
+          info = ?msg.header,
+          destination = ?recv_addr
+        );
+
         self.send_with_metrics(&encoded, vec![recv_addr]).await;
 
         Ok(())

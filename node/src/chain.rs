@@ -146,9 +146,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     match msg.payload {
                         Payload::Candidate(_)
                         | Payload::Validation(_)
-                        | Payload::Ratification(_) => {
+                        | Payload::Ratification(_)
+                        | Payload::ValidationQuorum(_) => {
                             self.reroute_acceptor(msg).await;
                         }
+
                         Payload::Quorum(ref q) => {
                             fsm.on_quorum(q, msg.metadata.as_ref()).await;
                             self.reroute_acceptor(msg).await;

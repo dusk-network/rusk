@@ -280,6 +280,13 @@ impl WireMessage for payload::Quorum {
     }
 }
 
+impl WireMessage for payload::ValidationQuorum {
+    const TOPIC: Topics = Topics::ValidationQuorum;
+    fn consensus_header(&self) -> ConsensusHeader {
+        self.header
+    }
+}
+
 impl WireMessage for payload::GetMempool {
     const TOPIC: Topics = Topics::GetMempool;
 }
@@ -302,10 +309,6 @@ impl WireMessage for ledger::Block {
 
 impl WireMessage for ledger::Transaction {
     const TOPIC: Topics = Topics::Tx;
-}
-
-impl WireMessage for payload::ValidationQuorum {
-    const TOPIC: Topics = Topics::ValidationQuorum;
 }
 
 impl WireMessage for payload::ValidationResult {
@@ -1370,6 +1373,7 @@ impl Topics {
                 | Topics::Validation
                 | Topics::Ratification
                 | Topics::Quorum
+                | Topics::ValidationQuorum
         )
     }
 }
@@ -1386,6 +1390,7 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::Validation);
         map_topic!(v, Topics::Ratification);
         map_topic!(v, Topics::Quorum);
+        map_topic!(v, Topics::ValidationQuorum);
 
         Topics::Unknown
     }

@@ -220,8 +220,6 @@ impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
         consensus_header: &ConsensusHeader,
         validation_result: &payload::ValidationResult,
     ) {
-        debug!(event = "store ValidationResult", info = ?consensus_header,);
-
         let _ = self.db.read().await.update(|db| {
             db.store_validation_result(consensus_header, validation_result)
         });

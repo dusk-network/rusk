@@ -34,13 +34,20 @@ impl RatificationStep {
         let ratification =
             self::build_ratification_payload(ru, iteration, result);
 
+        let vote = ratification.vote;
         let msg = Message::from(ratification);
 
         let is_emergency = is_emergency_iter(iteration);
 
         if result.quorum() == QuorumType::Valid || !is_emergency {
             // Publish ratification vote
-            info!(event = "send_vote", validation_bitset = result.sv().bitset);
+            info!(
+              event = "Cast vote",
+              step = "Ratification",
+              info = ?msg.header,
+              vote = ?vote,
+              validation_bitset = result.sv().bitset
+            );
 
             // Publish
             outbound.try_send(msg.clone());

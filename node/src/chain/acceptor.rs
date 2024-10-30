@@ -355,7 +355,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         match &msg.payload {
             Payload::Candidate(_)
             | Payload::Validation(_)
-            | Payload::Ratification(_) => {
+            | Payload::Ratification(_)
+            | Payload::ValidationQuorum(_) => {
                 // Process consensus msg only if they are for the current round
                 // or at most 10 rounds in the future
                 let msg_round = msg.header.round;
@@ -363,6 +364,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     && msg_round <= (tip_height + MAX_ROUND_DISTANCE)
                 {
                     consensus_task.main_inbound.try_send(msg);
+                } else {
+                    warn!(
+                      event = "msg discarded",
+                      topic = ?msg.topic(),
+                      info = ?msg.header,
+                      ray_id = msg.ray_id()
+                    );
                 }
             }
 

@@ -109,6 +109,12 @@ impl<D: Database> ValidationHandler<D> {
         // In Emergency Mode, we store ValidationResult in case some peer
         // requests it
         if is_emergency_iter(consensus_header.iteration) {
+            debug!(
+              event = "Store ValidationResult",
+              info = ?consensus_header,
+              src = "Validation"
+            );
+
             self.db
                 .lock()
                 .await
@@ -227,6 +233,12 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                 let vr = vq.result;
 
                 // Store ValidationResult
+                debug!(
+                  event = "Store ValidationResult",
+                  info = ?vq.header,
+                  src = "ValidationQuorum"
+                );
+
                 self.db
                     .lock()
                     .await

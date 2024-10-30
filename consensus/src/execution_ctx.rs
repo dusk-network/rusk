@@ -21,7 +21,7 @@ use node_data::ledger::Block;
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
 };
-use node_data::message::{AsyncQueue, Message, Payload};
+use node_data::message::{AsyncQueue, Message, Payload, Topics};
 use node_data::StepName;
 
 use crate::config::{
@@ -160,7 +160,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     match msg.payload {
                         Payload::Candidate(_)
                         | Payload::Validation(_)
-                        | Payload::Ratification(_) => {
+                        | Payload::Ratification(_)
+                        | Payload::ValidationQuorum(_) => {
                             // If we received a Step Message, we pass it on to
                             // the running step for processing.
                             if let Some(step_result) = self
@@ -377,6 +378,14 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
+                debug!(
+                    event = "Cast past vote",
+                    step = "Validation",
+                    mode = "emergency",
+                    round = candidate.header().height,
+                    iter = msg_iteration
+                );
+
                 let expected_generator = self
                     .iter_ctx
                     .get_generator(msg_iteration)
@@ -406,6 +415,14 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
+                debug!(
+                    event = "Cast past vote",
+                    step = "Ratification",
+                    mode = "emergency",
+                    round = self.round_update.round,
+                    iter = msg_iteration
+                );
+
                 // Should we collect our own vote?
                 let _msg = RatificationStep::try_vote(
                     &self.round_update,
@@ -430,10 +447,13 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             return;
         }
 
+        let msg_topic = msg.topic();
         // Repropagate past iteration messages
         // INFO: messages are previously validate by is_valid
-        log_msg("send message", "handle_past_msg", &msg);
-        self.outbound.try_send(msg.clone());
+        if msg_topic != Topics::ValidationQuorum {
+            log_msg("send message", "handle_past_msg", &msg);
+            self.outbound.try_send(msg.clone());
+        }
 
         let msg_iteration = msg.header.iteration;
 
@@ -458,10 +478,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 Payload::ValidationResult(result) => {
                     info!(
                       event = "New ValidationResult",
-                      src = "emergency_iter",
-                      msg_iteration,
+                      mode = "emergency",
+                      info = ?m.header,
                       vote = ?result.vote(),
-                      quorum = ?result.quorum(),
+                      src = ?msg_topic
                     );
 
                     if let QuorumType::Valid = result.quorum() {
@@ -476,8 +496,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     if let Vote::Valid(_) = &q.vote() {
                         info!(
                             event = "New Quorum",
-                            src = "emergency_iter",
-                            msg_iteration,
+                            mode = "emergency",
+                            inf = ?m.header,
                             vote = ?q.vote(),
                         );
 
