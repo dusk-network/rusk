@@ -45,7 +45,7 @@ VITE_GAS_PRICE_LOWER=1
 VITE_MIGRATE_CONTRACT=""
 VITE_MINIMUM_ALLOWED_STAKE=1000
 VITE_MODE_MAINTENANCE=false
-VITE_WALLET_NETWORK="https://nodes.dusk.network/"
+VITE_NODE_URL="" # connect to a specific node
 ```
 
 To run a local node different steps are needed, so please read the [related section](#running-a-local-rusk-node).

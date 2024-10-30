@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { makeNodeUrl } from "..";
-// import { JSDOM } from "jsdom";
 
 describe("makeNodeUrl", () => {
   const localhostString = window.location.hostname;

@@ -49,7 +49,7 @@ export default defineConfig(({ mode }) => {
         VITE_GAS_PRICE_LOWER: env.VITE_GAS_PRICE_LOWER,
         VITE_GAS_PRICE_UPPER: env.VITE_GAS_PRICE_UPPER,
         VITE_MINIMUM_ALLOWED_STAKE: env.VITE_MINIMUM_ALLOWED_STAKE,
-        VITE_WALLET_NETWORK: env.VITE_WALLET_NETWORK,
+        VITE_NODE_URL: env.VITE_NODE_URL,
       },
     },
     plugins:
@@ -95,7 +95,7 @@ export default defineConfig(({ mode }) => {
         VITE_GAS_PRICE_DEFAULT: "1",
         VITE_GAS_PRICE_LOWER: "1",
         VITE_MINIMUM_ALLOWED_STAKE: "1234",
-        VITE_WALLET_NETWORK: "https://nodes.dusk.network/",
+        VITE_NODE_URL: "",
       },
       environment: "jsdom",
       include: ["src/**/*.{test,spec}.{js,ts}"],
