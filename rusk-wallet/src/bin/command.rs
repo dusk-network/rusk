@@ -17,7 +17,7 @@ use rusk_wallet::{
     currency::{Dusk, Lux},
     gas::{
         Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT,
-        DEFAULT_LIMIT_TRANSFER, DEFAULT_PRICE,
+        DEFAULT_LIMIT_TRANSFER, DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
     },
     Address, Error, Profile, Wallet, EPOCH, MAX_PROFILES,
 };
@@ -254,7 +254,7 @@ pub(crate) enum Command {
         gas_limit: u64,
 
         /// Price you're going to pay for each gas unit (in LUX)
-        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        #[arg(short = 'p', long, default_value_t = MIN_PRICE_DEPLOYMENT)]
         gas_price: Lux,
     },
 

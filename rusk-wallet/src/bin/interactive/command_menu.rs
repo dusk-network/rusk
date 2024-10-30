@@ -9,8 +9,8 @@ use requestty::Question;
 use rusk_wallet::{
     currency::Dusk,
     gas::{
-        self, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT,
-        DEFAULT_LIMIT_STAKE, DEFAULT_LIMIT_TRANSFER,
+        self, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_STAKE, DEFAULT_LIMIT_TRANSFER,
+        DEFAULT_PRICE, GAS_PER_DEPLOY_BYTE, MIN_PRICE_DEPLOYMENT,
     },
     Address, Wallet, MAX_FUNCTION_NAME_SIZE,
 };
@@ -110,7 +110,7 @@ pub(crate) fn online(
                     gas::DEFAULT_LIMIT_TRANSFER,
                 )?,
                 memo,
-                gas_price: prompt::request_gas_price()?,
+                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
             }))
         }
         MenuItem::Stake => {
@@ -135,7 +135,7 @@ pub(crate) fn online(
                 address: Some(addr),
                 amt: prompt::request_stake_token_amt(balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
+                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
             }))
         }
         MenuItem::Unstake => {
@@ -159,7 +159,7 @@ pub(crate) fn online(
             ProfileOp::Run(Box::new(Command::Unstake {
                 address: Some(addr),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
+                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
             }))
         }
         MenuItem::Withdraw => {
@@ -183,7 +183,7 @@ pub(crate) fn online(
             ProfileOp::Run(Box::new(Command::Withdraw {
                 address: Some(addr),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
+                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
             }))
         }
         MenuItem::ContractDeploy => {
@@ -194,10 +194,19 @@ pub(crate) fn online(
                 moonlight_balance,
             )?;
 
+            // Request the contract code and determine its length
+            let code = prompt::request_contract_code()?;
+            let code_len = code.metadata()?.len() as u64;
+
+            // Calculate the effective cost for the deployment
+            let gas_price = prompt::request_gas_price(MIN_PRICE_DEPLOYMENT)?;
+            let gas_limit =
+                (code_len * GAS_PER_DEPLOY_BYTE) + DEFAULT_LIMIT_TRANSFER;
+
             if check_min_gas_balance(
                 balance,
-                DEFAULT_LIMIT_DEPLOYMENT,
-                "a deploy transaction",
+                gas_limit * gas_price,
+                "the deployment of the given contract",
             )
             .is_err()
             {
@@ -206,13 +215,11 @@ pub(crate) fn online(
 
             ProfileOp::Run(Box::new(Command::ContractDeploy {
                 address: Some(addr),
-                code: prompt::request_contract_code()?,
+                code,
                 init_args: prompt::request_bytes("init arguments")?,
                 deploy_nonce: prompt::request_nonce()?,
-                gas_limit: prompt::request_gas_limit(
-                    gas::DEFAULT_LIMIT_DEPLOYMENT,
-                )?,
-                gas_price: prompt::request_gas_price()?,
+                gas_limit: prompt::request_gas_limit(gas_limit)?,
+                gas_price,
             }))
         }
         MenuItem::ContractCall => {
@@ -244,7 +251,7 @@ pub(crate) fn online(
                     "arguments of calling function",
                 )?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
+                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
             }))
         }
         MenuItem::History => {
@@ -270,7 +277,7 @@ pub(crate) fn online(
                 profile_idx: Some(profile_idx),
                 amt: prompt::request_token_amt("convert", moonlight_balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
+                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
             }))
         }
         MenuItem::Unshield => {
@@ -288,7 +295,7 @@ pub(crate) fn online(
                 profile_idx: Some(profile_idx),
                 amt: prompt::request_token_amt("convert", phoenix_spendable)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price()?,
+                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
             }))
         }
         MenuItem::CalculateContractId => {

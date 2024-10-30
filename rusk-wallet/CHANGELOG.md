@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Add
 
+- Add gas cost calculation to contract deploy [#2768]
 - Add more information to `stake-info` [#2659]
 - Add string length validation to memo transfer and function calls [#2566]
 - Add contract deploy and contract calling [#2402]
@@ -32,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix stake info for inactive stakes with rewards [#2766]
 - Fix Moonlight stake reward withdrawal [#2523]
 
+[#2768]: https://github.com/dusk-network/rusk/issues/2768
 [#2766]: https://github.com/dusk-network/rusk/issues/2766
 [#2708]: https://github.com/dusk-network/rusk/issues/2708
 [#2702]: https://github.com/dusk-network/rusk/issues/2702
