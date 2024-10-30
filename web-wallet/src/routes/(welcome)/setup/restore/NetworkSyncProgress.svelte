@@ -32,7 +32,7 @@
   {#if !syncStarted || (syncStatus.isInProgress && !syncStatus.progress)}
     <span>Syncing...</span>
   {:else if syncStatus.isInProgress}
-    <span>Syncing... <b>{syncStatus.progress * 100}%</b></span>
+    <span>Syncing... <b>{(syncStatus.progress * 100).toFixed(0)}%</b></span>
     <SyncBar
       from={syncStatus.from}
       last={syncStatus.last}
