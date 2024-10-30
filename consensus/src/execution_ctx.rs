@@ -8,7 +8,7 @@ use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
 
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::IterationCtx;
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::operations::Operations;
 use crate::queue::{MsgRegistry, MsgRegistryError};
 
@@ -24,7 +24,9 @@ use node_data::message::payload::{
 use node_data::message::{AsyncQueue, Message, Payload};
 use node_data::StepName;
 
-use crate::config::{is_emergency_iter, CONSENSUS_MAX_ITER};
+use crate::config::{
+    is_emergency_iter, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
+};
 use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
 use std::sync::Arc;
@@ -131,7 +133,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         &mut self,
         phase: Arc<Mutex<C>>,
         additional_timeout: Option<Duration>,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Message {
         let open_consensus_mode = self.last_step_running();
 
         // When consensus is in open_consensus_mode then it keeps Ratification
@@ -175,7 +177,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                 // to Consensus
                                 if !open_consensus_mode {
                                     self.report_elapsed_time().await;
-                                    return Ok(step_result);
+                                    return step_result;
                                 }
 
                                 // In Open Consensus, we only broadcast Success
@@ -333,7 +335,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             // terminate the iteration.
                             // Messages for different iterations are discarded.
                             if qiter == iter {
-                                return Ok(msg);
+                                return msg;
                             } else {
                                 debug!(
                                   event = "Quorum discarded",
@@ -360,7 +362,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         error!("Timeout detected during last step running. This should never happen")
                     } else {
                         self.process_timeout_event(phase).await;
-                        return Ok(Message::empty());
+                        return Message::empty();
                     }
                 }
             }
@@ -447,11 +449,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         }
 
         // Process message from a previous iteration/step.
-        if let Some(m) = self
-            .iter_ctx
-            .process_past_msg(&self.round_update, msg)
-            .await
-        {
+        if let Some(m) = self.iter_ctx.process_past_msg(msg).await {
             match &m.payload {
                 Payload::Candidate(p) => {
                     self.try_cast_validation_vote(&p.candidate).await;
@@ -514,7 +512,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         // generate the committees so that we can pre-verify its validity.
         // We do it here because we need the IterationCtx
 
-        let same_prev_hash = msg.header.round == self.round_update.round
+        let current_round = self.round_update.round;
+
+        let same_prev_hash = msg.header.round == current_round
             && msg.header.prev_block_hash == self.round_update.hash();
 
         if same_prev_hash && msg.header.iteration > self.iteration {
@@ -566,7 +566,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     }
                 }
 
-                if msg.header.round > self.round_update.round + 10 {
+                // We verify message signatures only for the next 10 round
+                // messages. Removing this check will lead to
+                // repropagate everything only according to the signer pk
+                if msg.header.round > current_round + MAX_ROUND_DISTANCE {
                     log_msg(
                         "discarded msg (round too far from now)",
                         SRC,
@@ -622,9 +625,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         match collected {
             // Fully valid state reached on this step. Return it as an output to
             // populate next step with it.
-            Ok(HandleMsgOutput::Ready(m)) => Some(m),
+            Ok(StepOutcome::Ready(m)) => Some(m),
             // Message collected but phase didn't reach a final result
-            Ok(HandleMsgOutput::Pending) => None,
+            Ok(StepOutcome::Pending) => None,
             Err(err) => {
                 let event = "failed collect";
                 error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_height,);
@@ -654,11 +657,11 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// Handles all messages stored in future_msgs queue that belongs to the
     /// current round and step.
     ///
-    /// Returns Some(msg) if the step is finalized.
+    /// Returns the step result if the step is finalized.
     pub async fn handle_future_msgs<C: MsgHandler>(
         &self,
         phase: Arc<Mutex<C>>,
-    ) -> Option<Message> {
+    ) -> StepOutcome {
         let committee = self
             .get_current_committee()
             .expect("committee to be created before run");
@@ -690,19 +693,23 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
                     self.outbound.try_send(msg.clone());
 
-                    if let Ok(HandleMsgOutput::Ready(msg)) = phase
+                    match phase
                         .lock()
                         .await
                         .collect(msg, &self.round_update, committee, generator)
                         .await
                     {
-                        return Some(msg);
+                        Ok(StepOutcome::Ready(msg)) => {
+                            return StepOutcome::Ready(msg)
+                        }
+                        Ok(_) => {}
+                        Err(e) => warn!("error in collecting message {e:?}"),
                     }
                 }
             }
         }
 
-        None
+        StepOutcome::Pending
     }
 
     /// Reports step elapsed time to the client

@@ -19,7 +19,7 @@ use tracing::{debug, warn};
 /// Indicates whether an output value is available for current step execution
 /// (Step is Ready) or needs to collect data (Step is Pending)
 #[allow(clippy::large_enum_variant)]
-pub enum HandleMsgOutput {
+pub enum StepOutcome {
     Pending,
     Ready(Message),
 }
@@ -41,11 +41,11 @@ pub trait MsgHandler {
         committee: &Committee,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
-        let signer = msg.get_signer().map(|s| s.to_bs58()).unwrap_or_default();
+        let signer = msg.get_signer();
 
         debug!(
             event = "validating msg",
-            signer,
+            signer = signer.as_ref().map(|s| s.to_bs58()),
             src_addr = ?msg.metadata.as_ref().map(|m| m.src_addr),
             topic = ?msg.topic(),
             step = msg.get_step(),
@@ -64,9 +64,8 @@ pub trait MsgHandler {
                 if msg_tip != ru.hash() {
                     return Err(ConsensusError::InvalidPrevBlockHash(msg_tip));
                 }
-                let signer =
-                    msg.get_signer().ok_or(ConsensusError::InvalidMsgType)?;
 
+                let signer = signer.ok_or(ConsensusError::InvalidMsgType)?;
                 // Ensure the message originates from a committee member.
                 if !committee.is_member(&signer) {
                     return Err(ConsensusError::NotCommitteeMember);
@@ -166,17 +165,16 @@ pub trait MsgHandler {
         ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError>;
+    ) -> Result<StepOutcome, ConsensusError>;
 
     /// collect allows each Phase to process a verified message from a former
     /// iteration
     async fn collect_from_past(
         &mut self,
         msg: Message,
-        ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
-    ) -> Result<HandleMsgOutput, ConsensusError>;
+    ) -> Result<StepOutcome, ConsensusError>;
 
     /// handle_timeout allows each Phase to handle a timeout event.
     /// Returned Message here is sent to outboud queue.

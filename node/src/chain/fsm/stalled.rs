@@ -4,23 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node_data::{
-    ledger::{to_str, Block, Header},
-    message::payload::{self},
-};
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use tracing::{error, info, trace, warn};
-
-use crate::{
-    database::{self, Ledger},
-    vm::VMExecution,
-    Network,
-};
+use node_data::{ledger::Header, message::payload};
 
 use anyhow::{anyhow, Result};
 
-use super::acceptor::Acceptor;
+use super::*;
+use crate::vm::VMExecution;
 
 /// Timeout for accepting a block.
 /// If we have not accepted a block for more than this time, we switch to

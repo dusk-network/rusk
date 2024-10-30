@@ -326,12 +326,8 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             let mut buf = vec![];
             LightBlock {
                 header: header.clone(),
-                transactions_ids: txs
-                    .iter()
-                    .map(|t| t.inner.id())
-                    .collect::<Vec<[u8; 32]>>(),
-
-                faults_ids: faults.iter().map(|f| f.hash()).collect::<Vec<_>>(),
+                transactions_ids: txs.iter().map(|t| t.inner.id()).collect(),
+                faults_ids: faults.iter().map(|f| f.hash()).collect(),
             }
             .write(&mut buf)?;
 

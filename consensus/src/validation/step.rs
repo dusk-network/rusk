@@ -6,8 +6,8 @@
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
-use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
+use crate::msg_handler::StepOutcome;
 use crate::operations::{Operations, Voter};
 use crate::validation::handler;
 use anyhow::anyhow;
@@ -240,7 +240,7 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     pub async fn run<DB: Database>(
         &mut self,
         mut ctx: ExecutionCtx<'_, T, DB>,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Message {
         let committee = ctx
             .get_current_committee()
             .expect("committee to be created before run");
@@ -270,11 +270,12 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
-            return Ok(m);
+        match ctx.handle_future_msgs(self.handler.clone()).await {
+            StepOutcome::Ready(m) => m,
+            StepOutcome::Pending => {
+                ctx.event_loop(self.handler.clone(), None).await
+            }
         }
-
-        ctx.event_loop(self.handler.clone(), None).await
     }
 
     pub fn name(&self) -> &'static str {

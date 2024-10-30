@@ -8,7 +8,9 @@ use crate::database::{self, ConsensusStorage, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::TimeoutSet;
-use dusk_consensus::config::{MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT};
+use dusk_consensus::config::{
+    MAX_ROUND_DISTANCE, MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
+};
 use dusk_consensus::errors::{ConsensusError, HeaderError};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_consensus::user::stake::Stake;
@@ -357,7 +359,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // Process consensus msg only if they are for the current round
                 // or at most 10 rounds in the future
                 let msg_round = msg.header.round;
-                if msg_round > tip_height && msg_round < (tip_height + 10) {
+                if msg_round > tip_height
+                    && msg_round <= (tip_height + MAX_ROUND_DISTANCE)
+                {
                     consensus_task.main_inbound.try_send(msg);
                 }
             }
@@ -1010,13 +1014,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip after reverting
-        let (blk, (_, label)) = self.db.read().await.update(|t| {
+        let (blk, label) = self.db.read().await.update(|t| {
             let mut height = curr_height;
             loop {
                 let b = Ledger::fetch_block_by_height(t, height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
                 let h = b.header();
-                let label =
+                let (_, label) =
                     t.fetch_block_label_by_height(h.height)?.ok_or_else(
                         || anyhow::anyhow!("could not fetch block label"),
                     )?;
