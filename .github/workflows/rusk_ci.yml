@@ -29,6 +29,7 @@ jobs:
               - '!(web-wallet/**/*|.github/workflows/webwallet_ci.yml)'
               - '!(explorer/**/*|.github/workflows/explorer_ci.yml)'
           predicate-quantifier: "every"
+
   analyze:
     needs: changes
     if: needs.changes.outputs.run-ci == 'true'
@@ -41,30 +42,6 @@ jobs:
       - run: cargo install --git https://github.com/dusk-network/cargo-dusk-analyzer
       - run: cargo dusk-analyzer
 
-  test_nightly:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
-    name: Nightly tests
-    runs-on: core
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dsherret/rust-toolchain-file@v1
-      - run: >
-          RUSK_PROFILE_PATH="/var/opt/build-cache"
-          RUSK_KEEP_KEYS="1"
-          RUSK_BUILD_STATE="1"
-          RUSK_FORCE_STATE="1"
-          make test
-      - name: "Clippy check release"
-        env:
-          RUSK_PROFILE_PATH: "/var/opt/build-cache"
-        run: make clippy
-      - name: "Upload Rusk Artifact"
-        uses: actions/upload-artifact@v4
-        with:
-          name: rusk-artifact
-          path: ./target/release/rusk
-          retention-days: 5
   fmt:
     needs: changes
     if: needs.changes.outputs.run-ci == 'true'
@@ -75,3 +52,38 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dsherret/rust-toolchain-file@v1
       - run: cargo fmt --all -- --check
+
+  clippy_check:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
+    name: Clippy check release
+    runs-on: core
+    env:
+      RUSK_PROFILE_PATH: "/var/opt/build-cache"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1
+      - name: Build WASM
+        run: make wasm
+      - name: Run Clippy
+        run: >
+          RUSK_KEEP_KEYS="1"
+          RUSK_BUILD_STATE="1"
+          RUSK_FORCE_STATE="1"
+          make clippy
+      - name: "Upload Rusk Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: rusk-artifact
+          path: ./target/release/rusk
+          retention-days: 5
+
+  test_nightly:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
+    name: Nightly tests
+    runs-on: core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1
+      - run: make test
