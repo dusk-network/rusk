@@ -104,13 +104,11 @@ pub trait MsgHandler {
 
             let step = msg.get_step();
             if let Some(committee) = round_committees.get_committee(step) {
-                if let Payload::ValidationQuorum(_) = &msg.payload {
-                    // skip signer verification for ValidationQuorum, since
-                    // there's no signer
-                } else {
+                // Ensure msg is signed by a committee member.
+                // We skip ValidationQuorum, since it has no signer
+                if !matches!(msg.payload, Payload::ValidationQuorum(_)) {
                     let signer = msg.get_signer().expect("signer to exist");
-                    // Ensure the message originates from a committee
-                    // member.
+
                     if !committee.is_member(&signer) {
                         return Err(ConsensusError::NotCommitteeMember);
                     }
