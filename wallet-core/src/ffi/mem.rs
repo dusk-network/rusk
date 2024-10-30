@@ -40,17 +40,20 @@ pub fn free(ptr: u32, len: u32) {
     }
 }
 
-/// Checks and deserializes a value from the given po
-pub unsafe fn from_buffer<T>(ptr: *const u8) -> Result<T, ErrorCode>
+/// Read a buffer from the given pointer.
+pub unsafe fn read_buffer<'a>(ptr: *const u8) -> &'a [u8] {
+    let len = slice::from_raw_parts(ptr, 4);
+    let len = u32::from_le_bytes(len.try_into().unwrap()) as usize;
+    slice::from_raw_parts(ptr.add(4), len)
+}
+
+/// Parse the buffer
+pub unsafe fn parse_buffer<T>(bytes: &[u8]) -> Result<T, ErrorCode>
 where
     T: Archive,
     for<'a> T::Archived:
         CheckBytes<DefaultValidator<'a>> + Deserialize<T, SharedDeserializeMap>,
 {
-    let len = slice::from_raw_parts(ptr, 4);
-    let len = u32::from_le_bytes(len.try_into().unwrap()) as usize;
-    let bytes = slice::from_raw_parts(ptr.add(4), len);
-
     let aligned = bytes.to_vec();
     let aligned_slice: &[u8] = &aligned;
 
@@ -60,4 +63,16 @@ where
         .or(Err(ErrorCode::UnarchivingError));
 
     result
+}
+
+/// Checks and deserializes a value from the given po
+pub unsafe fn from_buffer<T>(ptr: *const u8) -> Result<T, ErrorCode>
+where
+    T: Archive,
+    for<'a> T::Archived:
+        CheckBytes<DefaultValidator<'a>> + Deserialize<T, SharedDeserializeMap>,
+{
+    let bytes = read_buffer(ptr);
+
+    parse_buffer::<T>(bytes)
 }
