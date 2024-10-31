@@ -11,13 +11,16 @@
 
 <div class="transactions">
   <h2 class="sr-only">Transactions</h2>
-
-  <Transactions
-    items={walletStore.getTransactionsHistory()}
-    {language}
-    isSyncing={syncStatus.isInProgress}
-    syncError={syncStatus.error}
-  />
+  {#if import.meta.env.VITE_FEATURE_TRANSACTION_HISTORY === "true"}
+    <Transactions
+      items={walletStore.getTransactionsHistory()}
+      {language}
+      isSyncing={syncStatus.isInProgress}
+      syncError={syncStatus.error}
+    />
+  {:else}
+    <p>Transaction history is currently unavailable</p>
+  {/if}
 </div>
 
 <style lang="postcss">
