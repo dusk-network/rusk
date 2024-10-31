@@ -14,7 +14,7 @@ class NetworkMock extends Network {
      * the hassle of mocking the module when we need to
      * check that the correct URL is passed.
      */
-    expect(url).toBe(import.meta.env.VITE_WALLET_NETWORK);
+    expect(url).toBe("https://localhost");
   }
 
   get blockHeight() {

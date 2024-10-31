@@ -1,5 +1,5 @@
 <script>
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { networkStore, settingsStore } from "$lib/stores";
   import { Toast, Tooltip } from "$lib/dusk/components";
 
@@ -11,6 +11,10 @@
 
   onDestroy(async () => {
     await networkStore.disconnect();
+  });
+
+  onMount(async () => {
+    await networkStore.connect();
   });
 </script>
 

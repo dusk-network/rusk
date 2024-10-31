@@ -1,12 +1,26 @@
 import { writable } from "svelte/store";
+import { browser } from "$app/environment";
 import {
   AccountSyncer,
   AddressSyncer,
   Network,
 } from "$lib/vendor/w3sper.js/src/mod";
+import { makeNodeUrl } from "$lib/url";
+
+function getNetworkUrl() {
+  if (browser) {
+    return makeNodeUrl();
+  } else {
+    return (
+      (import.meta.env.VITE_NODE_URL &&
+        new URL(import.meta.env.VITE_NODE_URL)) ||
+      "https://localhost"
+    );
+  }
+}
 
 /** @type {Network} */
-const network = new Network(import.meta.env.VITE_WALLET_NETWORK);
+const network = new Network(getNetworkUrl());
 
 /** @type {NetworkStoreContent} */
 const initialState = {
