@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(feature = "archive")]
+mod archive;
 mod block;
 mod data;
 mod tx;
@@ -18,7 +20,10 @@ use node::database::rocksdb::Backend;
 use node::database::{Ledger, DB};
 #[cfg(feature = "archive")]
 use {
-    deserialized_archive_data::DeserializedMoonlightGroups,
+    archive::data::deserialized_archive_data::DeserializedMoonlightGroups,
+    archive::data::*,
+    archive::events::*,
+    archive::moonlight::*,
     node::archive::{Archive, MoonlightGroup},
 };
 
