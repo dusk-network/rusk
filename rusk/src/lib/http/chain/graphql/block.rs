@@ -105,38 +105,3 @@ pub async fn blocks_range(
     blocks.reverse();
     Ok(blocks)
 }
-
-#[cfg(feature = "archive")]
-pub(super) async fn block_events_by_height(
-    ctx: &Context<'_>,
-    height: i64,
-) -> OptResult<BlockEvents> {
-    let (_, archive) = ctx.data::<DBContext>()?;
-    let mut events;
-
-    if height < 0 {
-        events = archive.fetch_json_last_vm_events().await.map_err(|e| {
-            FieldError::new(format!("Cannot fetch events: {}", e))
-        })?;
-    } else {
-        events = archive.fetch_json_vm_events(height).await.map_err(|e| {
-            FieldError::new(format!("Cannot fetch events: {}", e))
-        })?;
-    }
-
-    Ok(Some(BlockEvents(serde_json::from_str(&events)?)))
-}
-
-#[cfg(feature = "archive")]
-pub(super) async fn block_events_by_hash(
-    ctx: &Context<'_>,
-    hash: String,
-) -> OptResult<BlockEvents> {
-    let (_, archive) = ctx.data::<DBContext>()?;
-    let events = archive
-        .fetch_json_vm_events_by_blk_hash(&hash)
-        .await
-        .map_err(|e| FieldError::new(format!("Cannot fetch events: {}", e)))?;
-
-    Ok(Some(BlockEvents(serde_json::from_str(&events)?)))
-}
