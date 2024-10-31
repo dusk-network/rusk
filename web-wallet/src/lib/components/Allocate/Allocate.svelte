@@ -13,18 +13,14 @@
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
   import { logo } from "$lib/dusk/icons";
   import {
+    AnchorButton,
     Badge,
     Icon,
     Textbox,
     Wizard,
     WizardStep,
   } from "$lib/dusk/components";
-  import {
-    AppAnchorButton,
-    GasFee,
-    GasSettings,
-    OperationResult,
-  } from "$lib/components";
+  import { GasFee, GasSettings, OperationResult } from "$lib/components";
 
   /** @type {(to: string, amount: number, gasPrice: number, gasLimit: number) => Promise<string>} */
   export let execute;
@@ -283,8 +279,8 @@
       >
         <svelte:fragment slot="success-content" let:result={hash}>
           {#if hash}
-            <AppAnchorButton
-              href={`https://explorer.dusk.network/transactions/transaction?id=${hash}`}
+            <AnchorButton
+              href={`/explorer/transactions/transaction?id=${hash}`}
               text="VIEW ON BLOCK EXPLORER"
               rel="noopener noreferrer"
               target="_blank"

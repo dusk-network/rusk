@@ -429,7 +429,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           <samp>
             <a
               class="dusk-anchor dusk-anchor--on-surface"
-              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
+              href="/explorer/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -513,7 +513,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           <samp>
             <a
               class="dusk-anchor dusk-anchor--on-surface"
-              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh794h"
+              href="/explorer/transactions/transaction?id=tg874534tddsghdtst54hdfh794h"
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -580,7 +580,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           <samp>
             <a
               class="dusk-anchor dusk-anchor--on-surface"
-              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh793h"
+              href="/explorer/transactions/transaction?id=tg874534tddsghdtst54hdfh793h"
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -647,7 +647,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           <samp>
             <a
               class="dusk-anchor dusk-anchor--on-surface"
-              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh792h"
+              href="/explorer/transactions/transaction?id=tg874534tddsghdtst54hdfh792h"
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -731,7 +731,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           <samp>
             <a
               class="dusk-anchor dusk-anchor--on-surface"
-              href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh791h"
+              href="/explorer/transactions/transaction?id=tg874534tddsghdtst54hdfh791h"
               rel="noopener noreferrer"
               target="_blank"
             >

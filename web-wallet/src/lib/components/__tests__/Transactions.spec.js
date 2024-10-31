@@ -25,8 +25,7 @@ vi.useFakeTimers();
 describe("Transactions", () => {
   const transactionsPromise = resolveAfter(1000, transactions);
   const emptyTransactionsPromise = resolveAfter(1000, []);
-  const blockExplorerBaseUrl =
-    "https://explorer.dusk.network/transactions/transaction?id=";
+  const blockExplorerBaseUrl = "/explorer/transactions/transaction?id=";
   const highestTransactionID = sortByHeightDesc(transactions)[0].id;
   const settings = get(settingsStore);
   const language = settings.language;

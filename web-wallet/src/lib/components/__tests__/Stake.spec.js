@@ -222,7 +222,7 @@ describe("Stake", () => {
       vi.useRealTimers();
     });
 
-    const expectedExplorerLink = `https://explorer.dusk.network/transactions/transaction?id=${lastTxId}`;
+    const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
 
     it("should perform a stake for the desired amount, give a success message and supply a link to see the transaction in the explorer", async () => {
       const { getByRole, getByText } = render(Stake, baseProps);
@@ -296,7 +296,7 @@ describe("Stake", () => {
   });
 
   describe("Unstake operation", () => {
-    const expectedExplorerLink = `https://explorer.dusk.network/transactions/transaction?id=${lastTxId}`;
+    const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
 
     beforeAll(() => {
       vi.useFakeTimers();
@@ -348,7 +348,7 @@ describe("Stake", () => {
   });
 
   describe("Withdraw Rewards operation", () => {
-    const expectedExplorerLink = `https://explorer.dusk.network/transactions/transaction?id=${lastTxId}`;
+    const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
 
     beforeAll(() => {
       vi.useFakeTimers();

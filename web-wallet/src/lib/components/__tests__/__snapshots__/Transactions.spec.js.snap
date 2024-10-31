@@ -44,7 +44,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
         <samp>
           <a
             class="dusk-anchor dusk-anchor--on-surface"
-            href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
+            href="/explorer/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -128,7 +128,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
         <samp>
           <a
             class="dusk-anchor dusk-anchor--on-surface"
-            href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh794h"
+            href="/explorer/transactions/transaction?id=tg874534tddsghdtst54hdfh794h"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -195,7 +195,7 @@ exports[`Transactions > renders the correct amount of Transactions, as the limit
         <samp>
           <a
             class="dusk-anchor dusk-anchor--on-surface"
-            href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh793h"
+            href="/explorer/transactions/transaction?id=tg874534tddsghdtst54hdfh793h"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -298,7 +298,7 @@ exports[`Transactions > renders transactions correctly when items are fulfilled 
         <samp>
           <a
             class="dusk-anchor dusk-anchor--on-surface"
-            href="https://explorer.dusk.network/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
+            href="/explorer/transactions/transaction?id=tg874534tddsghdtst54hdfh795h"
             rel="noopener noreferrer"
             target="_blank"
           >
