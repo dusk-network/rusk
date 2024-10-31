@@ -1,3 +1,11 @@
+type WalletCacheBalanceInfo = {
+  address: string;
+  balance: {
+    shielded: AddressBalance;
+    unshielded: AccountBalance;
+  };
+};
+
 type WalletCacheNote = {
   address: string;
   note: Uint8Array;
@@ -10,11 +18,13 @@ type WalletCacheDbNote = Omit<WalletCacheNote, "note" | "nullifier"> & {
 };
 
 type WalletCacheGetDataType<T extends WalletCacheTableName> =
-  T extends "pendingNotesInfo"
-    ? WalletCacheDbPendingNoteInfo[]
-    : T extends "syncInfo"
-      ? WalletCacheSyncInfo[]
-      : WalletCacheDbNote[];
+  T extends "balancesInfo"
+    ? WalletCacheBalanceInfo[]
+    : T extends "pendingNotesInfo"
+      ? WalletCacheDbPendingNoteInfo[]
+      : T extends "syncInfo"
+        ? WalletCacheSyncInfo[]
+        : WalletCacheDbNote[];
 
 type WalletCacheGetEntriesReturnType<
   T extends WalletCacheTableName,
@@ -23,7 +33,9 @@ type WalletCacheGetEntriesReturnType<
   ? WalletCacheGetDataType<T>
   : T extends "syncInfo"
     ? never
-    : ArrayBuffer[];
+    : T extends "balancesInfo"
+      ? never
+      : ArrayBuffer[];
 
 type WalletCacheHistoryEntry = {
   history: Transaction[];
@@ -51,6 +63,7 @@ type WalletCacheSyncInfo = {
 };
 
 type WalletCacheTableName =
+  | "balancesInfo"
   | "pendingNotesInfo"
   | "syncInfo"
   | "spentNotes"

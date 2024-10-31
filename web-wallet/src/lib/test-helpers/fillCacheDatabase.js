@@ -2,6 +2,7 @@ import { mapWith } from "lamb";
 import { getCacheDatabase } from ".";
 
 import {
+  cacheBalances,
   cachePendingNotesInfo,
   cacheSpentNotes,
   cacheSyncInfo,
@@ -35,8 +36,15 @@ async function fillCacheDatabase() {
   return db
     .transaction(
       "rw",
-      ["pendingNotesInfo", "spentNotes", "syncInfo", "unspentNotes"],
+      [
+        "balancesInfo",
+        "pendingNotesInfo",
+        "spentNotes",
+        "syncInfo",
+        "unspentNotes",
+      ],
       async () => {
+        await db.table("balancesInfo").bulkPut(cacheBalances);
         await db
           .table("pendingNotesInfo")
           .bulkPut(fixPending(cachePendingNotesInfo));

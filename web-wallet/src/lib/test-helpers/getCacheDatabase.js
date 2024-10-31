@@ -5,6 +5,7 @@ function getCacheDatabase() {
   const db = new Dexie("@dusk-network/wallet-cache");
 
   db.version(1).stores({
+    balancesInfo: "address",
     pendingNotesInfo: "nullifier,txId",
     spentNotes: "nullifier,address",
     syncInfo: "++",
