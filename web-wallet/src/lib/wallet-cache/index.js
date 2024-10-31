@@ -2,6 +2,7 @@ import { Dexie } from "dexie";
 import {
   compose,
   getKey,
+  getPath,
   head,
   isUndefined,
   mapWith,
@@ -85,6 +86,7 @@ class WalletCache {
     const db = new Dexie("@dusk-network/wallet-cache");
 
     db.version(1).stores({
+      balancesInfo: "address",
       pendingNotesInfo: "nullifier,txId",
       spentNotes: "nullifier,address",
       syncInfo: "++",
@@ -116,6 +118,23 @@ class WalletCache {
   /** @returns {Promise<void>} */
   clear() {
     return this.#db.delete({ disableAutoOpen: false });
+  }
+
+  /**
+   * @param {string} address
+   * @returns {Promise<WalletCacheBalanceInfo["balance"]>}
+   */
+  getBalance(address) {
+    return this.#getEntriesFrom("balancesInfo", false, {
+      addresses: [address],
+    })
+      .then(getPath("0.balance"))
+      .then(
+        when(isUndefined, () => ({
+          shielded: { spendable: 0n, value: 0n },
+          unshielded: { nonce: 0n, value: 0n },
+        }))
+      );
   }
 
   /**
@@ -200,6 +219,20 @@ class WalletCache {
     }
 
     return result;
+  }
+
+  /**
+   * @param {string} address
+   * @param {WalletCacheBalanceInfo["balance"]} balance
+   * @returns {Promise<void>}
+   */
+  async setBalance(address, balance) {
+    return this.#db
+      .open()
+      .then(async (db) => {
+        await db.table("balancesInfo").put({ address, balance });
+      })
+      .finally(() => this.#db.close());
   }
 
   /**

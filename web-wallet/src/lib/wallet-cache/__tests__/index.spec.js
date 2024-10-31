@@ -18,6 +18,7 @@ import {
 } from "lamb";
 
 import {
+  cacheBalances,
   cachePendingNotesInfo,
   cacheSpentNotes,
   cacheSyncInfo,
@@ -78,6 +79,23 @@ describe("Wallet cache", () => {
       }
 
       db.close();
+    });
+
+    it("should expose a method to retrieve the cached balance for a given address", async () => {
+      for (const balanceInfo of cacheBalances) {
+        await expect(
+          walletCache.getBalance(balanceInfo.address)
+        ).resolves.toStrictEqual(balanceInfo.balance);
+      }
+    });
+
+    it("should return an empty balance if none is stored in the cache for the supplied address", async () => {
+      await expect(
+        walletCache.getBalance("fake-address")
+      ).resolves.toStrictEqual({
+        shielded: { spendable: 0n, value: 0n },
+        unshielded: { nonce: 0n, value: 0n },
+      });
     });
 
     it("should expose a method to retrieve the pending notes info and optionally filter them by their nullifiers", async () => {
@@ -534,6 +552,39 @@ describe("Wallet cache", () => {
       expect(walletCache.nullifiersDifference(b, a)).toStrictEqual([]);
       expect(walletCache.nullifiersDifference(a, [])).toStrictEqual(a);
       expect(walletCache.nullifiersDifference([], b)).toStrictEqual([]);
+    });
+
+    it("should expose a method to set the balance of a given address", async () => {
+      const newBalance = {
+        address: "fake-address",
+        balance: {
+          shielded: {
+            spendable: 123n,
+            value: 456n,
+          },
+          unshielded: {
+            nonce: 7n,
+            value: 345n,
+          },
+        },
+      };
+
+      await walletCache.setBalance(newBalance.address, newBalance.balance);
+
+      for (const balanceInfo of cacheBalances.concat(newBalance)) {
+        await expect(
+          walletCache.getBalance(balanceInfo.address)
+        ).resolves.toStrictEqual(balanceInfo.balance);
+      }
+
+      await walletCache.setBalance(
+        cacheBalances[0].address,
+        newBalance.balance
+      );
+
+      await expect(
+        walletCache.getBalance(cacheBalances[0].address)
+      ).resolves.toStrictEqual(newBalance.balance);
     });
 
     it("should expose a method to update the last block height", async () => {

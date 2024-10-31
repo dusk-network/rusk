@@ -70,10 +70,19 @@ const updateBalance = async () => {
 
   const shielded = await bookkeeper.balance(currentProfile.address);
   const unshielded = await bookkeeper.balance(currentProfile.account);
+  const balance = { shielded, unshielded };
+
+  /**
+   * We ignore the error as the cached balance is only
+   * a nice to have for the user.
+   */
+  await walletCache
+    .setBalance(currentProfile.address.toString(), balance)
+    .catch(() => {});
 
   update((currentStore) => ({
     ...currentStore,
-    balance: { shielded, unshielded },
+    balance,
   }));
 };
 
@@ -106,11 +115,13 @@ const getTransactionsHistory = async () => transactions;
 async function init(profileGenerator, syncFromBlock) {
   const currentProfile = await profileGenerator.default;
   const currentAddress = currentProfile.address.toString();
+  const cachedBalance = await walletCache.getBalance(currentAddress);
 
   treasury.setProfiles([currentProfile]);
 
   set({
     ...initialState,
+    balance: cachedBalance,
     currentProfile,
     initialized: true,
     profiles: [currentProfile],
