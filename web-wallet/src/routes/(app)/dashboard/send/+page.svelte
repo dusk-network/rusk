@@ -15,6 +15,9 @@
   ]);
   const gasLimits = $gasStore;
 
+  /** @type {bigint} */
+  let spendable = 0n;
+
   $: [gasSettings, language] = collectSettings($settingsStore);
   $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
   $: ({ balance } = $walletStore);
@@ -24,6 +27,20 @@
       value: duskFormatter(luxToDusk(balance.shielded.spendable)),
     },
   ];
+  /* eslint-disable no-sequences, no-unused-expressions */
+  $: balance, (spendable = balance.shielded.spendable);
+  /* eslint-enable no-sequences, no-unused-expressions */
+
+  /**
+   * @param {{type:string}} event
+   */
+  function keyChangeHandler(event) {
+    if (event.type === "account") {
+      spendable = balance.unshielded.value;
+    } else {
+      spendable = balance.shielded.spendable;
+    }
+  }
 </script>
 
 <IconHeadingCard gap="medium" heading="Send" icons={[mdiArrowTopRight]} reverse>
@@ -32,8 +49,11 @@
     formatter={duskFormatter}
     {gasLimits}
     {gasSettings}
-    spendable={balance.shielded.spendable}
+    {spendable}
     {statuses}
     enableAllocateButton={import.meta.env.VITE_FEATURE_ALLOCATE === "true"}
+    enableMoonlightTransactions={import.meta.env
+      .VITE_FEATURE_MOONLIGHT_TRANSACTIONS === "true"}
+    on:keyChange={keyChangeHandler}
   />
 </IconHeadingCard>

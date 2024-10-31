@@ -2,7 +2,7 @@
 
 <script>
   import { fade } from "svelte/transition";
-  import { onMount } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import {
     mdiAlertOutline,
     mdiArrowUpBoldBoxOutline,
@@ -53,6 +53,9 @@
   /** @type {boolean} */
   export let enableAllocateButton = false;
 
+  /** @type {boolean} */
+  export let enableMoonlightTransactions = false;
+
   /** @type {number} */
   let amount = 1;
 
@@ -83,6 +86,7 @@
     { label: "Review" },
     { label: "Done" },
   ];
+  const dispatch = createEventDispatcher();
 
   onMount(() => {
     amountInput = document.querySelector(".operation__input-field");
@@ -97,6 +101,13 @@
   $: isFeeWithinLimit = totalLuxFee <= spendable;
   $: isNextButtonDisabled = !(isAmountValid && isGasValid && isFeeWithinLimit);
   $: addressValidationResult = validateAddress(address);
+  $: isMoonlightTransaction = addressValidationResult.type === "account";
+  /* eslint-disable no-sequences, no-unused-expressions */
+  $: isMoonlightTransaction,
+    dispatch("keyChange", {
+      type: addressValidationResult.type,
+    });
+  /* eslint-enable no-sequences, no-unused-expressions */
 
   function setMaxAmount() {
     if (!isGasValid) {
@@ -121,6 +132,21 @@
   }
 
   let activeStep = 0;
+
+  /**
+   * Validates an address/account depending on moonlight transactions being enabled.
+   *
+   * Note. This function can be removed when the VITE_FEATURE_MOONLIGHT_TRANSACTIONS flag is removed.
+   *
+   * @param {{isValid: boolean, type?: "address" | "account"}} validationResult
+   */
+  function isValid(validationResult) {
+    return !validationResult.isValid
+      ? true
+      : isMoonlightTransaction
+        ? !enableMoonlightTransactions
+        : false;
+  }
 </script>
 
 <div class="operation">
@@ -140,7 +166,7 @@
         action: () => {
           activeStep = 1;
         },
-        disabled: !addressValidationResult.isValid,
+        disabled: isValid(addressValidationResult),
       }}
     >
       <div in:fade|global class="operation__send">
@@ -162,8 +188,19 @@
           bind:value={address}
         />
         {#if addressValidationResult.type === "account"}
-          <Banner title="Public Account detected." variant="info">
-            <p>This transaction will be public.</p>
+          <Banner
+            title="Public account detected"
+            variant={enableMoonlightTransactions ? "info" : "warning"}
+          >
+            {#if enableMoonlightTransactions}
+              <p>
+                This transaction will be public and sent from your <strong
+                  >unshielded</strong
+                > account.
+              </p>
+            {:else}
+              <p>Public transactions are currently unavailable.</p>
+            {/if}
           </Banner>
         {/if}
         <ContractStatusesList items={statuses}>
