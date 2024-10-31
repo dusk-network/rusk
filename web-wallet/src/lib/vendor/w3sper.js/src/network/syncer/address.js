@@ -25,34 +25,19 @@ export class AddressSyncer extends EventTarget {
   }
 
   get #bookmark() {
-    const url = new URL(
-      `/on/contracts:${TRANSFER}/num_notes`,
-      this.#network.url
-    );
-
-    const request = new Request(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream",
-      },
-    });
-
-    return this.#network
-      .dispatch(request)
+    return this.#network.contracts
+      .withId(TRANSFER)
+      .call.num_notes()
       .then((response) => response.arrayBuffer())
       .then((buffer) => new Bookmark(new Uint8Array(buffer)));
   }
 
   get root() {
     const network = this.#network;
-    const url = new URL(`/on/contracts:${TRANSFER}/root`, network.url);
-
-    const req = new Request(url, {
-      headers: { "Content-Type": "application/octet-stream" },
-      method: "POST",
-    });
-
-    return network.dispatch(req).then((response) => response.arrayBuffer());
+    return network.contracts
+      .withId(TRANSFER)
+      .call.root()
+      .then((response) => response.arrayBuffer());
   }
 
   async openings(notes, options = {}) {
@@ -65,15 +50,8 @@ export class AddressSyncer extends EventTarget {
 
     for (let i = 0; i < bookmarks.length; i += 8) {
       const body = bookmarks.slice(i, i + 8);
-      const url = new URL(`/on/contracts:${TRANSFER}/opening`, network.url);
 
-      const req = new Request(url, {
-        headers: { "Content-Type": "application/octet-stream" },
-        method: "POST",
-        body,
-      });
-
-      requests.push(network.dispatch(req));
+      requests.push(network.contracts.withId(TRANSFER).call.opening(body));
     }
 
     const result = Promise.all(requests)
@@ -85,25 +63,15 @@ export class AddressSyncer extends EventTarget {
   async spent(nullifiers) {
     const entrySize = await ProtocolDriver.getEntrySize();
 
-    const url = new URL(
-      `/on/contracts:${TRANSFER}/existing_nullifiers`,
-      this.#network.url
-    );
-
     const size = nullifiers.length * entrySize.key + 8;
     const body = new Uint8Array(size);
 
     DataBuffer.copyInto(body, nullifiers);
     DataBuffer.layout(body, nullifiers.length);
 
-    const req = new Request(url, {
-      headers: { "Content-Type": "application/octet-stream" },
-      method: "POST",
-      body,
-    });
-
-    const buffer = await this.#network
-      .dispatch(req)
+    const buffer = await this.#network.contracts
+      .withId(TRANSFER)
+      .call.existing_nullifiers(body)
       .then((response) => response.arrayBuffer());
 
     const layout = DataBuffer.layout(new Uint8Array(buffer));
@@ -134,21 +102,9 @@ export class AddressSyncer extends EventTarget {
       new DataView(body.buffer).setBigUint64(0, from, true);
     }
 
-    const url = new URL(
-      `/on/contracts:${TRANSFER}/${topic}`,
-      this.#network.url
-    );
-
-    const request = new Request(url, {
-      method: "POST",
-      headers: {
-        "Rusk-Feeder": "true",
-        "Content-Type": "application/octet-stream",
-      },
-      body,
-    });
-
-    let response = await this.#network.dispatch(request);
+    let response = await this.#network.contracts
+      .withId(TRANSFER)
+      .call[topic](body, { headers: { "Rusk-Feeder": "true" } });
     let reader = getBYOBReader(response.body);
 
     const entrySize = await ProtocolDriver.getEntrySize();
@@ -157,6 +113,7 @@ export class AddressSyncer extends EventTarget {
       pull: async (controller) => {
         try {
           const buffer = new Uint8Array(entrySize.item * 100); // Pre-allocated buffer
+
           const { done, value } = await reader.read(buffer);
 
           if (done) {

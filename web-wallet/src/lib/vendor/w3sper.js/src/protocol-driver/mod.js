@@ -5,7 +5,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-// import * as exu from "https://rawcdn.githack.com/dusk-network/exu/v0.1.2/src/mod.js";
 import * as exu from "$lib/vendor/exu/mod.js";
 import { none } from "./none.js";
 
@@ -528,4 +527,84 @@ export const phoenix = async (info) =>
     const proof_buffer = await memcpy(null, proof_ptr + 4, proof_len);
 
     return [tx_buffer, proof_buffer];
+  })();
+
+export const moonlight = async (info) =>
+  protocolDriverModule.task(async function ({ malloc, moonlight }, { memcpy }) {
+    const ptr = Object.create(null);
+
+    const seed = new Uint8Array(await info.sender.seed);
+
+    ptr.seed = await malloc(64);
+    await memcpy(ptr.seed, seed, 64);
+
+    const sender_index = +info.sender;
+    const receiver = info.receiver.valueOf();
+    ptr.receiver = await malloc(receiver.byteLength);
+    await memcpy(ptr.receiver, receiver);
+
+    const transfer_value = new Uint8Array(8);
+    new DataView(transfer_value.buffer).setBigUint64(
+      0,
+      info.transfer_value,
+      true
+    );
+    ptr.transfer_value = await malloc(8);
+    await memcpy(ptr.transfer_value, transfer_value);
+
+    const deposit = new Uint8Array(8);
+    new DataView(deposit.buffer).setBigUint64(0, info.deposit, true);
+    ptr.deposit = await malloc(8);
+    await memcpy(ptr.deposit, deposit);
+
+    const gas_limit = new Uint8Array(8);
+    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+    ptr.gas_limit = await malloc(8);
+    await memcpy(ptr.gas_limit, gas_limit);
+
+    const gas_price = new Uint8Array(8);
+    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+    ptr.gas_price = await malloc(8);
+    await memcpy(ptr.gas_price, gas_price);
+
+    const nonce = new Uint8Array(8);
+    new DataView(nonce.buffer).setBigUint64(0, info.nonce, true);
+    ptr.nonce = await malloc(8);
+    await memcpy(ptr.nonce, nonce);
+
+    let tx = await malloc(4);
+    let hash = await malloc(64);
+
+    // Copy the value to the WASM memory
+    const code = await moonlight(
+      ptr.seed,
+      sender_index,
+      ptr.receiver,
+      ptr.transfer_value,
+      ptr.deposit,
+      ptr.gas_limit,
+      ptr.gas_price,
+      ptr.nonce,
+      info.chainId,
+      info.data,
+      tx,
+      hash
+    );
+
+    if (code > 0) throw DriverError.from(code);
+
+    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+      0,
+      true
+    );
+
+    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
+      0,
+      true
+    );
+
+    const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
+
+    hash = new TextDecoder().decode(await memcpy(null, hash, 64));
+    return [tx_buffer, hash];
   })();
