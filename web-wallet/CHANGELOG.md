@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added allocation (shield/unshield) page and UI [#2196]
 - Add validation for "Use Max" button on Send / Stake flows [#2310]
 - Add Banner component [#2696]
+- Add BigIntInput component [#2776]
 
 ### Changed
 
@@ -280,6 +281,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2498]: https://github.com/dusk-network/rusk/issues/2498
 [#2532]: https://github.com/dusk-network/rusk/issues/2532
 [#2696]: https://github.com/dusk-network/rusk/issues/2696
+[#2776]: https://github.com/dusk-network/rusk/issues/2776
 
 <!-- VERSIONS -->
 
