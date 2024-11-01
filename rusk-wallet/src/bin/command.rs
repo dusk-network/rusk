@@ -696,28 +696,37 @@ impl<'a> RunResult<'a> {
                     "hash": hex
                 })
             }
-            StakeInfo(data, _) => match data.amount {
-                Some(amt) => {
-                    let amount = Dusk::from(amt.value).to_string();
-                    let locked = Dusk::from(amt.locked).to_string();
-                    let faults = data.faults.to_string();
-                    let hard_faults = data.hard_faults.to_string();
-                    let eligibility = amt.eligibility.to_string();
-                    let epoch = (amt.eligibility / EPOCH).to_string();
-                    let rewards = Dusk::from(data.reward).to_string();
+            StakeInfo(data, _) => {
+                let faults = data.faults.to_string();
+                let hard_faults = data.hard_faults.to_string();
+                let rewards = Dusk::from(data.reward).to_string();
 
-                    json!({
-                        "rewards": rewards,
-                        "amount": amount,
-                        "locked": locked,
-                        "eligibility": eligibility,
-                        "epoch": epoch,
-                        "hard_faults": hard_faults,
-                        "faults": faults,
-                    })
+                match data.amount {
+                    Some(amt) => {
+                        let amount = Dusk::from(amt.value).to_string();
+                        let locked = Dusk::from(amt.locked).to_string();
+                        let eligibility = amt.eligibility.to_string();
+                        let epoch = (amt.eligibility / EPOCH).to_string();
+
+                        json!({
+                            "rewards": rewards,
+                            "amount": amount,
+                            "locked": locked,
+                            "eligibility": eligibility,
+                            "epoch": epoch,
+                            "hard_faults": hard_faults,
+                            "faults": faults,
+                        })
+                    }
+                    None => {
+                        json!({
+                            "rewards": rewards,
+                            "faults": faults,
+                            "hard_faults": hard_faults
+                        })
+                    }
                 }
-                None => serde_json::Value::Null,
-            },
+            }
             ExportedKeys(pk, kp) => {
                 let pk = pk.as_os_str();
                 let kp = kp.as_os_str();
@@ -812,8 +821,9 @@ impl<'a> fmt::Display for RunResult<'a> {
                 writeln!(f, "> Hard Slashes: {hard_faults}")?;
                 write!(f, "> Accumulated rewards is: {rewards} DUSK")
             }
-            ContractId(bytes) => {
-                write!(f, "> Contract ID: {}", hex::encode(bytes))
+            ContractId((bytes, nonce)) => {
+                write!(f, "> Contract ID: {}", hex::encode(bytes))?;
+                write!(f, "> Deploy nonce: {}", nonce)
             }
             ExportedKeys(pk, kp) => {
                 let pk = pk.display();

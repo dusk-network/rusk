@@ -230,12 +230,8 @@ impl Profile {
     /// format the profile into a json value
     pub fn to_json(&self) -> serde_json::Value {
         json!({
-            "shielded": String::from(&Address::Shielded {
-                addr: self.shielded_addr
-            }),
-            "public": String::from(&Address::Public {
-                addr: self.public_addr
-            }),
+            "shielded": String::from(&Address::Shielded(self.shielded_addr)),
+            "public": String::from(&Address::Public(self.public_addr)),
         })
     }
 }
