@@ -19,8 +19,9 @@ elif command -v yum &> /dev/null; then
     PKG_MANAGER="yum"
 elif command -v brew &> /dev/null; then
     PKG_MANAGER="brew"
-elif command -v apk &> /dev/null; then
-    PKG_MANAGER="apk"
+# TODO: Create musl release of Duskc
+# elif command -v apk &> /dev/null; then
+#     PKG_MANAGER="apk"
 else
     echo "Unsupported package manager. Please install the dependencies manually."
     exit 1
@@ -33,26 +34,26 @@ install_dependencies() {
             echo "Updating package list..."
             $SUDO apt-get update
             echo "Installing packages for Ubuntu/Debian..."
-            $SUDO apt-get install -y curl zip libssl-dev gcc clang git make pkg-config
+            $SUDO apt-get install -y curl zip libssl-dev gcc clang make pkg-config
             ;;
         pacman)
             echo "Installing packages for Arch Linux..."
-            $SUDO pacman -Sy --noconfirm curl zip openssl gcc clang git make pkg-config
+            $SUDO pacman -Sy --noconfirm curl zip unzip base-devel openssl clang
             ;;
         yum)
             echo "Installing packages for CentOS/RHEL..."
-            $SUDO yum install -y curl zip openssl-devel gcc clang git make pkg-config
+            $SUDO yum install -y curl zip unzip openssl-devel gcc clang make pkg-config
             ;;
         brew)
             echo "Installing packages for macOS..."
-            brew install curl zip openssl gcc clang git make pkg-config
+            brew install curl zip openssl gcc make pkg-config
             ;;
-        apk)
-            echo "Updating package list..."
-            $SUDO apk update
-            echo "Installing packages for Alpine Linux..."
-            $SUDO apk add curl zip openssl-dev gcc clang git make pkg-config
-            ;;
+        # apk)
+        #     echo "Updating package list..."
+        #     $SUDO apk update
+        #     echo "Installing packages for Alpine Linux..."
+        #     $SUDO apk add musl musl-dev build-base curl zip unzip openssl-dev openssl-libs-static gcc g++ libc-dev binutils gcompat clang git make pkgconf
+        #     ;;
     esac
 }
 
@@ -108,6 +109,8 @@ install_rust_and_wasm_pack() {
 
 # Run dependency installation
 install_dependencies
-install_rust_and_wasm_pack
+echo "Dependency installation complete."
 
+install_rust_and_wasm_pack
 echo "Development environment setup complete."
+echo "Restart your shell environment to apply new configurations."
