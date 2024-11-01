@@ -4,11 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! The graphql endpoint can be queried with this helper struct. 
+//! The <node-url>/on/gaphql/query if queried with empty bytes returns the 
+//! graphql schema
+
 use execution_core::transfer::Transaction;
 use tokio::time::{sleep, Duration};
 
-use rusk_wallet::{Error, RuesHttpClient};
+use crate::{Error, RuesHttpClient};
 use serde::Deserialize;
+
+
+
 
 /// GraphQL is a helper struct that aggregates all queries done
 /// to the Dusk GraphQL database.
@@ -20,6 +27,17 @@ pub struct GraphQL {
     status: fn(&str),
 }
 
+/// The tx_for_block returns a Vec<TransactionBlock> which contains
+/// the execution-core transaction, its id hash and gas spent
+pub struct TransactionBlock {
+    /// The execution transacton struct obtianed from grahpql endpoint
+    pub tx: Transaction, 
+    /// The hash of the transaction or the id of the transaction in string utf8
+    pub id: String,
+    /// Gas amount spent for the transaction
+    pub gas_spent: u64,
+}
+
 #[derive(Deserialize)]
 struct SpentTx {
     pub id: String,
@@ -29,6 +47,7 @@ struct SpentTx {
     #[serde(alias = "gasSpent", default)]
     pub gas_spent: f64,
 }
+
 #[derive(Deserialize)]
 struct Block {
     pub transactions: Vec<SpentTx>,
@@ -46,6 +65,7 @@ struct SpentTxResponse {
 
 /// Transaction status
 #[derive(Debug)]
+#[allow(missing_docs)]
 pub enum TxStatus {
     Ok,
     NotFound,
@@ -101,7 +121,7 @@ impl GraphQL {
     pub async fn txs_for_block(
         &self,
         block_height: u64,
-    ) -> anyhow::Result<Vec<(Transaction, String, u64)>, GraphQLError> {
+    ) -> anyhow::Result<Vec<TransactionBlock>, GraphQLError> {
         let query = "query { block(height: ####) { transactions {id, raw, gasSpent, err}}}"
             .replace("####", block_height.to_string().as_str());
 
@@ -115,9 +135,16 @@ impl GraphQL {
             let tx_raw = hex::decode(&spent_tx.raw)
                 .map_err(|_| GraphQLError::TxStatus)?;
             let ph_tx = Transaction::from_slice(&tx_raw).unwrap();
-            ret.push((ph_tx, spent_tx.id, spent_tx.gas_spent as u64));
+            
+            ret.push(TransactionBlock { tx: ph_tx, id: spent_tx.id, gas_spent: spent_tx.gas_spent as u64 });
         }
+
         Ok(ret)
+    }
+
+    /// Sends an empty body to url to check if its available
+    pub async fn check_connection(&self) -> Result<(), Error> {
+        self.query("").await.map(|_| ())
     }
 }
 
@@ -131,6 +158,7 @@ pub enum GraphQLError {
     #[error("Failed to obtain transaction status")]
     TxStatus,
     #[error("Failed to obtain block info")]
+    /// Failed to obtain block info
     BlockInfo,
 }
 
@@ -147,6 +175,7 @@ impl From<serde_json::Error> for GraphQLError {
 }
 
 impl GraphQL {
+    /// Call the graphql endpoint of a node
     pub async fn query(&self, query: &str) -> Result<Vec<u8>, Error> {
         self.client
             .call("graphql", None, "query", query.as_bytes())
