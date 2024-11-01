@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Check if SKIP_CLIPPY_CHECK is set
 if [ "$SKIP_CLIPPY_CHECK" = "true" ]; then
@@ -8,8 +8,12 @@ fi
 
 echo "Detecting changes and running clippy only on modified workspace members..."
 
-# List of Rust workspace members
-WORKSPACE_MEMBERS="execution-core circuits contracts rusk-abi rusk-profile rusk-recovery rusk-prover node-data consensus node wallet-core rusk rusk-wallet"
+# Extract workspace members from the Cargo.toml file and members from the `make clippy` in the Makefile
+WORKSPACE_MEMBERS=$(awk '/members = \[/,/\]/' ./Cargo.toml | grep -o '"[^"]*"' | tr -d '"' | sed 's/\/.*//g' | sort -u)
+MAKEFILE_CLIPPY_TARGETS=$(awk '/clippy:/,/^$/' ./Makefile | grep -o '\./[^ ]*' | sed 's/\.\///;s/\/$//' | sort -u)
+
+# Filter workspace members to include only those part of the `make clippy` target
+WORKSPACE_MEMBERS=$(echo "$WORKSPACE_MEMBERS" | grep -Fxf - <(echo "$MAKEFILE_CLIPPY_TARGETS"))
 
 # Find the common ancestor between the feature branch and master
 BASE_COMMIT=$(git merge-base HEAD master)
