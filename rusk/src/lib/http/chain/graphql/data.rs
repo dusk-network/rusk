@@ -8,6 +8,22 @@ use std::ops::Deref;
 
 use async_graphql::{FieldError, FieldResult, Object, SimpleObject};
 use node::database::{Ledger, LightBlock, DB};
+use serde::{Deserialize, Serialize};
+
+/// Pair of (block height, block hash) of the last block and the last finalized
+/// block.
+#[derive(Serialize, Deserialize)]
+pub struct BlockPair {
+    pub last_block: (u64, String),
+    pub last_finalized_block: (u64, String),
+}
+
+#[Object]
+impl BlockPair {
+    pub async fn json(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or_default()
+    }
+}
 
 pub struct Block {
     header: node_data::ledger::Header,

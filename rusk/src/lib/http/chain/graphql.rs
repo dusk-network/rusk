@@ -23,6 +23,7 @@ use {
     archive::data::deserialized_archive_data::DeserializedMoonlightGroups,
     archive::data::*,
     archive::events::*,
+    archive::finalized_block::*,
     archive::moonlight::*,
     node::archive::{Archive, MoonlightGroup},
 };
@@ -198,5 +199,45 @@ impl Query {
             (None, Some(hash)) => block_events_by_hash(ctx, hash).await,
             _ => Err(FieldError::new("Specify height or hash")),
         }
+    }
+
+    /// Check if a given block height matches a given block hash.
+    ///
+    /// If `only_finalized` is set to `true`, only finalized blocks will be
+    /// checked `only_finalized` is set to `false` by default.
+    #[cfg(feature = "archive")]
+    async fn check_block(
+        &self,
+        ctx: &Context<'_>,
+        height: u64,
+        hash: String,
+        only_finalized: Option<bool>,
+    ) -> FieldResult<bool> {
+        if only_finalized.unwrap_or(false) {
+            check_finalized_block(ctx, height as i64, hash).await
+        } else {
+            check_block(ctx, height, hash).await
+        }
+    }
+
+    /// Get a pair of two tuples containing the height and hash of the last
+    /// block and the last finalized block.
+    #[cfg(feature = "archive")]
+    async fn last_block_pair(
+        &self,
+        ctx: &Context<'_>,
+    ) -> FieldResult<BlockPair> {
+        let last_block = last_block(ctx).await?;
+        let (blk_height, blk_hash) = (
+            last_block.header().height,
+            hex::encode(last_block.header().hash),
+        );
+
+        let last_finalized_block = last_finalized_block(ctx).await?;
+
+        Ok(BlockPair {
+            last_block: (blk_height, blk_hash),
+            last_finalized_block,
+        })
     }
 }

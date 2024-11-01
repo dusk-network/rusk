@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Module for GraphQL that relates to stored events in the archive.
+
 use async_graphql::{Context, FieldError, FieldResult, Object};
 
 use super::data::BlockEvents;
