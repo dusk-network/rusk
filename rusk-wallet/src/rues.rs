@@ -9,7 +9,7 @@ use std::time::Duration;
 use reqwest::{Body, Response};
 use rkyv::Archive;
 
-use crate::Error;
+use crate::{gql::GraphQL, Error};
 
 /// Supported Rusk version
 const REQUIRED_RUSK_VERSION: &str = ">=0.8.0";
