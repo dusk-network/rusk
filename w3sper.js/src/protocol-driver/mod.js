@@ -349,9 +349,7 @@ export const accountsIntoRaw = async (users) =>
     { memcpy },
   ) {
     let buffer = new Uint8Array(
-      DataBuffer.from(
-        DataBuffer.flatten(users.map((user) => user.account.valueOf())),
-      ),
+      DataBuffer.from(DataBuffer.flatten(users.map((user) => user.valueOf()))),
     );
 
     // copy buffer into WASM memory

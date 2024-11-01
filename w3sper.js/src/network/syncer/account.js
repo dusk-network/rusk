@@ -4,44 +4,37 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import { Bookmark } from "../bookmark.js";
 import * as ProtocolDriver from "../../protocol-driver/mod.js";
+import * as base58 from "../../b58.js";
 
-export const TRANSFER =
-  "0100000000000000000000000000000000000000000000000000000000000000";
+function intoAccount(resource) {
+  if (resource?.account?.valueOf()?.byteLength === 96) {
+    return resource.account;
+  } else if (typeof resource === "string") {
+    const buffer = base58.decode(resource);
+    if (buffer.byteLength === 96) {
+      return buffer;
+    }
+  }
+
+  return resource;
+}
 
 export class AccountSyncer extends EventTarget {
   #network;
 
-  constructor(network, options = {}) {
+  constructor(network) {
     super();
     this.#network = network;
   }
 
-  get #bookmark() {
-    const url = new URL(
-      `/on/contracts:${TRANSFER}/num_notes`,
-      this.#network.url,
+  async balances(profiles) {
+    const rawUsers = await ProtocolDriver.accountsIntoRaw(
+      profiles.map(intoAccount),
     );
 
-    const request = new Request(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream",
-      },
-    });
-
-    return this.#network
-      .dispatch(request)
-      .then((response) => response.arrayBuffer())
-      .then((buffer) => new Bookmark(new Uint8Array(buffer)));
-  }
-
-  async balances(profiles) {
-    const rawUsers = await ProtocolDriver.accountsIntoRaw(profiles);
-
-    let balances = rawUsers.map(async (user) =>
-      this.#network.contracts.withId(TRANSFER).call.account(user),
+    let balances = rawUsers.map((user) =>
+      this.#network.contracts.transferContract.call.account(user),
     );
 
     return await Promise.all(balances)
