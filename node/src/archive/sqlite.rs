@@ -82,6 +82,19 @@ impl Archive {
         Ok(events.json_contract_events)
     }
 
+    /// Fetch the last finalized block height and block hash
+    pub async fn fetch_last_finalized_block(&self) -> Result<(u64, String)> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        let block = sqlx::query!(
+            r#"SELECT block_height, block_hash FROM archive WHERE finalized = 1 ORDER BY block_height DESC LIMIT 1"#
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok((block.block_height as u64, block.block_hash))
+    }
+
     /*
     todo: Implement fetch json last vm events where finalized = 0?
      */
@@ -118,6 +131,24 @@ impl Archive {
         .await?;
 
         Ok(serde_json::from_str(&events.json_contract_events)?)
+    }
+
+    /// Check if a block_height & block_hash match a finalized block
+    pub async fn match_finalized_block_height_hash(
+        &self,
+        block_height: i64,
+        hex_block_hash: &str,
+    ) -> Result<bool> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        let r = sqlx::query!(
+            r#"SELECT block_height FROM archive WHERE block_height = ? AND block_hash = ? AND finalized = 1"#,
+            block_height, hex_block_hash
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        Ok(r.is_some())
     }
 }
 
@@ -411,5 +442,10 @@ mod tests {
             .remove_block(blk_height, &hex_blk_hash)
             .await
             .unwrap());
+
+        let (blk_height, blk_hash) =
+            archive.fetch_last_finalized_block().await.unwrap();
+        assert_eq!(blk_height, 1);
+        assert_eq!(blk_hash, hex_blk_hash);
     }
 }
