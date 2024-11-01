@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! The graphql endpoint can be queried with this helper struct. 
-//! The <node-url>/on/gaphql/query if queried with empty bytes returns the 
+//! The graphql endpoint can be queried with this helper struct.
+//! The <node-url>/on/gaphql/query if queried with empty bytes returns the
 //! graphql schema
 
 use execution_core::transfer::Transaction;
@@ -13,9 +13,6 @@ use tokio::time::{sleep, Duration};
 
 use crate::{Error, RuesHttpClient};
 use serde::Deserialize;
-
-
-
 
 /// GraphQL is a helper struct that aggregates all queries done
 /// to the Dusk GraphQL database.
@@ -27,11 +24,11 @@ pub struct GraphQL {
     status: fn(&str),
 }
 
-/// The tx_for_block returns a Vec<TransactionBlock> which contains
+/// The tx_for_block returns a Vec<BlockTransaction> which contains
 /// the execution-core transaction, its id hash and gas spent
-pub struct TransactionBlock {
-    /// The execution transacton struct obtianed from grahpql endpoint
-    pub tx: Transaction, 
+pub struct BlockTransaction {
+    /// The execution-core transaction struct obtained from GraphQL endpoint
+    pub tx: Transaction,
     /// The hash of the transaction or the id of the transaction in string utf8
     pub id: String,
     /// Gas amount spent for the transaction
@@ -65,7 +62,6 @@ struct SpentTxResponse {
 
 /// Transaction status
 #[derive(Debug)]
-#[allow(missing_docs)]
 pub enum TxStatus {
     Ok,
     NotFound,
@@ -121,7 +117,7 @@ impl GraphQL {
     pub async fn txs_for_block(
         &self,
         block_height: u64,
-    ) -> anyhow::Result<Vec<TransactionBlock>, GraphQLError> {
+    ) -> anyhow::Result<Vec<BlockTransaction>, GraphQLError> {
         let query = "query { block(height: ####) { transactions {id, raw, gasSpent, err}}}"
             .replace("####", block_height.to_string().as_str());
 
@@ -135,8 +131,12 @@ impl GraphQL {
             let tx_raw = hex::decode(&spent_tx.raw)
                 .map_err(|_| GraphQLError::TxStatus)?;
             let ph_tx = Transaction::from_slice(&tx_raw).unwrap();
-            
-            ret.push(TransactionBlock { tx: ph_tx, id: spent_tx.id, gas_spent: spent_tx.gas_spent as u64 });
+
+            ret.push(BlockTransaction {
+                tx: ph_tx,
+                id: spent_tx.id,
+                gas_spent: spent_tx.gas_spent as u64,
+            });
         }
 
         Ok(ret)
@@ -200,8 +200,10 @@ async fn test() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
     let block_txs = gql.txs_for_block(90).await?;
-    block_txs.into_iter().for_each(|(t, chain_txid, _)| {
-        let hash = t.hash();
+    block_txs.into_iter().for_each(|tx_block| {
+        let tx = tx_block.tx;
+        let chain_txid = tx_block.id;
+        let hash = tx.hash();
         let tx_id = hex::encode(hash.to_bytes());
         assert_eq!(chain_txid, tx_id);
         println!("txid: {tx_id}");

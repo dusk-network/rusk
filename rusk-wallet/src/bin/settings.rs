@@ -7,7 +7,7 @@
 use crate::config::Network;
 use crate::io::WalletArgs;
 
-use rusk_wallet::Error;
+use rusk_wallet::{Error, RuesHttpClient};
 use std::fmt;
 use std::path::PathBuf;
 
@@ -134,6 +134,18 @@ impl Settings {
         };
 
         SettingsBuilder { wallet_dir, args }
+    }
+
+    pub async fn check_state_con(&self) -> Result<(), reqwest::Error> {
+        RuesHttpClient::new(self.state.as_ref())
+            .check_connection()
+            .await
+    }
+
+    pub async fn check_prover_con(&self) -> Result<(), reqwest::Error> {
+        RuesHttpClient::new(self.prover.as_ref())
+            .check_connection()
+            .await
     }
 }
 

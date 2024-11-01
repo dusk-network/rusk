@@ -4,8 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::fmt::Display;
+
 use execution_core::transfer::data::MAX_MEMO_SIZE;
-use requestty::Question;
+use inquire::{InquireError, Select};
 use rusk_wallet::{
     currency::Dusk,
     gas::{
@@ -15,7 +17,7 @@ use rusk_wallet::{
     Address, Wallet, MAX_FUNCTION_NAME_SIZE,
 };
 
-use crate::{prompt, settings::Settings, Command, Menu, WalletFile};
+use crate::{prompt, settings::Settings, Command, WalletFile};
 
 use super::ProfileOp;
 
@@ -37,6 +39,30 @@ enum MenuItem {
     Back,
 }
 
+impl Display for MenuItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MenuItem::History => write!(f, "Show Transactions History"),
+            MenuItem::Transfer => write!(f, "Transfer Dusk"),
+            MenuItem::Stake => write!(f, "Stake"),
+            MenuItem::Unstake => write!(f, "Unstake"),
+            MenuItem::Withdraw => write!(f, "Withdraw Stake Reward"),
+            MenuItem::ContractDeploy => write!(f, "Deploy a Contract"),
+            MenuItem::ContractCall => write!(f, "Call a Contract"),
+            MenuItem::Unshield => {
+                write!(f, "Convert Shielded Dusk to Public Dusk")
+            }
+            MenuItem::Shield => {
+                write!(f, "Convert Public Dusk to Shielded Dusk")
+            }
+            MenuItem::CalculateContractId => write!(f, "Calculate Contract ID"),
+            MenuItem::StakeInfo => write!(f, "Stake Info"),
+            MenuItem::Export => write!(f, "Export Provisioner Key-Pair"),
+            MenuItem::Back => write!(f, "Back"),
+        }
+    }
+}
+
 /// Allows the user to choose the operation to perform for the
 /// selected profile
 pub(crate) async fn online(
@@ -46,33 +72,31 @@ pub(crate) async fn online(
     moonlight_balance: Dusk,
     settings: &Settings,
 ) -> anyhow::Result<ProfileOp> {
-    let cmd_menu = Menu::new()
-        .add(MenuItem::History, "Show Transactions History")
-        .add(MenuItem::Transfer, "Transfer Dusk")
-        .add(MenuItem::Unshield, "Convert Shielded Dusk to Public Dusk")
-        .add(MenuItem::Shield, "Convert Public Dusk to Shielded Dusk")
-        .add(MenuItem::StakeInfo, "Check Existing Stake")
-        .add(MenuItem::Stake, "Stake")
-        .add(MenuItem::Unstake, "Unstake")
-        .add(MenuItem::Withdraw, "Withdraw Stake Reward")
-        .add(MenuItem::ContractCall, "Call a Contract")
-        .add(MenuItem::ContractDeploy, "Deploy a Contract")
-        .add(MenuItem::CalculateContractId, "Calculate Contract ID")
-        .add(MenuItem::Export, "Export Provisioner Key-Pair")
-        .separator()
-        .add(MenuItem::Back, "Back")
-        .separator();
+    let cmd_menu = vec![
+        MenuItem::History,
+        MenuItem::Transfer,
+        MenuItem::Unshield,
+        MenuItem::Shield,
+        MenuItem::StakeInfo,
+        MenuItem::Stake,
+        MenuItem::Unstake,
+        MenuItem::Withdraw,
+        MenuItem::ContractCall,
+        MenuItem::ContractDeploy,
+        MenuItem::CalculateContractId,
+        MenuItem::Export,
+        MenuItem::Back,
+    ];
 
-    let q = Question::select("theme")
-        .message("What do you like to do?")
-        .choices(cmd_menu.clone())
-        .page_size(20)
-        .build();
+    let select = Select::new("What would you like to do?", cmd_menu).prompt();
 
-    let answer = requestty::prompt_one(q)?;
-    let cmd = cmd_menu.answer(&answer).to_owned();
+    if let Err(InquireError::OperationCanceled) = select {
+        return Ok(ProfileOp::Back);
+    }
 
-    let res = match cmd {
+    let select = select?;
+
+    let res = match select {
         MenuItem::Transfer => {
             let rcvr = prompt::request_rcvr_addr("recipient")?;
 
@@ -355,6 +379,7 @@ pub(crate) async fn online(
         })),
         MenuItem::Back => ProfileOp::Back,
     };
+
     Ok(res)
 }
 
@@ -364,21 +389,12 @@ pub(crate) fn offline(
     profile_idx: u8,
     settings: &Settings,
 ) -> anyhow::Result<ProfileOp> {
-    let cmd_menu = Menu::new()
-        .separator()
-        .add(MenuItem::Export, "Export provisioner key-pair")
-        .separator()
-        .add(MenuItem::Back, "Back");
+    let cmd_menu = vec![MenuItem::Export];
 
-    let q = Question::select("theme")
-        .message("[OFFLINE] What would you like to do?")
-        .choices(cmd_menu.clone())
-        .build();
+    let select = Select::new("[OFFLINE] What would you like to do?", cmd_menu)
+        .prompt()?;
 
-    let answer = requestty::prompt_one(q)?;
-    let cmd = cmd_menu.answer(&answer).to_owned();
-
-    let res = match cmd {
+    let res = match select {
         MenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
             profile_idx: Some(profile_idx),
             name: None,
@@ -387,9 +403,9 @@ pub(crate) fn offline(
                 settings.wallet_dir.clone(),
             )?,
         })),
-        MenuItem::Back => ProfileOp::Back,
         _ => unreachable!(),
     };
+
     Ok(res)
 }
 

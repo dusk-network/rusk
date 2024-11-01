@@ -26,7 +26,6 @@ serde_json = { workspace = true }
 hex = { workspace = true }
 tiny-bip39 = { workspace = true }
 crossterm = { workspace = true }
-requestty = { workspace = true }
 futures = { workspace = true }
 base64 = { workspace = true }
 blake3 = { workspace = true }
@@ -55,7 +54,7 @@ tracing-subscriber = { workspace = true, features = [
 ] }
 
 rkyv = { workspace = true }
-
+inquire = { workspace = true }
 konst = { workspace = true }
 
 [dev-dependencies]

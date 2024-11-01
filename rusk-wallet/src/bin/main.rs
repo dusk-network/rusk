@@ -8,14 +8,13 @@ mod command;
 mod config;
 mod interactive;
 mod io;
-mod menu;
 mod settings;
 
 pub(crate) use command::{Command, RunResult};
-pub(crate) use menu::Menu;
 
 use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Parser;
+use inquire::InquireError;
 use rocksdb::ErrorKind;
 use tracing::{error, info, warn, Level};
 
@@ -25,12 +24,11 @@ use crate::settings::{LogFormat, Settings};
 use rusk_wallet::{
     currency::Dusk,
     dat::{self, LATEST_VERSION},
-    Error, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
+    Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
 };
 
 use config::Config;
-use io::{prompt, status};
-use io::{GraphQL, WalletArgs};
+use io::{prompt, status, WalletArgs};
 
 use std::fs::{self, File};
 use std::io::Write;
@@ -55,8 +53,8 @@ impl SecureWalletFile for WalletFile {
 async fn main() -> anyhow::Result<()> {
     if let Err(err) = exec().await {
         // display the error message (if any)
-        match err.downcast_ref::<requestty::ErrorKind>() {
-            Some(requestty::ErrorKind::Interrupted) => {
+        match err.downcast_ref::<InquireError>() {
+            Some(InquireError::OperationInterrupted) => {
                 // TODO: Handle this error properly
                 // See also https://github.com/dusk-network/wallet-cli/issues/104
             }
@@ -132,10 +130,6 @@ async fn exec() -> anyhow::Result<()> {
     // get the subcommand, if it is `None` we run the wallet in interactive mode
     let cmd = args.command.clone();
 
-    // set symbols to ASCII for Windows terminal compatibility
-    #[cfg(windows)]
-    requestty::symbols::set(requestty::symbols::ASCII);
-
     // Get the initial settings from the args
     let settings_builder = Settings::args(args);
 
@@ -207,7 +201,8 @@ async fn exec() -> anyhow::Result<()> {
         // if `cmd` is `None` we are in interactive mode and need to load the
         // wallet from file
         None => {
-            interactive::load_wallet(&wallet_path, &settings, file_version)?
+            interactive::load_wallet(&wallet_path, &settings, file_version)
+                .await?
         }
         // else we check if we need to replace the wallet and then load it
         Some(ref cmd) => match cmd {
@@ -413,7 +408,6 @@ async fn exec() -> anyhow::Result<()> {
         }
     }
 
-    // Gracefully close the wallet
     wallet.close();
 
     Ok(())

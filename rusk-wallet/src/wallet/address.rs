@@ -153,6 +153,7 @@ impl fmt::Debug for Address {
 
 /// Profile struct containing the addresses used for shielded and public
 /// transactions as well as for staking operations.
+#[derive(Debug, PartialEq, Eq)]
 pub struct Profile {
     /// Shielded address for shielded transactions
     pub shielded_addr: PhoenixPublicKey,

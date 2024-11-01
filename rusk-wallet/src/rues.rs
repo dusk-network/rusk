@@ -9,7 +9,7 @@ use std::time::Duration;
 use reqwest::{Body, Response};
 use rkyv::Archive;
 
-use crate::{gql::GraphQL, Error};
+use crate::Error;
 
 /// Supported Rusk version
 const REQUIRED_RUSK_VERSION: &str = ">=0.8.0";
@@ -59,6 +59,7 @@ impl RuesHttpClient {
     /// Check rusk connection
     pub async fn check_connection(&self) -> Result<(), reqwest::Error> {
         self.client.post(&self.uri).send().await?;
+
         Ok(())
     }
 
