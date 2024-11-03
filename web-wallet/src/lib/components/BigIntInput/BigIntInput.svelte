@@ -1,7 +1,7 @@
 <svelte:options immutable />
 
 <script>
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { Textbox } from "$lib/dusk/components";
   import { makeClassName } from "$lib/dusk/string";
   import "./BigIntInput.css";
@@ -44,13 +44,19 @@
     "invalid-input": isInvalidInput,
     [`${className}`]: true,
   });
+
+  onMount(() => {
+    checkValidity();
+  });
 </script>
 
 <Textbox
+  {...$$restProps}
   className={inputClass}
   inputmode="numeric"
   type="text"
   bind:value={internalValue}
   on:input={validateInput}
+  on:input
   pattern="\d+"
 />

@@ -95,11 +95,11 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           </span>
            
           <input
-            class="dusk-textbox dusk-textbox-number gas-control__input"
-            max="20000000"
-            min="1"
+            class="dusk-textbox dusk-textbox-text gas-control__input"
+            inputmode="numeric"
+            pattern="\\d+"
             required=""
-            type="number"
+            type="text"
           />
           
         </label>
@@ -114,11 +114,11 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           </span>
            
           <input
-            class="dusk-textbox dusk-textbox-number gas-control__input"
-            max="1000000000"
-            min="10000000"
+            class="dusk-textbox dusk-textbox-text gas-control__input"
+            inputmode="numeric"
+            pattern="\\d+"
             required=""
-            type="number"
+            type="text"
           />
           
         </label>
@@ -618,11 +618,11 @@ exports[`Settings > should render the settings page displaying the status of the
           </span>
            
           <input
-            class="dusk-textbox dusk-textbox-number gas-control__input"
-            max="20000000"
-            min="1"
+            class="dusk-textbox dusk-textbox-text gas-control__input"
+            inputmode="numeric"
+            pattern="\\d+"
             required=""
-            type="number"
+            type="text"
           />
           
         </label>
@@ -637,11 +637,11 @@ exports[`Settings > should render the settings page displaying the status of the
           </span>
            
           <input
-            class="dusk-textbox dusk-textbox-number gas-control__input"
-            max="1000000000"
-            min="10000000"
+            class="dusk-textbox dusk-textbox-text gas-control__input"
+            inputmode="numeric"
+            pattern="\\d+"
             required=""
-            type="number"
+            type="text"
           />
           
         </label>
@@ -1123,11 +1123,11 @@ exports[`Settings > should render the settings page displaying the status of the
           </span>
            
           <input
-            class="dusk-textbox dusk-textbox-number gas-control__input"
-            max="20000000"
-            min="1"
+            class="dusk-textbox dusk-textbox-text gas-control__input"
+            inputmode="numeric"
+            pattern="\\d+"
             required=""
-            type="number"
+            type="text"
           />
           
         </label>
@@ -1142,11 +1142,11 @@ exports[`Settings > should render the settings page displaying the status of the
           </span>
            
           <input
-            class="dusk-textbox dusk-textbox-number gas-control__input"
-            max="1000000000"
-            min="10000000"
+            class="dusk-textbox dusk-textbox-text gas-control__input"
+            inputmode="numeric"
+            pattern="\\d+"
             required=""
-            type="number"
+            type="text"
           />
           
         </label>

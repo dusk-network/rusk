@@ -2,21 +2,21 @@
 
 <script>
   import { createEventDispatcher, onMount } from "svelte";
-  import { Textbox } from "$lib/dusk/components";
+  import { BigIntInput } from "$lib/components";
 
-  /** @type {Number} */
+  /** @type {bigint} */
   export let limit;
 
-  /** @type {Number} */
+  /** @type {bigint} */
   export let limitLower;
 
-  /** @type {Number} */
+  /** @type {bigint} */
   export let limitUpper;
 
-  /** @type {Number} */
+  /** @type {bigint} */
   export let price;
 
-  /** @type {Number} */
+  /** @type {bigint} */
   export let priceLower;
 
   const dispatch = createEventDispatcher();
@@ -35,27 +35,25 @@
 
 <label for={undefined} class="gas-control">
   <span class="gas-control__label"> Price: (lux) </span>
-  <Textbox
+  <BigIntInput
     bind:value={price}
     className="gas-control__input"
-    max={limit}
-    min={priceLower}
+    maxValue={limit}
+    minValue={priceLower}
     on:input={dispatchGasLimits}
     required
-    type="number"
   />
 </label>
 
 <label for={undefined} class="gas-control">
   <span class="gas-control__label"> Gas Limit: (unit) </span>
-  <Textbox
+  <BigIntInput
     bind:value={limit}
     className="gas-control__input"
-    max={limitUpper}
-    min={limitLower}
+    maxValue={limitUpper}
+    minValue={limitLower}
     on:input={dispatchGasLimits}
     required
-    type="number"
   />
 </label>
 

@@ -42,13 +42,13 @@ describe("Stake", () => {
     flow: "stake",
     formatter,
     gasLimits: {
-      gasLimitLower: 10000000,
-      gasLimitUpper: 2900000000,
-      gasPriceLower: 1,
+      gasLimitLower: 10000000n,
+      gasLimitUpper: 2900000000n,
+      gasPriceLower: 1n,
     },
     gasSettings: {
-      gasLimit: 20000000,
-      gasPrice: 1,
+      gasLimit: 20000000n,
+      gasPrice: 1n,
     },
     hideStakingNotice: true,
     minAllowedStake: 1234,
@@ -119,8 +119,8 @@ describe("Stake", () => {
       ...baseProps,
       gasSettings: {
         ...baseProps.gasSettings,
-        gasLimit: 40000000,
-        gasPrice: 40000000,
+        gasLimit: 40000000n,
+        gasPrice: 40000000n,
       },
     };
     const currentMaxSpendable = deductLuxFeeFrom(
@@ -175,8 +175,8 @@ describe("Stake", () => {
       ...baseProps,
       gasSettings: {
         ...baseProps.gasSettings,
-        gasLimit: 40000000,
-        gasPrice: 40000000,
+        gasLimit: 40000000n,
+        gasPrice: 40000000n,
       },
     };
 
@@ -334,7 +334,7 @@ describe("Stake", () => {
       const props = {
         ...baseProps,
         flow: "unstake",
-        gasSettings: { gasLimit: 29000000090, gasPrice: 1 },
+        gasSettings: { gasLimit: 29000000090n, gasPrice: 1n },
       };
 
       const { getByRole } = render(Stake, props);
@@ -386,7 +386,7 @@ describe("Stake", () => {
       const props = {
         ...baseProps,
         flow: "unstake",
-        gasSettings: { gasLimit: 29000000090, gasPrice: 1 },
+        gasSettings: { gasLimit: 29000000090n, gasPrice: 1n },
       };
 
       const { getByRole } = render(Stake, props);

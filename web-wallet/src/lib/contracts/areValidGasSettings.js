@@ -4,8 +4,8 @@ import { get } from "svelte/store";
 
 /**
  *
- * @param {Number} price
- * @param {Number} limit
+ * @param {bigint} price
+ * @param {bigint} limit
  * @returns {Boolean}
  */
 const areValidGasSettings = (price, limit) => {
@@ -14,7 +14,7 @@ const areValidGasSettings = (price, limit) => {
   let isValidLimit = false;
   let isGasValid = false;
 
-  if ([price, limit].every(isType("Number"))) {
+  if ([price, limit].every(isType("BigInt"))) {
     isValidPrice = price >= gasLimits.gasPriceLower && price <= limit;
     isValidLimit =
       limit >= gasLimits.gasLimitLower && limit <= gasLimits.gasLimitUpper;

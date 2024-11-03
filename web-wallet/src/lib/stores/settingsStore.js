@@ -1,5 +1,21 @@
-import { persisted } from "svelte-persisted-store";
+import { writable } from "svelte/store";
 import { browser } from "$app/environment";
+
+// =========================
+// --- Utilities ---
+// =========================
+
+export const serializeProperty = (/** @type {any} */ value) =>
+  JSON.stringify(value, (_, v) => (typeof v === "bigint" ? `${v}n` : v));
+
+export const deserializeProperty = (/** @type {string} */ value) =>
+  JSON.parse(value, (_, v) =>
+    typeof v === "string" && /^\d+n$/.test(v) ? BigInt(v.slice(0, -1)) : v
+  );
+
+// =========================
+// --- End of Utilities ---
+// =========================
 
 const browserDefaults = browser
   ? {
@@ -16,22 +32,45 @@ const initialState = {
   ...browserDefaults,
   currency: "USD",
   dashboardTransactionLimit: 5,
-  gasLimit: parseInt(import.meta.env.VITE_GAS_LIMIT_DEFAULT, 10),
-  gasPrice: parseInt(import.meta.env.VITE_GAS_PRICE_DEFAULT, 10),
+  gasLimit: BigInt(import.meta.env.VITE_GAS_LIMIT_DEFAULT ?? 20000000),
+  gasPrice: BigInt(import.meta.env.VITE_GAS_PRICE_DEFAULT ?? 1),
   hideStakingNotice: false,
   minAllowedStake: parseInt(import.meta.env.VITE_MINIMUM_ALLOWED_STAKE, 10),
   userId: "",
 };
 
-const settingsStore = persisted(
+const createPersistedStore = (
+  /** @type {string} */ key,
+  /** @type {SettingsStoreContent} */ initialValue
+) => {
+  const load = () => {
+    if (!browser) {
+      return initialValue;
+    }
+    const storedValue = localStorage.getItem(key);
+    return storedValue ? deserializeProperty(storedValue) : initialValue;
+  };
+
+  const store = writable(load());
+
+  if (browser) {
+    store.subscribe((value) => {
+      localStorage.setItem(key, serializeProperty(value));
+    });
+  }
+
+  return store;
+};
+
+const settingsStore = createPersistedStore(
   `${CONFIG.LOCAL_STORAGE_APP_KEY}-preferences`,
   initialState
 );
+
 const { set, subscribe, update } = settingsStore;
 
-function reset() {
-  set(initialState);
-}
+// Reset store to initial state
+const reset = () => set(initialState);
 
 /** @type {SettingsStore} */
 export default {

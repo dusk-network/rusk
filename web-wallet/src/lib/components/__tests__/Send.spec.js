@@ -24,13 +24,13 @@ describe("Send", () => {
     execute: vi.fn().mockResolvedValue(lastTxId),
     formatter,
     gasLimits: {
-      gasLimitLower: 10000000,
-      gasLimitUpper: 2900000000,
-      gasPriceLower: 1,
+      gasLimitLower: 10000000n,
+      gasLimitUpper: 2900000000n,
+      gasPriceLower: 1n,
     },
     gasSettings: {
-      gasLimit: 20000000,
-      gasPrice: 1,
+      gasLimit: 20000000n,
+      gasPrice: 1n,
     },
     spendable: 1_000_000_000_000n,
     statuses: [
@@ -121,8 +121,8 @@ describe("Send", () => {
         ...baseProps,
         gasSettings: {
           ...baseProps.gasSettings,
-          gasLimit: 40000000,
-          gasPrice: 40000000,
+          gasLimit: 40000000n,
+          gasPrice: 40000000n,
         },
       };
       const { getByRole } = render(Send, props);
@@ -179,8 +179,8 @@ describe("Send", () => {
         ...baseProps,
         gasSettings: {
           ...baseProps.gasSettings,
-          gasLimit: 40000000,
-          gasPrice: 40000000,
+          gasLimit: 40000000n,
+          gasPrice: 40000000n,
         },
       };
 

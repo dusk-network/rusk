@@ -9,17 +9,16 @@ import { createCurrencyFormatter } from "$lib/dusk/currency";
 describe("GasSettings", () => {
   const settings = get(settingsStore);
   const duskFormatter = createCurrencyFormatter(settings.language, "DUSK", 9);
-  const fee = duskFormatter(
-    settings.gasPrice * settings.gasLimit * 0.000000001
-  );
+  const fee = settings.gasPrice * settings.gasLimit;
 
   const baseProps = {
     fee: fee,
-    limit: 20000000,
-    limitLower: 10000000,
-    limitUpper: 1000000000,
-    price: 1,
-    priceLower: 1,
+    formatter: duskFormatter,
+    limit: 20000000n,
+    limitLower: 10000000n,
+    limitUpper: 1000000000n,
+    price: 1n,
+    priceLower: 1n,
   };
 
   const baseOptions = {
@@ -53,13 +52,13 @@ describe("GasSettings", () => {
     );
     const editButton = getByRole("button", { name: "EDIT" });
 
-    expect(() => getAllByRole("spinbutton")).toThrow();
+    expect(() => getAllByRole("textbox")).toThrow();
 
     await fireEvent.click(editButton);
 
     component.$on("gasSettings", eventHandler);
 
-    const [priceInput, limitInput] = getAllByRole("spinbutton");
+    const [priceInput, limitInput] = getAllByRole("textbox");
 
     await fireEvent.input(limitInput, {
       target: { value: baseProps.limitLower },
@@ -72,13 +71,13 @@ describe("GasSettings", () => {
     });
 
     await fireEvent.input(priceInput, {
-      target: { value: baseProps.price * 2 },
+      target: { value: baseProps.price * 2n },
     });
 
     expect(eventHandler).toHaveBeenCalledTimes(2);
     expect(eventHandler.mock.lastCall?.[0].detail).toStrictEqual({
       limit: baseProps.limitLower,
-      price: baseProps.price * 2,
+      price: baseProps.price * 2n,
     });
   });
 });

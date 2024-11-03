@@ -46,7 +46,6 @@
     "lamb": "0.61.1",
     "qr-scanner": "1.4.2",
     "qrcode": "1.5.3",
-    "svelte-persisted-store": "0.11.0",
     "viem": "2.19.8",
     "web-streams-polyfill": "4.0.0"
   },

@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make address field only vertically resizable (Send flow) [#2435]
 - Update `Stake` to use `Stepper` [#2436]
 - Update textfield input to use the small control sizing [#2498]
+- Update GasSettings and related properties to BigInt type [#2778]
 
 ### Fixed
 
@@ -282,6 +283,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2532]: https://github.com/dusk-network/rusk/issues/2532
 [#2696]: https://github.com/dusk-network/rusk/issues/2696
 [#2776]: https://github.com/dusk-network/rusk/issues/2776
+[#2776]: https://github.com/dusk-network/rusk/issues/2778
 
 <!-- VERSIONS -->
 

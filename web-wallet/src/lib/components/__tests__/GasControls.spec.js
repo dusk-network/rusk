@@ -18,11 +18,11 @@ function asInput(element) {
 
 describe("GasControls", () => {
   const baseProps = {
-    limit: 20,
-    limitLower: 10,
-    limitUpper: 100,
-    price: 10,
-    priceLower: 1,
+    limit: 20n,
+    limitLower: 10n,
+    limitUpper: 100n,
+    price: 10n,
+    priceLower: 1n,
   };
   const baseOptions = {
     props: baseProps,
@@ -37,14 +37,7 @@ describe("GasControls", () => {
   });
 
   it("should render the `GasControls` component", () => {
-    const { container, getByLabelText } = render(GasControls, baseOptions);
-    const priceInput = asInput(getByLabelText(/price/i));
-    const limitInput = asInput(getByLabelText(/limit/i));
-
-    expect(priceInput.max).toBe(baseProps.limit.toString());
-    expect(priceInput.min).toBe(baseProps.priceLower.toString());
-    expect(limitInput.max).toBe(baseProps.limitUpper.toString());
-    expect(limitInput.min).toBe(baseProps.limitLower.toString());
+    const { container } = render(GasControls, baseOptions);
     expect(container).toMatchSnapshot();
   });
 
@@ -60,18 +53,17 @@ describe("GasControls", () => {
     expect(eventHandler).toHaveBeenCalledTimes(1);
     expect(eventHandler.mock.lastCall?.[0].detail).toStrictEqual({
       limit: baseProps.limit,
-      price: 15,
+      price: 15n,
     });
-    expect(priceInput.valueAsNumber).toBe(15);
+    expect(BigInt(priceInput.value)).toBe(15n);
 
     await fireInput(limitInput, 25);
 
     expect(eventHandler).toHaveBeenCalledTimes(2);
     expect(eventHandler.mock.lastCall?.[0].detail).toStrictEqual({
-      limit: 25,
-      price: 15,
+      limit: 25n,
+      price: 15n,
     });
-    expect(limitInput.valueAsNumber).toBe(25);
-    expect(priceInput.max).toBe("25");
+    expect(BigInt(limitInput.value)).toBe(25n);
   });
 });

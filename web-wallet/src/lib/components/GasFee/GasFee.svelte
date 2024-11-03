@@ -1,15 +1,21 @@
 <script>
   import { logo } from "$lib/dusk/icons";
   import { Icon } from "$lib/dusk/components";
+  import { luxToDusk } from "$lib/dusk/currency";
 
-  /** @type {string} */
+  /** @type {bigint} */
   export let fee;
+
+  /** @type {(amount: number) => string} */
+  export let formatter;
 </script>
 
 <div class="gas-fee">
   <span>Fee:</span>
   <div class="gas-fee__amount">
-    <div class="gas-fee__amount-value"><span>max</span> <span>{fee}</span></div>
+    <div class="gas-fee__amount-value">
+      <span>max</span> <span>{formatter(luxToDusk(fee))}</span>
+    </div>
     <Icon
       className="dusk-amount__icon"
       path={logo}

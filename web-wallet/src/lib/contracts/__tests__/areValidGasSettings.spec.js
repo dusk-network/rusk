@@ -20,16 +20,16 @@ describe("areValidGasSettings", () => {
       areValidGasSettings(realStore.gasPriceLower, realStore.gasLimitLower)
     ).toBe(true);
 
-    expect(areValidGasSettings(realStore.gasPriceLower + 1, 0)).toBe(false);
+    expect(areValidGasSettings(realStore.gasPriceLower + 1n, 0n)).toBe(false);
 
     expect(
-      areValidGasSettings(realStore.gasPriceLower, realStore.gasLimitLower - 1)
+      areValidGasSettings(realStore.gasPriceLower, realStore.gasLimitLower - 1n)
     ).toBe(false);
 
     expect(
       areValidGasSettings(
-        realStore.gasPriceLower - 1,
-        realStore.gasLimitUpper * 2
+        realStore.gasPriceLower - 1n,
+        realStore.gasLimitUpper * 2n
       )
     ).toBe(false);
 

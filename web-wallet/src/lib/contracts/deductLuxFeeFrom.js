@@ -7,10 +7,10 @@ import { duskToLux, luxToDusk } from "$lib/dusk/currency";
  * the given amount.
  *
  * @param {number} duskAmount
- * @param {number} luxFee
+ * @param {bigint} luxFee
  * @returns {number}
  */
 const deductLuxFeeFrom = (duskAmount, luxFee) =>
-  +luxToDusk(duskToLux(duskAmount) - BigInt(luxFee)).toFixed(9);
+  +luxToDusk(duskToLux(duskAmount) - luxFee).toFixed(9);
 
 export default deductLuxFeeFrom;

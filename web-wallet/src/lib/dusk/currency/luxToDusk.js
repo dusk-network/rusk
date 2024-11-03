@@ -2,9 +2,6 @@ const scaleFactorAsNumber = 1e9;
 const scaleFactorAsBigInt = BigInt(scaleFactorAsNumber);
 
 /**
- * Temporary conversion: in the near future
- * we will accept only BigInt as input.
- *
  * @param {bigint} n
  * @returns {number}
  */
