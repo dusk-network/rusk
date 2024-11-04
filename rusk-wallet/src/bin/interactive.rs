@@ -272,8 +272,8 @@ pub(crate) fn load_wallet(
                 password,
                 DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
             )?;
-            // display the recovery phrase
-            prompt::confirm_recovery_phrase(&mnemonic)?;
+            // display the mnemonic phrase
+            prompt::confirm_mnemonic_phrase(&mnemonic)?;
             // create and store the wallet
             let mut w = Wallet::new(mnemonic)?;
             let path = wallet_path.clone();
@@ -281,8 +281,8 @@ pub(crate) fn load_wallet(
             w
         }
         MainMenu::Recover => {
-            // ask user for 12-word recovery phrase
-            let phrase = prompt::request_recovery_phrase()?;
+            // ask user for 12-word mnemonic phrase
+            let phrase = prompt::request_mnemonic_phrase()?;
             // ask user for a password to secure the wallet, create the latest
             // wallet file from the seed
             let pwd = prompt::create_password(
@@ -323,12 +323,12 @@ fn menu_wallet(wallet_found: Option<WalletPath>) -> anyhow::Result<MainMenu> {
             .add(MainMenu::Create, "Replace your wallet with a new one")
             .add(
                 MainMenu::Recover,
-                "Replace your wallet with a lost one using the recovery phrase",
+                "Replace your wallet with a lost one using the mnemonic phrase",
             )
     } else {
         menu = menu.add(MainMenu::Create, "Create a new wallet").add(
             MainMenu::Recover,
-            "Access a lost wallet using the recovery phrase",
+            "Access a lost wallet using the mnemonic phrase",
         )
     }
 

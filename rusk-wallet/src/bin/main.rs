@@ -91,7 +91,7 @@ where
 
             let msg = match e.kind() {
                 ErrorKind::InvalidArgument => {
-                    format!("You seem to try access a wallet with a different seed-phrase \n\r\n\r{0: <1} delete the cache? (Alternatively specify the --wallet-dir flag to add a new wallet under the given path)", "[ALERT]")
+                    format!("You seem to try access a wallet with a different mnemonic phrase\n\r\n\r{0: <1} delete the cache? (Alternatively specify the --wallet-dir flag to add a new wallet under the given path)", "[ALERT]")
                 },
                 ErrorKind::Corruption => {
                        format!("The database appears to be corrupted \n\r\n\r{0: <1} delete the cache?", "[ALERT]")
@@ -231,7 +231,7 @@ async fn exec() -> anyhow::Result<()> {
                         file.write_all(mnemonic.phrase().as_bytes())?
                     }
                     // skip phrase confirmation if explicitly
-                    (false, _) => prompt::confirm_recovery_phrase(&mnemonic)?,
+                    (false, _) => prompt::confirm_mnemonic_phrase(&mnemonic)?,
                     _ => {}
                 }
 
@@ -269,8 +269,8 @@ async fn exec() -> anyhow::Result<()> {
                     // Use the latest dat file version when there's no dat file
                     // provided when restoring the wallet
                     None => {
-                        // ask user for 12-word recovery phrase
-                        let phrase = prompt::request_recovery_phrase()?;
+                        // ask user for 12-word mnemonic phrase
+                        let phrase = prompt::request_mnemonic_phrase()?;
                         // ask user for a password to secure the wallet
                         let pwd = prompt::create_password(
                             password,

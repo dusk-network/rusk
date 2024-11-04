@@ -27,12 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `--profile` flag to `--wallet-dir` [#2682]
 - Change Rusk wallet name and version information [#2647]
 - Update Clap from v3 to workspace v4 [#2489]
+- Rename all instances of recovery phrase to mnemonic phrase [#2839]
 
 ### Fix
 
 - Fix stake info for inactive stakes with rewards [#2766]
 - Fix Moonlight stake reward withdrawal [#2523]
 
+[#2839]: https://github.com/dusk-network/rusk/issues/2839
 [#2768]: https://github.com/dusk-network/rusk/issues/2768
 [#2766]: https://github.com/dusk-network/rusk/issues/2766
 [#2708]: https://github.com/dusk-network/rusk/issues/2708
