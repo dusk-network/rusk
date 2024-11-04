@@ -8,6 +8,7 @@ import * as ProtocolDriver from "../protocol-driver/mod.js";
 
 import { Rues } from "../rues/mod.js";
 import { Node } from "./components/node.js";
+import { Blocks } from "./components/blocks.js";
 import { Transactions } from "./components/transactions.js";
 import { Contracts } from "./components/contracts.js";
 import { Gas } from "./gas.js";
@@ -35,6 +36,7 @@ export class Network {
   constructor(url, options = {}) {
     this.#rues = new Rues(url, options);
     this.node = new Node(this.#rues);
+    this.blocks = new Blocks(this.#rues);
     this.contracts = new Contracts(this.#rues);
     this.transactions = new Transactions(this.#rues);
   }

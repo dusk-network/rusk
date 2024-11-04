@@ -15,23 +15,27 @@ export class Node {
     this.#scope = rues.scope("node");
   }
 
-  async info() {
+  get info() {
     if (this.#info) {
       return this.#info;
     }
 
-    const response = await this.#scope.call.info();
-
-    const data = await response.json();
-
-    const info = Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [snakeToCamel(key), value]),
-    );
-
-    info.chainId = info.chainId ?? 0;
-    this.#info = Object.freeze(info);
-
-    return this.#info;
+    return this.#scope.call
+      .info()
+      .then((r) => r.json())
+      .then((data) =>
+        Object.fromEntries(
+          Object.entries(data).map(([key, value]) => [
+            snakeToCamel(key),
+            value,
+          ]),
+        ),
+      )
+      .then((info) => {
+        info.chainId = info.chainId ?? 0;
+        this.#info = Object.freeze(info);
+        return this.#info;
+      });
   }
 
   crs() {

@@ -75,7 +75,7 @@ export class TransactionBuilder {
     const nullifiers = [...picked.keys()];
 
     // Get the chain id from the network
-    const { chainId } = await network.node.info();
+    const { chainId } = await network.node.info;
 
     // Create the unproven transaction
     let [tx, circuits] = await ProtocolDriver.phoenix({
@@ -111,7 +111,7 @@ export class TransactionBuilder {
     const receiver = this.#to;
 
     // Get the chain id from the network
-    const { chainId } = await network.node.info();
+    const { chainId } = await network.node.info;
 
     // Get the nonce
     let { nonce } = await this.#bookkeeper.balance(sender);

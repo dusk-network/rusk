@@ -21,7 +21,7 @@ test("Network connection", async () => {
 
   assert.ok(!network.connected);
 
-  assert.equal(Object.keys(await network.node.info()), [
+  assert.equal(Object.keys(await network.node.info), [
     "bootstrappingNodes",
     "chainId",
     "kadcastAddress",
@@ -34,6 +34,19 @@ test("Network block height", async () => {
   const network = await Network.connect("http://localhost:8080/");
 
   assert.ok((await network.blockHeight) > 0);
+
+  await network.disconnect();
+});
+
+test("Network gas price", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+
+  const price = await network.blocks.gasPrice;
+
+  assert.equal(typeof price.average, "bigint");
+  assert.equal(typeof price.max, "bigint");
+  assert.equal(typeof price.median, "bigint");
+  assert.equal(typeof price.min, "bigint");
 
   await network.disconnect();
 });
