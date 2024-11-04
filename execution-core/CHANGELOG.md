@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added `groth16` module allowing for proof generation and verification
+- Add `groth16` module allowing for proof generation and verification
+- Derive `PartialEq` for `Error`
 
 ## [0.1.0] - 2024-09-10
 

@@ -10,7 +10,7 @@ use alloc::string::String;
 use core::fmt;
 
 /// The execution-core error type.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     /// There is not sufficient balance to cover the transaction costs.
     InsufficientBalance,
