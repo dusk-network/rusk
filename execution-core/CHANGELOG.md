@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `groth16` module allowing for proof generation and verification
 - Derive `PartialEq` for `Error`
+- Add tests for transaction-creation
 
 ## [0.1.0] - 2024-09-10
 
