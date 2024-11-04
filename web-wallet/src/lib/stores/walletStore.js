@@ -51,14 +51,29 @@ const { set, subscribe, update } = walletStore;
 const treasury = new WalletTreasury();
 const bookkeeper = new Bookkeeper(treasury);
 
-/** @type {<T>(action: (...args: any[]) => Promise<T>) => Promise<T>} */
-const effectfulAction = (action) => sync().then(action).finally(updateBalance);
-
 const getCurrentAccount = () => get(walletStore).currentProfile?.account;
 const getCurrentAddress = () => get(walletStore).currentProfile?.address;
 
 /** @type {(...args: any) => Promise<void>} */
 const asyncNoopFailure = () => Promise.reject(new Error("Not implemented"));
+
+/** @type {(txInfo: TransactionInfo) => void} */
+const observeTxRemoval = (txInfo) => {
+  networkStore.connect().then((network) =>
+    network.transactions
+      .withId(txInfo.hash)
+      .once.removed()
+      .then(() => sync())
+      .finally(updateBalance)
+  );
+};
+
+/** @type {<T>(fn: (v: T) => any) => (a: T) => T} */
+const passThruWithEffects = (fn) => (a) => {
+  fn(a);
+
+  return a;
+};
 
 /** @type {() => Promise<void>} */
 const updateBalance = async () => {
@@ -255,35 +270,30 @@ async function sync(fromBlock) {
 
 /** @type {WalletStoreServices["transfer"]} */
 const transfer = async (to, amount, gas) =>
-  effectfulAction(() =>
-    networkStore
-      .connect()
-      .then((network) => {
-        const tx = bookkeeper.transfer(amount).to(b58.decode(to)).gas(gas);
+  sync()
+    .then(networkStore.connect)
+    .then((network) => {
+      const tx = bookkeeper.transfer(amount).to(b58.decode(to)).gas(gas);
 
-        return network.execute(
-          ProfileGenerator.typeOf(to) === "address"
-            ? tx.from(getCurrentAddress()).obfuscated()
-            : tx.from(getCurrentAccount())
-        );
-      })
-      .then(
-        /** @type {(txInfo: TransactionInfo) => Promise<TransactionInfo>} */ async (
-          txInfo
-        ) => {
-          /**
-           * For now we ignore the possible error while
-           * writing the pending notes info, as we'll
-           * change soon how they are handled (probably by w3sper directly).
-           */
-          await walletCache
-            .setPendingNoteInfo(txInfo.nullifiers, txInfo.hash)
-            .catch(() => {});
+      return network.execute(
+        ProfileGenerator.typeOf(to) === "address"
+          ? tx.from(getCurrentAddress()).obfuscated()
+          : tx.from(getCurrentAccount())
+      );
+    })
+    .then(async (txInfo) => {
+      /**
+       * For now we ignore the possible error while
+       * writing the pending notes info, as we'll
+       * change soon how they are handled (probably by w3sper directly).
+       */
+      await walletCache
+        .setPendingNoteInfo(txInfo.nullifiers, txInfo.hash)
+        .catch(() => {});
 
-          return txInfo;
-        }
-      )
-  );
+      return txInfo;
+    })
+    .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["unstake"]} */
 const unstake = async (gasSettings) => asyncNoopFailure(gasSettings);

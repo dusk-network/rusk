@@ -113,7 +113,7 @@ type WalletStoreServices = {
     to: string,
     amount: bigint,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
-  ) => Promise<any>;
+  ) => Promise<TransactionInfo>;
 
   unstake: (gas: import("$lib/vendor/w3sper.js/src/mod").Gas) => Promise<any>;
 
