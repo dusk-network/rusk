@@ -55,10 +55,10 @@ describe("Wallet store", async () => {
     });
 
   const getCachedBalanceSpy = vi
-    .spyOn(walletCache, "getBalance")
+    .spyOn(walletCache, "getBalanceInfo")
     .mockResolvedValue(cachedBalance);
   const setCachedBalanceSpy = vi
-    .spyOn(walletCache, "setBalance")
+    .spyOn(walletCache, "setBalanceInfo")
     .mockResolvedValue(undefined);
   const setProfilesSpy = vi.spyOn(WalletTreasury.prototype, "setProfiles");
   const treasuryUpdateSpy = vi.spyOn(WalletTreasury.prototype, "update");
@@ -223,14 +223,15 @@ describe("Wallet store", async () => {
     const amount = 150_000_000_000n;
     const gas = new Gas({ limit: 500n, price: 1n });
 
-    const txResult = {
+    const phoenixTxResult = {
       hash: "some-tx-id",
       nullifiers: [],
     };
 
     const executeSpy = vi
       .spyOn(Network.prototype, "execute")
-      .mockResolvedValue(txResult);
+      .mockResolvedValue(phoenixTxResult);
+    const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
 
     beforeEach(async () => {
       await walletStore.init(profileGenerator);
@@ -251,11 +252,13 @@ describe("Wallet store", async () => {
 
       cacheClearSpy.mockClear();
       executeSpy.mockClear();
+      setPendingNotesSpy.mockClear();
     });
 
     afterAll(() => {
       cacheClearSpy.mockRestore();
       executeSpy.mockRestore();
+      setPendingNotesSpy.mockRestore();
     });
 
     it("should expose a method to clear local data", async () => {
@@ -340,7 +343,6 @@ describe("Wallet store", async () => {
     it("should expose a method to execute a phoenix transfer, if the receiver is a phoenix address", async () => {
       vi.useRealTimers();
 
-      const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
       const expectedTx = {
         amount,
         from: fromAddress,
@@ -354,12 +356,13 @@ describe("Wallet store", async () => {
 
       // our TransactionBuilder mock is loaded
       expect(executeSpy.mock.calls[0][0].toJSON()).toStrictEqual(expectedTx);
+      expect(setCachedBalanceSpy).not.toHaveBeenCalled();
       expect(setPendingNotesSpy).toHaveBeenCalledTimes(1);
       expect(setPendingNotesSpy).toHaveBeenCalledWith(
-        txResult.nullifiers,
-        txResult.hash
+        phoenixTxResult.nullifiers,
+        phoenixTxResult.hash
       );
-      expect(result).toBe(txResult);
+      expect(result).toBe(phoenixTxResult);
 
       // check that we made a sync before the transfer
       expect(treasuryUpdateSpy).toHaveBeenCalledTimes(1);
@@ -373,7 +376,7 @@ describe("Wallet store", async () => {
 
       // hacky check that we used the correct API through our Transactions mock
       const expectedScope = {
-        id: txResult.hash,
+        id: phoenixTxResult.hash,
         name: "transactions",
         once: true,
       };
@@ -408,13 +411,21 @@ describe("Wallet store", async () => {
         balanceSpy.mock.invocationCallOrder[1]
       );
 
-      setPendingNotesSpy.mockRestore();
-
       vi.useFakeTimers();
     });
 
     it("should use the moonlight account and shouldn't obfuscate the transaction if the receiver is a moonlight account", async () => {
       vi.useRealTimers();
+
+      const currentlyCachedBalance = await walletCache.getBalanceInfo(
+        defaultProfile.address.toString()
+      );
+      const newNonce = currentlyCachedBalance.unshielded.nonce + 1n;
+
+      executeSpy.mockResolvedValueOnce({
+        hash: phoenixTxResult.hash,
+        nonce: newNonce,
+      });
 
       const expectedTx = {
         amount,
@@ -428,6 +439,18 @@ describe("Wallet store", async () => {
 
       // our TransactionBuilder mock is loaded
       expect(executeSpy.mock.calls[0][0].toJSON()).toStrictEqual(expectedTx);
+      expect(setPendingNotesSpy).not.toHaveBeenCalled();
+      expect(setCachedBalanceSpy).toHaveBeenCalledTimes(1);
+      expect(setCachedBalanceSpy).toHaveBeenCalledWith(
+        defaultProfile.address.toString(),
+        {
+          ...currentlyCachedBalance,
+          unshielded: {
+            ...currentlyCachedBalance.unshielded,
+            nonce: newNonce,
+          },
+        }
+      );
 
       vi.useFakeTimers();
     });

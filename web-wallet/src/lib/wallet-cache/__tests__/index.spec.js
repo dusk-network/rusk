@@ -84,14 +84,14 @@ describe("Wallet cache", () => {
     it("should expose a method to retrieve the cached balance for a given address", async () => {
       for (const balanceInfo of cacheBalances) {
         await expect(
-          walletCache.getBalance(balanceInfo.address)
+          walletCache.getBalanceInfo(balanceInfo.address)
         ).resolves.toStrictEqual(balanceInfo.balance);
       }
     });
 
     it("should return an empty balance if none is stored in the cache for the supplied address", async () => {
       await expect(
-        walletCache.getBalance("fake-address")
+        walletCache.getBalanceInfo("fake-address")
       ).resolves.toStrictEqual({
         shielded: { spendable: 0n, value: 0n },
         unshielded: { nonce: 0n, value: 0n },
@@ -569,21 +569,21 @@ describe("Wallet cache", () => {
         },
       };
 
-      await walletCache.setBalance(newBalance.address, newBalance.balance);
+      await walletCache.setBalanceInfo(newBalance.address, newBalance.balance);
 
       for (const balanceInfo of cacheBalances.concat(newBalance)) {
         await expect(
-          walletCache.getBalance(balanceInfo.address)
+          walletCache.getBalanceInfo(balanceInfo.address)
         ).resolves.toStrictEqual(balanceInfo.balance);
       }
 
-      await walletCache.setBalance(
+      await walletCache.setBalanceInfo(
         cacheBalances[0].address,
         newBalance.balance
       );
 
       await expect(
-        walletCache.getBalance(cacheBalances[0].address)
+        walletCache.getBalanceInfo(cacheBalances[0].address)
       ).resolves.toStrictEqual(newBalance.balance);
     });
 

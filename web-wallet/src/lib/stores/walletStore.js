@@ -1,5 +1,5 @@
 import { get, writable } from "svelte/store";
-import { setKey } from "lamb";
+import { setKey, setPathIn } from "lamb";
 import {
   Bookkeeper,
   Bookmark,
@@ -92,7 +92,7 @@ const updateBalance = async () => {
    * a nice to have for the user.
    */
   await walletCache
-    .setBalance(currentProfile.address.toString(), balance)
+    .setBalanceInfo(currentProfile.address.toString(), balance)
     .catch(() => {});
 
   update((currentStore) => ({
@@ -130,7 +130,7 @@ const getTransactionsHistory = async () => transactions;
 async function init(profileGenerator, syncFromBlock) {
   const currentProfile = await profileGenerator.default;
   const currentAddress = currentProfile.address.toString();
-  const cachedBalance = await walletCache.getBalance(currentAddress);
+  const cachedBalance = await walletCache.getBalanceInfo(currentAddress);
 
   treasury.setProfiles([currentProfile]);
 
@@ -281,18 +281,38 @@ const transfer = async (to, amount, gas) =>
           : tx.from(getCurrentAccount())
       );
     })
-    .then(async (txInfo) => {
-      /**
-       * For now we ignore the possible error while
-       * writing the pending notes info, as we'll
-       * change soon how they are handled (probably by w3sper directly).
-       */
-      await walletCache
-        .setPendingNoteInfo(txInfo.nullifiers, txInfo.hash)
-        .catch(() => {});
+    .then(
+      /** @type {(txInfo: TransactionInfo) => Promise<TransactionInfo>} */ async (
+        txInfo
+      ) => {
+        // we did a phoenix transaction
+        if ("nullifiers" in txInfo) {
+          /**
+           * For now we ignore the possible error while
+           * writing the pending notes info, as we'll
+           * change soon how they are handled (probably by w3sper directly).
+           */
+          await walletCache
+            .setPendingNoteInfo(txInfo.nullifiers, txInfo.hash)
+            .catch(() => {});
+        } else {
+          const address = String(getCurrentAddress());
+          const currentBalance = await walletCache.getBalanceInfo(address);
 
-      return txInfo;
-    })
+          /**
+           * We update the stored `nonce` so that if a transaction is made
+           * before the sync gives us an updated one, the transaction
+           * won't be rejected by reusing the old value.
+           */
+          await walletCache.setBalanceInfo(
+            address,
+            setPathIn(currentBalance, "unshielded.nonce", txInfo.nonce)
+          );
+        }
+
+        return txInfo;
+      }
+    )
     .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["unstake"]} */
