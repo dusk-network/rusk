@@ -361,19 +361,40 @@ describe("Wallet store", async () => {
       );
       expect(result).toBe(txResult);
 
-      // check that we made a sync before the transfer and the balance update afterwards
+      // check that we made a sync before the transfer
       expect(treasuryUpdateSpy).toHaveBeenCalledTimes(1);
-      expect(balanceSpy).toHaveBeenCalledTimes(2);
-      expect(balanceSpy).toHaveBeenNthCalledWith(1, defaultProfile.address);
-      expect(balanceSpy).toHaveBeenNthCalledWith(2, defaultProfile.account);
+
+      // but the balance is not updated yet
+      expect(balanceSpy).not.toHaveBeenCalled();
+
       expect(treasuryUpdateSpy.mock.invocationCallOrder[0]).toBeLessThan(
         executeSpy.mock.invocationCallOrder[0]
       );
+
+      // hacky check that we used the correct API through our Transactions mock
+      const expectedScope = {
+        id: txResult.hash,
+        name: "transactions",
+        once: true,
+      };
+
+      // this will trigger the resolve in the `removed` promise
+      dispatchEvent(
+        new CustomEvent("transaction::removed", { detail: expectedScope })
+      );
+
+      // check that a sync starts after the transaction is removed from the mempool
+      await vi.waitUntil(() => treasuryUpdateSpy.mock.calls.length === 2);
+
+      // check that the balance is updated afterwards
+      expect(balanceSpy).toHaveBeenCalledTimes(2);
+      expect(balanceSpy).toHaveBeenNthCalledWith(1, defaultProfile.address);
+      expect(balanceSpy).toHaveBeenNthCalledWith(2, defaultProfile.account);
       expect(balanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
-        executeSpy.mock.invocationCallOrder[0]
+        treasuryUpdateSpy.mock.invocationCallOrder[1]
       );
       expect(balanceSpy.mock.invocationCallOrder[1]).toBeGreaterThan(
-        executeSpy.mock.invocationCallOrder[0]
+        treasuryUpdateSpy.mock.invocationCallOrder[1]
       );
       expect(setCachedBalanceSpy).toHaveBeenCalledTimes(1);
       expect(setCachedBalanceSpy).toHaveBeenCalledWith(
