@@ -110,11 +110,11 @@ pub trait Ledger {
 
 pub trait ConsensusStorage {
     /// Candidate Storage
-    fn store_candidate_block(&self, cm: Block) -> Result<()>;
-    fn fetch_candidate_block(&self, hash: &[u8]) -> Result<Option<Block>>;
+    fn store_candidate(&self, cm: Block) -> Result<()>;
+    fn candidate(&self, hash: &[u8]) -> Result<Option<Block>>;
 
     /// Fetches a candidate block by lookup key (prev_block_hash, iteration).
-    fn fetch_candidate_block_by_iteration(
+    fn candidate_by_iteration(
         &self,
         ch: &ConsensusHeader,
     ) -> Result<Option<Block>>;
@@ -134,7 +134,7 @@ pub trait ConsensusStorage {
         vr: &payload::ValidationResult,
     ) -> Result<()>;
 
-    fn fetch_validation_result(
+    fn validation_result(
         &self,
         ch: &ConsensusHeader,
     ) -> Result<Option<payload::ValidationResult>>;

@@ -594,7 +594,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the block is successfully stored, or an error if the
     /// operation fails.
-    fn store_candidate_block(&self, b: Block) -> Result<()> {
+    fn store_candidate(&self, b: Block) -> Result<()> {
         let mut serialized = vec![];
         b.write(&mut serialized)?;
 
@@ -618,7 +618,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(Some(block))` if the block is found, `Ok(None)` if the block
     /// is not found, or an error if the operation fails.
-    fn fetch_candidate_block(&self, hash: &[u8]) -> Result<Option<Block>> {
+    fn candidate(&self, hash: &[u8]) -> Result<Option<Block>> {
         if let Some(blob) = self.snapshot.get_cf(self.candidates_cf, hash)? {
             let b = Block::read(&mut &blob[..])?;
             return Ok(Some(b));
@@ -628,7 +628,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
         Ok(None)
     }
 
-    fn fetch_candidate_block_by_iteration(
+    fn candidate_by_iteration(
         &self,
         consensus_header: &ConsensusHeader,
     ) -> Result<Option<Block>> {
@@ -733,7 +733,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     /// Returns `Ok(Some(ValidationResult))` if the ValidationResult is found,
     /// `Ok(None)` if the ValidationResult is not found, or an error if the
     /// operation fails.
-    fn fetch_validation_result(
+    fn validation_result(
         &self,
         consensus_header: &ConsensusHeader,
     ) -> Result<Option<payload::ValidationResult>> {

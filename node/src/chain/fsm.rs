@@ -379,10 +379,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             {
                 // If Quorum is for at height tip+1 or tip (but for a different
                 // candidate) we try to fetch the candidate from the DB
-                let res = db
-                    .read()
-                    .await
-                    .view(|t| t.fetch_candidate_block(&candidate));
+                let res = db.read().await.view(|t| t.candidate(&candidate));
 
                 match res {
                     Ok(b) => b,

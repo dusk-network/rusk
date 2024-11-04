@@ -209,11 +209,7 @@ impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
             event = "store candidate block",
             height, iter, hash, prev_hash
         );
-        let _ = self
-            .db
-            .read()
-            .await
-            .update(|txn| txn.store_candidate_block(b));
+        let _ = self.db.read().await.update(|txn| txn.store_candidate(b));
     }
     async fn store_validation_result(
         &mut self,

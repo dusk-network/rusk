@@ -374,7 +374,7 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            if db.fetch_candidate_block(hash)?.is_none() {
+                            if db.candidate(hash)?.is_none() {
                                 inv.add_candidate_from_hash(*hash);
                             }
                         }
@@ -388,17 +388,14 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromIteration => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            if db
-                                .fetch_candidate_block_by_iteration(ch)?
-                                .is_none()
-                            {
+                            if db.candidate_by_iteration(ch)?.is_none() {
                                 inv.add_candidate_from_iteration(*ch);
                             }
                         }
                     }
                     InvType::ValidationResult => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            if db.fetch_validation_result(ch)?.is_none() {
+                            if db.validation_result(ch)?.is_none() {
                                 inv.add_validation_result(*ch);
                             }
                         }
@@ -468,13 +465,7 @@ impl DataBrokerSrv {
                             db.fetch_block(hash)
                                 .ok()
                                 .flatten()
-                                .or_else(|| {
-                                    ConsensusStorage::fetch_candidate_block(
-                                        &db, hash,
-                                    )
-                                    .ok()
-                                    .flatten()
-                                })
+                                .or_else(|| db.candidate(hash).ok().flatten())
                                 .map(Message::from)
                         } else {
                             None
@@ -492,28 +483,25 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromIteration => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            db.fetch_candidate_block_by_iteration(ch)
-                                .ok()
-                                .flatten()
-                                .map(|candidate| {
+                            db.candidate_by_iteration(ch).ok().flatten().map(
+                                |candidate| {
                                     Message::from(payload::Candidate {
                                         candidate,
                                     })
-                                })
+                                },
+                            )
                         } else {
                             None
                         }
                     }
                     InvType::ValidationResult => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            db.fetch_validation_result(ch).ok().flatten().map(
-                                |vr| {
-                                    Message::from(payload::ValidationQuorum {
-                                        header: *ch,
-                                        result: vr,
-                                    })
-                                },
-                            )
+                            db.validation_result(ch).ok().flatten().map(|vr| {
+                                Message::from(payload::ValidationQuorum {
+                                    header: *ch,
+                                    result: vr,
+                                })
+                            })
                         } else {
                             None
                         }
