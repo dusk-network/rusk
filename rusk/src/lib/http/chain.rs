@@ -240,7 +240,7 @@ impl RuskNode {
                 .read()
                 .await
                 .view(|t| -> anyhow::Result<Vec<u64>> {
-                    Ok(t.get_txs_ids_sorted_by_fee()?
+                    Ok(t.mempool_txs_ids_sorted_by_fee()?
                         .take(max_transactions)
                         .map(|(gas_price, _)| gas_price)
                         .collect())

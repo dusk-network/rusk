@@ -59,11 +59,10 @@ pub async fn mempool<'a>(
     ctx: &Context<'_>,
 ) -> FieldResult<Vec<Transaction<'a>>> {
     let (db, _) = ctx.data::<DBContext>()?;
-    let transactions = db.read().await.view(|t| {
-        let txs = t.get_txs_sorted_by_fee()?.map(|t| t.into()).collect();
-        Ok::<_, async_graphql::Error>(txs)
-    })?;
-    Ok(transactions)
+    db.read().await.view(|db| {
+        let txs = db.mempool_txs_sorted_by_fee()?.map(|t| t.into()).collect();
+        Ok(txs)
+    })
 }
 
 pub async fn mempool_by_hash<'a>(
@@ -73,6 +72,6 @@ pub async fn mempool_by_hash<'a>(
     let (db, _) = ctx.data::<DBContext>()?;
     let hash = &hex::decode(hash)?[..];
     let hash = hash.try_into()?;
-    let tx = db.read().await.view(|t| t.get_tx(hash))?;
+    let tx = db.read().await.view(|db| db.mempool_tx(hash))?;
     Ok(tx.map(|t| t.into()))
 }
