@@ -117,10 +117,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
                     // Remove expired transactions from the mempool
                     db.read().await.update(|db| {
-                        let expired_txs = db.get_expired_txs(expiration_time)?;
+                        let expired_txs = db.mempool_expired_txs(expiration_time)?;
                         for tx_id in expired_txs {
                             info!(event = "expired_tx", hash = hex::encode(tx_id));
-                            for deleted_tx_id in db.delete_tx(tx_id, true)? {
+                            for deleted_tx_id in db.delete_mempool_tx(tx_id, true)? {
                                 let event = TransactionEvent::Removed(deleted_tx_id);
                                 if let Err(e) = self.event_sender.try_send(event.into()) {
                                     warn!("cannot notify mempool removed transaction {e}")
@@ -227,7 +227,7 @@ impl MempoolSrv {
         // Perform basic checks on the transaction
         let tx_to_delete = db.read().await.view(|view| {
             // ensure transaction does not exist in the mempool
-            if view.get_tx_exists(tx_id)? {
+            if view.mempool_tx_exists(tx_id)? {
                 return Err(TxAcceptanceError::AlreadyExistsInMempool);
             }
 
@@ -236,11 +236,11 @@ impl MempoolSrv {
                 return Err(TxAcceptanceError::AlreadyExistsInLedger);
             }
 
-            let txs_count = view.txs_count();
+            let txs_count = view.mempool_txs_count();
             if txs_count >= max_mempool_txn_count {
                 // Get the lowest fee transaction to delete
                 let (lowest_price, to_delete) = view
-                    .get_txs_ids_sorted_by_low_fee()?
+                    .mempool_txs_ids_sorted_by_low_fee()?
                     .next()
                     .ok_or(anyhow::anyhow!("Cannot get lowest fee tx"))?;
 
@@ -273,7 +273,10 @@ impl MempoolSrv {
             db.read().await.view(|db| {
                 for nonce in state.nonce + 1..nonce_used {
                     let spending_id = SpendingId::AccountNonce(account, nonce);
-                    if db.get_txs_by_spendable_ids(&[spending_id]).is_empty() {
+                    if db
+                        .mempool_txs_by_spendable_ids(&[spending_id])
+                        .is_empty()
+                    {
                         return Err(TxAcceptanceError::VerificationFailed(
                             format!("Missing intermediate nonce {nonce}"),
                         ));
@@ -291,11 +294,11 @@ impl MempoolSrv {
 
             let mut replaced = false;
             // ensure spend_ids do not exist in the mempool
-            for m_tx_id in db.get_txs_by_spendable_ids(&spend_ids) {
-                if let Some(m_tx) = db.get_tx(m_tx_id)? {
+            for m_tx_id in db.mempool_txs_by_spendable_ids(&spend_ids) {
+                if let Some(m_tx) = db.mempool_tx(m_tx_id)? {
                     if m_tx.inner.gas_price() < tx.inner.gas_price() {
-                        for deleted_tx in db.delete_tx(m_tx_id, false)? {
-                            events.push(TransactionEvent::Removed(deleted_tx));
+                        for deleted in db.delete_mempool_tx(m_tx_id, false)? {
+                            events.push(TransactionEvent::Removed(deleted));
                             replaced = true;
                         }
                     } else {
@@ -310,7 +313,7 @@ impl MempoolSrv {
 
             if !replaced {
                 if let Some(to_delete) = tx_to_delete {
-                    for deleted in db.delete_tx(to_delete, true)? {
+                    for deleted in db.delete_mempool_tx(to_delete, true)? {
                         events.push(TransactionEvent::Removed(deleted));
                     }
                 }
@@ -319,7 +322,7 @@ impl MempoolSrv {
 
             let now = get_current_timestamp();
 
-            db.add_tx(tx, now)
+            db.store_mempool_tx(tx, now)
         })?;
         Ok(events)
     }

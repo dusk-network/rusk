@@ -258,7 +258,7 @@ impl DataBrokerSrv {
         db.read()
             .await
             .view(|t| {
-                for hash in t.get_txs_ids()? {
+                for hash in t.mempool_txs_ids()? {
                     inv.add_tx_id(hash);
                 }
 
@@ -353,49 +353,44 @@ impl DataBrokerSrv {
             max_entries = min(max_entries, m.max_entries as usize);
         }
 
-        let inv = db.read().await.view(|t| {
+        let inv = db.read().await.view(|db| {
             let mut inv = payload::Inv::default();
             for i in &m.inv_list {
                 debug!(event = "handle_inv", ?i);
                 match i.inv_type {
                     InvType::BlockFromHeight => {
                         if let InvParam::Height(height) = &i.param {
-                            if Ledger::fetch_block_by_height(&t, *height)?
-                                .is_none()
-                            {
+                            if db.fetch_block_by_height(*height)?.is_none() {
                                 inv.add_block_from_height(*height);
                             }
                         }
                     }
                     InvType::BlockFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            if Ledger::fetch_block(&t, hash)?.is_none() {
+                            if db.fetch_block(hash)?.is_none() {
                                 inv.add_block_from_hash(*hash);
                             }
                         }
                     }
                     InvType::CandidateFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            if ConsensusStorage::fetch_candidate_block(&t, hash)?
-                                .is_none()
-                            {
+                            if db.fetch_candidate_block(hash)?.is_none() {
                                 inv.add_candidate_from_hash(*hash);
                             }
                         }
                     }
                     InvType::MempoolTx => {
                         if let InvParam::Hash(tx_id) = &i.param {
-                            if Mempool::get_tx(&t, *tx_id)?.is_none() {
+                            if db.mempool_tx(*tx_id)?.is_none() {
                                 inv.add_tx_id(*tx_id);
                             }
                         }
                     }
                     InvType::CandidateFromIteration => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            if ConsensusStorage::fetch_candidate_block_by_iteration(
-                                &t, ch,
-                            )?
-                            .is_none()
+                            if db
+                                .fetch_candidate_block_by_iteration(ch)?
+                                .is_none()
                             {
                                 inv.add_candidate_from_iteration(*ch);
                             }
@@ -403,11 +398,7 @@ impl DataBrokerSrv {
                     }
                     InvType::ValidationResult => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            if ConsensusStorage::fetch_validation_result(
-                                &t, ch,
-                            )?
-                            .is_none()
-                            {
+                            if db.fetch_validation_result(ch)?.is_none() {
                                 inv.add_validation_result(*ch);
                             }
                         }
@@ -446,7 +437,7 @@ impl DataBrokerSrv {
             max_entries = min(max_entries, m.get_inv().max_entries as usize);
         }
 
-        db.read().await.view(|t| {
+        db.read().await.view(|db| {
             let res: Vec<Message> = m
                 .get_inv()
                 .inv_list
@@ -454,7 +445,7 @@ impl DataBrokerSrv {
                 .filter_map(|i| match i.inv_type {
                     InvType::BlockFromHeight => {
                         if let InvParam::Height(height) = &i.param {
-                            Ledger::fetch_block_by_height(&t, *height)
+                            db.fetch_block_by_height(*height)
                                 .ok()
                                 .flatten()
                                 .map(Message::from)
@@ -464,7 +455,7 @@ impl DataBrokerSrv {
                     }
                     InvType::BlockFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            Ledger::fetch_block(&t, hash)
+                            db.fetch_block(hash)
                                 .ok()
                                 .flatten()
                                 .map(Message::from)
@@ -474,13 +465,15 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            Ledger::fetch_block(&t, hash)
+                            db.fetch_block(hash)
                                 .ok()
                                 .flatten()
                                 .or_else(|| {
-                                    ConsensusStorage::fetch_candidate_block(&t, hash)
-                                        .ok()
-                                        .flatten()
+                                    ConsensusStorage::fetch_candidate_block(
+                                        &db, hash,
+                                    )
+                                    .ok()
+                                    .flatten()
                                 })
                                 .map(Message::from)
                         } else {
@@ -489,7 +482,7 @@ impl DataBrokerSrv {
                     }
                     InvType::MempoolTx => {
                         if let InvParam::Hash(tx_id) = &i.param {
-                            Mempool::get_tx(&t, *tx_id)
+                            db.mempool_tx(*tx_id)
                                 .ok()
                                 .flatten()
                                 .map(Message::from)
@@ -499,29 +492,28 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromIteration => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            ConsensusStorage::fetch_candidate_block_by_iteration(
-                                &t, ch,
-                            )
-                            .ok()
-                            .flatten()
-                            .map(|candidate| {
-                                Message::from(payload::Candidate { candidate })
-                            })
+                            db.fetch_candidate_block_by_iteration(ch)
+                                .ok()
+                                .flatten()
+                                .map(|candidate| {
+                                    Message::from(payload::Candidate {
+                                        candidate,
+                                    })
+                                })
                         } else {
                             None
                         }
                     }
                     InvType::ValidationResult => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            ConsensusStorage::fetch_validation_result(&t, ch)
-                                .ok()
-                                .flatten()
-                                .map(|vr| {
+                            db.fetch_validation_result(ch).ok().flatten().map(
+                                |vr| {
                                     Message::from(payload::ValidationQuorum {
                                         header: *ch,
                                         result: vr,
                                     })
-                                })
+                                },
+                            )
                         } else {
                             None
                         }

@@ -340,7 +340,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         let db = self.db.read().await;
         let (executed_txs, discarded_txs, verification_output) = db
             .view(|view| {
-                let txs = view.get_txs_sorted_by_fee().map_err(|err| {
+                let txs = view.mempool_txs_sorted_by_fee().map_err(|err| {
                     anyhow::anyhow!("failed to get mempool txs: {}", err)
                 })?;
                 let ret = vm.execute_state_transition(&params, txs).map_err(
@@ -351,7 +351,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             .map_err(OperationError::InvalidEST)?;
         let _ = db.update(|m| {
             for t in &discarded_txs {
-                if let Ok(_removed) = m.delete_tx(t.id(), true) {
+                if let Ok(_removed) = m.delete_mempool_tx(t.id(), true) {
                     // TODO: `_removed` entries should be sent to rues to inform
                     // the subscribers that a transaction has been pruned from
                     // the mempool
