@@ -45,7 +45,8 @@
   /** @type {string[]} */
   let mnemonicPhrase = $mnemonicPhraseResetStore;
 
-  let blockHeight = "0";
+  /** @type {bigint} */
+  let blockHeight = 0n;
 
   const { userId } = $settingsStore;
 
@@ -117,7 +118,7 @@
       showStepper={true}
       nextButton={{
         action: async () => {
-          await initializeWallet(mnemonicPhrase.join(" "), BigInt(blockHeight));
+          await initializeWallet(mnemonicPhrase.join(" "), blockHeight);
           mnemonicPhrase = [];
         },
         disabled: !isValidBlockHeight,

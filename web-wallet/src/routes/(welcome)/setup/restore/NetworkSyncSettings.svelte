@@ -3,18 +3,17 @@
 <script>
   import { mdiCubeOutline } from "@mdi/js";
 
-  import { Textbox } from "$lib/dusk/components";
   import { createNumberFormatter } from "$lib/dusk/number";
   import { makeClassName } from "$lib/dusk/string";
 
-  import { AppAnchor, Banner } from "$lib/components";
+  import { AppAnchor, Banner, BigIntInput } from "$lib/components";
   import { DOCUMENTATION_LINKS } from "$lib/constants";
   import { ToggleableCard } from "$lib/containers/Cards";
 
   import { networkStore, settingsStore } from "$lib/stores";
 
-  /** @type {string} */
-  export let blockHeight = "0";
+  /** @type {bigint} */
+  export let blockHeight = 0n;
 
   /** @type {boolean} */
   export let isValid = false;
@@ -25,33 +24,30 @@
   /** @type {bigint} */
   let currentNetworkBlock;
 
-  /** @type {(v: string) => bigint}*/
-  function blockHeightToBigInt(v) {
-    try {
-      return BigInt(v);
-    } catch (err) {
-      return -1n;
-    }
-  }
+  /** @type {boolean} */
+  let errorFetchingCurrentNetworkBlock;
 
   const { language } = $settingsStore;
   const numberFormatter = createNumberFormatter(language);
 
   const resetBlockHeight = () => {
-    blockHeight = "0";
+    blockHeight = 0n;
   };
 
-  networkStore.getCurrentBlockHeight().then((block) => {
-    currentNetworkBlock = block;
-  });
+  networkStore
+    .getCurrentBlockHeight()
+    .then((block) => {
+      currentNetworkBlock = block;
+    })
+    .catch(() => {
+      errorFetchingCurrentNetworkBlock = true;
+    });
 
   $: {
-    const heightAsBigInt = blockHeightToBigInt(blockHeight);
-
     isValid =
-      !isToggled ||
-      (heightAsBigInt >= 0 && heightAsBigInt <= currentNetworkBlock);
+      !isToggled || (blockHeight >= 0 && blockHeight <= currentNetworkBlock);
   }
+
   $: inputClasses = makeClassName({
     "block-height-input": true,
     "block-height-input--invalid": !isValid,
@@ -64,18 +60,21 @@
   heading="Block Height"
   on:toggle={resetBlockHeight}
 >
-  <Textbox
-    bind:value={blockHeight}
-    className={inputClasses}
-    placeholder="Block Height"
-    pattern="\d+"
-    required
-    type="text"
-  />
+  <BigIntInput className={inputClasses} bind:value={blockHeight} />
+
   {#if currentNetworkBlock}
     <span class="block-height-meta"
       >Network block height: {numberFormatter(currentNetworkBlock)}</span
     >
+  {/if}
+
+  {#if errorFetchingCurrentNetworkBlock}
+    <Banner
+      title="Unable to fetch current network block height."
+      variant="error"
+    >
+      <p>Please try again later.</p>
+    </Banner>
   {/if}
 </ToggleableCard>
 
