@@ -258,7 +258,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
     ) -> Result<BlockWithLabel> {
         let stored_block = db.view(|t| {
             anyhow::Ok(t.op_read(MD_HASH_KEY)?.and_then(|tip_hash| {
-                t.fetch_block(&tip_hash[..])
+                t.block(&tip_hash[..])
                     .expect("block to be found if metadata is set")
             }))
         })?;
@@ -266,9 +266,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         let block = match stored_block {
             Some(blk) => {
                 let (_, label) = db
-                    .view(|t| {
-                        t.fetch_block_label_by_height(blk.header().height)
-                    })?
+                    .view(|t| t.block_label_by_height(blk.header().height))?
                     .unwrap();
 
                 BlockWithLabel::new_with_label(blk, label)

@@ -286,7 +286,7 @@ impl DataBrokerSrv {
             .await
             .view(|t| {
                 let mut locator = t
-                    .fetch_block(&m.locator)?
+                    .block(&m.locator)?
                     .ok_or_else(|| {
                         anyhow::anyhow!("could not find locator block")
                     })?
@@ -297,12 +297,12 @@ impl DataBrokerSrv {
 
                 loop {
                     locator += 1;
-                    match t.fetch_block_hash_by_height(locator)? {
+                    match t.block_hash_by_height(locator)? {
                         Some(bh) => {
                             let header =
-                                t.fetch_block_header(&bh)?.ok_or_else(
-                                    || anyhow!("block header not found"),
-                                )?;
+                                t.block_header(&bh)?.ok_or_else(|| {
+                                    anyhow!("block header not found")
+                                })?;
 
                             if header.prev_block_hash != prev_block_hash {
                                 return Err(anyhow::anyhow!(
@@ -360,14 +360,14 @@ impl DataBrokerSrv {
                 match i.inv_type {
                     InvType::BlockFromHeight => {
                         if let InvParam::Height(height) = &i.param {
-                            if db.fetch_block_by_height(*height)?.is_none() {
+                            if db.block_by_height(*height)?.is_none() {
                                 inv.add_block_from_height(*height);
                             }
                         }
                     }
                     InvType::BlockFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            if db.fetch_block(hash)?.is_none() {
+                            if db.block(hash)?.is_none() {
                                 inv.add_block_from_hash(*hash);
                             }
                         }
@@ -442,7 +442,7 @@ impl DataBrokerSrv {
                 .filter_map(|i| match i.inv_type {
                     InvType::BlockFromHeight => {
                         if let InvParam::Height(height) = &i.param {
-                            db.fetch_block_by_height(*height)
+                            db.block_by_height(*height)
                                 .ok()
                                 .flatten()
                                 .map(Message::from)
@@ -452,17 +452,14 @@ impl DataBrokerSrv {
                     }
                     InvType::BlockFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            db.fetch_block(hash)
-                                .ok()
-                                .flatten()
-                                .map(Message::from)
+                            db.block(hash).ok().flatten().map(Message::from)
                         } else {
                             None
                         }
                     }
                     InvType::CandidateFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            db.fetch_block(hash)
+                            db.block(hash)
                                 .ok()
                                 .flatten()
                                 .or_else(|| db.candidate(hash).ok().flatten())

@@ -72,27 +72,21 @@ pub trait Ledger {
     ) -> Result<usize>;
 
     fn delete_block(&self, b: &Block) -> Result<()>;
-    fn fetch_block_header(&self, hash: &[u8]) -> Result<Option<Header>>;
+    fn block_header(&self, hash: &[u8]) -> Result<Option<Header>>;
 
-    fn fetch_light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>>;
+    fn light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>>;
 
-    fn fetch_block(&self, hash: &[u8]) -> Result<Option<Block>>;
-    fn fetch_block_hash_by_height(
-        &self,
-        height: u64,
-    ) -> Result<Option<[u8; 32]>>;
-    fn fetch_block_by_height(&self, height: u64) -> Result<Option<Block>>;
+    fn block(&self, hash: &[u8]) -> Result<Option<Block>>;
+    fn block_hash_by_height(&self, height: u64) -> Result<Option<[u8; 32]>>;
+    fn block_by_height(&self, height: u64) -> Result<Option<Block>>;
 
-    fn get_block_exists(&self, hash: &[u8]) -> Result<bool>;
+    fn block_exists(&self, hash: &[u8]) -> Result<bool>;
 
-    fn get_ledger_tx_by_hash(
-        &self,
-        tx_id: &[u8],
-    ) -> Result<Option<SpentTransaction>>;
+    fn ledger_tx(&self, tx_id: &[u8]) -> Result<Option<SpentTransaction>>;
 
-    fn get_ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool>;
+    fn ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool>;
 
-    fn fetch_block_label_by_height(
+    fn block_label_by_height(
         &self,
         height: u64,
     ) -> Result<Option<([u8; 32], Label)>>;
@@ -104,8 +98,8 @@ pub trait Ledger {
         label: Label,
     ) -> Result<()>;
 
-    fn fetch_faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>>;
-    fn fetch_faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>>;
+    fn faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>>;
+    fn faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>>;
 }
 
 pub trait ConsensusStorage {

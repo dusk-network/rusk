@@ -366,22 +366,23 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self.get_size())
     }
 
-    fn fetch_faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>> {
+    fn faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>> {
         let mut faults = vec![];
         let mut hash = self
             .op_read(MD_HASH_KEY)?
             .ok_or(anyhow::anyhow!("Cannot read tip"))?;
 
         loop {
-            let block = self.fetch_light_block(&hash)?.ok_or(
-                anyhow::anyhow!("Cannot read block {}", hex::encode(&hash)),
-            )?;
+            let block = self.light_block(&hash)?.ok_or(anyhow::anyhow!(
+                "Cannot read block {}",
+                hex::encode(&hash)
+            ))?;
 
             let block_height = block.header.height;
 
             if block_height >= start_height {
                 hash = block.header.prev_block_hash.to_vec();
-                faults.extend(self.fetch_faults(&block.faults_ids)?);
+                faults.extend(self.faults(&block.faults_ids)?);
             } else {
                 break;
             }
@@ -426,11 +427,11 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn get_block_exists(&self, hash: &[u8]) -> Result<bool> {
+    fn block_exists(&self, hash: &[u8]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.ledger_cf, hash)?.is_some())
     }
 
-    fn fetch_faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>> {
+    fn faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>> {
         if faults_ids.is_empty() {
             return Ok(vec![]);
         }
@@ -452,7 +453,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(faults)
     }
 
-    fn fetch_block(&self, hash: &[u8]) -> Result<Option<Block>> {
+    fn block(&self, hash: &[u8]) -> Result<Option<Block>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = LightBlock::read(&mut &blob[..])?;
@@ -497,7 +498,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
-    fn fetch_light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>> {
+    fn light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = LightBlock::read(&mut &blob[..])?;
@@ -507,7 +508,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
-    fn fetch_block_header(&self, hash: &[u8]) -> Result<Option<Header>> {
+    fn block_header(&self, hash: &[u8]) -> Result<Option<Header>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = Header::read(&mut &blob[..])?;
@@ -517,10 +518,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
-    fn fetch_block_hash_by_height(
-        &self,
-        height: u64,
-    ) -> Result<Option<[u8; 32]>> {
+    fn block_hash_by_height(&self, height: u64) -> Result<Option<[u8; 32]>> {
         Ok(self
             .snapshot
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
@@ -532,10 +530,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             }))
     }
 
-    fn get_ledger_tx_by_hash(
-        &self,
-        tx_id: &[u8],
-    ) -> Result<Option<SpentTransaction>> {
+    fn ledger_tx(&self, tx_id: &[u8]) -> Result<Option<SpentTransaction>> {
         let tx = self
             .snapshot
             .get_cf(self.ledger_txs_cf, tx_id)?
@@ -550,20 +545,20 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     ///
     /// This is a convenience method that checks if a transaction exists in the
     /// ledger without unmarshalling the transaction
-    fn get_ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool> {
+    fn ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_id)?.is_some())
     }
 
-    fn fetch_block_by_height(&self, height: u64) -> Result<Option<Block>> {
-        let hash = self.fetch_block_hash_by_height(height)?;
+    fn block_by_height(&self, height: u64) -> Result<Option<Block>> {
+        let hash = self.block_hash_by_height(height)?;
         let block = match hash {
-            Some(hash) => self.fetch_block(&hash)?,
+            Some(hash) => self.block(&hash)?,
             None => None,
         };
         Ok(block)
     }
 
-    fn fetch_block_label_by_height(
+    fn block_label_by_height(
         &self,
         height: u64,
     ) -> Result<Option<([u8; 32], Label)>> {
@@ -1297,7 +1292,7 @@ mod tests {
             db.view(|txn| {
                 // Assert block header is fully fetched from ledger
                 let db_blk = txn
-                    .fetch_block(&hash)
+                    .block(&hash)
                     .expect("Block to be fetched")
                     .expect("Block to exist");
                 assert_eq!(db_blk.header().hash, b.header().hash);
@@ -1327,7 +1322,7 @@ mod tests {
 
             db.view(|txn| {
                 assert!(txn
-                    .fetch_block(&hash)
+                    .block(&hash)
                     .expect("block to be fetched")
                     .is_none());
             });
@@ -1350,7 +1345,7 @@ mod tests {
             });
             db.view(|txn| {
                 assert!(txn
-                    .fetch_block(&b.header().hash)
+                    .block(&b.header().hash)
                     .expect("block to be fetched")
                     .is_none());
             });
@@ -1378,14 +1373,14 @@ mod tests {
                         .unwrap();
 
                         // No need to support Read-Your-Own-Writes
-                        assert!(txn.fetch_block(&hash)?.is_none());
+                        assert!(txn.block(&hash)?.is_none());
                         Ok(())
                     })
                     .is_ok());
 
                 // Asserts that the read-only/view transaction runs in isolation
                 assert!(txn
-                    .fetch_block(&hash)
+                    .block(&hash)
                     .expect("block to be fetched")
                     .is_none());
             });
@@ -1394,7 +1389,7 @@ mod tests {
             db.view(|txn| {
                 assert_blocks_eq(
                     &mut txn
-                        .fetch_block(&hash)
+                        .block(&hash)
                         .expect("block to be fetched")
                         .unwrap(),
                     &mut b,
@@ -1618,7 +1613,7 @@ mod tests {
             db.view(|v| {
                 for t in b.txs().iter() {
                     assert!(v
-                        .get_ledger_tx_by_hash(&t.id())
+                        .ledger_tx(&t.id())
                         .expect("should not return error")
                         .expect("should find a transaction")
                         .inner
@@ -1650,7 +1645,7 @@ mod tests {
             // Assert block hash is accessible by height.
             db.view(|v| {
                 assert!(v
-                    .fetch_block_hash_by_height(b.header().height)
+                    .block_hash_by_height(b.header().height)
                     .expect("should not return error")
                     .expect("should find a block")
                     .eq(&b.header().hash));
@@ -1680,7 +1675,7 @@ mod tests {
             // Assert block hash is accessible by height.
             db.view(|v| {
                 assert!(v
-                    .fetch_block_label_by_height(b.header().height)
+                    .block_label_by_height(b.header().height)
                     .expect("should not return error")
                     .expect("should find a block")
                     .1

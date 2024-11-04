@@ -253,11 +253,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     let prev_local_state_root =
                         acc.db.read().await.view(|t| {
                             let local_blk = t
-                                .fetch_block_header(&local_hash_at_fork)?
+                                .block_header(&local_hash_at_fork)?
                                 .expect("local hash should exist");
 
                             let prev_blk = t
-                                .fetch_block_header(&local_blk.prev_block_hash)?
+                                .block_header(&local_blk.prev_block_hash)?
                                 .expect("prev block hash should exist");
 
                             anyhow::Ok(prev_blk.state_hash)
@@ -360,7 +360,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
             // Check if we already accepted this block
             if let Ok(blk_exists) =
-                db.read().await.view(|t| t.get_block_exists(&candidate))
+                db.read().await.view(|t| t.block_exists(&candidate))
             {
                 if blk_exists {
                     warn!("skipping Quorum for known block");

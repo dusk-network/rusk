@@ -232,7 +232,7 @@ impl MempoolSrv {
             }
 
             // ensure transaction does not exist in the blockchain
-            if view.get_ledger_tx_exists(&tx_id)? {
+            if view.ledger_tx_exists(&tx_id)? {
                 return Err(TxAcceptanceError::AlreadyExistsInLedger);
             }
 
