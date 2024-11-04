@@ -141,6 +141,7 @@ export class ProfileGenerator {
     if (length === 96) {
       return "account";
     }
+
     return "undefined";
   }
 

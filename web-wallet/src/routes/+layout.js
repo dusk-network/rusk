@@ -1,4 +1,5 @@
 import "$lib/dusk/polyfill/asyncIterator";
+import "$lib/dusk/polyfill/promiseWithResolvers";
 
 export const csr = true;
 export const prerender = true;
