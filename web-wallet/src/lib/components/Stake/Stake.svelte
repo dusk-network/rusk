@@ -15,6 +15,7 @@
 
   import {
     Agreement,
+    AnchorButton,
     Badge,
     Button,
     Icon,
@@ -26,7 +27,6 @@
   import { toast } from "$lib/dusk/components/Toast/store";
   import {
     AppAnchor,
-    AppAnchorButton,
     ContractStatusesList,
     GasFee,
     GasSettings,
@@ -368,8 +368,8 @@
       >
         <svelte:fragment slot="success-content" let:result={hash}>
           {#if hash}
-            <AppAnchorButton
-              href={`https://explorer.dusk.network/transactions/transaction?id=${hash}`}
+            <AnchorButton
+              href={`/explorer/transactions/transaction?id=${hash}`}
               on:click={resetOperation}
               text="VIEW ON BLOCK EXPLORER"
               rel="noopener noreferrer"

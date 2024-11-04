@@ -248,7 +248,7 @@ describe("Send", () => {
     vi.useFakeTimers();
 
     const amount = 567;
-    const expectedExplorerLink = `https://explorer.dusk.network/transactions/transaction?id=${lastTxId}`;
+    const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
 
     afterAll(() => {
       vi.useRealTimers();

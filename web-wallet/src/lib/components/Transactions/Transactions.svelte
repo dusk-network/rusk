@@ -3,7 +3,13 @@
   import { mdiArrowLeft, mdiContain } from "@mdi/js";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import { Badge, Icon, Suspense, Throbber } from "$lib/dusk/components";
+  import {
+    Anchor,
+    Badge,
+    Icon,
+    Suspense,
+    Throbber,
+  } from "$lib/dusk/components";
   import {
     createFeeFormatter,
     createTransferFormatter,
@@ -11,7 +17,6 @@
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
   import { sortByHeightDesc } from "$lib/transactions";
 
-  import AppAnchor from "../AppAnchor/AppAnchor.svelte";
   import AppAnchorButton from "../AppAnchorButton/AppAnchorButton.svelte";
 
   /** @type {String} */
@@ -95,8 +100,8 @@
             <dt class="transactions-list__term">Hash</dt>
             <dd class="transactions-list__datum transactions-list__datum--hash">
               <samp>
-                <AppAnchor
-                  href="https://explorer.dusk.network/transactions/transaction?id={transaction.id}"
+                <Anchor
+                  href="/explorer/transactions/transaction?id={transaction.id}"
                   rel="noopener noreferrer"
                   target="_blank"
                 >
@@ -104,7 +109,7 @@
                     transaction.id,
                     calculateAdaptiveCharCount(screenWidth, 320, 640, 5, 20)
                   )}
-                </AppAnchor>
+                </Anchor>
               </samp>
             </dd>
             {#if transaction.tx_type}
