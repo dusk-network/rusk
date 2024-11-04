@@ -35,11 +35,11 @@ use std::{fmt, path::PathBuf};
 pub(crate) enum Command {
     /// Create a new wallet
     Create {
-        /// Skip wallet recovery phrase (useful for headless wallet creation)
+        /// Skip wallet mnemonic phrase (useful for headless wallet creation)
         #[arg(long)]
         skip_recovery: bool,
 
-        /// Save recovery phrase to file (useful for headless wallet creation)
+        /// Save mnemonic phrase to file (useful for headless wallet creation)
         #[arg(long)]
         seed_file: Option<PathBuf>,
     },

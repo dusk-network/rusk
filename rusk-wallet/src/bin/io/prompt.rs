@@ -92,8 +92,8 @@ pub(crate) fn create_password(
     Ok(hash(file_version, &pwd))
 }
 
-/// Display the recovery phrase to the user and ask for confirmation
-pub(crate) fn confirm_recovery_phrase<S>(phrase: &S) -> anyhow::Result<()>
+/// Display the mnemonic phrase to the user and ask for confirmation
+pub(crate) fn confirm_mnemonic_phrase<S>(phrase: &S) -> anyhow::Result<()>
 where
     S: std::fmt::Display,
 {
@@ -107,7 +107,7 @@ where
     // let the user confirm they have backed up their phrase
     loop {
         let q = requestty::Question::confirm("proceed")
-            .message("Have you backed up your recovery phrase?")
+            .message("Have you backed up your mnemonic phrase?")
             .build();
 
         let a = requestty::prompt_one(q)?;
@@ -117,13 +117,13 @@ where
     }
 }
 
-/// Request the user to input the recovery phrase
-pub(crate) fn request_recovery_phrase() -> anyhow::Result<String> {
-    // let the user input the recovery phrase
+/// Request the user to input the mnemonic phrase
+pub(crate) fn request_mnemonic_phrase() -> anyhow::Result<String> {
+    // let the user input the mnemonic phrase
     let mut attempt = 1;
     loop {
         let q = Question::input("phrase")
-            .message("Please enter the recovery phrase:")
+            .message("Please enter the mnemonic phrase:")
             .build();
 
         let a = requestty::prompt_one(q)?;
@@ -139,7 +139,7 @@ pub(crate) fn request_recovery_phrase() -> anyhow::Result<String> {
                 _ => return Err(err),
             },
             Err(_) => {
-                println!("Invalid recovery phrase, please try again");
+                println!("Invalid mnemonic phrase, please try again");
                 attempt += 1;
             }
         }

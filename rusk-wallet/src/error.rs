@@ -75,8 +75,8 @@ pub enum Error {
     /// Address does not belong to this wallet
     #[error("Address does not belong to this wallet")]
     AddressNotOwned,
-    /// Recovery phrase is not valid
-    #[error("Invalid recovery phrase")]
+    /// Mnemonic phrase is not valid
+    #[error("Invalid mnemonic phrase")]
     InvalidMnemonicPhrase,
     /// Path provided is not a directory
     #[error("Path provided is not a directory")]
