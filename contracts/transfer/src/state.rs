@@ -230,7 +230,7 @@ impl TransferState {
     /// will panic if this is not the case.
     pub fn convert(&mut self, convert: Withdraw) {
         // since each transaction only has, at maximum, a single contract call,
-        // this check impliest that this is the first contract call.
+        // this check implies that this is the first contract call.
         let caller = rusk_abi::caller()
             .expect("A conversion must happen in the context of a transaction");
         if caller != TRANSFER_CONTRACT {
