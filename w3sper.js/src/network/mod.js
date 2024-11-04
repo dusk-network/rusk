@@ -17,8 +17,6 @@ export { AddressSyncer } from "./syncer/address.js";
 export { AccountSyncer } from "./syncer/account.js";
 export { Bookmark } from "./bookmark.js";
 
-const protocol = { "https:": "wss:", "http:": "ws:" };
-
 const abortable = (signal) =>
   new Promise((resolve, reject) =>
     signal?.aborted ? reject(signal.reason) : resolve(signal),

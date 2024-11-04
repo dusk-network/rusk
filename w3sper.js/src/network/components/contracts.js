@@ -28,4 +28,10 @@ export class Contracts {
   withId(id) {
     return this.#scope.withId(id);
   }
+
+  get transferContract() {
+    return this.withId(
+      "0100000000000000000000000000000000000000000000000000000000000000",
+    );
+  }
 }
