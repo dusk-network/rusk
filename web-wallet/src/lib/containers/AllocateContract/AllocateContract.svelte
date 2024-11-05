@@ -15,13 +15,16 @@
 
   $: [gasSettings, language] = collectSettings($settingsStore);
   $: ({ balance, currentProfile } = $walletStore);
-  $: currentAddress = currentProfile ? currentProfile.address.toString() : "";
+  $: shieldedAddress = currentProfile ? currentProfile.address.toString() : "";
+  $: unshieldedAddress = currentProfile
+    ? currentProfile.account.toString()
+    : "";
   $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
 </script>
 
 <Allocate
-  shieldedAddress={currentAddress}
-  unshieldedAddress={currentAddress}
+  {shieldedAddress}
+  {unshieldedAddress}
   shieldedBalance={balance.shielded.spendable}
   unshieldedBalance={balance.unshielded.value}
   execute={executeSend}
