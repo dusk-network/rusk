@@ -142,7 +142,13 @@ impl RatificationStep {
 
             // Collect my own vote
             match handler
-                .collect(vote_msg, &ctx.round_update, committee, generator)
+                .collect(
+                    vote_msg,
+                    &ctx.round_update,
+                    committee,
+                    generator,
+                    &ctx.iter_ctx.committees,
+                )
                 .await
             {
                 Ok(StepOutcome::Ready(m)) => return m,

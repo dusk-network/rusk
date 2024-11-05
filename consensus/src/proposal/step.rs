@@ -89,7 +89,13 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .handler
                     .lock()
                     .await
-                    .collect(msg, &ctx.round_update, committee, None)
+                    .collect(
+                        msg,
+                        &ctx.round_update,
+                        committee,
+                        None,
+                        &ctx.iter_ctx.committees,
+                    )
                     .await
                 {
                     Ok(StepOutcome::Ready(msg)) => {

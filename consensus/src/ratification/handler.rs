@@ -99,13 +99,14 @@ impl MsgHandler for RatificationHandler {
         Err(ConsensusError::InvalidMsgType)
     }
 
-    /// Collect the ratification message.
+    /// Collect the Ratification message.
     async fn collect(
         &mut self,
         msg: Message,
         ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
+        round_committees: &RoundCommittees,
     ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
         let iteration = p.header().iteration;

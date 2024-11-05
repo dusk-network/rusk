@@ -49,13 +49,14 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         Ok(())
     }
 
-    /// Collects а new_block message.
+    /// Collects а Candidate message.
     async fn collect(
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
         _committee: &Committee,
         _generator: Option<PublicKeyBytes>,
+        _round_committees: &RoundCommittees,
     ) -> Result<StepOutcome, ConsensusError> {
         // store candidate block
         let p = Self::unwrap_msg(&msg)?;

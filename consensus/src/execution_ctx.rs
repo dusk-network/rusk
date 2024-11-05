@@ -639,7 +639,13 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         let collected = phase
             .lock()
             .await
-            .collect(msg, &self.round_update, committee, generator)
+            .collect(
+                msg,
+                &self.round_update,
+                committee,
+                generator,
+                &self.iter_ctx.committees,
+            )
             .await;
 
         match collected {
@@ -716,7 +722,13 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     match phase
                         .lock()
                         .await
-                        .collect(msg, &self.round_update, committee, generator)
+                        .collect(
+                            msg,
+                            &self.round_update,
+                            committee,
+                            generator,
+                            &self.iter_ctx.committees,
+                        )
                         .await
                     {
                         Ok(StepOutcome::Ready(msg)) => {
