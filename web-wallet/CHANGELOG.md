@@ -9,22 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
+- Added allocation (shield/unshield) page and UI [#2196]
+
+### Changed
+
+- Update Transactions list design [#1922]
+- Update `Stake` to use `Stepper` [#2436]
+
+## [0.6.0] - 2024-11-05
+
+### Added
+
 - Show current block height on Wallet Creation [#1561]
 - Add option to sync from a custom block height on Wallet Restoration [#1568]
-- Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
 - Added token migration contract bindings [#2014]
 - Add validation for public account ("Send" flow) [#2176]
-- Added allocation (shield/unshield) page and UI [#2196]
 - Add validation for "Use Max" button on Send / Stake flows [#2310]
 - Add Banner component [#2696]
 - Add BigIntInput component [#2776]
+- Add transaction history feature flag [#2807]
 
 ### Changed
 
 - Newly created Wallet does not sync from genesis [#1567]
 - Update Buttons to match the design system [#1606]
 - Update anchor colors to ensure better accessibility [#1765]
-- Update Transactions list design [#1922]
 - Update font-display to swap for custom fonts to improve performance [#2026]
 - Update `Stepper` component to new design [#2071]
 - Update dashboard to use routes instead of Tabs for navigation pattern [#2075]
@@ -36,9 +46,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Receive screen design updated, added UI support for displaying shielded/unshielded address [#2421]
 - Update ENV variables to the `VITE_FEATURE_*` naming convention [#2434]
 - Make address field only vertically resizable (Send flow) [#2435]
-- Update `Stake` to use `Stepper` [#2436]
 - Update textfield input to use the small control sizing [#2498]
 - Update GasSettings and related properties to BigInt type [#2778]
+- Update to w3sper.js beta [#2821]
+- Update sync and balance to use w3sper.js [#2608]
+- Update login flows to use w3sper.js [#2460]
+
+### Removed
+
+- Hide staking in the deployed wallet application until w3sper.js supports this.
+- Hide transaction history in the deployed application until w3sper.js supports this.
 
 ### Fixed
 
@@ -284,10 +301,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2696]: https://github.com/dusk-network/rusk/issues/2696
 [#2776]: https://github.com/dusk-network/rusk/issues/2776
 [#2776]: https://github.com/dusk-network/rusk/issues/2778
+[#2807]: https://github.com/dusk-network/rusk/issues/2807
+[#2821]: https://github.com/dusk-network/rusk/issues/2821
+[#2821]: https://github.com/dusk-network/rusk/issues/2608
+[#2821]: https://github.com/dusk-network/rusk/issues/2460
 
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[0.6.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.6.0
 [0.5.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.5.0
 [0.4.0]: https://github.com/dusk-network/rusk/tree/web-wallet-0.4.0
 [0.3.0]: https://github.com/dusk-network/rusk/tree/web-wallet-0.3.0
