@@ -85,13 +85,15 @@
 
 <slot />
 
-<Transactions
-  items={walletStore.getTransactionsHistory()}
-  {language}
-  limit={dashboardTransactionLimit}
-  isSyncing={syncStatus.isInProgress}
-  syncError={syncStatus.error}
-/>
+{#if import.meta.env.VITE_FEATURE_TRANSACTION_HISTORY === "true"}
+  <Transactions
+    items={walletStore.getTransactionsHistory()}
+    {language}
+    limit={dashboardTransactionLimit}
+    isSyncing={syncStatus.isInProgress}
+    syncError={syncStatus.error}
+  />
+{/if}
 
 <style lang="postcss">
   .no-contracts {

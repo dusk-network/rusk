@@ -188,6 +188,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
     </div>
   </article>
   
+  
 </div>
 `;
 
@@ -728,6 +729,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
       
     </div>
   </article>
+  
   
 </div>
 `;
