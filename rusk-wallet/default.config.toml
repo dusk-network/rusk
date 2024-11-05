@@ -5,12 +5,12 @@ explorer = "https://explorer.dusk.network/transactions/transaction/?id="
 [network.testnet]
 state = "https://testnet.nodes.dusk.network"
 prover = "https://testnet.provers.dusk.network"
-explorer = "https://testnet.apps.dusk.network/explorer/transactions/transaction/?id="
+explorer = "https://apps.testnet.dusk.network/explorer/transactions/transaction/?id="
 
 [network.devnet]
 state = "https://devnet.nodes.dusk.network"
 prover = "https://devnet.provers.dusk.network"
-explorer = "https://devnet.apps.dusk.network/explorer/transactions/transaction/?id="
+explorer = "https://apps.devnet.dusk.network/explorer/transactions/transaction/?id="
 
 [network.local]
 state = "http://127.0.0.1:8080"
