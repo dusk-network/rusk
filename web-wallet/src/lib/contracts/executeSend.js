@@ -4,7 +4,7 @@ import { Gas } from "$lib/vendor/w3sper.js/src/mod";
 import { walletStore } from "$lib/stores";
 import { duskToLux } from "$lib/dusk/currency";
 
-/** @type {(to: string, amount: number, gasPrice: number, gasLimit: number) => Promise<string>} */
+/** @type {(to: string, amount: number, gasPrice: bigint, gasLimit: bigint) => Promise<string>} */
 const executeSend = (to, amount, gasPrice, gasLimit) => {
   const luxAmount = duskToLux(amount);
 
@@ -13,8 +13,8 @@ const executeSend = (to, amount, gasPrice, gasLimit) => {
       to,
       luxAmount,
       new Gas({
-        limit: BigInt(gasLimit),
-        price: BigInt(gasPrice),
+        limit: gasLimit,
+        price: gasPrice,
       })
     )
     .then(getKey("hash"));

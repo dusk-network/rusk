@@ -105,7 +105,7 @@
   const suppressStakingNotice = () => dispatch("suppressStakingNotice");
 
   /**
-   * @param {{detail:{price:number, limit:number}}} event
+   * @param {{detail: {price: bigint, limit: bigint}}} event
    */
   const setGasValues = (event) => {
     isGasValid = areValidGasSettings(event.detail.price, event.detail.limit);
@@ -124,16 +124,15 @@
     isGasValid = areValidGasSettings(gasPrice, gasLimit);
   });
 
-  $: luxFee = gasLimit * gasPrice;
-  $: fee = formatter(luxToDusk(BigInt(luxFee)));
-  $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), luxFee);
+  $: fee = gasLimit * gasPrice;
+  $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), fee);
   $: minStake =
     maxSpendable > 0
       ? Math.min(minAllowedStake, maxSpendable)
       : minAllowedStake;
   $: isStakeAmountValid =
     stakeAmount >= minStake && stakeAmount <= maxSpendable;
-  $: totalLuxFee = BigInt(luxFee) + duskToLux(stakeAmount);
+  $: totalLuxFee = fee + duskToLux(stakeAmount);
   $: isFeeWithinLimit = totalLuxFee <= spendable;
   $: isNextButtonDisabled =
     flow === "stake"
@@ -169,7 +168,7 @@
       return;
     }
 
-    if (spendable < BigInt(luxFee)) {
+    if (spendable < fee) {
       toast(
         "error",
         "You don't have enough DUSK to cover the transaction fee",
@@ -290,6 +289,7 @@
         </div>
 
         <GasSettings
+          {formatter}
           {fee}
           limit={gasSettings.gasLimit}
           limitLower={gasLimits.gasLimitLower}
@@ -336,9 +336,10 @@
         />
 
         {#if flow === "stake"}
-          <GasFee {fee} />
+          <GasFee {formatter} {fee} />
         {:else}
           <GasSettings
+            {formatter}
             {fee}
             limit={gasSettings.gasLimit}
             limitLower={gasLimits.gasLimitLower}

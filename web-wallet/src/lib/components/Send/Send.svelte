@@ -33,7 +33,7 @@
     ScanQR,
   } from "$lib/components";
 
-  /** @type {(to: string, amount: number, gasPrice: number, gasLimit: number) => Promise<string>} */
+  /** @type {(to: string, amount: number, gasPrice: bigint, gasLimit: bigint) => Promise<string>} */
   export let execute;
 
   /** @type {(amount: number) => string} */
@@ -94,11 +94,10 @@
     isGasValid = areValidGasSettings(gasPrice, gasLimit);
   });
 
-  $: luxFee = gasLimit * gasPrice;
-  $: fee = formatter(luxToDusk(BigInt(luxFee)));
-  $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), luxFee);
+  $: fee = gasLimit * gasPrice;
+  $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), fee);
   $: isAmountValid = amount >= minAmount && amount <= maxSpendable;
-  $: totalLuxFee = BigInt(luxFee) + (amount ? duskToLux(amount) : 0n);
+  $: totalLuxFee = fee + (amount ? duskToLux(amount) : 0n);
   $: isFeeWithinLimit = totalLuxFee <= spendable;
   $: isNextButtonDisabled = !(isAmountValid && isGasValid && isFeeWithinLimit);
   $: addressValidationResult = validateAddress(address);
@@ -116,7 +115,7 @@
       return;
     }
 
-    if (spendable < BigInt(luxFee)) {
+    if (spendable < fee) {
       toast(
         "error",
         "You don't have enough DUSK to cover the transaction fee",
@@ -278,6 +277,7 @@
         </div>
 
         <GasSettings
+          {formatter}
           {fee}
           limit={gasSettings.gasLimit}
           limitLower={gasLimits.gasLimitLower}
@@ -350,7 +350,7 @@
           </dd>
         </dl>
 
-        <GasFee {fee} />
+        <GasFee {formatter} {fee} />
       </div>
     </WizardStep>
     <WizardStep step={3} {key} showNavigation={false}>

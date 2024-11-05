@@ -6,8 +6,8 @@ type ContractDescriptor = {
 };
 
 type ContractGasSettings = {
-  gasLimit: number;
-  gasPrice: number;
+  gasLimit: bigint;
+  gasPrice: bigint;
 };
 
 type ContractOperation = {

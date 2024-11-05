@@ -5,23 +5,26 @@
   import { areValidGasSettings } from "$lib/contracts";
   import { onMount } from "svelte";
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let limit;
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let limitLower;
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let limitUpper;
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let price;
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let priceLower;
 
-  /** @type {string} */
+  /** @type {bigint} */
   export let fee;
+
+  /** @type {(amount: number) => string} */
+  export let formatter;
 
   /** @type {boolean} */
   let isExpanded = false;
@@ -35,7 +38,7 @@
 
 <div class="gas-settings">
   <dl class="gas-settings__edit">
-    <GasFee {fee} />
+    <GasFee {formatter} {fee} />
     <dd>
       <Button
         size="small"

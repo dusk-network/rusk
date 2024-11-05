@@ -3,9 +3,9 @@ type Readable<T> = import("svelte/store").Readable<T>;
 type Writable<T> = import("svelte/store").Writable<T>;
 
 type GasStoreContent = {
-  gasLimitLower: number;
-  gasLimitUpper: number;
-  gasPriceLower: number;
+  gasLimitLower: bigint;
+  gasLimitUpper: bigint;
+  gasPriceLower: bigint;
 };
 
 type GasStore = Readable<GasStoreContent>;
@@ -14,8 +14,8 @@ type SettingsStoreContent = {
   currency: string;
   darkMode: boolean;
   dashboardTransactionLimit: number;
-  gasLimit: number;
-  gasPrice: number;
+  gasLimit: bigint;
+  gasPrice: bigint;
   hideStakingNotice: boolean;
   language: string;
   minAllowedStake: number;

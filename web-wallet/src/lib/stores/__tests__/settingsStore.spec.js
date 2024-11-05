@@ -35,10 +35,29 @@ describe("Settings store", () => {
   /** @type {SettingsStoreContent} */
   let settingsStoreContent;
 
+  /**
+   * Function to serialize an object containing BigInt values.
+   * Converts BigInt values to strings with an 'n' suffix.
+   *
+   * @type {(value: any) => string}
+   */
+  let serializeProperty;
+
+  /**
+   * Function to deserialize a JSON string with BigInt values in string format.
+   * Converts strings with an 'n' suffix back to BigInt values.
+   *
+   * @type {(value: string) => any}
+   */
+  let deserializeProperty;
+
   beforeEach(async () => {
     vi.resetModules();
-    settingsStore = (await import("../settingsStore")).default;
+    const settingsStoreModule = await import("../settingsStore");
+    settingsStore = settingsStoreModule.default;
     settingsStoreContent = get(settingsStore);
+    serializeProperty = settingsStoreModule.serializeProperty;
+    deserializeProperty = settingsStoreModule.deserializeProperty;
   });
 
   afterAll(() => {
@@ -82,10 +101,14 @@ describe("Settings store", () => {
         localStorage.getItem(`${CONFIG.LOCAL_STORAGE_APP_KEY}-preferences`)
       );
 
-      expect(localStorageSettings).toStrictEqual({
+      const expectedSettings = {
         ...settingsStoreContent,
         darkMode: false,
-      });
+        gasLimit: `${settingsStoreContent.gasLimit}n`,
+        gasPrice: `${settingsStoreContent.gasPrice}n`,
+      };
+
+      expect(localStorageSettings).toStrictEqual(expectedSettings);
     });
 
     it("should expose a method to reset the store to its initial state", () => {
@@ -109,6 +132,40 @@ describe("Settings store", () => {
     it("should use its own defaults in place of the browser's settings", () => {
       expect(settingsStoreContent.language).toBe("en");
       expect(settingsStoreContent.darkMode).toBe(false);
+    });
+  });
+
+  describe("BigInt serialization and deserialization", () => {
+    it("should serialize BigInt values correctly", () => {
+      const objWithBigInt = {
+        gasLimit: BigInt(1000000000),
+        gasPrice: BigInt(2000000000),
+      };
+
+      const serialized = serializeProperty(objWithBigInt);
+
+      const expectedSerialized = JSON.stringify({
+        gasLimit: "1000000000n",
+        gasPrice: "2000000000n",
+      });
+
+      expect(serialized).toBe(expectedSerialized);
+    });
+
+    it("should deserialize BigInt values correctly", () => {
+      const serialized = JSON.stringify({
+        gasLimit: "1000000000n",
+        gasPrice: "2000000000n",
+      });
+
+      const deserialized = deserializeProperty(serialized);
+
+      const expectedDeserialized = {
+        gasLimit: BigInt(1000000000),
+        gasPrice: BigInt(2000000000),
+      };
+
+      expect(deserialized).toStrictEqual(expectedDeserialized);
     });
   });
 });

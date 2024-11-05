@@ -22,7 +22,7 @@
   } from "$lib/dusk/components";
   import { GasFee, GasSettings, OperationResult } from "$lib/components";
 
-  /** @type {(to: string, amount: number, gasPrice: number, gasLimit: number) => Promise<string>} */
+  /** @type {(to: string, amount: number, gasPrice: bigint, gasLimit: bigint) => Promise<string>} */
   export let execute;
 
   /** @type {(amount: number) => string} */
@@ -79,8 +79,7 @@
     return () => resizeObserver.disconnect();
   });
 
-  $: luxFee = gasLimit * gasPrice;
-  $: fee = formatter(luxToDusk(BigInt(luxFee)));
+  $: fee = gasLimit * gasPrice;
   $: isFromUnshielded = shieldedAmount > shieldedBalance;
   $: isFromShielded = unshieldedAmount > unshieldedBalance;
   $: isNextButtonDisabled = !(isFromUnshielded || isFromShielded);
@@ -124,7 +123,7 @@
               min={minAmount}
               max={deductLuxFeeFrom(
                 luxToDusk(shieldedBalance + unshieldedBalance),
-                luxFee
+                fee
               )}
               step="0.000000001"
               on:input={() => {
@@ -162,7 +161,7 @@
               min={minAmount}
               max={deductLuxFeeFrom(
                 luxToDusk(unshieldedBalance + shieldedBalance),
-                luxFee
+                fee
               )}
               step="0.000000001"
               id="unshielded-amount"
@@ -182,6 +181,7 @@
         </fieldset>
 
         <GasSettings
+          {formatter}
           {fee}
           limit={gasSettings.gasLimit}
           limitLower={gasLimits.gasLimitLower}
@@ -262,7 +262,7 @@
             </span>
           </dd>
         </dl>
-        <GasFee {fee} />
+        <GasFee {formatter} {fee} />
       </div>
     </WizardStep>
     <WizardStep step={2} {key} showNavigation={false}>
