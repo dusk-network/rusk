@@ -60,11 +60,13 @@ type NetworkStoreServices = {
 
 type NetworkStore = Readable<NetworkStoreContent> & NetworkStoreServices;
 
+type WalletStoreBalance = {
+  shielded: AddressBalance;
+  unshielded: AccountBalance;
+};
+
 type WalletStoreContent = {
-  balance: {
-    shielded: AddressBalance;
-    unshielded: AccountBalance;
-  };
+  balance: WalletStoreBalance;
   currentProfile: import("$lib/vendor/w3sper.js/src/mod").Profile | null;
   initialized: boolean;
   profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>;

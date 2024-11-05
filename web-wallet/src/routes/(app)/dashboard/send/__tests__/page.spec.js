@@ -1,6 +1,10 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render } from "@testing-library/svelte";
-import Send from "../+page.svelte";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render } from "@testing-library/svelte";
+
+import mockedWalletStore from "../../../../../__mocks__/mockedWalletStore";
+import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
+
+import SendPage from "../+page.svelte";
 
 vi.mock("$lib/dusk/string", async (importOriginal) => {
   /** @type {typeof import("$lib/dusk/string")} */
@@ -12,16 +16,57 @@ vi.mock("$lib/dusk/string", async (importOriginal) => {
   };
 });
 
-vi.useFakeTimers();
+vi.mock("$lib/stores", async (importOriginal) => {
+  /** @type {typeof import("$lib/stores")} */
+  const original = await importOriginal();
 
-describe("Send", () => {
+  return {
+    ...original,
+    walletStore: { ...original.walletStore, ...mockedWalletStore },
+  };
+});
+
+const formatter = createCurrencyFormatter("en", "DUSK", 9);
+const { balance, currentProfile } = mockedWalletStore.getMockedStoreValue();
+const formattedShielded = formatter(luxToDusk(balance.shielded.spendable));
+const formattedUnshielded = formatter(luxToDusk(balance.unshielded.value));
+
+describe("Send page", () => {
   afterEach(cleanup);
 
-  it("should render the send page", async () => {
-    const { container } = render(Send);
+  afterAll(() => {
+    vi.doUnmock("$lib/dusk/string");
+    vi.doUnmock("$lib/stores");
+  });
 
-    await vi.advanceTimersToNextTimerAsync();
+  it("should render the send page", async () => {
+    const { container } = render(SendPage);
 
     expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it("should update the spendable amount passed to its child components when a `keyChange` event is fired", async () => {
+    const { container, getByRole } = render(SendPage);
+    const addressTextbox = getByRole("textbox");
+
+    expect(
+      container.querySelector(".contract-statuses__value")
+    ).toHaveTextContent(formattedShielded);
+
+    await fireEvent.input(addressTextbox, {
+      target: { value: currentProfile.account.toString() },
+    });
+
+    expect(
+      container.querySelector(".contract-statuses__value")
+    ).toHaveTextContent(formattedUnshielded);
+
+    await fireEvent.input(addressTextbox, {
+      target: { value: currentProfile.address.toString() },
+    });
+
+    expect(
+      container.querySelector(".contract-statuses__value")
+    ).toHaveTextContent(formattedShielded);
   });
 });
