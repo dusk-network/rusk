@@ -14,6 +14,7 @@ execution-core = { workspace = true, features = ["zk"] }
 
 # abi feature dependency
 piecrust-uplink = { workspace = true, features = ["abi"], optional = true }
+arbitrary = { workspace = true, optional = true }
 
 # host feature dependencies
 piecrust = { workspace = true, optional = true }
