@@ -56,10 +56,10 @@ describe("makeNodeUrl", () => {
     expect(makeNodeUrl().pathname).toBe("/testing");
   });
 
-  it("should return the devnet URL when the hostname starts with 'devnet.staging' on the staging URL", () => {
+  it("should return the devnet URL when the hostname starts with 'apps.staging.devnet' on the staging URL", () => {
     global.window = Object.create(window);
 
-    const url = new URL("https://devnet.staging.dusk.network");
+    const url = new URL("https://apps.staging.devnet.dusk.network");
 
     Object.defineProperty(window, "location", {
       value: {
@@ -72,10 +72,10 @@ describe("makeNodeUrl", () => {
     expect(makeNodeUrl().hostname).toBe("devnet.nodes.dusk.network");
   });
 
-  it("should return the devnet URL when the hostname starts with 'devnet'", () => {
+  it("should return the devnet URL when the hostname starts with 'apps.devnet'", () => {
     global.window = Object.create(window);
 
-    const url = new URL("https://devnet.dusk.network");
+    const url = new URL("https://apps.devnet.dusk.network");
 
     Object.defineProperty(window, "location", {
       value: {
@@ -88,10 +88,10 @@ describe("makeNodeUrl", () => {
     expect(makeNodeUrl().hostname).toBe("devnet.nodes.dusk.network");
   });
 
-  it("should return the testnet URL when the hostname starts with 'testnet.staging' on the staging URL", () => {
+  it("should return the testnet URL when the hostname starts with 'apps.staging.testnet' on the staging URL", () => {
     global.window = Object.create(window);
 
-    const url = new URL("https://testnet.staging.dusk.network");
+    const url = new URL("https://apps.staging.testnet.dusk.network");
 
     Object.defineProperty(window, "location", {
       value: {
@@ -104,10 +104,10 @@ describe("makeNodeUrl", () => {
     expect(makeNodeUrl().hostname).toBe("testnet.nodes.dusk.network");
   });
 
-  it("should return the testnet URL when the hostname starts with 'testnet'", () => {
+  it("should return the testnet URL when the hostname starts with 'apps.testnet'", () => {
     global.window = Object.create(window);
 
-    const url = new URL("https://testnet.dusk.network");
+    const url = new URL("https://apps.testnet.dusk.network");
 
     Object.defineProperty(window, "location", {
       value: {
@@ -152,10 +152,10 @@ describe("makeNodeUrl", () => {
     expect(makeNodeUrl().hostname).toBe("nodes.dusk.network");
   });
 
-  it("should return the mainnet URL when the hostname starts with 'staging.apps'", () => {
+  it("should return the mainnet URL when the hostname starts with 'apps.staging'", () => {
     global.window = Object.create(window);
 
-    const url = new URL("https://staging.apps.dusk.network");
+    const url = new URL("https://apps.staging.dusk.network");
 
     Object.defineProperty(window, "location", {
       value: {
