@@ -1,8 +1,11 @@
 <script>
   import { Balance } from "$lib/components";
 
-  const balance = 20000000;
-  const shieldedTokens = 10000000;
+  const shieldedAmount = 1_000_000_000n;
+  const unshieldedAmount = 2_000_000_000n;
+
+  const shieldedAmountEx2 = 1_000_000_000n;
+  const unshieldedAmountEx2 = 1_000_000_000n;
 </script>
 
 <section>
@@ -11,15 +14,25 @@
     fiatPrice={10}
     locale="en"
     tokenCurrency="DUSK"
-    tokens={balance}
+    {shieldedAmount}
+    {unshieldedAmount}
   />
-
+  <br />
   <Balance
     fiatCurrency="GBP"
     fiatPrice={10}
     locale="en"
     tokenCurrency="DUSK"
-    tokens={balance}
-    shieldedTokensPercentage={(shieldedTokens / balance) * 100}
+    shieldedAmount={shieldedAmountEx2}
+    unshieldedAmount={unshieldedAmountEx2}
+  />
+  <br />
+  <Balance
+    fiatCurrency="GBP"
+    fiatPrice={10}
+    locale="en"
+    tokenCurrency="DUSK"
+    shieldedAmount={shieldedAmountEx2}
+    unshieldedAmount={0n}
   />
 </section>

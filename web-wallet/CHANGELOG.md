@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update Transactions list design [#1922]
 - Update `Stake` to use `Stepper` [#2436]
+- Update Balance component [#2863]
 
 ## [0.6.0] - 2024-11-05
 

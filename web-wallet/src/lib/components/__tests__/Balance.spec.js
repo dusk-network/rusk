@@ -8,10 +8,11 @@ describe("Balance", () => {
     fiatCurrency: "USD",
     fiatPrice: 10,
     locale: "en",
-    shieldedTokensPercentage: 35,
+    shieldedAmount: 1_000_000n,
     tokenCurrency: "DUSK",
-    tokens: 2_000_000,
+    unshieldedAmount: 2_000_000n,
   };
+
   const baseOptions = {
     props: baseProps,
     target: document.body,
@@ -22,7 +23,9 @@ describe("Balance", () => {
   it("renders the Balance component", () => {
     const { container } = render(Balance, baseOptions);
 
-    expect(container.querySelector(".dusk-balance__usage")).toBeInTheDocument();
+    expect(
+      container.querySelector(".dusk-balance__usage-details")
+    ).toBeInTheDocument();
     expect(container.firstChild).toMatchSnapshot();
   });
 
@@ -35,11 +38,30 @@ describe("Balance", () => {
       fiatCurrency: "EUR",
       fiatPrice: 20,
       locale: "it",
+      shieldedAmount: 500_000n,
       tokenCurrency: "DUSK",
-      tokens: 4_000_000,
+      unshieldedAmount: 2_500_000n,
     });
 
     expect(container.firstChild).toMatchSnapshot();
+  });
+
+  it("should display the right percentage values", async () => {
+    const { container } = render(Balance, baseOptions);
+
+    // Check if shielded percentage displays as 33.33%
+    expect(
+      container.querySelector(
+        ".dusk-balance__account:first-child .dusk-balance__percentage"
+      )?.textContent
+    ).toContain("33.33%");
+
+    // Check if unshielded percentage displays as 66.67%
+    expect(
+      container.querySelector(
+        ".dusk-balance__account:last-child .dusk-balance__percentage"
+      )?.textContent
+    ).toContain("66.67%");
   });
 
   it("should pass additional class names and attributes to the rendered element", async () => {
@@ -68,35 +90,6 @@ describe("Balance", () => {
     const { container } = render(Balance, { ...baseOptions, props });
 
     expect(container.querySelector(".dusk-balance__fiat--visible")).toBeNull();
-    expect(container.firstChild).toMatchSnapshot();
-  });
-
-  it("should not display the fiat value if there are no tokens", () => {
-    const props = { ...baseProps, tokens: 0 };
-    const { container } = render(Balance, { ...baseOptions, props });
-
-    expect(container.querySelector(".dusk-balance__fiat--visible")).toBeNull();
-    expect(container.firstChild).toMatchSnapshot();
-  });
-
-  it("should display the usage indicator if the shielded percentage is zero", () => {
-    const props = {
-      ...baseProps,
-      shieldedTokensPercentage: 0,
-    };
-    const { container } = render(Balance, { ...baseOptions, props });
-
-    expect(container.querySelector(".dusk-balance__usage")).toBeInTheDocument();
-    expect(container.firstChild).toMatchSnapshot();
-  });
-
-  it("should not display the usage indicator if the shielded percentage is `undefined`", () => {
-    const props = { ...baseProps, shieldedTokensPercentage: undefined };
-    const { container } = render(Balance, { ...baseOptions, props });
-
-    expect(
-      container.querySelector(".dusk-balance__usage")
-    ).not.toBeInTheDocument();
     expect(container.firstChild).toMatchSnapshot();
   });
 });
