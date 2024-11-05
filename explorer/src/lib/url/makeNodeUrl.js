@@ -25,15 +25,17 @@ function makeNodeUrl(path = "") {
 
   let nodeUrl;
 
-  switch (subDomains[0]) {
-    case "apps": // mainnet
-    case "staging": // mainnet staging
+  switch (`${subDomains[0]}.${subDomains[1]}.${subDomains[2]}`) {
+    case "apps.dusk.network": // mainnet
+    case "apps.staging.dusk": // mainnet staging
       nodeUrl = buildHostedNodeUrl("nodes.");
       break;
-    case "devnet":
+    case "apps.devnet.dusk":
+    case "apps.staging.devnet":
       nodeUrl = buildHostedNodeUrl("devnet.nodes.");
       break;
-    case "testnet":
+    case "apps.testnet.dusk":
+    case "apps.staging.testnet":
       nodeUrl = buildHostedNodeUrl("testnet.nodes.");
       break;
     default:
