@@ -44,7 +44,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         let generator = round_committees
             .get_generator(iteration)
             .expect("committee to be created before run");
-        super::handler::verify_new_block(p, &generator)?;
+        super::handler::verify_candidate_msg(p, &generator)?;
 
         Ok(())
     }
@@ -132,7 +132,7 @@ impl<D: Database> ProposalHandler<D> {
     }
 }
 
-fn verify_new_block(
+fn verify_candidate_msg(
     p: &Candidate,
     expected_generator: &PublicKeyBytes,
 ) -> Result<(), ConsensusError> {
@@ -148,7 +148,7 @@ fn verify_new_block(
         return Err(ConsensusError::InvalidBlockSize(candidate_size));
     }
 
-    //  Verify new_block msg signature
+    // Verify msg signature
     p.verify_signature()?;
 
     if p.consensus_header().prev_block_hash
@@ -157,12 +157,20 @@ fn verify_new_block(
         return Err(ConsensusError::InvalidBlockHash);
     }
 
+    // INFO: we verify the transaction number and the merkle roots here because
+    // the signature only includes the header's hash, making 'txs' and 'faults'
+    // fields malleable from an adversary. We then discard blocks with errors
+    // related to these fields rather than propagating the message and vote
+    // Invalid
+
+    // Check number of transactions
     if p.candidate.txs().len() > MAX_NUMBER_OF_TRANSACTIONS {
         return Err(ConsensusError::TooManyTransactions(
             p.candidate.txs().len(),
         ));
     }
 
+    // Verify tx_root
     let tx_hashes: Vec<_> =
         p.candidate.txs().iter().map(|t| t.hash()).collect();
     let tx_root = merkle_root(&tx_hashes[..]);
@@ -170,10 +178,12 @@ fn verify_new_block(
         return Err(ConsensusError::InvalidBlock);
     }
 
+    // Check number of faults
     if p.candidate.faults().len() > MAX_NUMBER_OF_FAULTS {
         return Err(ConsensusError::TooManyFaults(p.candidate.faults().len()));
     }
 
+    // Verify fault_root
     let fault_hashes: Vec<_> =
         p.candidate.faults().iter().map(|t| t.hash()).collect();
     let fault_root = merkle_root(&fault_hashes[..]);
@@ -192,7 +202,7 @@ pub fn verify_stateless(
     let generator = round_committees
         .get_generator(iteration)
         .expect("committee to be created before run");
-    verify_new_block(c, &generator)?;
+    verify_candidate_msg(c, &generator)?;
 
     Ok(())
 }
