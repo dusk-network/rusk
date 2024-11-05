@@ -118,6 +118,14 @@ impl MsgHandler for RatificationHandler {
             round_committees,
         )?;
 
+        // Ensure the vote matches that of Validation
+        if *p.validation_result.vote() != p.vote {
+            return Err(ConsensusError::VoteMismatch(
+                *p.validation_result.vote(),
+                p.vote,
+            ));
+        }
+
         // Collect vote, if msg payload is of ratification type
         let (sv, quorum_reached) = self
             .aggregator

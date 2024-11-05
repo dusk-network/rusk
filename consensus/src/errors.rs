@@ -52,6 +52,7 @@ pub enum ConsensusError {
     ChildTaskTerminated,
     Canceled(u64),
     VoteAlreadyCollected,
+    VoteMismatch(Vote, Vote),
     TooManyTransactions(usize),
     TooManyFaults(usize),
     UnknownBlockSize,
