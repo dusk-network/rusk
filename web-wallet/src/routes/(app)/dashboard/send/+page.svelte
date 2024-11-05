@@ -9,36 +9,44 @@
   import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
   import { gasStore, settingsStore, walletStore } from "$lib/stores";
 
+  /** @type {(source: "shielded" | "unshielded", balanceInfo: WalletStoreBalance) => [bigint, ContractStatus[]]}*/
+  function getContractInfo(source, balanceInfo) {
+    const spendable =
+      source === "shielded"
+        ? balanceInfo.shielded.spendable
+        : balanceInfo.unshielded.value;
+    const statuses = [
+      {
+        label: "Spendable",
+        value: duskFormatter(luxToDusk(spendable)),
+      },
+    ];
+
+    return [spendable, statuses];
+  }
+
   const collectSettings = collect([
     pick(["gasLimit", "gasPrice"]),
     getKey("language"),
   ]);
   const gasLimits = $gasStore;
 
-  /** @type {bigint} */
-  let spendable = 0n;
+  /** @type {"shielded" | "unshielded"} */
+  let spendableSource = "shielded";
 
   $: [gasSettings, language] = collectSettings($settingsStore);
   $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
   $: ({ balance } = $walletStore);
-  $: statuses = [
-    {
-      label: "Spendable",
-      value: duskFormatter(luxToDusk(balance.shielded.spendable)),
-    },
-  ];
-  /* eslint-disable no-sequences, no-unused-expressions */
-  $: balance, (spendable = balance.shielded.spendable);
-  /* eslint-enable no-sequences, no-unused-expressions */
+  $: [spendable, statuses] = getContractInfo(spendableSource, balance);
 
   /**
-   * @param {{type:string}} event
+   * @param {CustomEvent<{ type: "account" | "address" | undefined}>} event
    */
   function keyChangeHandler(event) {
-    if (event.type === "account") {
-      spendable = balance.unshielded.value;
+    if (event.detail.type === "account") {
+      spendableSource = "unshielded";
     } else {
-      spendable = balance.shielded.spendable;
+      spendableSource = "shielded";
     }
   }
 </script>
