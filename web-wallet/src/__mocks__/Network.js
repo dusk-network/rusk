@@ -1,4 +1,3 @@
-import { expect } from "vitest";
 import { Network } from "$lib/vendor/w3sper.js/src/network/mod";
 
 class NetworkMock extends Network {
@@ -8,13 +7,6 @@ class NetworkMock extends Network {
   /** @param {string | URL} url */
   constructor(url) {
     super(url);
-
-    /**
-     * Not ideal to have this here, but it saves us
-     * the hassle of mocking the module when we need to
-     * check that the correct URL is passed.
-     */
-    expect(url).toBe("https://localhost");
   }
 
   get blockHeight() {

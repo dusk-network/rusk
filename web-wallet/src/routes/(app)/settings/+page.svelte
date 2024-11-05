@@ -56,12 +56,9 @@
   /** @type {(currency: { code: string, currency: string }) => SelectOption} */
   const currencyToOption = rename({ code: "value", currency: "label" });
   const currenciesToOptions = mapWith(currencyToOption);
-  const { currency, darkMode, gasLimit, gasPrice, network } = $settingsStore;
+  const { currency, darkMode, gasLimit, gasPrice } = $settingsStore;
   const { gasLimitLower, gasLimitUpper, gasPriceLower } = $gasStore;
-  const networks = [
-    { label: "testnet", value: "testnet" },
-    { disabled: true, label: "mainnet", value: "mainnet" },
-  ];
+  const { name: networkName } = $networkStore;
 
   let isDarkMode = darkMode;
   let isGasValid = false;
@@ -93,21 +90,7 @@
         </div>
         <Badge {...connectedBadgeProps} />
       </header>
-      <Select
-        className="settings-group__select"
-        value={network}
-        on:change={(evt) => {
-          settingsStore.update((store) => {
-            // eslint-disable-next-line no-extra-parens
-            const option = /** @type {HTMLInputElement} */ (evt.target);
-
-            store.network = option.value;
-
-            return store;
-          });
-        }}
-        options={networks}
-      />
+      <h1>{networkName}</h1>
     </article>
     <hr />
     <article class="settings-group">

@@ -27,7 +27,7 @@
     Textbox,
   } from "$lib/dusk/components";
   import { logo } from "$lib/dusk/icons";
-  import { settingsStore, walletStore } from "$lib/stores";
+  import { networkStore, settingsStore, walletStore } from "$lib/stores";
   import {
     account,
     modal,
@@ -36,11 +36,17 @@
   } from "$lib/migration/walletConnection";
   import { getBalanceOfCoin } from "$lib/migration/migration";
 
-  const { darkMode, network: migrationNetwork } = $settingsStore;
+  const { name: migrationNetwork } = $networkStore;
+  const { darkMode } = $settingsStore;
 
-  /** @type {"mainnet" | "testnet"} */
-  // @ts-ignore
-  const network = migrationNetwork.toLowerCase();
+  /**
+   * We force the type here, because the Migrate Contract
+   * won't be enabled if we're not on the networks below.
+   * See `src/lib/contracts/contract-descriptors.js`.
+   */
+  const network = /** @type {"mainnet" | "testnet"} */ (
+    migrationNetwork.toLowerCase()
+  );
 
   const { ["ERC-20"]: erc20, ["BEP-20"]: bep20 } = tokens[network];
 

@@ -26,6 +26,39 @@ describe("Network store", async () => {
     blockHeightSpy.mockRestore();
   });
 
+  it("should build the newtork with the correct URL and expose a name for it", async () => {
+    let network;
+    let store;
+
+    store = (await import("..")).networkStore;
+    network = await store.connect();
+
+    expect(get(store).name).toBe("Localnet");
+    expect(network.url).toStrictEqual(new URL("https://localhost"));
+
+    vi.resetModules();
+
+    /** @type {Record<string, string>} */
+    const matches = {
+      "https://devnet.nodes.dusk.network/": "Devnet",
+      "https://nodes.dusk.network/": "Mainnet",
+      "https://testnet.nodes.dusk.network/": "Testnet",
+    };
+
+    for (const match of Object.keys(matches)) {
+      vi.stubEnv("VITE_NODE_URL", match);
+
+      store = (await import("..")).networkStore;
+      network = await store.connect();
+
+      expect(get(store).name).toBe(matches[match]);
+      expect(network.url).toStrictEqual(new URL(match));
+      vi.resetModules();
+    }
+
+    vi.unstubAllEnvs();
+  });
+
   it("should expose a method to connect to the network and update the store's connection status", async () => {
     const store = (await import("..")).networkStore;
 

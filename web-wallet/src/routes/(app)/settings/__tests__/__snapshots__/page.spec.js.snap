@@ -51,24 +51,9 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         </span>
       </header>
        
-      <select
-        class="dusk-select settings-group__select"
-      >
-        <option
-          value="testnet"
-        >
-          testnet
-           
-        </option>
-        <option
-          disabled=""
-          value="mainnet"
-        >
-          mainnet
-           
-        </option>
-        
-      </select>
+      <h1>
+        Localnet
+      </h1>
     </article>
      
     <hr />
@@ -589,24 +574,9 @@ exports[`Settings > should render the settings page displaying the status of the
         </span>
       </header>
        
-      <select
-        class="dusk-select settings-group__select"
-      >
-        <option
-          value="testnet"
-        >
-          testnet
-           
-        </option>
-        <option
-          disabled=""
-          value="mainnet"
-        >
-          mainnet
-           
-        </option>
-        
-      </select>
+      <h1>
+        Localnet
+      </h1>
     </article>
      
     <hr />
@@ -1109,24 +1079,9 @@ exports[`Settings > should render the settings page displaying the status of the
         </span>
       </header>
        
-      <select
-        class="dusk-select settings-group__select"
-      >
-        <option
-          value="testnet"
-        >
-          testnet
-           
-        </option>
-        <option
-          disabled=""
-          value="mainnet"
-        >
-          mainnet
-           
-        </option>
-        
-      </select>
+      <h1>
+        Localnet
+      </h1>
     </article>
      
     <hr />

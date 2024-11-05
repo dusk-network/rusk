@@ -20,7 +20,6 @@ const initialState = {
   gasPrice: parseInt(import.meta.env.VITE_GAS_PRICE_DEFAULT, 10),
   hideStakingNotice: false,
   minAllowedStake: parseInt(import.meta.env.VITE_MINIMUM_ALLOWED_STAKE, 10),
-  network: "testnet",
   userId: "",
 };
 
