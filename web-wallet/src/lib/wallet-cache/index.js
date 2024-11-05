@@ -124,7 +124,7 @@ class WalletCache {
    * @param {string} address
    * @returns {Promise<WalletCacheBalanceInfo["balance"]>}
    */
-  getBalance(address) {
+  getBalanceInfo(address) {
     return this.#getEntriesFrom("balancesInfo", false, {
       addresses: [address],
     })
@@ -226,7 +226,7 @@ class WalletCache {
    * @param {WalletCacheBalanceInfo["balance"]} balance
    * @returns {Promise<void>}
    */
-  async setBalance(address, balance) {
+  async setBalanceInfo(address, balance) {
     return this.#db
       .open()
       .then(async (db) => {

@@ -25,10 +25,15 @@ type SettingsStoreContent = {
 
 type SettingsStore = Writable<SettingsStoreContent> & { reset: () => void };
 
-type TransactionInfo = {
-  hash: string;
-  nullifiers: Uint8Array[];
-};
+type TransactionInfo =
+  | {
+      hash: string;
+      nullifiers: Uint8Array[];
+    }
+  | {
+      hash: string;
+      nonce: bigint;
+    };
 
 type TransactionsStoreContent = { transactions: Transaction[] };
 
