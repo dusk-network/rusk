@@ -30,26 +30,26 @@ describe("makeNodeUrl", () => {
     expect(makeNodeUrl().pathname).toBe("/testing");
   });
 
-  it("should return the devnet URL when the hostname starts with 'devnet.staging'", () => {
-    const hostname = "devnet.staging.dusk.network";
+  it("should return the devnet URL when the hostname starts with 'apps.staging.devnet'", () => {
+    const hostname = "apps.staging.devnet.dusk.network";
     vi.stubGlobal("location", { hostname, protocol });
     expect(makeNodeUrl().hostname).toBe("devnet.nodes.dusk.network");
   });
 
-  it("should return the devnet URL when the hostname starts with 'devnet'", () => {
-    const hostname = "devnet.dusk.network";
+  it("should return the devnet URL when the hostname starts with 'apps.devnet'", () => {
+    const hostname = "apps.devnet.dusk.network";
     vi.stubGlobal("location", { hostname, protocol });
     expect(makeNodeUrl().hostname).toBe("devnet.nodes.dusk.network");
   });
 
-  it("should return the testnet URL when the hostname starts with 'testnet.staging'", () => {
-    const hostname = "testnet.staging.dusk.network";
+  it("should return the testnet URL when the hostname starts with 'apps.staging.testnet'", () => {
+    const hostname = "apps.staging.testnet.dusk.network";
     vi.stubGlobal("location", { hostname, protocol });
     expect(makeNodeUrl().hostname).toBe("testnet.nodes.dusk.network");
   });
 
-  it("should return the testnet URL when the hostname starts with 'testnet'", () => {
-    const hostname = "testnet.dusk.network";
+  it("should return the testnet URL when the hostname starts with 'apps.testnet'", () => {
+    const hostname = "apps.testnet.dusk.network";
     vi.stubGlobal("location", { hostname, protocol });
     expect(makeNodeUrl().hostname).toBe("testnet.nodes.dusk.network");
   });
