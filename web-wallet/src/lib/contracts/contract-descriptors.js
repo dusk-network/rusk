@@ -1,3 +1,9 @@
+import { get } from "svelte/store";
+
+import { networkStore } from "$lib/stores";
+
+const { name: networkName } = get(networkStore);
+
 /**
  * Contracts or operations disabled here will stay
  * disabled regardless of other conditions like
@@ -57,7 +63,11 @@ export default [
     ],
   },
   {
-    enabled: import.meta.env.VITE_FEATURE_MIGRATE === "true",
+    // We are missing token configurations for other networks
+    // See `src/lib/containers/MigrateContract/MigrateContract.svelte`
+    enabled:
+      import.meta.env.VITE_FEATURE_MIGRATE === "true" &&
+      ["Mainnet", "Testnet"].includes(networkName),
     id: "migrate",
     label: "Migrate",
     operations: [

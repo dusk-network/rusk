@@ -12,7 +12,7 @@
     mdiTimerSand,
   } from "@mdi/js";
   import { Button, Icon } from "$lib/dusk/components";
-  import { settingsStore, walletStore } from "$lib/stores";
+  import { networkStore, settingsStore, walletStore } from "$lib/stores";
   import {
     AddressPicker,
     AppAnchorButton,
@@ -41,21 +41,21 @@
   });
 
   const { currency, language } = $settingsStore;
+  const { name: networkName } = $networkStore;
 
-  $: ({ network } = $settingsStore);
   $: ({ balance, currentProfile, profiles, syncStatus } = $walletStore);
   $: if (syncStatus.isInProgress) {
     iconVariant = "warning";
     networkStatusIconPath = mdiTimerSand;
-    syncStatusLabel = `Dusk ${network}`;
+    syncStatusLabel = `Dusk ${networkName}`;
   } else if (syncStatus.error) {
     iconVariant = "error";
     networkStatusIconPath = mdiAlertOutline;
-    syncStatusLabel = `Dusk ${network} - Sync Failed`;
+    syncStatusLabel = `Dusk ${networkName} - Sync Failed`;
   } else {
     iconVariant = "success";
     networkStatusIconPath = mdiLink;
-    syncStatusLabel = `Dusk ${network}`;
+    syncStatusLabel = `Dusk ${networkName}`;
   }
   $: totalBalance = luxToDusk(
     balance.shielded.value + balance.unshielded.value

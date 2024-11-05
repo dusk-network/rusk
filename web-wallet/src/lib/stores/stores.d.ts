@@ -19,7 +19,6 @@ type SettingsStoreContent = {
   hideStakingNotice: boolean;
   language: string;
   minAllowedStake: number;
-  network: string;
   userId: string;
 };
 
@@ -38,8 +37,11 @@ type OperationsStoreContent = { currentOperation: string };
 
 type OperationsStore = Writable<OperationsStoreContent>;
 
+type NetworkName = "Devnet" | "Localnet" | "Mainnet" | "Testnet";
+
 type NetworkStoreContent = {
   get connected(): boolean;
+  name: NetworkName;
 };
 
 type NetworkSyncerOptions = {

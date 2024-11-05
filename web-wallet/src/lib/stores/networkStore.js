@@ -14,19 +14,49 @@ function getNetworkUrl() {
     return (
       (import.meta.env.VITE_NODE_URL &&
         new URL(import.meta.env.VITE_NODE_URL)) ||
-      "https://localhost"
+      new URL("https://localhost")
     );
   }
 }
 
+/** @type {Record<string, Exclude<NetworkName, "Mainnet">>} */
+const networkMatchesMap = {
+  devnet: "Devnet",
+  localhost: "Localnet",
+  testnet: "Testnet",
+};
+
+/**
+ * Quick solution to retrieve the network name
+ * from the extrapolated URL.
+ *
+ * @type {(url: URL) => NetworkName}
+ */
+function getNetworkName(url) {
+  /** @type {NetworkName} */
+  let name = "Mainnet";
+
+  for (const match of Object.keys(networkMatchesMap)) {
+    if (~url.href.indexOf(match)) {
+      name = networkMatchesMap[match];
+      break;
+    }
+  }
+
+  return name;
+}
+
+const networkUrl = getNetworkUrl();
+
 /** @type {Network} */
-const network = new Network(getNetworkUrl());
+const network = new Network(networkUrl);
 
 /** @type {NetworkStoreContent} */
 const initialState = {
   get connected() {
     return network.connected;
   },
+  name: getNetworkName(networkUrl),
 };
 
 const networkStore = writable(initialState);
