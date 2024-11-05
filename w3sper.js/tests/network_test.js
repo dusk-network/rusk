@@ -27,7 +27,15 @@ test("Network connection", async () => {
     "kadcastAddress",
     "version",
     "versionBuild",
+    "chain",
   ]);
+
+  const { chain, chainId } = await network.node.info;
+
+  assert.equal(+chain, 0);
+  assert.equal(+chain, chainId);
+  assert.equal(chain.toString(), "localnet");
+  assert.ok(chain === Network.LOCALNET);
 });
 
 test("Network block height", async () => {
