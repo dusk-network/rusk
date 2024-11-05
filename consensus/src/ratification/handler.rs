@@ -79,7 +79,7 @@ impl MsgHandler for RatificationHandler {
     fn verify(
         &self,
         msg: &Message,
-        round_committees: &RoundCommittees,
+        _round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         if let Payload::Ratification(p) = &msg.payload {
             if self.aggregator.is_vote_collected(p) {
@@ -87,11 +87,6 @@ impl MsgHandler for RatificationHandler {
             }
 
             p.verify_signature()?;
-            Self::verify_validation_result(
-                &p.header,
-                &p.validation_result,
-                round_committees,
-            )?;
 
             return Ok(());
         }
@@ -116,6 +111,12 @@ impl MsgHandler for RatificationHandler {
             // collect_from_past fn
             return Err(ConsensusError::InvalidMsgIteration(iteration));
         }
+
+        Self::verify_validation_result(
+            &p.header,
+            &p.validation_result,
+            round_committees,
+        )?;
 
         // Collect vote, if msg payload is of ratification type
         let (sv, quorum_reached) = self
