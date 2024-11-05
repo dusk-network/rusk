@@ -19,18 +19,19 @@ use execution_core::BlsScalar;
 /// while minimizing the value employed. To do this we sort the notes in
 /// ascending value order, and go through each combination in a
 /// lexicographic order until we find the first combination whose sum is
-/// larger or equal to the given value. If such a slice is not found, an
+/// larger or equal to the given cost. If such a slice is not found, an
 /// empty vector is returned.
 ///
-/// If the target sum is greater than the sum of the notes then an
-/// empty vector is returned.
+/// If the cost is greater than the sum of the notes then an empty vector is
+/// returned.
 #[must_use]
-pub fn notes(vk: &PhoenixViewKey, notes: NoteList, value: u64) -> NoteList {
+pub fn notes(vk: &PhoenixViewKey, notes: NoteList, cost: u64) -> NoteList {
     if notes.is_empty() {
         return NoteList::default();
     }
 
-    let mut notes_and_values: Vec<(NoteLeaf, u64, BlsScalar)> = notes
+    // decrypt the note-values
+    let mut notes_values_nullifier: Vec<(NoteLeaf, u64, BlsScalar)> = notes
         .iter()
         .filter_map(|(nullifier, leaf)| {
             leaf.as_ref()
@@ -40,36 +41,64 @@ pub fn notes(vk: &PhoenixViewKey, notes: NoteList, value: u64) -> NoteList {
         })
         .collect();
 
-    let sum: u64 = notes_and_values
+    // return an empty list if the sum of all notes cannot cover the cost
+    let sum: u64 = notes_values_nullifier
         .iter()
         .fold(0, |sum, &(_, value, _)| sum.saturating_add(value));
-
-    if sum < value {
+    if sum < cost {
         return NoteList::default();
     }
 
+    // if there are less that MAX_INPUT_NOTES notes, we can return the list as
+    // it is
     if notes.len() <= MAX_INPUT_NOTES {
         return notes;
     }
 
-    notes_and_values.sort_by(|(_, aval, _), (_, bval, _)| aval.cmp(bval));
-    pick_lexicographic(notes_and_values.len(), |indices| {
-        indices
-            .iter()
-            .map(|index| notes_and_values[*index].1)
-            .sum::<u64>()
-            >= value
-    })
-    .map(|index| notes_and_values[index].clone())
-    .map(|(n, _, b)| (b, n))
-    .to_vec()
-    .into()
+    // sort the input-notes from smallest to largest value
+    notes_values_nullifier.sort_by(|(_, aval, _), (_, bval, _)| aval.cmp(bval));
+
+    // return an empty list if the MAX_INPUT_NOTES highest notes do not cover
+    // the cost
+    if notes_values_nullifier
+        .iter()
+        .skip(notes_values_nullifier.len() - MAX_INPUT_NOTES)
+        .map(|notes_values_nullifier| notes_values_nullifier.1)
+        .sum::<u64>()
+        < cost
+    {
+        return NoteList::default();
+    }
+
+    // at this point we know that there is a possible combination of
+    // MAX_INPUT_NOTES notes that cover the cost and we pick the combination of
+    // the smallest note-values possible whose sum cover the cost
+    pick_lexicographic(&notes_values_nullifier, cost)
+        .map(|index| notes_values_nullifier[index].clone())
+        .map(|(n, _, b)| (b, n))
+        .to_vec()
+        .into()
 }
 
-fn pick_lexicographic<F: Fn(&[usize; MAX_INPUT_NOTES]) -> bool>(
-    max_len: usize,
-    is_valid: F,
+fn is_valid(
+    notes_values_nullifier: impl AsRef<[(NoteLeaf, u64, BlsScalar)]>,
+    cost: u64,
+    indices: &[usize; MAX_INPUT_NOTES],
+) -> bool {
+    indices
+        .iter()
+        .map(|index| notes_values_nullifier.as_ref()[*index].1)
+        .sum::<u64>()
+        >= cost
+}
+
+fn pick_lexicographic(
+    notes_values_nullifier: &Vec<(NoteLeaf, u64, BlsScalar)>,
+    cost: u64,
 ) -> [usize; MAX_INPUT_NOTES] {
+    let max_len = notes_values_nullifier.len();
+
+    // initialize the indices
     let mut indices = [0; MAX_INPUT_NOTES];
     indices
         .iter_mut()
@@ -77,7 +106,7 @@ fn pick_lexicographic<F: Fn(&[usize; MAX_INPUT_NOTES]) -> bool>(
         .for_each(|(i, index)| *index = i);
 
     loop {
-        if is_valid(&indices) {
+        if is_valid(notes_values_nullifier, cost, &indices) {
             return indices;
         }
 
@@ -101,5 +130,5 @@ fn pick_lexicographic<F: Fn(&[usize; MAX_INPUT_NOTES]) -> bool>(
         }
     }
 
-    [0; MAX_INPUT_NOTES]
+    indices
 }

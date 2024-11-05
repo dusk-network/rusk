@@ -173,7 +173,7 @@ fn test_balance() {
 }
 
 #[test]
-fn knapsack_works() {
+fn test_pick_notes() {
     use rand::SeedableRng;
 
     let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(0xbeef);
@@ -182,58 +182,111 @@ fn knapsack_works() {
     let vk = PhoenixViewKey::from(&sk);
     let pk = PhoenixPublicKey::from(&sk);
 
+    // Check single input-note
+
     // sanity check
     assert!(pick_notes(&vk, NoteList::default(), 70).is_empty());
 
-    // basic check
+    // basic check with one note
     let leaf = gen_note_leaf(&mut rng, true, &pk, 100);
-    let n = leaf.note.gen_nullifier(&sk);
-    let available = NoteList::from(vec![(n, leaf)]);
+    let all_notes = generate_note_list([leaf], &sk);
 
-    let input = pick_notes(&vk, available.clone(), 70);
-    assert_eq!(input, available);
+    let input_notes = pick_notes(&vk, all_notes.clone(), 70);
+    assert_eq!(input_notes, all_notes);
 
     // out of balance basic check
     let leaf = gen_note_leaf(&mut rng, true, &pk, 100);
-    let available = NoteList::from(vec![(n, leaf)]);
-    assert!(pick_notes(&vk, available, 101).is_empty());
+    let all_notes = generate_note_list([leaf], &sk);
+    assert!(pick_notes(&vk, all_notes, 101).is_empty());
 
-    // multiple inputs check
-    // note: this test is checking a naive, simple order-based output
+    // Check multiple input-notes
 
-    let leaf = [
+    // checking a naive, simple order-based output works
+    let leaves = [
         gen_note_leaf(&mut rng, true, &pk, 100),
         gen_note_leaf(&mut rng, true, &pk, 500),
         gen_note_leaf(&mut rng, true, &pk, 300),
     ];
+    let all_notes = generate_note_list(leaves, &sk);
+    assert_eq!(pick_notes(&vk, all_notes.clone(), 600), all_notes);
 
-    let available: Vec<(_, _)> = leaf
-        .iter()
-        .map(|l| {
-            let n = l.note.gen_nullifier(&sk);
-            (n, l.clone())
-        })
-        .collect();
-
-    let available = NoteList::from(available);
-
-    assert_eq!(pick_notes(&vk, available.clone(), 600), available);
-
-    let leaf = [
+    // checking that spending more than the total doesn't work
+    let leaves = [
         gen_note_leaf(&mut rng, true, &pk, 100),
         gen_note_leaf(&mut rng, true, &pk, 500),
         gen_note_leaf(&mut rng, true, &pk, 300),
     ];
+    let all_notes = generate_note_list(leaves, &sk);
+    assert_eq!(pick_notes(&vk, all_notes, 901), NoteList::default());
 
-    let available: Vec<(_, _)> = leaf
+    // checking that pick_notes works if spendable is smaller that the total
+
+    // generate 5 notes with 10 dusk owned by the same key
+    let leaves = [
+        gen_note_leaf(&mut rng, true, &pk, 10),
+        gen_note_leaf(&mut rng, true, &pk, 10),
+        gen_note_leaf(&mut rng, true, &pk, 10),
+        gen_note_leaf(&mut rng, true, &pk, 10),
+        gen_note_leaf(&mut rng, true, &pk, 20),
+    ];
+    let all_notes = generate_note_list(leaves, &sk);
+
+    // with a target value of 20 it should pick the first 4 notes
+    let target = 20;
+    let expected_input_notes =
+        generate_expected_input_notes(&all_notes, &[0, 1, 2, 3]);
+    assert_eq!(
+        pick_notes(&vk, all_notes.clone(), target),
+        expected_input_notes
+    );
+
+    // with a target value of 50 it should also pick the last note
+    let target = 50;
+    let expected_input_notes =
+        generate_expected_input_notes(&all_notes, &[0, 1, 2, 4]);
+    assert_eq!(
+        pick_notes(&vk, all_notes.clone(), target),
+        expected_input_notes
+    );
+
+    // a target value of 51 however is above the max spendable
+    let target = 51;
+    let expected_input_notes = NoteList::default();
+    assert_eq!(
+        pick_notes(&vk, all_notes.clone(), target),
+        expected_input_notes
+    );
+}
+
+fn generate_expected_input_notes(
+    ordered_notes: &NoteList,
+    expected_indices: &[usize],
+) -> NoteList {
+    let expected_input: Vec<(_, _)> = ordered_notes
         .iter()
-        .map(|l| {
-            let n = l.note.gen_nullifier(&sk);
-            (n, l.clone())
+        .enumerate()
+        .filter_map(|(i, note_leaf)| {
+            if expected_indices.contains(&i) {
+                Some(note_leaf.clone())
+            } else {
+                None
+            }
         })
         .collect();
+    expected_input.into()
+}
 
-    let available = NoteList::from(available);
-
-    assert_eq!(pick_notes(&vk, available, 901), NoteList::default());
+fn generate_note_list(
+    note_leaves: impl AsRef<[NoteLeaf]>,
+    sk: &PhoenixSecretKey,
+) -> NoteList {
+    note_leaves
+        .as_ref()
+        .iter()
+        .map(|leaf| {
+            let nullifier = leaf.note.gen_nullifier(sk);
+            (nullifier, leaf.clone())
+        })
+        .collect::<Vec<(_, _)>>()
+        .into()
 }
