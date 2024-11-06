@@ -19,7 +19,6 @@
     Balance,
     SyncBar,
   } from "$lib/components";
-  import { luxToDusk } from "$lib/dusk/currency";
 
   /** @type {import('./$types').LayoutData} */
   export let data;
@@ -57,15 +56,6 @@
     networkStatusIconPath = mdiLink;
     syncStatusLabel = `Dusk ${networkName}`;
   }
-  $: totalBalance = luxToDusk(
-    balance.shielded.value + balance.unshielded.value
-  );
-  $: shieldedTokensPercentage =
-    import.meta.env.VITE_FEATURE_ALLOCATE === "true"
-      ? totalBalance > 0
-        ? +((luxToDusk(balance.shielded.value) * 100) / totalBalance).toFixed(2)
-        : 0
-      : undefined;
 </script>
 
 <svelte:window
@@ -85,8 +75,8 @@
       {fiatPrice}
       locale={language}
       tokenCurrency="DUSK"
-      tokens={luxToDusk(balance.shielded.value)}
-      {shieldedTokensPercentage}
+      shieldedAmount={balance.shielded.value}
+      unshieldedAmount={balance.unshielded.value}
     />
 
     <slot />

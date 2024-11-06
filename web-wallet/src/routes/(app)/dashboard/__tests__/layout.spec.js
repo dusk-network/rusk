@@ -104,7 +104,7 @@ describe("Dashboard Layout", () => {
       expect(result2.currentPrice).resolves.toStrictEqual({});
     });
 
-    it('shoud return a promise that resolves with an empty object if the fetch Response status is not "ok"', async () => {
+    it('should return a promise that resolves with an empty object if the fetch Response status is not "ok"', async () => {
       fetchMock.mockResolvedValueOnce(new Response("", { status: 404 }));
 
       const result = /** @type {Record<string, any>} */ (await loadData());
@@ -117,7 +117,7 @@ describe("Dashboard Layout", () => {
       expect(result.currentPrice).resolves.toStrictEqual({});
     });
 
-    it("shoud return a promise that resolves with an empty object if the fetch fails or the Response contains invalid JSON", async () => {
+    it("should return a promise that resolves with an empty object if the fetch fails or the Response contains invalid JSON", async () => {
       fetchMock
         .mockRejectedValueOnce(new Error("some error"))
         .mockResolvedValueOnce(new Response("}", { status: 200 }));
@@ -143,7 +143,9 @@ describe("Dashboard Layout", () => {
 
   const usdPrice = 0.5;
   const expectedFiat =
-    luxToDusk(get(mockedWalletStore).balance.shielded.value) * usdPrice;
+    (luxToDusk(get(mockedWalletStore).balance.shielded.value) +
+      luxToDusk(get(mockedWalletStore).balance.unshielded.value)) *
+    usdPrice;
   const formatter = createCurrencyFormatter("en", "usd", 2);
   const baseProps = {
     data: { currentPrice: Promise.resolve({ usd: usdPrice }) },
@@ -154,34 +156,6 @@ describe("Dashboard Layout", () => {
 
     expect(getStatusWrapper(container, "success")).toBeTruthy();
     expect(container).toMatchSnapshot();
-  });
-
-  it("should show the correct shielded percentage", async () => {
-    const { getByRole } = render(Layout, baseProps);
-    const { balance } = mockedWalletStore.getMockedStoreValue();
-    const [shielded, unshielded] = [
-      balance.shielded.value,
-      balance.unshielded.value,
-    ];
-    const expectedPercentage = (
-      (luxToDusk(shielded) * 100) /
-      luxToDusk(shielded + unshielded)
-    ).toFixed(2);
-    const meter = getByRole("meter");
-
-    expect(meter).toHaveAttribute("aria-valuenow", expectedPercentage);
-
-    await act(() => {
-      mockedWalletStore.setMockedStoreValue({
-        ...initialState,
-        balance: {
-          shielded: { spendable: 0n, value: 0n },
-          unshielded: { nonce: 0n, value: 0n },
-        },
-      });
-    });
-
-    expect(meter).toHaveAttribute("aria-valuenow", "0");
   });
 
   it("should render the dashboard layout and show a throbber while balance is loading", async () => {
