@@ -1,0 +1,82 @@
+name: w3sper.js CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+jobs:
+  # JOB to run change detection
+  changes:
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      pull-requests: read
+    # Set job outputs to values from filter step
+    outputs:
+      run-ci: ${{ steps.filter.outputs.run-ci }}
+    steps:
+      # For pull requests it's not necessary to checkout the code
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run-ci:
+              - 'execution-core/**'
+              - 'wallet-core/**'
+              - 'w3sper.js/**'
+              - '.github/workflows/w3sperjs_ci.yml'
+
+  deno_lint_check:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
+    name: Deno lint check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup deno
+        uses: denoland/setup-deno@v2
+        with: 
+          deno-version: v2.x
+      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run deno lint        
+        run: |
+          cd w3sper.js
+          deno lint
+
+  make_wasm_and_w3sper_test:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true'
+    name: "Build wallet-core WASM, run Docker image and deno tests"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository, setup rust
+        uses: actions/checkout@v4
+
+      - name: Run Docker container
+        run: |
+          mkdir /opt/rusk
+          docker run --name rusk -d -p 9000:9000/udp -p 8080:8080/tcp -v ./w3sper.js/tests/assets/genesis.toml:/opt/rusk/state.toml dusknode/rusk
+      
+      - name: Setup Rust
+        uses: dsherret/rust-toolchain-file@v1
+
+      - name: Setup deno
+        uses: denoland/setup-deno@v2
+        with: 
+          deno-version: v2.x
+        
+      - name: Run deno
+        run: |
+          cd wallet-core
+          make wasm
+          cd ../w3sper.js
+          deno task test

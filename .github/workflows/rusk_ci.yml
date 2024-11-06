@@ -28,6 +28,7 @@ jobs:
             run-ci:
               - '!(web-wallet/**/*|.github/workflows/webwallet_ci.yml)'
               - '!(explorer/**/*|.github/workflows/explorer_ci.yml)'
+              - '!(w3sper.js/**/*|.github/workflows/w3sperjs_ci.yml)'
           predicate-quantifier: "every"
 
   analyze:
