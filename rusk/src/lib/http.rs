@@ -221,9 +221,16 @@ async fn listening_loop<H>(
         ws_event_channel_cap,
     };
 
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .thread_name("http")
+        .enable_all()
+        .build()
+        .expect("http runtime to be created");
     loop {
         tokio::select! {
             _ = shutdown.recv() => {
+                runtime.shutdown_background();
                 break;
             }
             r = listener.accept() => {
@@ -237,7 +244,7 @@ async fn listening_loop<H>(
                 let stream = TokioIo::new(stream);
                 let service = service.clone();
 
-                task::spawn(async move {
+                runtime.spawn(async move {
                     let conn = http.serve_connection_with_upgrades(stream, service);
                     conn.await
                 });
