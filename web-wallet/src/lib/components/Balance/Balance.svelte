@@ -34,8 +34,13 @@
 
   $: totalBalance = luxToDusk(shieldedAmount + unshieldedAmount);
 
-  $: shieldedPercentage = (luxToDusk(shieldedAmount) / totalBalance) * 100;
-  $: unshieldedPercentage = (luxToDusk(unshieldedAmount) / totalBalance) * 100;
+  $: shieldedPercentage = totalBalance
+    ? (luxToDusk(shieldedAmount) / totalBalance) * 100
+    : 0;
+
+  $: unshieldedPercentage = totalBalance
+    ? (luxToDusk(unshieldedAmount) / totalBalance) * 100
+    : 0;
 
   $: classes = makeClassName(["dusk-balance", className]);
 

@@ -35,4 +35,13 @@
     shieldedAmount={shieldedAmountEx2}
     unshieldedAmount={0n}
   />
+  <br />
+  <Balance
+    fiatCurrency="GBP"
+    fiatPrice={10}
+    locale="en"
+    tokenCurrency="DUSK"
+    shieldedAmount={0n}
+    unshieldedAmount={0n}
+  />
 </section>
