@@ -1,27 +1,25 @@
-# w3sper.js SDK
+# w3sper SDK
 
-The W3sper.js SDK is a robust toolkit designed to streamline the development of applications that seamlessly interact with the Dusk Blockchain. This repository hosts the Web SDK, built with JavaScript, while a Native SDK, implemented in Rust, is also available in a separate repository. Both versions of the SDK offer comprehensive tools for managing blockchain interactions, but this version focuses on web-based implementations.
+`w3sper` is a JavaScript library designed to enhance secure and private communication within the Dusk Network ecosystem. With `w3sper`, developers can integrate privacy-focused blockchain features seamlessly into web applications, harnessing the power of the Dusk Network’s privacy-centric technology.
 
-## Features
+## Key Features
 
-- **Address & Account Management**: Generate and manage profiles.
-- **Balance & Transaction Handling**: Check balances, create signed transactions, and manage gas.
-- **Event Subscription**: Subscribe to network events and query blockchain data.
-- **Proof Management**: Generate and delegate cryptographic proofs.
+- **Address & Account Management**: Easily create and manage profiles for both public accounts and shielded addresses, supporting secure and private identity handling.
+- **Balance & Transaction Management**: Access account balances, transfer tokens between shielded addresses and public accounts, create and sign transactions, and manage gas efficiently.
+- **Offline Transaction Creation**: Generate signed transactions offline for public accounts, enabling secure transaction handling without an internet connection.
+- **Event Subscription**: Subscribe to network and contract events in real time, allowing seamless access to blockchain updates.
+- **Contract Interactions**: Query contract states and create custom transactions for contract interactions, making decentralized application development more flexible.
+- **Proof Management**: Generate and delegate cryptographic proofs for enhanced privacy and security.
 
-## Modules Overview
+## Installation
 
-| Module         | Native SDK | Web SDK | Description                              |
-| -------------- | ---------- | ------- | ---------------------------------------- |
-| Profile        | ✓          | ✓       | Manage accounts, addresses, and balances |
-| Events         | ✓          | ✓       | Subscribe to and dispatch events         |
-| Data (GraphQL) | ✓          | ✓       | Query blockchain data                    |
-| Transaction    | ✓          | ✓       | Create and dispatch transactions         |
-| Prover         | ✓          | ✗       | Generate cryptographic proofs            |
+To install the `w3sper` SDK, run the following command:
 
-## Getting Started
+```sh
+deno add jsr:@dusk/w3sper
+```
 
-To start using the W3sper SDK in your project, refer to the installation and usage guides for the [Native SDK](link-to-native-sdk-docs) and [Web SDK](link-to-web-sdk-docs).
+Installation
 
 ## License
 
