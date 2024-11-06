@@ -618,10 +618,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 self.handle_past_msg(msg).await;
                 return None;
             }
-            Err(ConsensusError::InvalidValidation(QuorumType::NoQuorum)) => {
-                warn!(event = "No quorum reached", iter = msg.header.iteration);
-                return None;
-            }
             // An error here means this message is invalid due to failed
             // verification.
             Err(e) => {

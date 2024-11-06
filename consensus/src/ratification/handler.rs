@@ -283,7 +283,7 @@ impl RatificationHandler {
             .get_validation_committee(iter)
             .ok_or_else(|| {
                 error!("could not get validation committee");
-                ConsensusError::InvalidValidation(result.quorum())
+                ConsensusError::CommitteeNotGenerated
             })?;
         verify_votes(
             header,
