@@ -64,6 +64,27 @@ describe("Balance", () => {
     ).toContain("66.67%");
   });
 
+  it("should display the right percentage values when balance is zero", async () => {
+    const options = {
+      ...baseOptions,
+      props: { ...baseProps, shieldedAmount: 0n, unshieldedAmount: 0n },
+    };
+
+    const { container } = render(Balance, options);
+
+    expect(
+      container.querySelector(
+        ".dusk-balance__account:first-child .dusk-balance__percentage"
+      )?.textContent
+    ).toContain("0%");
+
+    expect(
+      container.querySelector(
+        ".dusk-balance__account:last-child .dusk-balance__percentage"
+      )?.textContent
+    ).toContain("0%");
+  });
+
   it("should pass additional class names and attributes to the rendered element", async () => {
     const props = {
       ...baseProps,
