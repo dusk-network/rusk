@@ -66,7 +66,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             let failed_attestations =
                 ctx.sv_registry.lock().await.get_failed_atts(iteration);
 
-            if let Ok(msg) = self
+            match self
                 .bg
                 .generate_candidate_message(
                     &ctx.round_update,
@@ -75,40 +75,49 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                 )
                 .await
             {
-                debug!(
-                    event = "send message",
-                    src = "proposal",
-                    msg_topic = ?msg.topic(),
-                    info = ?msg.header,
-                    ray_id = msg.ray_id()
-                );
-                ctx.outbound.try_send(msg.clone());
+                Ok(msg) => {
+                    debug!(
+                        event = "send message",
+                        src = "proposal",
+                        msg_topic = ?msg.topic(),
+                        info = ?msg.header,
+                        ray_id = msg.ray_id()
+                    );
+                    ctx.outbound.try_send(msg.clone());
 
-                // register new candidate in local state
-                match self
-                    .handler
-                    .lock()
-                    .await
-                    .collect(
-                        msg,
-                        &ctx.round_update,
-                        committee,
-                        None,
-                        &ctx.iter_ctx.committees,
+                    // register new candidate in local state
+                    match self
+                        .handler
+                        .lock()
+                        .await
+                        .collect(
+                            msg,
+                            &ctx.round_update,
+                            committee,
+                            None,
+                            &ctx.iter_ctx.committees,
+                        )
+                        .await
+                    {
+                        Ok(StepOutcome::Ready(msg)) => {
+                            Self::wait_until_next_slot(tip_timestamp).await;
+                            return msg;
+                        }
+                        Err(e) => {
+                            error!("invalid candidate generated due to {:?}", e)
+                        }
+                        _ => {}
+                    };
+                }
+
+                Err(e) => {
+                    error!(
+                      event = "Failed to generate candidate block",
+                      round = ctx.round_update.round,
+                      iteration = ctx.iteration,
+                      err = ?e,
                     )
-                    .await
-                {
-                    Ok(StepOutcome::Ready(msg)) => {
-                        Self::wait_until_next_slot(tip_timestamp).await;
-                        return msg;
-                    }
-                    Err(e) => {
-                        error!("invalid candidate generated due to {:?}", e)
-                    }
-                    _ => {}
-                };
-            } else {
-                error!("block generator couldn't create candidate block")
+                }
             }
         }
 
