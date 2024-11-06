@@ -185,7 +185,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             .db
             .read()
             .await
-            .view(|db| db.get_block_exists(&candidate_block.hash))
+            .view(|db| db.block_exists(&candidate_block.hash))
             .map_err(|e| {
                 HeaderError::Storage(
                     "error checking Ledger::get_block_exists",
@@ -236,7 +236,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             .db
             .read()
             .await
-            .view(|v| v.fetch_block_header(&self.prev_header.prev_block_hash))
+            .view(|v| v.block_header(&self.prev_header.prev_block_hash))
             .map_err(|e| {
                 HeaderError::Storage(
                     "error checking Ledger::fetch_block_header",
@@ -371,7 +371,7 @@ pub async fn verify_faults<DB: database::DB>(
             .await
             .view(|db| {
                 let prev_header = db
-                    .fetch_block_header(&fault_header.prev_block_hash)?
+                    .block_header(&fault_header.prev_block_hash)?
                     .ok_or(anyhow::anyhow!("Slashing a non accepted header"))?;
                 // No overflow here, since the header has been already validated
                 // not to be 0
@@ -383,7 +383,7 @@ pub async fn verify_faults<DB: database::DB>(
                 // id directly This needs the fault id to be
                 // changed into "HEIGHT|TYPE|PROV_KEY"
                 let start_height = fault_header.round.saturating_sub(EPOCH);
-                let stored_faults = db.fetch_faults_by_block(start_height)?;
+                let stored_faults = db.faults_by_block(start_height)?;
                 if stored_faults.iter().any(|other| f.same(other)) {
                     anyhow::bail!("Double fault detected");
                 }

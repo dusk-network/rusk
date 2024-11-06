@@ -12,7 +12,7 @@ use anyhow::Result;
 use std::cell::RefCell;
 
 use node_data::ledger::{
-    self, Fault, Header, Label, SpendingId, SpentTransaction,
+    Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
 };
 use node_data::message::payload;
 use node_data::message::ConsensusHeader;
@@ -24,7 +24,7 @@ use rocksdb::{
     AsColumnFamilyRef, BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor,
     DBAccess, DBRawIteratorWithThreadMode, IteratorMode, LogLevel,
     OptimisticTransactionDB, OptimisticTransactionOptions, Options,
-    SnapshotWithThreadMode, Transaction, WriteOptions,
+    SnapshotWithThreadMode, WriteOptions,
 };
 
 use std::collections::HashSet;
@@ -282,7 +282,7 @@ impl DB for Backend {
 }
 
 pub struct DBTransaction<'db, DB: DBAccess> {
-    inner: Transaction<'db, DB>,
+    inner: rocksdb::Transaction<'db, DB>,
     /// cumulative size of transaction footprint
     cumulative_inner_size: RefCell<usize>,
 
@@ -312,7 +312,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn store_block(
         &self,
-        header: &ledger::Header,
+        header: &Header,
         txs: &[SpentTransaction],
         faults: &[Fault],
         label: Label,
@@ -366,22 +366,23 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self.get_size())
     }
 
-    fn fetch_faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>> {
+    fn faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>> {
         let mut faults = vec![];
         let mut hash = self
             .op_read(MD_HASH_KEY)?
             .ok_or(anyhow::anyhow!("Cannot read tip"))?;
 
         loop {
-            let block = self.fetch_light_block(&hash)?.ok_or(
-                anyhow::anyhow!("Cannot read block {}", hex::encode(&hash)),
-            )?;
+            let block = self.light_block(&hash)?.ok_or(anyhow::anyhow!(
+                "Cannot read block {}",
+                hex::encode(&hash)
+            ))?;
 
             let block_height = block.header.height;
 
             if block_height >= start_height {
                 hash = block.header.prev_block_hash.to_vec();
-                faults.extend(self.fetch_faults(&block.faults_ids)?);
+                faults.extend(self.faults(&block.faults_ids)?);
             } else {
                 break;
             }
@@ -408,7 +409,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn delete_block(&self, b: &ledger::Block) -> Result<()> {
+    fn delete_block(&self, b: &Block) -> Result<()> {
         self.inner.delete_cf(
             self.ledger_height_cf,
             b.header().height.to_le_bytes(),
@@ -426,11 +427,11 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn get_block_exists(&self, hash: &[u8]) -> Result<bool> {
+    fn block_exists(&self, hash: &[u8]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.ledger_cf, hash)?.is_some())
     }
 
-    fn fetch_faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>> {
+    fn faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>> {
         if faults_ids.is_empty() {
             return Ok(vec![]);
         }
@@ -445,14 +446,14 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         let mut faults = vec![];
         for buf in faults_buffer {
             let buf = buf?.unwrap();
-            let fault = ledger::Fault::read(&mut &buf.to_vec()[..])?;
+            let fault = Fault::read(&mut &buf[..])?;
             faults.push(fault);
         }
 
         Ok(faults)
     }
 
-    fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
+    fn block(&self, hash: &[u8]) -> Result<Option<Block>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = LightBlock::read(&mut &blob[..])?;
@@ -469,8 +470,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 let mut txs = vec![];
                 for buf in txs_buffers {
                     let buf = buf?.unwrap();
-                    let tx =
-                        ledger::SpentTransaction::read(&mut &buf.to_vec()[..])?;
+                    let tx = SpentTransaction::read(&mut &buf[..])?;
                     txs.push(tx.inner);
                 }
 
@@ -485,12 +485,12 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 let mut faults = vec![];
                 for buf in faults_buffer {
                     let buf = buf?.unwrap();
-                    let fault = ledger::Fault::read(&mut &buf.to_vec()[..])?;
+                    let fault = Fault::read(&mut &buf[..])?;
                     faults.push(fault);
                 }
 
                 Ok(Some(
-                    ledger::Block::new(record.header, txs, faults)
+                    Block::new(record.header, txs, faults)
                         .expect("block should be valid"),
                 ))
             }
@@ -498,7 +498,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
-    fn fetch_light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>> {
+    fn light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = LightBlock::read(&mut &blob[..])?;
@@ -508,7 +508,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
-    fn fetch_block_header(&self, hash: &[u8]) -> Result<Option<Header>> {
+    fn block_header(&self, hash: &[u8]) -> Result<Option<Header>> {
         match self.snapshot.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = Header::read(&mut &blob[..])?;
@@ -518,10 +518,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
-    fn fetch_block_hash_by_height(
-        &self,
-        height: u64,
-    ) -> Result<Option<[u8; 32]>> {
+    fn block_hash_by_height(&self, height: u64) -> Result<Option<[u8; 32]>> {
         Ok(self
             .snapshot
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
@@ -533,14 +530,11 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             }))
     }
 
-    fn get_ledger_tx_by_hash(
-        &self,
-        tx_id: &[u8],
-    ) -> Result<Option<ledger::SpentTransaction>> {
+    fn ledger_tx(&self, tx_id: &[u8]) -> Result<Option<SpentTransaction>> {
         let tx = self
             .snapshot
             .get_cf(self.ledger_txs_cf, tx_id)?
-            .map(|blob| ledger::SpentTransaction::read(&mut &blob[..]))
+            .map(|blob| SpentTransaction::read(&mut &blob[..]))
             .transpose()?;
 
         Ok(tx)
@@ -551,23 +545,20 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     ///
     /// This is a convenience method that checks if a transaction exists in the
     /// ledger without unmarshalling the transaction
-    fn get_ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool> {
+    fn ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_id)?.is_some())
     }
 
-    fn fetch_block_by_height(
-        &self,
-        height: u64,
-    ) -> Result<Option<ledger::Block>> {
-        let hash = self.fetch_block_hash_by_height(height)?;
+    fn block_by_height(&self, height: u64) -> Result<Option<Block>> {
+        let hash = self.block_hash_by_height(height)?;
         let block = match hash {
-            Some(hash) => self.fetch_block(&hash)?,
+            Some(hash) => self.block(&hash)?,
             None => None,
         };
         Ok(block)
     }
 
-    fn fetch_block_label_by_height(
+    fn block_label_by_height(
         &self,
         height: u64,
     ) -> Result<Option<([u8; 32], Label)>> {
@@ -598,7 +589,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the block is successfully stored, or an error if the
     /// operation fails.
-    fn store_candidate_block(&self, b: ledger::Block) -> Result<()> {
+    fn store_candidate(&self, b: Block) -> Result<()> {
         let mut serialized = vec![];
         b.write(&mut serialized)?;
 
@@ -622,12 +613,9 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(Some(block))` if the block is found, `Ok(None)` if the block
     /// is not found, or an error if the operation fails.
-    fn fetch_candidate_block(
-        &self,
-        hash: &[u8],
-    ) -> Result<Option<ledger::Block>> {
+    fn candidate(&self, hash: &[u8]) -> Result<Option<Block>> {
         if let Some(blob) = self.snapshot.get_cf(self.candidates_cf, hash)? {
-            let b = ledger::Block::read(&mut &blob[..])?;
+            let b = Block::read(&mut &blob[..])?;
             return Ok(Some(b));
         }
 
@@ -635,16 +623,16 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
         Ok(None)
     }
 
-    fn fetch_candidate_block_by_iteration(
+    fn candidate_by_iteration(
         &self,
         consensus_header: &ConsensusHeader,
-    ) -> Result<Option<ledger::Block>> {
+    ) -> Result<Option<Block>> {
         let iter = self
             .inner
             .iterator_cf(self.candidates_cf, IteratorMode::Start);
 
         for (_, blob) in iter.map(Result::unwrap) {
-            let b = ledger::Block::read(&mut &blob[..])?;
+            let b = Block::read(&mut &blob[..])?;
 
             let header = b.header();
             if header.prev_block_hash == consensus_header.prev_block_hash
@@ -740,7 +728,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     /// Returns `Ok(Some(ValidationResult))` if the ValidationResult is found,
     /// `Ok(None)` if the ValidationResult is not found, or an error if the
     /// operation fails.
-    fn fetch_validation_result(
+    fn validation_result(
         &self,
         consensus_header: &ConsensusHeader,
     ) -> Result<Option<payload::ValidationResult>> {
@@ -840,7 +828,7 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
 }
 
 impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
-    fn add_tx(&self, tx: &ledger::Transaction, timestamp: u64) -> Result<()> {
+    fn store_mempool_tx(&self, tx: &Transaction, timestamp: u64) -> Result<()> {
         // Map Hash to serialized transaction
         let mut tx_data = vec![];
         tx.write(&mut tx_data)?;
@@ -869,25 +857,27 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn get_tx(&self, hash: [u8; 32]) -> Result<Option<ledger::Transaction>> {
+    fn mempool_tx(&self, hash: [u8; 32]) -> Result<Option<Transaction>> {
         let data = self.inner.get_cf(self.mempool_cf, hash)?;
 
         match data {
             // None has a meaning key not found
             None => Ok(None),
-            Some(blob) => {
-                Ok(Some(ledger::Transaction::read(&mut &blob.to_vec()[..])?))
-            }
+            Some(blob) => Ok(Some(Transaction::read(&mut &blob.to_vec()[..])?)),
         }
     }
 
-    fn get_tx_exists(&self, h: [u8; 32]) -> Result<bool> {
+    fn mempool_tx_exists(&self, h: [u8; 32]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.mempool_cf, h)?.is_some())
     }
 
-    fn delete_tx(&self, h: [u8; 32], cascade: bool) -> Result<Vec<[u8; 32]>> {
+    fn delete_mempool_tx(
+        &self,
+        h: [u8; 32],
+        cascade: bool,
+    ) -> Result<Vec<[u8; 32]>> {
         let mut deleted = vec![];
-        let tx = self.get_tx(h)?;
+        let tx = self.mempool_tx(h)?;
         if let Some(tx) = tx {
             let hash = tx.id();
 
@@ -912,8 +902,11 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
                 // Get the next spending id (aka next nonce tx)
                 // retrieve tx_id and delete it
                 if let Some(spending_id) = tx.next_spending_id() {
-                    for tx_id in self.get_txs_by_spendable_ids(&[spending_id]) {
-                        let cascade_deleted = self.delete_tx(tx_id, cascade)?;
+                    for tx_id in
+                        self.mempool_txs_by_spendable_ids(&[spending_id])
+                    {
+                        let cascade_deleted =
+                            self.delete_mempool_tx(tx_id, cascade)?;
                         deleted.extend(cascade_deleted);
                     }
                 }
@@ -923,7 +916,10 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(deleted)
     }
 
-    fn get_txs_by_spendable_ids(&self, n: &[SpendingId]) -> HashSet<[u8; 32]> {
+    fn mempool_txs_by_spendable_ids(
+        &self,
+        n: &[SpendingId],
+    ) -> HashSet<[u8; 32]> {
         n.iter()
             .filter_map(|n| {
                 match self.snapshot.get_cf(self.spending_id_cf, n.to_bytes()) {
@@ -934,15 +930,15 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
             .collect()
     }
 
-    fn get_txs_sorted_by_fee(
+    fn mempool_txs_sorted_by_fee(
         &self,
-    ) -> Result<Box<dyn Iterator<Item = ledger::Transaction> + '_>> {
+    ) -> Result<Box<dyn Iterator<Item = Transaction> + '_>> {
         let iter = MemPoolIterator::new(&self.inner, self.fees_cf, self);
 
         Ok(Box::new(iter))
     }
 
-    fn get_txs_ids_sorted_by_fee(
+    fn mempool_txs_ids_sorted_by_fee(
         &self,
     ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>> {
         let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf, true);
@@ -950,7 +946,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(Box::new(iter))
     }
 
-    fn get_txs_ids_sorted_by_low_fee(
+    fn mempool_txs_ids_sorted_by_low_fee(
         &self,
     ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>> {
         let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf, false);
@@ -959,7 +955,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     }
 
     /// Get all expired transactions hashes.
-    fn get_expired_txs(&self, timestamp: u64) -> Result<Vec<[u8; 32]>> {
+    fn mempool_expired_txs(&self, timestamp: u64) -> Result<Vec<[u8; 32]>> {
         let mut iter = self.inner.raw_iterator_cf(self.fees_cf);
         iter.seek_to_first();
         let mut txs_list = vec![];
@@ -996,7 +992,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(txs_list)
     }
 
-    fn get_txs_ids(&self) -> Result<Vec<[u8; 32]>> {
+    fn mempool_txs_ids(&self) -> Result<Vec<[u8; 32]>> {
         let mut iter = self.inner.raw_iterator_cf(self.fees_cf);
         iter.seek_to_last();
 
@@ -1016,7 +1012,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(txs_list)
     }
 
-    fn txs_count(&self) -> usize {
+    fn mempool_txs_count(&self) -> usize {
         self.inner
             .iterator_cf(self.mempool_cf, IteratorMode::Start)
             .count()
@@ -1030,7 +1026,7 @@ pub struct MemPoolIterator<'db, DB: DBAccess, M: Mempool> {
 
 impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
     fn new(
-        db: &'db Transaction<DB>,
+        db: &'db rocksdb::Transaction<DB>,
         fees_cf: &ColumnFamily,
         mempool: &'db M,
     ) -> Self {
@@ -1040,22 +1036,22 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
 }
 
 impl<DB: DBAccess, M: Mempool> Iterator for MemPoolIterator<'_, DB, M> {
-    type Item = ledger::Transaction;
+    type Item = Transaction;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .and_then(|(_, tx_id)| self.mempool.get_tx(tx_id).ok().flatten())
+        self.iter.next().and_then(|(_, tx_id)| {
+            self.mempool.mempool_tx(tx_id).ok().flatten()
+        })
     }
 }
 
 pub struct MemPoolFeeIterator<'db, DB: DBAccess> {
-    iter: DBRawIteratorWithThreadMode<'db, Transaction<'db, DB>>,
+    iter: DBRawIteratorWithThreadMode<'db, rocksdb::Transaction<'db, DB>>,
     fee_desc: bool,
 }
 
 impl<'db, DB: DBAccess> MemPoolFeeIterator<'db, DB> {
     fn new(
-        db: &'db Transaction<DB>,
+        db: &'db rocksdb::Transaction<DB>,
         fees_cf: &ColumnFamily,
         fee_desc: bool,
     ) -> Self {
@@ -1099,7 +1095,7 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
             if let Ok(Some(blob)) =
                 self.snapshot.get_cf(self.ledger_cf, &hash[..])
             {
-                let b = ledger::Block::read(&mut &blob[..]).unwrap_or_default();
+                let b = Block::read(&mut &blob[..]).unwrap_or_default();
                 writeln!(f, "ledger_block [{}]: {:#?}", b.header().height, b)
             } else {
                 Ok(())
@@ -1116,8 +1112,7 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
                 if let Ok(Some(blob)) =
                     self.snapshot.get_cf(self.candidates_cf, &hash[..])
                 {
-                    let b =
-                        ledger::Block::read(&mut &blob[..]).unwrap_or_default();
+                    let b = Block::read(&mut &blob[..]).unwrap_or_default();
                     writeln!(
                         f,
                         "candidate_block [{}]: {:#?}",
@@ -1230,7 +1225,7 @@ impl node_data::Serializable for LightBlock {
         Self: Sized,
     {
         // Read block header
-        let header = ledger::Header::read(r)?;
+        let header = Header::read(r)?;
 
         // Read transactions count
         let len = Self::read_u32_le(r)?;
@@ -1271,15 +1266,13 @@ mod tests {
     use node_data::ledger;
 
     use fake::{Fake, Faker};
-    use node_data::ledger::Transaction;
 
     #[test]
     fn test_store_block() {
         TestWrapper::new("test_store_block").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
 
-            let b: ledger::Block = Faker.fake();
+            let b: Block = Faker.fake();
             assert!(!b.txs().is_empty());
 
             let hash = b.header().hash;
@@ -1299,7 +1292,7 @@ mod tests {
             db.view(|txn| {
                 // Assert block header is fully fetched from ledger
                 let db_blk = txn
-                    .fetch_block(&hash)
+                    .block(&hash)
                     .expect("Block to be fetched")
                     .expect("Block to exist");
                 assert_eq!(db_blk.header().hash, b.header().hash);
@@ -1329,7 +1322,7 @@ mod tests {
 
             db.view(|txn| {
                 assert!(txn
-                    .fetch_block(&hash)
+                    .block(&hash)
                     .expect("block to be fetched")
                     .is_none());
             });
@@ -1339,9 +1332,8 @@ mod tests {
     #[test]
     fn test_read_only() {
         TestWrapper::new("test_read_only").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
-            let b: ledger::Block = Faker.fake();
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
+            let b: Block = Faker.fake();
             db.view(|txn| {
                 txn.store_block(
                     b.header(),
@@ -1353,7 +1345,7 @@ mod tests {
             });
             db.view(|txn| {
                 assert!(txn
-                    .fetch_block(&b.header().hash)
+                    .block(&b.header().hash)
                     .expect("block to be fetched")
                     .is_none());
             });
@@ -1363,9 +1355,8 @@ mod tests {
     #[test]
     fn test_transaction_isolation() {
         TestWrapper::new("test_transaction_isolation").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
-            let mut b: ledger::Block = Faker.fake();
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
+            let mut b: Block = Faker.fake();
             let hash = b.header().hash;
 
             db.view(|txn| {
@@ -1382,14 +1373,14 @@ mod tests {
                         .unwrap();
 
                         // No need to support Read-Your-Own-Writes
-                        assert!(txn.fetch_block(&hash)?.is_none());
+                        assert!(txn.block(&hash)?.is_none());
                         Ok(())
                     })
                     .is_ok());
 
                 // Asserts that the read-only/view transaction runs in isolation
                 assert!(txn
-                    .fetch_block(&hash)
+                    .block(&hash)
                     .expect("block to be fetched")
                     .is_none());
             });
@@ -1398,7 +1389,7 @@ mod tests {
             db.view(|txn| {
                 assert_blocks_eq(
                     &mut txn
-                        .fetch_block(&hash)
+                        .block(&hash)
                         .expect("block to be fetched")
                         .unwrap(),
                     &mut b,
@@ -1407,7 +1398,7 @@ mod tests {
         });
     }
 
-    fn assert_blocks_eq(a: &mut ledger::Block, b: &mut ledger::Block) {
+    fn assert_blocks_eq(a: &Block, b: &Block) {
         assert!(a.header().hash != [0u8; 32]);
         assert!(a.header().hash.eq(&b.header().hash));
     }
@@ -1415,17 +1406,18 @@ mod tests {
     #[test]
     fn test_add_mempool_tx() {
         TestWrapper::new("test_add_tx").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
-            let t: ledger::Transaction = Faker.fake();
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
+            let t: Transaction = Faker.fake();
 
-            assert!(db.update(|txn| { txn.add_tx(&t, 0) }).is_ok());
+            assert!(db.update(|txn| { txn.store_mempool_tx(&t, 0) }).is_ok());
 
             db.view(|vq| {
-                assert!(Mempool::get_tx_exists(&vq, t.id()).unwrap());
+                assert!(vq.mempool_tx_exists(t.id()).unwrap());
 
-                let fetched_tx =
-                    vq.get_tx(t.id()).expect("valid contract call").unwrap();
+                let fetched_tx = vq
+                    .mempool_tx(t.id())
+                    .expect("valid contract call")
+                    .unwrap();
 
                 assert_eq!(
                     fetched_tx.id(),
@@ -1436,7 +1428,8 @@ mod tests {
 
             // Delete a contract call
             db.update(|txn| {
-                let deleted = txn.delete_tx(t.id(), false).expect("valid tx");
+                let deleted =
+                    txn.delete_mempool_tx(t.id(), false).expect("valid tx");
                 assert!(deleted.len() == 1);
                 Ok(())
             })
@@ -1447,22 +1440,22 @@ mod tests {
     #[test]
     fn test_mempool_txs_sorted_by_fee() {
         TestWrapper::new("test_mempool_txs_sorted_by_fee").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
             // Populate mempool with N contract calls
             let _rng = rand::thread_rng();
             db.update(|txn| {
                 for _i in 0..10u32 {
-                    let t: ledger::Transaction = Faker.fake();
-                    txn.add_tx(&t, 0)?;
+                    let t: Transaction = Faker.fake();
+                    txn.store_mempool_tx(&t, 0)?;
                 }
                 Ok(())
             })
             .unwrap();
 
             db.view(|txn| {
-                let txs =
-                    txn.get_txs_sorted_by_fee().expect("iter should return");
+                let txs = txn
+                    .mempool_txs_sorted_by_fee()
+                    .expect("iter should return");
 
                 let mut last_fee = u64::MAX;
                 for t in txs {
@@ -1481,8 +1474,7 @@ mod tests {
     #[test]
     fn test_txs_count() {
         TestWrapper::new("test_txs_count").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
 
             const N: usize = 100;
             const D: usize = 50;
@@ -1492,9 +1484,9 @@ mod tests {
                 .collect();
 
             db.update(|db| {
-                assert_eq!(db.txs_count(), 0);
+                assert_eq!(db.mempool_txs_count(), 0);
                 txs.iter().for_each(|t| {
-                    db.add_tx(&t, 0).expect("tx should be added")
+                    db.store_mempool_tx(&t, 0).expect("tx should be added")
                 });
                 Ok(())
             })
@@ -1502,11 +1494,11 @@ mod tests {
 
             db.update(|db| {
                 // Ensure txs count is equal to the number of added tx
-                assert_eq!(db.txs_count(), N);
+                assert_eq!(db.mempool_txs_count(), N);
 
                 txs.iter().take(D).for_each(|tx| {
                     let deleted = db
-                        .delete_tx(tx.id(), false)
+                        .delete_mempool_tx(tx.id(), false)
                         .expect("transaction should be deleted");
                     assert!(deleted.len() == 1);
                 });
@@ -1517,7 +1509,7 @@ mod tests {
 
             // Ensure txs count is updated after the deletion
             db.update(|db| {
-                assert_eq!(db.txs_count(), N - D);
+                assert_eq!(db.mempool_txs_count(), N - D);
                 Ok(())
             })
             .unwrap();
@@ -1527,13 +1519,12 @@ mod tests {
     #[test]
     fn test_max_gas_limit() {
         TestWrapper::new("test_block_size_limit").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
 
             db.update(|txn| {
                 for i in 0..10u32 {
                     let t = ledger::faker::gen_dummy_tx(i as u64);
-                    txn.add_tx(&t, 0)?;
+                    txn.store_mempool_tx(&t, 0)?;
                 }
                 Ok(())
             })
@@ -1542,7 +1533,7 @@ mod tests {
             let total_gas_price: u64 = 9 + 8 + 7 + 6 + 5 + 4 + 3 + 2 + 1;
             db.view(|txn| {
                 let txs = txn
-                    .get_txs_sorted_by_fee()
+                    .mempool_txs_sorted_by_fee()
                     .expect("should return all txs")
                     .map(|t| t.gas_price())
                     .sum::<u64>();
@@ -1555,32 +1546,31 @@ mod tests {
     #[test]
     fn test_get_expired_txs() {
         TestWrapper::new("test_get_expired_txs").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
 
             let mut expiry_list = HashSet::new();
             let _ = db.update(|txn| {
                 (1..101).for_each(|i| {
                     let t = ledger::faker::gen_dummy_tx(i as u64);
-                    txn.add_tx(&t, i).expect("tx should be added");
+                    txn.store_mempool_tx(&t, i).expect("tx should be added");
                     expiry_list.insert(t.id());
                 });
 
                 (1000..1100).for_each(|i| {
                     let t = ledger::faker::gen_dummy_tx(i as u64);
-                    txn.add_tx(&t, i).expect("tx should be added");
+                    txn.store_mempool_tx(&t, i).expect("tx should be added");
                 });
 
                 Ok(())
             });
 
             db.view(|vq| {
-                let expired: HashSet<[u8; 32]> =
-                    Mempool::get_expired_txs(&vq, 100)
-                        .unwrap()
-                        .into_iter()
-                        .map(|id| id)
-                        .collect();
+                let expired: HashSet<_> = vq
+                    .mempool_expired_txs(100)
+                    .unwrap()
+                    .into_iter()
+                    .map(|id| id)
+                    .collect();
 
                 assert_eq!(expiry_list, expired);
             });
@@ -1601,9 +1591,8 @@ mod tests {
     #[test]
     fn test_get_ledger_tx_by_hash() {
         TestWrapper::new("test_get_ledger_tx_by_hash").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
-            let b: ledger::Block = Faker.fake();
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
+            let b: Block = Faker.fake();
             assert!(!b.txs().is_empty());
 
             // Store a block
@@ -1624,7 +1613,7 @@ mod tests {
             db.view(|v| {
                 for t in b.txs().iter() {
                     assert!(v
-                        .get_ledger_tx_by_hash(&t.id())
+                        .ledger_tx(&t.id())
                         .expect("should not return error")
                         .expect("should find a transaction")
                         .inner
@@ -1637,9 +1626,8 @@ mod tests {
     #[test]
     fn test_fetch_block_hash_by_height() {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
-            let b: ledger::Block = Faker.fake();
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
+            let b: Block = Faker.fake();
 
             // Store a block
             assert!(db
@@ -1657,7 +1645,7 @@ mod tests {
             // Assert block hash is accessible by height.
             db.view(|v| {
                 assert!(v
-                    .fetch_block_hash_by_height(b.header().height)
+                    .block_hash_by_height(b.header().height)
                     .expect("should not return error")
                     .expect("should find a block")
                     .eq(&b.header().hash));
@@ -1668,9 +1656,8 @@ mod tests {
     #[test]
     fn test_fetch_block_label_by_height() {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
-            let b: ledger::Block = Faker.fake();
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
+            let b: Block = Faker.fake();
 
             // Store a block
             assert!(db
@@ -1688,7 +1675,7 @@ mod tests {
             // Assert block hash is accessible by height.
             db.view(|v| {
                 assert!(v
-                    .fetch_block_label_by_height(b.header().height)
+                    .block_label_by_height(b.header().height)
                     .expect("should not return error")
                     .expect("should find a block")
                     .1
@@ -1702,8 +1689,7 @@ mod tests {
     fn test_delete_block() {
         let t = TestWrapper::new("test_fetch_block_hash_by_height");
         t.run(|path| {
-            let db: Backend =
-                Backend::create_or_open(path, DatabaseOptions::default());
+            let db = Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
 
             assert!(db

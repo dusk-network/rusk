@@ -424,10 +424,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         match qmsg.vote() {
                             Vote::Valid(_) => {
                                 if let Ok(local_blk) =
-                                    self.db.read().await.view(|t| {
-                                        t.fetch_block_by_height(
-                                            qmsg.header.round,
-                                        )
+                                    self.db.read().await.view(|db| {
+                                        db.block_by_height(qmsg.header.round)
                                     })
                                 {
                                     if let Some(l_blk) = local_blk {
@@ -570,7 +568,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .db
             .read()
             .await
-            .update(|t| t.get_block_exists(&blk.header().hash))?;
+            .update(|t| t.block_exists(&blk.header().hash))?;
 
         if !exists {
             return Err(anyhow::anyhow!("could not find block"));
@@ -580,9 +578,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         task.abort_with_wait().await;
 
         //  Update register.
-        self.db.read().await.update(|t| {
-            t.op_write(MD_HASH_KEY, blk.header().hash)?;
-            t.op_write(MD_STATE_ROOT_KEY, blk.header().state_hash)
+        self.db.read().await.update(|db| {
+            db.op_write(MD_HASH_KEY, blk.header().hash)?;
+            db.op_write(MD_STATE_ROOT_KEY, blk.header().state_hash)
         })?;
 
         let vm = self.vm.read().await;
@@ -743,7 +741,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .db
             .read()
             .await
-            .update(|t| {
+            .update(|db| {
                 // Delete any candidate block older than TIP - OFFSET
                 let threshold = tip
                     .inner()
@@ -751,15 +749,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     .height
                     .saturating_sub(CANDIDATES_DELETION_OFFSET);
 
-                ConsensusStorage::delete_candidate(t, |height| {
-                    height <= threshold
-                })?;
+                db.delete_candidate(|height| height <= threshold)?;
 
                 // Delete from mempool any transaction already included in the
                 // block
                 for tx in tip.inner().txs().iter() {
                     let tx_id = tx.id();
-                    for deleted in Mempool::delete_tx(t, tx_id, false)
+                    for deleted in db
+                        .delete_mempool_tx(tx_id, false)
                         .map_err(|e| warn!("Error while deleting tx: {e}"))
                         .unwrap_or_default()
                     {
@@ -767,13 +764,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     }
 
                     let spend_ids = tx.to_spend_ids();
-                    for orphan_tx in t.get_txs_by_spendable_ids(&spend_ids) {
-                        for deleted_tx in
-                            Mempool::delete_tx(t, orphan_tx, false)
-                                .map_err(|e| {
-                                    warn!("Error while deleting orphan_tx: {e}")
-                                })
-                                .unwrap_or_default()
+                    for orphan_tx in db.mempool_txs_by_spendable_ids(&spend_ids)
+                    {
+                        for deleted_tx in db
+                            .delete_mempool_tx(orphan_tx, false)
+                            .map_err(|e| {
+                                warn!("Error while deleting orphan_tx: {e}")
+                            })
+                            .unwrap_or_default()
                         {
                             events.push(
                                 TransactionEvent::Removed(deleted_tx).into(),
@@ -781,7 +779,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         }
                     }
                 }
-                Ok(ConsensusStorage::count_candidates(t))
+                Ok(db.count_candidates())
             })
             .map_err(|e| warn!("Error while cleaning up the database: {e}"));
 
@@ -870,7 +868,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Retrieve latest blocks up to the Last Finalized Block
         let mut lfb_hash = None;
         for height in (0..current_height).rev() {
-            let (hash, label) = db.fetch_block_label_by_height(height)?.ok_or(
+            let (hash, label) = db.block_label_by_height(height)?.ok_or(
                 anyhow!("Cannot find block label for height {height}"),
             )?;
             if let Label::Final(_) = label {
@@ -882,7 +880,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let lfb_hash =
             lfb_hash.expect("Unable to find last finalized block hash");
         let lfb_state_root = db
-            .fetch_block_header(&lfb_hash)?
+            .block_header(&lfb_hash)?
             .ok_or(anyhow!(
                 "Cannot get header for last finalized block hash {}",
                 to_str(&lfb_hash)
@@ -954,7 +952,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     db.store_block_label(height, &hash, label)?;
 
                     let state_hash = db
-                        .fetch_block_header(&hash)?
+                        .block_header(&hash)?
                         .map(|h| h.state_hash)
                         .ok_or(anyhow!(
                             "Cannot get header for hash {}",
@@ -1022,16 +1020,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip after reverting
-        let (blk, label) = self.db.read().await.update(|t| {
+        let (blk, label) = self.db.read().await.update(|db| {
             let mut height = curr_height;
             loop {
-                let b = Ledger::fetch_block_by_height(t, height)?
+                let b = db
+                    .block_by_height(height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
                 let h = b.header();
                 let (_, label) =
-                    t.fetch_block_label_by_height(h.height)?.ok_or_else(
-                        || anyhow::anyhow!("could not fetch block label"),
-                    )?;
+                    db.block_label_by_height(h.height)?.ok_or_else(|| {
+                        anyhow::anyhow!("could not fetch block label")
+                    })?;
 
                 if h.state_hash == target_state_hash {
                     return Ok((b, label));
@@ -1061,7 +1060,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 );
 
                 // Delete any rocksdb record related to this block
-                t.delete_block(&b)?;
+                db.delete_block(&b)?;
 
                 let now = get_current_timestamp();
 
@@ -1069,7 +1068,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // An error here is not considered critical.
                 // Txs timestamp is reset here
                 for tx in b.txs().iter() {
-                    if let Err(e) = Mempool::add_tx(t, tx, now) {
+                    if let Err(e) = db.store_mempool_tx(tx, now) {
                         warn!("failed to resubmit transactions: {e}")
                     };
                 }
@@ -1142,9 +1141,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             for height in (0..prev_height).rev() {
                 if let Ok(Some((hash, Label::Final(_)))) =
-                    v.fetch_block_label_by_height(height)
+                    v.block_label_by_height(height)
                 {
-                    if let Some(blk) = v.fetch_block(&hash)? {
+                    if let Some(blk) = v.block(&hash)? {
                         return Ok(blk);
                     } else {
                         return Err(anyhow::anyhow!(
@@ -1155,7 +1154,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
 
             warn!("No final block found, using genesis block");
-            v.fetch_block_by_height(0)?
+            v.block_by_height(0)?
                 .ok_or(anyhow::anyhow!("could not find the genesis block"))
         })?;
 
@@ -1198,8 +1197,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     async fn read_avg_timeout(&self, key: &[u8]) -> Duration {
-        let metric = self.db.read().await.view(|t| {
-            let bytes = &t.op_read(key)?;
+        let metric = self.db.read().await.view(|db| {
+            let bytes = &db.op_read(key)?;
             let metric = match bytes {
                 Some(bytes) => AverageElapsedTime::read(&mut &bytes[..])
                     .unwrap_or_default(),
@@ -1233,7 +1232,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .await
             .view(|t| {
                 let res = t
-                    .fetch_block_header(&header.prev_block_hash)?
+                    .block_header(&header.prev_block_hash)?
                     .map(|prev| prev.seed);
 
                 anyhow::Ok::<Option<Seed>>(res)
@@ -1278,9 +1277,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         local: &ledger::Header,
         new: &ledger::Header,
     ) -> Result<()> {
-        let prev_header = self.db.read().await.view(|t| {
+        let prev_header = self.db.read().await.view(|db| {
             let prev_hash = &local.prev_block_hash;
-            t.fetch_block_header(prev_hash)?.ok_or(anyhow::anyhow!(
+            db.block_header(prev_hash)?.ok_or(anyhow::anyhow!(
                 "Unable to find block with hash {}",
                 to_str(prev_hash)
             ))

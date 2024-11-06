@@ -161,7 +161,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
         let exists = db
             .read()
             .await
-            .view(|t| t.get_block_exists(&new_blk.header().hash))?;
+            .view(|t| t.block_exists(&new_blk.header().hash))?;
 
         if exists {
             // Block already exists in ledger
@@ -171,7 +171,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
         let local_blk = db
             .read()
             .await
-            .view(|t| t.fetch_block_by_height(new_blk.header().height))?
+            .view(|t| t.block_by_height(new_blk.header().height))?
             .expect("local block should exist");
 
         let remote_blk = new_blk;

@@ -258,7 +258,7 @@ impl DataBrokerSrv {
         db.read()
             .await
             .view(|t| {
-                for hash in t.get_txs_ids()? {
+                for hash in t.mempool_txs_ids()? {
                     inv.add_tx_id(hash);
                 }
 
@@ -286,7 +286,7 @@ impl DataBrokerSrv {
             .await
             .view(|t| {
                 let mut locator = t
-                    .fetch_block(&m.locator)?
+                    .block(&m.locator)?
                     .ok_or_else(|| {
                         anyhow::anyhow!("could not find locator block")
                     })?
@@ -297,12 +297,12 @@ impl DataBrokerSrv {
 
                 loop {
                     locator += 1;
-                    match t.fetch_block_hash_by_height(locator)? {
+                    match t.block_hash_by_height(locator)? {
                         Some(bh) => {
                             let header =
-                                t.fetch_block_header(&bh)?.ok_or_else(
-                                    || anyhow!("block header not found"),
-                                )?;
+                                t.block_header(&bh)?.ok_or_else(|| {
+                                    anyhow!("block header not found")
+                                })?;
 
                             if header.prev_block_hash != prev_block_hash {
                                 return Err(anyhow::anyhow!(
@@ -353,61 +353,49 @@ impl DataBrokerSrv {
             max_entries = min(max_entries, m.max_entries as usize);
         }
 
-        let inv = db.read().await.view(|t| {
+        let inv = db.read().await.view(|db| {
             let mut inv = payload::Inv::default();
             for i in &m.inv_list {
                 debug!(event = "handle_inv", ?i);
                 match i.inv_type {
                     InvType::BlockFromHeight => {
                         if let InvParam::Height(height) = &i.param {
-                            if Ledger::fetch_block_by_height(&t, *height)?
-                                .is_none()
-                            {
+                            if db.block_by_height(*height)?.is_none() {
                                 inv.add_block_from_height(*height);
                             }
                         }
                     }
                     InvType::BlockFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            if Ledger::fetch_block(&t, hash)?.is_none() {
+                            if db.block(hash)?.is_none() {
                                 inv.add_block_from_hash(*hash);
                             }
                         }
                     }
                     InvType::CandidateFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            if ConsensusStorage::fetch_candidate_block(&t, hash)?
-                                .is_none()
-                            {
+                            if db.candidate(hash)?.is_none() {
                                 inv.add_candidate_from_hash(*hash);
                             }
                         }
                     }
                     InvType::MempoolTx => {
                         if let InvParam::Hash(tx_id) = &i.param {
-                            if Mempool::get_tx(&t, *tx_id)?.is_none() {
+                            if db.mempool_tx(*tx_id)?.is_none() {
                                 inv.add_tx_id(*tx_id);
                             }
                         }
                     }
                     InvType::CandidateFromIteration => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            if ConsensusStorage::fetch_candidate_block_by_iteration(
-                                &t, ch,
-                            )?
-                            .is_none()
-                            {
+                            if db.candidate_by_iteration(ch)?.is_none() {
                                 inv.add_candidate_from_iteration(*ch);
                             }
                         }
                     }
                     InvType::ValidationResult => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            if ConsensusStorage::fetch_validation_result(
-                                &t, ch,
-                            )?
-                            .is_none()
-                            {
+                            if db.validation_result(ch)?.is_none() {
                                 inv.add_validation_result(*ch);
                             }
                         }
@@ -446,7 +434,7 @@ impl DataBrokerSrv {
             max_entries = min(max_entries, m.get_inv().max_entries as usize);
         }
 
-        db.read().await.view(|t| {
+        db.read().await.view(|db| {
             let res: Vec<Message> = m
                 .get_inv()
                 .inv_list
@@ -454,7 +442,7 @@ impl DataBrokerSrv {
                 .filter_map(|i| match i.inv_type {
                     InvType::BlockFromHeight => {
                         if let InvParam::Height(height) = &i.param {
-                            Ledger::fetch_block_by_height(&t, *height)
+                            db.block_by_height(*height)
                                 .ok()
                                 .flatten()
                                 .map(Message::from)
@@ -464,24 +452,17 @@ impl DataBrokerSrv {
                     }
                     InvType::BlockFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            Ledger::fetch_block(&t, hash)
-                                .ok()
-                                .flatten()
-                                .map(Message::from)
+                            db.block(hash).ok().flatten().map(Message::from)
                         } else {
                             None
                         }
                     }
                     InvType::CandidateFromHash => {
                         if let InvParam::Hash(hash) = &i.param {
-                            Ledger::fetch_block(&t, hash)
+                            db.block(hash)
                                 .ok()
                                 .flatten()
-                                .or_else(|| {
-                                    ConsensusStorage::fetch_candidate_block(&t, hash)
-                                        .ok()
-                                        .flatten()
-                                })
+                                .or_else(|| db.candidate(hash).ok().flatten())
                                 .map(Message::from)
                         } else {
                             None
@@ -489,7 +470,7 @@ impl DataBrokerSrv {
                     }
                     InvType::MempoolTx => {
                         if let InvParam::Hash(tx_id) = &i.param {
-                            Mempool::get_tx(&t, *tx_id)
+                            db.mempool_tx(*tx_id)
                                 .ok()
                                 .flatten()
                                 .map(Message::from)
@@ -499,29 +480,25 @@ impl DataBrokerSrv {
                     }
                     InvType::CandidateFromIteration => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            ConsensusStorage::fetch_candidate_block_by_iteration(
-                                &t, ch,
+                            db.candidate_by_iteration(ch).ok().flatten().map(
+                                |candidate| {
+                                    Message::from(payload::Candidate {
+                                        candidate,
+                                    })
+                                },
                             )
-                            .ok()
-                            .flatten()
-                            .map(|candidate| {
-                                Message::from(payload::Candidate { candidate })
-                            })
                         } else {
                             None
                         }
                     }
                     InvType::ValidationResult => {
                         if let InvParam::Iteration(ch) = &i.param {
-                            ConsensusStorage::fetch_validation_result(&t, ch)
-                                .ok()
-                                .flatten()
-                                .map(|vr| {
-                                    Message::from(payload::ValidationQuorum {
-                                        header: *ch,
-                                        result: vr,
-                                    })
+                            db.validation_result(ch).ok().flatten().map(|vr| {
+                                Message::from(payload::ValidationQuorum {
+                                    header: *ch,
+                                    result: vr,
                                 })
+                            })
                         } else {
                             None
                         }

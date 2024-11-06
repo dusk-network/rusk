@@ -77,7 +77,7 @@ impl Block {
 
         db.view(|t| {
             for id in &self.txs_id {
-                let tx = t.get_ledger_tx_by_hash(id)?.ok_or_else(|| {
+                let tx = t.ledger_tx(id)?.ok_or_else(|| {
                     FieldError::new("Cannot find transaction")
                 })?;
                 ret.push(SpentTransaction(tx));
@@ -193,7 +193,7 @@ impl SpentTransaction {
         let block_height = self.0.block_height;
 
         let block_hash = db.view(|t| {
-            t.fetch_block_hash_by_height(block_height)?.ok_or_else(|| {
+            t.block_hash_by_height(block_height)?.ok_or_else(|| {
                 FieldError::new("Cannot find block hash by height")
             })
         })?;
@@ -214,10 +214,10 @@ impl SpentTransaction {
 
         let header = db.view(|t| {
             let block_hash =
-                t.fetch_block_hash_by_height(block_height)?.ok_or_else(
-                    || FieldError::new("Cannot find block hash by height"),
-                )?;
-            t.fetch_block_header(&block_hash)?
+                t.block_hash_by_height(block_height)?.ok_or_else(|| {
+                    FieldError::new("Cannot find block hash by height")
+                })?;
+            t.block_header(&block_hash)?
                 .ok_or_else(|| FieldError::new("Cannot find block header"))
         })?;
 

@@ -14,7 +14,7 @@ pub async fn tx_by_hash(
 ) -> OptResult<SpentTransaction> {
     let (db, _) = ctx.data::<DBContext>()?;
     let hash = hex::decode(hash)?;
-    let tx = db.read().await.view(|t| t.get_ledger_tx_by_hash(&hash))?;
+    let tx = db.read().await.view(|t| t.ledger_tx(&hash))?;
     Ok(tx.map(SpentTransaction))
 }
 
@@ -31,23 +31,22 @@ pub async fn last_transactions(
         let mut txs = vec![];
         let mut current_block =
             t.op_read(MD_HASH_KEY).and_then(|res| match res {
-                Some(hash) => t.fetch_light_block(&hash),
+                Some(hash) => t.light_block(&hash),
                 None => Ok(None),
             })?;
 
         while let Some(h) = current_block {
             for txs_id in h.transactions_ids {
-                let tx =
-                    t.get_ledger_tx_by_hash(&txs_id)?.ok_or_else(|| {
-                        FieldError::new("Cannot find transaction")
-                    })?;
+                let tx = t.ledger_tx(&txs_id)?.ok_or_else(|| {
+                    FieldError::new("Cannot find transaction")
+                })?;
 
                 txs.push(SpentTransaction(tx));
                 if txs.len() >= count {
                     return Ok::<_, async_graphql::Error>(txs);
                 }
             }
-            current_block = t.fetch_light_block(&h.header.prev_block_hash)?;
+            current_block = t.light_block(&h.header.prev_block_hash)?;
         }
 
         Ok::<_, async_graphql::Error>(txs)
@@ -59,11 +58,10 @@ pub async fn mempool<'a>(
     ctx: &Context<'_>,
 ) -> FieldResult<Vec<Transaction<'a>>> {
     let (db, _) = ctx.data::<DBContext>()?;
-    let transactions = db.read().await.view(|t| {
-        let txs = t.get_txs_sorted_by_fee()?.map(|t| t.into()).collect();
-        Ok::<_, async_graphql::Error>(txs)
-    })?;
-    Ok(transactions)
+    db.read().await.view(|db| {
+        let txs = db.mempool_txs_sorted_by_fee()?.map(|t| t.into()).collect();
+        Ok(txs)
+    })
 }
 
 pub async fn mempool_by_hash<'a>(
@@ -73,6 +71,6 @@ pub async fn mempool_by_hash<'a>(
     let (db, _) = ctx.data::<DBContext>()?;
     let hash = &hex::decode(hash)?[..];
     let hash = hash.try_into()?;
-    let tx = db.read().await.view(|t| t.get_tx(hash))?;
+    let tx = db.read().await.view(|db| db.mempool_tx(hash))?;
     Ok(tx.map(|t| t.into()))
 }

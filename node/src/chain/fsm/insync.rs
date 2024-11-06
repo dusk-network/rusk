@@ -124,7 +124,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     .db
                     .read()
                     .await
-                    .view(|t| t.get_block_exists(&remote_header.hash))?;
+                    .view(|t| t.block_exists(&remote_header.hash))?;
 
                 if blk_exists {
                     return Ok(None);
@@ -142,10 +142,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             // Check if prev_blk is in our chain
             // If not, remote_blk is on a fork
-            let prev_blk_exists =
-                acc.db.read().await.view(|t| {
-                    t.get_block_exists(&remote_header.prev_block_hash)
-                })?;
+            let prev_blk_exists = acc
+                .db
+                .read()
+                .await
+                .view(|t| t.block_exists(&remote_header.prev_block_hash))?;
 
             if !prev_blk_exists {
                 warn!(
@@ -162,7 +163,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 acc.db
                     .read()
                     .await
-                    .view(|t| t.fetch_block_by_height(remote_height))?
+                    .view(|t| t.block_by_height(remote_height))?
                     .expect("local block should exist")
             };
             let local_header = local_blk.header();
@@ -186,9 +187,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         .await
                         .view(|t| {
                             let res = t
-                                .fetch_block_header(
-                                    &remote_header.prev_block_hash,
-                                )?
+                                .block_header(&remote_header.prev_block_hash)?
                                 .map(|prev| prev.state_hash);
 
                             anyhow::Ok(res)

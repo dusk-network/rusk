@@ -461,8 +461,7 @@ mod tests {
         let mut buf = vec![];
         obj.write(&mut buf).expect("should be writable");
 
-        assert!(obj
-            .eq(&S::read(&mut &buf.to_vec()[..]).expect("should be readable")));
+        assert!(obj.eq(&S::read(&mut &buf[..]).expect("should be readable")));
     }
 
     #[test]

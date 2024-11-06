@@ -11,14 +11,16 @@ pub mod rocksdb;
 
 use anyhow::Result;
 
-use node_data::ledger::{self, Fault, Label, SpendingId, SpentTransaction};
+use node_data::ledger::{
+    Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
+};
 use node_data::message::payload;
 use node_data::message::ConsensusHeader;
 
 use serde::{Deserialize, Serialize};
 
 pub struct LightBlock {
-    pub header: ledger::Header,
+    pub header: Header,
     pub transactions_ids: Vec<[u8; 32]>,
     pub faults_ids: Vec<[u8; 32]>,
 }
@@ -63,38 +65,28 @@ pub trait Ledger {
     /// Returns disk footprint of the committed transaction
     fn store_block(
         &self,
-        header: &ledger::Header,
+        header: &Header,
         txs: &[SpentTransaction],
         faults: &[Fault],
         label: Label,
     ) -> Result<usize>;
 
-    fn delete_block(&self, b: &ledger::Block) -> Result<()>;
-    fn fetch_block_header(&self, hash: &[u8])
-        -> Result<Option<ledger::Header>>;
+    fn delete_block(&self, b: &Block) -> Result<()>;
+    fn block_header(&self, hash: &[u8]) -> Result<Option<Header>>;
 
-    fn fetch_light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>>;
+    fn light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>>;
 
-    fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>>;
-    fn fetch_block_hash_by_height(
-        &self,
-        height: u64,
-    ) -> Result<Option<[u8; 32]>>;
-    fn fetch_block_by_height(
-        &self,
-        height: u64,
-    ) -> Result<Option<ledger::Block>>;
+    fn block(&self, hash: &[u8]) -> Result<Option<Block>>;
+    fn block_hash_by_height(&self, height: u64) -> Result<Option<[u8; 32]>>;
+    fn block_by_height(&self, height: u64) -> Result<Option<Block>>;
 
-    fn get_block_exists(&self, hash: &[u8]) -> Result<bool>;
+    fn block_exists(&self, hash: &[u8]) -> Result<bool>;
 
-    fn get_ledger_tx_by_hash(
-        &self,
-        tx_id: &[u8],
-    ) -> Result<Option<ledger::SpentTransaction>>;
+    fn ledger_tx(&self, tx_id: &[u8]) -> Result<Option<SpentTransaction>>;
 
-    fn get_ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool>;
+    fn ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool>;
 
-    fn fetch_block_label_by_height(
+    fn block_label_by_height(
         &self,
         height: u64,
     ) -> Result<Option<([u8; 32], Label)>>;
@@ -106,23 +98,20 @@ pub trait Ledger {
         label: Label,
     ) -> Result<()>;
 
-    fn fetch_faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>>;
-    fn fetch_faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>>;
+    fn faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>>;
+    fn faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>>;
 }
 
 pub trait ConsensusStorage {
     /// Candidate Storage
-    fn store_candidate_block(&self, cm: ledger::Block) -> Result<()>;
-    fn fetch_candidate_block(
-        &self,
-        hash: &[u8],
-    ) -> Result<Option<ledger::Block>>;
+    fn store_candidate(&self, cm: Block) -> Result<()>;
+    fn candidate(&self, hash: &[u8]) -> Result<Option<Block>>;
 
     /// Fetches a candidate block by lookup key (prev_block_hash, iteration).
-    fn fetch_candidate_block_by_iteration(
+    fn candidate_by_iteration(
         &self,
         ch: &ConsensusHeader,
-    ) -> Result<Option<ledger::Block>>;
+    ) -> Result<Option<Block>>;
 
     fn clear_candidates(&self) -> Result<()>;
 
@@ -139,7 +128,7 @@ pub trait ConsensusStorage {
         vr: &payload::ValidationResult,
     ) -> Result<()>;
 
-    fn fetch_validation_result(
+    fn validation_result(
         &self,
         ch: &ConsensusHeader,
     ) -> Result<Option<payload::ValidationResult>>;
@@ -155,51 +144,54 @@ pub trait ConsensusStorage {
 
 pub trait Mempool {
     /// Adds a transaction to the mempool with a timestamp.
-    fn add_tx(&self, tx: &ledger::Transaction, timestamp: u64) -> Result<()>;
+    fn store_mempool_tx(&self, tx: &Transaction, timestamp: u64) -> Result<()>;
 
     /// Gets a transaction from the mempool.
-    fn get_tx(&self, tx_id: [u8; 32]) -> Result<Option<ledger::Transaction>>;
+    fn mempool_tx(&self, tx_id: [u8; 32]) -> Result<Option<Transaction>>;
 
     /// Checks if a transaction exists in the mempool.
-    fn get_tx_exists(&self, tx_id: [u8; 32]) -> Result<bool>;
+    fn mempool_tx_exists(&self, tx_id: [u8; 32]) -> Result<bool>;
 
     /// Deletes a transaction from the mempool.
     ///
     /// If `cascade` is true, all dependant transactions are deleted
     ///
     /// Return a vector with all the deleted tx_id
-    fn delete_tx(
+    fn delete_mempool_tx(
         &self,
         tx_id: [u8; 32],
         cascade: bool,
     ) -> Result<Vec<[u8; 32]>>;
 
     /// Get transactions hash from the mempool, searching by spendable ids
-    fn get_txs_by_spendable_ids(&self, n: &[SpendingId]) -> HashSet<[u8; 32]>;
+    fn mempool_txs_by_spendable_ids(
+        &self,
+        n: &[SpendingId],
+    ) -> HashSet<[u8; 32]>;
 
     /// Get an iterator over the mempool transactions sorted by gas price
-    fn get_txs_sorted_by_fee(
+    fn mempool_txs_sorted_by_fee(
         &self,
-    ) -> Result<Box<dyn Iterator<Item = ledger::Transaction> + '_>>;
+    ) -> Result<Box<dyn Iterator<Item = Transaction> + '_>>;
 
     /// Get an iterator over the mempool transactions hash by gas price
-    fn get_txs_ids_sorted_by_fee(
+    fn mempool_txs_ids_sorted_by_fee(
         &self,
     ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>>;
 
     /// Get an iterator over the mempool transactions hash by gas price (asc)
-    fn get_txs_ids_sorted_by_low_fee(
+    fn mempool_txs_ids_sorted_by_low_fee(
         &self,
     ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>>;
 
     /// Get all transactions hashes.
-    fn get_txs_ids(&self) -> Result<Vec<[u8; 32]>>;
+    fn mempool_txs_ids(&self) -> Result<Vec<[u8; 32]>>;
 
     /// Get all expired transactions.
-    fn get_expired_txs(&self, timestamp: u64) -> Result<Vec<[u8; 32]>>;
+    fn mempool_expired_txs(&self, timestamp: u64) -> Result<Vec<[u8; 32]>>;
 
     /// Number of persisted transactions
-    fn txs_count(&self) -> usize;
+    fn mempool_txs_count(&self) -> usize;
 }
 
 pub trait Metadata {
