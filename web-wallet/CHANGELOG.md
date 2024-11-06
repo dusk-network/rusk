@@ -293,18 +293,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2355]: https://github.com/dusk-network/rusk/issues/2355
 [#2406]: https://github.com/dusk-network/rusk/issues/2406
 [#2420]: https://github.com/dusk-network/rusk/issues/2420
+[#2421]: https://github.com/dusk-network/rusk/issues/2421
 [#2434]: https://github.com/dusk-network/rusk/issues/2434
 [#2435]: https://github.com/dusk-network/rusk/issues/2435
 [#2436]: https://github.com/dusk-network/rusk/issues/2436
+[#2460]: https://github.com/dusk-network/rusk/issues/2460
 [#2498]: https://github.com/dusk-network/rusk/issues/2498
 [#2532]: https://github.com/dusk-network/rusk/issues/2532
 [#2696]: https://github.com/dusk-network/rusk/issues/2696
+[#2608]: https://github.com/dusk-network/rusk/issues/2608
 [#2776]: https://github.com/dusk-network/rusk/issues/2776
-[#2776]: https://github.com/dusk-network/rusk/issues/2778
+[#2778]: https://github.com/dusk-network/rusk/issues/2778
 [#2807]: https://github.com/dusk-network/rusk/issues/2807
 [#2821]: https://github.com/dusk-network/rusk/issues/2821
-[#2821]: https://github.com/dusk-network/rusk/issues/2608
-[#2821]: https://github.com/dusk-network/rusk/issues/2460
 
 <!-- VERSIONS -->
 
