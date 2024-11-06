@@ -160,7 +160,7 @@ exports[`Stake > should render the Stake component 1`] = `
       class="operation__amount-wrapper svelte-xevz12"
     >
       <p>
-        Enter amount:
+        Amount:
       </p>
        
       <button

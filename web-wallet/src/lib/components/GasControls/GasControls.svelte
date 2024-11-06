@@ -34,7 +34,7 @@
 </script>
 
 <label for={undefined} class="gas-control">
-  <span class="gas-control__label"> Price: (lux) </span>
+  <span class="gas-control__label"> Price (lux):</span>
   <BigIntInput
     bind:value={price}
     className="gas-control__input"
@@ -46,7 +46,7 @@
 </label>
 
 <label for={undefined} class="gas-control">
-  <span class="gas-control__label"> Gas Limit: (unit) </span>
+  <span class="gas-control__label"> Gas Limit (unit):</span>
   <BigIntInput
     bind:value={limit}
     className="gas-control__input"

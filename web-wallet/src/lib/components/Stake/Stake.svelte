@@ -262,7 +262,7 @@
       >
         <ContractStatusesList items={statuses} />
         <div class="operation__amount-wrapper">
-          <p>Enter amount:</p>
+          <p>Amount:</p>
           <Button
             size="small"
             variant="tertiary"

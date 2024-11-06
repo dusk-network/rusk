@@ -8,7 +8,7 @@ exports[`GasControls > should render the \`GasControls\` component 1`] = `
     <span
       class="gas-control__label svelte-1p4ekyk"
     >
-      Price: (lux)
+      Price (lux):
     </span>
      
     <input
@@ -27,7 +27,7 @@ exports[`GasControls > should render the \`GasControls\` component 1`] = `
     <span
       class="gas-control__label svelte-1p4ekyk"
     >
-      Gas Limit: (unit)
+      Gas Limit (unit):
     </span>
      
     <input

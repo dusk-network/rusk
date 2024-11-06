@@ -85,7 +85,7 @@ exports[`Send > Address step > should display a warning if the address input is 
         class="operation__address-wrapper svelte-npcavd"
       >
         <p>
-          Enter address:
+          Address:
         </p>
          
         <button
@@ -350,7 +350,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
         class="operation__address-wrapper svelte-npcavd"
       >
         <p>
-          Enter address:
+          Address:
         </p>
          
         <button
@@ -641,7 +641,7 @@ exports[`Send > Amount step > should render the Send component Amount state with
         class="operation__amount-wrapper svelte-npcavd"
       >
         <p>
-          Enter amount:
+          Amount:
         </p>
          
         <button
@@ -931,7 +931,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
         class="operation__amount-wrapper svelte-npcavd"
       >
         <p>
-          Enter amount:
+          Amount:
         </p>
          
         <button

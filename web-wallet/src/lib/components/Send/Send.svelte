@@ -171,7 +171,7 @@
     >
       <div in:fade|global class="operation__send">
         <div class="operation__address-wrapper">
-          <p>Enter address:</p>
+          <p>Address:</p>
           <Button
             disabled={!scanner}
             size="small"
@@ -250,7 +250,7 @@
         </ContractStatusesList>
 
         <div class="operation__amount-wrapper">
-          <p>Enter amount:</p>
+          <p>Amount:</p>
           <Button
             size="small"
             variant="tertiary"

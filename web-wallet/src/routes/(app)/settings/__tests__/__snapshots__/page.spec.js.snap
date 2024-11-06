@@ -91,7 +91,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           <span
             class="gas-control__label svelte-1p4ekyk"
           >
-            Price: (lux)
+            Price (lux):
           </span>
            
           <input
@@ -110,7 +110,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           <span
             class="gas-control__label svelte-1p4ekyk"
           >
-            Gas Limit: (unit)
+            Gas Limit (unit):
           </span>
            
           <input
@@ -614,7 +614,7 @@ exports[`Settings > should render the settings page displaying the status of the
           <span
             class="gas-control__label svelte-1p4ekyk"
           >
-            Price: (lux)
+            Price (lux):
           </span>
            
           <input
@@ -633,7 +633,7 @@ exports[`Settings > should render the settings page displaying the status of the
           <span
             class="gas-control__label svelte-1p4ekyk"
           >
-            Gas Limit: (unit)
+            Gas Limit (unit):
           </span>
            
           <input
@@ -1119,7 +1119,7 @@ exports[`Settings > should render the settings page displaying the status of the
           <span
             class="gas-control__label svelte-1p4ekyk"
           >
-            Price: (lux)
+            Price (lux):
           </span>
            
           <input
@@ -1138,7 +1138,7 @@ exports[`Settings > should render the settings page displaying the status of the
           <span
             class="gas-control__label svelte-1p4ekyk"
           >
-            Gas Limit: (unit)
+            Gas Limit (unit):
           </span>
            
           <input
