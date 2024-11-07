@@ -70,6 +70,15 @@ fn revert(value: &BlsScalar) -> String {
     displayed
 }
 
+fn as_phoenix_transaction(
+    tx: Transaction,
+) -> Result<phoenix::Transaction, ErrorCode> {
+    match tx {
+        Transaction::Phoenix(tx) => Ok(tx),
+        _ => Err(ErrorCode::PhoenixTransactionError),
+    }
+}
+
 /// Map a list of indexes into keys using the provided seed and callback.
 unsafe fn indexes_into_keys<T, F>(
     seed: &Seed,
@@ -301,10 +310,10 @@ impl Prove for NoOpProver {
 }
 
 #[no_mangle]
-pub unsafe fn into_proved(
+pub unsafe fn into_proven(
     tx_ptr: *const u8,
     proof_ptr: *const u8,
-    proved_ptr: *mut *mut u8,
+    proven_ptr: *mut *mut u8,
     hash_ptr: &mut [u8; 64],
 ) -> ErrorCode {
     let tx = mem::read_buffer(tx_ptr);
@@ -320,7 +329,7 @@ pub unsafe fn into_proved(
     let ptr = mem::malloc(4 + bytes.len() as u32);
     let ptr = ptr as *mut u8;
 
-    *proved_ptr = ptr;
+    *proven_ptr = ptr;
 
     ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
     ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
@@ -343,12 +352,12 @@ pub unsafe fn phoenix(
     openings: *const u8,
     root: &[u8; BlsScalar::SIZE],
     transfer_value: *const u64,
-    obfuscated_transaction: bool, // ?
-    deposit: *const u64,          // ?
+    obfuscated_transaction: bool,
+    deposit: *const u64,
     gas_limit: *const u64,
     gas_price: *const u64,
-    chain_id: u8,    // ?
-    data: *const u8, // ?
+    chain_id: u8,
+    data: *const u8,
     tx_ptr: *mut *mut u8,
     proof_ptr: *mut *mut u8,
 ) -> ErrorCode {
@@ -427,12 +436,12 @@ pub unsafe fn moonlight(
     sender_index: u8,
     receiver: &[u8; BlsPublicKey::SIZE],
     transfer_value: *const u64,
-    deposit: *const u64, // ?
+    deposit: *const u64,
     gas_limit: *const u64,
     gas_price: *const u64,
     nonce: *const u64,
-    chain_id: u8,    // ?
-    data: *const u8, // ?
+    chain_id: u8,
+    data: *const u8,
     tx_ptr: *mut *mut u8,
     hash_ptr: &mut [u8; 64],
 ) -> ErrorCode {
@@ -458,6 +467,136 @@ pub unsafe fn moonlight(
     .or(Err(ErrorCode::MoonlightTransactionError))?;
 
     let bytes = Transaction::Moonlight(tx.clone()).to_var_bytes();
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *tx_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    let displayed = revert(&tx.hash());
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), hash_ptr.as_mut_ptr(), 64);
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn phoenix_to_moonlight(
+    rng: &[u8; 32],
+    seed: &Seed,
+    profile_index: u8,
+    inputs: *const u8,
+    openings: *const u8,
+    nullifiers: *const u8,
+    root: &[u8; BlsScalar::SIZE],
+    allocate_value: *const u64,
+    gas_limit: *const u64,
+    gas_price: *const u64,
+    chain_id: u8,
+    tx_ptr: *mut *mut u8,
+    proof_ptr: *mut *mut u8,
+) -> ErrorCode {
+    let mut rng = ChaCha12Rng::from_seed(*rng);
+
+    let phoenix_sender_sk = derive_phoenix_sk(&seed, profile_index);
+    let moonlight_receiver_sk = derive_bls_sk(&seed, profile_index);
+
+    let root: BlsScalar =
+        rkyv::from_bytes(root).or(Err(ErrorCode::UnarchivingError))?;
+
+    let openings: Vec<Option<NoteOpening>> = mem::from_buffer(openings)?;
+    let nullifiers: Vec<BlsScalar> = mem::from_buffer(nullifiers)?;
+    let notes: Vec<NoteLeaf> = mem::from_buffer(inputs)?;
+
+    let inputs: Vec<(Note, NoteOpening, BlsScalar)> = notes
+        .into_iter()
+        .map(|note_leaf| note_leaf.note)
+        .zip(openings.into_iter())
+        .zip(nullifiers.into_iter())
+        .filter_map(|((note, opening), nullifier)| {
+            opening.map(|op| (note, op, nullifier))
+        })
+        .collect();
+
+    let prover = NoOpProver::default();
+
+    let tx = crate::transaction::phoenix_to_moonlight(
+        &mut rng,
+        &phoenix_sender_sk,
+        &moonlight_receiver_sk,
+        inputs,
+        root,
+        *allocate_value,
+        *gas_limit,
+        *gas_price,
+        chain_id,
+        &prover,
+    )
+    .or(Err(ErrorCode::PhoenixTransactionError))?;
+
+    let tx = as_phoenix_transaction(tx)?;
+
+    let bytes = to_bytes::<_, 4096>(&tx).or(Err(ErrorCode::ArchivingError))?;
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *tx_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    let bytes = prover.circuits.into_inner();
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *proof_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn moonlight_to_phoenix(
+    rng: &[u8; 32],
+    seed: &Seed,
+    profile_index: u8,
+    allocate_value: *const u64,
+    gas_limit: *const u64,
+    gas_price: *const u64,
+    nonce: *const u64,
+    chain_id: u8,
+    tx_ptr: *mut *mut u8,
+    hash_ptr: &mut [u8; 64],
+) -> ErrorCode {
+    let mut rng = ChaCha12Rng::from_seed(*rng);
+
+    let moonlight_sender_sk = derive_bls_sk(&seed, profile_index);
+    let phoenix_receiver_sk = derive_phoenix_sk(&seed, profile_index);
+
+    let tx = crate::transaction::moonlight_to_phoenix(
+        &mut rng,
+        &moonlight_sender_sk,
+        &phoenix_receiver_sk,
+        *allocate_value,
+        *gas_limit,
+        *gas_price,
+        *nonce,
+        chain_id,
+    )
+    .or(Err(ErrorCode::MoonlightTransactionError))?;
+
+    let bytes = tx.to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
     let ptr = mem::malloc(4 + bytes.len() as u32);
