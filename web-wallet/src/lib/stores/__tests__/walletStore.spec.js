@@ -26,6 +26,7 @@ import { walletStore } from "..";
 describe("Wallet store", async () => {
   vi.useFakeTimers();
 
+  const AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
   const cachedBalance = {
     shielded: {
       spendable: 10n,
@@ -45,6 +46,9 @@ describe("Wallet store", async () => {
     value: shielded.value / 2n,
   };
 
+  const setTimeoutSpy = vi.spyOn(window, "setTimeout");
+  const clearTimeoutSpy = vi.spyOn(window, "clearTimeout");
+
   const abortControllerSpy = vi.spyOn(AbortController.prototype, "abort");
   const balanceSpy = vi
     .spyOn(Bookkeeper.prototype, "balance")
@@ -60,6 +64,7 @@ describe("Wallet store", async () => {
   const setCachedBalanceSpy = vi
     .spyOn(walletCache, "setBalanceInfo")
     .mockResolvedValue(undefined);
+  const setLastBlockHeightSpy = vi.spyOn(walletCache, "setLastBlockHeight");
   const setProfilesSpy = vi.spyOn(WalletTreasury.prototype, "setProfiles");
   const treasuryUpdateSpy = vi.spyOn(WalletTreasury.prototype, "update");
 
@@ -78,7 +83,7 @@ describe("Wallet store", async () => {
         value: 0n,
       },
     },
-    currentProfile: defaultProfile,
+    currentProfile: null,
     initialized: false,
     profiles: [],
     syncStatus: {
@@ -98,9 +103,13 @@ describe("Wallet store", async () => {
     profiles: [defaultProfile],
   };
 
-  afterEach(async () => {
-    await vi.runAllTimersAsync();
+  beforeEach(async () => {
+    await vi.runOnlyPendingTimersAsync();
+    vi.clearAllTimers();
+    setTimeoutSpy.mockClear();
+    clearTimeoutSpy.mockClear();
     abortControllerSpy.mockClear();
+    setLastBlockHeightSpy.mockClear();
     setCachedBalanceSpy.mockClear();
     setProfilesSpy.mockClear();
     treasuryUpdateSpy.mockClear();
@@ -108,7 +117,10 @@ describe("Wallet store", async () => {
 
   afterAll(() => {
     vi.useRealTimers();
+    setTimeoutSpy.mockRestore();
+    clearTimeoutSpy.mockRestore();
     abortControllerSpy.mockRestore();
+    setLastBlockHeightSpy.mockRestore();
     balanceSpy.mockRestore();
     getCachedBalanceSpy.mockRestore();
     setCachedBalanceSpy.mockRestore();
@@ -135,7 +147,7 @@ describe("Wallet store", async () => {
         },
       });
 
-      await vi.runAllTimersAsync();
+      await vi.advanceTimersByTimeAsync(AUTO_SYNC_INTERVAL - 1);
 
       expect(get(walletStore)).toStrictEqual(initializedStore);
       expect(setProfilesSpy).toHaveBeenCalledTimes(1);
@@ -144,6 +156,11 @@ describe("Wallet store", async () => {
         treasuryUpdateSpy.mock.invocationCallOrder[0]
       );
       expect(treasuryUpdateSpy).toHaveBeenCalledTimes(1);
+      expect(setLastBlockHeightSpy).toHaveBeenCalledTimes(1);
+      expect(setLastBlockHeightSpy).toHaveBeenCalledWith(expect.any(BigInt));
+      expect(setLastBlockHeightSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
+        treasuryUpdateSpy.mock.invocationCallOrder[0]
+      );
       expect(balanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
         treasuryUpdateSpy.mock.invocationCallOrder[0]
       );
@@ -161,16 +178,42 @@ describe("Wallet store", async () => {
       expect(setCachedBalanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
         balanceSpy.mock.invocationCallOrder[1]
       );
+      expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+      expect(clearTimeoutSpy.mock.invocationCallOrder[0]).toBeLessThan(
+        setTimeoutSpy.mock.invocationCallOrder[0]
+      );
+
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.runOnlyPendingTimersAsync();
+
+      // auto sync started
+      expect(get(walletStore)).toStrictEqual({
+        ...initializedStore,
+        syncStatus: {
+          ...initializedStore.syncStatus,
+          isInProgress: true,
+        },
+      });
+
+      walletStore.reset();
+      expect(get(walletStore)).toStrictEqual(initialState);
     });
   });
 
   describe("Abort sync", () => {
     beforeEach(async () => {
-      await walletStore.init(profileGenerator);
+      walletStore.reset();
+      expect(get(walletStore)).toStrictEqual(initialState);
 
-      await vi.runAllTimersAsync();
+      await walletStore.init(profileGenerator);
+      await vi.advanceTimersByTimeAsync(AUTO_SYNC_INTERVAL - 1);
+
+      vi.clearAllTimers();
 
       expect(get(walletStore)).toStrictEqual(initializedStore);
+
+      clearTimeoutSpy.mockClear();
 
       // somewhere else (dexie?) the abort is called already six times
       abortControllerSpy.mockClear();
@@ -185,6 +228,7 @@ describe("Wallet store", async () => {
       walletStore.abortSync();
 
       expect(abortControllerSpy).toHaveBeenCalledTimes(1);
+      expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
 
       await vi.runAllTimersAsync();
 
@@ -195,21 +239,22 @@ describe("Wallet store", async () => {
 
       walletStore.sync();
 
-      await vi.runAllTimersAsync();
+      await vi.advanceTimersByTimeAsync(AUTO_SYNC_INTERVAL - 1);
 
       expect(get(walletStore)).toStrictEqual(initializedStore);
+
+      walletStore.abortSync();
     });
 
-    it("should do nothing if there is no sync in progress", async () => {
+    it("should do nothing but stopping the auto-sync if there is no sync in progress", async () => {
       walletStore.abortSync();
 
       expect(abortControllerSpy).not.toHaveBeenCalled();
+      expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("Wallet store services", () => {
-    const cacheClearSpy = vi.spyOn(walletCache, "clear");
-
     /** @type {string} */
     let fromAddress;
 
@@ -228,16 +273,28 @@ describe("Wallet store", async () => {
       nullifiers: [],
     };
 
+    const cacheClearSpy = vi.spyOn(walletCache, "clear");
     const executeSpy = vi
       .spyOn(Network.prototype, "execute")
       .mockResolvedValue(phoenixTxResult);
     const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
 
     beforeEach(async () => {
-      await walletStore.init(profileGenerator);
-      await vi.runAllTimersAsync();
+      walletStore.reset();
+      expect(get(walletStore)).toStrictEqual(initialState);
 
-      const { currentProfile } = get(walletStore);
+      await walletStore.init(profileGenerator);
+      await vi.advanceTimersByTimeAsync(AUTO_SYNC_INTERVAL - 1);
+
+      vi.clearAllTimers();
+
+      const currentStore = get(walletStore);
+
+      expect(currentStore).toStrictEqual(initializedStore);
+
+      const { currentProfile } = currentStore;
+
+      expect(currentProfile).toBeDefined();
 
       fromAccount = /** @type {string} */ (currentProfile?.account.toString());
       fromAddress = /** @type {string} */ (currentProfile?.address.toString());
@@ -248,8 +305,6 @@ describe("Wallet store", async () => {
     });
 
     afterEach(async () => {
-      await vi.runAllTimersAsync();
-
       cacheClearSpy.mockClear();
       executeSpy.mockClear();
       setPendingNotesSpy.mockClear();
@@ -262,6 +317,13 @@ describe("Wallet store", async () => {
     });
 
     it("should expose a method to clear local data", async () => {
+      /**
+       * For some reason calling `useRealTimers` makes
+       * `setTimeout` and `clearTimeout` disappear from
+       * `window` if they are spied upon.
+       */
+      setTimeoutSpy.mockRestore();
+      clearTimeoutSpy.mockRestore();
       vi.useRealTimers();
 
       await walletStore.clearLocalData();
@@ -277,7 +339,8 @@ describe("Wallet store", async () => {
 
       walletStore.clearLocalDataAndInit(newGenerator, 99n);
 
-      await vi.runAllTimersAsync();
+      await vi.advanceTimersByTimeAsync(AUTO_SYNC_INTERVAL - 1);
+      vi.clearAllTimers();
 
       expect(cacheClearSpy).toHaveBeenCalledTimes(1);
       expect(get(walletStore)).toStrictEqual({
@@ -292,8 +355,6 @@ describe("Wallet store", async () => {
     });
 
     it("should expose a method to set the current profile and update the balance afterwards", async () => {
-      vi.useRealTimers();
-
       const fakeExtraProfile = {
         account: {
           toString() {
@@ -331,8 +392,6 @@ describe("Wallet store", async () => {
       expect(setCachedBalanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
         balanceSpy.mock.invocationCallOrder[1]
       );
-
-      vi.useFakeTimers();
     });
 
     it("should reject with an error if the profile is not in the known list", async () => {
@@ -341,6 +400,13 @@ describe("Wallet store", async () => {
     });
 
     it("should expose a method to execute a phoenix transfer, if the receiver is a phoenix address", async () => {
+      /**
+       * For some reason calling `useRealTimers` makes
+       * `setTimeout` and `clearTimeout` disappear from
+       * `window` if they are spied upon.
+       */
+      setTimeoutSpy.mockRestore();
+      clearTimeoutSpy.mockRestore();
       vi.useRealTimers();
 
       const expectedTx = {
@@ -415,6 +481,13 @@ describe("Wallet store", async () => {
     });
 
     it("should use the moonlight account and shouldn't obfuscate the transaction if the receiver is a moonlight account", async () => {
+      /**
+       * For some reason calling `useRealTimers` makes
+       * `setTimeout` and `clearTimeout` disappear from
+       * `window` if they are spied upon.
+       */
+      setTimeoutSpy.mockRestore();
+      clearTimeoutSpy.mockRestore();
       vi.useRealTimers();
 
       const currentlyCachedBalance = await walletCache.getBalanceInfo(

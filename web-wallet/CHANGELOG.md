@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
 - Added allocation (shield/unshield) page and UI [#2196]
+- Add auto-sync every five minutes [#2880]
 
 ### Changed
 
@@ -308,6 +309,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2778]: https://github.com/dusk-network/rusk/issues/2778
 [#2807]: https://github.com/dusk-network/rusk/issues/2807
 [#2821]: https://github.com/dusk-network/rusk/issues/2821
+[#2880]: https://github.com/dusk-network/rusk/issues/2880
 [#2888]: https://github.com/dusk-network/rusk/issues/2888
 
 <!-- VERSIONS -->
