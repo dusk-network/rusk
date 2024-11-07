@@ -9,6 +9,7 @@ import * as ProtocolDriver from "../protocol-driver/mod.js";
 
 import { Rues } from "../rues/mod.js";
 import { Node } from "./components/node.js";
+import { Blocks } from "./components/blocks.js";
 import { Transactions } from "./components/transactions.js";
 import { Contracts } from "./components/contracts.js";
 import { Gas } from "./gas.js";
@@ -17,8 +18,6 @@ export { Gas };
 export { AddressSyncer } from "./syncer/address.js";
 export { AccountSyncer } from "./syncer/account.js";
 export { Bookmark } from "./bookmark.js";
-
-const protocol = { "https:": "wss:", "http:": "ws:" };
 
 const abortable = (signal) =>
   new Promise((resolve, reject) =>
@@ -35,9 +34,15 @@ export class Network {
   node;
   contracts;
 
+  static LOCALNET = Node.CHAIN.LOCALNET;
+  static MAINNET = Node.CHAIN.MAINNET;
+  static TESTNET = Node.CHAIN.TESTNET;
+  static DEVNET = Node.CHAIN.DEVNET;
+
   constructor(url, options = {}) {
     this.#rues = new Rues(url, options);
     this.node = new Node(this.#rues);
+    this.blocks = new Blocks(this.#rues);
     this.contracts = new Contracts(this.#rues);
     this.transactions = new Transactions(this.#rues);
   }
@@ -57,9 +62,7 @@ export class Network {
   async connect(options = {}) {
     await this.#rues.connect(options);
 
-    ProtocolDriver.load(
-      new URL("$lib/vendor/wallet_core.wasm", import.meta.url)
-    );
+    ProtocolDriver.load(new URL("/static/drivers/wallet-core.wasm", this.url));
 
     return this;
   }

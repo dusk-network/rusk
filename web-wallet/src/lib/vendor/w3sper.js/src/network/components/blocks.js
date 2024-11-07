@@ -5,13 +5,23 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-export class Contracts {
+export class Blocks {
   #scope = null;
 
   constructor(rues) {
-    this.#scope = rues.scope("contracts", {
-      headers: { "Content-Type": "application/octet-stream" },
-    });
+    this.#scope = rues.scope("blocks");
+  }
+
+  get gasPrice() {
+    // The gas price endpoint returns the current gas price as `number` but it should
+    // be `BigInt` to avoid precision loss.
+    return this.#scope.call["gas-price"]()
+      .then((r) => r.json())
+      .then((data) =>
+        Object.fromEntries(
+          Object.entries(data).map(([key, value]) => [key, BigInt(value)])
+        )
+      );
   }
 
   get on() {
@@ -28,11 +38,5 @@ export class Contracts {
 
   withId(id) {
     return this.#scope.withId(id);
-  }
-
-  get transferContract() {
-    return this.withId(
-      "0100000000000000000000000000000000000000000000000000000000000000"
-    );
   }
 }
