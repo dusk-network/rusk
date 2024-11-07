@@ -58,6 +58,7 @@ impl VMExecution for Rusk {
         let (_, verification_output) = self
             .verify_transactions(
                 blk.header().height,
+                blk.header().hash,
                 blk.header().gas_limit,
                 &generator,
                 blk.txs(),

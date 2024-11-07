@@ -936,9 +936,10 @@ impl RuesEvent {
 impl From<node_data::events::contract::ContractTxEvent> for RuesEvent {
     fn from(tx_event: node_data::events::contract::ContractTxEvent) -> Self {
         let mut headers = serde_json::Map::new();
-        if let Some(origin) = tx_event.origin {
-            headers.insert("Rusk-Origin".into(), hex::encode(origin).into());
-        }
+
+        headers
+            .insert("Rusk-Origin".into(), hex::encode(tx_event.origin).into());
+
         let event = tx_event.event;
         Self {
             uri: RuesEventUri {
