@@ -1,0 +1,136 @@
+# Dusk account
+
+[[phoenix_balance]]
+address = '68UiBbsJ4PumJyVpS91VbffhKgq9p6QaLC8QCqzgLiKBX71mvCswmeViTHDsBJ3RMwsVcxBSkZ3HbjHAL9qCNxh'
+seed = 0xdead_beef
+notes = [1_000_000_000_000]
+
+# Faucet wallet
+
+[[phoenix_balance]]
+address = '4LULsDGr3CkeZcVDSfM9UtNr1Xa9DF7HqCEnfnbsDH2HXkkoCfdQWKpEwKwPF6enrSVoTTfb2bGCB8v2VyHHFoUJ'
+seed = 0xdead_beef
+notes = [500_000_000_000_000_000]
+
+
+# 30 Dusk network provisioners
+
+[[stake]]
+address = 'pFPEcfxidLvwmFKRQoifrSyWmmVY9UDEThoRFvGXddXRLZ8hB7xfWDYQYwHhTvZvXeL1p5Ygcnsuuxm1X8nHFJH6tEgK3cS76squcFVFSejaKJGMorYZdTup5uscNq6eDU2'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'rvXLHF8DBNwzZ63uSWPki3y7uNgGbdRCrKpouEP9N7awiGBDaP1uzyrtLBDtFbNgw8bPNjbyMsfAsNutZKnuX8JXzMiFvpW9vK4c2zmAmk3RygzwiFGCVJ9KSU7b4bgC1UT'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'rdHa4H5p1rVtQyqD5AjDHyr1EGg7yVU1wynqQ9VRqU8Wp7kMcePsSk2tURGzRLnzS36CaKEadpfRGwa3ucvFH5MEGYvF1LAqSQQT3zE1Fx7wQzYsrvDpJ44bBa6dKxN6mTC'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '244Sywxj7PuMHpcPxemaXLcrY5rPgztra6H9Vz8cU1Ro5v23SxKTfVqr2yS7NXAXE1iq59ndn4aMZmYxuzu3Te3e9fokQKTUkYvFxYg2P2E8EEg1gWUbs3AFL2aNx62HQd7r'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '24bfNr8MDUo5xJBecmeGzXDEraax4Cmbnhjyyt5GaL1Vbe6H48ZSYTpmjRDcFRDFzgzuePAPUNcdGMnBzBQBk4zAMgBCtPsY27tBJtKmB1st6qcmpzRR4Er5imxrzvMRnfWc'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'xEXp8qBarpXnVD9DJHUj8ywkWPggbPmgsmGFFtGAuXd2EXwEiXiXJ6r4WqdjvTvpE7Fx42TpwnkrpFwdc5BphPu7LCQ3FPU1DMQ1WKoDCxeQVircgHKrFpWsCZ8VLrGCdWm'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'shAky1Dnjxdhy1HsJRC17hgFw7YmT8PSdobce73k3ANmJWaDmycRyqruoxoxKoaVpudkCY4ENSgrkEoUgfG9xBa77jULgpDcWvYNLFQfWsA2bSFbooCJhZTHyGLyNQC73os'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'uDYKaU8SM5iriU88tWsR8Z7KbepmjiVubFLtetASuzEeBjwJZ5en4XuXjJTCZgHztK85gjS9que8njCebHGku9wnXzKbneYwx5xF1puiNF8XWRTcvDAta1ndsa4jAqGkWzm'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'zVnmVA7jfgAoBGnsMDrHGiwPx3sZhG42t6pysHjMj7rF6BKPGut87GZaDaXwmdjXsz53ULB2Mmur9aoSU1ZCGHYwQ57eN59FMwHqdBjULpNBfvFZN1qnzVpgz23y3UPPz6x'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'shB6W4UWipm3JQQgmbkC4Xy3CEvtyz4FL3QBpYUb5aRr4UspY4ezzq6XzoYENZgaf6p2j3xrtLuWNGcYhNU1jUdi9hS62bvCctoiqNNVdx1dXLJHyndHyT97Cww6Kmyr5r9'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'prV8r1A5oHHyMGuqvsyVP4eMfaqbYYtzKvfV6phwHMBNKaDnRCy4ntC81QGGS1dUDyqu6EuNamAEHZpR5cWWQkHvABrADkXs1fDbNqKtisEAnVjBj46iDJdQ7ck4vGs69Td'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'qHeUtHGi27ZRFHyBimKF6fHCy8B3mr2VShAkfk2ifkb8HAwD8Gr7Zrq96F9s5G4VWFUSbaUVcCBnExnumHeoQqfjRp52CRfzXDzkBevUG2CVtGqUvGGV1DxsDAEXHhCyXbX'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'sMnHcRLM2BTKDLrJUDcTQPAE7NhkNDS3v986rmV2eZJF5RRqtDJQya2RnLTN8vBodfHrqxVeVpFG2MEbta6YmNfokSn135rYhAvnmDwPL1nd3Uq3iwqih5hNBpiGK7HY9D1'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'oUgxBUWEPyFAekXW9T2UdJBcMF7xAuBfstrCX8ATXFk7MusqddFGoq2LN9euCbwVuXpSM5rGLKNUb6NVPFUVM5g4pA6CnXjNfNVBiy91NcH9eBVcdcG1eYUaKWQSYQ9t2um'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '26brdzqNXEG1jTzCubJAPhks18bSSDY4n21ZW6VLYkCv6bBUdBAZZAbn1Coz1LPBYc4uEekBbzFnZvhL9untGCqRamhZS2cBV51fdZog3qkP3NbMEaqgNMcKEahAFV8t2Cke'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '2681cRrpmrN17r1C1jNKNqAL6xc7mCTNu9qwhtjTVNHiaVioqowCcTcMqXcmYuqpG8c22bPqKWDRfRmzcfSnLLA9GG5jdgBhmoQxSAqaXMUL2Ee5LAGMB5RJycuUcDoHTCwY'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'nV71a9Hec6jeXVFkUN6JvgiLDTucp1R4g6GewvnL7nYLbRrcxuPtFHt2PNjApDaLXLKTBEEwMdefjnQgKtBFaJAtA1jxkF9K2EKW1nBea26cHcvb326rbXNgYA4pNWv4roh'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '26LsKrN6Rk4UPALU6msRjkdu5tdSsoNtudcMSvz8Xa2jmp6gDCv964yf7rq4SC4bHDCuoT28KBS8989WfTjBuxTdYqQhCswDL1MiDhXBvraiWPX9Hjhvi1X4pbs757sHYXGb'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'uSXgfWF1uhmxjmLaQPXhVY2NJt1UNUKf5xTGK5eCGF1kFtnhG2DwhYJGX4kowZScrJV37vEFDMPEzG4q2hsjBoSMbnMjz7qUWevKA5UP3MBZS45k6vcjHEF5GB5CeuafQwA'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'nvdsjA8biVgXQc7fFYxJwZAY7AM1wc8YqYNQ5fFe8NYQZnVHSRny6yQadz5MNXzsCYhcFHDAGqrgVRDKoPNN41Z2bwy57SZwCXSBrx3SnjVbefrRXzXAEuHMfUEBBtq8gzH'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'm6dy2gz3jC3ifLpZmdTaZbgcptWxRrfnQEZ8hG8ewhopKXTcCTnTqs4UeucXFkcSuFMfTqMzT1Go6KfNkuFvJPvsrvp5vKxEccuJNUgMi1uSCne1ti5kgYeNHtW82FWtnpf'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '26DsWXiCrNxkmCZ1zfCh3XTE2cXqf4NEPGGRMU39vZhNYF6hExrRrzN4nETVYduLuiRAHmtonkP6TvtVnhf9v5YcksgUfhHY78dNgCTSZs9WgHjN4NP2QRiybAaH3xUGeatm'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '23fAnih3A9TtZLmwBggRgjGHsEB9qyVTq25C1LahSVH2LigFdjLxveccFgnfQPxWUmMFLJDh8Ptd4NivosEK6pDZoAb48EirBaKqDEExh75iXDsr6k8hjFxV2hJhfGtYLFGr'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'yDiwuTDWV9WPeihhaToqHYijiwM5n84deh8Nn779WyNr9kGFcRLnHHkDTcVpzLaNSEa7b3DQQky6i72hvsrKJ2uFSsJQD37pokQKVokV4Q2q1p1aRPNRdSujfmcdMP3MBVS'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'txesrFKYx2Ea7foBoBUNDj1rn1MjG8KREfZYNEb6UGg1k3KSBQdXr52Ayfemz1cEJ64AosipuGH5khnSXq87EcKP6uD2JrGb1NKdAgBELYkocXpbcmANd4VupWnVCPoecr1'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '24Qzcp49pQt8Rb1bWf65Yq76QysTfyQKUZh7C219345iD6eYfHKptxxAKrqGYLFXKUci3NR5FbLhFjmLnL4jf249hwZK19gY2nqKESbSyfkMVMQHpS5dVVcN2my1KWR3jha4'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '26TVUnyxdYwX3Sipc2RLAwGnE6gLHW86sudf2HU3xP8S7NbAoiJDUE2XTn1FaEKV32FvZpCf9SjsgkYatddn6BsoBhMTmXyd1TMpzgFyJ8rGNXNN2R9LBuHfCXoXXj3MtNJr'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'o6Ckan2efbGTbJRSgzM9vwK5z4fTY5AFr3WqWTRNVL8dsXxEBkEqa4wsHs6g3ARWZovFVEkV3r1HJZbhLWK2vC8xBarMRKifta7xZNeprb5xUFpjeS3ekF9VBsnKPbwTtP1'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '23hcRjNqzKUhcHevbiP24NThLLbCjMXDFdwFXqgLjmx5cheXE6drSuSiuvvaSc7rbnbR2Yb1NY1x3276WVp47nFUM2ygmmERC4cxuF51aMqu75PVanouxfgmaHtFHjcHoHjj'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '21SQ3HyThUvJUAtn3cfYUAisdw9h25DCp5hT2vzeiiQrvjGpmjsZKmbMMQTFSfU3EsEYtLqncXhVRkxnapwYrjYmR1tVdx3xE3nz2UkxSD1L34E1aTCoGqqZek9TfmSTQ5Sn'
+amount = 500_000_000_000_000
