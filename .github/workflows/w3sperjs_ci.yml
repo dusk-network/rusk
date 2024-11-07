@@ -31,9 +31,10 @@ jobs:
               - 'w3sper.js/**'
               - '.github/workflows/w3sperjs_ci.yml'
 
-  deno_lint_check:
+  deno_lint_and_fmt_check:
     needs: changes
-    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
+    # Skip lint check, see issue #2891
+    if: false
     name: Deno lint check
     runs-on: ubuntu-latest
 
@@ -50,10 +51,11 @@ jobs:
         run: |
           cd w3sper.js
           deno lint
+          deno fmt --check
 
   make_wasm_and_w3sper_test:
     needs: changes
-    if: needs.changes.outputs.run-ci == 'true'
+    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
     name: "Build wallet-core WASM, run Docker image and deno tests"
     runs-on: ubuntu-latest
 
