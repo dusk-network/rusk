@@ -33,6 +33,11 @@ export class Network {
   node;
   contracts;
 
+  static LOCALNET = Node.CHAIN.LOCALNET;
+  static MAINNET = Node.CHAIN.MAINNET;
+  static TESTNET = Node.CHAIN.TESTNET;
+  static DEVNET = Node.CHAIN.DEVNET;
+
   constructor(url, options = {}) {
     this.#rues = new Rues(url, options);
     this.node = new Node(this.#rues);
