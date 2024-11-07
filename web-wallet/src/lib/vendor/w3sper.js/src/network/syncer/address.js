@@ -11,9 +11,6 @@ import * as DataBuffer from "../../protocol-driver/buffer.js";
 import * as ProtocolDriver from "../../protocol-driver/mod.js";
 import { Bookmark } from "../bookmark.js";
 
-export const TRANSFER =
-  "0100000000000000000000000000000000000000000000000000000000000000";
-
 const size = (array) => array.reduce((sum, { size }) => sum + size, 0);
 
 export class AddressSyncer extends EventTarget {
@@ -25,18 +22,16 @@ export class AddressSyncer extends EventTarget {
   }
 
   get #bookmark() {
-    return this.#network.contracts
-      .withId(TRANSFER)
-      .call.num_notes()
+    return this.#network.contracts.transferContract.call
+      .num_notes()
       .then((response) => response.arrayBuffer())
       .then((buffer) => new Bookmark(new Uint8Array(buffer)));
   }
 
   get root() {
     const network = this.#network;
-    return network.contracts
-      .withId(TRANSFER)
-      .call.root()
+    return network.contracts.transferContract.call
+      .root()
       .then((response) => response.arrayBuffer());
   }
 
@@ -51,7 +46,7 @@ export class AddressSyncer extends EventTarget {
     for (let i = 0; i < bookmarks.length; i += 8) {
       const body = bookmarks.slice(i, i + 8);
 
-      requests.push(network.contracts.withId(TRANSFER).call.opening(body));
+      requests.push(network.contracts.transferContract.call.opening(body));
     }
 
     const result = Promise.all(requests)
@@ -69,9 +64,8 @@ export class AddressSyncer extends EventTarget {
     DataBuffer.copyInto(body, nullifiers);
     DataBuffer.layout(body, nullifiers.length);
 
-    const buffer = await this.#network.contracts
-      .withId(TRANSFER)
-      .call.existing_nullifiers(body)
+    const buffer = await this.#network.contracts.transferContract.call
+      .existing_nullifiers(body)
       .then((response) => response.arrayBuffer());
 
     const layout = DataBuffer.layout(new Uint8Array(buffer));
@@ -102,9 +96,10 @@ export class AddressSyncer extends EventTarget {
       new DataView(body.buffer).setBigUint64(0, from, true);
     }
 
-    let response = await this.#network.contracts
-      .withId(TRANSFER)
-      .call[topic](body, { headers: { "Rusk-Feeder": "true" } });
+    let response = await this.#network.contracts.transferContract.call[topic](
+      body,
+      { headers: { "Rusk-Feeder": "true" } }
+    );
     let reader = getBYOBReader(response.body);
 
     const entrySize = await ProtocolDriver.getEntrySize();

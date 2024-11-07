@@ -3,10 +3,9 @@ import { AccountSyncer } from "$lib/vendor/w3sper.js/src/network/syncer/account"
 class AccountSyncerMock extends AccountSyncer {
   /**
    * @param {import("$lib/vendor/w3sper.js/src/mod").Network} network
-   * @param {Record<string, any>} [options={}]
    */
-  constructor(network, options = {}) {
-    super(network, options);
+  constructor(network) {
+    super(network);
   }
 
   /**

@@ -66,7 +66,7 @@ class WalletTreasury {
    */
   // eslint-disable-next-line max-statements
   async update(from, syncIterationListener, signal) {
-    const accountSyncer = await networkStore.getAccountSyncer({ signal });
+    const accountSyncer = await networkStore.getAccountSyncer();
     const addressSyncer = await networkStore.getAddressSyncer({ signal });
 
     // @ts-ignore
