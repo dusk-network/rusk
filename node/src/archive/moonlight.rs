@@ -12,7 +12,7 @@ use core::result::Result as CoreResult;
 use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use node_data::events::contract::ContractEvent;
-use node_data::events::contract::{ContractTxEvent, TxHash};
+use node_data::events::contract::{ContractTxEvent, OriginHash};
 use rocksdb::{
     BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice,
     LogLevel, OptimisticTransactionDB, Options,
@@ -33,13 +33,13 @@ const DEFAULT_MAX_COUNT: usize = 1000;
 
 // Column family names.
 
-/// Moonlight TxHash to MoonlightTxEvents mapping  
+/// Moonlight TxHash to MoonlightTxEvents mapping
 const CF_MTXHASH_MEVENTS: &str = "cf_mtxhash_mevents";
-/// AccountPublicKey to Inflow MoonlightTx mapping  
+/// AccountPublicKey to Inflow MoonlightTx mapping
 const CF_M_INFLOW_ADDRESS_TX: &str = "cf_m_inflow_address_tx";
-/// AccountPublicKey to Outflow MoonlightTx mapping  
+/// AccountPublicKey to Outflow MoonlightTx mapping
 const CF_M_OUTFLOW_ADDRESS_TX: &str = "cf_m_outflow_address_tx";
-/// Memo to MoonlightTx mapping (in- & outlfows)  
+/// Memo to MoonlightTx mapping (in- & outlfows)
 const CF_M_MEMO_TX: &str = "cf_m_memo_tx";
 
 /// Group of events belonging to a single Moonlight transaction and additional
@@ -56,7 +56,7 @@ const CF_M_MEMO_TX: &str = "cf_m_memo_tx";
 pub struct MoonlightGroup {
     events: Vec<ContractEvent>,
     #[serde_as(as = "serde_with::hex::Hex")]
-    origin: TxHash,
+    origin: OriginHash,
     block_height: u64,
 }
 
@@ -67,7 +67,7 @@ impl MoonlightGroup {
     }
 
     /// Returns the origin of the MoonlightGroup/Events.
-    pub fn origin(&self) -> &TxHash {
+    pub fn origin(&self) -> &OriginHash {
         &self.origin
     }
 
@@ -597,7 +597,7 @@ impl Archive {
             }
         };
 
-        let keys: Vec<&TxHash> =
+        let keys: Vec<&OriginHash> =
             moonlight_txs.iter().map(|tx| tx.origin()).collect();
 
         // sorted_input - If true, it means the input keys are already sorted by
@@ -740,7 +740,7 @@ mod tests {
     };
     use execution_core::{ContractId, CONTRACT_ID_BYTES};
     use node_data::events::contract::{
-        ContractEvent, WrappedContractId, TX_HASH_BYTES,
+        ContractEvent, WrappedContractId, ORIGIN_HASH_BYTES,
     };
     use rand::distributions::Alphanumeric;
     use rand::rngs::StdRng;
@@ -1140,7 +1140,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(fetched_moonlight_tx[0].block_height(), 1);
-        assert_eq!(fetched_moonlight_tx[0].origin(), &[1u8; TX_HASH_BYTES]);
+        assert_eq!(fetched_moonlight_tx[0].origin(), &[1u8; ORIGIN_HASH_BYTES]);
         assert_eq!(fetched_moonlight_tx[0], moonlight_tx);
 
         let events = fetched_events_by_moonlight_tx.events();
@@ -1183,7 +1183,7 @@ mod tests {
         assert_eq!(fetched_tx3.len(), 4);
 
         for (i, fetched_tx) in fetched_tx3.iter().enumerate() {
-            assert_eq!(fetched_tx.origin(), &[i as u8; TX_HASH_BYTES]);
+            assert_eq!(fetched_tx.origin(), &[i as u8; ORIGIN_HASH_BYTES]);
             fetched_tx.events().iter().for_each(|e| {
                 assert_eq!(e.topic, "moonlight");
                 assert_eq!(

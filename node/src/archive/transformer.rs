@@ -12,7 +12,7 @@ use execution_core::transfer::{
     ConvertEvent, MoonlightTransactionEvent, WithdrawEvent, CONVERT_TOPIC,
     MINT_TOPIC, MOONLIGHT_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
 };
-use node_data::events::contract::{ContractEvent, ContractTxEvent, TxHash};
+use node_data::events::contract::{ContractEvent, ContractTxEvent, OriginHash};
 use serde::{Deserialize, Serialize};
 
 /// A group of events that belong to the same Moonlight transaction.
@@ -53,11 +53,11 @@ impl MoonlightTxEvents {
 pub struct MoonlightTx {
     pub(super) block_height: u64,
     #[serde_as(as = "serde_with::hex::Hex")]
-    pub(super) tx_hash: TxHash,
+    pub(super) tx_hash: OriginHash,
 }
 
 impl MoonlightTx {
-    pub fn origin(&self) -> &TxHash {
+    pub fn origin(&self) -> &OriginHash {
         &self.tx_hash
     }
 
@@ -92,17 +92,14 @@ pub(super) fn group_by_origins_filter_and_convert(
         Vec<ContractEvent>,
     > = BTreeMap::new();
     for event in block_events {
-        if let Some(origin) = event.origin {
-            let event_to_analyze = event.event;
-
-            moonlight_is_already_grouped
-                .entry(MoonlightTx {
-                    block_height,
-                    tx_hash: origin,
-                })
-                .or_default()
-                .push(event_to_analyze);
-        }
+        let event_to_analyze = event.event;
+        moonlight_is_already_grouped
+            .entry(MoonlightTx {
+                block_height,
+                tx_hash: event.origin,
+            })
+            .or_default()
+            .push(event_to_analyze);
     }
 
     // 2nd Keep only the event groups which contain a moonlight in-
