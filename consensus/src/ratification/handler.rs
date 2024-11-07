@@ -8,6 +8,7 @@ use crate::commons::RoundUpdate;
 use crate::errors::ConsensusError;
 use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
+
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Attestation;
@@ -112,13 +113,7 @@ impl MsgHandler for RatificationHandler {
             return Err(ConsensusError::InvalidMsgIteration(iteration));
         }
 
-        Self::verify_validation_result(
-            &p.header,
-            &p.validation_result,
-            round_committees,
-        )?;
-
-        // Ensure the vote matches that of Validation
+        // Ensure the vote matches the msg ValidationResult
         if *p.validation_result.vote() != p.vote {
             return Err(ConsensusError::VoteMismatch(
                 *p.validation_result.vote(),
@@ -126,8 +121,37 @@ impl MsgHandler for RatificationHandler {
             ));
         }
 
-        // Collect vote, if msg payload is of ratification type
-        let (sv, quorum_reached) = self
+        // If the vote is a Quorum, check it against our result
+        // (NoQuorum votes need no verification)
+        if p.vote != Vote::NoQuorum {
+            // If our result is NoQuorum, verify votes and update our result
+            match self.validation_result().vote() {
+                Vote::NoQuorum => {
+                    // If our result is NoQuorum, verify votes and
+                    // then update our result
+                    Self::verify_validation_result(
+                        &p.header,
+                        &p.validation_result,
+                        round_committees,
+                    )?;
+
+                    self.update_validation_result(p.validation_result.clone())
+                }
+
+                vote => {
+                    // If our result is also a Quorum, check they match and skip
+                    // verification
+                    if p.vote != *vote {
+                        return Err(ConsensusError::VoteMismatch(
+                            *vote, p.vote,
+                        ));
+                    }
+                }
+            }
+        }
+
+        // Collect vote
+        let (ratification_sv, quorum_reached) = self
             .aggregator
             .collect_vote(committee, &p)
             .map_err(|error| {
@@ -147,19 +171,24 @@ impl MsgHandler for RatificationHandler {
         let _ = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &p.vote,
-            sv,
+            ratification_sv,
             StepName::Ratification,
             quorum_reached,
             &generator.expect("There must be a valid generator"),
         );
 
         if quorum_reached {
+            // INFO: we set Validation SV to our local result to always include
+            // a quorum-reaching (if any) SV even if the Ratification result is
+            // NoQuorum
+            let validation_sv = *self.validation_result.sv();
+
             return Ok(StepOutcome::Ready(self.build_quorum_msg(
                 ru,
                 iteration,
                 p.vote,
-                *p.validation_result.sv(),
-                sv,
+                validation_sv,
+                ratification_sv,
             )));
         }
 
@@ -263,6 +292,10 @@ impl RatificationHandler {
 
     pub(crate) fn validation_result(&self) -> &ValidationResult {
         &self.validation_result
+    }
+
+    pub(crate) fn update_validation_result(&mut self, vr: ValidationResult) {
+        self.validation_result = vr;
     }
 
     fn unwrap_msg(msg: Message) -> Result<Ratification, ConsensusError> {
