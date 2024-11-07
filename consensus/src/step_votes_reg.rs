@@ -220,11 +220,15 @@ impl AttInfoRegistry {
         let vote = attestation.result.vote();
         let att_info = iter_atts.get_or_insert(vote);
 
+        // If RatificationResult is NoQuorum, we assume Validation votes did not
+        // reach a quorum
+        let validation_quorum = !matches!(vote, Vote::NoQuorum);
+
         att_info.set_sv(
             iteration,
             attestation.validation,
             StepName::Validation,
-            true,
+            validation_quorum,
         );
         att_info.set_sv(
             iteration,
