@@ -10,17 +10,18 @@ use anyhow::Result;
 use execution_core::{ContractId, Event, CONTRACT_ID_BYTES};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-pub const TX_HASH_BYTES: usize = 32;
-pub type TxHash = [u8; TX_HASH_BYTES];
+pub const ORIGIN_HASH_BYTES: usize = 32;
+/// Origin hash of a contract event. This is in most cases the transaction hash.
+/// In the case of a reward or slash event, it is the block hash.
+pub type OriginHash = [u8; ORIGIN_HASH_BYTES];
 
-/// Contract event with optional origin (tx hash).
+/// Contract event with origin `OriginHash`.
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ContractTxEvent {
     pub event: ContractEvent,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[serde_as(as = "Option<serde_with::hex::Hex>")]
-    pub origin: Option<TxHash>,
+    #[serde_as(as = "serde_with::hex::Hex")]
+    pub origin: OriginHash,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
