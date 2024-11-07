@@ -7,6 +7,18 @@
 const hex = (bytes) =>
   Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0"));
 
+const mergeMap = (dest, source, lookup) => {
+  for (const [key, value] of source) {
+    const hexKey = hex(key).join("");
+    if (!lookup.has(hexKey)) {
+      dest.set(key, value);
+      lookup.add(hexKey);
+    }
+  }
+
+  return;
+};
+
 import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 import {
   test as harnessTest,
@@ -57,6 +69,8 @@ export const seeder = () => SEED;
 export class Treasury {
   #users;
   #notes = new Map();
+  #keySet = new Set();
+
   #accounts = [];
 
   lastSyncInfo;
@@ -85,11 +99,11 @@ export class Treasury {
     })) {
       for (let i = 0; i < this.#users.length; i++) {
         const userNotes = this.#notes.get(this.#users[i].address.toString());
-        this.#notes.set(
-          this.#users[i].address.toString(),
-          new Map([...userNotes, ...notes[i]]),
-        );
+        mergeMap(userNotes, notes[i], this.#keySet);
+
+        // this.#notes.set(this.#users[i].address.toString(), userNotes);
       }
+
       this.lastSyncInfo = syncInfo;
     }
 
@@ -104,7 +118,7 @@ export class Treasury {
     );
 
     this.#notes.forEach((notes) => {
-      for (let [key, value] of notes) {
+      for (let [key, _value] of notes) {
         if (spent.includes(hex(key).join(""))) {
           notes.delete(key);
         }
