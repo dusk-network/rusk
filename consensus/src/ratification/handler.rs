@@ -13,7 +13,7 @@ use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Attestation;
 use node_data::{ledger, StepName};
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::aggregator::{Aggregator, StepVote};
 
@@ -105,6 +105,7 @@ impl MsgHandler for RatificationHandler {
         round_committees: &RoundCommittees,
     ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
+        let vote = p.vote;
         let iteration = p.header().iteration;
 
         if iteration != self.curr_iteration {
@@ -114,18 +115,25 @@ impl MsgHandler for RatificationHandler {
         }
 
         // Ensure the vote matches the msg ValidationResult
-        if *p.validation_result.vote() != p.vote {
-            return Err(ConsensusError::VoteMismatch(
-                *p.validation_result.vote(),
-                p.vote,
-            ));
+        let vr_vote = *p.validation_result.vote();
+        if vr_vote != vote {
+            warn!(
+                event = "Vote discarded",
+                step = "Ratification",
+                reason = "mismatch with msg ValidationResult",
+                round = ru.round,
+                iter = iteration
+            );
+
+            return Err(ConsensusError::VoteMismatch(vr_vote, vote));
         }
 
         // If the vote is a Quorum, check it against our result
         // (NoQuorum votes need no verification)
-        if p.vote != Vote::NoQuorum {
+        if vote != Vote::NoQuorum {
             // If our result is NoQuorum, verify votes and update our result
-            match self.validation_result().vote() {
+            let local_vote = *self.validation_result().vote();
+            match local_vote {
                 Vote::NoQuorum => {
                     // If our result is NoQuorum, verify votes and
                     // then update our result
@@ -135,15 +143,27 @@ impl MsgHandler for RatificationHandler {
                         round_committees,
                     )?;
 
+                    debug!(
+                        "Update local ValidationResult ({:?}) with {:?}",
+                        local_vote, vote
+                    );
                     self.update_validation_result(p.validation_result.clone())
                 }
 
-                vote => {
+                _ => {
                     // If our result is also a Quorum, check they match and skip
                     // verification
-                    if p.vote != *vote {
+                    if vote != local_vote {
+                        warn!(
+                            event = "Vote discarded",
+                            step = "Ratification",
+                            reason = "mismatch with local ValidationResult",
+                            round = ru.round,
+                            iter = iteration
+                        );
+
                         return Err(ConsensusError::VoteMismatch(
-                            *vote, p.vote,
+                            local_vote, vote,
                         ));
                     }
                 }
@@ -159,18 +179,18 @@ impl MsgHandler for RatificationHandler {
                     event = "Cannot collect vote",
                     ?error,
                     from = p.sign_info().signer.to_bs58(),
-                    vote = ?p.vote,
+                    ?vote,
                     msg_step = p.get_step(),
                     msg_iter = p.header().iteration,
                     msg_height = p.header().round,
                 );
-                ConsensusError::InvalidVote(p.vote)
+                ConsensusError::InvalidVote(vote)
             })?;
 
         // Record any signature in global registry
         let _ = self.sv_registry.lock().await.set_step_votes(
             iteration,
-            &p.vote,
+            &vote,
             ratification_sv,
             StepName::Ratification,
             quorum_reached,
@@ -186,7 +206,7 @@ impl MsgHandler for RatificationHandler {
             return Ok(StepOutcome::Ready(self.build_quorum_msg(
                 ru,
                 iteration,
-                p.vote,
+                vote,
                 validation_sv,
                 ratification_sv,
             )));
