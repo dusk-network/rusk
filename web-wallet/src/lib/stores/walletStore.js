@@ -15,6 +15,10 @@ import { transactions } from "$lib/mock-data";
 import networkStore from "./networkStore";
 import settingsStore from "./settingsStore";
 
+const AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
+
+let autoSyncId = 0;
+
 /** @type {AbortController | null} */
 let syncController = null;
 
@@ -103,6 +107,7 @@ const updateBalance = async () => {
 
 /** @type {WalletStoreServices["abortSync"]} */
 const abortSync = () => {
+  window.clearTimeout(autoSyncId);
   syncPromise && syncController?.abort();
   syncPromise = null;
 };
@@ -245,6 +250,12 @@ async function sync(fromBlock) {
           ...currentStore,
           syncStatus: initialState.syncStatus,
         }));
+      })
+      .then(() => {
+        window.clearTimeout(autoSyncId);
+        autoSyncId = window.setTimeout(() => {
+          sync().finally(updateBalance);
+        }, AUTO_SYNC_INTERVAL);
       })
       .catch((error) => {
         syncController?.abort();
