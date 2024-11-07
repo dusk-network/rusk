@@ -144,7 +144,7 @@ export class ListenerProxy {
         }
 
         if (signal) {
-          signal.addEventListener("abort", async (event) => {
+          signal.addEventListener("abort", async (_event) => {
             await unsubscribe(target, topic, options);
           });
         }

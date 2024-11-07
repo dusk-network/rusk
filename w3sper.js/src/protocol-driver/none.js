@@ -10,6 +10,8 @@ const _none = Symbol("none::instance");
 
 const DEFAULT_MESSAGE =
   "The object is uninitialized. Please initialize it before use.";
+
+// deno-lint-ignore no-unused-vars
 const X = Symbol("X");
 
 export const none = function (strings, ...values) {

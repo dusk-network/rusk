@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import * as DataBuffer from "./buffer.js";
 import { none } from "./none.js";
 
 const _mem = Symbol("allocator::mem");
@@ -76,7 +75,7 @@ class Allocator {
     function u32x(source) {
       source ??= this;
       return memcpy(null, +source, 4).then((data) =>
-        new DataView(data.buffer).getUint32(0, true),
+        new DataView(data.buffer).getUint32(0, true)
       );
     }
     u32x.byteLength = 4;
@@ -84,14 +83,14 @@ class Allocator {
     function u64(source) {
       source ??= this;
       return memcpy(null, +source, 8).then((data) =>
-        new DataView(data.buffer).getBigUint64(0, true),
+        new DataView(data.buffer).getBigUint64(0, true)
       );
     }
     u32x.byteLength = 8;
 
     function ptrx(type) {
       return async function () {
-        let address = await u32x.call(this);
+        const address = await u32x.call(this);
         return await type.call(address);
       };
     }
@@ -102,12 +101,15 @@ class Allocator {
       const len = await u32x(source);
       const data = await memcpy(null, source + 4, len);
 
-      let align = new DataView(data.buffer).getUint32(
+      const align = new DataView(data.buffer).getUint32(
         data.byteLength - 8,
         true,
       );
 
-      let size = new DataView(data.buffer).getUint32(data.byteLength - 4, true);
+      const size = new DataView(data.buffer).getUint32(
+        data.byteLength - 4,
+        true,
+      );
 
       return [data, { align, size }];
     }
@@ -129,7 +131,7 @@ class Allocator {
 
       u32(source) {
         return memcpy(null, +source, 4).then((data) =>
-          new DataView(data.buffer).getUint32(0, true),
+          new DataView(data.buffer).getUint32(0, true)
         );
       },
     };

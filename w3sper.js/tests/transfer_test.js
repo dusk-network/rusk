@@ -5,16 +5,16 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import {
-  Network,
-  Gas,
-  ProfileGenerator,
+  AccountSyncer,
+  AddressSyncer,
   Bookkeeper,
   Bookmark,
-  AddressSyncer,
-  AccountSyncer,
+  Gas,
+  Network,
+  ProfileGenerator,
 } from "../src/mod.js";
 
-import { test, assert, seeder, Treasury } from "./harness.js";
+import { assert, seeder, test, Treasury } from "./harness.js";
 
 test.withLocalWasm = "release";
 
@@ -49,7 +49,7 @@ test("accounts", async () => {
 
   await treasury.update({ accounts });
 
-  let newBalances = [
+  const newBalances = [
     await bookkeeper.balance(users[0].account),
     await bookkeeper.balance(users[1].account),
   ];
@@ -69,7 +69,7 @@ test("addresses", async () => {
   const addresses = new AddressSyncer(network);
 
   const treasury = new Treasury(users);
-  let from = Bookmark.from(0n);
+  const from = Bookmark.from(0n);
 
   await treasury.update({ addresses, from });
 
@@ -93,7 +93,7 @@ test("addresses", async () => {
 
   await treasury.update({ addresses });
 
-  let newBalances = [
+  const newBalances = [
     await bookkeeper.balance(users[0].address),
     await bookkeeper.balance(users[1].address),
   ];

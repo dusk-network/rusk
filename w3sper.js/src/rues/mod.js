@@ -14,7 +14,7 @@ const protocol = { "https:": "wss:", "http:": "ws:" };
 
 const once = (target, topic) =>
   new Promise((resolve) =>
-    target.addEventListener(topic, resolve, { once: true }),
+    target.addEventListener(topic, resolve, { once: true })
   );
 
 class RuesTarget {
@@ -120,7 +120,7 @@ export class Rues extends EventTarget {
     if (signal?.aborted) {
       this.#session.reject(signal.reason);
     } else if (signal) {
-      signal.addEventListener("abort", (event) => {
+      signal.addEventListener("abort", (_event) => {
         socket.close();
       });
     }
@@ -163,8 +163,8 @@ export class Rues extends EventTarget {
 
   handleEvent(event) {
     if (event instanceof MessageEvent) {
-      let ruesEvent = RuesEvent.from(event);
-      let ruesComponentEvent = RuesEvent.from(ruesEvent, { as: "component" });
+      const ruesEvent = RuesEvent.from(event);
+      const ruesComponentEvent = RuesEvent.from(ruesEvent, { as: "component" });
 
       this.dispatchEvent(ruesEvent);
       this.dispatchEvent(ruesComponentEvent);

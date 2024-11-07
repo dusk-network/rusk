@@ -11,22 +11,17 @@ const baseUrl = new URL(paths.slice(0, testsIndex + 1).join("/"), moduleUrl);
 const srcUrl = new URL(paths.slice(0, testsIndex).join("/"), moduleUrl);
 
 // Start listening on port 8000 of localhost.
-const server = Deno.listen({ port: 8000 });
+startServer();
 console.log("File server running on http://localhost:8000/");
 
-for await (const conn of server) {
-  handleHttp(conn).catch(console.error);
-}
-
-async function handleHttp(conn: Deno.Conn) {
-  const httpConn = Deno.serveHttp(conn);
-  for await (const requestEvent of httpConn) {
+function startServer() {
+  Deno.serve(async (req) => {
     // Use the request pathname as filepath
-    const url = new URL(requestEvent.request.url);
+    const url = new URL(req.url);
     let filepath = decodeURIComponent(url.pathname);
 
     if (filepath === "/" || filepath === "/index.html") {
-      filepath = "./index.html";
+      filepath = baseUrl.pathname + "/index.html";
     } else if (filepath.startsWith("/src/")) {
       filepath = srcUrl.pathname + filepath;
     } else {
@@ -39,9 +34,7 @@ async function handleHttp(conn: Deno.Conn) {
       file = await Deno.open(filepath, { read: true });
     } catch {
       // If the file cannot be opened, return a "404 Not Found" response
-      const notFoundResponse = new Response("404 Not Found", { status: 404 });
-      await requestEvent.respondWith(notFoundResponse);
-      continue;
+      return new Response("404 Not Found", { status: 404 });
     }
 
     // Build a readable stream so the file doesn't have to be fully loaded into
@@ -62,8 +55,6 @@ async function handleHttp(conn: Deno.Conn) {
     }
 
     // Build and send the response
-    const response = new Response(readableStream, options);
-
-    await requestEvent.respondWith(response);
-  }
+    return new Response(readableStream, options);
+  });
 }

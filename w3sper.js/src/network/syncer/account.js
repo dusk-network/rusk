@@ -33,8 +33,8 @@ export class AccountSyncer extends EventTarget {
       profiles.map(intoAccount),
     );
 
-    let balances = rawUsers.map((user) =>
-      this.#network.contracts.transferContract.call.account(user),
+    const balances = rawUsers.map((user) =>
+      this.#network.contracts.transferContract.call.account(user)
     );
 
     return await Promise.all(balances)
@@ -44,7 +44,7 @@ export class AccountSyncer extends EventTarget {
         buffers.map((buffer) => ({
           nonce: new DataView(buffer).getBigUint64(0, true),
           value: new DataView(buffer).getBigUint64(8, true),
-        })),
+        }))
       );
   }
 }

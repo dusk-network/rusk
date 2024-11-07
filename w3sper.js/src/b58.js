@@ -8,8 +8,8 @@ const A = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 // Uint8Array raw byte input
 export function encode(buffer) {
-  var d = [], //the array for storing the stream of base58 digits
-    s = "", //the result string variable that will be returned
+  const d = []; //the array for storing the stream of base58 digits
+  let s = "", //the result string variable that will be returned
     i, //the iterator variable for the byte input
     j, //the iterator variable for the base58 digit array (d)
     c, //the carry amount variable that is used to overflow from the current base58 digit to the next base58 digit
@@ -28,17 +28,18 @@ export function encode(buffer) {
       j++; //iterate to the next base58 digit
     }
   }
-  while (j--)
+  while (j--) {
     //since the base58 digits are backwards, loop through them in reverse order
     s += A[d[j]]; //lookup the character associated with each base58 digit
+  }
   return s; //return the final base58 string
 }
 
 // Base58 encoded string input
 export function decode(string) {
-  var d = [], //the array for storing the stream of decoded bytes
-    b = [], //the result byte array that will be returned
-    i, //the iterator variable for the base58 string
+  const d = [], //the array for storing the stream of decoded bytes
+    b = []; //the result byte array that will be returned
+  let i, //the iterator variable for the base58 string
     j, //the iterator variable for the byte array (d)
     c, //the carry amount variable that is used to overflow from the current byte to the next byte
     n; //a temporary placeholder variable for the current byte
@@ -46,9 +47,10 @@ export function decode(string) {
     //loop through each base58 character in the input string
     (j = 0), //reset the byte iterator
       (c = A.indexOf(string[i])); //set the initial carry amount equal to the current base58 digit
-    if (c < 0)
+    if (c < 0) {
       //see if the base58 digit lookup is invalid (-1)
       return undefined; //if invalid base58 digit, bail out and return undefined
+    }
     c || b.length ^ i ? i : b.push(0); //prepend the result array with a zero if the base58 digit is zero and non-zero characters haven't been seen yet (to ensure correct decode length)
     while (j in d || c) {
       //start looping through the bytes until there are no more bytes and no carry amount
@@ -59,8 +61,9 @@ export function decode(string) {
       j++; //iterate to the next byte
     }
   }
-  while (j--)
+  while (j--) {
     //since the byte array is backwards, loop through it in reverse order
     b.push(d[j]); //append each byte to the result
+  }
   return new Uint8Array(b); //return the final byte array in Uint8Array format
 }

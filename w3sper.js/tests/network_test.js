@@ -4,15 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import {
-  Network,
-  ProfileGenerator,
-  Bookkeeper,
-  AddressSyncer,
-  AccountSyncer,
-} from "../src/mod.js";
+import { Network } from "../src/mod.js";
 
-import { test, assert, seeder, Treasury } from "./harness.js";
+import { assert, test } from "./harness.js";
 
 test.withLocalWasm = "release";
 

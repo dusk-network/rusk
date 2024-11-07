@@ -5,15 +5,15 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import {
-  test,
   assert,
+  test,
 } from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js";
 
 import { Network, ProfileGenerator } from "../src/mod.js";
 
 // Define a seed for deterministic profile generation
 const SEED = new Uint8Array(64);
-const seeder = async () => SEED;
+const seeder = () => SEED;
 
 // Test case for initial profile generation
 test("Initial Profile Generation", async () => {

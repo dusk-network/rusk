@@ -78,7 +78,7 @@ export class TransactionBuilder {
     const { chainId } = await network.node.info;
 
     // Create the unproven transaction
-    let [tx, circuits] = await ProtocolDriver.phoenix({
+    const [tx, circuits] = await ProtocolDriver.phoenix({
       sender,
       receiver,
       inputs,
@@ -117,7 +117,7 @@ export class TransactionBuilder {
     let { nonce } = await this.#bookkeeper.balance(sender);
     nonce += 1n;
 
-    let [buffer, hash] = await ProtocolDriver.moonlight({
+    const [buffer, hash] = await ProtocolDriver.moonlight({
       sender,
       receiver,
       transfer_value: this.#amount,
@@ -136,7 +136,7 @@ export class TransactionBuilder {
     });
   }
 
-  async build(network) {
+  build(network) {
     switch (ProfileGenerator.typeOf(this.#from.toString())) {
       case "account":
         return this.#accountBuild(network);

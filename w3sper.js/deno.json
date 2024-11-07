@@ -1,5 +1,5 @@
 {
-   "tasks": {
-     "test": "deno test --allow-read --allow-net --allow-write --allow-run --trace-leaks"
-   }
+  "tasks": {
+    "test": "deno test --allow-read --allow-net --allow-write --allow-run --trace-leaks"
+  }
 }

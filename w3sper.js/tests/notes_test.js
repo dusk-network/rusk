@@ -3,8 +3,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import { test, assert } from "./harness.js";
-import { ProfileGenerator, Bookkeeper } from "../src/mod.js";
+import { assert, test } from "./harness.js";
+import { Bookkeeper, ProfileGenerator } from "../src/mod.js";
 
 const hex = (bytes) =>
   Array.from(bytes)
@@ -13,7 +13,7 @@ const hex = (bytes) =>
 
 // Define a seed for deterministic profile generation
 const SEED = new Uint8Array(64).fill(1);
-const seeder = async () => SEED;
+const seeder = () => SEED;
 
 const NOTES_RKYV = "./tests/assets/notes.rkyv";
 const notesBuffer = await Deno.readFile(NOTES_RKYV);
@@ -36,7 +36,7 @@ test("owened notes balance", async () => {
   const owner3 = [await profiles.next()];
   const owner4 = [await profiles.next()];
 
-  let [notes1] = await ProtocolDriver.mapOwned(owner1, notesBuffer);
+  const [notes1] = await ProtocolDriver.mapOwned(owner1, notesBuffer);
   assert.equal(notes1.length, 3);
 
   assert.equal(notes1[0].size, 12);
@@ -65,7 +65,7 @@ test("owened notes balance", async () => {
     "7a70d19b83c4722a6b27e2f5712e9ad3b7573656d32ccf847ec95d3ae942955b",
   ]);
 
-  let [notes2] = await ProtocolDriver.mapOwned(owner2, notesBuffer);
+  const [notes2] = await ProtocolDriver.mapOwned(owner2, notesBuffer);
 
   assert.equal(notes2.length, 2);
   assert.equal([...notes2[0].keys()].map(hex), [
@@ -76,19 +76,19 @@ test("owened notes balance", async () => {
     "96c24f81d2587017726ec7bbcbbfa80d5f300002c5d8dabe53870e97379d873f",
   ]);
 
-  let [notes3] = await ProtocolDriver.mapOwned(owner3, notesBuffer);
+  const [notes3] = await ProtocolDriver.mapOwned(owner3, notesBuffer);
 
   assert.equal(notes3.length, 1);
   assert.equal([...notes3[0].keys()].map(hex), [
     "81d45c11c5e9b20c2ebba17eaa4f720c669bfd4876cf620280c296225b721c18",
   ]);
 
-  let [notes4] = await ProtocolDriver.mapOwned(owner4, notesBuffer);
+  const [notes4] = await ProtocolDriver.mapOwned(owner4, notesBuffer);
   assert.equal(notes4.length, 1);
   assert.equal(notes4[0].size, 0);
 
   // Create a treasury object for testing
-  let treasury = {
+  const treasury = {
     data: {
       "62b5giMnKSpczFSdeLAouS76DZRB6Ny755WTUbJ7sp9dXMJptfe3gknP3XRubWkT1apSZ4YPanSVFjBJBP2SV6wU":
         notes1[0],
@@ -105,7 +105,7 @@ test("owened notes balance", async () => {
     },
   };
 
-  let bookkeeper = new Bookkeeper(treasury);
+  const bookkeeper = new Bookkeeper(treasury);
 
   assert.equal(await bookkeeper.balance(owner1[0].address), {
     value: 67n,

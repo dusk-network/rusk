@@ -22,12 +22,13 @@ export class Bookkeeper {
     switch (type) {
       case "account":
         return await this.#treasury.account(identifier);
-      case "address":
+      case "address": {
         const notes = await this.#treasury.address(identifier);
         const seed = await ProfileGenerator.seedFrom(identifier);
         const index = +identifier;
 
         return ProtocolDriver.balance(seed, index, notes);
+      }
     }
   }
 

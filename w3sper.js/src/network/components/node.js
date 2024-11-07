@@ -29,7 +29,7 @@ export class Node {
             snakeToCamel(key),
             value,
           ]),
-        ),
+        )
       )
       .then((info) => {
         info.chainId = info.chainId ?? 0;

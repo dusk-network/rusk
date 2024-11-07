@@ -15,7 +15,7 @@ const size = (array) => array.reduce((sum, { size }) => sum + size, 0);
 export class AddressSyncer extends EventTarget {
   #network;
 
-  constructor(network, options = {}) {
+  constructor(network, _options = {}) {
     super();
     this.#network = network;
   }
@@ -34,13 +34,13 @@ export class AddressSyncer extends EventTarget {
       .then((response) => response.arrayBuffer());
   }
 
-  async openings(notes, options = {}) {
+  async openings(notes, _soptions = {}) {
     const network = this.#network;
     // Get the bookmarks for each notes
     const bookmarks = await ProtocolDriver.bookmarks(notes);
 
     // Fetch the openings for each picked notes
-    let requests = [];
+    const requests = [];
 
     for (let i = 0; i < bookmarks.length; i += 8) {
       const body = bookmarks.slice(i, i + 8);
@@ -82,24 +82,24 @@ export class AddressSyncer extends EventTarget {
     const lastBookmark = await this.#bookmark;
     const lastBlock = await this.#network.blockHeight;
 
-    let body, topic, to;
+    let body, topic, _to;
 
     if (from instanceof Bookmark) {
       topic = "leaves_from_pos";
       body = from.data;
-      to = lastBookmark;
+      _to = lastBookmark;
     } else {
       topic = "leaves_from_height";
       body = new Uint8Array(8);
-      to = lastBlock;
+      _to = lastBlock;
       new DataView(body.buffer).setBigUint64(0, from, true);
     }
 
-    let response = await this.#network.contracts.transferContract.call[topic](
+    const response = await this.#network.contracts.transferContract.call[topic](
       body,
       { headers: { "Rusk-Feeder": "true" } },
     );
-    let reader = getBYOBReader(response.body);
+    const reader = getBYOBReader(response.body);
 
     const entrySize = await ProtocolDriver.getEntrySize();
 
@@ -120,10 +120,9 @@ export class AddressSyncer extends EventTarget {
             value,
           ).catch(console.error);
 
-          let progress =
-            Number(
-              ((syncInfo.bookmark * 100n) / lastBookmark.asUint()) * 100n,
-            ) / 10000;
+          const progress = Number(
+            ((syncInfo.bookmark * 100n) / lastBookmark.asUint()) * 100n,
+          ) / 10000;
 
           this.dispatchEvent(
             new SyncEvent("synciteration", {

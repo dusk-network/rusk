@@ -9,15 +9,15 @@ const hex = (bytes) =>
 
 import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 import {
-  test as harnessTest,
   assert,
+  test as harnessTest,
 } from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js";
 
 import { Bookmark } from "../src/mod.js";
 
 export { assert };
 
-export async function test(name, fn) {
+export function test(name, fn) {
   let path = "";
   switch (test.withLocalWasm) {
     case "debug":
@@ -46,10 +46,70 @@ export async function test(name, fn) {
 
 // Define a seed for deterministic profile generation
 const SEED = new Uint8Array([
-  153, 16, 102, 99, 133, 196, 55, 237, 42, 2, 163, 116, 233, 89, 10, 115, 19,
-  81, 140, 31, 38, 81, 10, 46, 118, 112, 151, 244, 145, 90, 145, 168, 214, 242,
-  68, 123, 116, 76, 223, 56, 200, 60, 188, 217, 34, 113, 55, 172, 27, 255, 184,
-  55, 143, 233, 109, 20, 137, 34, 20, 196, 252, 117, 221, 221,
+  153,
+  16,
+  102,
+  99,
+  133,
+  196,
+  55,
+  237,
+  42,
+  2,
+  163,
+  116,
+  233,
+  89,
+  10,
+  115,
+  19,
+  81,
+  140,
+  31,
+  38,
+  81,
+  10,
+  46,
+  118,
+  112,
+  151,
+  244,
+  145,
+  90,
+  145,
+  168,
+  214,
+  242,
+  68,
+  123,
+  116,
+  76,
+  223,
+  56,
+  200,
+  60,
+  188,
+  217,
+  34,
+  113,
+  55,
+  172,
+  27,
+  255,
+  184,
+  55,
+  143,
+  233,
+  109,
+  20,
+  137,
+  34,
+  20,
+  196,
+  252,
+  117,
+  221,
+  221,
 ]);
 
 export const seeder = () => SEED;
@@ -80,9 +140,11 @@ export class Treasury {
 
     from = from ?? Bookmark.from(this.lastSyncInfo?.bookmark ?? 0n);
 
-    for await (let [notes, syncInfo] of await addresses.notes(this.#users, {
-      from,
-    })) {
+    for await (
+      const [notes, syncInfo] of await addresses.notes(this.#users, {
+        from,
+      })
+    ) {
       for (let i = 0; i < this.#users.length; i++) {
         const userNotes = this.#notes.get(this.#users[i].address.toString());
         this.#notes.set(
@@ -95,16 +157,16 @@ export class Treasury {
 
     // Get all the nullifiers
     const nullifiers = Array.from(this.#notes.values()).flatMap((innerMap) =>
-      Array.from(innerMap.keys()),
+      Array.from(innerMap.keys())
     );
 
     // Returns which notes have been spent of the given ones
     const spent = (await addresses.spent(nullifiers)).map((n) =>
-      hex(new Uint8Array(n)).join(""),
+      hex(new Uint8Array(n)).join("")
     );
 
     this.#notes.forEach((notes) => {
-      for (let [key, value] of notes) {
+      for (const [key, _value] of notes) {
         if (spent.includes(hex(key).join(""))) {
           notes.delete(key);
         }

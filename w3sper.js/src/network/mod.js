@@ -18,14 +18,16 @@ export { AddressSyncer } from "./syncer/address.js";
 export { AccountSyncer } from "./syncer/account.js";
 export { Bookmark } from "./bookmark.js";
 
+// deno-lint-ignore no-unused-vars
 const abortable = (signal) =>
   new Promise((resolve, reject) =>
-    signal?.aborted ? reject(signal.reason) : resolve(signal),
+    signal?.aborted ? reject(signal.reason) : resolve(signal)
   );
 
+// deno-lint-ignore no-unused-vars
 const once = (target, topic) =>
   new Promise((resolve) =>
-    target.addEventListener(topic, resolve, { once: true }),
+    target.addEventListener(topic, resolve, { once: true })
   );
 
 export class Network {
@@ -95,7 +97,7 @@ export class Network {
     return tx;
   }
 
-  async prove(circuits) {
+  prove(circuits) {
     return this.#rues
       .scope("prover")
       .call.prove(circuits, {

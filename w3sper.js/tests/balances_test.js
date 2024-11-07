@@ -5,14 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import {
+  AccountSyncer,
+  AddressSyncer,
+  Bookkeeper,
   Network,
   ProfileGenerator,
-  Bookkeeper,
-  AddressSyncer,
-  AccountSyncer,
 } from "../src/mod.js";
 
-import { test, assert, seeder, Treasury } from "./harness.js";
+import { assert, seeder, test, Treasury } from "./harness.js";
 
 test.withLocalWasm = "release";
 
