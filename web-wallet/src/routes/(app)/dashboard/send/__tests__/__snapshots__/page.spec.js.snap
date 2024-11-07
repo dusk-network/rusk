@@ -127,7 +127,7 @@ exports[`Send page > should render the send page 1`] = `
             class="operation__address-wrapper svelte-npcavd"
           >
             <p>
-              Enter address:
+              Address:
             </p>
              
             <button

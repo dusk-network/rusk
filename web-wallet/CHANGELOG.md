@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Transactions list design [#1922]
 - Update `Stake` to use `Stepper` [#2436]
 - Update Balance component [#2863]
+- Update UI labels [#2888]
 
 ## [0.6.0] - 2024-11-05
 
@@ -307,6 +308,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2778]: https://github.com/dusk-network/rusk/issues/2778
 [#2807]: https://github.com/dusk-network/rusk/issues/2807
 [#2821]: https://github.com/dusk-network/rusk/issues/2821
+[#2888]: https://github.com/dusk-network/rusk/issues/2888
 
 <!-- VERSIONS -->
 
