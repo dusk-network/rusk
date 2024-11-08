@@ -5,9 +5,38 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import * as ProtocolDriver from "../src/protocol-driver/mod.js";
-import { ProfileGenerator } from "./profile.js";
+import { ProfileGenerator, Profile } from "./profile.js";
 
-import { TransactionBuilder } from "../src/transaction.js";
+import {
+  Transfer,
+  UnshieldTransfer,
+  ShieldTransfer,
+} from "../src/transaction.js";
+
+class BookEntry {
+  constructor(bookkeeper, profile) {
+    this.bookkeeper = bookkeeper;
+    this.profile = profile;
+
+    Object.freeze(this);
+  }
+
+  async balance(type) {
+    return this.bookkeeper.balance(this.profile[type]);
+  }
+
+  transfer(amount) {
+    return new Transfer(this).amount(amount);
+  }
+
+  unshield(amount) {
+    return new UnshieldTransfer(this).amount(amount);
+  }
+
+  shield(amount) {
+    return new ShieldTransfer(this).amount(amount);
+  }
+}
 
 export class Bookkeeper {
   #treasury;
@@ -17,8 +46,7 @@ export class Bookkeeper {
   }
 
   async balance(identifier) {
-    const type = ProfileGenerator.typeOf(identifier.toString());
-
+    const type = ProfileGenerator.typeOf(String(identifier));
     switch (type) {
       case "account":
         return await this.#treasury.account(identifier);
@@ -45,7 +73,11 @@ export class Bookkeeper {
     return ProtocolDriver.pickNotes(identifier, notes, amount);
   }
 
-  transfer(amount) {
-    return new TransactionBuilder(this).amount(amount);
+  as(profile) {
+    if (!(profile instanceof Profile)) {
+      throw new TypeError(`${profile} is not a Profile instance`);
+    }
+
+    return new BookEntry(this, profile);
   }
 }

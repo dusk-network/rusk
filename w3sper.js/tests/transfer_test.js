@@ -12,11 +12,69 @@ import {
   Bookmark,
   AddressSyncer,
   AccountSyncer,
+  Transfer,
 } from "../src/mod.js";
 
 import { test, assert, seeder, Treasury } from "./harness.js";
 
 test.withLocalWasm = "release";
+
+const getGasPaid = (payload) =>
+  new Gas({
+    limit: payload["gas_spent"],
+    price: payload.inner.fee["gas_price"],
+  }).total;
+
+test("Offline account transfers", async () => {
+  const profiles = new ProfileGenerator(seeder);
+  const users = await Promise.all([profiles.default, profiles.next()]);
+
+  const transfers = await Promise.all(
+    [77n, 22n].map((amount, nonce) =>
+      new Transfer(users[1])
+        .amount(amount)
+        .to(users[0].account)
+        .nonce(BigInt(nonce))
+        .chain(Network.LOCALNET)
+        .gas({ limit: 500_000_000n })
+        .build(),
+    ),
+  );
+
+  assert.equal(
+    transfers[0].hash,
+    "72bc75e53d31afec67e32df825e5793594d937ae2c8d5b0726e833dc21db2b0d",
+  );
+  assert.equal(transfers[0].nonce, 1n);
+
+  assert.equal(
+    transfers[1].hash,
+    "9b4039406a620b7537ab873e17c0ae5442afa4514a59f77b95644effd293936f",
+  );
+  assert.equal(transfers[1].nonce, 2n);
+
+  const network = await Network.connect("http://localhost:8080/");
+
+  const balances = await new AccountSyncer(network).balances(users);
+
+  let { hash } = await network.execute(transfers[0]);
+
+  let { payload } = await network.transactions.withId(hash).once.executed();
+  let gasPaid = getGasPaid(payload);
+
+  ({ hash } = await network.execute(transfers[1]));
+
+  ({ payload } = await network.transactions.withId(hash).once.executed());
+  gasPaid += getGasPaid(payload);
+
+  const newBalances = await new AccountSyncer(network).balances(users);
+
+  assert.equal(newBalances[0].value, balances[0].value + 77n + 22n);
+  assert.equal(newBalances[1].nonce, balances[1].nonce + 2n);
+  assert.equal(newBalances[1].value, balances[1].value - 77n - 22n - gasPaid);
+
+  await network.disconnect();
+});
 
 test("accounts", async () => {
   const network = await Network.connect("http://localhost:8080/");
@@ -38,14 +96,16 @@ test("accounts", async () => {
   ];
 
   const transfer = bookkeeper
+    .as(users[1])
     .transfer(77n)
-    .from(users[1].account)
     .to(users[0].account)
-    .gas(new Gas({ limit: 500_000_000n }));
+    .gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
 
-  await network.transactions.withId(hash).once.executed();
+  const { payload } = await network.transactions.withId(hash).once.executed();
+
+  const gasPaid = getGasPaid(payload);
 
   await treasury.update({ accounts });
 
@@ -56,6 +116,7 @@ test("accounts", async () => {
 
   assert.equal(newBalances[0].value, balances[0].value + 77n);
   assert.equal(newBalances[1].nonce, balances[1].nonce + 1n);
+  assert.equal(newBalances[1].value, balances[1].value - gasPaid - 77n);
 
   await network.disconnect();
 });
@@ -81,15 +142,15 @@ test("addresses", async () => {
   ];
 
   const transfer = bookkeeper
+    .as(users[1])
     .transfer(11n)
-    .obfuscated()
-    .from(users[1].address)
     .to(users[0].address)
     .gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
 
-  await network.transactions.withId(hash).once.executed();
+  const { payload } = await network.transactions.withId(hash).once.executed();
+  const gasPaid = getGasPaid(payload);
 
   await treasury.update({ addresses });
 
@@ -99,6 +160,77 @@ test("addresses", async () => {
   ];
 
   assert.equal(newBalances[0].value, balances[0].value + 11n);
+  assert.equal(newBalances[1].value, balances[1].value - 11n - gasPaid);
+
+  await network.disconnect();
+});
+
+test("unshield", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const accounts = new AccountSyncer(network);
+  const addresses = new AddressSyncer(network);
+
+  const treasury = new Treasury([await profiles.default]);
+
+  await treasury.update({ accounts, addresses });
+
+  const bookkeeper = new Bookkeeper(treasury);
+  const bookentry = bookkeeper.as(await profiles.default);
+
+  const accountBalance = await bookentry.balance("account");
+  const addressBalance = await bookentry.balance("address");
+
+  const transfer = bookentry.unshield(123n).gas({ limit: 500_000_000n });
+
+  const { hash } = await network.execute(transfer);
+
+  const { payload } = await network.transactions.withId(hash).once.executed();
+  const gasPaid = getGasPaid(payload);
+
+  await treasury.update({ accounts, addresses });
+
+  const newAccountBalance = await bookentry.balance("account");
+  const newAddressBalance = await bookentry.balance("address");
+
+  assert.equal(newAccountBalance.value, accountBalance.value + 123n);
+  assert.equal(newAddressBalance.value, addressBalance.value - 123n - gasPaid);
+
+  await network.disconnect();
+});
+
+test("shield", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const accounts = new AccountSyncer(network);
+  const addresses = new AddressSyncer(network);
+
+  const treasury = new Treasury([await profiles.default]);
+
+  await treasury.update({ accounts, addresses });
+
+  const bookkeeper = new Bookkeeper(treasury);
+  const bookentry = bookkeeper.as(await profiles.default);
+
+  const accountBalance = await bookentry.balance("account");
+  const addressBalance = await bookentry.balance("address");
+
+  const transfer = bookentry.shield(321n).gas({ limit: 500_000_000n });
+
+  const { hash } = await network.execute(transfer);
+
+  const { payload } = await network.transactions.withId(hash).once.executed();
+  const gasPaid = getGasPaid(payload);
+
+  await treasury.update({ accounts, addresses });
+
+  const newAccountBalance = await bookentry.balance("account");
+  const newAddressBalance = await bookentry.balance("address");
+
+  assert.equal(newAccountBalance.value, accountBalance.value - 321n - gasPaid);
+  assert.equal(newAddressBalance.value, addressBalance.value + 321n);
 
   await network.disconnect();
 });

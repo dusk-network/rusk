@@ -384,9 +384,9 @@ export const accountsIntoRaw = async (users) =>
     return result;
   })();
 
-export const intoProved = async (tx, proof) =>
+export const intoProven = async (tx, proof) =>
   protocolDriverModule.task(async function (
-    { malloc, into_proved },
+    { malloc, into_proven },
     { memcpy },
   ) {
     let buffer = tx.valueOf();
@@ -405,7 +405,7 @@ export const intoProved = async (tx, proof) =>
     let proved_ptr = await malloc(4);
     let hash_ptr = await malloc(64);
 
-    const code = await into_proved(tx_ptr, proof_ptr, proved_ptr, hash_ptr);
+    const code = await into_proven(tx_ptr, proof_ptr, proved_ptr, hash_ptr);
     if (code > 0) throw DriverError.from(code);
 
     proved_ptr = new DataView(
@@ -436,6 +436,7 @@ export const phoenix = async (info) =>
 
     const sender_index = +info.sender;
     const receiver = info.receiver.valueOf();
+
     ptr.receiver = await malloc(receiver.byteLength);
     await memcpy(ptr.receiver, receiver);
 
@@ -584,6 +585,182 @@ export const moonlight = async (info) =>
       ptr.nonce,
       info.chainId,
       info.data,
+      tx,
+      hash,
+    );
+
+    if (code > 0) throw DriverError.from(code);
+
+    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
+
+    hash = new TextDecoder().decode(await memcpy(null, hash, 64));
+    return [tx_buffer, hash];
+  })();
+
+export const unshield = async (info) =>
+  protocolDriverModule.task(async function (
+    { malloc, phoenix_to_moonlight },
+    { memcpy },
+  ) {
+    const ptr = Object.create(null);
+
+    const seed = new Uint8Array(await info.profile.seed);
+
+    ptr.seed = await malloc(64);
+    await memcpy(ptr.seed, seed, 64);
+
+    ptr.rng = await malloc(32);
+    await memcpy(ptr.rng, new Uint8Array(rng()));
+
+    const profile_index = +info.profile;
+
+    const inputs = DataBuffer.from(info.inputs);
+
+    ptr.inputs = await malloc(inputs.byteLength);
+    await memcpy(ptr.inputs, new Uint8Array(inputs));
+
+    const openings = DataBuffer.from(info.openings);
+    ptr.openings = await malloc(openings.byteLength);
+    await memcpy(ptr.openings, new Uint8Array(openings));
+
+    const nullifiers = DataBuffer.from(info.nullifiers);
+    ptr.nullifiers = await malloc(nullifiers.byteLength);
+    await memcpy(ptr.nullifiers, new Uint8Array(nullifiers));
+
+    const root = info.root;
+    ptr.root = await malloc(root.byteLength);
+    await memcpy(ptr.root, new Uint8Array(root));
+
+    const allocate_value = new Uint8Array(8);
+    new DataView(allocate_value.buffer).setBigUint64(
+      0,
+      info.allocate_value,
+      true,
+    );
+    ptr.allocate_value = await malloc(8);
+    await memcpy(ptr.allocate_value, allocate_value);
+
+    const gas_limit = new Uint8Array(8);
+    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+    ptr.gas_limit = await malloc(8);
+    await memcpy(ptr.gas_limit, gas_limit);
+
+    const gas_price = new Uint8Array(8);
+    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+    ptr.gas_price = await malloc(8);
+    await memcpy(ptr.gas_price, gas_price);
+
+    let tx = await malloc(4);
+    let proof = await malloc(4);
+
+    // Copy the value to the WASM memory
+    const code = await phoenix_to_moonlight(
+      ptr.rng,
+      ptr.seed,
+      profile_index,
+      ptr.inputs,
+      ptr.openings,
+      ptr.nullifiers,
+      ptr.root,
+      ptr.allocate_value,
+      ptr.gas_limit,
+      ptr.gas_price,
+      info.chainId,
+      tx,
+      proof,
+    );
+
+    if (code > 0) throw DriverError.from(code);
+
+    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    const tx_buffer = await memcpy(null, tx_ptr, tx_len);
+
+    let proof_ptr = new DataView(
+      (await memcpy(null, proof, 4)).buffer,
+    ).getUint32(0, true);
+
+    let proof_len = new DataView(
+      (await memcpy(null, proof_ptr, 4)).buffer,
+    ).getUint32(0, true);
+
+    const proof_buffer = await memcpy(null, proof_ptr + 4, proof_len);
+
+    return [tx_buffer, proof_buffer];
+  })();
+
+export const shield = async (info) =>
+  protocolDriverModule.task(async function (
+    { malloc, moonlight_to_phoenix },
+    { memcpy },
+  ) {
+    const ptr = Object.create(null);
+
+    const seed = new Uint8Array(await info.profile.seed);
+
+    ptr.seed = await malloc(64);
+    await memcpy(ptr.seed, seed, 64);
+
+    const profile_index = +info.profile;
+
+    ptr.rng = await malloc(32);
+    await memcpy(ptr.rng, new Uint8Array(rng()));
+
+    const allocate_value = new Uint8Array(8);
+    new DataView(allocate_value.buffer).setBigUint64(
+      0,
+      info.allocate_value,
+      true,
+    );
+    ptr.allocate_value = await malloc(8);
+    await memcpy(ptr.allocate_value, allocate_value);
+
+    const gas_limit = new Uint8Array(8);
+    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+    ptr.gas_limit = await malloc(8);
+    await memcpy(ptr.gas_limit, gas_limit);
+
+    const gas_price = new Uint8Array(8);
+    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+    ptr.gas_price = await malloc(8);
+    await memcpy(ptr.gas_price, gas_price);
+
+    const nonce = new Uint8Array(8);
+    new DataView(nonce.buffer).setBigUint64(0, info.nonce, true);
+    ptr.nonce = await malloc(8);
+    await memcpy(ptr.nonce, nonce);
+
+    let tx = await malloc(4);
+    let hash = await malloc(64);
+
+    // Copy the value to the WASM memory
+    const code = await moonlight_to_phoenix(
+      ptr.rng,
+      ptr.seed,
+      profile_index,
+      ptr.allocate_value,
+      ptr.gas_limit,
+      ptr.gas_price,
+      ptr.nonce,
+      info.chainId,
       tx,
       hash,
     );
