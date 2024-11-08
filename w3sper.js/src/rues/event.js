@@ -52,16 +52,19 @@ export class RuesEvent extends Event {
   }
 
   static from(event, options = {}) {
+    let headers;
+    let payload;
+
     if (event instanceof MessageEvent) {
       const { data } = event;
       const headersLength = new DataView(data).getUint32(0, true);
       const headersBuffer = new Uint8Array(data, 4, headersLength);
-      const headers = new Headers(
+
+      headers = new Headers(
         JSON.parse(new TextDecoder().decode(headersBuffer)),
       );
       const body = new Uint8Array(data, 4 + headersLength);
 
-      let payload;
       switch (headers.get("content-type")) {
         case "application/json":
           payload = JSON.parse(new TextDecoder().decode(body));
@@ -76,28 +79,20 @@ export class RuesEvent extends Event {
             payload = body;
           }
       }
-
-      let type = new RuesEventOrigin(
-        headers.get("content-location"),
-        options,
-      ).toString();
-
-      const ruesEvent = new RuesEvent(type);
-      ruesEvent.#headers = headers;
-      ruesEvent.#payload = payload;
-
-      return ruesEvent;
     } else if (event instanceof RuesEvent) {
-      let type = new RuesEventOrigin(
-        event.headers.get("content-location"),
-        options,
-      ).toString();
-
-      const ruesEvent = new RuesEvent(type);
-      ruesEvent.#headers = event.headers;
-      ruesEvent.#payload = event.payload;
-
-      return ruesEvent;
+      headers = event.headers;
+      payload = event.payload;
     }
+
+    let type = new RuesEventOrigin(
+      headers.get("content-location"),
+      options,
+    ).toString();
+
+    const ruesEvent = new this(type);
+    ruesEvent.#headers = headers;
+    ruesEvent.#payload = payload;
+
+    return ruesEvent;
   }
 }

@@ -19,12 +19,6 @@ import { test, assert, seeder, Treasury } from "./harness.js";
 
 test.withLocalWasm = "release";
 
-const getGasPaid = (payload) =>
-  new Gas({
-    limit: payload["gas_spent"],
-    price: payload.inner.fee["gas_price"],
-  }).total;
-
 test("Offline account transfers", async () => {
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);
@@ -61,13 +55,13 @@ test("Offline account transfers", async () => {
 
   let { hash } = await network.execute(transfers[0]);
 
-  let { payload } = await network.transactions.withId(hash).once.executed();
-  let gasPaid = getGasPaid(payload);
+  let evt = await network.transactions.withId(hash).once.executed();
+  let gasPaid = evt.gasPaid;
 
   ({ hash } = await network.execute(transfers[1]));
 
-  ({ payload } = await network.transactions.withId(hash).once.executed());
-  gasPaid += getGasPaid(payload);
+  evt = await network.transactions.withId(hash).once.executed();
+  gasPaid += evt.gasPaid;
 
   const newBalances = await new AccountSyncer(network).balances(users);
 
@@ -105,9 +99,7 @@ test("accounts", async () => {
 
   const { hash } = await network.execute(transfer);
 
-  const { payload } = await network.transactions.withId(hash).once.executed();
-
-  const gasPaid = getGasPaid(payload);
+  const { gasPaid } = await network.transactions.withId(hash).once.executed();
 
   await treasury.update({ accounts });
 
@@ -151,8 +143,7 @@ test("addresses", async () => {
 
   const { hash } = await network.execute(transfer);
 
-  const { payload } = await network.transactions.withId(hash).once.executed();
-  const gasPaid = getGasPaid(payload);
+  const { gasPaid } = await network.transactions.withId(hash).once.executed();
 
   await treasury.update({ addresses });
 
@@ -188,8 +179,7 @@ test("unshield", async () => {
 
   const { hash } = await network.execute(transfer);
 
-  const { payload } = await network.transactions.withId(hash).once.executed();
-  const gasPaid = getGasPaid(payload);
+  const { gasPaid } = await network.transactions.withId(hash).once.executed();
 
   await treasury.update({ accounts, addresses });
 
@@ -223,8 +213,7 @@ test("shield", async () => {
 
   const { hash } = await network.execute(transfer);
 
-  const { payload } = await network.transactions.withId(hash).once.executed();
-  const gasPaid = getGasPaid(payload);
+  const { gasPaid } = await network.transactions.withId(hash).once.executed();
 
   await treasury.update({ accounts, addresses });
 
@@ -233,6 +222,62 @@ test("shield", async () => {
 
   assert.equal(newAccountBalance.value, accountBalance.value - 321n - gasPaid);
   assert.equal(newAddressBalance.value, addressBalance.value + 321n);
+
+  await network.disconnect();
+});
+
+test("memo transfer", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+  const users = await Promise.all([profiles.default, profiles.next()]);
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+
+  await treasury.update({ accounts });
+
+  const bookkeeper = new Bookkeeper(treasury);
+
+  let transfer = bookkeeper
+    .as(users[1])
+    .transfer(1n)
+    .to(users[0].account)
+    .memo(new Uint8Array([2, 4, 8, 16]))
+    .gas({ limit: 500_000_000n });
+
+  let { hash } = await network.execute(transfer);
+
+  let evt = await network.transactions.withId(hash).once.executed();
+
+  assert.equal([...evt.memo()], [2, 4, 8, 16]);
+
+  await treasury.update({ accounts });
+
+  transfer = bookkeeper
+    .as(users[1])
+    .transfer(1n)
+    .to(users[0].account)
+    .memo("Tarapia Tapioco, come fosse stringa")
+    .gas({ limit: 500_000_000n });
+
+  ({ hash } = await network.execute(transfer));
+
+  evt = await network.transactions.withId(hash).once.executed();
+
+  assert.equal(
+    [...evt.memo()],
+    [
+      84, 97, 114, 97, 112, 105, 97, 32, 84, 97, 112, 105, 111, 99, 111, 44, 32,
+      99, 111, 109, 101, 32, 102, 111, 115, 115, 101, 32, 115, 116, 114, 105,
+      110, 103, 97,
+    ],
+  );
+
+  assert.equal(
+    evt.memo({ as: "string" }),
+    "Tarapia Tapioco, come fosse stringa",
+  );
 
   await network.disconnect();
 });
