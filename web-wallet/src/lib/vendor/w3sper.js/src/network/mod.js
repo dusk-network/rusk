@@ -62,7 +62,9 @@ export class Network {
   async connect(options = {}) {
     await this.#rues.connect(options);
 
-    ProtocolDriver.load(new URL("/static/drivers/wallet-core.wasm", this.url));
+    ProtocolDriver.load(
+      new URL("$lib/vendor/wallet_core.wasm", import.meta.url)
+    );
 
     return this;
   }
