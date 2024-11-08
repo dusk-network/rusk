@@ -198,15 +198,17 @@ impl Serializable for Message {
         match &self.payload {
             Payload::Candidate(p) => p.write(w),
             Payload::Validation(p) => p.write(w),
+            Payload::Ratification(p) => p.write(w),
             Payload::Quorum(p) => p.write(w),
+            Payload::ValidationQuorum(p) => p.write(w),
+
             Payload::Block(p) => p.write(w),
             Payload::Transaction(p) => p.write(w),
             Payload::GetMempool(p) => p.write(w),
             Payload::Inv(p) => p.write(w),
             Payload::GetBlocks(p) => p.write(w),
             Payload::GetResource(p) => p.write(w),
-            Payload::Ratification(p) => p.write(w),
-            Payload::ValidationQuorum(p) => p.write(w),
+
             Payload::Empty | Payload::ValidationResult(_) => Ok(()), /* internal message, not sent on the wire */
         }
     }
@@ -227,12 +229,14 @@ impl Serializable for Message {
             Topics::ValidationQuorum => {
                 payload::ValidationQuorum::read(r)?.into()
             }
+
             Topics::Block => ledger::Block::read(r)?.into(),
             Topics::Tx => ledger::Transaction::read(r)?.into(),
             Topics::GetResource => payload::GetResource::read(r)?.into(),
             Topics::GetBlocks => payload::GetBlocks::read(r)?.into(),
             Topics::GetMempool => payload::GetMempool::read(r)?.into(),
             Topics::Inv => payload::Inv::read(r)?.into(),
+
             Topics::Unknown => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -439,21 +443,20 @@ impl Payload {
     }
 }
 
-impl From<payload::Ratification> for Payload {
-    fn from(value: payload::Ratification) -> Self {
-        Self::Ratification(value)
+// Consensus messages
+impl From<payload::Candidate> for Payload {
+    fn from(value: payload::Candidate) -> Self {
+        Self::Candidate(Box::new(value))
     }
 }
-
 impl From<payload::Validation> for Payload {
     fn from(value: payload::Validation) -> Self {
         Self::Validation(value)
     }
 }
-
-impl From<payload::Candidate> for Payload {
-    fn from(value: payload::Candidate) -> Self {
-        Self::Candidate(Box::new(value))
+impl From<payload::Ratification> for Payload {
+    fn from(value: payload::Ratification) -> Self {
+        Self::Ratification(value)
     }
 }
 impl From<payload::Quorum> for Payload {
@@ -461,6 +464,13 @@ impl From<payload::Quorum> for Payload {
         Self::Quorum(value)
     }
 }
+impl From<payload::ValidationQuorum> for Payload {
+    fn from(value: payload::ValidationQuorum) -> Self {
+        Self::ValidationQuorum(Box::new(value))
+    }
+}
+
+// Data exchange messages
 impl From<ledger::Block> for Payload {
     fn from(value: ledger::Block) -> Self {
         Self::Block(Box::new(value))
@@ -492,12 +502,7 @@ impl From<payload::GetResource> for Payload {
     }
 }
 
-impl From<payload::ValidationQuorum> for Payload {
-    fn from(value: payload::ValidationQuorum) -> Self {
-        Self::ValidationQuorum(Box::new(value))
-    }
-}
-
+// Internal messages
 impl From<payload::ValidationResult> for Payload {
     fn from(value: payload::ValidationResult) -> Self {
         Self::ValidationResult(Box::new(value))
