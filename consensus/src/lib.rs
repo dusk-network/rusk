@@ -6,6 +6,7 @@
 
 #![deny(unused_crate_dependencies)]
 #![deny(unused_extern_crates)]
+#![feature(lazy_cell)]
 
 pub mod commons;
 pub mod consensus;

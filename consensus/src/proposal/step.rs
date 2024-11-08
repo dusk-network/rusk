@@ -130,7 +130,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
     fn next_slot_in(tip_timestamp: u64) -> Option<Duration> {
         let current_time_secs = get_current_timestamp();
 
-        let next_slot_timestamp = tip_timestamp + MINIMUM_BLOCK_TIME;
+        let next_slot_timestamp = tip_timestamp + *MINIMUM_BLOCK_TIME;
         if current_time_secs >= next_slot_timestamp {
             None
         } else {

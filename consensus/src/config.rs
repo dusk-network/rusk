@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::time::Duration;
+use std::{env, sync::LazyLock, time::Duration};
 
 use node_data::message::{MESSAGE_MAX_FAILED_ITERATIONS, MESSAGE_MAX_ITER};
 
@@ -28,7 +28,17 @@ pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = 16;
 pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(7);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);
 pub const TIMEOUT_INCREASE: Duration = Duration::from_secs(2);
-pub const MINIMUM_BLOCK_TIME: u64 = 10;
+
+mod default {
+    pub const MINIMUM_BLOCK_TIME: u64 = 10;
+}
+
+pub static MINIMUM_BLOCK_TIME: LazyLock<u64> = LazyLock::new(|| {
+    env::var("RUSK_MINIMUM_BLOCK_TIME")
+        .unwrap_or_default()
+        .parse()
+        .unwrap_or(default::MINIMUM_BLOCK_TIME)
+});
 
 /// Maximum allowable round difference for message signature verification and
 /// for determining if a consensus message is close enough to the network tip
