@@ -119,6 +119,11 @@ describe("Network store", async () => {
 
     expect(connectSpy).toHaveBeenCalledTimes(1);
     expect(syncer).toBeInstanceOf(AccountSyncer);
+
+    // check that the cached network is used
+    await store.getAccountSyncer();
+    expect(connectSpy).toHaveBeenCalledTimes(1);
+    expect(syncer).toBeInstanceOf(AccountSyncer);
   });
 
   it("should expose a service method to retrieve a `AddressSyncer` for the network", async () => {
@@ -131,6 +136,11 @@ describe("Network store", async () => {
 
     const syncer = await store.getAddressSyncer();
 
+    expect(connectSpy).toHaveBeenCalledTimes(1);
+    expect(syncer).toBeInstanceOf(AddressSyncer);
+
+    // check that the cached network is used
+    await store.getAddressSyncer();
     expect(connectSpy).toHaveBeenCalledTimes(1);
     expect(syncer).toBeInstanceOf(AddressSyncer);
   });
