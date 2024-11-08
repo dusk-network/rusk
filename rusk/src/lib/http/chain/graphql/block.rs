@@ -105,3 +105,25 @@ pub async fn blocks_range(
     blocks.reverse();
     Ok(blocks)
 }
+
+/// Check if a block height matches a block hash for a block
+/// (finalized **or** unfinalized).
+pub(super) async fn check_block(
+    ctx: &Context<'_>,
+    block_height: u64,
+    hex_block_hash: String,
+) -> FieldResult<bool> {
+    let (db, _) = ctx.data::<DBContext>()?;
+    let block_hash = hex::decode(hex_block_hash)?;
+    let block = db.read().await.view(|t| {
+        t.fetch_block_hash_by_height(block_height).map(|hash| {
+            if let Some(hash) = hash {
+                hash == block_hash[..]
+            } else {
+                false
+            }
+        })
+    })?;
+
+    Ok(block)
+}

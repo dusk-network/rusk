@@ -6,4 +6,5 @@
 
 pub(super) mod data;
 pub mod events;
+pub mod finalized_block;
 pub mod moonlight;

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT block_height FROM archive WHERE block_height = ? AND block_hash = ? AND finalized = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "block_height",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "dccdedb8099832ac1e6732edc3c482fa3cbfec4846f2a7cdd02099f4b5f5509a"
+}

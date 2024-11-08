@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Module for GraphQL that is used for moonlight related data in the archive.
+
 use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use execution_core::transfer::{
