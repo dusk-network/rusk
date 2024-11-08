@@ -10,7 +10,7 @@ use execution_core::signatures::bls::Error as BlsSigError;
 use node_data::{
     bls::PublicKeyBytes,
     ledger::{Hash, InvalidFault},
-    message::payload::{QuorumType, RatificationResult, Vote},
+    message::payload::{RatificationResult, Vote},
     StepName,
 };
 use thiserror::Error;
@@ -39,7 +39,6 @@ pub enum ConsensusError {
     InvalidSignature(BlsSigError),
     InvalidMsgType,
     InvalidValidationStepVotes(StepSigError),
-    InvalidValidation(QuorumType),
     InvalidPrevBlockHash(Hash),
     InvalidQuorumType,
     InvalidVote(Vote),
@@ -47,11 +46,13 @@ pub enum ConsensusError {
     FutureEvent,
     PastEvent,
     NotCommitteeMember,
+    CommitteeNotGenerated,
     NotImplemented,
     NotReady,
     ChildTaskTerminated,
     Canceled(u64),
     VoteAlreadyCollected,
+    VoteMismatch(Vote, Vote),
     TooManyTransactions(usize),
     TooManyFaults(usize),
     UnknownBlockSize,

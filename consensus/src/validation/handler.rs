@@ -156,6 +156,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
         _ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
+        _round_committees: &RoundCommittees,
     ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 

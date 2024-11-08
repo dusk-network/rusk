@@ -79,7 +79,7 @@ impl MsgHandler for RatificationHandler {
     fn verify(
         &self,
         msg: &Message,
-        round_committees: &RoundCommittees,
+        _round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
         if let Payload::Ratification(p) = &msg.payload {
             if self.aggregator.is_vote_collected(p) {
@@ -87,11 +87,6 @@ impl MsgHandler for RatificationHandler {
             }
 
             p.verify_signature()?;
-            Self::verify_validation_result(
-                &p.header,
-                &p.validation_result,
-                round_committees,
-            )?;
 
             return Ok(());
         }
@@ -99,13 +94,14 @@ impl MsgHandler for RatificationHandler {
         Err(ConsensusError::InvalidMsgType)
     }
 
-    /// Collect the ratification message.
+    /// Collect the Ratification message.
     async fn collect(
         &mut self,
         msg: Message,
         ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
+        round_committees: &RoundCommittees,
     ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
         let iteration = p.header().iteration;
@@ -114,6 +110,20 @@ impl MsgHandler for RatificationHandler {
             // Message that belongs to step from the past must be handled with
             // collect_from_past fn
             return Err(ConsensusError::InvalidMsgIteration(iteration));
+        }
+
+        Self::verify_validation_result(
+            &p.header,
+            &p.validation_result,
+            round_committees,
+        )?;
+
+        // Ensure the vote matches that of Validation
+        if *p.validation_result.vote() != p.vote {
+            return Err(ConsensusError::VoteMismatch(
+                *p.validation_result.vote(),
+                p.vote,
+            ));
         }
 
         // Collect vote, if msg payload is of ratification type
@@ -273,7 +283,7 @@ impl RatificationHandler {
             .get_validation_committee(iter)
             .ok_or_else(|| {
                 error!("could not get validation committee");
-                ConsensusError::InvalidValidation(result.quorum())
+                ConsensusError::CommitteeNotGenerated
             })?;
         verify_votes(
             header,

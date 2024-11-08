@@ -163,6 +163,7 @@ pub trait MsgHandler {
         ru: &RoundUpdate,
         committee: &Committee,
         generator: Option<PublicKeyBytes>,
+        round_committees: &RoundCommittees,
     ) -> Result<StepOutcome, ConsensusError>;
 
     /// collect allows each Phase to process a verified message from a former

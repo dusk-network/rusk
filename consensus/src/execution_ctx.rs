@@ -618,10 +618,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 self.handle_past_msg(msg).await;
                 return None;
             }
-            Err(ConsensusError::InvalidValidation(QuorumType::NoQuorum)) => {
-                warn!(event = "No quorum reached", iter = msg.header.iteration);
-                return None;
-            }
             // An error here means this message is invalid due to failed
             // verification.
             Err(e) => {
@@ -639,7 +635,13 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         let collected = phase
             .lock()
             .await
-            .collect(msg, &self.round_update, committee, generator)
+            .collect(
+                msg,
+                &self.round_update,
+                committee,
+                generator,
+                &self.iter_ctx.committees,
+            )
             .await;
 
         match collected {
@@ -716,7 +718,13 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     match phase
                         .lock()
                         .await
-                        .collect(msg, &self.round_update, committee, generator)
+                        .collect(
+                            msg,
+                            &self.round_update,
+                            committee,
+                            generator,
+                            &self.iter_ctx.committees,
+                        )
                         .await
                     {
                         Ok(StepOutcome::Ready(msg)) => {
