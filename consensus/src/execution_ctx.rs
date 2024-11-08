@@ -501,7 +501,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         info!(
                             event = "New Quorum",
                             mode = "emergency",
-                            inf = ?m.header,
+                            round = q.header.round,
+                            iter = q.header.iteration,
                             vote = ?q.vote(),
                         );
 
