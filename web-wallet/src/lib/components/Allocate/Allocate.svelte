@@ -9,7 +9,7 @@
     mdiShieldLockOpenOutline,
   } from "@mdi/js";
   import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
-  import { duskToLux, luxToDusk } from "$lib/dusk/currency";
+  import { luxToDusk } from "$lib/dusk/currency";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
   import { logo } from "$lib/dusk/icons";
   import {
@@ -21,9 +21,9 @@
     WizardStep,
   } from "$lib/dusk/components";
   import { GasFee, GasSettings, OperationResult } from "$lib/components";
-
-  /** @type {(to: string, amount: number, gasPrice: bigint, gasLimit: bigint) => Promise<string>} */
-  export let execute;
+  import { walletStore } from "$lib/stores";
+  import { Gas } from "$lib/vendor/w3sper.js/src/mod";
+  import BigIntInput from "../BigIntInput/BigIntInput.svelte";
 
   /** @type {(amount: number) => string} */
   export let formatter;
@@ -54,11 +54,11 @@
 
   let { gasLimit, gasPrice } = gasSettings;
 
-  /** @type {number} */
-  let shieldedAmount = luxToDusk(shieldedBalance);
+  /** @type {bigint} */
+  let shieldedAmount = shieldedBalance;
 
-  /** @type {number} */
-  let unshieldedAmount = luxToDusk(unshieldedBalance);
+  /** @type {bigint} */
+  let unshieldedAmount = unshieldedBalance;
 
   /** @type {number} */
   let screenWidth = window.innerWidth;
@@ -115,22 +115,18 @@
           </div>
 
           <div class="operation__input-wrapper">
-            <Textbox
+            <BigIntInput
               className="operation__input-field"
+              id="shielded-amount"
               bind:value={shieldedAmount}
-              required
-              type="number"
               min={minAmount}
               max={deductLuxFeeFrom(
                 luxToDusk(shieldedBalance + unshieldedBalance),
                 fee
               )}
-              step="0.000000001"
               on:input={() => {
-                unshieldedAmount = +(
-                  luxToDusk(shieldedBalance + unshieldedBalance) -
-                  shieldedAmount
-                ).toFixed(9);
+                unshieldedAmount =
+                  shieldedBalance + unshieldedBalance - shieldedAmount;
               }}
             />
             <Icon
@@ -153,24 +149,19 @@
           </div>
 
           <div class="operation__input-wrapper">
-            <Textbox
+            <BigIntInput
               className="operation__input-field"
               bind:value={unshieldedAmount}
-              required
-              type="number"
               min={minAmount}
               max={deductLuxFeeFrom(
                 luxToDusk(unshieldedBalance + shieldedBalance),
                 fee
               )}
-              step="0.000000001"
-              id="unshielded-amount"
               on:input={() => {
-                shieldedAmount = +(
-                  luxToDusk(unshieldedBalance + shieldedBalance) -
-                  unshieldedAmount
-                ).toFixed(9);
+                shieldedAmount =
+                  unshieldedBalance + shieldedBalance - unshieldedAmount;
               }}
+              id="unshielded-amount"
             />
             <Icon
               data-tooltip-id="main-tooltip"
@@ -225,8 +216,8 @@
           <dd class="review-transaction__value operation__review-amount">
             <span>
               {isFromUnshielded
-                ? `${formatter(luxToDusk(unshieldedBalance - duskToLux(unshieldedAmount)))} DUSK`
-                : `${formatter(luxToDusk(shieldedBalance - duskToLux(shieldedAmount)))} DUSK`}
+                ? `${formatter(luxToDusk(unshieldedBalance - unshieldedAmount))} DUSK`
+                : `${formatter(luxToDusk(shieldedBalance - shieldedAmount))} DUSK`}
             </span>
             <Icon
               className="dusk-amount__icon"
@@ -268,12 +259,12 @@
     <WizardStep step={2} {key} showNavigation={false}>
       <OperationResult
         errorMessage="Transaction failed"
-        operation={execute(
-          isFromShielded ? unshieldedAddress : shieldedAddress,
-          isFromShielded ? unshieldedAmount : shieldedAmount,
-          gasPrice,
-          gasLimit
-        )}
+        operation={isFromUnshielded
+          ? walletStore.shield(shieldedAmount, new Gas({ gasLimit, gasPrice }))
+          : walletStore.unshield(
+              unshieldedAmount,
+              new Gas({ gasLimit, gasPrice })
+            )}
         pendingMessage="Processing transaction"
         successMessage="Transaction completed"
       >
