@@ -89,8 +89,10 @@ export class Network {
     );
   }
 
-  async execute(builder) {
-    const tx = await builder.build(this);
+  async execute(tx) {
+    if (typeof tx?.build === "function") {
+      tx = await tx.build(this);
+    }
 
     // Attempt to preverify the transaction
     await this.transactions.preverify(tx.buffer);

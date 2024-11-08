@@ -33,8 +33,8 @@ export class Gas {
 
   // Passing null/undefined/0 or negative values will set the default value for price and limit
   constructor({ limit, price } = {}) {
-    this.limit = max(limit, 0n) || Gas.DEFAULT_LIMIT;
-    this.price = max(price, 0n) || Gas.DEFAULT_PRICE;
+    this.limit = max(BigInt(limit || 0), 0n) || Gas.DEFAULT_LIMIT;
+    this.price = max(BigInt(price || 0), 0n) || Gas.DEFAULT_PRICE;
     this.total = this.limit * this.price;
 
     Object.freeze(this);

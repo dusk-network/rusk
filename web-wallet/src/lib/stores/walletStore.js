@@ -5,7 +5,6 @@ import {
   Bookmark,
   ProfileGenerator,
 } from "$lib/vendor/w3sper.js/src/mod";
-import * as b58 from "$lib/vendor/w3sper.js/src/b58";
 
 import walletCache from "$lib/wallet-cache";
 import WalletTreasury from "$lib/wallet-treasury";
@@ -55,8 +54,7 @@ const { set, subscribe, update } = walletStore;
 const treasury = new WalletTreasury();
 const bookkeeper = new Bookkeeper(treasury);
 
-const getCurrentAccount = () => get(walletStore).currentProfile?.account;
-const getCurrentAddress = () => get(walletStore).currentProfile?.address;
+const getCurrentProfile = () => get(walletStore).currentProfile;
 
 /** @type {(...args: any) => Promise<void>} */
 const asyncNoopFailure = () => Promise.reject(new Error("Not implemented"));
@@ -77,6 +75,36 @@ const passThruWithEffects = (fn) => (a) => {
   fn(a);
 
   return a;
+};
+
+/** @type {(txInfo: TransactionInfo) => Promise<TransactionInfo>} */
+const updateCacheAfterTransaction = async (txInfo) => {
+  // we did a phoenix transaction
+  if ("nullifiers" in txInfo) {
+    /**
+     * For now we ignore the possible error while
+     * writing the pending notes info, as we'll
+     * change soon how they are handled (probably by w3sper directly).
+     */
+    await walletCache
+      .setPendingNoteInfo(txInfo.nullifiers, txInfo.hash)
+      .catch(() => {});
+  } else {
+    const address = String(getCurrentProfile()?.address);
+    const currentBalance = await walletCache.getBalanceInfo(address);
+
+    /**
+     * We update the stored `nonce` so that if a transaction is made
+     * before the sync gives us an updated one, the transaction
+     * won't be rejected by reusing the old value.
+     */
+    await walletCache.setBalanceInfo(
+      address,
+      setPathIn(currentBalance, "unshielded.nonce", txInfo.nonce)
+    );
+  }
+
+  return txInfo;
 };
 
 /** @type {() => Promise<void>} */
@@ -279,51 +307,47 @@ async function sync(fromBlock) {
   return syncPromise;
 }
 
+/** @type {WalletStoreServices["shield"]} */
+const shield = async (amount, gas) =>
+  sync()
+    .then(networkStore.connect)
+    .then((network) =>
+      network.execute(
+        bookkeeper.as(getCurrentProfile()).shield(amount).gas(gas)
+      )
+    )
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
+
 /** @type {WalletStoreServices["transfer"]} */
 const transfer = async (to, amount, gas) =>
   sync()
     .then(networkStore.connect)
     .then((network) => {
-      const tx = bookkeeper.transfer(amount).to(b58.decode(to)).gas(gas);
+      const tx = bookkeeper
+        .as(getCurrentProfile())
+        .transfer(amount)
+        .to(to)
+        .gas(gas);
 
       return network.execute(
-        ProfileGenerator.typeOf(to) === "address"
-          ? tx.from(getCurrentAddress()).obfuscated()
-          : tx.from(getCurrentAccount())
+        // @ts-ignore we don't have access to the AddressTransfer type
+        ProfileGenerator.typeOf(to) === "address" ? tx.obfuscated() : tx
       );
     })
-    .then(
-      /** @type {(txInfo: TransactionInfo) => Promise<TransactionInfo>} */ async (
-        txInfo
-      ) => {
-        // we did a phoenix transaction
-        if ("nullifiers" in txInfo) {
-          /**
-           * For now we ignore the possible error while
-           * writing the pending notes info, as we'll
-           * change soon how they are handled (probably by w3sper directly).
-           */
-          await walletCache
-            .setPendingNoteInfo(txInfo.nullifiers, txInfo.hash)
-            .catch(() => {});
-        } else {
-          const address = String(getCurrentAddress());
-          const currentBalance = await walletCache.getBalanceInfo(address);
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
 
-          /**
-           * We update the stored `nonce` so that if a transaction is made
-           * before the sync gives us an updated one, the transaction
-           * won't be rejected by reusing the old value.
-           */
-          await walletCache.setBalanceInfo(
-            address,
-            setPathIn(currentBalance, "unshielded.nonce", txInfo.nonce)
-          );
-        }
-
-        return txInfo;
-      }
+/** @type {WalletStoreServices["unshield"]} */
+const unshield = async (amount, gas) =>
+  sync()
+    .then(networkStore.connect)
+    .then((network) =>
+      network.execute(
+        bookkeeper.as(getCurrentProfile()).unshield(amount).gas(gas)
+      )
     )
+    .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["unstake"]} */
@@ -342,10 +366,12 @@ export default {
   init,
   reset,
   setCurrentProfile,
+  shield,
   stake,
   subscribe,
   sync,
   transfer,
+  unshield,
   unstake,
   withdrawReward,
 };
