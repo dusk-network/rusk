@@ -145,8 +145,10 @@ impl<T: Operations> Generator<T> {
         let txs: Vec<_> = result.txs.into_iter().map(|t| t.inner).collect();
         blk_header.txroot = merkle_root(&tx_hashes[..]);
 
-        blk_header.timestamp =
-            max(ru.timestamp() + MINIMUM_BLOCK_TIME, get_current_timestamp());
+        blk_header.timestamp = max(
+            ru.timestamp() + *MINIMUM_BLOCK_TIME,
+            get_current_timestamp(),
+        );
 
         Block::new(blk_header, txs, faults.to_vec()).map_err(|e| {
             crate::errors::OperationError::InvalidEST(anyhow::anyhow!(
