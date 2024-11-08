@@ -19,7 +19,7 @@ use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace, warn};
 
-use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
+use crate::commons::{Database, RoundUpdate};
 use crate::config::{
     is_emergency_iter, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
 };
@@ -56,7 +56,6 @@ pub struct ExecutionCtx<'a, T, DB: Database> {
     pub client: Arc<T>,
 
     pub sv_registry: SafeAttestationInfoRegistry,
-    quorum_sender: QuorumMsgSender,
 }
 
 impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
@@ -73,7 +72,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         step: StepName,
         client: Arc<T>,
         sv_registry: SafeAttestationInfoRegistry,
-        quorum_sender: QuorumMsgSender,
     ) -> Self {
         Self {
             iter_ctx,
@@ -86,7 +84,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             step,
             client,
             sv_registry,
-            quorum_sender,
             step_start_time: None,
         }
     }
@@ -202,9 +199,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                                 is_local = true
                                             );
 
-                                            self.quorum_sender
-                                                .send_quorum(msg)
-                                                .await;
+                                            // Broadcast Quorum
+                                            self.outbound.try_send(msg);
                                         }
                                         RatificationResult::Fail(vote) => {
                                             debug!(
@@ -264,10 +260,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                             is_local = false
                                         );
 
-                                        // Repropagate Success Quorum
-                                        self.quorum_sender
-                                            .send_quorum(msg.clone())
-                                            .await;
+                                        // Broadcast Success Quorum
+                                        self.outbound.try_send(msg.clone());
                                     }
                                     RatificationResult::Fail(vote) => {
                                         debug!(
@@ -512,7 +506,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         );
 
                         // Broadcast Quorum
-                        self.quorum_sender.send_quorum(m).await;
+                        self.outbound.try_send(m);
                     }
                 }
 
