@@ -72,12 +72,11 @@ const disconnect = () => network.disconnect();
 const getCurrentBlockHeight = () => network.blockHeight;
 
 /** @type {() => Promise<AccountSyncer>} */
-const getAccountSyncer = () =>
-  network.connect().then(() => new AccountSyncer(network));
+const getAccountSyncer = () => connect().then(() => new AccountSyncer(network));
 
 /** @type {(options?: NetworkSyncerOptions) => Promise<AddressSyncer>} */
 const getAddressSyncer = (options) =>
-  network.connect().then(() => new AddressSyncer(network, options));
+  connect().then(() => new AddressSyncer(network, options));
 
 /** @type {NetworkStore} */
 export default {
