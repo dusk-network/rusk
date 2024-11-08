@@ -163,7 +163,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         // Ensure rule of minimum block time is addressed
         if candidate_block.timestamp
-            < self.prev_header.timestamp + MINIMUM_BLOCK_TIME
+            < self.prev_header.timestamp + *MINIMUM_BLOCK_TIME
         {
             return Err(HeaderError::BlockTimeLess);
         }
