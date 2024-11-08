@@ -256,9 +256,11 @@ impl Rusk {
     }
 
     /// Verify the given transactions are ok.
+    #[allow(clippy::too_many_arguments)]
     pub fn verify_transactions(
         &self,
         block_height: u64,
+        block_hash: Hash,
         block_gas_limit: u64,
         generator: &BlsPublicKey,
         txs: &[Transaction],
@@ -270,6 +272,7 @@ impl Rusk {
         accept(
             session,
             block_height,
+            block_hash,
             block_gas_limit,
             generator,
             txs,
@@ -291,7 +294,7 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        _archive_block_hash: Hash,
+        block_hash: Hash,
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
@@ -307,6 +310,7 @@ impl Rusk {
         let (spent_txs, verification_output, session, events) = accept(
             session,
             block_height,
+            block_hash,
             block_gas_limit,
             &generator,
             &txs[..],
@@ -333,7 +337,7 @@ impl Rusk {
         {
             let _ = self.archive_sender.try_send(ArchivalData::ArchivedEvents(
                 block_height,
-                _archive_block_hash,
+                block_hash,
                 events.clone(),
             ));
         }
@@ -512,6 +516,7 @@ impl Rusk {
 fn accept(
     session: Session,
     block_height: u64,
+    block_hash: Hash,
     block_gas_limit: u64,
     generator: &BlsPublicKey,
     txs: &[Transaction],
@@ -552,7 +557,7 @@ fn accept(
             .into_iter()
             .map(|event| ContractTxEvent {
                 event: event.into(),
-                origin: Some(tx_id),
+                origin: tx_id,
             })
             .collect();
 
@@ -589,7 +594,7 @@ fn accept(
         .into_iter()
         .map(|event| ContractTxEvent {
             event: event.into(),
-            origin: None,
+            origin: block_hash,
         })
         .collect();
     events.extend(coinbase_events);

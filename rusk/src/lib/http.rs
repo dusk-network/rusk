@@ -1272,7 +1272,7 @@ mod tests {
                 topic: TOPIC.into(),
                 data: b"hello, events".to_vec(),
             },
-            origin: None,
+            origin: [0; 32],
         });
 
         // This event is at first subscribed to, so it should be received the
@@ -1283,7 +1283,7 @@ mod tests {
                 topic: TOPIC.into(),
                 data: b"hello, events".to_vec(),
             },
-            origin: None,
+            origin: [1; 32],
         });
 
         // This event is not subscribed to, so it should not be received
@@ -1293,7 +1293,7 @@ mod tests {
                 topic: TOPIC.into(),
                 data: b"hello, events".to_vec(),
             },
-            origin: None,
+            origin: [2; 32],
         });
 
         event_sender

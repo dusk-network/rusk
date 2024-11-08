@@ -57,7 +57,7 @@ pub mod deserialized_archive_data {
         TRANSFER_CONTRACT, WITHDRAW_TOPIC,
     };
     use node_data::events::contract::{
-        ContractEvent, TxHash, WrappedContractId,
+        ContractEvent, OriginHash, WrappedContractId,
     };
     use serde::ser::SerializeStruct;
     use serde::{Deserialize, Serialize};
@@ -67,7 +67,7 @@ pub mod deserialized_archive_data {
     pub struct DeserializedMoonlightGroup {
         pub events: serde_json::Value,
         #[serde_as(as = "serde_with::hex::Hex")]
-        pub origin: TxHash,
+        pub origin: OriginHash,
         pub block_height: u64,
     }
     pub struct DeserializedMoonlightGroups(pub Vec<DeserializedMoonlightGroup>);
