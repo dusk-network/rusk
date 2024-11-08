@@ -38,7 +38,7 @@ pub trait DB: Send + Sync + 'static {
     /// Provides a managed execution of a read-only isolated transaction.
     fn view<F, T>(&self, f: F) -> T
     where
-        F: for<'a> FnOnce(Self::P<'a>) -> T;
+        F: for<'a> FnOnce(&Self::P<'a>) -> T;
 
     /// Provides a managed execution of a read-write atomic transaction.
     ///
@@ -49,11 +49,11 @@ pub trait DB: Send + Sync + 'static {
     /// and no panic is raised on `fn` execution.
     fn update<F, T>(&self, f: F) -> Result<T>
     where
-        F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>;
+        F: for<'a> FnOnce(&mut Self::P<'a>) -> Result<T>;
 
     fn update_dry_run<F, T>(&self, dry_run: bool, f: F) -> Result<T>
     where
-        F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>;
+        F: for<'a> FnOnce(&mut Self::P<'a>) -> Result<T>;
 
     fn close(&mut self);
 }
@@ -64,14 +64,14 @@ pub trait Ledger {
     /// Read-write transactions
     /// Returns disk footprint of the committed transaction
     fn store_block(
-        &self,
+        &mut self,
         header: &Header,
         txs: &[SpentTransaction],
         faults: &[Fault],
         label: Label,
     ) -> Result<usize>;
 
-    fn delete_block(&self, b: &Block) -> Result<()>;
+    fn delete_block(&mut self, b: &Block) -> Result<()>;
     fn block_header(&self, hash: &[u8]) -> Result<Option<Header>>;
 
     fn light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>>;
@@ -92,7 +92,7 @@ pub trait Ledger {
     ) -> Result<Option<([u8; 32], Label)>>;
 
     fn store_block_label(
-        &self,
+        &mut self,
         height: u64,
         hash: &[u8; 32],
         label: Label,
@@ -104,7 +104,7 @@ pub trait Ledger {
 
 pub trait ConsensusStorage {
     /// Candidate Storage
-    fn store_candidate(&self, cm: Block) -> Result<()>;
+    fn store_candidate(&mut self, cm: Block) -> Result<()>;
     fn candidate(&self, hash: &[u8]) -> Result<Option<Block>>;
 
     /// Fetches a candidate block by lookup key (prev_block_hash, iteration).
@@ -113,9 +113,9 @@ pub trait ConsensusStorage {
         ch: &ConsensusHeader,
     ) -> Result<Option<Block>>;
 
-    fn clear_candidates(&self) -> Result<()>;
+    fn clear_candidates(&mut self) -> Result<()>;
 
-    fn delete_candidate<F>(&self, closure: F) -> Result<()>
+    fn delete_candidate<F>(&mut self, closure: F) -> Result<()>
     where
         F: FnOnce(u64) -> bool + std::marker::Copy;
 
@@ -123,7 +123,7 @@ pub trait ConsensusStorage {
 
     /// ValidationResult Storage
     fn store_validation_result(
-        &self,
+        &mut self,
         ch: &ConsensusHeader,
         vr: &payload::ValidationResult,
     ) -> Result<()>;
@@ -133,9 +133,9 @@ pub trait ConsensusStorage {
         ch: &ConsensusHeader,
     ) -> Result<Option<payload::ValidationResult>>;
 
-    fn clear_validation_results(&self) -> Result<()>;
+    fn clear_validation_results(&mut self) -> Result<()>;
 
-    fn delete_validation_results<F>(&self, closure: F) -> Result<()>
+    fn delete_validation_results<F>(&mut self, closure: F) -> Result<()>
     where
         F: FnOnce([u8; 32]) -> bool + std::marker::Copy;
 
@@ -144,7 +144,11 @@ pub trait ConsensusStorage {
 
 pub trait Mempool {
     /// Adds a transaction to the mempool with a timestamp.
-    fn store_mempool_tx(&self, tx: &Transaction, timestamp: u64) -> Result<()>;
+    fn store_mempool_tx(
+        &mut self,
+        tx: &Transaction,
+        timestamp: u64,
+    ) -> Result<()>;
 
     /// Gets a transaction from the mempool.
     fn mempool_tx(&self, tx_id: [u8; 32]) -> Result<Option<Transaction>>;
@@ -158,7 +162,7 @@ pub trait Mempool {
     ///
     /// Return a vector with all the deleted tx_id
     fn delete_mempool_tx(
-        &self,
+        &mut self,
         tx_id: [u8; 32],
         cascade: bool,
     ) -> Result<Vec<[u8; 32]>>;
@@ -196,7 +200,7 @@ pub trait Mempool {
 
 pub trait Metadata {
     /// Assigns an value to a key in the Metadata CF
-    fn op_write<T: AsRef<[u8]>>(&self, key: &[u8], value: T) -> Result<()>;
+    fn op_write<T: AsRef<[u8]>>(&mut self, key: &[u8], value: T) -> Result<()>;
 
     /// Reads an value of a key from the Metadata CF
     fn op_read(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
@@ -207,7 +211,7 @@ pub trait Persist:
 {
     // Candidate block functions
 
-    fn clear_database(&self) -> Result<()>;
+    fn clear_database(&mut self) -> Result<()>;
     fn commit(self) -> Result<()>;
     fn rollback(self) -> Result<()>;
 }

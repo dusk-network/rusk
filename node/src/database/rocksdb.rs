@@ -24,7 +24,7 @@ use rocksdb::{
     AsColumnFamilyRef, BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor,
     DBAccess, DBRawIteratorWithThreadMode, IteratorMode, LogLevel,
     OptimisticTransactionDB, OptimisticTransactionOptions, Options,
-    SnapshotWithThreadMode, WriteOptions,
+    WriteOptions,
 };
 
 use std::collections::HashSet;
@@ -128,8 +128,6 @@ impl Backend {
             .cf_handle(CF_METADATA)
             .expect("CF_METADATA column family must exist");
 
-        let snapshot = self.rocksdb.snapshot();
-
         DBTransaction::<'_, OptimisticTransactionDB> {
             inner,
             candidates_cf,
@@ -143,7 +141,6 @@ impl Backend {
             fees_cf,
             ledger_height_cf,
             metadata_cf,
-            snapshot,
             cumulative_inner_size: RefCell::new(0),
         }
     }
@@ -241,32 +238,34 @@ impl DB for Backend {
 
     fn view<F, T>(&self, f: F) -> T
     where
-        F: for<'a> FnOnce(Self::P<'a>) -> T,
+        F: for<'a> FnOnce(&Self::P<'a>) -> T,
     {
         // Create a new read-only transaction
         let tx = self.begin_tx();
 
         // Execute all read-only transactions in isolation
-        f(tx)
+        let ret = f(&tx);
+        tx.rollback().expect("rollback to succeed for readonly");
+        ret
     }
 
     fn update<F, T>(&self, execute: F) -> Result<T>
     where
-        F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>,
+        F: for<'a> FnOnce(&mut Self::P<'a>) -> Result<T>,
     {
         self.update_dry_run(false, execute)
     }
 
     fn update_dry_run<F, T>(&self, dry_run: bool, execute: F) -> Result<T>
     where
-        F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>,
+        F: for<'a> FnOnce(&mut Self::P<'a>) -> Result<T>,
     {
         // Create read-write transaction
-        let tx = self.begin_tx();
+        let mut tx = self.begin_tx();
 
         // If f returns err, no commit will be applied into backend
         // storage
-        let ret = execute(&tx)?;
+        let ret = execute(&mut tx)?;
 
         if dry_run {
             tx.rollback()?;
@@ -305,13 +304,11 @@ pub struct DBTransaction<'db, DB: DBAccess> {
     fees_cf: &'db ColumnFamily,
 
     metadata_cf: &'db ColumnFamily,
-
-    snapshot: SnapshotWithThreadMode<'db, DB>,
 }
 
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn store_block(
-        &self,
+        &mut self,
         header: &Header,
         txs: &[SpentTransaction],
         faults: &[Fault],
@@ -395,7 +392,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     }
 
     fn store_block_label(
-        &self,
+        &mut self,
         height: u64,
         hash: &[u8; 32],
         label: Label,
@@ -409,7 +406,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn delete_block(&self, b: &Block) -> Result<()> {
+    fn delete_block(&mut self, b: &Block) -> Result<()> {
         self.inner.delete_cf(
             self.ledger_height_cf,
             b.header().height.to_le_bytes(),
@@ -428,7 +425,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     }
 
     fn block_exists(&self, hash: &[u8]) -> Result<bool> {
-        Ok(self.snapshot.get_cf(self.ledger_cf, hash)?.is_some())
+        Ok(self.inner.get_cf(self.ledger_cf, hash)?.is_some())
     }
 
     fn faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>> {
@@ -441,7 +438,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             .collect::<Vec<_>>();
 
         // Retrieve all faults ID with single call
-        let faults_buffer = self.snapshot.multi_get_cf(ids);
+        let faults_buffer = self.inner.multi_get_cf(ids);
 
         let mut faults = vec![];
         for buf in faults_buffer {
@@ -454,12 +451,12 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     }
 
     fn block(&self, hash: &[u8]) -> Result<Option<Block>> {
-        match self.snapshot.get_cf(self.ledger_cf, hash)? {
+        match self.inner.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = LightBlock::read(&mut &blob[..])?;
 
                 // Retrieve all transactions buffers with single call
-                let txs_buffers = self.snapshot.multi_get_cf(
+                let txs_buffers = self.inner.multi_get_cf(
                     record
                         .transactions_ids
                         .iter()
@@ -475,7 +472,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 }
 
                 // Retrieve all faults ID with single call
-                let faults_buffer = self.snapshot.multi_get_cf(
+                let faults_buffer = self.inner.multi_get_cf(
                     record
                         .faults_ids
                         .iter()
@@ -499,7 +496,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     }
 
     fn light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>> {
-        match self.snapshot.get_cf(self.ledger_cf, hash)? {
+        match self.inner.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = LightBlock::read(&mut &blob[..])?;
                 Ok(Some(record))
@@ -509,7 +506,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     }
 
     fn block_header(&self, hash: &[u8]) -> Result<Option<Header>> {
-        match self.snapshot.get_cf(self.ledger_cf, hash)? {
+        match self.inner.get_cf(self.ledger_cf, hash)? {
             Some(blob) => {
                 let record = Header::read(&mut &blob[..])?;
                 Ok(Some(record))
@@ -520,7 +517,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
     fn block_hash_by_height(&self, height: u64) -> Result<Option<[u8; 32]>> {
         Ok(self
-            .snapshot
+            .inner
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
             .map(|h| {
                 const LEN: usize = 32;
@@ -532,7 +529,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
     fn ledger_tx(&self, tx_id: &[u8]) -> Result<Option<SpentTransaction>> {
         let tx = self
-            .snapshot
+            .inner
             .get_cf(self.ledger_txs_cf, tx_id)?
             .map(|blob| SpentTransaction::read(&mut &blob[..]))
             .transpose()?;
@@ -546,7 +543,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     /// This is a convenience method that checks if a transaction exists in the
     /// ledger without unmarshalling the transaction
     fn ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool> {
-        Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_id)?.is_some())
+        Ok(self.inner.get_cf(self.ledger_txs_cf, tx_id)?.is_some())
     }
 
     fn block_by_height(&self, height: u64) -> Result<Option<Block>> {
@@ -564,7 +561,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     ) -> Result<Option<([u8; 32], Label)>> {
         const HASH_LEN: usize = 32;
         Ok(self
-            .snapshot
+            .inner
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
             .map(|h| {
                 let mut hash = [0u8; HASH_LEN];
@@ -589,7 +586,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the block is successfully stored, or an error if the
     /// operation fails.
-    fn store_candidate(&self, b: Block) -> Result<()> {
+    fn store_candidate(&mut self, b: Block) -> Result<()> {
         let mut serialized = vec![];
         b.write(&mut serialized)?;
 
@@ -614,7 +611,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     /// Returns `Ok(Some(block))` if the block is found, `Ok(None)` if the block
     /// is not found, or an error if the operation fails.
     fn candidate(&self, hash: &[u8]) -> Result<Option<Block>> {
-        if let Some(blob) = self.snapshot.get_cf(self.candidates_cf, hash)? {
+        if let Some(blob) = self.inner.get_cf(self.candidates_cf, hash)? {
             let b = Block::read(&mut &blob[..])?;
             return Ok(Some(b));
         }
@@ -655,7 +652,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
-    fn delete_candidate<F>(&self, closure: F) -> Result<()>
+    fn delete_candidate<F>(&mut self, closure: F) -> Result<()>
     where
         F: FnOnce(u64) -> bool + std::marker::Copy,
     {
@@ -688,7 +685,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
-    fn clear_candidates(&self) -> Result<()> {
+    fn clear_candidates(&mut self) -> Result<()> {
         self.delete_candidate(|_| true)
     }
 
@@ -703,7 +700,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     /// Returns `Ok(())` if the ValidationResult is successfully stored, or an
     /// error if the operation fails.
     fn store_validation_result(
-        &self,
+        &mut self,
         consensus_header: &ConsensusHeader,
         validation_result: &payload::ValidationResult,
     ) -> Result<()> {
@@ -734,7 +731,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ) -> Result<Option<payload::ValidationResult>> {
         let key = serialize_iter_key(consensus_header)?;
         if let Some(blob) =
-            self.snapshot.get_cf(self.validation_results_cf, key)?
+            self.inner.get_cf(self.validation_results_cf, key)?
         {
             let validation_result =
                 payload::ValidationResult::read(&mut &blob[..])?;
@@ -756,7 +753,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
-    fn delete_validation_results<F>(&self, closure: F) -> Result<()>
+    fn delete_validation_results<F>(&mut self, closure: F) -> Result<()>
     where
         F: FnOnce([u8; 32]) -> bool + std::marker::Copy,
     {
@@ -789,14 +786,14 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     ///
     /// Returns `Ok(())` if the deletion is successful, or an error if the
     /// operation fails.
-    fn clear_validation_results(&self) -> Result<()> {
+    fn clear_validation_results(&mut self) -> Result<()> {
         self.delete_validation_results(|_| true)
     }
 }
 
 impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
     /// Deletes all items from both CF_LEDGER and CF_CANDIDATES column families
-    fn clear_database(&self) -> Result<()> {
+    fn clear_database(&mut self) -> Result<()> {
         // Create an iterator over the column family CF_LEDGER
         let iter = self.inner.iterator_cf(self.ledger_cf, IteratorMode::Start);
 
@@ -828,7 +825,11 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
 }
 
 impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
-    fn store_mempool_tx(&self, tx: &Transaction, timestamp: u64) -> Result<()> {
+    fn store_mempool_tx(
+        &mut self,
+        tx: &Transaction,
+        timestamp: u64,
+    ) -> Result<()> {
         // Map Hash to serialized transaction
         let mut tx_data = vec![];
         tx.write(&mut tx_data)?;
@@ -868,11 +869,11 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     }
 
     fn mempool_tx_exists(&self, h: [u8; 32]) -> Result<bool> {
-        Ok(self.snapshot.get_cf(self.mempool_cf, h)?.is_some())
+        Ok(self.inner.get_cf(self.mempool_cf, h)?.is_some())
     }
 
     fn delete_mempool_tx(
-        &self,
+        &mut self,
         h: [u8; 32],
         cascade: bool,
     ) -> Result<Vec<[u8; 32]>> {
@@ -922,7 +923,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     ) -> HashSet<[u8; 32]> {
         n.iter()
             .filter_map(|n| {
-                match self.snapshot.get_cf(self.spending_id_cf, n.to_bytes()) {
+                match self.inner.get_cf(self.spending_id_cf, n.to_bytes()) {
                     Ok(Some(tx_id)) => tx_id.try_into().ok(),
                     _ => None,
                 }
@@ -1092,8 +1093,7 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
         let iter = self.inner.iterator_cf(self.ledger_cf, IteratorMode::Start);
 
         iter.map(Result::unwrap).try_for_each(|(hash, _)| {
-            if let Ok(Some(blob)) =
-                self.snapshot.get_cf(self.ledger_cf, &hash[..])
+            if let Ok(Some(blob)) = self.inner.get_cf(self.ledger_cf, &hash[..])
             {
                 let b = Block::read(&mut &blob[..]).unwrap_or_default();
                 writeln!(f, "ledger_block [{}]: {:#?}", b.header().height, b)
@@ -1110,7 +1110,7 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
         let results: std::fmt::Result =
             iter.map(Result::unwrap).try_for_each(|(hash, _)| {
                 if let Ok(Some(blob)) =
-                    self.snapshot.get_cf(self.candidates_cf, &hash[..])
+                    self.inner.get_cf(self.candidates_cf, &hash[..])
                 {
                     let b = Block::read(&mut &blob[..]).unwrap_or_default();
                     writeln!(
@@ -1129,7 +1129,7 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
 }
 
 impl<'db, DB: DBAccess> Metadata for DBTransaction<'db, DB> {
-    fn op_write<T: AsRef<[u8]>>(&self, key: &[u8], value: T) -> Result<()> {
+    fn op_write<T: AsRef<[u8]>>(&mut self, key: &[u8], value: T) -> Result<()> {
         self.put_cf(self.metadata_cf, key, value)?;
         Ok(())
     }
@@ -1334,15 +1334,15 @@ mod tests {
         TestWrapper::new("test_read_only").run(|path| {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
             let b: Block = Faker.fake();
-            db.view(|txn| {
+            db.update_dry_run(true, |txn| {
                 txn.store_block(
                     b.header(),
                     &to_spent_txs(b.txs()),
                     b.faults(),
                     Label::Final(3),
                 )
-                .expect("block to be stored");
-            });
+            })
+            .expect("block to be stored");
             db.view(|txn| {
                 assert!(txn
                     .block(&b.header().hash)
@@ -1363,26 +1363,31 @@ mod tests {
                 // Simulate a concurrent update is committed during read-only
                 // transaction
                 assert!(db
-                    .update(|txn| {
-                        txn.store_block(
-                            b.header(),
-                            &to_spent_txs(b.txs()),
-                            b.faults(),
-                            Label::Final(3),
-                        )
-                        .unwrap();
+                    .update(|inner| {
+                        inner
+                            .store_block(
+                                b.header(),
+                                &to_spent_txs(b.txs()),
+                                b.faults(),
+                                Label::Final(3),
+                            )
+                            .unwrap();
 
-                        // No need to support Read-Your-Own-Writes
+                        // We support Read-Your-Own-Writes
+                        assert!(inner.block(&hash)?.is_some());
+                        // Data is isolated until the transaction is not
+                        // committed
                         assert!(txn.block(&hash)?.is_none());
                         Ok(())
                     })
                     .is_ok());
 
-                // Asserts that the read-only/view transaction runs in isolation
+                // Asserts that the read-only/view transaction get the updated
+                // data after the tx is committed
                 assert!(txn
                     .block(&hash)
                     .expect("block to be fetched")
-                    .is_none());
+                    .is_some());
             });
 
             // Asserts that update was done

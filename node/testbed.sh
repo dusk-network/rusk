@@ -14,7 +14,7 @@ run_node() {
     local NODE_FOLDER="${TEMPD}/node_${ID}"
     local RUSK_STATE_PATH="${NODE_FOLDER}/state"
 
-    RUSK_STATE_PATH="${RUSK_STATE_PATH}" cargo r --release -p rusk -- recovery state --init "$GENESIS_PATH"
+    RUSK_STATE_PATH="${RUSK_STATE_PATH}" ./target/release/rusk recovery state --init "$GENESIS_PATH"
     
     echo "Starting node $ID ..."
     RUSK_STATE_PATH="${RUSK_STATE_PATH}" $TOOL_BIN \
@@ -30,6 +30,7 @@ run_node() {
             --delay-on-resp-msg 10 \
 	    --config ./node/default.config.toml \
             > "${TEMPD}/node_${ID}.log" &
+     echo "Started node $ID"
 }
 
 # Cleanup function to stop all running rusk-node processes
@@ -49,8 +50,10 @@ killall rusk
 # Determine number of pre-loaded provisioners and mode
 PROV_NUM="$1"
 
+cargo b --release -p rusk
+
 # Set paths and addresses
-GENESIS_PATH="./rusk-recovery/config/testnet.toml"
+GENESIS_PATH="./node/testbed.toml"
 BOOTSTRAP_ADDR="127.0.0.1:7000"
 DUSK_WALLET_DIR="${DUSK_WALLET_DIR:-}" # Default value if DUSK_WALLET_DIR is not set
 
@@ -77,9 +80,16 @@ for ((i = 0; i < PROV_NUM; i++)); do
     fi
 
     run_node "$BOOTSTRAP_ADDR" "127.0.0.1:$PORT" "info" "$DUSK_WALLET_DIR" "$i" "$TEMPD" "127.0.0.1:$WS_PORT" "127.0.0.1:$TELEMETRY_PORT" "$TOOL_BIN" &
+
+    if [ $i -eq 0 ]; then
+      echo "sleep 10 seconds to get the bootstrapper running"
+      sleep 10
+    fi
 done
 
+echo "Sleeping ..."
 # Monitor nodes
 sleep 10
-tail -F "${TEMPD}/node_*.log" | grep -e "accepted\|ERROR\|gen_candidate"
+echo "Tail ..."
+tail -F ${TEMPD}/node_*.log | grep -E "accepted|ERROR|gen_candidate"
 

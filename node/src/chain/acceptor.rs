@@ -568,7 +568,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .db
             .read()
             .await
-            .update(|t| t.block_exists(&blk.header().hash))?;
+            .view(|t| t.block_exists(&blk.header().hash))?;
 
         if !exists {
             return Err(anyhow::anyhow!("could not find block"));
@@ -848,7 +848,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         &self,
         pni: u8, // Previous Non-Attested Iterations
         blk: &Block,
-        db: &D::P<'_>,
+        db: &mut D::P<'_>,
         events: &mut Vec<Event>,
     ) -> Result<(Label, Option<RollingFinalityResult>)> {
         let confirmed_after = match pni {
