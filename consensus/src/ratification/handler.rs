@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::RoundUpdate;
+use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
@@ -143,28 +144,40 @@ impl MsgHandler for RatificationHandler {
                         round_committees,
                     )?;
 
-                    debug!(
-                        "Update local ValidationResult ({:?}) with {:?}",
-                        local_vote, vote
-                    );
                     self.update_validation_result(p.validation_result.clone())
                 }
 
                 _ => {
                     // If our result is also a Quorum, check they match and skip
-                    // verification
+                    // verification.
                     if vote != local_vote {
-                        warn!(
-                            event = "Vote discarded",
-                            step = "Ratification",
-                            reason = "mismatch with local ValidationResult",
-                            round = ru.round,
-                            iter = iteration
-                        );
+                        if !is_emergency_iter(iteration) {
+                            warn!(
+                                event = "Vote discarded",
+                                step = "Ratification",
+                                reason = "mismatch with local ValidationResult",
+                                round = ru.round,
+                                iter = iteration
+                            );
 
-                        return Err(ConsensusError::VoteMismatch(
-                            local_vote, vote,
-                        ));
+                            return Err(ConsensusError::VoteMismatch(
+                                local_vote, vote,
+                            ));
+                        } else {
+                            // In Emergency Mode, we do not discard votes
+                            // because multiple votes are allowed
+                            Self::verify_validation_result(
+                                &p.header,
+                                &p.validation_result,
+                                round_committees,
+                            )?;
+
+                            // We update our result to be sure to build a
+                            // coherent Quorum message
+                            self.update_validation_result(
+                                p.validation_result.clone(),
+                            )
+                        }
                     }
                 }
             }
@@ -315,6 +328,13 @@ impl RatificationHandler {
     }
 
     pub(crate) fn update_validation_result(&mut self, vr: ValidationResult) {
+        let cur_vote = *self.validation_result().vote();
+        let new_vote = vr.vote();
+        debug!(
+            "Update local ValidationResult ({:?}) with {:?}",
+            cur_vote, new_vote
+        );
+
         self.validation_result = vr;
     }
 
