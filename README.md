@@ -1,14 +1,24 @@
-[![Rusk CI](https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml/badge.svg)](https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml)
-[![explorer CI](https://github.com/dusk-network/rusk/actions/workflows/explorer_ci.yml/badge.svg)](https://github.com/dusk-network/rusk/actions/workflows/explorer_ci.yml)
-[![web-wallet CI](https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml/badge.svg)](https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml)
-[![codecov](https://codecov.io/gh/dusk-network/rusk/branch/master/graph/badge.svg)](https://codecov.io/gh/dusk-network/rusk)
+<h1 align="center">
+<img height="90" src="assets/rusk_logo_light.svg#gh-dark-mode-only" alt="Rusk">
+<img height="90" src="assets/rusk_logo_dark.svg#gh-light-mode-only" alt="Rusk">
+</h1>
 
-# Rusk
+<p align="center">
+  The official <img height="11" src="assets/dusk_circular_light.svg#gh-dark-mode-only"><img height="11" src="assets/dusk_circular_dark.svg#gh-light-mode-only"><a href="https://dusk.network/"> Dusk</a> protocol node client and smart contract platform.
+</p>
 
-The official [Dusk](https://dusk.network/) protocol node client and smart contract platform.
+<p align=center>
+<a href="https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml">
+<img src="https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml/badge.svg" alt="Rusk CI"></a>
+&nbsp;
+<a href="https://github.com/dusk-network/rusk/actions/workflows/explorer_ci.yml">
+<img src="https://github.com/dusk-network/rusk/actions/workflows/explorer_ci.yml/badge.svg" alt="explorer CI"></a>
+&nbsp;
+<a href="https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml">
+<img src="https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml/badge.svg" alt="web-wallet CI"></a>
+</p>
 
-_Unstable_ : No guarantees can be made regarding the API stability, the project
-is in development.
+> _Unstable_ : No guarantees can be made regarding the API stability, the project is in development.
 
 ## How to run a node
 
