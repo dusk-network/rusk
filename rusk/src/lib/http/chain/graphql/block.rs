@@ -116,7 +116,7 @@ pub(super) async fn check_block(
     let (db, _) = ctx.data::<DBContext>()?;
     let block_hash = hex::decode(hex_block_hash)?;
     let block = db.read().await.view(|t| {
-        t.fetch_block_hash_by_height(block_height).map(|hash| {
+        t.block_hash_by_height(block_height).map(|hash| {
             if let Some(hash) = hash {
                 hash == block_hash[..]
             } else {
