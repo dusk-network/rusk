@@ -111,6 +111,11 @@ type WalletStoreServices = {
     profile: import("$lib/vendor/w3sper.js/src/mod").Profile
   ) => Promise<void>;
 
+  shield: (
+    amount: bigint,
+    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
+  ) => Promise<TransactionInfo>;
+
   stake: (
     amount: number,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
@@ -120,6 +125,11 @@ type WalletStoreServices = {
 
   transfer: (
     to: string,
+    amount: bigint,
+    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
+  ) => Promise<TransactionInfo>;
+
+  unshield: (
     amount: bigint,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<TransactionInfo>;

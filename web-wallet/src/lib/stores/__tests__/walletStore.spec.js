@@ -14,7 +14,6 @@ import {
   Network,
   ProfileGenerator,
 } from "$lib/vendor/w3sper.js/src/mod";
-import * as b58 from "$lib/vendor/w3sper.js/src/b58";
 import { generateMnemonic } from "bip39";
 
 import walletCache from "$lib/wallet-cache";
@@ -255,12 +254,6 @@ describe("Wallet store", async () => {
   });
 
   describe("Wallet store services", () => {
-    /** @type {string} */
-    let fromAddress;
-
-    /** @type {string} */
-    let fromAccount;
-
     const toPhoenix =
       "4ZH3oyfTuMHyWD1Rp4e7QKp5yK6wLrWvxHneufAiYBAjvereFvfjtDvTbBcZN5ZCsaoMo49s1LKPTwGpowik6QJG";
     const toMoonlight =
@@ -295,9 +288,6 @@ describe("Wallet store", async () => {
       const { currentProfile } = currentStore;
 
       expect(currentProfile).toBeDefined();
-
-      fromAccount = /** @type {string} */ (currentProfile?.account.toString());
-      fromAddress = /** @type {string} */ (currentProfile?.address.toString());
 
       treasuryUpdateSpy.mockClear();
       balanceSpy.mockClear();
@@ -399,6 +389,48 @@ describe("Wallet store", async () => {
       await expect(walletStore.setCurrentProfile({})).rejects.toThrow();
     });
 
+    it("should expose a method to shield a given amount from the unshielded account", async () => {
+      setTimeoutSpy.mockRestore();
+      clearTimeoutSpy.mockRestore();
+      vi.useRealTimers();
+
+      const currentlyCachedBalance = await walletCache.getBalanceInfo(
+        defaultProfile.address.toString()
+      );
+      const newNonce = currentlyCachedBalance.unshielded.nonce + 1n;
+
+      executeSpy.mockResolvedValueOnce({
+        hash: phoenixTxResult.hash,
+        nonce: newNonce,
+      });
+
+      const expectedTx = {
+        amount,
+        gas,
+      };
+
+      await walletStore.shield(amount, gas);
+
+      expect(executeSpy.mock.calls[0][0].attributes).toStrictEqual(expectedTx);
+      expect(executeSpy.mock.calls[0][0].bookentry.profile).toStrictEqual(
+        defaultProfile
+      );
+      expect(setPendingNotesSpy).not.toHaveBeenCalled();
+      expect(setCachedBalanceSpy).toHaveBeenCalledTimes(1);
+      expect(setCachedBalanceSpy).toHaveBeenCalledWith(
+        defaultProfile.address.toString(),
+        {
+          ...currentlyCachedBalance,
+          unshielded: {
+            ...currentlyCachedBalance.unshielded,
+            nonce: newNonce,
+          },
+        }
+      );
+
+      vi.useFakeTimers();
+    });
+
     it("should expose a method to execute a phoenix transfer, if the receiver is a phoenix address", async () => {
       /**
        * For some reason calling `useRealTimers` makes
@@ -411,17 +443,17 @@ describe("Wallet store", async () => {
 
       const expectedTx = {
         amount,
-        from: fromAddress,
         gas,
         obfuscated: true,
-        to: b58.decode(toPhoenix),
+        to: toPhoenix,
       };
       const result = await walletStore.transfer(toPhoenix, amount, gas);
 
       expect(executeSpy).toHaveBeenCalledTimes(1);
-
-      // our TransactionBuilder mock is loaded
-      expect(executeSpy.mock.calls[0][0].toJSON()).toStrictEqual(expectedTx);
+      expect(executeSpy.mock.calls[0][0].attributes).toStrictEqual(expectedTx);
+      expect(executeSpy.mock.calls[0][0].bookentry.profile).toStrictEqual(
+        defaultProfile
+      );
       expect(setCachedBalanceSpy).not.toHaveBeenCalled();
       expect(setPendingNotesSpy).toHaveBeenCalledTimes(1);
       expect(setPendingNotesSpy).toHaveBeenCalledWith(
@@ -502,16 +534,16 @@ describe("Wallet store", async () => {
 
       const expectedTx = {
         amount,
-        from: fromAccount,
         gas,
-        obfuscated: false,
-        to: b58.decode(toMoonlight),
+        to: toMoonlight,
       };
 
       await walletStore.transfer(toMoonlight, amount, gas);
 
-      // our TransactionBuilder mock is loaded
-      expect(executeSpy.mock.calls[0][0].toJSON()).toStrictEqual(expectedTx);
+      expect(executeSpy.mock.calls[0][0].attributes).toStrictEqual(expectedTx);
+      expect(executeSpy.mock.calls[0][0].bookentry.profile).toStrictEqual(
+        defaultProfile
+      );
       expect(setPendingNotesSpy).not.toHaveBeenCalled();
       expect(setCachedBalanceSpy).toHaveBeenCalledTimes(1);
       expect(setCachedBalanceSpy).toHaveBeenCalledWith(
@@ -523,6 +555,43 @@ describe("Wallet store", async () => {
             nonce: newNonce,
           },
         }
+      );
+
+      vi.useFakeTimers();
+    });
+
+    it("should expose a method to unshield a given amount from the shielded account", async () => {
+      setTimeoutSpy.mockRestore();
+      clearTimeoutSpy.mockRestore();
+      vi.useRealTimers();
+
+      const expectedTx = {
+        amount,
+        gas,
+      };
+      const result = await walletStore.unshield(amount, gas);
+
+      expect(executeSpy).toHaveBeenCalledTimes(1);
+      expect(executeSpy.mock.calls[0][0].attributes).toStrictEqual(expectedTx);
+      expect(executeSpy.mock.calls[0][0].bookentry.profile).toStrictEqual(
+        defaultProfile
+      );
+      expect(setCachedBalanceSpy).not.toHaveBeenCalled();
+      expect(setPendingNotesSpy).toHaveBeenCalledTimes(1);
+      expect(setPendingNotesSpy).toHaveBeenCalledWith(
+        phoenixTxResult.nullifiers,
+        phoenixTxResult.hash
+      );
+      expect(result).toBe(phoenixTxResult);
+
+      // check that we made a sync before the transfer
+      expect(treasuryUpdateSpy).toHaveBeenCalledTimes(1);
+
+      // but the balance is not updated yet
+      expect(balanceSpy).not.toHaveBeenCalled();
+
+      expect(treasuryUpdateSpy.mock.invocationCallOrder[0]).toBeLessThan(
+        executeSpy.mock.invocationCallOrder[0]
       );
 
       vi.useFakeTimers();

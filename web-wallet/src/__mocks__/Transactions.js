@@ -9,7 +9,8 @@ afterAll(() => {
   });
 });
 
-const deferredRemove = Promise.withResolvers();
+/** @type {PromiseWithResolvers<void>} */
+let deferredRemove;
 
 class FakeRuesScope {
   #id = "";
@@ -45,6 +46,7 @@ class FakeRuesScope {
   }
 
   removed() {
+    deferredRemove = Promise.withResolvers();
     return deferredRemove.promise;
   }
 
