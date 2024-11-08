@@ -28,12 +28,14 @@ const getGasPaid = (payload) =>
 test("Offline account transfers", async () => {
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);
+  const to =
+    "oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu";
 
   const transfers = await Promise.all(
     [77n, 22n].map((amount, nonce) =>
       new Transfer(users[1])
         .amount(amount)
-        .to(users[0].account)
+        .to(to)
         .nonce(BigInt(nonce))
         .chain(Network.LOCALNET)
         .gas({ limit: 500_000_000n })

@@ -11,6 +11,7 @@ import { AddressSyncer } from "./network/syncer/address.js";
 import { Gas } from "./network/gas.js";
 import * as ProtocolDriver from "./protocol-driver/mod.js";
 import { ProfileGenerator, Profile } from "./profile.js";
+import * as base58 from "./b58.js";
 
 const _attributes = Symbol("builder::attributes");
 
@@ -49,9 +50,10 @@ export class Transfer extends BasicTransfer {
     super(from);
   }
 
-  to(identifier) {
+  to(value) {
     let builder;
-    switch (ProfileGenerator.typeOf(String(identifier))) {
+    let identifier = String(value);
+    switch (ProfileGenerator.typeOf(identifier)) {
       case "account":
         builder = new AccountTransfer(this.bookentry);
         break;
@@ -86,7 +88,9 @@ class AccountTransfer extends Transfer {
   async build(network) {
     const sender = this.bookentry.profile;
     const { attributes } = this;
-    const { to: receiver, amount: transfer_value, gas } = attributes;
+    const { to, amount: transfer_value, gas } = attributes;
+
+    const receiver = base58.decode(to);
 
     // Obtain the chain id
     let chainId;
@@ -141,12 +145,14 @@ class AddressTransfer extends Transfer {
   async build(network) {
     const { attributes } = this;
     const {
-      to: receiver,
+      to,
       amount: transfer_value,
       obfuscated: obfuscated_transaction,
       gas,
     } = attributes;
     const sender = this.bookentry.profile;
+    const receiver = base58.decode(to);
+
     const { bookkeeper } = this.bookentry;
 
     // Pick notes to spend from the treasury
