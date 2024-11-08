@@ -220,11 +220,15 @@ impl AttInfoRegistry {
         let vote = attestation.result.vote();
         let att_info = iter_atts.get_or_insert(vote);
 
+        // If RatificationResult is NoQuorum, we assume Validation votes did not
+        // reach a quorum
+        let validation_quorum = !matches!(vote, Vote::NoQuorum);
+
         att_info.set_sv(
             iteration,
             attestation.validation,
             StepName::Validation,
-            true,
+            validation_quorum,
         );
         att_info.set_sv(
             iteration,
@@ -271,6 +275,8 @@ impl AttInfoRegistry {
     pub(crate) fn get_fail_att(&self, iteration: u8) -> Option<Attestation> {
         self.att_list
             .get(&iteration)
-            .and_then(|atts| atts.failed().map(|info| info.att))
+            .and_then(|atts| atts.failed())
+            .filter(|info| info.is_ready())
+            .map(|info| info.att)
     }
 }

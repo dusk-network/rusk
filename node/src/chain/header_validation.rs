@@ -32,7 +32,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
-use tracing::{error, info};
+use tracing::{debug, error};
 
 const MARGIN_TIMESTAMP: u64 = 3;
 
@@ -258,10 +258,10 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(voters)
     }
 
-    /// Return the number of failed iterations that have no quorum in the
-    /// ratification phase
+    /// Verify the Failed Iterations field in a block.
     ///
-    /// We refer to this number as Previous Non-Attested Iterations, or PNI
+    /// Return the number of attested failed iterations. We refer to this number
+    /// as Previous Non-Attested Iterations, or PNI
     async fn verify_failed_iterations(
         &self,
         candidate_block: &'a ledger::Header,
@@ -276,7 +276,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         for (iter, att) in att_list.iter().enumerate() {
             if let Some((att, pk)) = att {
-                info!(event = "verify_att", att_type = "failed_att", iter);
+                debug!(event = "verify fail attestation", iter);
 
                 let expected_pk = self.provisioners.current().get_generator(
                     iter as u8,
@@ -294,7 +294,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     candidate_block.to_consensus_header();
                 consensus_header.iteration = iter as u8;
 
-                let (_, rat_quorum, _) = verify_att(
+                verify_att(
                     att,
                     consensus_header,
                     self.prev_header.seed,
@@ -303,9 +303,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 )
                 .await?;
 
-                if rat_quorum.quorum_reached() {
-                    failed_atts += 1;
-                }
+                failed_atts += 1;
             }
         }
 

@@ -289,44 +289,39 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             // past-iteration Attestations without interrupting
                             // the step execution
                             if let RatificationResult::Fail(vote) = att.result {
-                                match vote {
-                                    Vote::NoCandidate | Vote::Invalid(_) => {
-                                        // Check if we know this Attestation
-                                        let mut sv_registry =
-                                            self.sv_registry.lock().await;
+                                // Check if we know this Attestation
+                                let mut sv_registry =
+                                    self.sv_registry.lock().await;
 
-                                        match sv_registry.get_fail_att(qiter) {
-                                            None => {
-                                                debug!(
-                                                  event = "Storing Fail Attestation",
-                                                  round = qround,
-                                                  iter = qiter,
-                                                  vote = ?vote,
-                                                );
+                                match sv_registry.get_fail_att(qiter) {
+                                    None => {
+                                        debug!(
+                                          event = "Storing Fail Attestation",
+                                          round = qround,
+                                          iter = qiter,
+                                          vote = ?vote,
+                                        );
 
-                                                let generator = self
-                                                    .iter_ctx
-                                                    .get_generator(qiter);
+                                        let generator =
+                                            self.iter_ctx.get_generator(qiter);
 
-                                                sv_registry
-                                                        .set_attestation(
-                                                          qiter,
-                                                          att,
-                                                          &generator.expect("There must be a valid generator")
-                                                        );
-                                            }
-                                            Some(_) => {
-                                                debug!(
-                                                  event = "Quorum discarded",
-                                                  reason = "known Fail Quorum",
-                                                  round = qround,
-                                                  iter = qiter,
-                                                  vote = ?vote,
-                                                );
-                                            }
-                                        }
+                                        sv_registry
+                                            .set_attestation(
+                                              qiter,
+                                              att,
+                                              &generator.expect("There must be a valid generator")
+                                            );
                                     }
-                                    _ => {}
+
+                                    Some(_) => {
+                                        debug!(
+                                          event = "Quorum discarded",
+                                          reason = "known Fail Quorum",
+                                          round = qround,
+                                          iter = qiter,
+                                          vote = ?vote,
+                                        );
+                                    }
                                 }
                             }
 
