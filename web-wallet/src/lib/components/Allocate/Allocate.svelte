@@ -80,9 +80,14 @@
   });
 
   $: fee = gasLimit * gasPrice;
-  $: isFromUnshielded = shieldedAmount > shieldedBalance;
-  $: isFromShielded = unshieldedAmount > unshieldedBalance;
-  $: isNextButtonDisabled = !(isFromUnshielded || isFromShielded);
+  $: balanceStatus = {
+    isFromUnshielded: shieldedAmount > shieldedBalance,
+    isFromShielded: unshieldedAmount > unshieldedBalance,
+  };
+
+  $: isNextButtonDisabled = !(
+    balanceStatus.isFromShielded || balanceStatus.isFromUnshielded
+  );
 </script>
 
 <div class="operation">
@@ -215,7 +220,7 @@
           </dt>
           <dd class="review-transaction__value operation__review-amount">
             <span>
-              {isFromUnshielded
+              {balanceStatus.isFromUnshielded
                 ? `${formatter(luxToDusk(unshieldedBalance - unshieldedAmount))} DUSK`
                 : `${formatter(luxToDusk(shieldedBalance - shieldedAmount))} DUSK`}
             </span>
@@ -230,26 +235,34 @@
         <dl class="operation__review-transaction">
           <dt class="review-transaction__label">
             <Icon
-              path={isFromUnshielded ? mdiShieldLockOpenOutline : mdiShieldLock}
+              path={balanceStatus.isFromUnshielded
+                ? mdiShieldLockOpenOutline
+                : mdiShieldLock}
             />
             <span>From</span>
           </dt>
           <dd class="operation__review-address">
             <span>
-              {isFromUnshielded ? unshieldedAddress : shieldedAddress}
+              {balanceStatus.isFromUnshielded
+                ? unshieldedAddress
+                : shieldedAddress}
             </span>
           </dd>
         </dl>
         <dl class="operation__review-transaction">
           <dt class="review-transaction__label">
             <Icon
-              path={isFromShielded ? mdiShieldLockOpenOutline : mdiShieldLock}
+              path={balanceStatus.isFromShielded
+                ? mdiShieldLockOpenOutline
+                : mdiShieldLock}
             />
             <span>To</span>
           </dt>
           <dd class="operation__review-address">
             <span>
-              {isFromShielded ? unshieldedAddress : shieldedAddress}
+              {balanceStatus.isFromShielded
+                ? unshieldedAddress
+                : shieldedAddress}
             </span>
           </dd>
         </dl>
@@ -259,7 +272,7 @@
     <WizardStep step={2} {key} showNavigation={false}>
       <OperationResult
         errorMessage="Transaction failed"
-        operation={isFromUnshielded
+        operation={balanceStatus.isFromUnshielded
           ? walletStore.shield(shieldedAmount, new Gas({ gasLimit, gasPrice }))
           : walletStore.unshield(
               unshieldedAmount,
