@@ -3,7 +3,6 @@
 <script>
   import { collect, getKey, pick } from "lamb";
   import { createCurrencyFormatter } from "$lib/dusk/currency";
-  import { executeSend } from "$lib/contracts";
   import { gasStore, settingsStore, walletStore } from "$lib/stores";
   import { Allocate } from "$lib/components";
 
@@ -27,7 +26,6 @@
   {unshieldedAddress}
   shieldedBalance={balance.shielded.spendable}
   unshieldedBalance={balance.unshielded.value}
-  execute={executeSend}
   formatter={duskFormatter}
   {gasLimits}
   {gasSettings}

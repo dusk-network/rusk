@@ -8,7 +8,7 @@
     mdiShieldLock,
     mdiShieldLockOpenOutline,
   } from "@mdi/js";
-  import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
+  import { areValidGasSettings } from "$lib/contracts";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
   import { logo } from "$lib/dusk/icons";
@@ -21,9 +21,9 @@
     WizardStep,
   } from "$lib/dusk/components";
   import { GasFee, GasSettings, OperationResult } from "$lib/components";
-
-  /** @type {(to: string, amount: number, gasPrice: bigint, gasLimit: bigint) => Promise<string>} */
-  export let execute;
+  import { walletStore } from "$lib/stores";
+  import { Gas } from "$lib/vendor/w3sper.js/src/mod";
+  import Banner from "../Banner/Banner.svelte";
 
   /** @type {(amount: number) => string} */
   export let formatter;
@@ -46,24 +46,38 @@
   /** @type {bigint} */
   export let unshieldedBalance;
 
-  /** @type {boolean} */
-  let isNextButtonDisabled = false;
+  // @ts-ignore
+  function handleBalanceChange(event) {
+    const value = parseFloat(event.target.value);
 
-  /** @type {boolean} */
-  let isGasValid = false;
+    if (isNaN(value) || value < 0) {
+      hasInvalidInput = true;
+      return;
+    }
 
-  let { gasLimit, gasPrice } = gasSettings;
+    hasInvalidInput = false;
 
-  /** @type {number} */
-  let shieldedAmount = luxToDusk(shieldedBalance);
+    const isShieldedAmount = event.target.name === "shielded-amount";
+    shielded = isShieldedAmount
+      ? duskToLux(value)
+      : totalBalance - duskToLux(value);
+  }
 
-  /** @type {number} */
-  let unshieldedAmount = luxToDusk(unshieldedBalance);
+  async function allocate() {
+    const gas = new Gas({ limit: gasLimit, price: gasPrice });
 
-  /** @type {number} */
-  let screenWidth = window.innerWidth;
+    if (difference !== 0n) {
+      const transactionInfo = isShielding
+        ? await walletStore.shield(difference, gas)
+        : await walletStore.unshield(-difference, gas);
 
-  const minAmount = 0.000000001;
+      return transactionInfo.hash;
+    }
+
+    // We shouldn't end up in this case,
+    // as the next button should be disabled
+    return Promise.resolve();
+  }
 
   onMount(() => {
     isGasValid = areValidGasSettings(gasPrice, gasLimit);
@@ -79,10 +93,46 @@
     return () => resizeObserver.disconnect();
   });
 
+  /** @type {boolean} */
+  let isNextButtonDisabled = false;
+
+  /** @type {boolean} */
+  let isGasValid = false;
+
+  let { gasLimit, gasPrice } = gasSettings;
+
+  /** @type {number} */
+  let screenWidth = window.innerWidth;
+
+  const minAmount = 0.000000001;
+
+  let hasInvalidInput = false;
+
+  // Constant total
+  const totalBalance = shieldedBalance + unshieldedBalance;
+
+  // Used to keep the difference between the initial shielded balance and the current one
+  const initialShielded = shieldedBalance;
+
+  // Internal state of the balances
+  let shielded = shieldedBalance;
+  $: unshielded = totalBalance - shielded;
+
+  // Derived number states for UI Inputs
+  $: shieldedNumber = luxToDusk(shielded);
+  $: unshieldedNumber = luxToDusk(unshielded);
+
+  $: isShielding = difference > 0n;
+  $: isUnshielding = !isShielding;
+
   $: fee = gasLimit * gasPrice;
-  $: isFromUnshielded = shieldedAmount > shieldedBalance;
-  $: isFromShielded = unshieldedAmount > unshieldedBalance;
-  $: isNextButtonDisabled = !(isFromUnshielded || isFromShielded);
+  $: difference = shielded - initialShielded;
+  $: isNextButtonDisabled =
+    difference === 0n || // No change in balance
+    shielded < 0n || // Shielded balance is negative
+    unshielded < 0n || // Unshielded balance is negative
+    shielded + unshielded > totalBalance ||
+    hasInvalidInput;
 </script>
 
 <div class="operation">
@@ -100,7 +150,7 @@
       <div in:fade|global class="operation__allocate">
         <p>
           Edit the value to change the allocation of your Dusk between your
-          shielded or public account.
+          shielded and public accounts.
         </p>
 
         <fieldset class="operation__fieldset">
@@ -117,21 +167,16 @@
           <div class="operation__input-wrapper">
             <Textbox
               className="operation__input-field"
-              bind:value={shieldedAmount}
+              value={shieldedNumber}
               required
               type="number"
               min={minAmount}
-              max={deductLuxFeeFrom(
-                luxToDusk(shieldedBalance + unshieldedBalance),
-                fee
-              )}
+              max={isShielding
+                ? luxToDusk(totalBalance - fee)
+                : luxToDusk(totalBalance)}
               step="0.000000001"
-              on:input={() => {
-                unshieldedAmount = +(
-                  luxToDusk(shieldedBalance + unshieldedBalance) -
-                  shieldedAmount
-                ).toFixed(9);
-              }}
+              on:input={handleBalanceChange}
+              name="shielded-amount"
             />
             <Icon
               data-tooltip-id="main-tooltip"
@@ -142,7 +187,7 @@
 
           <hr class="glyph" />
 
-          <p class="operation__label">Unshielded</p>
+          <p class="operation__label">Public</p>
 
           <div class="operation__address-wrapper">
             <Icon path={mdiShieldLockOpenOutline} />
@@ -155,22 +200,17 @@
           <div class="operation__input-wrapper">
             <Textbox
               className="operation__input-field"
-              bind:value={unshieldedAmount}
+              value={unshieldedNumber}
               required
               type="number"
               min={minAmount}
-              max={deductLuxFeeFrom(
-                luxToDusk(unshieldedBalance + shieldedBalance),
-                fee
-              )}
+              max={isUnshielding
+                ? luxToDusk(totalBalance - fee)
+                : luxToDusk(totalBalance)}
               step="0.000000001"
               id="unshielded-amount"
-              on:input={() => {
-                shieldedAmount = +(
-                  luxToDusk(unshieldedBalance + shieldedBalance) -
-                  unshieldedAmount
-                ).toFixed(9);
-              }}
+              on:input={handleBalanceChange}
+              name="unshielded-amount"
             />
             <Icon
               data-tooltip-id="main-tooltip"
@@ -224,9 +264,9 @@
           </dt>
           <dd class="review-transaction__value operation__review-amount">
             <span>
-              {isFromUnshielded
-                ? `${formatter(luxToDusk(unshieldedBalance - duskToLux(unshieldedAmount)))} DUSK`
-                : `${formatter(luxToDusk(shieldedBalance - duskToLux(shieldedAmount)))} DUSK`}
+              {isShielding
+                ? `${formatter(luxToDusk(unshieldedBalance - unshielded))} DUSK`
+                : `${formatter(luxToDusk(shieldedBalance - shielded))} DUSK`}
             </span>
             <Icon
               className="dusk-amount__icon"
@@ -239,41 +279,41 @@
         <dl class="operation__review-transaction">
           <dt class="review-transaction__label">
             <Icon
-              path={isFromUnshielded ? mdiShieldLockOpenOutline : mdiShieldLock}
+              path={isShielding ? mdiShieldLockOpenOutline : mdiShieldLock}
             />
             <span>From</span>
           </dt>
           <dd class="operation__review-address">
             <span>
-              {isFromUnshielded ? unshieldedAddress : shieldedAddress}
+              {isShielding ? unshieldedAddress : shieldedAddress}
             </span>
           </dd>
         </dl>
         <dl class="operation__review-transaction">
           <dt class="review-transaction__label">
             <Icon
-              path={isFromShielded ? mdiShieldLockOpenOutline : mdiShieldLock}
+              path={isUnshielding ? mdiShieldLockOpenOutline : mdiShieldLock}
             />
             <span>To</span>
           </dt>
           <dd class="operation__review-address">
             <span>
-              {isFromShielded ? unshieldedAddress : shieldedAddress}
+              {isUnshielding ? unshieldedAddress : shieldedAddress}
             </span>
           </dd>
         </dl>
         <GasFee {formatter} {fee} />
+        <Banner title="Fee details" variant="info">
+          <p>
+            Fee will be paid with your {isUnshielding ? "shielded" : "public"} balance.
+          </p>
+        </Banner>
       </div>
     </WizardStep>
     <WizardStep step={2} {key} showNavigation={false}>
       <OperationResult
         errorMessage="Transaction failed"
-        operation={execute(
-          isFromShielded ? unshieldedAddress : shieldedAddress,
-          isFromShielded ? unshieldedAmount : shieldedAmount,
-          gasPrice,
-          gasLimit
-        )}
+        operation={allocate()}
         pendingMessage="Processing transaction"
         successMessage="Transaction completed"
       >

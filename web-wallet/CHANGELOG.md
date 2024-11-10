@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
 - Added allocation (shield/unshield) page and UI [#2196]
 - Add auto-sync every five minutes [#2880]
+- Integrate Allocate UI with w3sper's SDK to enable Allocate functionalities [#2920]
 
 ### Changed
 
@@ -316,6 +317,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2878]: https://github.com/dusk-network/rusk/issues/2878
 [#2880]: https://github.com/dusk-network/rusk/issues/2880
 [#2888]: https://github.com/dusk-network/rusk/issues/2888
+[#2920]: https://github.com/dusk-network/rusk/issues/2920
 
 <!-- VERSIONS -->
 
