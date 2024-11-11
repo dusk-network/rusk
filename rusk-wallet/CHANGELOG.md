@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fix
 
+- Fix phoenix balance update [#2488]
 - Fix stake info for inactive stakes with rewards [#2766]
 - Fix Moonlight stake reward withdrawal [#2523]
 
@@ -45,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2566]: https://github.com/dusk-network/rusk/issues/2566
 [#2523]: https://github.com/dusk-network/rusk/issues/2523
 [#2489]: https://github.com/dusk-network/rusk/issues/2489
+[#2488]: https://github.com/dusk-network/rusk/issues/2488
 [#2402]: https://github.com/dusk-network/rusk/issues/2402
 [#2401]: https://github.com/dusk-network/rusk/issues/2401
 [#2400]: https://github.com/dusk-network/rusk/issues/2400
