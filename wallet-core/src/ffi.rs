@@ -450,8 +450,13 @@ pub unsafe fn moonlight(
     let receiver_pk = BlsPublicKey::from_bytes(receiver)
         .or(Err(ErrorCode::DeserializationError))?;
 
-    let data: Option<TransactionData> =
-        if data.is_null() { None } else { todo!() };
+    let data: Option<TransactionData> = if data.is_null() {
+        None
+    } else {
+        let buffer = mem::read_buffer(data);
+
+        Some(buffer[1..].to_vec().into())
+    };
 
     let tx = MoonlightTransaction::new(
         &sender_sk,

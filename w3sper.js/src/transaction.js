@@ -8,10 +8,10 @@ export const TRANSFER =
   "0100000000000000000000000000000000000000000000000000000000000000";
 
 import { AddressSyncer } from "./network/syncer/address.js";
-import { Gas } from "./network/gas.js";
 import * as ProtocolDriver from "./protocol-driver/mod.js";
 import { ProfileGenerator, Profile } from "./profile.js";
-import * as base58 from "./b58.js";
+import * as base58 from "./encoders/b58.js";
+import { Gas } from "./gas.js";
 
 const _attributes = Symbol("builder::attributes");
 
@@ -85,10 +85,15 @@ class AccountTransfer extends Transfer {
     return this;
   }
 
+  memo(value) {
+    this[_attributes].memo = value;
+    return this;
+  }
+
   async build(network) {
     const sender = this.bookentry.profile;
     const { attributes } = this;
-    const { to, amount: transfer_value, gas } = attributes;
+    const { to, amount: transfer_value, memo: data, gas } = attributes;
 
     const receiver = base58.decode(to);
 
@@ -121,7 +126,7 @@ class AccountTransfer extends Transfer {
       gas_price: gas.price,
       nonce,
       chainId,
-      data: null,
+      data,
     });
 
     return Object.freeze({

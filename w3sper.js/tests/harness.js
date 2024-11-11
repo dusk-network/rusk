@@ -100,8 +100,6 @@ export class Treasury {
       for (let i = 0; i < this.#users.length; i++) {
         const userNotes = this.#notes.get(this.#users[i].address.toString());
         mergeMap(userNotes, notes[i], this.#keySet);
-
-        // this.#notes.set(this.#users[i].address.toString(), userNotes);
       }
 
       this.lastSyncInfo = syncInfo;

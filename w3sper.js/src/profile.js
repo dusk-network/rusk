@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import * as ProtocolDriver from "../src/protocol-driver/mod.js";
-import * as base58 from "./b58.js";
+import * as base58 from "./encoders/b58.js";
 
 const _index = Symbol("profile::index");
 const _seeder = Symbol("profile::seeder");

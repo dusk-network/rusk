@@ -11,7 +11,7 @@ import { Node } from "./components/node.js";
 import { Blocks } from "./components/blocks.js";
 import { Transactions } from "./components/transactions.js";
 import { Contracts } from "./components/contracts.js";
-import { Gas } from "./gas.js";
+import { Gas } from "../gas.js";
 
 export { Gas };
 export { AddressSyncer } from "./syncer/address.js";

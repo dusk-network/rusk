@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import * as ProtocolDriver from "../../protocol-driver/mod.js";
-import * as base58 from "../../b58.js";
+import * as base58 from "../../encoders/b58.js";
 
 function intoAccount(resource) {
   if (resource?.account?.valueOf()?.byteLength === 96) {
