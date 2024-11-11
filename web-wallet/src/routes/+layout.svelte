@@ -15,6 +15,7 @@
 
   onMount(async () => {
     await networkStore.connect();
+    await networkStore.init();
   });
 </script>
 

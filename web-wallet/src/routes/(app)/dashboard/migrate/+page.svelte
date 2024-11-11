@@ -3,7 +3,7 @@
 <script>
   import { onDestroy } from "svelte";
   import { MigrateContract } from "$lib/containers";
-  import { operationsStore } from "$lib/stores";
+  import { networkStore, operationsStore } from "$lib/stores";
 
   /** @param {string} id */
   function updateOperation(id) {
@@ -16,6 +16,10 @@
   onDestroy(() => {
     updateOperation("");
   });
+
+  const { networkName } = $networkStore;
 </script>
 
-<MigrateContract />
+{#if ["mainnet", "testnet"].includes(networkName)}
+  <MigrateContract migrationNetwork={networkName} />
+{/if}

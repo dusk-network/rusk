@@ -19,33 +19,6 @@ function getNetworkUrl() {
   }
 }
 
-/** @type {Record<string, Exclude<NetworkName, "Mainnet">>} */
-const networkMatchesMap = {
-  devnet: "Devnet",
-  localhost: "Localnet",
-  testnet: "Testnet",
-};
-
-/**
- * Quick solution to retrieve the network name
- * from the extrapolated URL.
- *
- * @type {(url: URL) => NetworkName}
- */
-function getNetworkName(url) {
-  /** @type {NetworkName} */
-  let name = "Mainnet";
-
-  for (const match of Object.keys(networkMatchesMap)) {
-    if (~url.href.indexOf(match)) {
-      name = networkMatchesMap[match];
-      break;
-    }
-  }
-
-  return name;
-}
-
 const networkUrl = getNetworkUrl();
 
 /** @type {Network} */
@@ -56,11 +29,11 @@ const initialState = {
   get connected() {
     return network.connected;
   },
-  name: getNetworkName(networkUrl),
+  networkName: "unknown",
 };
 
 const networkStore = writable(initialState);
-const { subscribe } = networkStore;
+const { set, subscribe } = networkStore;
 
 /** @type {NetworkStoreServices["connect"]} */
 const connect = async () => (network.connected ? network : network.connect());
@@ -78,6 +51,16 @@ const getAccountSyncer = () => connect().then(() => new AccountSyncer(network));
 const getAddressSyncer = (options) =>
   connect().then(() => new AddressSyncer(network, options));
 
+/** @type {NetworkStoreServices["init"]} */
+async function init() {
+  const info = await network.node.info;
+
+  set({
+    ...initialState,
+    networkName: info.chain.toString(),
+  });
+}
+
 /** @type {NetworkStore} */
 export default {
   connect,
@@ -85,5 +68,6 @@ export default {
   getAccountSyncer,
   getAddressSyncer,
   getCurrentBlockHeight,
+  init,
   subscribe,
 };

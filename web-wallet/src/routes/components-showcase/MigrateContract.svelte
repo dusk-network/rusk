@@ -5,5 +5,5 @@
 </script>
 
 <section>
-  <MigrateContract />
+  <MigrateContract migrationNetwork="Testnet" />
 </section>

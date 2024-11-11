@@ -13,6 +13,15 @@ class NetworkMock extends Network {
     return Promise.resolve(123_456_789n);
   }
 
+  // @ts-ignore
+  node = {
+    info: Promise.resolve({
+      chain: function toString() {
+        return "localnet";
+      },
+    }),
+  };
+
   get connected() {
     return this.#connected;
   }

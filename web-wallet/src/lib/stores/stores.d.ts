@@ -42,11 +42,9 @@ type OperationsStoreContent = { currentOperation: string };
 
 type OperationsStore = Writable<OperationsStoreContent>;
 
-type NetworkName = "Devnet" | "Localnet" | "Mainnet" | "Testnet";
-
 type NetworkStoreContent = {
   get connected(): boolean;
-  name: NetworkName;
+  networkName: string;
 };
 
 type NetworkSyncerOptions = {
@@ -63,9 +61,18 @@ type NetworkStoreServices = {
     options?: NetworkSyncerOptions
   ) => Promise<import("$lib/vendor/w3sper.js/src/mod").AddressSyncer>;
   getCurrentBlockHeight: () => Promise<bigint>;
+  init: () => Promise<void>;
 };
 
 type NetworkStore = Readable<NetworkStoreContent> & NetworkStoreServices;
+
+type NodeInfo = {
+  bootstrappingNodes: Array<string>;
+  chainId: number;
+  kadcastAddress: string;
+  version: string;
+  versionBuild: string;
+};
 
 type WalletStoreBalance = {
   shielded: AddressBalance;
