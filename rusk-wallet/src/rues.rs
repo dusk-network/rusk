@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::time::Duration;
+
 use reqwest::{Body, Response};
 use rkyv::Archive;
 
@@ -18,13 +20,19 @@ pub const CONTRACTS_TARGET: &str = "contracts";
 #[derive(Clone)]
 /// Rusk HTTP Binary Client
 pub struct RuesHttpClient {
+    client: reqwest::Client,
     uri: String,
 }
 
 impl RuesHttpClient {
     /// Create a new HTTP Client
     pub fn new<S: Into<String>>(uri: S) -> Self {
-        Self { uri: uri.into() }
+        let client = reqwest::ClientBuilder::new()
+            .connect_timeout(Duration::from_secs(30))
+            .build()
+            .expect("Client to be created");
+        let uri = uri.into();
+        Self { uri, client }
     }
 
     /// Utility for querying the rusk VM
@@ -50,7 +58,7 @@ impl RuesHttpClient {
 
     /// Check rusk connection
     pub async fn check_connection(&self) -> Result<(), reqwest::Error> {
-        reqwest::Client::new().post(&self.uri).send().await?;
+        self.client.post(&self.uri).send().await?;
         Ok(())
     }
 
@@ -86,11 +94,11 @@ impl RuesHttpClient {
         E: Into<Option<&'static str>>,
     {
         let uri = &self.uri;
-        let client = reqwest::Client::new();
         let entity = entity.into().map(|e| format!(":{e}")).unwrap_or_default();
 
         let rues_prefix = if uri.ends_with('/') { "on" } else { "/on" };
-        let mut request = client
+        let mut request = self
+            .client
             .post(format!("{uri}{rues_prefix}/{target}{entity}/{topic}"))
             .body(Body::from(data.to_vec()))
             .header("Content-Type", "application/octet-stream")
