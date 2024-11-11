@@ -28,6 +28,27 @@ pub struct ContractTxEvent {
 #[repr(C)]
 pub struct WrappedContractId(pub ContractId);
 
+impl TryFrom<String> for WrappedContractId {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+        let source_bytes = hex::decode(value)?;
+        let mut source_array = [0u8; CONTRACT_ID_BYTES];
+
+        if source_bytes.len() != CONTRACT_ID_BYTES {
+            return Err(anyhow::anyhow!(
+                "Invalid length: expected {} bytes, got {}",
+                CONTRACT_ID_BYTES,
+                source_bytes.len()
+            ));
+        } else {
+            source_array.copy_from_slice(&source_bytes);
+        }
+
+        Ok(WrappedContractId(ContractId::from_bytes(source_array)))
+    }
+}
+
 impl Serialize for WrappedContractId {
     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
     where
@@ -54,9 +75,10 @@ impl<'de> Deserialize<'de> for WrappedContractId {
                 CONTRACT_ID_BYTES,
                 source_bytes.len()
             )));
+        } else {
+            source_array.copy_from_slice(&source_bytes);
         }
 
-        source_array.copy_from_slice(&source_bytes);
         Ok(WrappedContractId(ContractId::from_bytes(source_array)))
     }
 }
