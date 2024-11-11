@@ -204,12 +204,11 @@ impl State {
     }
 
     /// Selects up to MAX_INPUT_NOTES unspent input notes from the cache. The
-    /// value of the input notes need to cover the target-value of the
-    /// transaction.
+    /// value of the input notes need to cover the cost of the transaction.
     pub(crate) async fn tx_input_notes(
         &self,
         index: u8,
-        target: u64,
+        tx_cost: u64,
     ) -> Result<Vec<(Note, NoteOpening, BlsScalar)>, Error> {
         let vk = derive_phoenix_vk(self.store().get_seed(), index);
         let mut sk = derive_phoenix_sk(self.store().get_seed(), index);
@@ -226,8 +225,8 @@ impl State {
             })
             .collect();
 
-        // pick up to MAX_INPUT_NOTES input-notes that cover the target value
-        let tx_input_notes = pick_notes(&vk, cached_notes.into(), target);
+        // pick up to MAX_INPUT_NOTES input-notes that cover the tx-cost
+        let tx_input_notes = pick_notes(&vk, cached_notes.into(), tx_cost);
         if tx_input_notes.is_empty() {
             return Err(Error::NotEnoughBalance);
         }
