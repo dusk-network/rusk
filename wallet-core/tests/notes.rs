@@ -219,7 +219,7 @@ fn test_pick_notes() {
     let all_notes = generate_note_list(leaves, &sk);
     assert_eq!(pick_notes(&vk, all_notes, 901), NoteList::default());
 
-    // checking that pick_notes works if spendable is smaller that the total
+    // checking that pick_notes works if spendable is smaller than the total
 
     // generate 5 notes with 10 dusk owned by the same key
     let leaves = [

@@ -13,16 +13,17 @@ use crate::notes::MAX_INPUT_NOTES;
 use execution_core::transfer::phoenix::{NoteLeaf, ViewKey as PhoenixViewKey};
 use execution_core::BlsScalar;
 
-/// Pick the notes to be used in a transaction from a list of owned notes.
+/// Pick up to [`MAX_INPUT_NOTES`] notes to be used as input-notes in a
+/// transaction from a list of owned notes.
 ///
-/// The notes are picked in a way to maximize the number of notes used,
-/// while minimizing the value employed. To do this we sort the notes in
-/// ascending value order, and go through each combination in a
-/// lexicographic order until we find the first combination whose sum is
-/// larger or equal to the given cost. If such a slice is not found, an
-/// empty vector is returned.
+/// The notes are picked in a way to maximize the number of notes used, while
+/// minimizing the value employed. To do this we sort the notes in ascending
+/// value order, and go through each combination in a lexicographic order until
+/// we find the first combination whose sum is larger or equal to the given
+/// cost.
 ///
-/// If the cost is greater than the sum of the notes then an empty vector is
+/// If the cost is greater than the sum of the [`MAX_INPUT_NOTES`] notes with
+/// the largest value, no combination can be found and an empty vector is
 /// returned.
 #[must_use]
 pub fn notes(vk: &PhoenixViewKey, notes: NoteList, cost: u64) -> NoteList {
@@ -72,7 +73,8 @@ pub fn notes(vk: &PhoenixViewKey, notes: NoteList, cost: u64) -> NoteList {
 
     // at this point we know that there is a possible combination of
     // MAX_INPUT_NOTES notes that cover the cost and we pick the combination of
-    // the smallest note-values possible whose sum cover the cost
+    // MAX_INPUT_NOTES notes with the smallest possible values whose sum cover
+    // the cost
     pick_lexicographic(&notes_values_nullifier, cost)
         .map(|index| notes_values_nullifier[index].clone())
         .map(|(n, _, b)| (b, n))
@@ -80,6 +82,8 @@ pub fn notes(vk: &PhoenixViewKey, notes: NoteList, cost: u64) -> NoteList {
         .into()
 }
 
+// Sum up the values of the MAX_INPUT_NOTES notes stored at the given indices
+// and check that this sum is larger or equal the given cost.
 fn is_valid(
     notes_values_nullifier: impl AsRef<[(NoteLeaf, u64, BlsScalar)]>,
     cost: u64,
@@ -92,6 +96,8 @@ fn is_valid(
         >= cost
 }
 
+// Pick a combination of exactly MAX_INPUT_NOTES notes that cover the cost.
+// Notes with smaller values are favored.
 fn pick_lexicographic(
     notes_values_nullifier: &Vec<(NoteLeaf, u64, BlsScalar)>,
     cost: u64,
