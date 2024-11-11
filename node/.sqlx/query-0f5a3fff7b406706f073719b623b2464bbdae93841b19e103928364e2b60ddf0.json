@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "DELETE FROM archive WHERE block_hash = ? AND (finalized IS NULL OR finalized = 0)\n            RETURNING block_height\n            ",
+  "query": "DELETE FROM unfinalized_blocks WHERE block_hash = ?\n            RETURNING block_height\n            ",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "14e22bec4a8a50d407955a5db5fdf66138a9e1a0f14967134e3f2370d12d3173"
+  "hash": "0f5a3fff7b406706f073719b623b2464bbdae93841b19e103928364e2b60ddf0"
 }

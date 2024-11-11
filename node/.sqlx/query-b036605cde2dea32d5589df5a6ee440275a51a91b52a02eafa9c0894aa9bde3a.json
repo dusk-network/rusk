@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT block_height, block_hash FROM archive WHERE finalized = 1 ORDER BY block_height DESC LIMIT 1",
+  "query": "SELECT block_height, block_hash FROM finalized_blocks WHERE block_height = (SELECT MAX(block_height) FROM finalized_blocks)",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "3e24aeef004c78f2589f716a35334e0e0e8d5404de9fc039c3597f86cd175424"
+  "hash": "b036605cde2dea32d5589df5a6ee440275a51a91b52a02eafa9c0894aa9bde3a"
 }

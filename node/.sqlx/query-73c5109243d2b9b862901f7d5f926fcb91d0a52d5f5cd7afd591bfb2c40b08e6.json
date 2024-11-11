@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM unfinalized_blocks WHERE block_hash = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "73c5109243d2b9b862901f7d5f926fcb91d0a52d5f5cd7afd591bfb2c40b08e6"
+}

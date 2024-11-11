@@ -8,10 +8,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::Result;
-use execution_core::signatures::bls::PublicKey as AccountPublicKey;
-use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::Hash;
 use rocksdb::OptimisticTransactionDB;
 use sqlx::sqlite::SqlitePool;
 
@@ -68,47 +64,6 @@ impl Archive {
             moonlight_db,
         }
     }
-}
-
-/// The Archivist is responsible for storing the events and potentially other
-/// ephemeral data forever in the archive DB.
-///
-/// Example:
-/// - The block does not store the events, only the hash of the events. The
-///   archivist will store the events.
-pub(crate) trait Archivist {
-    /// Store the list of all vm events from the block of the given height &
-    /// hash.
-    async fn store_vm_events(
-        &self,
-        block_height: u64,
-        block_hash: Hash,
-        events: Vec<ContractTxEvent>,
-    ) -> Result<()>;
-
-    /// Fetch the list of all vm events from the block of the given height.
-    async fn fetch_vm_events(
-        &self,
-        block_height: u64,
-    ) -> Result<Vec<ContractTxEvent>>;
-
-    /// Fetch the moonlight events for the given public key
-    fn fetch_moonlight_histories(
-        &self,
-        address: AccountPublicKey,
-    ) -> Result<Option<Vec<MoonlightGroup>>>;
-
-    async fn mark_block_finalized(
-        &self,
-        current_block_height: u64,
-        hex_block_hash: &str,
-    ) -> Result<()>;
-
-    async fn remove_block(
-        &self,
-        current_block_height: u64,
-        hex_block_hash: &str,
-    ) -> Result<bool>;
 }
 
 #[derive(Clone, Debug)]

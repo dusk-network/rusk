@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT block_height FROM archive WHERE block_height = ? AND block_hash = ? AND finalized = 1",
+  "query": "SELECT block_height FROM finalized_blocks WHERE block_height = ? AND block_hash = ?",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "dccdedb8099832ac1e6732edc3c482fa3cbfec4846f2a7cdd02099f4b5f5509a"
+  "hash": "22135e0afad32fbbd710ad9074941e5aabc27309200949081fe2bd153421ef7e"
 }
