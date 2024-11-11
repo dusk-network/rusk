@@ -56,7 +56,7 @@ exports[`Allocate > should render the allocation page 1`] = `
         >
           <p>
             Edit the value to change the allocation of your Dusk between your
-          shielded or public account.
+          shielded and public accounts.
           </p>
            
           <fieldset
@@ -90,8 +90,9 @@ exports[`Allocate > should render the allocation page 1`] = `
             >
               <input
                 class="dusk-textbox dusk-textbox-number operation__input-field"
-                max="-0.02"
+                max="0"
                 min="1e-9"
+                name="shielded-amount"
                 required=""
                 step="0.000000001"
                 type="number"
@@ -119,7 +120,7 @@ exports[`Allocate > should render the allocation page 1`] = `
             <p
               class="operation__label svelte-eoztn2"
             >
-              Unshielded
+              Public
             </p>
              
             <div
@@ -147,6 +148,7 @@ exports[`Allocate > should render the allocation page 1`] = `
                 id="unshielded-amount"
                 max="-0.02"
                 min="1e-9"
+                name="unshielded-amount"
                 required=""
                 step="0.000000001"
                 type="number"
