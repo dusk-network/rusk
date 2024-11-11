@@ -10,14 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
+
+### Changed
+
+- Update Transactions list design [#1922]
+- Update `Stake` to use `Stepper` [#2436]
+
+### Removed
+
+### Fixed
+
+## [0.7.0] - 2024-11-11
+
+### Added
+
 - Added allocation (shield/unshield) page and UI [#2196]
 - Add auto-sync every five minutes [#2880]
 - Integrate Allocate UI with w3sper's SDK to enable Allocate functionalities [#2920]
 
 ### Changed
 
-- Update Transactions list design [#1922]
-- Update `Stake` to use `Stepper` [#2436]
 - Update Balance component [#2863]
 - Update UI labels [#2888]
 
@@ -314,6 +326,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2778]: https://github.com/dusk-network/rusk/issues/2778
 [#2807]: https://github.com/dusk-network/rusk/issues/2807
 [#2821]: https://github.com/dusk-network/rusk/issues/2821
+[#2863]: https://github.com/dusk-network/rusk/issues/2863
 [#2878]: https://github.com/dusk-network/rusk/issues/2878
 [#2880]: https://github.com/dusk-network/rusk/issues/2880
 [#2888]: https://github.com/dusk-network/rusk/issues/2888
@@ -322,6 +335,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[0.7.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.7.0
 [0.6.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.6.0
 [0.5.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.5.0
 [0.4.0]: https://github.com/dusk-network/rusk/tree/web-wallet-0.4.0
