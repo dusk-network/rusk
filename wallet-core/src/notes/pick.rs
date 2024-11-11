@@ -42,20 +42,6 @@ pub fn notes(vk: &PhoenixViewKey, notes: NoteList, cost: u64) -> NoteList {
         })
         .collect();
 
-    // return an empty list if the sum of all notes cannot cover the cost
-    let sum: u64 = notes_values_nullifier
-        .iter()
-        .fold(0, |sum, &(_, value, _)| sum.saturating_add(value));
-    if sum < cost {
-        return NoteList::default();
-    }
-
-    // if there are less that MAX_INPUT_NOTES notes, we can return the list as
-    // it is
-    if notes.len() <= MAX_INPUT_NOTES {
-        return notes;
-    }
-
     // sort the input-notes from smallest to largest value
     notes_values_nullifier.sort_by(|(_, aval, _), (_, bval, _)| aval.cmp(bval));
 
@@ -63,12 +49,19 @@ pub fn notes(vk: &PhoenixViewKey, notes: NoteList, cost: u64) -> NoteList {
     // the cost
     if notes_values_nullifier
         .iter()
-        .skip(notes_values_nullifier.len() - MAX_INPUT_NOTES)
+        .rev()
+        .take(MAX_INPUT_NOTES)
         .map(|notes_values_nullifier| notes_values_nullifier.1)
         .sum::<u64>()
         < cost
     {
         return NoteList::default();
+    }
+
+    // if there are less than MAX_INPUT_NOTES notes, we can return the list as
+    // it is
+    if notes.len() <= MAX_INPUT_NOTES {
+        return notes;
     }
 
     // at this point we know that there is a possible combination of
