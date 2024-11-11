@@ -667,6 +667,7 @@ fn response(
 ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
     Ok(Response::builder()
         .status(status)
+        .header(RUSK_VERSION_HEADER, VERSION.as_str())
         .body(Full::new(body.into()).into())
         .expect("Failed to build response"))
 }
