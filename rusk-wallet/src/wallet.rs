@@ -320,9 +320,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self,
         profile_idx: u8,
     ) -> Result<BalanceInfo, Error> {
-        let state = self.state()?;
+        self.sync().await?;
 
-        let notes = state.fetch_notes(self.shielded_key(profile_idx)?)?;
+        let notes =
+            self.state()?.fetch_notes(self.shielded_key(profile_idx)?)?;
 
         Ok(phoenix_balance(
             &self.derive_phoenix_vk(profile_idx),
