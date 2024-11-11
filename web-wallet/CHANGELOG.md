@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Balance component [#2863]
 - Update UI labels [#2888]
 
+### Fixed
+
+- Fix web-wallet crashing after setting high gas price [#2878]
+
 ## [0.6.0] - 2024-11-05
 
 ### Added
@@ -309,6 +313,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2778]: https://github.com/dusk-network/rusk/issues/2778
 [#2807]: https://github.com/dusk-network/rusk/issues/2807
 [#2821]: https://github.com/dusk-network/rusk/issues/2821
+[#2878]: https://github.com/dusk-network/rusk/issues/2878
 [#2880]: https://github.com/dusk-network/rusk/issues/2880
 [#2888]: https://github.com/dusk-network/rusk/issues/2888
 
