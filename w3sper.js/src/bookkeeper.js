@@ -21,8 +21,12 @@ class BookEntry {
     Object.freeze(this);
   }
 
-  async balance(type) {
+  balance(type) {
     return this.bookkeeper.balance(this.profile[type]);
+  }
+
+  stakeInfo() {
+    return this.bookkeeper.stakeInfo(this.profile.account);
   }
 
   transfer(amount) {
@@ -57,6 +61,15 @@ export class Bookkeeper {
 
         return ProtocolDriver.balance(seed, index, notes);
     }
+  }
+
+  stakeInfo(identifier) {
+    const type = ProfileGenerator.typeOf(String(identifier));
+    if (type !== "account") {
+      throw new TypeError("Only accounts can stake");
+    }
+
+    return this.#treasury.stakeInfo(identifier);
   }
 
   async pick(identifier, amount) {

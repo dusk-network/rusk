@@ -72,6 +72,7 @@ export class Treasury {
   #keySet = new Set();
 
   #accounts = [];
+  #stakes = [];
 
   lastSyncInfo;
 
@@ -85,7 +86,10 @@ export class Treasury {
 
   async update({ from, addresses, accounts }) {
     if (accounts) {
-      this.#accounts = await accounts.balances(this.#users);
+      [this.#accounts, this.#stakes] = await Promise.all([
+        accounts.balances(this.#users),
+        accounts.stakes(this.#users),
+      ]);
     }
 
     if (!addresses) {
@@ -130,5 +134,9 @@ export class Treasury {
 
   account(identifier) {
     return this.#accounts.at(+identifier);
+  }
+
+  stakeInfo(identifier) {
+    return this.#stakes.at(+identifier);
   }
 }
