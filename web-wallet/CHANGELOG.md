@@ -15,10 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update Transactions list design [#1922]
 - Update `Stake` to use `Stepper` [#2436]
+- Update Mnemonic (Authenticate) Enter key behavior [#2879]
 
 ### Removed
 
 ### Fixed
+
+- Suggested words in the Mnemonic (Authenticate) are accessible using Tab [#2879]
 
 ## [0.7.0] - 2024-11-11
 
@@ -328,6 +331,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2821]: https://github.com/dusk-network/rusk/issues/2821
 [#2863]: https://github.com/dusk-network/rusk/issues/2863
 [#2878]: https://github.com/dusk-network/rusk/issues/2878
+[#2879]: https://github.com/dusk-network/rusk/issues/2879
 [#2880]: https://github.com/dusk-network/rusk/issues/2880
 [#2888]: https://github.com/dusk-network/rusk/issues/2888
 [#2920]: https://github.com/dusk-network/rusk/issues/2920

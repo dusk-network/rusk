@@ -76,7 +76,7 @@
       return;
     }
 
-    if (event.key === "Enter" && suggestions.length === 1) {
+    if (event.key === "Enter" && suggestions[0] === currentInput) {
       updateEnteredPhrase(suggestions[0], index);
     }
   }
@@ -181,6 +181,7 @@
                 text={suggestion}
                 data-value={suggestion}
                 on:click={handleWordButtonClick}
+                tabindex="0"
               />
             {/each}
           </div>
