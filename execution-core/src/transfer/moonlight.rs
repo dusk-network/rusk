@@ -13,17 +13,15 @@ use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::{
-    signatures::bls::{
-        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
-        Signature as AccountSignature,
-    },
-    transfer::data::{
-        ContractBytecode, ContractCall, ContractDeploy, TransactionData,
-        MAX_MEMO_SIZE,
-    },
-    BlsScalar, Error,
+use crate::signatures::bls::{
+    PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
+    Signature as AccountSignature,
 };
+use crate::transfer::data::{
+    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+    MAX_MEMO_SIZE,
+};
+use crate::{BlsScalar, Error};
 
 /// A Moonlight account's information.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]

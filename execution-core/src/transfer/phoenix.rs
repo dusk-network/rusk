@@ -17,16 +17,14 @@ use ff::Field;
 use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::{
-    signatures::schnorr::{
-        SecretKey as SchnorrSecretKey, Signature as SchnorrSignature,
-    },
-    transfer::data::{
-        ContractBytecode, ContractCall, ContractDeploy, TransactionData,
-        MAX_MEMO_SIZE,
-    },
-    BlsScalar, Error, JubJubAffine, JubJubScalar,
+use crate::signatures::schnorr::{
+    SecretKey as SchnorrSecretKey, Signature as SchnorrSignature,
 };
+use crate::transfer::data::{
+    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+    MAX_MEMO_SIZE,
+};
+use crate::{BlsScalar, Error, JubJubAffine, JubJubScalar};
 
 // phoenix types
 pub use phoenix_circuits::{InputNoteInfo, OutputNoteInfo, TxCircuit};

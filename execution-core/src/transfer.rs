@@ -9,7 +9,6 @@
 
 use alloc::string::String;
 use alloc::vec::Vec;
-
 use core::fmt::Debug;
 
 use bytecheck::CheckBytes;
@@ -18,12 +17,11 @@ use poseidon_merkle::Opening;
 use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::{
-    signatures::bls::{
-        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
-    },
-    BlsScalar, ContractId, Error,
+use crate::signatures::bls::{
+    PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
+use crate::{BlsScalar, ContractId, Error};
+
 use data::{ContractCall, ContractDeploy, TransactionData};
 use moonlight::Transaction as MoonlightTransaction;
 use phoenix::{

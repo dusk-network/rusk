@@ -12,16 +12,12 @@ use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Serializable, Write};
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::{
-    signatures::bls::{
-        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-        Signature as BlsSignature,
-    },
-    transfer::withdraw::Withdraw as TransferWithdraw,
-    ContractId,
+use crate::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    Signature as BlsSignature,
 };
-
-use crate::{dusk, Dusk};
+use crate::transfer::withdraw::Withdraw as TransferWithdraw;
+use crate::{dusk, ContractId, Dusk};
 
 /// ID of the genesis stake contract
 pub const STAKE_CONTRACT: ContractId = crate::reserved(0x2);
