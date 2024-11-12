@@ -23,9 +23,12 @@ pub async fn block_events_by_height(
             FieldError::new(format!("Cannot fetch events: {}", e))
         })?;
     } else {
-        events = archive.fetch_json_vm_events(height).await.map_err(|e| {
-            FieldError::new(format!("Cannot fetch events: {}", e))
-        })?;
+        events = archive
+            .fetch_json_vm_events_by_blk_height(height)
+            .await
+            .map_err(|e| {
+                FieldError::new(format!("Cannot fetch events: {}", e))
+            })?;
     }
 
     Ok(Some(BlockEvents(serde_json::from_str(&events)?)))

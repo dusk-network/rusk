@@ -332,7 +332,7 @@ impl Rusk {
 
         self.set_current_commit(session.commit()?);
 
-        // Sent events to archivist
+        // Sent all events from this block to the archivist
         #[cfg(feature = "archive")]
         {
             let _ = self.archive_sender.try_send(ArchivalData::ArchivedEvents(
@@ -347,7 +347,7 @@ impl Rusk {
             if event.event.target.0 == STAKE_CONTRACT {
                 stake_events.push(event.event.clone());
             }
-            // Send VN event to RUES
+            // Send VM event to RUES
             let event = RuesEvent::from(event);
             let _ = self.event_sender.send(event);
         }
