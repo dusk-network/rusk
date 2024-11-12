@@ -32,7 +32,7 @@ use alloc::vec::Vec;
 use core::{ptr, slice};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use execution_core::signatures::bls::PublicKey as BlsPublicKey;
-use execution_core::transfer::data::TransactionData;
+use execution_core::transfer::data::{ContractCall, TransactionData};
 use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use execution_core::transfer::phoenix;
 use execution_core::transfer::phoenix::{
@@ -40,6 +40,8 @@ use execution_core::transfer::phoenix::{
     PublicKey as PhoenixPublicKey,
 };
 
+use execution_core::stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT};
+use execution_core::transfer::withdraw::WithdrawReplayToken;
 use execution_core::transfer::Transaction;
 use execution_core::BlsScalar;
 
@@ -55,6 +57,9 @@ use alloc::string::String;
 static KEY_SIZE: usize = BlsScalar::SIZE;
 #[no_mangle]
 static ITEM_SIZE: usize = core::mem::size_of::<ArchivedNoteLeaf>();
+
+#[no_mangle]
+static MINIMUM_STAKE: u64 = execution_core::stake::MINIMUM_STAKE;
 
 /// The size of the scratch buffer used for parsing the notes.
 const NOTES_BUFFER_SIZE: usize = 96 * 1024;
@@ -434,7 +439,7 @@ pub unsafe fn phoenix(
 pub unsafe fn moonlight(
     seed: &Seed,
     sender_index: u8,
-    receiver: &[u8; BlsPublicKey::SIZE],
+    receiver: *const [u8; BlsPublicKey::SIZE],
     transfer_value: *const u64,
     deposit: *const u64,
     gas_limit: *const u64,
@@ -447,8 +452,14 @@ pub unsafe fn moonlight(
 ) -> ErrorCode {
     let sender_sk = derive_bls_sk(&seed, sender_index);
 
-    let receiver_pk = BlsPublicKey::from_bytes(receiver)
-        .or(Err(ErrorCode::DeserializationError))?;
+    let receiver_pk = if receiver.is_null() {
+        None
+    } else {
+        Some(
+            BlsPublicKey::from_bytes(&*receiver)
+                .or(Err(ErrorCode::DeserializationError))?,
+        )
+    };
 
     let data: Option<TransactionData> = if data.is_null() {
         None
@@ -460,7 +471,7 @@ pub unsafe fn moonlight(
 
     let tx = MoonlightTransaction::new(
         &sender_sk,
-        Some(receiver_pk),
+        receiver_pk,
         *transfer_value,
         *deposit,
         *gas_limit,
@@ -598,6 +609,190 @@ pub unsafe fn moonlight_to_phoenix(
         *gas_price,
         *nonce,
         chain_id,
+    )
+    .or(Err(ErrorCode::MoonlightTransactionError))?;
+
+    let bytes = tx.to_var_bytes();
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *tx_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    let displayed = revert(&tx.hash());
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), hash_ptr.as_mut_ptr(), 64);
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn moonlight_stake(
+    seed: &Seed,
+    sender_index: u8,
+    stake_value: *const u64,
+    gas_limit: *const u64,
+    gas_price: *const u64,
+    nonce: *const u64,
+    chain_id: u8,
+    stake_nonce: *const u64,
+    tx_ptr: *mut *mut u8,
+    hash_ptr: &mut [u8; 64],
+) -> ErrorCode {
+    let transfer_value = 0;
+    let deposit = *stake_value;
+
+    let sender_sk = derive_bls_sk(&seed, sender_index);
+    let stake_sk = sender_sk.clone();
+
+    let stake = Stake::new(&stake_sk, *stake_value, *stake_nonce, chain_id);
+
+    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)
+        .or(Err(ErrorCode::ContractCallError))?;
+
+    let tx = crate::transaction::moonlight(
+        &sender_sk,
+        None,
+        transfer_value,
+        deposit,
+        *gas_limit,
+        *gas_price,
+        *nonce,
+        chain_id,
+        Some(contract_call),
+    )
+    .or(Err(ErrorCode::MoonlightTransactionError))?;
+
+    let bytes = tx.to_var_bytes();
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *tx_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    let displayed = revert(&tx.hash());
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), hash_ptr.as_mut_ptr(), 64);
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn moonlight_unstake(
+    rng: &[u8; 32],
+    seed: &Seed,
+    sender_index: u8,
+    unstake_value: *const u64,
+    gas_limit: *const u64,
+    gas_price: *const u64,
+    nonce: *const u64,
+    chain_id: u8,
+    tx_ptr: *mut *mut u8,
+    hash_ptr: &mut [u8; 64],
+) -> ErrorCode {
+    let mut rng = ChaCha12Rng::from_seed(*rng);
+
+    let sender_sk = derive_bls_sk(&seed, sender_index);
+    let stake_sk = sender_sk.clone();
+
+    let transfer_value = 0;
+    let deposit = 0;
+
+    let gas_payment_token = WithdrawReplayToken::Moonlight(*nonce);
+
+    let contract_call = crate::transaction::unstake_to_moonlight(
+        &mut rng,
+        &sender_sk,
+        &stake_sk,
+        gas_payment_token,
+        *unstake_value,
+    )
+    .or(Err(ErrorCode::ContractCallError))?;
+
+    let tx = crate::transaction::moonlight(
+        &sender_sk,
+        None,
+        transfer_value,
+        deposit,
+        *gas_limit,
+        *gas_price,
+        *nonce,
+        chain_id,
+        Some(contract_call),
+    )
+    .or(Err(ErrorCode::MoonlightTransactionError))?;
+
+    let bytes = tx.to_var_bytes();
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *tx_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    let displayed = revert(&tx.hash());
+    let bytes = displayed.as_bytes();
+
+    ptr::copy_nonoverlapping(bytes.as_ptr(), hash_ptr.as_mut_ptr(), 64);
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn moonlight_stake_reward(
+    rng: &[u8; 32],
+    seed: &Seed,
+    sender_index: u8,
+    reward_amount: *const u64,
+    gas_limit: *const u64,
+    gas_price: *const u64,
+    nonce: *const u64,
+    chain_id: u8,
+    tx_ptr: *mut *mut u8,
+    hash_ptr: &mut [u8; 64],
+) -> ErrorCode {
+    let mut rng = ChaCha12Rng::from_seed(*rng);
+
+    let sender_sk = derive_bls_sk(&seed, sender_index);
+    let stake_sk = sender_sk.clone();
+
+    let transfer_value = 0;
+    let deposit = 0;
+
+    let gas_payment_token = WithdrawReplayToken::Moonlight(*nonce);
+
+    let contract_call = crate::transaction::stake_reward_to_moonlight(
+        &mut rng,
+        &sender_sk,
+        &stake_sk,
+        gas_payment_token,
+        *reward_amount,
+    )
+    .or(Err(ErrorCode::ContractCallError))?;
+
+    let tx = crate::transaction::moonlight(
+        &sender_sk,
+        None,
+        transfer_value,
+        deposit,
+        *gas_limit,
+        *gas_price,
+        *nonce,
+        chain_id,
+        Some(contract_call),
     )
     .or(Err(ErrorCode::MoonlightTransactionError))?;
 

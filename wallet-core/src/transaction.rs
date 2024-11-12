@@ -723,7 +723,7 @@ fn stake_reward_to_phoenix<R: RngCore + CryptoRng>(
     ContractCall::new(STAKE_CONTRACT, "withdraw", &reward_withdraw)
 }
 
-fn stake_reward_to_moonlight<R: RngCore + CryptoRng>(
+pub(crate) fn stake_reward_to_moonlight<R: RngCore + CryptoRng>(
     rng: &mut R,
     moonlight_receiver_sk: &BlsSecretKey,
     stake_sk: &BlsSecretKey,
@@ -763,7 +763,7 @@ fn unstake_to_phoenix<R: RngCore + CryptoRng>(
     ContractCall::new(STAKE_CONTRACT, "unstake", &unstake)
 }
 
-fn unstake_to_moonlight<R: RngCore + CryptoRng>(
+pub(crate) fn unstake_to_moonlight<R: RngCore + CryptoRng>(
     rng: &mut R,
     moonlight_receiver_sk: &BlsSecretKey,
     stake_sk: &BlsSecretKey,
