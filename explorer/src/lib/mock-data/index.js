@@ -11,3 +11,4 @@ export { default as gqlTransaction } from "./gql-transaction.json";
 export { default as gqlTransactionDetails } from "./gql-transaction-details.json";
 export { default as gqlTransactions } from "./gql-transactions.json";
 export { default as hostProvisioners } from "./host-provisioners.json";
+export { default as nodeLocationsCount } from "./node-locations.count.json";

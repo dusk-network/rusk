@@ -332,9 +332,8 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           <div
             class="statistics-panel__statistics-item-value"
           >
-            <span>
-              - - -
-            </span>
+            15
+            
             
              
           </div>
@@ -366,9 +365,8 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           <div
             class="statistics-panel__statistics-item-value"
           >
-            <span>
-              - - -
-            </span>
+            North Bergen, US
+            
             
              
           </div>
@@ -710,9 +708,8 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           <div
             class="statistics-panel__statistics-item-value"
           >
-            <span>
-              - - -
-            </span>
+            15
+            
             
              
           </div>
@@ -744,9 +741,8 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           <div
             class="statistics-panel__statistics-item-value"
           >
-            <span>
-              - - -
-            </span>
+            North Bergen, US
+            
             
              
           </div>

@@ -21,7 +21,8 @@ vi.mock("$lib/services", async (importOriginal) => {
   const { transformBlock, transformTransaction } = await import(
     "$lib/chain-info"
   );
-  const { apiMarketData, gqlLatestChainInfo } = await import("$lib/mock-data");
+  const { apiMarketData, gqlLatestChainInfo, nodeLocationsCount } =
+    await import("$lib/mock-data");
   const { current_price: currentPrice, market_cap: marketCap } =
     apiMarketData.market_data;
 
@@ -35,6 +36,7 @@ vi.mock("$lib/services", async (importOriginal) => {
       }),
       getMarketData: () =>
         resolveAfter(marketDataSettleTime, { currentPrice, marketCap }),
+      getNodeLocations: vi.fn().mockResolvedValue(nodeLocationsCount),
     },
   };
 });

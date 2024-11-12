@@ -155,7 +155,7 @@
         attributes: null,
         canBeStale: false,
         compact: true,
-        data: nodesData ? nodesData[0].count : null,
+        data: nodesData?.length ? nodesData[0].count : null,
         icon: mdiTransitConnectionVariant,
         title: "Largest Node Cluster",
       },
@@ -164,7 +164,7 @@
         attributes: null,
         canBeStale: false,
         compact: null,
-        data: nodesData
+        data: nodesData?.length
           ? `${nodesData[0].city}, ${nodesData[0].countryCode}`
           : null,
         icon: mdiMapMarker,

@@ -1,0 +1,170 @@
+[
+  {
+    "city": "North Bergen",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.793,
+    "lon": -74.0247,
+    "count": 15
+  },
+  {
+    "city": "Amsterdam",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 52.352,
+    "lon": 4.9392,
+    "count": 15
+  },
+  {
+    "city": "Santa Clara",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 37.3931,
+    "lon": -121.962,
+    "count": 11
+  },
+  {
+    "city": "Frankfurt am Main",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.1169,
+    "lon": 8.6837,
+    "count": 9
+  },
+  {
+    "city": "Clifton",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 40.8364,
+    "lon": -74.1403,
+    "count": 9
+  },
+  {
+    "city": "Portsmouth",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 50.8544,
+    "lon": -1.002,
+    "count": 6
+  },
+  {
+    "city": "Singapore",
+    "country": "Singapore",
+    "countryCode": "SG",
+    "lat": 1.32123,
+    "lon": 103.695,
+    "count": 5
+  },
+  {
+    "city": "Nuremberg",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 49.405,
+    "lon": 11.1617,
+    "count": 4
+  },
+  {
+    "city": "Helsinki",
+    "country": "Finland",
+    "countryCode": "FI",
+    "lat": 60.1797,
+    "lon": 24.9344,
+    "count": 2
+  },
+  {
+    "city": "Alexandria",
+    "country": "Australia",
+    "countryCode": "AU",
+    "lat": -33.9088,
+    "lon": 151.196,
+    "count": 1
+  },
+  {
+    "city": "Milan",
+    "country": "Italy",
+    "countryCode": "IT",
+    "lat": 45.4722,
+    "lon": 9.1922,
+    "count": 1
+  },
+  {
+    "city": "Sydney",
+    "country": "Australia",
+    "countryCode": "AU",
+    "lat": -33.808,
+    "lon": 151.1415,
+    "count": 1
+  },
+  {
+    "city": "Hillsboro",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 45.5397,
+    "lon": -122.9638,
+    "count": 1
+  },
+  {
+    "city": "St Louis",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 38.6364,
+    "lon": -90.1985,
+    "count": 1
+  },
+  {
+    "city": "Slough",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 51.5368,
+    "lon": -0.6718,
+    "count": 1
+  },
+  {
+    "city": "Seattle",
+    "country": "United States",
+    "countryCode": "US",
+    "lat": 47.3066,
+    "lon": -122.2619,
+    "count": 1
+  },
+  {
+    "city": "Limerick",
+    "country": "Ireland",
+    "countryCode": "IE",
+    "lat": 52.6669,
+    "lon": -8.6274,
+    "count": 1
+  },
+  {
+    "city": "Falkenstein",
+    "country": "Germany",
+    "countryCode": "DE",
+    "lat": 50.4777,
+    "lon": 12.3649,
+    "count": 1
+  },
+  {
+    "city": "Paris",
+    "country": "France",
+    "countryCode": "FR",
+    "lat": 48.8323,
+    "lon": 2.4075,
+    "count": 1
+  },
+  {
+    "city": "Newcastle upon Tyne",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "lat": 54.9958,
+    "lon": -1.6897,
+    "count": 1
+  },
+  {
+    "city": "Sneek",
+    "country": "The Netherlands",
+    "countryCode": "NL",
+    "lat": 53.0366,
+    "lon": 5.6858,
+    "count": 1
+  }
+]
