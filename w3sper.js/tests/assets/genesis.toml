@@ -1,18 +1,19 @@
 [[stake]]
 address = 'oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu'
 amount = 1_000_000_000_000
+reward = 1_000_000_000_000
 
 [[moonlight_account]]
 address = 'oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu'
-balance = 10_100_000_000
+balance = 100_1_000_000_000_000
 
 [[moonlight_account]]
 address = 'ocXXBAafr7xFqQTpC1vfdSYdHMXerbPCED2apyUVpLjkuycsizDxwA6b9D7UW91kG58PFKqm9U9NmY9VSwufUFL5rVRSnFSYxbiKK658TF6XjHsHGBzavFJcxAzjjBRM4eF'
-balance = 8_800_000_000
+balance = 80_800_000_000_000
 
 [[moonlight_account]]
 address = 'u7bwZ53tt9s2g3sfbEqxiuXNeGBrzKNNQakAafrELah29dkKakmFf1gDk56vyYocSse7ABnsPxTDddDkMcrmf1Dgd5L3arznA1rWPHH4zsYVZdD4ctAwxMvdKbHkFCgU2Ne'
-balance = 6_060_000_000
+balance = 60_060_000_000_000
 
 [[phoenix_balance]]
 address = '4ZH3oyfTuMHyWD1Rp4e7QKp5yK6wLrWvxHneufAiYBAjvereFvfjtDvTbBcZN5ZCsaoMo49s1LKPTwGpowik6QJG'

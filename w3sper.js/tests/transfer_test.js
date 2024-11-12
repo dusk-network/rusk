@@ -172,8 +172,8 @@ test("unshield", async () => {
   const bookkeeper = new Bookkeeper(treasury);
   const bookentry = bookkeeper.as(await profiles.default);
 
-  const accountBalance = await bookentry.balance("account");
-  const addressBalance = await bookentry.balance("address");
+  const accountBalance = await bookentry.info.balance("account");
+  const addressBalance = await bookentry.info.balance("address");
 
   const transfer = bookentry.unshield(123n).gas({ limit: 500_000_000n });
 
@@ -183,8 +183,8 @@ test("unshield", async () => {
 
   await treasury.update({ accounts, addresses });
 
-  const newAccountBalance = await bookentry.balance("account");
-  const newAddressBalance = await bookentry.balance("address");
+  const newAccountBalance = await bookentry.info.balance("account");
+  const newAddressBalance = await bookentry.info.balance("address");
 
   assert.equal(newAccountBalance.value, accountBalance.value + 123n);
   assert.equal(newAddressBalance.value, addressBalance.value - 123n - gasPaid);
@@ -206,8 +206,8 @@ test("shield", async () => {
   const bookkeeper = new Bookkeeper(treasury);
   const bookentry = bookkeeper.as(await profiles.default);
 
-  const accountBalance = await bookentry.balance("account");
-  const addressBalance = await bookentry.balance("address");
+  const accountBalance = await bookentry.info.balance("account");
+  const addressBalance = await bookentry.info.balance("address");
 
   const transfer = bookentry.shield(321n).gas({ limit: 500_000_000n });
 
@@ -217,8 +217,8 @@ test("shield", async () => {
 
   await treasury.update({ accounts, addresses });
 
-  const newAccountBalance = await bookentry.balance("account");
-  const newAddressBalance = await bookentry.balance("address");
+  const newAccountBalance = await bookentry.info.balance("account");
+  const newAddressBalance = await bookentry.info.balance("address");
 
   assert.equal(newAccountBalance.value, accountBalance.value - 321n - gasPaid);
   assert.equal(newAddressBalance.value, addressBalance.value + 321n);
@@ -277,6 +277,161 @@ test("memo transfer", async () => {
   assert.equal(
     evt.memo({ as: "string" }),
     "Tarapia Tapioco, come fosse stringa",
+  );
+
+  await network.disconnect();
+});
+
+test("stake amount insufficient", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const users = [await profiles.default];
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+
+  await treasury.update({ accounts });
+
+  const bookkeeper = new Bookkeeper(treasury);
+  let bookentry = bookkeeper.as(users[0]);
+
+  const minimumStake = await bookentry.bookkeeper.minimumStake;
+
+  let transfer = bookentry
+    .stake(minimumStake - 1n)
+    .gas({ limit: 500_000_000n });
+
+  assert.reject(async () => await network.execute(transfer));
+
+  await network.disconnect();
+});
+
+test("stake twice", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const users = [await profiles.default];
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+
+  await treasury.update({ accounts });
+
+  const bookkeeper = new Bookkeeper(treasury);
+  let bookentry = bookkeeper.as(users[0]);
+
+  const accountBalance = await bookentry.info.balance("account");
+
+  const minimumStake = await bookentry.bookkeeper.minimumStake;
+
+  let transfer = bookentry.stake(minimumStake).gas({ limit: 500_000_000n });
+
+  const { hash } = await network.execute(transfer);
+
+  const evt = await network.transactions.withId(hash).once.executed();
+  const { gasPaid } = evt;
+
+  assert.equal(evt.payload.err, "Panic: Can't stake twice for the same key");
+
+  await treasury.update({ accounts });
+
+  const newAccountBalance = await bookentry.info.balance("account");
+
+  assert.equal(newAccountBalance.value, accountBalance.value - gasPaid);
+
+  await network.disconnect();
+});
+
+test("stake", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const users = [await profiles.default, await profiles.next()];
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+
+  await treasury.update({ accounts });
+
+  const bookkeeper = new Bookkeeper(treasury);
+  let bookentry = bookkeeper.as(users[1]);
+
+  const accountBalance = await bookentry.info.balance("account");
+
+  const minimumStake = await bookentry.bookkeeper.minimumStake;
+
+  let transfer = bookentry.stake(minimumStake).gas({ limit: 500_000_000n });
+
+  let stakeInfo = await bookentry.info.stake();
+
+  assert.equal(stakeInfo.amount, null);
+
+  const { hash } = await network.execute(transfer);
+
+  const evt = await network.transactions.withId(hash).once.executed();
+  const { gasPaid } = evt;
+
+  await treasury.update({ accounts });
+
+  stakeInfo = await bookentry.info.stake();
+
+  assert.equal(stakeInfo.amount?.value, transfer.attributes.amount);
+
+  const newAccountBalance = await bookentry.info.balance("account");
+
+  assert.equal(
+    newAccountBalance.value,
+    accountBalance.value - transfer.attributes.amount - gasPaid,
+  );
+
+  await network.disconnect();
+});
+
+test("unstake", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const users = [await profiles.default, await profiles.next()];
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+  const bookkeeper = new Bookkeeper(treasury);
+  const bookentry = bookkeeper.as(users[1]);
+
+  await treasury.update({ accounts });
+
+  const accountBalance = await bookentry.info.balance("account");
+  let stakeInfo = await bookentry.info.stake();
+
+  const minimumStake = await bookentry.bookkeeper.minimumStake;
+
+  assert.equal(stakeInfo.amount.eligibility, 4320n);
+  assert.equal(stakeInfo.amount.locked, 0n);
+  assert.equal(stakeInfo.amount.value, minimumStake);
+
+  let transfer = bookentry.unstake().gas({ limit: 500_000_000n });
+
+  const { hash } = await network.execute(transfer);
+
+  const evt = await network.transactions.withId(hash).once.executed();
+  const { gasPaid } = evt;
+
+  await treasury.update({ accounts });
+
+  stakeInfo = await bookentry.info.stake();
+
+  assert.equal(stakeInfo.amount, null);
+
+  const newAccountBalance = await bookentry.info.balance("account");
+
+  assert.equal(
+    newAccountBalance.value,
+    accountBalance.value + minimumStake - gasPaid,
   );
 
   await network.disconnect();

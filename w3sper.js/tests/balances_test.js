@@ -75,8 +75,11 @@ test("Balances synchronization", async () => {
   assert.equal(accountBalances[2].value, 6060000000n);
 
   const bookentry = bookkeeper.as(await profiles.default);
-  assert.equal((await bookentry.balance("address")).value, 1026179647718621n);
-  assert.equal((await bookentry.balance("account")).value, 10100000000n);
+  assert.equal(
+    (await bookentry.info.balance("address")).value,
+    1026179647718621n,
+  );
+  assert.equal((await bookentry.info.balance("account")).value, 10100000000n);
 
   await network.disconnect();
 });
