@@ -7,18 +7,13 @@
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
-use execution_core::{
-    signatures::{
-        bls::{
-            MultisigSignature, PublicKey as BlsPublicKey,
-            Signature as BlsSignature,
-        },
-        schnorr::{
-            PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
-        },
-    },
-    BlsScalar, ContractId,
+use execution_core::signatures::bls::{
+    MultisigSignature, PublicKey as BlsPublicKey, Signature as BlsSignature,
 };
+use execution_core::signatures::schnorr::{
+    PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
+};
+use execution_core::{BlsScalar, ContractId};
 use piecrust_uplink::{host_query, meta_data};
 
 use crate::{Metadata, Query};
