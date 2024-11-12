@@ -7,14 +7,13 @@
 #![deny(unused_crate_dependencies)]
 #![deny(unused_extern_crates)]
 
+use std::fs::{self, read, remove_file, write};
+use std::path::{Path, PathBuf};
+use std::{env, io};
+
 use dirs::home_dir;
 use sha2::{Digest, Sha256};
 use tracing::{info, warn};
-
-use std::env;
-use std::fs::{self, read, remove_file, write};
-use std::io;
-use std::path::{Path, PathBuf};
 
 mod theme;
 pub use theme::Theme;
