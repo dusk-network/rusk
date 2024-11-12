@@ -5,7 +5,7 @@
   import { validateMnemonic } from "bip39";
 
   import { Button, Textbox } from "$lib/dusk/components";
-  import { AppAnchorButton } from "$lib/components";
+  import { AppAnchor, AppAnchorButton, Banner } from "$lib/components";
   import { IconHeadingCard } from "$lib/containers/Cards";
   import { goto } from "$lib/navigation";
   import {
@@ -57,8 +57,8 @@
   /** @type {string} */
   let secretText = "";
 
-  /** @type {string} */
-  let errorMessage = "";
+  /** @type {null|"invalid-password"|"invalid-mnemonic"} */
+  let error = null;
 
   /** @type {import("svelte/elements").FormEventHandler<HTMLFormElement>} */
   function handleUnlockWalletSubmit() {
@@ -78,7 +78,10 @@
           goto("/setup/restore");
           return;
         }
-        errorMessage = err.message;
+        error =
+          err.message === "Wrong password"
+            ? "invalid-password"
+            : "invalid-mnemonic";
         fldSecret.focus();
         fldSecret.select();
       });
@@ -110,8 +113,22 @@
           type="password"
           autocomplete="current-password"
         />
-        {#if errorMessage}
-          <span class="login__error">{errorMessage}</span>
+        {#if error === "invalid-mnemonic"}
+          <Banner title="Invalid mnemonic phrase" variant="error">
+            <p>
+              Please ensure you have entered your 12-word mnemonic phrase, with
+              a space separating each word.
+            </p>
+          </Banner>
+        {/if}
+        {#if error === "invalid-password"}
+          <Banner title="Invalid password" variant="error">
+            <p>
+              Please ensure the password entered matches the one you have set up
+              while setting up the wallet. If you have forgotten your password,
+              you can <AppAnchor href="/setup/restore">restore</AppAnchor> your wallet.
+            </p>
+          </Banner>
         {/if}
         <Button text="Unlock Wallet" type="submit" />
         {#if modeLabel === "Password"}
@@ -149,10 +166,6 @@
 
     &__form {
       gap: var(--default-gap);
-    }
-
-    &__error {
-      color: var(--error);
     }
   }
 

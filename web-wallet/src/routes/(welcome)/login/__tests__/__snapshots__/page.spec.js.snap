@@ -2,7 +2,7 @@
 
 exports[`Login > Mnemonic phrase workflow > should render the login page and show the field to enter the mnemonic phrase, if there is no login info stored 1`] = `
 <section
-  class="login svelte-1h8yo9z"
+  class="login svelte-1e8gc2s"
 >
   <h2
     class="h1"
@@ -20,7 +20,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
   </h2>
    
   <div
-    class="login svelte-1h8yo9z"
+    class="login svelte-1e8gc2s"
   >
     <article
       class="dusk-card dusk-card--gap-medium"
@@ -64,7 +64,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
         class="dusk-card__body-container"
       >
         <form
-          class="login__form svelte-1h8yo9z"
+          class="login__form svelte-1e8gc2s"
         >
           <input
             autocomplete="current-password"
@@ -75,6 +75,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
             type="password"
           />
           
+           
            
            
           <button
@@ -96,7 +97,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
   </div>
    
   <footer
-    class="login-footer svelte-1h8yo9z"
+    class="login-footer svelte-1e8gc2s"
   >
     <a
       aria-disabled="false"
@@ -128,7 +129,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
 
 exports[`Login > Password workflow > should show the password field and the link to restore the wallet if there is login info stored 1`] = `
 <section
-  class="login svelte-1h8yo9z"
+  class="login svelte-1e8gc2s"
 >
   <h2
     class="h1"
@@ -146,7 +147,7 @@ exports[`Login > Password workflow > should show the password field and the link
   </h2>
    
   <div
-    class="login svelte-1h8yo9z"
+    class="login svelte-1e8gc2s"
   >
     <article
       class="dusk-card dusk-card--gap-medium"
@@ -190,7 +191,7 @@ exports[`Login > Password workflow > should show the password field and the link
         class="dusk-card__body-container"
       >
         <form
-          class="login__form svelte-1h8yo9z"
+          class="login__form svelte-1e8gc2s"
         >
           <input
             autocomplete="current-password"
@@ -201,6 +202,7 @@ exports[`Login > Password workflow > should show the password field and the link
             type="password"
           />
           
+           
            
            
           <button
@@ -234,7 +236,7 @@ exports[`Login > Password workflow > should show the password field and the link
   </div>
    
   <footer
-    class="login-footer svelte-1h8yo9z"
+    class="login-footer svelte-1e8gc2s"
   >
     <a
       aria-disabled="false"
