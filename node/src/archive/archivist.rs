@@ -54,7 +54,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     ArchivalData::DeletedBlock(blk_height, hex_blk_hash) => {
                         if let Err(e) = self
                             .archivist
-                            .remove_block(blk_height, &hex_blk_hash)
+                            .remove_block_and_events(blk_height, &hex_blk_hash)
                             .await
                         {
                             error!(
