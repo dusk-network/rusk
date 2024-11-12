@@ -17,7 +17,6 @@ use execution_core::{
     Error as ExecutionCoreError,
 };
 use flume::Receiver;
-use futures::{StreamExt, TryStreamExt};
 use rues::RuesHttpClient;
 use tokio::{
     task::JoinHandle,
@@ -209,47 +208,46 @@ impl State {
         Ok(tx)
     }
 
-    /// Find notes for a view key, starting from the given block height.
-    pub(crate) async fn inputs(
+    /// Selects up to MAX_INPUT_NOTES unspent input notes from the cache. The
+    /// value of the input notes need to cover the cost of the transaction.
+    pub(crate) async fn tx_input_notes(
         &self,
         index: u8,
-        target: u64,
+        tx_cost: u64,
     ) -> Result<Vec<(Note, NoteOpening, BlsScalar)>, Error> {
         let vk = derive_phoenix_vk(self.store().get_seed(), index);
         let mut sk = derive_phoenix_sk(self.store().get_seed(), index);
         let pk = derive_phoenix_pk(self.store().get_seed(), index);
 
-        let inputs: Result<Vec<_>, Error> = self
+        // fetch the cached unspent notes
+        let cached_notes: Vec<_> = self
             .cache()
             .notes(&pk)?
             .into_iter()
-            .map(|data| {
-                let note = data.note;
-                let block_height = data.block_height;
-                let nullifier = note.gen_nullifier(&sk);
-                let leaf = NoteLeaf { note, block_height };
-                Ok((nullifier, leaf))
+            .map(|note_leaf| {
+                let nullifier = note_leaf.note.gen_nullifier(&sk);
+                (nullifier, note_leaf)
             })
             .collect();
 
-        let input_notes = pick_notes(&vk, inputs?.into(), target);
+        // pick up to MAX_INPUT_NOTES input-notes that cover the tx-cost
+        let tx_input_notes = pick_notes(&vk, cached_notes.into(), tx_cost);
+        if tx_input_notes.is_empty() {
+            return Err(Error::NotEnoughBalance);
+        }
 
-        let inputs = input_notes.iter().map(|(scalar, note)| async {
-            let opening = self.fetch_opening(note.as_ref()).await?;
+        // construct the transaction input
+        let mut tx_input = Vec::<(Note, NoteOpening, BlsScalar)>::new();
+        for (nullifier, note_leaf) in tx_input_notes.iter() {
+            // fetch the openings for the input-notes
+            let opening = self.fetch_opening(note_leaf.as_ref()).await?;
 
-            Ok((note.note.clone(), opening, *scalar))
-        });
-
-        // to not overwhelm the node, we buffer the requests
-        // 10 in line
-        let inputs = futures::stream::iter(inputs)
-            .buffer_unordered(10)
-            .try_collect()
-            .await;
+            tx_input.push((note_leaf.note.clone(), opening, *nullifier));
+        }
 
         sk.zeroize();
 
-        inputs
+        Ok(tx_input)
     }
 
     pub(crate) async fn fetch_account(
