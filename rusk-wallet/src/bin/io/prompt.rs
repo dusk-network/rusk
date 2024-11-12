@@ -18,7 +18,7 @@ use bip39::{ErrorKind, Language, Mnemonic};
 use execution_core::stake::MINIMUM_STAKE;
 use requestty::{Choice, Question};
 
-use rusk_wallet::gas;
+use rusk_wallet::gas::{self, MempoolGasPrices};
 use rusk_wallet::{
     currency::{Dusk, Lux},
     dat::DatFileVersion,
@@ -306,11 +306,22 @@ pub(crate) fn request_gas_limit(default_gas_limit: u64) -> anyhow::Result<u64> {
 }
 
 /// Request gas price
-pub(crate) fn request_gas_price(min_gas_price: Lux) -> anyhow::Result<Lux> {
+pub(crate) fn request_gas_price(
+    min_gas_price: Lux,
+    mempool_gas_prices: MempoolGasPrices,
+) -> anyhow::Result<Lux> {
+    let default_gas_price = if mempool_gas_prices.average > min_gas_price {
+        mempool_gas_prices.average
+    } else {
+        min_gas_price
+    };
+
+    let default_gas_price = Dusk::from(default_gas_price).into();
     let min_gas_price = Dusk::from(min_gas_price).into();
+
     let question = requestty::Question::float("amt")
         .message("Introduce the gas price for this transaction:")
-        .default(min_gas_price)
+        .default(default_gas_price)
         .validate_on_key(|f, _| {
             check_valid_denom(f, MIN_CONVERTIBLE, MAX_CONVERTIBLE).is_ok()
         })

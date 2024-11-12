@@ -38,6 +38,7 @@ use wallet_core::{
     BalanceInfo,
 };
 
+use crate::gas::MempoolGasPrices;
 use crate::{
     clients::State,
     crypto::encrypt,
@@ -601,6 +602,21 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         if let Some(x) = &mut self.state {
             x.close();
         }
+    }
+
+    /// Get gas prices from the mempool
+    pub async fn get_mempool_gas_prices(
+        &self,
+    ) -> Result<MempoolGasPrices, Error> {
+        let client = self.state()?.client();
+
+        let response = client
+            .call("blocks", None, "gas-price", &[] as &[u8])
+            .await?;
+
+        let gas_prices: MempoolGasPrices = serde_json::from_slice(&response)?;
+
+        Ok(gas_prices)
     }
 }
 

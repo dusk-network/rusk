@@ -110,6 +110,11 @@ impl State {
         })
     }
 
+    /// Returns the reference to the client
+    pub fn client(&self) -> &RuesHttpClient {
+        &self.client
+    }
+
     pub async fn check_connection(&self) -> bool {
         self.client.check_connection().await.is_ok()
     }

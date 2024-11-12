@@ -39,7 +39,7 @@ enum MenuItem {
 
 /// Allows the user to choose the operation to perform for the
 /// selected profile
-pub(crate) fn online(
+pub(crate) async fn online(
     profile_idx: u8,
     wallet: &Wallet<WalletFile>,
     phoenix_spendable: Dusk,
@@ -102,6 +102,8 @@ pub(crate) fn online(
                 prompt::request_token_amt("transfer", balance)
             }?;
 
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
             ProfileOp::Run(Box::new(Command::Transfer {
                 sender: Some(sender),
                 rcvr,
@@ -110,7 +112,10 @@ pub(crate) fn online(
                     gas::DEFAULT_LIMIT_TRANSFER,
                 )?,
                 memo,
-                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
+                gas_price: prompt::request_gas_price(
+                    DEFAULT_PRICE,
+                    mempool_gas_prices,
+                )?,
             }))
         }
         MenuItem::Stake => {
@@ -131,11 +136,16 @@ pub(crate) fn online(
                 return Ok(ProfileOp::Stay);
             }
 
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
             ProfileOp::Run(Box::new(Command::Stake {
                 address: Some(addr),
                 amt: prompt::request_stake_token_amt(balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
+                gas_price: prompt::request_gas_price(
+                    DEFAULT_PRICE,
+                    mempool_gas_prices,
+                )?,
             }))
         }
         MenuItem::Unstake => {
@@ -156,10 +166,15 @@ pub(crate) fn online(
                 return Ok(ProfileOp::Stay);
             }
 
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
             ProfileOp::Run(Box::new(Command::Unstake {
                 address: Some(addr),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
+                gas_price: prompt::request_gas_price(
+                    DEFAULT_PRICE,
+                    mempool_gas_prices,
+                )?,
             }))
         }
         MenuItem::Withdraw => {
@@ -180,10 +195,15 @@ pub(crate) fn online(
                 return Ok(ProfileOp::Stay);
             }
 
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
             ProfileOp::Run(Box::new(Command::Withdraw {
                 address: Some(addr),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
+                gas_price: prompt::request_gas_price(
+                    DEFAULT_PRICE,
+                    mempool_gas_prices,
+                )?,
             }))
         }
         MenuItem::ContractDeploy => {
@@ -198,8 +218,13 @@ pub(crate) fn online(
             let code = prompt::request_contract_code()?;
             let code_len = code.metadata()?.len() as u64;
 
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
             // Calculate the effective cost for the deployment
-            let gas_price = prompt::request_gas_price(MIN_PRICE_DEPLOYMENT)?;
+            let gas_price = prompt::request_gas_price(
+                MIN_PRICE_DEPLOYMENT,
+                mempool_gas_prices,
+            )?;
             let gas_limit =
                 (code_len * GAS_PER_DEPLOY_BYTE) + DEFAULT_LIMIT_TRANSFER;
 
@@ -240,6 +265,8 @@ pub(crate) fn online(
                 return Ok(ProfileOp::Stay);
             }
 
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
             ProfileOp::Run(Box::new(Command::ContractCall {
                 address: Some(addr),
                 contract_id: prompt::request_bytes("contract id")?,
@@ -251,7 +278,10 @@ pub(crate) fn online(
                     "arguments of calling function",
                 )?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
+                gas_price: prompt::request_gas_price(
+                    DEFAULT_PRICE,
+                    mempool_gas_prices,
+                )?,
             }))
         }
         MenuItem::History => {
@@ -273,11 +303,16 @@ pub(crate) fn online(
                 return Ok(ProfileOp::Stay);
             }
 
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
             ProfileOp::Run(Box::new(Command::Shield {
                 profile_idx: Some(profile_idx),
                 amt: prompt::request_token_amt("convert", moonlight_balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
+                gas_price: prompt::request_gas_price(
+                    DEFAULT_PRICE,
+                    mempool_gas_prices,
+                )?,
             }))
         }
         MenuItem::Unshield => {
@@ -291,11 +326,16 @@ pub(crate) fn online(
                 return Ok(ProfileOp::Stay);
             }
 
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
             ProfileOp::Run(Box::new(Command::Unshield {
                 profile_idx: Some(profile_idx),
                 amt: prompt::request_token_amt("convert", phoenix_spendable)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price(DEFAULT_PRICE)?,
+                gas_price: prompt::request_gas_price(
+                    DEFAULT_PRICE,
+                    mempool_gas_prices,
+                )?,
             }))
         }
         MenuItem::CalculateContractId => {
