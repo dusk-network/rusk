@@ -145,18 +145,17 @@ impl SpendingId {
 
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
-    use super::*;
-    use crate::ledger::Dummy;
-    use execution_core::transfer::{
-        data::{ContractCall, TransactionData},
-        phoenix::{
-            Fee, Note, Payload as PhoenixPayload,
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            Transaction as PhoenixTransaction, TxSkeleton,
-        },
+    use execution_core::transfer::data::{ContractCall, TransactionData};
+    use execution_core::transfer::phoenix::{
+        Fee, Note, Payload as PhoenixPayload, PublicKey as PhoenixPublicKey,
+        SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
+        TxSkeleton,
     };
     use execution_core::{BlsScalar, JubJubScalar};
     use rand::Rng;
+
+    use super::*;
+    use crate::ledger::Dummy;
 
     impl<T> Dummy<T> for Transaction {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, _rng: &mut R) -> Self {

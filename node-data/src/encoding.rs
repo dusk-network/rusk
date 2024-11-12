@@ -450,10 +450,10 @@ impl Serializable for QuorumType {
 
 #[cfg(test)]
 mod tests {
-    use crate::message::payload::{Candidate, Validation};
+    use fake::{Dummy, Fake, Faker};
 
     use super::*;
-    use fake::{Dummy, Fake, Faker};
+    use crate::message::payload::{Candidate, Validation};
 
     /// Asserts if encoding/decoding of a serializable type runs properly.
     fn assert_serializable<S: Dummy<Faker> + Eq + Serializable>() {

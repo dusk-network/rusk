@@ -4,28 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{
-    bls::PublicKey,
-    message::{
-        payload::{
-            Candidate, Ratification, RatificationResult, Validation, Vote,
-        },
-        ConsensusHeader, SignInfo, SignedStepMessage,
-    },
-};
-
 use dusk_bytes::Serializable as DuskSerializeble;
-use execution_core::{
-    signatures::bls::{
-        Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
-        MultisigSignature as BlsMultisigSignature,
-    },
-    stake::EPOCH,
+use execution_core::signatures::bls::{
+    Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
+    MultisigSignature as BlsMultisigSignature,
 };
+use execution_core::stake::EPOCH;
 use thiserror::Error;
 use tracing::error;
 
 use super::*;
+use crate::bls::PublicKey;
+use crate::message::payload::{
+    Candidate, Ratification, RatificationResult, Validation, Vote,
+};
+use crate::message::{ConsensusHeader, SignInfo, SignedStepMessage};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy, Eq, PartialEq))]

@@ -4,25 +4,25 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use aes::Aes256;
-use base64::{engine::general_purpose::STANDARD as BASE64_ENGINE, Engine};
-use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, BlockModeError, Cbc};
-use dusk_bytes::{DeserializableSlice, Serializable};
-
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use serde::Serialize;
-use sha2::{Digest, Sha256};
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
-use tracing::warn;
 
+use aes::Aes256;
+use base64::engine::general_purpose::STANDARD as BASE64_ENGINE;
+use base64::Engine;
+use block_modes::block_padding::Pkcs7;
+use block_modes::{BlockMode, BlockModeError, Cbc};
+use dusk_bytes::{DeserializableSlice, Serializable};
 use execution_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use serde::Serialize;
+use sha2::{Digest, Sha256};
+use tracing::warn;
 pub const PUBLIC_BLS_SIZE: usize = BlsPublicKey::SIZE;
 
 /// Extends BlsPublicKey by implementing a few traits

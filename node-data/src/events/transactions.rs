@@ -6,10 +6,10 @@
 
 use std::collections::HashMap;
 
+use execution_core::transfer::RefundAddress;
+
 use super::*;
 use crate::ledger::{Hash, SpentTransaction, Transaction};
-
-use execution_core::transfer::RefundAddress;
 
 /// Represents events related to transactions.
 ///
@@ -58,7 +58,8 @@ impl EventSource for TransactionEvent<'_> {
         hex::encode(hash)
     }
 }
-use base64::{engine::general_purpose::STANDARD as BASE64_ENGINE, Engine};
+use base64::engine::general_purpose::STANDARD as BASE64_ENGINE;
+use base64::Engine;
 use dusk_bytes::Serializable;
 use execution_core::transfer::Transaction as ProtocolTransaction;
 use serde::ser::{Serialize, SerializeStruct, Serializer};

@@ -110,9 +110,10 @@ impl BlockWithLabel {
 
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
-    use super::*;
     use rand::Rng;
     use transaction::faker::gen_dummy_tx;
+
+    use super::*;
 
     impl<T> Dummy<T> for Block {
         /// Creates a block with 3 transactions and a random header.
