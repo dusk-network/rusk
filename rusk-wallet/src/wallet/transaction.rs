@@ -54,8 +54,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut sender_sk = self.derive_phoenix_sk(sender_idx);
         let refund_pk = self.shielded_key(sender_idx)?;
 
+        let tx_cost = amt + gas.limit * gas.price;
         let inputs = state
-            .tx_input_notes(sender_idx, amt + gas.limit * gas.price)
+            .tx_input_notes(sender_idx, tx_cost)
             .await?
             .into_iter()
             .map(|(note, opening, _nullifier)| (note, opening))
@@ -152,8 +153,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         // the same
         let receiver_pk = self.shielded_key(sender_idx)?;
 
+        let tx_cost = deposit + gas.limit * gas.price;
         let inputs = state
-            .tx_input_notes(sender_idx, deposit + gas.limit * gas.price)
+            .tx_input_notes(sender_idx, tx_cost)
             .await?
             .into_iter()
             .map(|(a, b, _)| (a, b))
@@ -264,8 +266,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let nonce = current_stake.map(|s| s.nonce).unwrap_or(0) + 1;
 
+        let tx_cost = amt + gas.limit * gas.price;
         let inputs = state
-            .tx_input_notes(profile_idx, amt + gas.limit * gas.price)
+            .tx_input_notes(profile_idx, tx_cost)
             .await?
             .into_iter()
             .map(|(a, b, _)| (a, b))
@@ -359,9 +362,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::NotStaked);
         }
 
-        let inputs = state
-            .tx_input_notes(profile_idx, gas.limit * gas.price)
-            .await?;
+        let tx_cost = gas.limit * gas.price;
+        let inputs = state.tx_input_notes(profile_idx, tx_cost).await?;
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
@@ -440,9 +442,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut sender_sk = self.derive_phoenix_sk(sender_idx);
         let mut stake_sk = self.derive_bls_sk(sender_idx);
 
-        let inputs = state
-            .tx_input_notes(sender_idx, gas.limit * gas.price)
-            .await?;
+        let tx_cost = gas.limit * gas.price;
+        let inputs = state.tx_input_notes(sender_idx, tx_cost).await?;
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
@@ -510,10 +511,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
-        let amt = *amt;
-        let inputs = state
-            .tx_input_notes(profile_idx, amt + gas.limit * gas.price)
-            .await?;
+        let tx_cost = *amt + gas.limit * gas.price;
+        let inputs = state.tx_input_notes(profile_idx, tx_cost).await?;
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
@@ -527,7 +526,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             &moonlight_sk,
             inputs,
             root,
-            amt,
+            *amt,
             gas.limit,
             gas.price,
             chain_id,
@@ -591,9 +590,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let chain_id = state.fetch_chain_id().await?;
         let root = state.fetch_root().await?;
 
-        let inputs = state
-            .tx_input_notes(sender_idx, gas.limit * gas.price)
-            .await?;
+        let tx_cost = gas.limit * gas.price;
+        let inputs = state.tx_input_notes(sender_idx, tx_cost).await?;
 
         let mut sender_sk = self.derive_phoenix_sk(sender_idx);
         let owner_pk = self.public_key(sender_idx)?;
