@@ -4,47 +4,42 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{StateClient, Store};
-
-use core::convert::Infallible;
-
 use alloc::string::FromUtf8Error;
 use alloc::vec::Vec;
+use core::convert::Infallible;
 
 use dusk_bytes::Error as BytesError;
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
+use execution_core::stake::StakeData;
+use execution_core::transfer::data::TransactionData;
+use execution_core::transfer::moonlight::{
+    AccountData, Transaction as MoonlightTransaction,
+};
+use execution_core::transfer::phoenix::{
+    Note, NoteLeaf, NoteOpening, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
+};
+use execution_core::transfer::Transaction;
+use execution_core::{BlsScalar, Error as ExecutionError};
 use rand::{CryptoRng, Error as RngError, RngCore};
 use rkyv::ser::serializers::{
     AllocScratchError, CompositeSerializerError, SharedSerializeMapError,
 };
 use rkyv::validation::validators::CheckDeserializeError;
+use rusk_prover::LocalProver;
+use wallet_core::keys::{derive_bls_sk, derive_phoenix_sk};
+use wallet_core::transaction::{
+    moonlight_deployment, moonlight_stake, moonlight_stake_reward,
+    moonlight_to_phoenix, moonlight_unstake, phoenix as phoenix_transaction,
+    phoenix_deployment, phoenix_stake, phoenix_stake_reward,
+    phoenix_to_moonlight, phoenix_unstake,
+};
+use wallet_core::{phoenix_balance, BalanceInfo};
 use zeroize::Zeroize;
 
-use execution_core::{
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::StakeData,
-    transfer::{
-        data::TransactionData,
-        moonlight::{AccountData, Transaction as MoonlightTransaction},
-        phoenix::{
-            Note, NoteLeaf, NoteOpening, PublicKey as PhoenixPublicKey,
-            SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
-        },
-        Transaction,
-    },
-    BlsScalar, Error as ExecutionError,
-};
-use rusk_prover::LocalProver;
-use wallet_core::{
-    keys::{derive_bls_sk, derive_phoenix_sk},
-    phoenix_balance,
-    transaction::{
-        moonlight_deployment, moonlight_stake, moonlight_stake_reward,
-        moonlight_to_phoenix, moonlight_unstake,
-        phoenix as phoenix_transaction, phoenix_deployment, phoenix_stake,
-        phoenix_stake_reward, phoenix_to_moonlight, phoenix_unstake,
-    },
-    BalanceInfo,
-};
+use crate::{StateClient, Store};
 
 const MAX_INPUT_NOTES: usize = 4;
 

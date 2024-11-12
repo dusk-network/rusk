@@ -15,20 +15,18 @@ extern crate alloc;
 mod imp;
 
 use alloc::vec::Vec;
-use zeroize::Zeroize;
 
-use execution_core::{
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::StakeData,
-    transfer::{
-        moonlight::AccountData,
-        phoenix::{
-            Note, NoteOpening, PublicKey as PhoenixPublicKey,
-            SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
-        },
-    },
-    BlsScalar,
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
+use execution_core::stake::StakeData;
+use execution_core::transfer::moonlight::AccountData;
+use execution_core::transfer::phoenix::{
+    Note, NoteOpening, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
+};
+use execution_core::BlsScalar;
+use zeroize::Zeroize;
 
 pub use wallet_core::keys::{
     derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
