@@ -40,7 +40,7 @@
   });
 
   const { currency, language } = $settingsStore;
-  const { name: networkName } = $networkStore;
+  const { networkName } = $networkStore;
 
   $: ({ balance, currentProfile, profiles, syncStatus } = $walletStore);
   $: if (syncStatus.isInProgress) {

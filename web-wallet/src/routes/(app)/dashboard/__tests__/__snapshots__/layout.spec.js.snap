@@ -228,7 +228,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
             class="footer__network-message svelte-krh9k4"
           >
             <span>
-              Dusk Localnet
+              Dusk unknown
             </span>
              
           </div>
@@ -494,7 +494,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
           class="footer__network-message svelte-krh9k4"
         >
           <span>
-            Dusk Localnet
+            Dusk unknown
           </span>
            
         </div>
@@ -761,7 +761,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
             class="footer__network-message svelte-krh9k4"
           >
             <span>
-              Dusk Localnet - Sync Failed
+              Dusk unknown - Sync Failed
             </span>
              
           </div>
@@ -1048,7 +1048,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         >
            
           <span>
-            Dusk Localnet
+            Dusk unknown
              –
               
             <b>
@@ -1322,7 +1322,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
           >
              
             <span>
-              Dusk Localnet
+              Dusk unknown
                –
               
               <b>

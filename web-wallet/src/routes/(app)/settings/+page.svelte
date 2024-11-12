@@ -58,7 +58,7 @@
   const currenciesToOptions = mapWith(currencyToOption);
   const { currency, darkMode, gasLimit, gasPrice } = $settingsStore;
   const { gasLimitLower, gasLimitUpper, gasPriceLower } = $gasStore;
-  const { name: networkName } = $networkStore;
+  const { networkName } = $networkStore;
 
   let isDarkMode = darkMode;
   let isGasValid = false;
@@ -90,7 +90,9 @@
         </div>
         <Badge {...connectedBadgeProps} />
       </header>
-      <h1>{networkName}</h1>
+      <strong class="h1 settings-group__label">
+        {networkName}
+      </strong>
     </article>
     <hr />
     <article class="settings-group">
@@ -239,6 +241,7 @@
     margin-bottom: 0.5em;
 
     &__header {
+      text-transform: capitalize;
       display: flex;
       align-items: center;
       gap: 0.75em;
@@ -247,6 +250,10 @@
         width: 100%;
         justify-content: space-between;
       }
+    }
+
+    &__label {
+      text-transform: capitalize;
     }
 
     &__heading {

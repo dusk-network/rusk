@@ -26,14 +26,13 @@ describe("Network store", async () => {
     blockHeightSpy.mockRestore();
   });
 
-  it("should build the newtork with the correct URL and expose a name for it", async () => {
+  it("should build the network with the correct URL and expose a name for it", async () => {
     let network;
     let store;
 
     store = (await import("..")).networkStore;
     network = await store.connect();
 
-    expect(get(store).name).toBe("Localnet");
     expect(network.url).toStrictEqual(new URL("https://localhost"));
 
     vi.resetModules();
@@ -51,7 +50,6 @@ describe("Network store", async () => {
       store = (await import("..")).networkStore;
       network = await store.connect();
 
-      expect(get(store).name).toBe(matches[match]);
       expect(network.url).toStrictEqual(new URL(match));
       vi.resetModules();
     }

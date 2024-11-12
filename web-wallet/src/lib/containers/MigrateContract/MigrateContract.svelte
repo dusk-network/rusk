@@ -27,7 +27,7 @@
     Textbox,
   } from "$lib/dusk/components";
   import { logo } from "$lib/dusk/icons";
-  import { networkStore, settingsStore, walletStore } from "$lib/stores";
+  import { settingsStore, walletStore } from "$lib/stores";
   import {
     account,
     modal,
@@ -36,7 +36,9 @@
   } from "$lib/migration/walletConnection";
   import { getBalanceOfCoin } from "$lib/migration/migration";
 
-  const { name: migrationNetwork } = $networkStore;
+  /** @type {string} */
+  export let migrationNetwork;
+
   const { darkMode } = $settingsStore;
 
   /**
