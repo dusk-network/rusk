@@ -112,6 +112,7 @@ pub(crate) async fn run_loop(
                     moonlight_bal,
                     settings,
                 )
+                .await
             };
 
             prompt::hide_cursor()?;

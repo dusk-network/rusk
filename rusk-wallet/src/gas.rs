@@ -7,6 +7,8 @@
 //! This module contains the primitive related to the gas used for transaction
 //! in the Dusk Network.
 
+use serde::Deserialize;
+
 use crate::currency::Lux;
 
 /// The minimum gas limit
@@ -88,4 +90,17 @@ impl Default for Gas {
     fn default() -> Self {
         Self::new(DEFAULT_LIMIT_TRANSFER)
     }
+}
+
+/// Dynamic gas prices information from the mempool
+#[derive(Debug, Deserialize)]
+pub struct MempoolGasPrices {
+    /// Average gas price in the mempool in [Lux]
+    pub average: Lux,
+    /// Maximum gas price in the mempool in [Lux]
+    pub max: Lux,
+    /// Median gas price in the mempool in [Lux]
+    pub median: Lux,
+    /// Minimum gas price in the mempool in [Lux]
+    pub min: Lux,
 }
