@@ -8,7 +8,6 @@ use std::net::{AddrParseError, SocketAddr};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-use crate::{BoxedFilter, Message};
 use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
@@ -19,6 +18,8 @@ use node_data::message::{AsyncQueue, Metadata, PROTOCOL_VERSION};
 use node_data::{get_current_timestamp, Serializable};
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, trace, warn};
+
+use crate::{BoxedFilter, Message};
 
 /// Number of alive peers randomly selected which a `flood_request` is sent to
 const REDUNDANCY_PEER_COUNT: usize = 8;

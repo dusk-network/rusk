@@ -8,27 +8,25 @@ mod insync;
 mod outofsync;
 mod stalled;
 
-use insync::InSyncImpl;
-use outofsync::OutOfSyncImpl;
-use stalled::StalledChainFSM;
-
-use super::acceptor::{Acceptor, RevertTarget};
-use crate::database;
-use crate::{vm, Network};
-
-use crate::database::{ConsensusStorage, Ledger};
-use metrics::counter;
-use node_data::ledger::{to_str, Attestation, Block};
-use node_data::message::payload::{Inv, Quorum, RatificationResult, Vote};
-
-use node_data::message::Metadata;
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
+
+use metrics::counter;
+use node_data::ledger::{to_str, Attestation, Block};
+use node_data::message::payload::{Inv, Quorum, RatificationResult, Vote};
+use node_data::message::Metadata;
 use tokio::sync::RwLock;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace, warn};
+
+use self::insync::InSyncImpl;
+use self::outofsync::OutOfSyncImpl;
+use self::stalled::StalledChainFSM;
+use super::acceptor::{Acceptor, RevertTarget};
+use crate::database::{ConsensusStorage, Ledger};
+use crate::{database, vm, Network};
 
 const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 

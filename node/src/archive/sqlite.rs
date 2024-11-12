@@ -9,10 +9,8 @@ use std::path::Path;
 use anyhow::Result;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
-use sqlx::{
-    sqlite::{SqliteConnectOptions, SqlitePool},
-    Pool, Sqlite,
-};
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
+use sqlx::{Pool, Sqlite};
 use tracing::{error, info, warn};
 
 use crate::archive::transformer;
@@ -470,13 +468,16 @@ mod util {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use execution_core::ContractId;
-    use node_data::events::contract::{ContractEvent, WrappedContractId};
-    use rand::{distributions::Alphanumeric, Rng};
     use std::env;
     use std::path::PathBuf;
+
+    use execution_core::ContractId;
+    use node_data::events::contract::{ContractEvent, WrappedContractId};
+    use rand::distributions::Alphanumeric;
+    use rand::Rng;
     use util::truncate_string;
+
+    use super::*;
 
     #[test]
     fn test_truncate_string() {

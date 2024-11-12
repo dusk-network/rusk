@@ -18,19 +18,17 @@ pub mod network;
 pub mod telemetry;
 pub mod vm;
 
-use async_trait::async_trait;
-use node_data::message::payload::Inv;
-use node_data::message::AsyncQueue;
-use node_data::message::Message;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Duration;
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+use async_trait::async_trait;
+use node_data::message::payload::Inv;
+use node_data::message::{AsyncQueue, Message};
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::RwLock;
 use tokio::task::JoinSet;
-use tracing::warn;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 /// Filter is used by Network implementor to filter messages before re-routing
 /// them. It's like the middleware in HTTP pipeline.

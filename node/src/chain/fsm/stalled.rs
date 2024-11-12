@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node_data::{ledger::Header, message::payload};
-
 use anyhow::{anyhow, Result};
+use node_data::ledger::Header;
+use node_data::message::payload;
 
 use super::*;
 use crate::vm::VMExecution;

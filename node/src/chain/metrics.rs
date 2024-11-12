@@ -4,12 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node_data::Serializable;
 use std::collections::VecDeque;
 use std::io;
 use std::io::{Read, Write};
 use std::ops::Div;
 use std::time::Duration;
+
+use node_data::Serializable;
 
 const AVG_VALUES_NUM: usize = 5;
 

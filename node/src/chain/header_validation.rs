@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database;
-use crate::database::Ledger;
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
 use dusk_bytes::Serializable;
 use dusk_consensus::config::{
     is_emergency_iter, MINIMUM_BLOCK_TIME, RELAX_ITERATION_THRESHOLD,
@@ -28,11 +29,12 @@ use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger, StepName};
-use std::collections::BTreeMap;
-use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::{debug, error};
+
+use crate::database;
+use crate::database::Ledger;
 
 const MARGIN_TIMESTAMP: u64 = 3;
 

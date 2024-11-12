@@ -4,16 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{database, vm, LongLivedService, Network};
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::Duration;
+
 use async_trait::async_trait;
 use memory_stats::memory_stats;
 use metrics::histogram;
 use metrics_exporter_prometheus::PrometheusBuilder;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
+
+use crate::{database, vm, LongLivedService, Network};
 
 #[derive(Default)]
 pub struct TelemetrySrv {
