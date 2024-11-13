@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::config::is_emergency_iter;
-use crate::user::cluster::Cluster;
-use crate::user::committee::Committee;
+use std::collections::{BTreeMap, HashMap};
+use std::fmt;
+
 use dusk_bytes::Serializable;
 use execution_core::signatures::bls::{
     Error as BlsSigError, MultisigSignature as BlsMultisigSignature,
@@ -15,10 +15,12 @@ use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::{to_str, StepVotes};
 use node_data::message::payload::Vote;
 use node_data::message::SignedStepMessage;
-use std::collections::{BTreeMap, HashMap};
-use std::fmt;
 use thiserror::Error;
 use tracing::{debug, error, warn};
+
+use crate::config::is_emergency_iter;
+use crate::user::cluster::Cluster;
+use crate::user::committee::Committee;
 
 /// Aggregator collects votes for Validation and Ratification steps by
 /// mapping step numbers and [StepVote] to both an aggregated signature and a
@@ -230,12 +232,8 @@ impl AggrSignature {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::aggregator::Aggregator;
-    use crate::commons::RoundUpdate;
-    use crate::user::committee::Committee;
-    use crate::user::provisioners::{Provisioners, DUSK};
-    use crate::user::sortition::Config;
+    use std::collections::HashMap;
+
     use dusk_bytes::DeserializableSlice;
     use execution_core::signatures::bls::{
         PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
@@ -243,7 +241,13 @@ mod tests {
     use hex::FromHex;
     use node_data::ledger::{Header, Seed};
     use node_data::message::StepMessage;
-    use std::collections::HashMap;
+
+    use super::*;
+    use crate::aggregator::Aggregator;
+    use crate::commons::RoundUpdate;
+    use crate::user::committee::Committee;
+    use crate::user::provisioners::{Provisioners, DUSK};
+    use crate::user::sortition::Config;
 
     impl<V> Aggregator<V> {
         pub fn get_total(&self, step: u8, vote: Vote) -> Option<usize> {

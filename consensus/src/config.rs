@@ -4,7 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{env, sync::LazyLock, time::Duration};
+use std::env;
+use std::sync::LazyLock;
+use std::time::Duration;
 
 use node_data::message::{MESSAGE_MAX_FAILED_ITERATIONS, MESSAGE_MAX_ITER};
 

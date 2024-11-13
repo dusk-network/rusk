@@ -4,13 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use node_data::message::Message;
+use node_data::StepName;
+use tracing::{debug, trace};
+
 use crate::commons::Database;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 use crate::{proposal, ratification, validation};
-use node_data::message::Message;
-use node_data::StepName;
-use tracing::{debug, trace};
 
 macro_rules! await_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {

@@ -4,17 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use async_trait::async_trait;
+use node_data::bls::PublicKeyBytes;
+use node_data::message::{Message, Payload, Status};
+use node_data::StepName;
+use tracing::{debug, warn};
+
 use crate::commons::RoundUpdate;
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
 use crate::ratification::handler::RatificationHandler;
 use crate::user::committee::Committee;
 use crate::{proposal, validation};
-use async_trait::async_trait;
-use node_data::bls::PublicKeyBytes;
-use node_data::message::{Message, Payload, Status};
-use node_data::StepName;
-use tracing::{debug, warn};
 
 /// Indicates whether an output value is available for current step execution
 /// (Step is Ready) or needs to collect data (Step is Pending)

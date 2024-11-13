@@ -4,12 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use node_data::bls::PublicKeyBytes;
+use node_data::ledger::Seed;
+use node_data::StepName;
 use num_bigint::BigInt;
 use num_bigint::Sign::Plus;
-
 use sha3::{Digest, Sha3_256};
-
-use node_data::{bls::PublicKeyBytes, ledger::Seed, StepName};
 
 use crate::config::{
     PROPOSAL_COMMITTEE_CREDITS, RATIFICATION_COMMITTEE_CREDITS,
@@ -94,17 +94,16 @@ pub fn generate_sortition_score(
 #[cfg(test)]
 mod tests {
 
-    use super::*;
-
-    use crate::user::committee::Committee;
-    use crate::user::provisioners::{Provisioners, DUSK};
-    use crate::user::sortition::Config;
     use dusk_bytes::DeserializableSlice;
     use execution_core::signatures::bls::{
         PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
     };
-
     use node_data::ledger::Seed;
+
+    use super::*;
+    use crate::user::committee::Committee;
+    use crate::user::provisioners::{Provisioners, DUSK};
+    use crate::user::sortition::Config;
 
     impl Config {
         pub fn raw(

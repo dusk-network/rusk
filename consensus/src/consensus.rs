@@ -4,27 +4,25 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::cmp;
+use std::sync::Arc;
+
+use node_data::message::{AsyncQueue, Message, Payload};
+use tokio::sync::{oneshot, Mutex};
+use tokio::task::JoinHandle;
+use tracing::{debug, error, warn, Instrument};
+
 use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
 use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::errors::ConsensusError;
+use crate::execution_ctx::ExecutionCtx;
+use crate::iteration_ctx::IterationCtx;
 use crate::operations::Operations;
 use crate::phase::Phase;
-
-use node_data::message::{AsyncQueue, Message, Payload};
-
-use crate::execution_ctx::ExecutionCtx;
-use crate::proposal;
 use crate::queue::MsgRegistry;
-use crate::user::provisioners::Provisioners;
-use crate::{ratification, validation};
-use tracing::{debug, error, warn, Instrument};
-
-use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::AttInfoRegistry;
-use std::cmp;
-use std::sync::Arc;
-use tokio::sync::{oneshot, Mutex};
-use tokio::task::JoinHandle;
+use crate::user::provisioners::Provisioners;
+use crate::{proposal, ratification, validation};
 
 pub struct Consensus<T: Operations, D: Database> {
     /// inbound is a queue of messages that comes from outside world

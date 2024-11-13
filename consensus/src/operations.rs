@@ -7,8 +7,7 @@
 use std::fmt;
 use std::time::Duration;
 
-use node_data::bls::PublicKey;
-use node_data::bls::PublicKeyBytes;
+use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::{
     Block, Fault, Header, Slash, SpentTransaction, Transaction,
 };

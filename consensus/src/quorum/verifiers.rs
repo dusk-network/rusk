@@ -4,26 +4,25 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node_data::bls::PublicKey;
-use node_data::ledger::{to_str, Seed, StepVotes};
-use node_data::message::payload::{self, Vote};
-use node_data::message::{ConsensusHeader, SignedStepMessage};
-use node_data::{Serializable, StepName};
-use tracing::error;
-
-use crate::errors::StepSigError;
-use crate::operations::Voter;
-use crate::user::cluster::Cluster;
-use crate::user::committee::{Committee, CommitteeSet};
-use crate::user::sortition;
-
-use crate::config::exclude_next_generator;
 use dusk_bytes::Serializable as BytesSerializable;
 use execution_core::signatures::bls::{
     MultisigPublicKey as BlsMultisigPublicKey,
     MultisigSignature as BlsMultisigSignature,
 };
+use node_data::bls::PublicKey;
+use node_data::ledger::{to_str, Seed, StepVotes};
+use node_data::message::payload::{self, Vote};
+use node_data::message::{ConsensusHeader, SignedStepMessage};
+use node_data::{Serializable, StepName};
 use tokio::sync::RwLock;
+use tracing::error;
+
+use crate::config::exclude_next_generator;
+use crate::errors::StepSigError;
+use crate::operations::Voter;
+use crate::user::cluster::Cluster;
+use crate::user::committee::{Committee, CommitteeSet};
+use crate::user::sortition;
 
 pub async fn verify_step_votes(
     header: &ConsensusHeader,

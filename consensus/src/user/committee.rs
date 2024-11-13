@@ -4,15 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::user::provisioners::Provisioners;
-use crate::user::sortition;
+use std::collections::{BTreeMap, HashMap};
+use std::{fmt, mem};
+
+use node_data::bls::{PublicKey, PublicKeyBytes};
 
 use super::cluster::Cluster;
 use crate::config::{majority, supermajority};
-use node_data::bls::{PublicKey, PublicKeyBytes};
-use std::collections::{BTreeMap, HashMap};
-use std::fmt;
-use std::mem;
+use crate::user::provisioners::Provisioners;
+use crate::user::sortition;
 
 #[derive(Default, Debug, Clone)]
 pub struct Committee {

@@ -7,13 +7,12 @@
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
 
-use node_data::ledger::*;
 use std::collections::HashMap;
-
 use std::time::Duration;
 
 use execution_core::signatures::bls::SecretKey as BlsSecretKey;
 use node_data::bls::PublicKey;
+use node_data::ledger::*;
 use node_data::message::{
     payload, AsyncQueue, ConsensusHeader, Message, Payload,
 };

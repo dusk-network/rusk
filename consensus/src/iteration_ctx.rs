@@ -4,33 +4,29 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Database, TimeoutSet};
 use std::cmp;
-
-use crate::config::{
-    exclude_next_generator, MAX_STEP_TIMEOUT, TIMEOUT_INCREASE,
-};
-use crate::msg_handler::MsgHandler;
-use crate::msg_handler::StepOutcome;
-
-use crate::user::committee::Committee;
-use crate::user::provisioners::Provisioners;
-use crate::user::sortition;
-
-use crate::{proposal, ratification, validation};
-use node_data::bls::PublicKeyBytes;
-
-use node_data::ledger::Seed;
-use node_data::message::{Message, Topics};
 use std::collections::HashMap;
 use std::ops::Add;
 use std::sync::Arc;
 use std::time::Duration;
+
+use node_data::bls::PublicKeyBytes;
+use node_data::ledger::Seed;
+use node_data::message::{Message, Topics};
+use node_data::StepName;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-
-use node_data::StepName;
 use tracing::debug;
+
+use crate::commons::{Database, TimeoutSet};
+use crate::config::{
+    exclude_next_generator, MAX_STEP_TIMEOUT, TIMEOUT_INCREASE,
+};
+use crate::msg_handler::{MsgHandler, StepOutcome};
+use crate::user::committee::Committee;
+use crate::user::provisioners::Provisioners;
+use crate::user::sortition;
+use crate::{proposal, ratification, validation};
 
 /// A pool of all generated committees
 #[derive(Default)]
