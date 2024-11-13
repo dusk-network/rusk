@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
+- Add temporary link to the block explorer on the dashboard [#2882]
 
 ### Changed
 
@@ -333,6 +334,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2878]: https://github.com/dusk-network/rusk/issues/2878
 [#2879]: https://github.com/dusk-network/rusk/issues/2879
 [#2880]: https://github.com/dusk-network/rusk/issues/2880
+[#2882]: https://github.com/dusk-network/rusk/issues/2882
 [#2888]: https://github.com/dusk-network/rusk/issues/2888
 [#2920]: https://github.com/dusk-network/rusk/issues/2920
 

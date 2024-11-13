@@ -6,16 +6,20 @@
     mdiArrowTopRight,
     mdiContain,
     mdiDatabaseOutline,
+    mdiListBoxOutline,
     mdiSwapHorizontal,
     mdiSwapVertical,
     mdiSync,
   } from "@mdi/js";
-  import { Icon } from "$lib/dusk/components";
+  import { AnchorButton, Icon } from "$lib/dusk/components";
   import { DashboardNav, Transactions } from "$lib/components";
-  import { settingsStore, walletStore } from "$lib/stores";
+  import { networkStore, settingsStore, walletStore } from "$lib/stores";
   import { contractDescriptors } from "$lib/contracts";
+  import IconHeadingCard from "$lib/containers/Cards/IconHeadingCard.svelte";
+  import { page } from "$app/stores";
 
   const { dashboardTransactionLimit, language } = $settingsStore;
+  const { networkName } = $networkStore;
 
   /** @param {string} contract */
   function getIconsForContract(contract) {
@@ -46,6 +50,20 @@
     }
 
     return icons;
+  }
+
+  function getExplorerPath() {
+    const isStaging = $page.url.href.includes("staging");
+    const baseUrl = isStaging ? "https://apps.staging" : "https://apps";
+
+    switch (networkName) {
+      case "devnet":
+        return `${baseUrl}.devnet.dusk.network/explorer`;
+      case "testnet":
+        return `${baseUrl}.testnet.dusk.network/explorer`;
+      default:
+        return `${baseUrl}.dusk.network/explorer`;
+    }
   }
 
   /** @type {ContractDescriptor[]} */
@@ -93,6 +111,25 @@
     isSyncing={syncStatus.isInProgress}
     syncError={syncStatus.error}
   />
+{:else}
+  <IconHeadingCard
+    gap="medium"
+    icons={[mdiListBoxOutline]}
+    heading="Transactions"
+  >
+    <p>
+      Transaction history will be available in an upcoming release. Meanwhile,
+      you can check the status of your transactions on the Dusk Block Explorer.
+    </p>
+
+    <AnchorButton
+      variant="tertiary"
+      href={getExplorerPath()}
+      text="Block Explorer"
+      rel="noopener noreferrer"
+      target="_blank"
+    />
+  </IconHeadingCard>
 {/if}
 
 <style lang="postcss">
