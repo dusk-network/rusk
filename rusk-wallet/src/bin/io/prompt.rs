@@ -43,10 +43,10 @@ pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
 }
 
 pub(crate) fn create_new_password() -> Result<String, InquireError> {
-    let pwd = Password::new("password")
+    let pwd = Password::new("Password:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Hidden)
-        .with_custom_confirmation_message("confirm password: ")
+        .with_custom_confirmation_message("Confirm password: ")
         .with_custom_confirmation_error_message("The passwords doesn't match")
         .prompt();
 
@@ -108,7 +108,8 @@ pub(crate) fn request_mnemonic_phrase() -> anyhow::Result<String> {
     // let the user input the mnemonic phrase
     let mut attempt = 1;
     loop {
-        let phrase = Text::new("Please enter the mnemonic phrase").prompt()?;
+        let phrase =
+            Text::new("Please enter the mnemonic phrase: ").prompt()?;
 
         match Mnemonic::from_phrase(&phrase, Language::English) {
             Ok(phrase) => break Ok(phrase.to_string()),
@@ -219,13 +220,13 @@ fn request_token(
         }
     };
 
-    let msg = format!("Introduce dusk amount for {}", action);
+    let msg = format!("Introduce dusk amount for {}:", action);
 
     let amount_prompt: CustomType<f64> = CustomType {
         message: &msg,
         starting_input: None,
-        formatter: &|i| format!("DUSK {}", i),
-        default_value_formatter: &|i| format!("DUSK {}", i),
+        formatter: &|i| format!("{} DUSK", i),
+        default_value_formatter: &|i| format!("{} DUSK", i),
         default,
         validators: vec![Box::new(validator)],
         placeholder: Some("123.45"),
@@ -272,7 +273,7 @@ pub(crate) fn request_stake_token_amt(balance: Dusk) -> anyhow::Result<Dusk> {
 /// Request gas limit
 pub(crate) fn request_gas_limit(default_gas_limit: u64) -> anyhow::Result<u64> {
     Ok(
-        CustomType::<u64>::new("Introduce the gas limit for this transaction")
+        CustomType::<u64>::new("Introduce the gas limit for this transaction:")
             .with_default(default_gas_limit)
             .with_validator(|n: &u64| {
                 if *n < gas::MIN_LIMIT {
@@ -359,7 +360,7 @@ pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
 
 pub(crate) fn request_bytes(name: &str) -> anyhow::Result<Vec<u8>> {
     let byte_string =
-        Text::new(format!("Introduce hex bytes for {}", name).as_str())
+        Text::new(format!("Introduce hex bytes for {}:", name).as_str())
             .with_validator(|f: &str| match hex::decode(f) {
                 Ok(_) => Ok(Validation::Valid),
                 Err(_) => Ok(Validation::Invalid("Invalid hex string".into())),
@@ -373,7 +374,7 @@ pub(crate) fn request_bytes(name: &str) -> anyhow::Result<Vec<u8>> {
 
 pub(crate) fn request_nonce() -> anyhow::Result<u64> {
     let nonce_string =
-        Text::new("Introduce a number for Contract Deployment nonce")
+        Text::new("Introduce a number for Contract Deployment nonce:")
             .with_validator(|f: &str| match u64::from_str(f) {
                 Ok(_) => Ok(Validation::Valid),
                 Err(_) => Ok(Validation::Invalid("Invalid u64 nonce".into())),
