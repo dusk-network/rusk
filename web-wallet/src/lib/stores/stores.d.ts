@@ -84,6 +84,7 @@ type WalletStoreContent = {
   currentProfile: import("$lib/vendor/w3sper.js/src/mod").Profile | null;
   initialized: boolean;
   profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>;
+  stakeInfo: StakeInfo;
   syncStatus: {
     from: bigint;
     isInProgress: boolean;
@@ -102,8 +103,6 @@ type WalletStoreServices = {
     profileGenerator: import("$lib/vendor/w3sper.js/src/mod").ProfileGenerator,
     syncFromBlock?: bigint
   ) => Promise<void>;
-
-  getStakeInfo: () => Promise<any>;
 
   getTransactionsHistory: () => Promise<any>;
 

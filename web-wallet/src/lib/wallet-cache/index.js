@@ -1,6 +1,7 @@
 import { Dexie } from "dexie";
 import {
   compose,
+  condition,
   getKey,
   getPath,
   head,
@@ -15,8 +16,8 @@ import {
   when,
 } from "lamb";
 
-/** @typedef {{ nullifiers?: Uint8Array[] } | { addresses?: string[] }} RawCriteria */
-/** @typedef {{ field: "nullifier", values: Uint8Array[] } | { field: "address", values: string[]} | undefined} Criteria */
+/** @typedef {{ nullifiers?: Uint8Array[] } | { addresses?: string[] } | { accounts?: string[] }} RawCriteria */
+/** @typedef {{ field: "nullifier", values: Uint8Array[] } | { field: "address", values: string[]} | { field: "account", values: string[]} | undefined} Criteria */
 
 /** @type {(buffer: ArrayBuffer) => Uint8Array} */
 const bufferToUint8Array = (buffer) => new Uint8Array(buffer);
@@ -45,7 +46,12 @@ const toCriteria = pipe([
   pairs,
   head,
   unless(isUndefined, (pair) => ({
-    field: pair[0] === "nullifiers" ? "nullifier" : "address",
+    field:
+      pair[0] === "nullifiers"
+        ? "nullifier"
+        : pair[0] === "addresses"
+          ? "address"
+          : "account",
     values: pair[1],
   })),
 ]);
@@ -89,6 +95,15 @@ class WalletCache {
       balancesInfo: "address",
       pendingNotesInfo: "nullifier,txId",
       spentNotes: "nullifier,address",
+      syncInfo: "++",
+      unspentNotes: "nullifier,address",
+    });
+
+    db.version(2).stores({
+      balancesInfo: "address",
+      pendingNotesInfo: "nullifier,txId",
+      spentNotes: "nullifier,address",
+      stakeInfo: "account",
       syncInfo: "++",
       unspentNotes: "nullifier,address",
     });
@@ -165,6 +180,43 @@ class WalletCache {
     return this.#getEntriesFrom("spentNotes", true, { addresses }).then(
       restoreNullifiers
     );
+  }
+
+  /**
+   * @param {string} account
+   * @returns {Promise<StakeInfo>}
+   */
+  getStakeInfo(account) {
+    return this.#getEntriesFrom("stakeInfo", false, {
+      accounts: [account],
+    })
+      .then(getPath("0.stakeInfo"))
+      .then(
+        condition(
+          isUndefined,
+          () => ({
+            amount: null,
+            faults: 0,
+            hardFaults: 0,
+            nonce: 0n,
+            reward: 0n,
+          }),
+
+          // we reinstate the `total` getter if the
+          // amount is not `null`
+          (stakeInfo) => ({
+            ...stakeInfo,
+            amount: stakeInfo.amount
+              ? {
+                  ...stakeInfo.amount,
+                  get total() {
+                    return this.value + this.locked;
+                  },
+                }
+              : null,
+          })
+        )
+      );
   }
 
   /** @returns {Promise<WalletCacheSyncInfo>} */
@@ -268,6 +320,20 @@ class WalletCache {
       .open()
       .then(async (db) => {
         await db.table("pendingNotesInfo").bulkAdd(data);
+      })
+      .finally(() => this.#db.close());
+  }
+
+  /**
+   * @param {string} account
+   * @param {StakeInfo} stakeInfo
+   * @returns {Promise<void>}
+   */
+  async setStakeInfo(account, stakeInfo) {
+    return this.#db
+      .open()
+      .then(async (db) => {
+        await db.table("stakeInfo").put({ account, stakeInfo });
       })
       .finally(() => this.#db.close());
   }

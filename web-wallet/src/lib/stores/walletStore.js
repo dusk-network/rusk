@@ -39,6 +39,13 @@ const initialState = {
   currentProfile: null,
   initialized: false,
   profiles: [],
+  stakeInfo: {
+    amount: null,
+    faults: 0,
+    hardFaults: 0,
+    nonce: 0n,
+    reward: 0n,
+  },
   syncStatus: {
     error: null,
     from: 0n,
@@ -66,7 +73,7 @@ const observeTxRemoval = (txInfo) => {
       .withId(txInfo.hash)
       .once.removed()
       .then(() => sync())
-      .finally(updateBalance)
+      .finally(updateStaticInfo)
   );
 };
 
@@ -133,6 +140,33 @@ const updateBalance = async () => {
   }));
 };
 
+/** @type {() => Promise<void>} */
+const updateStakeInfo = async () => {
+  const { currentProfile } = get(walletStore);
+
+  if (!currentProfile) {
+    return;
+  }
+
+  const stakeInfo = await bookkeeper.stakeInfo(currentProfile.account);
+
+  /**
+   * We ignore the error as the cached stake info is only
+   * a nice to have for the user.
+   */
+  await walletCache
+    .setStakeInfo(currentProfile.account.toString(), stakeInfo)
+    .catch(() => {});
+
+  update((currentStore) => ({
+    ...currentStore,
+    stakeInfo,
+  }));
+};
+
+const updateStaticInfo = () =>
+  Promise.allSettled([updateBalance(), updateStakeInfo()]);
+
 /** @type {WalletStoreServices["abortSync"]} */
 const abortSync = () => {
   window.clearTimeout(autoSyncId);
@@ -153,9 +187,6 @@ const clearLocalDataAndInit = (profileGenerator, syncFromBlock) =>
     return init(profileGenerator, syncFromBlock);
   });
 
-/** @type {WalletStoreServices["getStakeInfo"]} */
-const getStakeInfo = async () => ({ amount: 0, reward: 0 });
-
 /** @type {WalletStoreServices["getTransactionsHistory"]} */
 const getTransactionsHistory = async () => transactions;
 
@@ -164,6 +195,9 @@ async function init(profileGenerator, syncFromBlock) {
   const currentProfile = await profileGenerator.default;
   const currentAddress = currentProfile.address.toString();
   const cachedBalance = await walletCache.getBalanceInfo(currentAddress);
+  const cachedStakeInfo = await walletCache.getStakeInfo(
+    currentProfile.account.toString()
+  );
 
   treasury.setProfiles([currentProfile]);
 
@@ -173,13 +207,14 @@ async function init(profileGenerator, syncFromBlock) {
     currentProfile,
     initialized: true,
     profiles: [currentProfile],
+    stakeInfo: cachedStakeInfo,
   });
 
   sync(syncFromBlock)
     .then(() => {
       settingsStore.update(setKey("userId", currentAddress));
     })
-    .finally(updateBalance);
+    .finally(updateStaticInfo);
 }
 
 /** @type {WalletStoreServices["reset"]} */
@@ -194,7 +229,9 @@ async function setCurrentProfile(profile) {
 
   return store.profiles.includes(profile)
     ? Promise.resolve(set({ ...store, currentProfile: profile })).then(
-        updateBalance
+        async () => {
+          await updateStaticInfo();
+        }
       )
     : Promise.reject(
         new Error("The received profile is not in the known list")
@@ -282,7 +319,7 @@ async function sync(fromBlock) {
       .then(() => {
         window.clearTimeout(autoSyncId);
         autoSyncId = window.setTimeout(() => {
-          sync().finally(updateBalance);
+          sync().finally(updateStaticInfo);
         }, AUTO_SYNC_INTERVAL);
       })
       .catch((error) => {
@@ -361,7 +398,6 @@ export default {
   abortSync,
   clearLocalData,
   clearLocalDataAndInit,
-  getStakeInfo,
   getTransactionsHistory,
   init,
   reset,

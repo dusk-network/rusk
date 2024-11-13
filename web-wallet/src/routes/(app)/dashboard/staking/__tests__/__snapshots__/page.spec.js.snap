@@ -89,7 +89,7 @@ exports[`Staking > should render the staking page 1`] = `
             class="contract-statuses__value svelte-1up3579"
           >
             <span>
-              0.000000000
+              N/A
             </span>
              
             <svg
@@ -145,7 +145,6 @@ exports[`Staking > should render the staking page 1`] = `
         >
           <button
             class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
-            disabled=""
             type="button"
           >
             <svg

@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { sortWith } from "lamb";
+import { getKey, skipIn, sortWith } from "lamb";
 
 import {
+  cacheBalances,
   cachePendingNotesInfo,
   cacheSpentNotes,
+  cacheStakeInfo,
   cacheSyncInfo,
   cacheUnspentNotes,
 } from "$lib/mock-data";
@@ -22,6 +24,9 @@ const sortByDbNullifier = sortWith([
     ({ nullifier }) => new Uint8Array(nullifier).toString()
   ),
 ]);
+
+const sortByAccount = sortWith([getKey("account")]);
+const sortByAddress = sortWith([getKey("address")]);
 
 /** @type {(entry: WalletCacheNote) => WalletCacheDbNote} */
 const toDbNote = (entry) => ({
@@ -53,11 +58,25 @@ describe("fillCacheDatabase", () => {
     await db.open();
 
     await expect(
+      db.table("balancesInfo").toArray().then(sortByAddress)
+    ).resolves.toStrictEqual(sortByAddress(cacheBalances));
+    await expect(
       db.table("pendingNotesInfo").toArray().then(sortByDbNullifier)
     ).resolves.toStrictEqual(expectedPendingNotesInfo);
     await expect(
       db.table("spentNotes").toArray().then(sortByDbNullifier)
     ).resolves.toStrictEqual(expectedSpentNotes);
+    await expect(
+      db.table("stakeInfo").toArray().then(sortByAccount)
+    ).resolves.toStrictEqual(
+      sortByAccount(cacheStakeInfo).map((entry) => ({
+        ...entry,
+        stakeInfo: {
+          ...entry.stakeInfo,
+          amount: skipIn(entry.stakeInfo.amount, ["total"]),
+        },
+      }))
+    );
     await expect(db.table("syncInfo").toArray()).resolves.toStrictEqual(
       cacheSyncInfo
     );

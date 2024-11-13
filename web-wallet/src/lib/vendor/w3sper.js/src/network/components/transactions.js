@@ -5,11 +5,40 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-export class Transactions {
+import { Gas } from "../../gas.js";
+import { RuesScope } from "../../rues/scope.js";
+import { RuesEvent } from "../../rues/event.js";
+import * as base16 from "../../encoders/b16.js";
+
+class TransactionExecutedEvent extends RuesEvent {
+  constructor(type) {
+    super(type);
+  }
+
+  get gasPaid() {
+    return new Gas({
+      limit: this.payload["gas_spent"],
+      price: this.payload.inner.fee["gas_price"],
+    }).total;
+  }
+
+  memo(options = {}) {
+    const buffer = base16.decode(this.payload.inner.memo);
+
+    if (options.as === "string") {
+      return new TextDecoder().decode(buffer);
+    }
+
+    return buffer;
+  }
+}
+
+export class Transactions extends RuesScope {
   #scope = null;
 
   constructor(rues) {
-    this.#scope = rues.scope("transactions");
+    super("transactions");
+    this.#scope = rues.scope(this);
   }
 
   preverify(tx) {
@@ -44,5 +73,14 @@ export class Transactions {
 
   withId(id) {
     return this.#scope.withId(id);
+  }
+
+  eventFrom(ruesEvent) {
+    switch (ruesEvent.origin.topic) {
+      case "executed":
+        return TransactionExecutedEvent.from(ruesEvent);
+    }
+
+    return ruesEvent;
   }
 }

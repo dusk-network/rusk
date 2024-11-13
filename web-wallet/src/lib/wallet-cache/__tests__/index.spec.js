@@ -15,12 +15,14 @@ import {
   take,
   takeFrom,
   uniques,
+  updatePathIn,
 } from "lamb";
 
 import {
   cacheBalances,
   cachePendingNotesInfo,
   cacheSpentNotes,
+  cacheStakeInfo,
   cacheSyncInfo,
   cacheUnspentNotes,
 } from "$lib/mock-data";
@@ -179,6 +181,26 @@ describe("Wallet cache", () => {
       await expect(
         walletCache.getSpentNotesNullifiers(["foo"])
       ).resolves.toStrictEqual([]);
+    });
+
+    it("should expose a method to retrieve the cached stake info for a given account", async () => {
+      for (const stakeInfo of cacheStakeInfo) {
+        await expect(
+          walletCache.getStakeInfo(stakeInfo.account)
+        ).resolves.toStrictEqual(stakeInfo.stakeInfo);
+      }
+    });
+
+    it('should return "empty" stake info if none is stored in the cache for the given account', async () => {
+      await expect(
+        walletCache.getStakeInfo("fake-account")
+      ).resolves.toStrictEqual({
+        amount: null,
+        faults: 0,
+        hardFaults: 0,
+        nonce: 0n,
+        reward: 0n,
+      });
     });
 
     it("should expose a method to retrieve the sync info, which returns `{ blockHeight: 0n, bookmark: 0n }` if there is no info stored", async () => {
@@ -577,14 +599,21 @@ describe("Wallet cache", () => {
         ).resolves.toStrictEqual(balanceInfo.balance);
       }
 
+      // overwrite test
+      const modifiedBalance = updatePathIn(
+        newBalance.balance,
+        "shielded.value",
+        add(345n)
+      );
+
       await walletCache.setBalanceInfo(
         cacheBalances[0].address,
-        newBalance.balance
+        modifiedBalance
       );
 
       await expect(
         walletCache.getBalanceInfo(cacheBalances[0].address)
-      ).resolves.toStrictEqual(newBalance.balance);
+      ).resolves.toStrictEqual(modifiedBalance);
     });
 
     it("should expose a method to update the last block height", async () => {
@@ -645,6 +674,53 @@ describe("Wallet cache", () => {
           .getPendingNotesInfo(spendableNullifiers)
           .then(sortByNullifier)
       ).resolves.toStrictEqual(expectedInfo);
+    });
+
+    it("should expose a method to set the stake info of a given account", async () => {
+      const newStakeInfo = {
+        account: "fake-account",
+        stakeInfo: {
+          amount: {
+            eligibility: 123n,
+            locked: 789n,
+            get total() {
+              return this.value + this.locked;
+            },
+            value: 3456n,
+          },
+          faults: 1,
+          hardFaults: 1,
+          nonce: 10n,
+          reward: 9000n,
+        },
+      };
+
+      await walletCache.setStakeInfo(
+        newStakeInfo.account,
+        newStakeInfo.stakeInfo
+      );
+
+      for (const stakeInfo of cacheStakeInfo.concat(newStakeInfo)) {
+        await expect(
+          walletCache.getStakeInfo(stakeInfo.account)
+        ).resolves.toStrictEqual(stakeInfo.stakeInfo);
+      }
+
+      // overwrite test
+      const modifiedStakeInfo = updatePathIn(
+        newStakeInfo.stakeInfo,
+        "amount.eligibility",
+        add(345n)
+      );
+
+      await walletCache.setStakeInfo(
+        cacheStakeInfo[0].account,
+        modifiedStakeInfo
+      );
+
+      await expect(
+        walletCache.getStakeInfo(cacheStakeInfo[0].account)
+      ).resolves.toStrictEqual(modifiedStakeInfo);
     });
 
     it("should expose a method to convert notes in the w3sper map format into the one used by the cache", () => {

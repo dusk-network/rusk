@@ -8,6 +8,7 @@
 import { CallableProxy } from "./callable.js";
 import { ListenerProxy } from "./listener.js";
 import { RuesEvent } from "./event.js";
+import { RuesScope } from "./scope.js";
 
 const _rues = Symbol("rues");
 
@@ -64,11 +65,14 @@ class RuesTarget {
 export class Rues extends EventTarget {
   #url;
   #socket;
+  #scopes;
   #session;
   #version = "0.8.0";
 
   constructor(url, options = {}) {
     super();
+
+    this.#scopes = new Map();
 
     if (typeof url === "string") {
       this.#url = new URL(url);
@@ -155,7 +159,16 @@ export class Rues extends EventTarget {
     return this.#socket?.readyState === WebSocket.OPEN;
   }
 
-  scope(name, options = {}) {
+  scope(source, options = {}) {
+    let name;
+
+    if (typeof source === "string") {
+      name = source;
+    } else if (source instanceof RuesScope) {
+      ({ name } = source);
+      this.#scopes.set(name, source);
+    }
+
     const target = new RuesTarget(name, options);
     target[_rues] = this;
 
@@ -165,6 +178,13 @@ export class Rues extends EventTarget {
   handleEvent(event) {
     if (event instanceof MessageEvent) {
       let ruesEvent = RuesEvent.from(event);
+
+      const scope = this.#scopes.get(ruesEvent.origin.scope);
+
+      if (scope) {
+        ruesEvent = scope.eventFrom(ruesEvent);
+      }
+
       let ruesComponentEvent = RuesEvent.from(ruesEvent, { as: "component" });
 
       this.dispatchEvent(ruesEvent);

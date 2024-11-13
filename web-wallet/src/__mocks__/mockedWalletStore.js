@@ -1,5 +1,7 @@
 import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/profile";
 
+import { stakeInfo } from "$lib/mock-data";
+
 import { mockReadableStore } from "$lib/dusk/test-helpers";
 
 const seed = new Uint8Array(64);
@@ -20,6 +22,7 @@ const content = {
   currentProfile,
   initialized: true,
   profiles,
+  stakeInfo,
   syncStatus: {
     error: null,
     from: 0n,

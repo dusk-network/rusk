@@ -10,6 +10,9 @@ class WalletTreasury {
 
   #profiles;
 
+  /** @type {StakeInfo[]} */
+  #accountStakeInfo = [];
+
   /** @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles */
   constructor(profiles = []) {
     this.#profiles = profiles;
@@ -60,6 +63,23 @@ class WalletTreasury {
   }
 
   /**
+   * @param {import("$lib/vendor/w3sper.js/src/mod").Profile["account"]} identifier
+   * @returns {Promise<StakeInfo>}
+   */
+  async stakeInfo(identifier) {
+    const stakeInfo = this.#accountStakeInfo.at(+identifier);
+
+    return (
+      stakeInfo ??
+      Promise.reject(
+        new Error(
+          "No stake info found for the account with the given identifier"
+        )
+      )
+    );
+  }
+
+  /**
    * @param {bigint | import("$lib/vendor/w3sper.js/src/mod").Bookmark} from
    * @param {(evt: CustomEvent) => void} syncIterationListener
    * @param {AbortSignal} signal
@@ -72,7 +92,10 @@ class WalletTreasury {
     // @ts-ignore
     addressSyncer.addEventListener("synciteration", syncIterationListener);
 
-    this.#accountBalances = await accountSyncer.balances(this.#profiles);
+    [this.#accountBalances, this.#accountStakeInfo] = await Promise.all([
+      accountSyncer.balances(this.#profiles),
+      accountSyncer.stakes(this.#profiles),
+    ]);
 
     const notesStream = await addressSyncer.notes(this.#profiles, {
       from,
