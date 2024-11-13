@@ -13,9 +13,8 @@ use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
-use rkyv::{
-    ser::serializers::AllocSerializer, Archive, Deserialize, Serialize,
-};
+use rkyv::ser::serializers::AllocSerializer;
+use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{ContractId, Error, ARGBUF_LEN};
 

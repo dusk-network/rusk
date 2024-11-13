@@ -4,21 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use execution_core::{
-    signatures::bls::{
-        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
-    },
-    transfer::{
-        data::{ContractCall, TransactionData, MAX_MEMO_SIZE},
-        phoenix::{
-            Note, NoteOpening, NoteTreeItem, NotesTree, Prove,
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            TxCircuitVec,
-        },
-        Transaction,
-    },
-    Error, JubJubScalar,
+use execution_core::signatures::bls::{
+    PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
+use execution_core::transfer::data::{
+    ContractCall, TransactionData, MAX_MEMO_SIZE,
+};
+use execution_core::transfer::phoenix::{
+    Note, NoteOpening, NoteTreeItem, NotesTree, Prove,
+    PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey, TxCircuitVec,
+};
+use execution_core::transfer::Transaction;
+use execution_core::{Error, JubJubScalar};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
