@@ -12,6 +12,15 @@ function getCacheDatabase() {
     unspentNotes: "nullifier,address",
   });
 
+  db.version(2).stores({
+    balancesInfo: "address",
+    pendingNotesInfo: "nullifier,txId",
+    spentNotes: "nullifier,address",
+    stakeInfo: "account",
+    syncInfo: "++",
+    unspentNotes: "nullifier,address",
+  });
+
   return db;
 }
 

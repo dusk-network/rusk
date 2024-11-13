@@ -17,14 +17,23 @@ type WalletCacheDbNote = Omit<WalletCacheNote, "note" | "nullifier"> & {
   nullifier: ArrayBuffer;
 };
 
+type WalletCacheDbStakeInfo = {
+  account: string;
+  stakeInfo: Omit<StakeInfo, "amount"> & {
+    amount: null | Omit<Exclude<StakeAmount, null>, "total">;
+  };
+};
+
 type WalletCacheGetDataType<T extends WalletCacheTableName> =
   T extends "balancesInfo"
     ? WalletCacheBalanceInfo[]
     : T extends "pendingNotesInfo"
       ? WalletCacheDbPendingNoteInfo[]
-      : T extends "syncInfo"
-        ? WalletCacheSyncInfo[]
-        : WalletCacheDbNote[];
+      : T extends "stakeInfo"
+        ? WalletCacheDbStakeInfo[]
+        : T extends "syncInfo"
+          ? WalletCacheSyncInfo[]
+          : WalletCacheDbNote[];
 
 type WalletCacheGetEntriesReturnType<
   T extends WalletCacheTableName,
@@ -35,7 +44,9 @@ type WalletCacheGetEntriesReturnType<
     ? never
     : T extends "balancesInfo"
       ? never
-      : ArrayBuffer[];
+      : T extends "stakeInfo"
+        ? never
+        : ArrayBuffer[];
 
 type WalletCacheHistoryEntry = {
   history: Transaction[];
@@ -67,4 +78,5 @@ type WalletCacheTableName =
   | "pendingNotesInfo"
   | "syncInfo"
   | "spentNotes"
+  | "stakeInfo"
   | "unspentNotes";

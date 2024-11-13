@@ -1,10 +1,11 @@
-import { mapWith } from "lamb";
+import { mapWith, skipIn } from "lamb";
 import { getCacheDatabase } from ".";
 
 import {
   cacheBalances,
   cachePendingNotesInfo,
   cacheSpentNotes,
+  cacheStakeInfo,
   cacheSyncInfo,
   cacheUnspentNotes,
 } from "$lib/mock-data";
@@ -27,6 +28,23 @@ const fixNotes = mapWith((record) => ({
   nullifier: record.nullifier.buffer,
 }));
 
+/**
+ * In IndexedDB objects with a getter will be
+ * written without the getter.
+ *
+ * In `fake-indexeddb` apparently the getter is
+ * written as a normal prop.
+ *
+ * Hence we remove it to simulate the real situation.
+ */
+const fixStakeInfo = mapWith((entry) => ({
+  ...entry,
+  stakeInfo: {
+    ...entry.stakeInfo,
+    amount: skipIn(entry.stakeInfo.amount, ["total"]),
+  },
+}));
+
 /** @type {() => Promise<void>} */
 async function fillCacheDatabase() {
   const db = getCacheDatabase();
@@ -40,6 +58,7 @@ async function fillCacheDatabase() {
         "balancesInfo",
         "pendingNotesInfo",
         "spentNotes",
+        "stakeInfo",
         "syncInfo",
         "unspentNotes",
       ],
@@ -49,6 +68,7 @@ async function fillCacheDatabase() {
           .table("pendingNotesInfo")
           .bulkPut(fixPending(cachePendingNotesInfo));
         await db.table("spentNotes").bulkPut(fixNotes(cacheSpentNotes));
+        await db.table("stakeInfo").bulkPut(fixStakeInfo(cacheStakeInfo));
         await db.table("syncInfo").bulkPut(cacheSyncInfo);
         await db.table("unspentNotes").bulkPut(fixNotes(cacheUnspentNotes));
       }

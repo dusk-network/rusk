@@ -128,5 +128,38 @@ describe("WalletTreasury", () => {
       ).toStrictEqual(sortNullifiers(pluckFrom(expectedNotes, "note")));
       expect(unspentNotesMapB).toStrictEqual(new Map());
     });
+
+    it("should implement the `stakeInfo` method of the treasury interface to retrieve the stake info for a given account", async () => {
+      const abortController = new AbortController();
+
+      await walletTreasury.update(0n, () => {}, abortController.signal);
+
+      // @ts-expect-error We don't care to pass a real `Key` object right now
+      await expect(walletTreasury.stakeInfo(fakeKey)).resolves.toStrictEqual(
+        expect.objectContaining({
+          amount: expect.objectContaining({
+            eligibility: expect.any(BigInt),
+            locked: expect.any(BigInt),
+            total: expect.any(BigInt),
+            value: expect.any(BigInt),
+          }),
+          faults: expect.any(Number),
+          hardFaults: expect.any(Number),
+          nonce: expect.any(BigInt),
+          reward: expect.any(BigInt),
+        })
+      );
+    });
+
+    it("should return a rejected promise if the `stakeInfo` method isn't able to find the stake info for the given account", async () => {
+      await expect(
+        // @ts-expect-error We don't care to pass a real `Key` object right now
+        walletTreasury.stakeInfo({
+          toString() {
+            return "non-existent address";
+          },
+        })
+      ).rejects.toThrow();
+    });
   });
 });

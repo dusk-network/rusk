@@ -14,7 +14,7 @@
   import { mdiArrowLeft } from "@mdi/js";
   import { Gas } from "$lib/vendor/w3sper.js/src/mod";
 
-  import { createCurrencyFormatter } from "$lib/dusk/currency";
+  import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
   import { getLastTransactionHash } from "$lib/transactions";
   import {
     gasStore,
@@ -35,6 +35,14 @@
 
   const gasLimits = $gasStore;
 
+  /**
+   * Temporary replacement for the old `walletStore.getStakeInfo`
+   * function.
+   * The UI needs to be updated to just use the `stakeInfo` property
+   * directly.
+   */
+  const getStakeInfo = async () => $walletStore.stakeInfo;
+
   const collectSettings = collect([
     pick([
       "gasLimit",
@@ -47,11 +55,11 @@
     getKey("minAllowedStake"),
   ]);
 
-  /** @type {Record<string, (info: WalletStakeInfo) => boolean>} */
+  /** @type {Record<string, (info: StakeInfo) => boolean>} */
   const disablingConditions = {
-    stake: (info) => info.has_staked,
-    unstake: (info) => !info.has_staked,
-    "withdraw-rewards": (info) => info.reward <= 0,
+    stake: (info) => !!info.amount,
+    unstake: (info) => !info.amount || info.amount.total === 0n,
+    "withdraw-rewards": (info) => info.reward <= 0n,
   };
 
   /** @type {Record<StakeType, (...args: any[]) => Promise<string>>} */
@@ -83,7 +91,7 @@
    * otherwise the descriptor takes precedence.
    *
    * @param {ContractOperation[]} operations
-   * @param {WalletStakeInfo} stakeInfo
+   * @param {StakeInfo} stakeInfo
    * @returns {ContractOperation[]}
    */
   const getOperations = (operations, stakeInfo) =>
@@ -96,27 +104,29 @@
     );
 
   /**
-   * @param {WalletStakeInfo} stakeInfo
+   * @param {StakeInfo} stakeInfo
    * @param {bigint} spendable
    * @returns {ContractStatus[]}
    */
   const getStatuses = (stakeInfo, spendable) => [
     {
       label: "Spendable",
-      value: duskFormatter(spendable),
+      value: duskFormatter(luxToDusk(spendable)),
     },
     {
       label: "Total Locked",
-      value: duskFormatter(stakeInfo.amount),
+      value: stakeInfo.amount
+        ? duskFormatter(luxToDusk(stakeInfo.amount.locked))
+        : "N/A",
     },
     {
       label: "Rewards",
-      value: duskFormatter(stakeInfo.reward),
+      value: duskFormatter(luxToDusk(stakeInfo.reward)),
     },
   ];
 
   /**
-   * @param {WalletStakeInfo} stakeInfo
+   * @param {StakeInfo} stakeInfo
    * @returns {(operation: ContractOperation) => ContractOperation}
    */
   const updateOperationDisabledStatus = (stakeInfo) => (operation) => ({
@@ -137,7 +147,7 @@
     gap="medium"
     errorMessage="Failed to retrieve stake info"
     errorVariant="details"
-    waitFor={walletStore.getStakeInfo()}
+    waitFor={getStakeInfo()}
   >
     <svelte:fragment slot="pending-content">
       {#if !syncStatus.isInProgress && !syncStatus.error}
@@ -161,9 +171,9 @@
           {minAllowedStake}
           on:operationChange
           on:suppressStakingNotice
-          rewards={stakeInfo.reward}
+          rewards={luxToDusk(stakeInfo.reward)}
           spendable={balance.shielded.spendable}
-          staked={stakeInfo.amount}
+          staked={stakeInfo.amount ? luxToDusk(stakeInfo.amount.total) : 0}
           {statuses}
           {hideStakingNotice}
         />

@@ -574,6 +574,15 @@ export const moonlight = async (info) =>
     let tx = await malloc(4);
     let hash = await malloc(64);
 
+    const data = serializeMemo(info.data);
+
+    if (data) {
+      ptr.data = await malloc(data.byteLength);
+      await memcpy(ptr.data, data);
+    } else {
+      ptr.data = null;
+    }
+
     // Copy the value to the WASM memory
     const code = await moonlight(
       ptr.seed,
@@ -585,7 +594,7 @@ export const moonlight = async (info) =>
       ptr.gas_price,
       ptr.nonce,
       info.chainId,
-      info.data,
+      ptr.data,
       tx,
       hash
     );
@@ -783,3 +792,28 @@ export const shield = async (info) =>
     hash = new TextDecoder().decode(await memcpy(null, hash, 64));
     return [tx_buffer, hash];
   })();
+
+function serializeMemo(memo) {
+  if (!memo) {
+    return null;
+  }
+
+  let buffer = null;
+  if (typeof memo === "string") {
+    buffer = new TextEncoder().encode(memo);
+  } else if (memo instanceof ArrayBuffer) {
+    buffer = new Uint8Array(memo);
+  } else if (memo instanceof Uint8Array) {
+    buffer = memo;
+  }
+
+  if (!buffer) {
+    return null;
+  }
+
+  const memoBuffer = new Uint8Array(1 + buffer.byteLength);
+  memoBuffer[0] = 3; // Memo type
+  memoBuffer.set(buffer, 1);
+
+  return new Uint8Array(DataBuffer.from(memoBuffer));
+}
