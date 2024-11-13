@@ -27,6 +27,8 @@ pub enum ErrorCode {
     PhoenixTransactionError = 252,
     // Moonlight Transaction error
     MoonlightTransactionError = 251,
+    // Contract Call Error
+    ContractCallError = 250,
     // Success
     Ok = 0,
 }
