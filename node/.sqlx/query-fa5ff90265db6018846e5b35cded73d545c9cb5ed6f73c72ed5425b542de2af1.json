@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "UPDATE archive SET finalized = 1 WHERE block_hash = ?\n            RETURNING block_height, json_contract_events\n            ",
+  "query": "SELECT * FROM unfinalized_blocks WHERE block_hash = ?",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Integer"
       },
       {
-        "name": "json_contract_events",
+        "name": "block_hash",
         "ordinal": 1,
         "type_info": "Text"
       }
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "615a87effc582024c4b36d63d0ac5a9a0a4b1e6e7385e715a50025bff7509fdf"
+  "hash": "fa5ff90265db6018846e5b35cded73d545c9cb5ed6f73c72ed5425b542de2af1"
 }

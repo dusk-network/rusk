@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "origin",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "topic",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "source",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "data",
+        "ordinal": 3,
+        "type_info": "Blob"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ef20285bf30a8737f5c5dc59e8b126e772f22f1f3f33d8404bfac80691a432da"
+}

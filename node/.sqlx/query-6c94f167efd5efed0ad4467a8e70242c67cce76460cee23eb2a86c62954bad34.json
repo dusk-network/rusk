@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO finalized_blocks (block_height, block_hash) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6c94f167efd5efed0ad4467a8e70242c67cce76460cee23eb2a86c62954bad34"
+}

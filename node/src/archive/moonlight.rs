@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -12,7 +13,7 @@ use core::result::Result as CoreResult;
 use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use node_data::events::contract::ContractEvent;
-use node_data::events::contract::{ContractTxEvent, OriginHash};
+use node_data::events::contract::OriginHash;
 use rocksdb::{
     BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice,
     LogLevel, OptimisticTransactionDB, Options,
@@ -21,7 +22,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, warn};
 
 use crate::archive::transformer::{
-    self, MoonlightTx, MoonlightTxEvents, MoonlightTxMapping,
+    self, EventIdentifier, MoonlightTxEvents, MoonlightTxMapping,
 };
 use crate::archive::{Archive, ArchiveOptions};
 
@@ -144,12 +145,11 @@ impl Archive {
     ///
     /// # Arguments
     ///
-    /// * `block_events` - All contract events from a finalized block.
-    /// * `block_height` - The height of the finalized block.
+    /// * `grouped_events` - List of ContractTxEvent grouped by TxIdentifier
+    ///   from a finalized block.
     pub(super) fn tl_moonlight(
         &self,
-        block_events: Vec<ContractTxEvent>,
-        block_height: u64,
+        grouped_events: BTreeMap<EventIdentifier, Vec<ContractEvent>>,
     ) -> Result<()> {
         debug!("Loading moonlight transaction events into the moonlight db");
 
@@ -158,10 +158,7 @@ impl Archive {
             address_inflow_mappings,
             memo_mappings,
             moonlight_tx_mappings,
-        } = transformer::group_by_origins_filter_and_convert(
-            block_events,
-            block_height,
-        );
+        } = transformer::filter_and_convert(grouped_events);
 
         debug!(
             "Found {} moonlight transactions",
@@ -199,7 +196,7 @@ impl Archive {
     fn update_inflow_address_tx(
         &self,
         pk: AccountPublicKey,
-        moonlight_tx: MoonlightTx,
+        moonlight_tx: EventIdentifier,
     ) -> Result<()> {
         let key = pk.to_bytes();
         self.append_moonlight_tx(
@@ -214,7 +211,7 @@ impl Archive {
     fn update_outflow_address_tx(
         &self,
         pk: AccountPublicKey,
-        moonlight_tx: MoonlightTx,
+        moonlight_tx: EventIdentifier,
     ) -> Result<()> {
         let key = pk.to_bytes();
         self.append_moonlight_tx(
@@ -228,7 +225,7 @@ impl Archive {
     fn update_memo_tx(
         &self,
         memo: Vec<u8>,
-        moonlight_tx: MoonlightTx,
+        moonlight_tx: EventIdentifier,
     ) -> Result<()> {
         self.append_moonlight_tx(self.cf_memo_tx()?, &memo, moonlight_tx)
     }
@@ -293,7 +290,7 @@ impl Archive {
     /// Get a vector of MoonlightGroup for a given vector of MoonlightTx.
     fn moonlight_groups(
         &self,
-        moonlight_tx: Vec<MoonlightTx>,
+        moonlight_tx: Vec<EventIdentifier>,
     ) -> Result<Option<Vec<MoonlightGroup>>> {
         let multi_get = self.multi_get_moonlight_events(&moonlight_tx);
 
@@ -307,7 +304,7 @@ impl Archive {
 
         for (
             serialized_event,
-            MoonlightTx {
+            EventIdentifier {
                 block_height,
                 tx_hash,
             },
@@ -364,7 +361,7 @@ impl Archive {
         to_block: Option<u64>,
         max_count: Option<usize>,
         page_count: Option<usize>,
-    ) -> Result<Option<Vec<MoonlightTx>>> {
+    ) -> Result<Option<Vec<EventIdentifier>>> {
         let max_count = max_count.unwrap_or(DEFAULT_MAX_COUNT);
         // None and Page 1 = 0, Page 2 = 1, Page 3 = 2, ...
         let page_count = page_count.map(|p| p - 1).unwrap_or(0);
@@ -459,7 +456,7 @@ impl Archive {
         &self,
         cf: &ColumnFamily,
         key: &[u8],
-        moonlight_tx: MoonlightTx,
+        moonlight_tx: EventIdentifier,
     ) -> Result<()> {
         let txn = self.moonlight_db.transaction();
 
@@ -467,7 +464,7 @@ impl Archive {
 
         if let Some(tx_hashes) = existing_tx_hashes {
             let mut moonlight_txs =
-                serde_json::from_slice::<Vec<MoonlightTx>>(&tx_hashes)?;
+                serde_json::from_slice::<Vec<EventIdentifier>>(&tx_hashes)?;
 
             // Append the new TxHash to the existing tx hashes
             moonlight_txs.push(moonlight_tx);
@@ -491,7 +488,7 @@ impl Archive {
     /// Insert new moonlight event(s) for a MoonlightTx.
     fn put_moonlight_events(
         &self,
-        moonlight_tx: MoonlightTx,
+        moonlight_tx: EventIdentifier,
         events: MoonlightTxEvents,
     ) -> Result<()> {
         let txn = self.moonlight_db.transaction();
@@ -519,14 +516,14 @@ impl Archive {
     fn get_moonlight_outflow_tx(
         &self,
         sender: AccountPublicKey,
-    ) -> Result<Option<Vec<MoonlightTx>>> {
+    ) -> Result<Option<Vec<EventIdentifier>>> {
         // Note: We can likely only partially read (also with binary search)
         // the tx_hashes through wide_column & PinnableWideColumns
         if let Some(tx_hashes) = self
             .moonlight_db
             .get_cf(self.cf_m_outflow_address_tx()?, sender.to_bytes())?
         {
-            Ok(Some(serde_json::from_slice::<Vec<MoonlightTx>>(
+            Ok(Some(serde_json::from_slice::<Vec<EventIdentifier>>(
                 &tx_hashes,
             )?))
         } else {
@@ -537,14 +534,14 @@ impl Archive {
     fn get_moonlight_inflow_tx(
         &self,
         receiver: AccountPublicKey,
-    ) -> Result<Option<Vec<MoonlightTx>>> {
+    ) -> Result<Option<Vec<EventIdentifier>>> {
         // Note: We can likely only partially read (also with binary search)
         // the tx_hashes through wide_column & PinnableWideColumns
         if let Some(tx_hashes) = self
             .moonlight_db
             .get_cf(self.cf_m_inflow_address_tx()?, receiver.to_bytes())?
         {
-            Ok(Some(serde_json::from_slice::<Vec<MoonlightTx>>(
+            Ok(Some(serde_json::from_slice::<Vec<EventIdentifier>>(
                 &tx_hashes,
             )?))
         } else {
@@ -557,11 +554,11 @@ impl Archive {
     fn get_memo_txhashes(
         &self,
         memo: Vec<u8>,
-    ) -> Result<Option<Vec<MoonlightTx>>> {
+    ) -> Result<Option<Vec<EventIdentifier>>> {
         if let Some(moonlight_tx) =
             self.moonlight_db.get_cf(self.cf_memo_tx()?, memo)?
         {
-            Ok(Some(serde_json::from_slice::<Vec<MoonlightTx>>(
+            Ok(Some(serde_json::from_slice::<Vec<EventIdentifier>>(
                 &moonlight_tx,
             )?))
         } else {
@@ -572,8 +569,8 @@ impl Archive {
     /// Get data to construct MoonlightGroup for a given MoonlightTx.
     pub fn get_moonlight_events(
         &self,
-        moonlight_tx: MoonlightTx,
-    ) -> Result<Option<(MoonlightTx, Vec<u8>)>> {
+        moonlight_tx: EventIdentifier,
+    ) -> Result<Option<(EventIdentifier, Vec<u8>)>> {
         if let Some(events) = self
             .moonlight_db
             .get_cf(self.cf_txhash_moonlight_events()?, moonlight_tx.origin())?
@@ -587,7 +584,7 @@ impl Archive {
     /// Get multiple MoonlightTxEvents for a given list of MoonlightTx.
     fn multi_get_moonlight_events(
         &self,
-        moonlight_txs: &[MoonlightTx],
+        moonlight_txs: &[EventIdentifier],
     ) -> Vec<CoreResult<Option<DBPinnableSlice>, rocksdb::Error>> {
         let cf = match self.cf_txhash_moonlight_events() {
             Ok(cf) => cf,
@@ -610,13 +607,13 @@ impl Archive {
 mod util {
     use tracing::warn;
 
-    use super::{AccountPublicKey, MoonlightTx, Serializable};
+    use super::{AccountPublicKey, EventIdentifier, Serializable};
 
     /// Return the intersection of two vectors of MoonlightTx.
     pub(super) fn intersection(
-        inflows: Vec<MoonlightTx>,
-        outflows: Vec<MoonlightTx>,
-    ) -> Option<Vec<MoonlightTx>> {
+        inflows: Vec<EventIdentifier>,
+        outflows: Vec<EventIdentifier>,
+    ) -> Option<Vec<EventIdentifier>> {
         let intersection = inflows
             .into_iter()
             .filter(|inflow_tx| {
@@ -635,7 +632,7 @@ mod util {
                         outflows[idx].origin() == inflow_tx.origin()
                     })
             })
-            .collect::<Vec<MoonlightTx>>();
+            .collect::<Vec<EventIdentifier>>();
 
         if intersection.is_empty() {
             None
@@ -646,12 +643,12 @@ mod util {
 
     /// Limit the number of MoonlightTx returned based on the passed arguments.
     pub(super) fn limit(
-        moonlight_tx: Option<Vec<MoonlightTx>>,
+        moonlight_tx: Option<Vec<EventIdentifier>>,
         from_block: Option<u64>,
         to_block: Option<u64>,
         max_count: usize,
         page_count: usize,
-    ) -> Option<Vec<MoonlightTx>> {
+    ) -> Option<Vec<EventIdentifier>> {
         if let Some(mut moonlight_tx) = moonlight_tx {
             if let Some(to_block) = to_block {
                 // Remove all transactions that are above the to_block
@@ -677,7 +674,7 @@ mod util {
                 .into_iter()
                 .skip(lower_bound_idx + (page_count * max_count))
                 .take(max_count)
-                .collect::<Vec<MoonlightTx>>();
+                .collect::<Vec<EventIdentifier>>();
 
             if limited.is_empty() {
                 None
@@ -690,7 +687,7 @@ mod util {
     }
 
     /// Find lower bound for MoonlightTx.
-    fn lower_bound(moonlight_tx: &Vec<MoonlightTx>, target: u64) -> usize {
+    fn lower_bound(moonlight_tx: &Vec<EventIdentifier>, target: u64) -> usize {
         let mut left = 0;
         let mut right = moonlight_tx.len();
 
@@ -708,8 +705,8 @@ mod util {
 
     /// Check and remove duplicates from a list of address mappings.
     pub(super) fn check_duplicates(
-        address_mappings: Vec<(AccountPublicKey, MoonlightTx)>,
-    ) -> Vec<(AccountPublicKey, MoonlightTx)> {
+        address_mappings: Vec<(AccountPublicKey, EventIdentifier)>,
+    ) -> Vec<(AccountPublicKey, EventIdentifier)> {
         let len_before = address_mappings.len();
         let mut seen = std::collections::HashSet::new();
         let mut deduped = Vec::new();
@@ -740,19 +737,15 @@ mod tests {
     };
     use execution_core::{ContractId, CONTRACT_ID_BYTES};
     use node_data::events::contract::{
-        ContractEvent, WrappedContractId, ORIGIN_HASH_BYTES,
+        ContractEvent, ContractTxEvent, WrappedContractId, ORIGIN_HASH_BYTES,
     };
     use rand::distributions::Alphanumeric;
     use rand::rngs::StdRng;
-    use rand::{CryptoRng, RngCore};
-    use rand::{Rng, SeedableRng};
+    use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
-    use super::transformer::{
-        group_by_origins_filter_and_convert, TransormerResult,
-    };
+    use super::transformer::{self, filter_and_convert, TransormerResult};
     use super::{
-        AccountPublicKey, Archive, ContractTxEvent, MoonlightTx,
-        MoonlightTxEvents,
+        AccountPublicKey, Archive, EventIdentifier, MoonlightTxEvents,
     };
 
     // Construct a random test directory path in the temp folder of the OS
@@ -777,7 +770,7 @@ mod tests {
                 topic: topic.to_owned(),
                 data: vec![1, 6, 1, 8],
             },
-            origin: Some([0; 32]),
+            origin: [0; 32],
         }
     }
 
@@ -794,7 +787,7 @@ mod tests {
                     .unwrap()
                     .to_vec(),
             },
-            origin: Some([0; 32]),
+            origin: [0; 32],
         }
     }
 
@@ -815,7 +808,7 @@ mod tests {
                     .unwrap()
                     .to_vec(),
             },
-            origin: Some([1; 32]),
+            origin: [1; 32],
         }
     }
 
@@ -845,7 +838,7 @@ mod tests {
                     .unwrap()
                     .to_vec(),
             },
-            origin: Some(origin),
+            origin: origin,
         }
     }
 
@@ -866,7 +859,7 @@ mod tests {
                     .unwrap()
                     .to_vec(),
             },
-            origin: Some([3; 32]),
+            origin: [3; 32],
         }
     }
 
@@ -887,7 +880,7 @@ mod tests {
                     .unwrap()
                     .to_vec(),
             },
-            origin: Some(origin),
+            origin: origin,
         }
     }
 
@@ -908,7 +901,7 @@ mod tests {
                     .unwrap()
                     .to_vec(),
             },
-            origin: Some([5; 32]),
+            origin: [5; 32],
         }
     }
 
@@ -999,13 +992,13 @@ mod tests {
     #[tokio::test]
     async fn test_event_transformer() {
         let block_events = block_events();
-
+        let event_groups = transformer::group_by_origins(block_events, 1);
         let TransormerResult {
             address_outflow_mappings,
             address_inflow_mappings,
             memo_mappings,
             moonlight_tx_mappings,
-        } = group_by_origins_filter_and_convert(block_events, 1);
+        } = filter_and_convert(event_groups);
 
         assert_eq!(address_outflow_mappings.len(), 4);
         assert_eq!(address_inflow_mappings.len(), 6);
@@ -1038,8 +1031,10 @@ mod tests {
 
         let block_events = block_events();
 
+        let event_groups = transformer::group_by_origins(block_events, 1);
+
         // Store block events in the archive
-        archive.tl_moonlight(block_events, 1).unwrap();
+        archive.tl_moonlight(event_groups).unwrap();
 
         let inflows = archive.get_moonlight_inflow_tx(pk).unwrap();
         let outflows = archive.get_moonlight_outflow_tx(pk).unwrap();
@@ -1049,7 +1044,7 @@ mod tests {
             .unwrap()
             .into_iter()
             .chain(outflows.unwrap())
-            .collect::<Vec<MoonlightTx>>();
+            .collect::<Vec<EventIdentifier>>();
 
         assert_eq!(fetched_moonlight_tx.len(), 9);
 
@@ -1119,7 +1114,8 @@ mod tests {
         assert!(archive.full_moonlight_history(pk).unwrap().is_none());
 
         let block_events = block_events();
-        archive.tl_moonlight(block_events, 1).unwrap();
+        let event_groups = transformer::group_by_origins(block_events, 1);
+        archive.tl_moonlight(event_groups).unwrap();
 
         let inflows = archive.get_moonlight_inflow_tx(pk).unwrap();
         let outflows = archive.get_moonlight_outflow_tx(pk).unwrap();
@@ -1127,7 +1123,7 @@ mod tests {
             .unwrap()
             .into_iter()
             .chain(outflows.unwrap())
-            .collect::<Vec<MoonlightTx>>();
+            .collect::<Vec<EventIdentifier>>();
 
         let (moonlight_tx, fetched_events_by_moonlight_tx) = archive
             .get_moonlight_events(fetched_moonlight_tx[0])
@@ -1154,7 +1150,8 @@ mod tests {
         let archive = Archive::create_or_open(path).await;
 
         let block_events = memo_txs();
-        archive.tl_moonlight(block_events, 1).unwrap();
+        let event_groups = transformer::group_by_origins(block_events, 1);
+        archive.tl_moonlight(event_groups).unwrap();
 
         let fetched_tx1 = archive
             .moonlight_txs_by_memo(vec![1, 1, 1, 1])
@@ -1212,7 +1209,9 @@ mod tests {
         let (_, _, block_events) = random_events(amount, None, &mut rng);
 
         for (i, block_event) in block_events.into_iter().enumerate() {
-            archive.tl_moonlight(block_event, (i + 1) as u64).unwrap();
+            let grouped_events =
+                transformer::group_by_origins(block_event, (i + 1) as u64);
+            archive.tl_moonlight(grouped_events).unwrap();
         }
 
         // Receiver only
@@ -1345,7 +1344,10 @@ mod tests {
             random_events(amount, Some(&mut r_address), &mut r_txhash);
 
         for (i, block_event) in block_events.into_iter().enumerate() {
-            archive.tl_moonlight(block_event, (i + 1) as u64).unwrap();
+            let event_groups =
+                transformer::group_by_origins(block_event, (i + 1) as u64);
+
+            archive.tl_moonlight(event_groups).unwrap();
         }
 
         for i in 0..amount {

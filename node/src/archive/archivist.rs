@@ -12,7 +12,7 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::RwLock;
 use tracing::error;
 
-use crate::archive::{Archive, Archivist};
+use crate::archive::Archive;
 use crate::{database, vm, LongLivedService, Network};
 
 pub struct ArchivistSrv {
@@ -40,7 +40,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     ) => {
                         if let Err(e) = self
                             .archivist
-                            .store_vm_events(blk_height, blk_hash, events)
+                            .store_unfinalized_vm_events(
+                                blk_height, blk_hash, events,
+                            )
                             .await
                         {
                             error!(
@@ -52,7 +54,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     ArchivalData::DeletedBlock(blk_height, hex_blk_hash) => {
                         if let Err(e) = self
                             .archivist
-                            .remove_block(blk_height, &hex_blk_hash)
+                            .remove_block_and_events(blk_height, &hex_blk_hash)
                             .await
                         {
                             error!(
@@ -64,7 +66,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     ArchivalData::FinalizedBlock(blk_height, hex_blk_hash) => {
                         if let Err(e) = self
                             .archivist
-                            .mark_block_finalized(blk_height, &hex_blk_hash)
+                            .finalize_archive_data(blk_height, &hex_blk_hash)
                             .await
                         {
                             error!(
