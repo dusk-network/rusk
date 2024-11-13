@@ -187,18 +187,29 @@ impl Query {
         moonlight_tx_by_memo(ctx, memo).await
     }
 
+    /// Get contract events by height or hash.
     #[cfg(feature = "archive")]
-    async fn block_events(
+    async fn contract_events(
         &self,
         ctx: &Context<'_>,
         height: Option<i64>,
         hash: Option<String>,
-    ) -> OptResult<BlockEvents> {
+    ) -> OptResult<ContractEvents> {
         match (height, hash) {
-            (Some(height), None) => block_events_by_height(ctx, height).await,
-            (None, Some(hash)) => block_events_by_hash(ctx, hash).await,
+            (Some(height), None) => events_by_height(ctx, height).await,
+            (None, Some(hash)) => events_by_hash(ctx, hash).await,
             _ => Err(FieldError::new("Specify height or hash")),
         }
+    }
+
+    /// Get all finalized contract events from a specific contract id.
+    #[cfg(feature = "archive")]
+    async fn finalized_events(
+        &self,
+        ctx: &Context<'_>,
+        contract_id: String,
+    ) -> OptResult<ContractEvents> {
+        finalized_events_by_contractid(ctx, contract_id).await
     }
 
     /// Check if a given block height matches a given block hash.
