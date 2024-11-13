@@ -436,3 +436,165 @@ test("unstake", async () => {
 
   await network.disconnect();
 });
+
+test("withdraw stake reward with no stake", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const users = [
+    await profiles.default,
+    await profiles.next(),
+    await profiles.next(),
+  ];
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+  const bookkeeper = new Bookkeeper(treasury);
+  const bookentry = bookkeeper.as(users[2]);
+
+  await treasury.update({ accounts });
+
+  let stakeInfo = await bookentry.info.stake();
+
+  assert.equal(stakeInfo.amount, null);
+
+  let transfer = bookentry.withdraw(1000n).gas({ limit: 500_000_000n });
+
+  assert.reject(async () => await network.execute(transfer));
+
+  await network.disconnect();
+});
+
+test("withdraw stake reward greater than available", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const users = [
+    await profiles.default,
+    await profiles.next(),
+    await profiles.next(),
+  ];
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+  const bookkeeper = new Bookkeeper(treasury);
+  const bookentry = bookkeeper.as(users[0]);
+
+  await treasury.update({ accounts });
+
+  const stakeInfo = await bookentry.info.stake();
+
+  const transfer = bookentry
+    .withdraw(stakeInfo.reward + 1n)
+    .gas({ limit: 500_000_000n });
+
+  assert.reject(async () => await network.execute(transfer));
+
+  await network.disconnect();
+});
+
+test("withdraw partial stake reward", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const users = [await profiles.default, await profiles.next()];
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+  const bookkeeper = new Bookkeeper(treasury);
+  const bookentry = bookkeeper.as(users[0]);
+
+  await treasury.update({ accounts });
+
+  let stakeInfo = await bookentry.info.stake();
+  const accountBalance = await bookentry.info.balance("account");
+
+  const claimAmount = stakeInfo.reward / 2n;
+
+  const transfer = bookentry.withdraw(claimAmount).gas({ limit: 500_000_000n });
+
+  const { hash } = await network.execute(transfer);
+
+  const evt = await network.transactions.withId(hash).once.executed();
+  const { gasPaid } = evt;
+
+  await treasury.update({ accounts });
+
+  stakeInfo = await bookentry.info.stake();
+  const newAccountBalance = await bookentry.info.balance("account");
+
+  assert.equal(
+    newAccountBalance.value,
+    accountBalance.value + claimAmount - gasPaid,
+  );
+
+  await network.disconnect();
+});
+
+test("withdraw full stake reward", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const users = [await profiles.default, await profiles.next()];
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+  const bookkeeper = new Bookkeeper(treasury);
+  const bookentry = bookkeeper.as(users[0]);
+
+  await treasury.update({ accounts });
+
+  let stakeInfo = await bookentry.info.stake();
+  const accountBalance = await bookentry.info.balance("account");
+
+  const claimAmount = stakeInfo.reward;
+
+  const transfer = bookentry.withdraw(claimAmount).gas({ limit: 500_000_000n });
+
+  const { hash } = await network.execute(transfer);
+
+  const evt = await network.transactions.withId(hash).once.executed();
+  const { gasPaid } = evt;
+
+  await treasury.update({ accounts });
+
+  stakeInfo = await bookentry.info.stake();
+  const newAccountBalance = await bookentry.info.balance("account");
+
+  assert.equal(
+    newAccountBalance.value,
+    accountBalance.value + claimAmount - gasPaid,
+  );
+
+  await network.disconnect();
+});
+
+test("withdraw 0 as stake reward", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+
+  const users = [await profiles.default, await profiles.next()];
+
+  const accounts = new AccountSyncer(network);
+
+  const treasury = new Treasury(users);
+  const bookkeeper = new Bookkeeper(treasury);
+  const bookentry = bookkeeper.as(users[0]);
+
+  await treasury.update({ accounts });
+
+  let stakeInfo = await bookentry.info.stake();
+  const accountBalance = await bookentry.info.balance("account");
+
+  const claimAmount = 0;
+
+  const transfer = bookentry.withdraw(claimAmount).gas({ limit: 500_000_000n });
+
+  assert.reject(async () => await network.execute(transfer));
+
+  await network.disconnect();
+});

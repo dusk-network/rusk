@@ -13,6 +13,7 @@ import {
   ShieldTransfer,
   StakeTransfer,
   UnstakeTransfer,
+  WithdrawStakeRewardTransfer,
 } from "../src/transaction.js";
 
 class BookEntry {
@@ -53,6 +54,10 @@ class BookEntry {
 
   unstake() {
     return new UnstakeTransfer(this);
+  }
+
+  withdraw(amount) {
+    return new WithdrawStakeRewardTransfer(this).amount(amount);
   }
 }
 
