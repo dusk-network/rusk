@@ -83,6 +83,7 @@ type WalletStoreContent = {
   balance: WalletStoreBalance;
   currentProfile: import("$lib/vendor/w3sper.js/src/mod").Profile | null;
   initialized: boolean;
+  minimumStake: bigint;
   profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>;
   stakeInfo: StakeInfo;
   syncStatus: {
@@ -123,7 +124,7 @@ type WalletStoreServices = {
   ) => Promise<TransactionInfo>;
 
   stake: (
-    amount: number,
+    amount: bigint,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<any>;
 
@@ -143,6 +144,7 @@ type WalletStoreServices = {
   unstake: (gas: import("$lib/vendor/w3sper.js/src/mod").Gas) => Promise<any>;
 
   withdrawReward: (
+    amount: bigint,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<any>;
 };

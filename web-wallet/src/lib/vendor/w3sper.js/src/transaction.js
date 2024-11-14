@@ -112,8 +112,8 @@ class AccountTransfer extends Transfer {
     let nonce;
     if ("nonce" in attributes) {
       ({ nonce } = attributes);
-    } else if (typeof this.bookentry?.balance === "function") {
-      ({ nonce } = await this.bookentry.balance("account"));
+    } else if (typeof this.bookentry?.info.balance === "function") {
+      ({ nonce } = await this.bookentry.info.balance("account"));
     }
 
     nonce += 1n;
@@ -286,13 +286,145 @@ export class ShieldTransfer extends BasicTransfer {
     const { chainId } = await network.node.info;
 
     // Obtain the nonce
-    let { nonce } = await this.bookentry.balance("account");
+    let { nonce } = await this.bookentry.info.balance("account");
 
     nonce += 1n;
 
     let [buffer, hash] = await ProtocolDriver.shield({
       profile,
       allocate_value,
+      gas_limit: gas.limit,
+      gas_price: gas.price,
+      nonce,
+      chainId,
+    });
+
+    return Object.freeze({
+      buffer,
+      hash,
+      nonce,
+    });
+  }
+}
+
+export class StakeTransfer extends BasicTransfer {
+  constructor(from) {
+    super(from);
+  }
+
+  async build(network) {
+    const { attributes } = this;
+    const { amount: stake_value, gas } = attributes;
+    const { profile, bookkeeper } = this.bookentry;
+
+    const minimumStake = await bookkeeper.minimumStake;
+
+    if (stake_value < minimumStake) {
+      throw new Error(`Stake value must be greater than ${minimumStake}`);
+    }
+
+    // Get the chain id from the network
+    const { chainId } = await network.node.info;
+
+    // Obtain the nonces
+    let { nonce } = await this.bookentry.info.balance("account");
+    let { nonce: stake_nonce } = await this.bookentry.info.stake();
+
+    nonce += 1n;
+    stake_nonce += 1n;
+
+    let [buffer, hash] = await ProtocolDriver.stake({
+      profile,
+      stake_value,
+      stake_nonce,
+      gas_limit: gas.limit,
+      gas_price: gas.price,
+      nonce,
+      chainId,
+    });
+
+    return Object.freeze({
+      buffer,
+      hash,
+      nonce,
+    });
+  }
+}
+
+export class UnstakeTransfer extends BasicTransfer {
+  constructor(from) {
+    super(from);
+  }
+
+  async build(network) {
+    const { attributes } = this;
+    const { gas } = attributes;
+    const { profile } = this.bookentry;
+
+    // Get the chain id from the network
+    const { chainId } = await network.node.info;
+
+    // Obtain the nonces
+    let { nonce } = await this.bookentry.info.balance("account");
+
+    // Obtain the staked amount
+    let { amount } = await this.bookentry.info.stake();
+
+    nonce += 1n;
+
+    let [buffer, hash] = await ProtocolDriver.unstake({
+      profile,
+      unstake_value: amount.total,
+      gas_limit: gas.limit,
+      gas_price: gas.price,
+      nonce,
+      chainId,
+    });
+
+    return Object.freeze({
+      buffer,
+      hash,
+      nonce,
+    });
+  }
+}
+
+export class WithdrawStakeRewardTransfer extends BasicTransfer {
+  constructor(from) {
+    super(from);
+  }
+
+  async build(network) {
+    const { attributes } = this;
+    const { amount: reward_amount, gas } = attributes;
+    const { profile } = this.bookentry;
+
+    // Get the chain id from the network
+    const { chainId } = await network.node.info;
+
+    // Obtain the nonces
+    let { nonce } = await this.bookentry.info.balance("account");
+
+    // Obtain the staked amount
+    let { reward } = await this.bookentry.info.stake();
+
+    if (!reward) {
+      throw new Error(`No stake available to withdraw the reward from`);
+    } else if (reward_amount > reward) {
+      throw new Error(
+        `The withdrawn reward amount must be less or equal to ${reward}`
+      );
+    } else if (!reward_amount) {
+      throw new Error(
+        `Can't withdraw an empty reward amount. I mean, you could, but it would be pointless.`
+      );
+    }
+
+    nonce += 1n;
+
+    let [buffer, hash] = await ProtocolDriver.withdraw({
+      profile,
+      reward_amount,
       gas_limit: gas.limit,
       gas_price: gas.price,
       nonce,

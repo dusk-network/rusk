@@ -13,6 +13,10 @@ export async function generateProfile(seed, n) {
   return new Uint8Array(64 + 96).fill(99);
 }
 
+export async function getMinimumStake() {
+  return 1_000_000_000_000n;
+}
+
 export function load() {}
 
 export async function unload() {}

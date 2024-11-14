@@ -21,6 +21,7 @@ const content = {
   balance: { shielded, unshielded },
   currentProfile,
   initialized: true,
+  minimumStake: 1_000_000_000_000n,
   profiles,
   stakeInfo,
   syncStatus: {

@@ -16,12 +16,13 @@ const rng = () => new Uint8Array(32); //crypto.getRandomValues(new Uint8Array(32
 
 const uninit = Object.freeze([
   none`No Protocol Driver loaded yet. Call "load" first.`,
-  none`No size set yet. Load the Protocol Driver first.`,
+  none`No globals set yet. Load the Protocol Driver first.`,
 ]);
 
-let [protocolDriverModule, driverEntrySize] = uninit;
+let [protocolDriverModule, driverGlobals] = uninit;
 
-export const getEntrySize = () => driverEntrySize;
+export const getEntrySize = () => driverGlobals.then(([size]) => size);
+export const getMinimumStake = () => driverGlobals.then(([, min]) => min);
 
 export function load(source, importsURL) {
   // If the module is already loaded, no need to load it again.
@@ -37,25 +38,26 @@ export function load(source, importsURL) {
 
   // Parse known globals once.
 
-  driverEntrySize = protocolDriverModule.task(
+  driverGlobals = protocolDriverModule.task(
     withAllocator(async function (_exports, allocator) {
-      const { ptr, u32 } = allocator.types;
+      const { ptr, u32, u64 } = allocator.types;
       const { globals } = allocator;
 
       const key = await u32(ptr(globals.KEY_SIZE));
       const item = await u32(ptr(globals.ITEM_SIZE));
+      const minimumStake = await u64(ptr(globals.MINIMUM_STAKE));
 
-      return { key, item };
+      return [{ key, item }, minimumStake];
     })
   )();
 }
 
 export function unload() {
-  if (protocolDriverModule instanceof none || driverEntrySize instanceof none) {
+  if (protocolDriverModule instanceof none || driverGlobals instanceof none) {
     return Promise.resolve();
   } else {
-    return Promise.all([protocolDriverModule, driverEntrySize]).then(() => {
-      [protocolDriverModule, driverEntrySize] = uninit;
+    return Promise.all([protocolDriverModule, driverGlobals]).then(() => {
+      [protocolDriverModule, driverGlobals] = uninit;
     });
   }
 }
@@ -236,7 +238,7 @@ export const mapOwned = (owners, notes) =>
         throw new Error("All owners must be generated from the same source");
       }
 
-      let { key: keySize, item: itemSize } = await driverEntrySize;
+      let { key: keySize, item: itemSize } = await getEntrySize();
       let entrySize = keySize + itemSize;
 
       let notesBuffer = new Uint8Array(
@@ -767,6 +769,229 @@ export const shield = async (info) =>
       ptr.seed,
       profile_index,
       ptr.allocate_value,
+      ptr.gas_limit,
+      ptr.gas_price,
+      ptr.nonce,
+      info.chainId,
+      tx,
+      hash
+    );
+
+    if (code > 0) throw DriverError.from(code);
+
+    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+      0,
+      true
+    );
+
+    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
+      0,
+      true
+    );
+
+    const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
+
+    hash = new TextDecoder().decode(await memcpy(null, hash, 64));
+    return [tx_buffer, hash];
+  })();
+
+export const stake = async (info) =>
+  protocolDriverModule.task(async function (
+    { malloc, moonlight_stake },
+    { memcpy }
+  ) {
+    const ptr = Object.create(null);
+
+    const seed = new Uint8Array(await info.profile.seed);
+
+    ptr.seed = await malloc(64);
+    await memcpy(ptr.seed, seed, 64);
+
+    const profile_index = +info.profile;
+
+    const stake_value = new Uint8Array(8);
+    new DataView(stake_value.buffer).setBigUint64(0, info.stake_value, true);
+    ptr.stake_value = await malloc(8);
+    await memcpy(ptr.stake_value, stake_value);
+
+    const gas_limit = new Uint8Array(8);
+    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+    ptr.gas_limit = await malloc(8);
+    await memcpy(ptr.gas_limit, gas_limit);
+
+    const gas_price = new Uint8Array(8);
+    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+    ptr.gas_price = await malloc(8);
+    await memcpy(ptr.gas_price, gas_price);
+
+    const nonce = new Uint8Array(8);
+    new DataView(nonce.buffer).setBigUint64(0, info.nonce, true);
+    ptr.nonce = await malloc(8);
+    await memcpy(ptr.nonce, nonce);
+
+    const stake_nonce = new Uint8Array(8);
+    new DataView(stake_nonce.buffer).setBigUint64(0, info.stake_nonce, true);
+    ptr.stake_nonce = await malloc(8);
+    await memcpy(ptr.stake_nonce, stake_nonce);
+
+    let tx = await malloc(4);
+    let hash = await malloc(64);
+
+    const code = await moonlight_stake(
+      ptr.seed,
+      profile_index,
+      ptr.stake_value,
+      ptr.gas_limit,
+      ptr.gas_price,
+      ptr.nonce,
+      info.chainId,
+      ptr.stake_nonce,
+      tx,
+      hash
+    );
+
+    if (code > 0) throw DriverError.from(code);
+
+    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+      0,
+      true
+    );
+
+    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
+      0,
+      true
+    );
+
+    const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
+
+    hash = new TextDecoder().decode(await memcpy(null, hash, 64));
+    return [tx_buffer, hash];
+  })();
+
+export const unstake = async (info) =>
+  protocolDriverModule.task(async function (
+    { malloc, moonlight_unstake },
+    { memcpy }
+  ) {
+    const ptr = Object.create(null);
+
+    ptr.rng = await malloc(32);
+    await memcpy(ptr.rng, new Uint8Array(rng()));
+
+    const seed = new Uint8Array(await info.profile.seed);
+
+    ptr.seed = await malloc(64);
+    await memcpy(ptr.seed, seed, 64);
+
+    const profile_index = +info.profile;
+
+    const unstake_value = new Uint8Array(8);
+    new DataView(unstake_value.buffer).setBigUint64(
+      0,
+      info.unstake_value,
+      true
+    );
+    ptr.unstake_value = await malloc(8);
+    await memcpy(ptr.unstake_value, unstake_value);
+
+    const gas_limit = new Uint8Array(8);
+    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+    ptr.gas_limit = await malloc(8);
+    await memcpy(ptr.gas_limit, gas_limit);
+
+    const gas_price = new Uint8Array(8);
+    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+    ptr.gas_price = await malloc(8);
+    await memcpy(ptr.gas_price, gas_price);
+
+    const nonce = new Uint8Array(8);
+    new DataView(nonce.buffer).setBigUint64(0, info.nonce, true);
+    ptr.nonce = await malloc(8);
+    await memcpy(ptr.nonce, nonce);
+
+    let tx = await malloc(4);
+    let hash = await malloc(64);
+
+    const code = await moonlight_unstake(
+      ptr.rng,
+      ptr.seed,
+      profile_index,
+      ptr.unstake_value,
+      ptr.gas_limit,
+      ptr.gas_price,
+      ptr.nonce,
+      info.chainId,
+      tx,
+      hash
+    );
+
+    if (code > 0) throw DriverError.from(code);
+
+    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+      0,
+      true
+    );
+
+    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
+      0,
+      true
+    );
+
+    const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
+
+    hash = new TextDecoder().decode(await memcpy(null, hash, 64));
+    return [tx_buffer, hash];
+  })();
+
+export const withdraw = async (info) =>
+  protocolDriverModule.task(async function (
+    { malloc, moonlight_stake_reward },
+    { memcpy }
+  ) {
+    const ptr = Object.create(null);
+
+    ptr.rng = await malloc(32);
+    await memcpy(ptr.rng, new Uint8Array(rng()));
+
+    const seed = new Uint8Array(await info.profile.seed);
+
+    ptr.seed = await malloc(64);
+    await memcpy(ptr.seed, seed, 64);
+
+    const profile_index = +info.profile;
+
+    const reward_amount = new Uint8Array(8);
+    new DataView(reward_amount.buffer).setBigUint64(
+      0,
+      info.reward_amount,
+      true
+    );
+    ptr.reward_amount = await malloc(8);
+    await memcpy(ptr.reward_amount, reward_amount);
+
+    const gas_limit = new Uint8Array(8);
+    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+    ptr.gas_limit = await malloc(8);
+    await memcpy(ptr.gas_limit, gas_limit);
+
+    const gas_price = new Uint8Array(8);
+    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+    ptr.gas_price = await malloc(8);
+    await memcpy(ptr.gas_price, gas_price);
+
+    const nonce = new Uint8Array(8);
+    new DataView(nonce.buffer).setBigUint64(0, info.nonce, true);
+    ptr.nonce = await malloc(8);
+    await memcpy(ptr.nonce, nonce);
+
+    let tx = await malloc(4);
+    let hash = await malloc(64);
+
+    const code = await moonlight_stake_reward(
+      ptr.rng,
+      ptr.seed,
+      profile_index,
+      ptr.reward_amount,
       ptr.gas_limit,
       ptr.gas_price,
       ptr.nonce,
