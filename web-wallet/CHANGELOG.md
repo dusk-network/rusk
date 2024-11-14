@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Transactions list design [#1922]
 - Update `Stake` to use `Stepper` [#2436]
 - Update Mnemonic (Authenticate) Enter key behavior [#2879]
+- Update Staking UI to support w3sper [#2978]
 
 ### Removed
 
@@ -337,6 +338,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2882]: https://github.com/dusk-network/rusk/issues/2882
 [#2888]: https://github.com/dusk-network/rusk/issues/2888
 [#2920]: https://github.com/dusk-network/rusk/issues/2920
+[#2978]: https://github.com/dusk-network/rusk/issues/2978
 
 <!-- VERSIONS -->
 
