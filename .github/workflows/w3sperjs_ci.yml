@@ -1,0 +1,83 @@
+name: w3sper.js CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+jobs:
+  # JOB to run change detection
+  changes:
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      pull-requests: read
+    # Set job outputs to values from filter step
+    outputs:
+      run-ci: ${{ steps.filter.outputs.run-ci }}
+    steps:
+      # For pull requests it's not necessary to checkout the code
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run-ci:
+              - 'execution-core/**'
+              - 'wallet-core/**'
+              - 'w3sper.js/**'
+              - '.github/workflows/w3sperjs_ci.yml'
+
+  deno_lint_fmt:
+    needs: changes
+    # Skip lint check, see issue #2891
+    if: false
+    name: Deno lint check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup deno
+        uses: denoland/setup-deno@v2
+        with: 
+          deno-version: v2.x
+      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run deno lint        
+        run: |
+          cd w3sper.js
+          deno lint
+          deno fmt --check
+
+  w3sper_test:
+    needs: changes
+    if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
+    name: "Run w3sper tests"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Docker container
+        run: |
+          mkdir /opt/rusk
+          docker run --name rusk -d -e RUSK_MINIMUM_BLOCK_TIME=1 -p 9000:9000/udp -p 8080:8080/tcp -v ./w3sper.js/tests/assets/genesis.toml:/opt/rusk/state.toml dusknode/rusk
+      
+      - name: Setup Rust
+        uses: dsherret/rust-toolchain-file@v1
+
+      - name: Setup deno
+        uses: denoland/setup-deno@v2
+        with: 
+          deno-version: v2.x
+        
+      - name: Run deno
+        run: |
+          cd w3sper.js
+          deno task wasm
+          deno task test
