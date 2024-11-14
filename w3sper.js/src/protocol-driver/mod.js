@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import * as exu from "https://rawcdn.githack.com/dusk-network/exu/v0.1.2/src/mod.js";
+import * as exu from "jsr:@dusk/exu@0.1.2";
 import { none } from "./none.js";
 
 import { DriverError } from "./error.js";
