@@ -60,6 +60,11 @@ describe("Wallet store", async () => {
     nonce: 1234n,
     value: shielded.value / 2n,
   };
+  const minimumStake = 1_000_000_000_000n;
+
+  vi.spyOn(Bookkeeper.prototype, "minimumStake", "get").mockResolvedValue(
+    minimumStake
+  );
 
   const setTimeoutSpy = vi.spyOn(window, "setTimeout");
   const clearTimeoutSpy = vi.spyOn(window, "clearTimeout");
@@ -72,6 +77,7 @@ describe("Wallet store", async () => {
         ? shielded
         : unshielded;
     });
+
   const stakeInfoSpy = vi
     .spyOn(Bookkeeper.prototype, "stakeInfo")
     .mockImplementation(async () => stakeInfo);
@@ -109,6 +115,7 @@ describe("Wallet store", async () => {
     },
     currentProfile: null,
     initialized: false,
+    minimumStake: 0n,
     profiles: [],
     stakeInfo: {
       amount: null,
@@ -131,6 +138,7 @@ describe("Wallet store", async () => {
     balance: { shielded, unshielded },
     currentProfile: defaultProfile,
     initialized: true,
+    minimumStake,
     profiles: [defaultProfile],
     stakeInfo,
   };
@@ -155,6 +163,7 @@ describe("Wallet store", async () => {
         balance: cachedBalance,
         currentProfile: defaultProfile,
         initialized: true,
+        minimumStake,
         profiles: [defaultProfile],
         stakeInfo: cachedStakeInfo,
         syncStatus: {

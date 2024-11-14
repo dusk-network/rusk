@@ -9,7 +9,11 @@ import {
 } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { deductLuxFeeFrom } from "$lib/contracts";
-import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
+import {
+  createCurrencyFormatter,
+  duskToLux,
+  luxToDusk,
+} from "$lib/dusk/currency";
 
 import { Stake } from "..";
 
@@ -237,7 +241,7 @@ describe("Stake", () => {
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
-        baseProps.minAllowedStake,
+        duskToLux(baseProps.minAllowedStake),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -265,7 +269,7 @@ describe("Stake", () => {
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
-        2567,
+        duskToLux(2567),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -286,7 +290,7 @@ describe("Stake", () => {
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
-        maxSpendable,
+        duskToLux(maxSpendable),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );

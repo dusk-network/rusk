@@ -362,7 +362,7 @@
         errorMessage="Transaction failed"
         onBeforeLeave={resetOperation}
         operation={flow === "stake"
-          ? execute(stakeAmount, gasPrice, gasLimit)
+          ? execute(duskToLux(stakeAmount), gasPrice, gasLimit)
           : execute(gasPrice, gasLimit)}
         pendingMessage="Processing transaction"
         successMessage="Transaction completed"

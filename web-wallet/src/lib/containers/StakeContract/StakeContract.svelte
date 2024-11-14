@@ -64,7 +64,7 @@
 
   /** @type {Record<StakeType, (...args: any[]) => Promise<string>>} */
   const executeOperations = {
-    stake: (amount, gasLimit, gasPrice) =>
+    stake: (amount, gasPrice, gasLimit) =>
       walletStore
         .stake(amount, new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getLastTransactionHash),
@@ -74,7 +74,10 @@
         .then(getLastTransactionHash),
     "withdraw-rewards": (gasPrice, gasLimit) =>
       walletStore
-        .withdrawReward(new Gas({ limit: gasLimit, price: gasPrice }))
+        .withdrawReward(
+          $walletStore.stakeInfo.reward,
+          new Gas({ limit: gasLimit, price: gasPrice })
+        )
         .then(getLastTransactionHash),
   };
 

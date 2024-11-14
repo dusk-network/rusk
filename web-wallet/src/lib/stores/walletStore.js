@@ -38,6 +38,7 @@ const initialState = {
   },
   currentProfile: null,
   initialized: false,
+  minimumStake: 0n,
   profiles: [],
   stakeInfo: {
     amount: null,
@@ -62,9 +63,6 @@ const treasury = new WalletTreasury();
 const bookkeeper = new Bookkeeper(treasury);
 
 const getCurrentProfile = () => get(walletStore).currentProfile;
-
-/** @type {(...args: any) => Promise<void>} */
-const asyncNoopFailure = () => Promise.reject(new Error("Not implemented"));
 
 /** @type {(txInfo: TransactionInfo) => void} */
 const observeTxRemoval = (txInfo) => {
@@ -198,6 +196,7 @@ async function init(profileGenerator, syncFromBlock) {
   const cachedStakeInfo = await walletCache.getStakeInfo(
     currentProfile.account.toString()
   );
+  const minimumStake = await bookkeeper.minimumStake;
 
   treasury.setProfiles([currentProfile]);
 
@@ -206,6 +205,7 @@ async function init(profileGenerator, syncFromBlock) {
     balance: cachedBalance,
     currentProfile,
     initialized: true,
+    minimumStake,
     profiles: [currentProfile],
     stakeInfo: cachedStakeInfo,
   });
@@ -238,9 +238,27 @@ async function setCurrentProfile(profile) {
       );
 }
 
+/** @type {WalletStoreServices["shield"]} */
+const shield = async (amount, gas) =>
+  sync()
+    .then(networkStore.connect)
+    .then((network) =>
+      network.execute(
+        bookkeeper.as(getCurrentProfile()).shield(amount).gas(gas)
+      )
+    )
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
+
 /** @type {WalletStoreServices["stake"]} */
-const stake = async (amount, gasSettings) =>
-  asyncNoopFailure(amount, gasSettings);
+const stake = async (amount, gas) =>
+  sync()
+    .then(networkStore.connect)
+    .then((network) =>
+      network.execute(bookkeeper.as(getCurrentProfile()).stake(amount).gas(gas))
+    )
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["sync"]} */
 async function sync(fromBlock) {
@@ -344,18 +362,6 @@ async function sync(fromBlock) {
   return syncPromise;
 }
 
-/** @type {WalletStoreServices["shield"]} */
-const shield = async (amount, gas) =>
-  sync()
-    .then(networkStore.connect)
-    .then((network) =>
-      network.execute(
-        bookkeeper.as(getCurrentProfile()).shield(amount).gas(gas)
-      )
-    )
-    .then(updateCacheAfterTransaction)
-    .then(passThruWithEffects(observeTxRemoval));
-
 /** @type {WalletStoreServices["transfer"]} */
 const transfer = async (to, amount, gas) =>
   sync()
@@ -388,10 +394,26 @@ const unshield = async (amount, gas) =>
     .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["unstake"]} */
-const unstake = async (gasSettings) => asyncNoopFailure(gasSettings);
+const unstake = async (gas) =>
+  sync()
+    .then(networkStore.connect)
+    .then((network) =>
+      network.execute(bookkeeper.as(getCurrentProfile()).unstake().gas(gas))
+    )
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["withdrawReward"]} */
-const withdrawReward = async (gasSettings) => asyncNoopFailure(gasSettings);
+const withdrawReward = async (amount, gas) =>
+  sync()
+    .then(networkStore.connect)
+    .then((network) =>
+      network.execute(
+        bookkeeper.as(getCurrentProfile()).withdraw(amount).gas(gas)
+      )
+    )
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStore} */
 export default {
