@@ -11,6 +11,9 @@ import {
   Transfer,
   UnshieldTransfer,
   ShieldTransfer,
+  StakeTransfer,
+  UnstakeTransfer,
+  WithdrawStakeRewardTransfer,
 } from "../src/transaction.js";
 
 class BookEntry {
@@ -21,12 +24,16 @@ class BookEntry {
     Object.freeze(this);
   }
 
-  balance(type) {
-    return this.bookkeeper.balance(this.profile[type]);
-  }
-
-  stakeInfo() {
-    return this.bookkeeper.stakeInfo(this.profile.account);
+  get info() {
+    const entry = this;
+    return {
+      balance(type) {
+        return entry.bookkeeper.balance(entry.profile[type]);
+      },
+      stake() {
+        return entry.bookkeeper.stakeInfo(entry.profile.account);
+      },
+    };
   }
 
   transfer(amount) {
@@ -39,6 +46,18 @@ class BookEntry {
 
   shield(amount) {
     return new ShieldTransfer(this).amount(amount);
+  }
+
+  stake(amount) {
+    return new StakeTransfer(this).amount(amount);
+  }
+
+  unstake() {
+    return new UnstakeTransfer(this);
+  }
+
+  withdraw(amount) {
+    return new WithdrawStakeRewardTransfer(this).amount(amount);
   }
 }
 
@@ -61,6 +80,10 @@ export class Bookkeeper {
 
         return ProtocolDriver.balance(seed, index, notes);
     }
+  }
+
+  get minimumStake() {
+    return ProtocolDriver.getMinimumStake();
   }
 
   stakeInfo(identifier) {
