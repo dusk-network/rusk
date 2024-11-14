@@ -14,9 +14,9 @@ describe("getCacheDatabase", () => {
         "balancesInfo",
         "pendingNotesInfo",
         "spentNotes",
+        "stakeInfo",
         "syncInfo",
         "unspentNotes",
-        "stakeInfo",
       ]
     `);
 

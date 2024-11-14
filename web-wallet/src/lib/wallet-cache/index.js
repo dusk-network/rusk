@@ -69,8 +69,6 @@ class WalletCache {
    * @returns {Promise<WalletCacheGetEntriesReturnType<TName, PK>>}
    */
   async #getEntriesFrom(tableName, primaryKeysOnly, rawCriteria) {
-    await this.#db.open();
-
     const criteria = rawCriteria && toCriteria(rawCriteria);
     const table = this.#db.table(tableName);
     const data =
@@ -85,19 +83,11 @@ class WalletCache {
             : table.toArray()
       );
 
-    return data.finally(() => this.#db.close());
+    return data.finally(() => this.#db.close({ disableAutoOpen: false }));
   }
 
   constructor() {
-    const db = new Dexie("@dusk-network/wallet-cache");
-
-    db.version(1).stores({
-      balancesInfo: "address",
-      pendingNotesInfo: "nullifier,txId",
-      spentNotes: "nullifier,address",
-      syncInfo: "++",
-      unspentNotes: "nullifier,address",
-    });
+    const db = new Dexie("@dusk-network/wallet-cache", { autoOpen: true });
 
     db.version(2).stores({
       balancesInfo: "address",
@@ -116,9 +106,7 @@ class WalletCache {
    * @param {WalletCacheSyncInfo} syncInfo
    * @returns {Promise<void>}
    */
-  async addUnspentNotes(notes, syncInfo) {
-    await this.#db.open();
-
+  addUnspentNotes(notes, syncInfo) {
     return this.#db
       .transaction("rw", ["syncInfo", "unspentNotes"], async () => {
         const syncInfoTable = this.#db.table("syncInfo");
@@ -127,7 +115,7 @@ class WalletCache {
         await syncInfoTable.add(syncInfo);
         await this.#db.table("unspentNotes").bulkPut(notes);
       })
-      .finally(() => this.#db.close());
+      .finally(() => this.#db.close({ disableAutoOpen: false }));
   }
 
   /** @returns {Promise<void>} */
@@ -279,12 +267,10 @@ class WalletCache {
    * @returns {Promise<void>}
    */
   async setBalanceInfo(address, balance) {
-    return this.#db
-      .open()
-      .then(async (db) => {
-        await db.table("balancesInfo").put({ address, balance });
-      })
-      .finally(() => this.#db.close());
+    await this.#db
+      .table("balancesInfo")
+      .put({ address, balance })
+      .finally(() => this.#db.close({ disableAutoOpen: false }));
   }
 
   /**
@@ -295,8 +281,6 @@ class WalletCache {
     return this.getSyncInfo()
       .then(setKey("blockHeight", n))
       .then(async (syncInfo) => {
-        await this.#db.open();
-
         return this.#db
           .transaction("rw", "syncInfo", async () => {
             const syncInfoTable = this.#db.table("syncInfo");
@@ -304,7 +288,7 @@ class WalletCache {
             await syncInfoTable.clear();
             await syncInfoTable.add(syncInfo);
           })
-          .finally(() => this.#db.close());
+          .finally(() => this.#db.close({ disableAutoOpen: false }));
       });
   }
 
@@ -316,12 +300,10 @@ class WalletCache {
   async setPendingNoteInfo(nullifiers, txId) {
     const data = nullifiers.map((nullifier) => ({ nullifier, txId }));
 
-    return this.#db
-      .open()
-      .then(async (db) => {
-        await db.table("pendingNotesInfo").bulkAdd(data);
-      })
-      .finally(() => this.#db.close());
+    await this.#db
+      .table("pendingNotesInfo")
+      .bulkAdd(data)
+      .finally(() => this.#db.close({ disableAutoOpen: false }));
   }
 
   /**
@@ -330,12 +312,10 @@ class WalletCache {
    * @returns {Promise<void>}
    */
   async setStakeInfo(account, stakeInfo) {
-    return this.#db
-      .open()
-      .then(async (db) => {
-        await db.table("stakeInfo").put({ account, stakeInfo });
-      })
-      .finally(() => this.#db.close());
+    await this.#db
+      .table("stakeInfo")
+      .put({ account, stakeInfo })
+      .finally(() => this.#db.close({ disableAutoOpen: false }));
   }
 
   /**
@@ -343,8 +323,6 @@ class WalletCache {
    * @returns {Promise<void>}
    */
   async spendNotes(nullifiers) {
-    await this.#db.open();
-
     return this.#db
       .transaction(
         "rw",
@@ -361,7 +339,7 @@ class WalletCache {
           await this.#db.table("spentNotes").bulkAdd(newlySpentNotes);
         }
       )
-      .finally(() => this.#db.close());
+      .finally(() => this.#db.close({ disableAutoOpen: false }));
   }
 
   /**
@@ -370,20 +348,17 @@ class WalletCache {
    */
   async unspendNotes(nullifiers) {
     return this.#db
-      .open()
-      .then(async (db) =>
-        db.transaction("rw", ["spentNotes", "unspentNotes"], async () => {
-          const notesToUnspend = await db
-            .table("spentNotes")
-            .where("nullifier")
-            .anyOf(nullifiers)
-            .toArray();
+      .transaction("rw", ["spentNotes", "unspentNotes"], async () => {
+        const notesToUnspend = await this.#db
+          .table("spentNotes")
+          .where("nullifier")
+          .anyOf(nullifiers)
+          .toArray();
 
-          await this.#db.table("spentNotes").bulkDelete(nullifiers);
-          await this.#db.table("unspentNotes").bulkAdd(notesToUnspend);
-        })
-      )
-      .finally(() => this.#db.close());
+        await this.#db.table("spentNotes").bulkDelete(nullifiers);
+        await this.#db.table("unspentNotes").bulkAdd(notesToUnspend);
+      })
+      .finally(() => this.#db.close({ disableAutoOpen: false }));
   }
 
   /**

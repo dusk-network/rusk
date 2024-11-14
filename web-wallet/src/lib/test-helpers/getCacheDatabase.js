@@ -4,14 +4,6 @@ import { Dexie } from "dexie";
 function getCacheDatabase() {
   const db = new Dexie("@dusk-network/wallet-cache");
 
-  db.version(1).stores({
-    balancesInfo: "address",
-    pendingNotesInfo: "nullifier,txId",
-    spentNotes: "nullifier,address",
-    syncInfo: "++",
-    unspentNotes: "nullifier,address",
-  });
-
   db.version(2).stores({
     balancesInfo: "address",
     pendingNotesInfo: "nullifier,txId",
