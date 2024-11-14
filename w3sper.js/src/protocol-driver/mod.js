@@ -942,6 +942,81 @@ export const unstake = async (info) =>
     return [tx_buffer, hash];
   })();
 
+export const withdraw = async (info) =>
+  protocolDriverModule.task(async function (
+    { malloc, moonlight_stake_reward },
+    { memcpy },
+  ) {
+    const ptr = Object.create(null);
+
+    ptr.rng = await malloc(32);
+    await memcpy(ptr.rng, new Uint8Array(rng()));
+
+    const seed = new Uint8Array(await info.profile.seed);
+
+    ptr.seed = await malloc(64);
+    await memcpy(ptr.seed, seed, 64);
+
+    const profile_index = +info.profile;
+
+    const reward_amount = new Uint8Array(8);
+    new DataView(reward_amount.buffer).setBigUint64(
+      0,
+      info.reward_amount,
+      true,
+    );
+    ptr.reward_amount = await malloc(8);
+    await memcpy(ptr.reward_amount, reward_amount);
+
+    const gas_limit = new Uint8Array(8);
+    new DataView(gas_limit.buffer).setBigUint64(0, info.gas_limit, true);
+    ptr.gas_limit = await malloc(8);
+    await memcpy(ptr.gas_limit, gas_limit);
+
+    const gas_price = new Uint8Array(8);
+    new DataView(gas_price.buffer).setBigUint64(0, info.gas_price, true);
+    ptr.gas_price = await malloc(8);
+    await memcpy(ptr.gas_price, gas_price);
+
+    const nonce = new Uint8Array(8);
+    new DataView(nonce.buffer).setBigUint64(0, info.nonce, true);
+    ptr.nonce = await malloc(8);
+    await memcpy(ptr.nonce, nonce);
+
+    let tx = await malloc(4);
+    let hash = await malloc(64);
+
+    const code = await moonlight_stake_reward(
+      ptr.rng,
+      ptr.seed,
+      profile_index,
+      ptr.reward_amount,
+      ptr.gas_limit,
+      ptr.gas_price,
+      ptr.nonce,
+      info.chainId,
+      tx,
+      hash,
+    );
+
+    if (code > 0) throw DriverError.from(code);
+
+    let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
+      0,
+      true,
+    );
+
+    const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
+
+    hash = new TextDecoder().decode(await memcpy(null, hash, 64));
+    return [tx_buffer, hash];
+  })();
+
 function serializeMemo(memo) {
   if (!memo) {
     return null;

@@ -387,3 +387,53 @@ export class UnstakeTransfer extends BasicTransfer {
     });
   }
 }
+
+export class WithdrawStakeRewardTransfer extends BasicTransfer {
+  constructor(from) {
+    super(from);
+  }
+
+  async build(network) {
+    const { attributes } = this;
+    const { amount: reward_amount, gas } = attributes;
+    const { profile } = this.bookentry;
+
+    // Get the chain id from the network
+    const { chainId } = await network.node.info;
+
+    // Obtain the nonces
+    let { nonce } = await this.bookentry.info.balance("account");
+
+    // Obtain the staked amount
+    let { reward } = await this.bookentry.info.stake();
+
+    if (!reward) {
+      throw new Error(`No stake available to withdraw the reward from`);
+    } else if (reward_amount > reward) {
+      throw new Error(
+        `The withdrawn reward amount must be less or equal to ${reward}`,
+      );
+    } else if (!reward_amount) {
+      throw new Error(
+        `Can't withdraw an empty reward amount. I mean, you could, but it would be pointless.`,
+      );
+    }
+
+    nonce += 1n;
+
+    let [buffer, hash] = await ProtocolDriver.withdraw({
+      profile,
+      reward_amount,
+      gas_limit: gas.limit,
+      gas_price: gas.price,
+      nonce,
+      chainId,
+    });
+
+    return Object.freeze({
+      buffer,
+      hash,
+      nonce,
+    });
+  }
+}

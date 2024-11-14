@@ -32,6 +32,8 @@ export class Network {
   #rues;
   node;
   contracts;
+  blocks;
+  transactions;
 
   static LOCALNET = Node.CHAIN.LOCALNET;
   static MAINNET = Node.CHAIN.MAINNET;
@@ -52,10 +54,6 @@ export class Network {
 
   get rues() {
     return this.#rues;
-  }
-
-  static connect(url, options = {}) {
-    return new Network(url).connect(options);
   }
 
   async connect(options = {}) {
@@ -124,5 +122,9 @@ export class Network {
           `Unexpected [${response.status}] : ${response.statusText}}`,
         );
     }
+  }
+
+  static connect(url, options = {}) {
+    return new Network(url).connect(options);
   }
 }
