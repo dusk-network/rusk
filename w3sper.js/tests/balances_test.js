@@ -26,7 +26,7 @@ test("Account Balance", async () => {
 
   assert.equal(balance, {
     nonce: 0n,
-    value: 10100000000n,
+    value: 1_001_000_000_000_000n,
   });
 });
 
@@ -62,24 +62,27 @@ test("Balances synchronization", async () => {
     owners.map((owner) => bookkeeper.balance(owner.address)),
   );
 
-  assert.equal(addressBalances[0].value, 1026179647718621n);
-  assert.equal(addressBalances[1].value, 1419179830115057n);
-  assert.equal(addressBalances[2].value, 512720219906168n);
+  assert.equal(addressBalances[0].value, 1_026_179_647_718_621n);
+  assert.equal(addressBalances[1].value, 1_419_179_830_115_057n);
+  assert.equal(addressBalances[2].value, 512_720_219_906_168n);
 
   const accountBalances = await Promise.all(
     owners.map((owner) => bookkeeper.balance(owner.account)),
   );
 
-  assert.equal(accountBalances[0].value, 10100000000n);
-  assert.equal(accountBalances[1].value, 8800000000n);
-  assert.equal(accountBalances[2].value, 6060000000n);
+  assert.equal(accountBalances[0].value, 100_1_000_000_000_000n);
+  assert.equal(accountBalances[1].value, 80_800_000_000_000n);
+  assert.equal(accountBalances[2].value, 60_060_000_000_000n);
 
   const bookentry = bookkeeper.as(await profiles.default);
   assert.equal(
     (await bookentry.info.balance("address")).value,
     1026179647718621n,
   );
-  assert.equal((await bookentry.info.balance("account")).value, 10100000000n);
+  assert.equal(
+    (await bookentry.info.balance("account")).value,
+    1_001_000_000_000_000n,
+  );
 
   await network.disconnect();
 });

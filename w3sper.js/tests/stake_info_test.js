@@ -77,7 +77,7 @@ test("stake info with treasury", async () => {
   const stakes = await Promise.all([
     bookkeeper.stakeInfo(users[0].account),
     bookkeeper.stakeInfo(users[1].account),
-    bookkeeper.as(users[0]).stakeInfo(),
+    bookkeeper.as(users[0]).info.stake(),
   ]);
 
   assert.equal(stakes.length, 3);
