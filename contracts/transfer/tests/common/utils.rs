@@ -6,15 +6,13 @@
 
 use std::sync::mpsc;
 
-use execution_core::{
-    signatures::bls::PublicKey as AccountPublicKey,
-    transfer::{
-        moonlight::AccountData,
-        phoenix::{Note, NoteLeaf, ViewKey as PhoenixViewKey},
-        Transaction, TRANSFER_CONTRACT,
-    },
-    ContractError, ContractId,
+use execution_core::signatures::bls::PublicKey as AccountPublicKey;
+use execution_core::transfer::moonlight::AccountData;
+use execution_core::transfer::phoenix::{
+    Note, NoteLeaf, ViewKey as PhoenixViewKey,
 };
+use execution_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use execution_core::{BlsScalar, ContractError, ContractId};
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 
 const GAS_LIMIT: u64 = 0x10_000_000;
@@ -140,4 +138,18 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
     iter.into_iter()
         .filter(|note| vk.owns(note.stealth_address()))
         .collect()
+}
+
+pub fn existing_nullifiers(
+    session: &mut Session,
+    nullifiers: &Vec<BlsScalar>,
+) -> Result<Vec<BlsScalar>, PiecrustError> {
+    session
+        .call(
+            TRANSFER_CONTRACT,
+            "existing_nullifiers",
+            &nullifiers.clone(),
+            GAS_LIMIT,
+        )
+        .map(|r| r.data)
 }

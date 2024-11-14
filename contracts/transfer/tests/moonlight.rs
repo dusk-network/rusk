@@ -7,8 +7,8 @@
 pub mod common;
 
 use crate::common::utils::{
-    account, chain_id, contract_balance, execute, filter_notes_owned_by,
-    leaves_from_height, owned_notes_value, update_root,
+    account, chain_id, contract_balance, execute, existing_nullifiers,
+    filter_notes_owned_by, leaves_from_height, owned_notes_value, update_root,
 };
 
 use ff::Field;
@@ -24,13 +24,13 @@ use execution_core::{
         data::{ContractCall, TransactionData},
         moonlight::Transaction as MoonlightTransaction,
         phoenix::{
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
             ViewKey as PhoenixViewKey,
         },
         withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
         ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
     },
-    ContractError, ContractId, JubJubScalar, LUX,
+    BlsScalar, ContractError, ContractId, JubJubScalar, LUX,
 };
 use rusk_abi::{ContractData, Session};
 
@@ -475,6 +475,137 @@ fn convert_to_phoenix() {
     assert_eq!(
         notes_value, CONVERSION_VALUE,
         "The new note should have the conversion value",
+    );
+}
+
+/// Converting phoenix DUSK into moonlight DUSK with a moonlight transaction
+/// should fail.
+#[test]
+fn convert_to_moonlight_fails() {
+    const CONVERSION_VALUE: u64 = dusk(10.0);
+
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+
+    let phoenix_sk = PhoenixSecretKey::random(rng);
+    let phoenix_vk = PhoenixViewKey::from(&phoenix_sk);
+    let phoenix_pk = PhoenixPublicKey::from(&phoenix_sk);
+
+    let moonlight_sk = AccountSecretKey::random(rng);
+    let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
+
+    let mut session = &mut instantiate(&moonlight_pk);
+
+    // Add a phoenix note with the conversion-value
+    let value_blinder = JubJubScalar::random(&mut *rng);
+    let sender_blinder = [
+        JubJubScalar::random(&mut *rng),
+        JubJubScalar::random(&mut *rng),
+    ];
+    let note = Note::obfuscated(
+        rng,
+        &phoenix_pk,
+        &phoenix_pk,
+        CONVERSION_VALUE,
+        value_blinder,
+        sender_blinder,
+    );
+    // get the nullifier for later check
+    let nullifier = note.gen_nullifier(&phoenix_sk);
+    // push genesis phoenix note to the contract
+    session
+        .call::<_, Note>(
+            TRANSFER_CONTRACT,
+            "push_note",
+            &(0u64, note),
+            GAS_LIMIT,
+        )
+        .expect("Pushing genesis note should succeed");
+
+    // update the root after the notes have been inserted
+    update_root(&mut session).expect("Updating the root should succeed");
+
+    // make sure that the phoenix-key doesn't own any notes yet
+    let leaves = leaves_from_height(session, 0)
+        .expect("getting the notes should succeed");
+    let notes = filter_notes_owned_by(
+        phoenix_vk,
+        leaves.into_iter().map(|leaf| leaf.note),
+    );
+    assert_eq!(notes.len(), 1, "There should be one note at this height");
+
+    // a conversion is a deposit into the transfer-contract paired with a
+    // withdrawal
+    let contract_call = ContractCall {
+        contract: TRANSFER_CONTRACT,
+        fn_name: String::from("convert"),
+        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+            rng,
+            &moonlight_sk,
+            TRANSFER_CONTRACT,
+            // set the conversion-value as a withdrawal
+            CONVERSION_VALUE,
+            WithdrawReceiver::Moonlight(moonlight_pk),
+            WithdrawReplayToken::Phoenix(vec![
+                notes[0].gen_nullifier(&phoenix_sk)
+            ]),
+        ))
+        .expect("should serialize conversion correctly")
+        .to_vec(),
+    };
+
+    let tx = MoonlightTransaction::new(
+        &moonlight_sk,
+        None,
+        0,
+        // set the conversion-value as the deposit
+        CONVERSION_VALUE,
+        GAS_LIMIT,
+        LUX,
+        MOONLIGHT_GENESIS_NONCE + 1,
+        CHAIN_ID,
+        Some(contract_call),
+    )
+    .expect("Creating moonlight transaction should succeed");
+
+    let receipt =
+        execute(&mut session, tx).expect("Executing TX should succeed");
+
+    // check that the transaction execution panicked with the correct message
+    assert!(receipt.data.is_err());
+    assert_eq!(
+        format!("{}", receipt.data.unwrap_err()),
+        String::from("Panic: Expected Phoenix TX, found Moonlight"),
+        "The attempted conversion from phoenix to moonlight when paying gas with moonlight should error"
+    );
+    assert_eq!(
+        receipt.gas_spent,
+        GAS_LIMIT * LUX,
+        "The max gas should have been spent"
+    );
+
+    update_root(session).expect("Updating the root should succeed");
+
+    println!("CONVERT TO MOONLIGHT: {} gas", receipt.gas_spent);
+
+    let moonlight_account = account(&mut session, &moonlight_pk)
+        .expect("Getting account should succeed");
+
+    assert_eq!(
+        moonlight_account.balance,
+        MOONLIGHT_GENESIS_VALUE - receipt.gas_spent,
+        "Since the conversion fails, the moonlight account should only have the gas-spent deducted"
+    );
+
+    let leaves = leaves_from_height(session, 1)
+        .expect("getting the notes should succeed");
+    assert_eq!(leaves.len(), 0, "no new leaves should have been created");
+
+    let nullifier = vec![nullifier];
+    let existing_nullifers = existing_nullifiers(session, &nullifier)
+        .expect("Querrying the nullifiers should work");
+    assert!(
+        existing_nullifers.is_empty(),
+        "the note shouldn't have been nullified"
     );
 }
 
