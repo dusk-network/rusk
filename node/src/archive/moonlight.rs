@@ -231,6 +231,8 @@ impl Archive {
     }
 
     /// Get the full moonlight transaction history of a given AccountPublicKey.
+    ///
+    /// Returns all finalized moonlight events for the given public key
     pub fn full_moonlight_history(
         &self,
         pk: AccountPublicKey,

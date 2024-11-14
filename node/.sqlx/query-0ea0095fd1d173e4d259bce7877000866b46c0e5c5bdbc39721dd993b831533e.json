@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                SELECT origin, topic, source, data FROM finalized_events\n                WHERE block_height = (SELECT MAX(block_height) FROM finalized_events)\n            ",
+  "query": "\n                SELECT origin, topic, source, data FROM unfinalized_events\n                WHERE block_height = (SELECT MAX(block_height) FROM unfinalized_events)\n            ",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "c3207b9139137f86573f37893130985499d99040c00551afe21b68f3b63a5707"
+  "hash": "0ea0095fd1d173e4d259bce7877000866b46c0e5c5bdbc39721dd993b831533e"
 }

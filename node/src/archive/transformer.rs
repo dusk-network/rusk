@@ -126,7 +126,7 @@ pub(super) fn filter_and_convert(
 
             /*
             Cases of a moonlight in- or outflow:
-            1. Any MoonlightTransactionEvent. This implicitly also catches a moonlight outflow for deposit or convert (from moonlight)
+            1. Any MoonlightTransactionEvent. This implicitly also catches a moonlight outflow for deposit, convert or refund (from moonlight)
             2a. Any withdraw event where the receiver is moonlight. (from phoenix)
             2b. Any mint event where the receiver is moonlight. (from staking)
             3. Any convert event where the receiver is moonlight. (from phoenix)
