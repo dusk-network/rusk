@@ -192,16 +192,17 @@ impl StakeState {
 
         let (loaded_stake, keys) = self
             .get_stake_mut(account)
-            .expect("A stake should exist in the map to be unstaked!");
+            .expect("A stake should exist in the map to get rewards!");
 
-        // ensure there is a non-zero reward, and that the withdrawal is exactly
-        // the same amount
-        if loaded_stake.reward == 0 {
-            panic!("There is no reward available to withdraw");
+        // ensure no 0 reward is executed,
+        if value == 0 {
+            panic!("Withdrawing 0 reward is not allowed");
         }
 
+        // ensure that the withdrawal amount is not greater than the current
+        // reward
         if value > loaded_stake.reward {
-            panic!("Value withdrawn higher than available reward");
+            panic!("Value to withdraw is higher than available reward");
         }
 
         // check signature is correct
