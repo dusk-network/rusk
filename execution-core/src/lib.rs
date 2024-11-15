@@ -17,7 +17,6 @@
 
 extern crate alloc;
 
-pub mod license;
 pub mod stake;
 pub mod transfer;
 
