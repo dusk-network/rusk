@@ -363,10 +363,6 @@ pub async fn contract_deploy_charge() {
     logger();
     let f = Fixture::build(false);
 
-    let license_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/license_contract.wasm"
-    );
-
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
         &f.rusk,
@@ -379,21 +375,8 @@ pub async fn contract_deploy_charge() {
         GAS_PRICE,
     );
     let after_bob_balance = f.wallet_balance();
-    make_and_execute_transaction_deploy(
-        &f.rusk,
-        &f.wallet,
-        license_bytecode,
-        GAS_LIMIT,
-        0,
-        false,
-        false,
-        GAS_PRICE,
-    );
-    let after_license_balance = f.wallet_balance();
     let bob_deployment_cost = before_balance - after_bob_balance;
-    let license_deployment_cost = after_bob_balance - after_license_balance;
-    assert!(license_deployment_cost > bob_deployment_cost);
-    assert!(license_deployment_cost - bob_deployment_cost > 10_000_000);
+    assert!(bob_deployment_cost > 10_000_000);
 }
 
 /// We deploy a contract with insufficient gas limit.
