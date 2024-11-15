@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Suggested words in the Mnemonic (Authenticate) are accessible using Tab [#2879]
+- Broken link in the stake warning [#2990]
 
 ## [0.7.0] - 2024-11-11
 
@@ -339,6 +340,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2888]: https://github.com/dusk-network/rusk/issues/2888
 [#2920]: https://github.com/dusk-network/rusk/issues/2920
 [#2932]: https://github.com/dusk-network/rusk/issues/2932
+[#2990]: https://github.com/dusk-network/rusk/issues/2990
 
 <!-- VERSIONS -->
 

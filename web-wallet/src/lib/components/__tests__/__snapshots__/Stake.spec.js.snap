@@ -449,7 +449,7 @@ exports[`Stake > should render the Stake notice 1`] = `
           I understand that I have set up a node properly, as described 
           <a
             class="dusk-anchor dusk-anchor--on-surface"
-            href="https://docs.dusk.network/getting-started/node-setup/overview"
+            href="https://docs.dusk.network/operator/02-provisioner/"
             rel="noopener noreferrer"
             target="_blank"
           >
