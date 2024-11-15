@@ -12,8 +12,6 @@ use tracing::info;
 use dusk_plonk::prelude::Circuit;
 use execution_core::transfer::phoenix::{TxCircuit, NOTES_TREE_DEPTH};
 
-use license_circuits::LicenseCircuit;
-
 type TxCircuitOneTwo = TxCircuit<NOTES_TREE_DEPTH, 1>;
 type TxCircuitTwoTwo = TxCircuit<NOTES_TREE_DEPTH, 2>;
 type TxCircuitThreeTwo = TxCircuit<NOTES_TREE_DEPTH, 3>;
@@ -28,7 +26,6 @@ pub fn cache_all() -> io::Result<()> {
     cache::<TxCircuitTwoTwo>(Some(String::from("TxCircuitTwoTwo")))?;
     cache::<TxCircuitThreeTwo>(Some(String::from("TxCircuitThreeTwo")))?;
     cache::<TxCircuitFourTwo>(Some(String::from("TxCircuitFourTwo")))?;
-    cache::<LicenseCircuit>(Some(String::from("LicenseCircuit")))?;
 
     Ok(())
 }
