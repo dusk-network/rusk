@@ -43,7 +43,7 @@ describe("Login", async () => {
     .default.then(getKey("address"))
     .then(String);
 
-  const getErrorElement = () => document.querySelector(".login__error");
+  const getErrorElement = () => document.querySelector(".banner--error");
   const gotoSpy = vi.spyOn(navigation, "goto");
 
   /**
@@ -93,7 +93,7 @@ describe("Login", async () => {
       );
 
       expect(initSpy).not.toHaveBeenCalled();
-      expect(errorElement?.textContent).toMatch(/mnemonic/i);
+      expect(errorElement?.textContent).toMatch("Invalid mnemonic phrase");
       expect(textInput).toHaveFocus();
       expect(selectedText).toBe(textInput.value);
     });
@@ -198,7 +198,7 @@ describe("Login", async () => {
       );
 
       expect(initSpy).not.toHaveBeenCalled();
-      expect(errorElement?.textContent).toMatch(/password/i);
+      expect(errorElement?.textContent).toMatch("Invalid password");
       expect(textInput).toHaveFocus();
       expect(selectedText).toBe(textInput.value);
     });
