@@ -68,8 +68,8 @@
 
     if (difference !== 0n) {
       const transactionInfo = isShielding
-        ? await walletStore.shield(difference, gas)
-        : await walletStore.unshield(-difference, gas);
+        ? await walletStore.shield(difference - fee, gas)
+        : await walletStore.unshield(-difference - fee, gas);
 
       return transactionInfo.hash;
     }
@@ -104,9 +104,8 @@
   /** @type {number} */
   let screenWidth = window.innerWidth;
 
-  const minAmount = 0.000000001;
-
   let hasInvalidInput = false;
+  let hasEnoughFunds = true;
 
   // Constant total
   const totalBalance = shieldedBalance + unshieldedBalance;
@@ -127,7 +126,14 @@
 
   $: fee = gasLimit * gasPrice;
   $: difference = shielded - initialShielded;
+
+  $: hasEnoughFunds = isUnshielding
+    ? shieldedBalance - difference - fee >= 0n
+    : unshieldedBalance + difference - fee >= 0n;
+
   $: isNextButtonDisabled =
+    !hasEnoughFunds ||
+    !isGasValid ||
     difference === 0n || // No change in balance
     shielded < 0n || // Shielded balance is negative
     unshielded < 0n || // Unshielded balance is negative
@@ -170,11 +176,9 @@
               value={shieldedNumber}
               required
               type="number"
-              min={minAmount}
-              max={isShielding
-                ? luxToDusk(totalBalance - fee)
-                : luxToDusk(totalBalance)}
               step="0.000000001"
+              max={luxToDusk(totalBalance)}
+              min="0"
               on:input={handleBalanceChange}
               name="shielded-amount"
             />
@@ -203,10 +207,8 @@
               value={unshieldedNumber}
               required
               type="number"
-              min={minAmount}
-              max={isUnshielding
-                ? luxToDusk(totalBalance - fee)
-                : luxToDusk(totalBalance)}
+              max={luxToDusk(totalBalance)}
+              min="0"
               step="0.000000001"
               id="unshielded-amount"
               on:input={handleBalanceChange}
@@ -240,6 +242,15 @@
             }
           }}
         />
+
+        {#if !hasEnoughFunds}
+          <Banner title="Insufficient Funds" variant="error">
+            <p>
+              Your balance is too low to cover the allocation fees. Please
+              adjust your transaction or add more funds to proceed.
+            </p>
+          </Banner>
+        {/if}
       </div>
     </WizardStep>
     <WizardStep
@@ -265,8 +276,8 @@
           <dd class="review-transaction__value operation__review-amount">
             <span>
               {isShielding
-                ? `${formatter(luxToDusk(unshieldedBalance - unshielded))} DUSK`
-                : `${formatter(luxToDusk(shieldedBalance - shielded))} DUSK`}
+                ? `${formatter(luxToDusk(unshieldedBalance - unshielded - fee))} DUSK`
+                : `${formatter(luxToDusk(shieldedBalance - shielded - fee))} DUSK`}
             </span>
             <Icon
               className="dusk-amount__icon"
@@ -303,9 +314,12 @@
           </dd>
         </dl>
         <GasFee {formatter} {fee} />
-        <Banner title="Fee details" variant="info">
+        <Banner title="Fee Details" variant="info">
           <p>
-            Fee will be paid with your {isUnshielding ? "shielded" : "public"} balance.
+            The fee will be deducted from your <b
+              >{isUnshielding ? "shielded" : "public"}</b
+            > balance, with the maximum estimated fee reserved before allocation.
+            This guarantees sufficient coverage for the transaction.
           </p>
         </Banner>
       </div>
