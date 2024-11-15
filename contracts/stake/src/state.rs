@@ -72,7 +72,7 @@ impl StakeState {
 
         let value = stake.value();
         let keys = *stake.keys();
-        let account = keys.account;
+        let account = &keys.account;
         let nonce = stake.nonce();
         let signature = *stake.signature();
 
@@ -80,7 +80,7 @@ impl StakeState {
             panic!("The stake must target the correct chain");
         }
 
-        let prev_stake = self.get_stake(&account).copied();
+        let prev_stake = self.get_stake(account).copied();
         let (loaded_stake, loaded_keys) = self.load_or_create_stake_mut(&keys);
 
         // Update the funds key with the newly provided one
@@ -131,7 +131,7 @@ impl StakeState {
         let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert((prev_stake, account));
+            .or_insert_with(|| (prev_stake, *account));
     }
 
     pub fn unstake(&mut self, unstake: Withdraw) {
