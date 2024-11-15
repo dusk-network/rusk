@@ -7,7 +7,6 @@
 use std::path::Path;
 
 use anyhow::Result;
-use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
 use sqlx::{
@@ -16,7 +15,6 @@ use sqlx::{
 };
 use tracing::{error, info, warn};
 
-use crate::archive::moonlight::MoonlightGroup;
 use crate::archive::transformer;
 use crate::archive::Archive;
 
@@ -56,100 +54,22 @@ impl Archive {
     }
 
     /// Fetch the json string of all vm events from a given block height
-    pub async fn fetch_json_vm_events_by_blk_height(
+    pub async fn fetch_json_events_by_height(
         &self,
         block_height: i64,
     ) -> Result<String> {
-        let mut conn = self.sqlite_archive.acquire().await?;
-
-        let events = sqlx::query_as!(data::ArchivedEvent,
-            r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_height = ?
-            UNION ALL
-            SELECT origin, topic, source, data FROM finalized_events WHERE block_height = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_height = ?)
-            "#,
-            block_height, block_height, block_height
-        ).fetch_all(&mut *conn).await?;
+        let events = self.fetch_events_by_height(block_height).await?;
 
         // Convert the event related row fields from finalized_events table to
         // json string
         Ok(serde_json::to_string(&events)?)
-    }
-
-    /// Fetch all vm events from the last finalized block and return them as a
-    /// json string
-    pub async fn fetch_json_last_vm_events(&self) -> Result<String> {
-        let mut conn = self.sqlite_archive.acquire().await?;
-
-        // Get the last finalized block height by getting all the events from
-        // the largest block height
-        let events = sqlx::query_as!(data::ArchivedEvent,
-            r#"
-                SELECT origin, topic, source, data FROM finalized_events
-                WHERE block_height = (SELECT MAX(block_height) FROM finalized_events)
-            "#
-        )
-        .fetch_all(&mut *conn)
-        .await?;
-
-        // Convert the event related row fields from finalized_events table to
-        // json string
-        Ok(serde_json::to_string(&events)?)
-    }
-
-    /// Fetch all vm events from a given block hash and return them as a json
-    /// string
-    pub async fn fetch_json_vm_events_by_blk_hash(
-        &self,
-        hex_block_hash: &str,
-    ) -> Result<String> {
-        let mut conn = self.sqlite_archive.acquire().await?;
-
-        let events = sqlx::query_as!(data::ArchivedEvent,
-            r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?
-            UNION ALL
-            SELECT origin, topic, source, data FROM finalized_events WHERE block_hash = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_hash = ?)
-            "#,
-            hex_block_hash, hex_block_hash, hex_block_hash
-        ).fetch_all(&mut *conn).await?;
-
-        // Convert the event related row fields from finalized_events table to
-        // json string
-        Ok(serde_json::to_string(&events)?)
-    }
-
-    /// Fetch all vm events from a given block hash
-    pub async fn fetch_vm_events_by_blk_hash(
-        &self,
-        hex_block_hash: &str,
-    ) -> Result<Vec<ContractTxEvent>> {
-        let mut conn = self.sqlite_archive.acquire().await?;
-
-        let events = sqlx::query_as!(data::ArchivedEvent,
-            r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?
-            UNION ALL
-            SELECT origin, topic, source, data FROM finalized_events WHERE block_hash = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_hash = ?)
-            "#,
-            hex_block_hash, hex_block_hash, hex_block_hash
-        ).fetch_all(&mut *conn).await?;
-
-        // Convert the event related row fields from finalized_events table to
-        // data::Events and then to ContractTxEvent through into()
-        let mut contract_tx_events = Vec::new();
-        for event in events {
-            let contract_tx_event: ContractTxEvent = event.try_into()?;
-            contract_tx_events.push(contract_tx_event);
-        }
-
-        Ok(contract_tx_events)
     }
 
     /// Fetch the list of all vm events from the block of the given height.
-    pub async fn fetch_vm_events(
+    async fn fetch_events_by_height(
         &self,
-        block_height: u64,
+        block_height: i64,
     ) -> Result<Vec<data::ArchivedEvent>> {
-        let block_height: i64 = block_height as i64;
-
         let mut conn = self.sqlite_archive.acquire().await?;
 
         // query all events now that we have the block height
@@ -164,17 +84,52 @@ impl Archive {
         Ok(records)
     }
 
-    /// Fetch the last finalized block height and block hash
-    pub async fn fetch_last_finalized_block(&self) -> Result<(u64, String)> {
+    /// Fetch all vm events from a given block hash and return them as a json
+    /// string
+    pub async fn fetch_json_events_by_hash(
+        &self,
+        hex_block_hash: &str,
+    ) -> Result<String> {
+        let events = self.fetch_events_by_hash(hex_block_hash).await?;
+
+        Ok(serde_json::to_string(&events)?)
+    }
+
+    /// Fetch all vm events from a given block hash
+    async fn fetch_events_by_hash(
+        &self,
+        hex_block_hash: &str,
+    ) -> Result<Vec<data::ArchivedEvent>> {
         let mut conn = self.sqlite_archive.acquire().await?;
 
-        let block = sqlx::query!(
-            r#"SELECT block_height, block_hash FROM finalized_blocks WHERE block_height = (SELECT MAX(block_height) FROM finalized_blocks)"#
+        let events = sqlx::query_as!(data::ArchivedEvent,
+            r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?
+            UNION ALL
+            SELECT origin, topic, source, data FROM finalized_events WHERE block_hash = ? AND NOT EXISTS (SELECT 1 FROM unfinalized_events WHERE block_hash = ?)
+            "#,
+            hex_block_hash, hex_block_hash, hex_block_hash
+        ).fetch_all(&mut *conn).await?;
+
+        Ok(events)
+    }
+
+    /// Fetch all vm events from the last block and return them as a
+    /// json string
+    pub async fn fetch_json_last_events(&self) -> Result<String> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        // Get the last finalized block height by getting all the events from
+        // the largest block height
+        let events = sqlx::query_as!(data::ArchivedEvent,
+            r#"
+                SELECT origin, topic, source, data FROM unfinalized_events
+                WHERE block_height = (SELECT MAX(block_height) FROM unfinalized_events)
+            "#
         )
-        .fetch_one(&mut *conn)
+        .fetch_all(&mut *conn)
         .await?;
 
-        Ok((block.block_height as u64, block.block_hash))
+        Ok(serde_json::to_string(&events)?)
     }
 
     /// Get all finalized events from a specific contract
@@ -196,7 +151,7 @@ impl Archive {
     }
 
     /// Fetch all unfinalized vm events from a given block hash
-    pub async fn fetch_unfinalized_vm_events_by_blk_hash(
+    pub async fn fetch_unfinalized_events_by_hash(
         &self,
         hex_block_hash: &str,
     ) -> Result<Vec<ContractTxEvent>> {
@@ -218,13 +173,17 @@ impl Archive {
         Ok(contract_tx_events)
     }
 
-    /// Fetch the finalized moonlight events for the given public key
-    pub fn fetch_moonlight_histories(
-        &self,
-        address: AccountPublicKey,
-    ) -> Result<Option<Vec<MoonlightGroup>>> {
-        // Get the moonlight events for the given public key from rocksdb
-        self.full_moonlight_history(address)
+    /// Fetch the last finalized block height and block hash
+    pub async fn fetch_last_finalized_block(&self) -> Result<(u64, String)> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        let block = sqlx::query!(
+                r#"SELECT block_height, block_hash FROM finalized_blocks WHERE block_height = (SELECT MAX(block_height) FROM finalized_blocks)"#
+            )
+            .fetch_one(&mut *conn)
+            .await?;
+
+        Ok((block.block_height as u64, block.block_hash))
     }
 
     /// Check if a block_height & block_hash match a finalized block
@@ -236,11 +195,11 @@ impl Archive {
         let mut conn = self.sqlite_archive.acquire().await?;
 
         let r = sqlx::query!(
-            r#"SELECT block_height FROM finalized_blocks WHERE block_height = ? AND block_hash = ?"#,
-            block_height, hex_block_hash
-        )
-        .fetch_optional(&mut *conn)
-        .await?;
+                r#"SELECT block_height FROM finalized_blocks WHERE block_height = ? AND block_hash = ?"#,
+                block_height, hex_block_hash
+            )
+            .fetch_optional(&mut *conn)
+            .await?;
 
         Ok(r.is_some())
     }
@@ -250,7 +209,7 @@ impl Archive {
 impl Archive {
     /// Store the list of **all** unfinalized vm events from the block of the
     /// given height.
-    pub(super) async fn store_unfinalized_vm_events(
+    pub(super) async fn store_unfinalized_events(
         &self,
         block_height: u64,
         block_hash: Hash,
@@ -320,7 +279,7 @@ impl Archive {
 
         // Get all the unfinalized events from the block
         let events = self
-            .fetch_unfinalized_vm_events_by_blk_hash(hex_block_hash)
+            .fetch_unfinalized_events_by_hash(hex_block_hash)
             .await?;
 
         // Group events by origin (block height, TxHash) & throw away the ones
@@ -582,11 +541,11 @@ mod tests {
         let events = dummy_data();
 
         archive
-            .store_unfinalized_vm_events(1, [5; 32], events.clone())
+            .store_unfinalized_events(1, [5; 32], events.clone())
             .await
             .unwrap();
 
-        let fetched_events = archive.fetch_vm_events(1).await.unwrap();
+        let fetched_events = archive.fetch_events_by_height(1).await.unwrap();
 
         // Check if the events are the same
         for (contract_tx_event, fetched_event) in
@@ -616,7 +575,7 @@ mod tests {
         let events = dummy_data();
 
         archive
-            .store_unfinalized_vm_events(blk_height, blk_hash, events.clone())
+            .store_unfinalized_events(blk_height, blk_hash, events.clone())
             .await
             .unwrap();
 
@@ -625,11 +584,14 @@ mod tests {
             .await
             .unwrap());
 
-        let fetched_events = archive.fetch_vm_events(blk_height).await.unwrap();
+        let fetched_events = archive
+            .fetch_events_by_height(blk_height as i64)
+            .await
+            .unwrap();
         assert!(fetched_events.is_empty());
 
         archive
-            .store_unfinalized_vm_events(blk_height, blk_hash, events.clone())
+            .store_unfinalized_events(blk_height, blk_hash, events.clone())
             .await
             .unwrap();
 

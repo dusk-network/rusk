@@ -11,7 +11,7 @@ use node::archive::MoonlightGroup;
 
 pub struct MoonlightTransactions(pub Vec<MoonlightGroup>);
 
-pub struct BlockEvents(pub(super) serde_json::Value);
+pub struct ContractEvents(pub(super) serde_json::Value);
 
 pub(super) struct NewAccountPublicKey(pub AccountPublicKey);
 
@@ -39,7 +39,7 @@ impl MoonlightTransactions {
 }
 
 #[Object]
-impl BlockEvents {
+impl ContractEvents {
     pub async fn json(&self) -> serde_json::Value {
         self.0.clone()
     }

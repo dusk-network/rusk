@@ -7,42 +7,64 @@
 //! Module for GraphQL that relates to stored events in the archive.
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
+use execution_core::CONTRACT_ID_BYTES;
+use node_data::events::contract::WrappedContractId;
 
-use super::data::BlockEvents;
+use super::data::ContractEvents;
 use crate::http::chain::graphql::{DBContext, OptResult};
 
-pub async fn block_events_by_height(
+pub async fn events_by_height(
     ctx: &Context<'_>,
     height: i64,
-) -> OptResult<BlockEvents> {
+) -> OptResult<ContractEvents> {
     let (_, archive) = ctx.data::<DBContext>()?;
     let mut events;
 
     if height < 0 {
-        events = archive.fetch_json_last_vm_events().await.map_err(|e| {
+        events = archive.fetch_json_last_events().await.map_err(|e| {
             FieldError::new(format!("Cannot fetch events: {}", e))
         })?;
     } else {
-        events = archive
-            .fetch_json_vm_events_by_blk_height(height)
-            .await
-            .map_err(|e| {
-                FieldError::new(format!("Cannot fetch events: {}", e))
-            })?;
+        events =
+            archive
+                .fetch_json_events_by_height(height)
+                .await
+                .map_err(|e| {
+                    FieldError::new(format!("Cannot fetch events: {}", e))
+                })?;
     }
 
-    Ok(Some(BlockEvents(serde_json::from_str(&events)?)))
+    Ok(Some(ContractEvents(serde_json::from_str(&events)?)))
 }
 
-pub async fn block_events_by_hash(
+pub async fn events_by_hash(
     ctx: &Context<'_>,
     hash: String,
-) -> OptResult<BlockEvents> {
+) -> OptResult<ContractEvents> {
     let (_, archive) = ctx.data::<DBContext>()?;
     let events = archive
-        .fetch_json_vm_events_by_blk_hash(&hash)
+        .fetch_json_events_by_hash(&hash)
         .await
         .map_err(|e| FieldError::new(format!("Cannot fetch events: {}", e)))?;
 
-    Ok(Some(BlockEvents(serde_json::from_str(&events)?)))
+    Ok(Some(ContractEvents(serde_json::from_str(&events)?)))
+}
+
+pub async fn finalized_events_by_contractid(
+    ctx: &Context<'_>,
+    hex_contract_id: String,
+) -> OptResult<ContractEvents> {
+    let (_, archive) = ctx.data::<DBContext>()?;
+
+    // shallow check if contract id is valid
+    if hex_contract_id.len() != CONTRACT_ID_BYTES * 2 {
+        return Err(FieldError::new("Invalid contract_id"));
+    }
+
+    let events = archive
+        .fetch_finalized_events_from_contract(&hex_contract_id)
+        .await
+        .map_err(|e| FieldError::new(format!("Cannot fetch events: {}", e)))?;
+
+    Ok(Some(ContractEvents(serde_json::to_value(events)?)))
 }

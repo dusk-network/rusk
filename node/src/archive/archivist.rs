@@ -40,7 +40,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     ) => {
                         if let Err(e) = self
                             .archivist
-                            .store_unfinalized_vm_events(
+                            .store_unfinalized_events(
                                 blk_height, blk_hash, events,
                             )
                             .await
