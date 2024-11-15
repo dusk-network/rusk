@@ -4,18 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::io::{stdout, Write};
-use std::thread;
-use std::time::Duration;
-
 use tracing::info;
 
 /// Prints an interactive status message
-pub(crate) fn interactive(status: &str) {
-    print!("\r{status: <50}\r");
-    let mut stdout = stdout();
-    stdout.flush().unwrap();
-    thread::sleep(Duration::from_millis(85));
+pub(crate) fn interactive(_status: &str) {
+    // FIXME: We currently don't print callback
+    // messages from wallet functions because we
+    // haven't found a constructive way to do so
+    // See issue #2962
 }
 
 /// Logs the status message at info level

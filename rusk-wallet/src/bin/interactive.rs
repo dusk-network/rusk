@@ -6,8 +6,11 @@
 
 mod command_menu;
 
+use std::fmt::Display;
+
 use bip39::{Language, Mnemonic, MnemonicType};
-use requestty::Question;
+use inquire::{InquireError, Select};
+
 use rusk_wallet::{
     currency::Dusk,
     dat::{DatFileVersion, LATEST_VERSION},
@@ -17,7 +20,7 @@ use rusk_wallet::{
 use crate::{
     io::{self, prompt},
     settings::Settings,
-    Command, GraphQL, Menu, RunResult, WalletFile,
+    Command, GraphQL, RunResult, WalletFile,
 };
 
 /// Run the interactive UX loop with a loaded wallet
@@ -27,59 +30,24 @@ pub(crate) async fn run_loop(
 ) -> anyhow::Result<()> {
     loop {
         // let the user choose (or create) a profile
-        let profile_idx = match menu_profile(wallet)? {
-            ProfileSelect::Index(profile_idx) => profile_idx,
-            ProfileSelect::New => {
-                if wallet.profiles().len() >= MAX_PROFILES {
-                    println!(
-                        "Cannot create more profiles, this wallet only supports up to {MAX_PROFILES} profiles"
-                    );
-                    std::process::exit(0);
-                }
-
-                let profile_idx = wallet.add_profile();
-                let file_version = wallet.get_file_version()?;
-
-                let password = &settings.password;
-                // if the version file is old, ask for password and save as
-                // latest dat file
-                if file_version.is_old() {
-                    let pwd = prompt::request_auth(
-                        "Updating your wallet data file, please enter your wallet password ",
-                        password,
-                        DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-                    )?;
-
-                    wallet.save_to(WalletFile {
-                        path: wallet.file().clone().unwrap().path,
-                        pwd,
-                    })?;
-                } else {
-                    // else just save
-                    wallet.save()?;
-                }
-
-                profile_idx
-            }
-            ProfileSelect::Exit => std::process::exit(0),
-        };
+        let profile_index = profile_idx(wallet, settings).await?;
 
         loop {
-            let profile = &wallet.profiles()[profile_idx as usize];
+            let profile = &wallet.profiles()[profile_index as usize];
             prompt::hide_cursor()?;
 
             let op = if !wallet.is_online().await {
-                println!("{}", profile.shielded_address_string());
+                println!("\r{}", profile.shielded_address_string());
                 println!("{}", profile.public_account_string());
                 println!();
 
-                command_menu::offline(profile_idx, settings)
+                command_menu::offline(profile_index, settings)
             } else {
                 // get balance for this profile
                 let moonlight_bal =
-                    wallet.get_moonlight_balance(profile_idx).await?;
+                    wallet.get_moonlight_balance(profile_index).await?;
                 let phoenix_bal =
-                    wallet.get_phoenix_balance(profile_idx).await?;
+                    wallet.get_phoenix_balance(profile_index).await?;
                 let phoenix_spendable = phoenix_bal.spendable.into();
                 let phoenix_total: Dusk = phoenix_bal.value.into();
 
@@ -106,7 +74,7 @@ pub(crate) async fn run_loop(
                 println!();
 
                 command_menu::online(
-                    profile_idx,
+                    profile_index,
                     wallet,
                     phoenix_spendable,
                     moonlight_bal,
@@ -118,8 +86,8 @@ pub(crate) async fn run_loop(
             prompt::hide_cursor()?;
 
             // perform operations with this profile
-            match op? {
-                ProfileOp::Run(cmd) => {
+            match op {
+                Ok(ProfileOp::Run(cmd)) => {
                     // request confirmation before running
                     if confirm(&cmd, wallet)? {
                         // run command
@@ -133,8 +101,8 @@ pub(crate) async fn run_loop(
                                 if let RunResult::Tx(hash) = res {
                                     let tx_id = hex::encode(hash.to_bytes());
 
-                                    // Wait for transaction confirmation from
-                                    // network
+                                    // Wait for transaction confirmation
+                                    // from network
                                     let gql = GraphQL::new(
                                         settings.state.to_string(),
                                         io::status::interactive,
@@ -149,74 +117,113 @@ pub(crate) async fn run_loop(
                                 }
                             }
 
-                            Err(err) => println!("{err}"),
+                            Err(err) => return Err(err),
                         }
                     }
                 }
-                ProfileOp::Back => break,
-                ProfileOp::Stay => continue,
-            }
+                Ok(ProfileOp::Stay) => (),
+                Ok(ProfileOp::Back) => {
+                    break;
+                }
+                Err(e) => match e.downcast_ref::<InquireError>() {
+                    Some(InquireError::OperationCanceled) => (),
+                    _ => return Err(e),
+                },
+            };
         }
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Debug, Clone)]
-enum ProfileSelect {
-    Index(u8),
+#[derive(PartialEq, Eq, Debug, Clone)]
+enum ProfileSelect<'a> {
+    Index(u8, &'a Profile),
     New,
-    Exit,
+    Back,
 }
 
-/// Allows the user to choose an profile from the selected wallet
+async fn profile_idx(
+    wallet: &mut Wallet<WalletFile>,
+    settings: &Settings,
+) -> anyhow::Result<u8> {
+    match menu_profile(wallet)? {
+        ProfileSelect::Index(index, _) => Ok(index),
+        ProfileSelect::New => {
+            if wallet.profiles().len() >= MAX_PROFILES {
+                println!(
+                        "Cannot create more profiles, this wallet only supports up to {MAX_PROFILES} profiles"
+                    );
+
+                return Err(InquireError::OperationCanceled.into());
+            }
+
+            let profile_idx = wallet.add_profile();
+            let file_version = wallet.get_file_version()?;
+
+            let password = &settings.password;
+            // if the version file is old, ask for password and save as
+            // latest dat file
+            if file_version.is_old() {
+                let pwd = prompt::request_auth(
+                        "Updating your wallet data file, please enter your wallet password ",
+                        password,
+                        DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+                    )?;
+
+                wallet.save_to(WalletFile {
+                    path: wallet.file().clone().unwrap().path,
+                    pwd,
+                })?;
+            } else {
+                // else just save
+                wallet.save()?;
+            }
+
+            Ok(profile_idx)
+        }
+        ProfileSelect::Back => Err(InquireError::OperationCanceled.into()),
+    }
+}
+
+/// Allows the user to choose a profile from the selected wallet
 /// to start performing operations.
 fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
-    let mut profile_menu = Menu::title("Profiles");
-    for (profile_idx, profile) in wallet.profiles().iter().enumerate() {
-        let profile_idx = profile_idx as u8;
-        let profile_str = format!(
-            "{}\n  {}\n  {}",
-            Profile::index_string(profile_idx),
-            profile.shielded_address_preview(),
-            profile.public_account_preview(),
-        );
-        profile_menu =
-            profile_menu.add(ProfileSelect::Index(profile_idx), profile_str);
+    let mut menu_items = Vec::new();
+    let profiles = wallet.profiles();
+
+    for (index, profile) in profiles.iter().enumerate() {
+        menu_items.push(ProfileSelect::Index(index as u8, profile));
     }
 
     let remaining_profiles =
         MAX_PROFILES.saturating_sub(wallet.profiles().len());
 
-    let mut action_menu = Menu::new();
     // only show the option to create a new profile if we don't already have
     // `MAX_PROFILES`
     if remaining_profiles > 0 {
-        action_menu = action_menu
-            .separator()
-            .add(ProfileSelect::New, "New profile")
-    };
+        menu_items.push(ProfileSelect::New);
+    }
+
+    menu_items.push(ProfileSelect::Back);
+
+    let mut select = Select::new("Your Profiles", menu_items);
+
+    // UNWRAP: Its okay to unwrap because the default help message
+    // is provided by inquire Select struct
+    let mut msg = Select::<ProfileSelect>::DEFAULT_HELP_MESSAGE
+        .unwrap()
+        .to_owned();
 
     if let Some(rx) = &wallet.state()?.sync_rx {
         if let Ok(status) = rx.try_recv() {
-            action_menu = action_menu
-                .separator()
-                .separator_msg(format!("Sync Status: {status}"));
+            msg = format!("Sync Status: {status}");
         } else {
-            action_menu = action_menu
-                .separator()
-                .separator_msg("Waiting for Sync to complete..");
+            msg = "Waiting for Sync to complete..".to_string();
         }
     }
 
-    action_menu = action_menu.separator().add(ProfileSelect::Exit, "Exit");
+    select = select.with_help_message(&msg);
 
-    let menu = profile_menu.extend(action_menu);
-    let questions = Question::select("theme")
-        .message("Please select a profile")
-        .choices(menu.clone())
-        .build();
-
-    let answer = requestty::prompt_one(questions)?;
-    Ok(menu.answer(&answer).to_owned())
+    Ok(select.prompt()?)
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -227,7 +234,7 @@ enum ProfileOp {
 }
 
 /// Allows the user to load a wallet interactively
-pub(crate) fn load_wallet(
+pub(crate) async fn load_wallet(
     wallet_path: &WalletPath,
     settings: &Settings,
     file_version: Result<DatFileVersion, Error>,
@@ -238,7 +245,7 @@ pub(crate) fn load_wallet(
     let password = &settings.password;
 
     // display main menu
-    let wallet = match menu_wallet(wallet_found)? {
+    let wallet = match menu_wallet(wallet_found, settings).await? {
         MainMenu::Load(path) => {
             let file_version = file_version?;
             let mut attempt = 1;
@@ -312,38 +319,38 @@ enum MainMenu {
 
 /// Allows the user to load an existing wallet, recover a lost one
 /// or create a new one.
-fn menu_wallet(wallet_found: Option<WalletPath>) -> anyhow::Result<MainMenu> {
+async fn menu_wallet(
+    wallet_found: Option<WalletPath>,
+    settings: &Settings,
+) -> anyhow::Result<MainMenu> {
     // create the wallet menu
-    let mut menu = Menu::new();
+    let mut menu_items = Vec::new();
 
     if let Some(wallet_path) = wallet_found {
-        menu = menu
-            .separator()
-            .add(MainMenu::Load(wallet_path), "Access your wallet")
-            .separator()
-            .add(MainMenu::Create, "Replace your wallet with a new one")
-            .add(
-                MainMenu::Recover,
-                "Replace your wallet with a lost one using the mnemonic phrase",
-            )
+        menu_items.push(MainMenu::Load(wallet_path));
+        menu_items.push(MainMenu::Create);
+        menu_items.push(MainMenu::Recover);
     } else {
-        menu = menu.add(MainMenu::Create, "Create a new wallet").add(
-            MainMenu::Recover,
-            "Access a lost wallet using the mnemonic phrase",
-        )
+        menu_items.push(MainMenu::Create);
+        menu_items.push(MainMenu::Recover);
     }
 
-    // create the action menu
-    menu = menu.separator().add(MainMenu::Exit, "Exit");
+    menu_items.push(MainMenu::Exit);
+
+    let emoji_state = status_emoji(settings.check_state_con().await.is_ok());
+    let emoji_prover = status_emoji(settings.check_prover_con().await.is_ok());
+
+    let state_status = format!("{} State: {}", emoji_state, settings.state);
+    let prover_status = format!("{} Prover: {}", emoji_prover, settings.prover);
+
+    let menu = format!(
+        "Welcome\n   {state_status}\n   {prover_status}   \nWhat would you like to do?",
+    );
 
     // let the user choose an option
-    let questions = Question::select("theme")
-        .message("What would you like to do?")
-        .choices(menu.clone())
-        .build();
+    let select = Select::new(menu.as_str(), menu_items);
 
-    let answer = requestty::prompt_one(questions)?;
-    Ok(menu.answer(&answer).to_owned())
+    Ok(select.prompt()?)
 }
 
 /// Request user confirmation for a transfer transaction
@@ -456,5 +463,44 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             prompt::ask_confirm()
         }
         _ => Ok(true),
+    }
+}
+
+fn status_emoji(status: bool) -> String {
+    if status {
+        "✅".to_string()
+    } else {
+        "❌".to_string()
+    }
+}
+
+impl<'a> Display for ProfileSelect<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ProfileSelect::Index(index, profile) => write!(
+                f,
+                "{}\n  {}\n  {}",
+                Profile::index_string(*index),
+                profile.shielded_address_preview(),
+                profile.public_account_preview(),
+            ),
+            ProfileSelect::New => write!(f, "Create a new profile"),
+            ProfileSelect::Back => write!(f, "Back"),
+        }
+    }
+}
+
+impl Display for MainMenu {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MainMenu::Load(path) => {
+                write!(f, "Load wallet from {}", path.wallet.display())
+            }
+            MainMenu::Create => write!(f, "Create a new wallet"),
+            MainMenu::Recover => {
+                write!(f, "Recover a lost wallet using recovery phrase")
+            }
+            MainMenu::Exit => write!(f, "Exit"),
+        }
     }
 }

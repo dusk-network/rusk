@@ -8,11 +8,11 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use rusk_wallet::DecodedNote;
+use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
 
 use execution_core::{dusk, from_dusk, transfer::Transaction};
 
-use crate::io::{self, GraphQL};
+use crate::io::{self};
 use crate::settings::Settings;
 
 pub struct TransactionHistory {
@@ -94,19 +94,22 @@ pub(crate) async fn transaction_from_notes(
 
         let note_hash = decoded_note.note.hash();
         // Looking for the transaction which created the note
-        let note_creator = txs.iter().find(|(t, _, _)| {
-            t.outputs().iter().any(|n| n.hash().eq(&note_hash))
-                || t.nullifiers()
-                    .iter()
-                    .any(|tx_null| nullifiers.iter().any(|(n, _)| n == tx_null))
-        });
+        let note_creator = txs.iter_mut().find(|tx_block| {
+            let tx = &tx_block.tx;
 
-        if let Some((t, tx_id, gas_spent)) = note_creator {
-            let inputs_amount: f64 = t
+            tx.outputs().iter().any(|note| note.hash().eq(&note_hash))
+                || tx.nullifiers().iter().any(|tx_null| {
+                    nullifiers.iter().any(|(nullifier, _)| nullifier == tx_null)
+                })
+        });
+        if let Some(BlockTransaction { tx, id, gas_spent }) = note_creator {
+            let inputs_amount: f64 = tx
                 .nullifiers()
                 .iter()
                 .filter_map(|input| {
-                    nullifiers.iter().find_map(|n| n.0.eq(input).then_some(n.1))
+                    nullifiers.iter().find_map(|(nullifier, gas)| {
+                        nullifier.eq(input).then_some(gas)
+                    })
                 })
                 .sum::<u64>() as f64;
 
@@ -115,15 +118,15 @@ pub(crate) async fn transaction_from_notes(
                 false => TransactionDirection::In,
             };
 
-            match ret.iter_mut().find(|th| &th.id == tx_id) {
+            match ret.iter_mut().find(|th| &th.id == id) {
                 Some(tx) => tx.amount += note_amount,
                 None => ret.push(TransactionHistory {
                     direction,
                     height: decoded_note.block_height,
                     amount: note_amount - inputs_amount,
-                    fee: gas_spent * t.gas_price(),
-                    tx: t.clone(),
-                    id: tx_id.clone(),
+                    fee: *gas_spent * tx.gas_price(),
+                    tx: tx.clone(),
+                    id: id.clone(),
                 }),
             }
         } else {

@@ -18,6 +18,7 @@ mod cache;
 mod clients;
 mod crypto;
 mod error;
+mod gql;
 mod rues;
 mod store;
 mod wallet;
@@ -32,6 +33,8 @@ pub use error::Error;
 pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
 };
+
+pub use gql::{BlockTransaction, GraphQL};
 
 use execution_core::{
     dusk, from_dusk,

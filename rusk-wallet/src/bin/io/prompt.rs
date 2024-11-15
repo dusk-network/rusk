@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{io::stdout, println};
@@ -16,15 +17,41 @@ use crossterm::{
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
 use execution_core::stake::MINIMUM_STAKE;
-use requestty::{Choice, Question};
 
-use rusk_wallet::gas::{self, MempoolGasPrices};
+use inquire::ui::RenderConfig;
+use inquire::validator::Validation;
+use inquire::{
+    Confirm, CustomType, InquireError, Password, PasswordDisplayMode, Select,
+    Text,
+};
 use rusk_wallet::{
     currency::{Dusk, Lux},
     dat::DatFileVersion,
+    gas::{self, MempoolGasPrices},
     Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE,
 };
 use sha2::{Digest, Sha256};
+
+pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
+    let pwd = Password::new(msg)
+        .with_display_toggle_enabled()
+        .without_confirmation()
+        .with_display_mode(PasswordDisplayMode::Hidden)
+        .prompt();
+
+    pwd
+}
+
+pub(crate) fn create_new_password() -> Result<String, InquireError> {
+    let pwd = Password::new("Password:")
+        .with_display_toggle_enabled()
+        .with_display_mode(PasswordDisplayMode::Hidden)
+        .with_custom_confirmation_message("Confirm password: ")
+        .with_custom_confirmation_error_message("The passwords doesn't match")
+        .prompt();
+
+    pwd
+}
 
 /// Request the user to authenticate with a password
 pub(crate) fn request_auth(
@@ -35,15 +62,7 @@ pub(crate) fn request_auth(
     let pwd = match password.as_ref() {
         Some(p) => p.to_string(),
 
-        None => {
-            let q = Question::password("password")
-                .message(format!("{}:", msg))
-                .mask('*')
-                .build();
-
-            let a = requestty::prompt_one(q)?;
-            a.as_string().expect("answer to be a string").into()
-        }
+        None => ask_pwd(msg)?,
     };
 
     Ok(hash(file_version, &pwd))
@@ -56,37 +75,7 @@ pub(crate) fn create_password(
 ) -> anyhow::Result<Vec<u8>> {
     let pwd = match password.as_ref() {
         Some(p) => p.to_string(),
-        None => {
-            let mut pwd = String::from("");
-
-            let mut pwds_match = false;
-            while !pwds_match {
-                // enter password
-                let q = Question::password("password")
-                    .message("Enter the password for the wallet:")
-                    .mask('*')
-                    .build();
-                let a = requestty::prompt_one(q)?;
-                let pwd1 = a.as_string().expect("answer to be a string");
-
-                // confirm password
-                let q = Question::password("password")
-                    .message("Please confirm the password:")
-                    .mask('*')
-                    .build();
-                let a = requestty::prompt_one(q)?;
-                let pwd2 = a.as_string().expect("answer to be a string");
-
-                // check match
-                pwds_match = pwd1 == pwd2;
-                if pwds_match {
-                    pwd = pwd1.to_string()
-                } else {
-                    println!("Passwords don't match, please try again.");
-                }
-            }
-            pwd
-        }
+        None => create_new_password()?,
     };
 
     Ok(hash(file_version, &pwd))
@@ -98,23 +87,20 @@ where
     S: std::fmt::Display,
 {
     // inform the user about the mnemonic phrase
-    println!("The following phrase is essential for you to regain access to your wallet\nin case you lose access to this computer.");
-    println!("Please print it or write it down and store it somewhere safe:");
-    println!();
-    println!("> {}", phrase);
-    println!();
+    let msg = format!("The following phrase is essential for you to regain access to your wallet\nin case you lose access to this computer. Please print it or write it down and store it somewhere safe.\n> {} \nHave you backed up this phrase?", phrase);
 
     // let the user confirm they have backed up their phrase
-    loop {
-        let q = requestty::Question::confirm("proceed")
-            .message("Have you backed up your mnemonic phrase?")
-            .build();
+    let confirm = Confirm::new(&msg)
+        .with_help_message(
+            "It is important you backup the mnemonic phrase before proceeding",
+        )
+        .prompt()?;
 
-        let a = requestty::prompt_one(q)?;
-        if a.as_bool().expect("answer to be a bool") {
-            return Ok(());
-        }
+    if !confirm {
+        confirm_mnemonic_phrase(phrase)?
     }
+
+    Ok(())
 }
 
 /// Request the user to input the mnemonic phrase
@@ -122,14 +108,10 @@ pub(crate) fn request_mnemonic_phrase() -> anyhow::Result<String> {
     // let the user input the mnemonic phrase
     let mut attempt = 1;
     loop {
-        let q = Question::input("phrase")
-            .message("Please enter the mnemonic phrase:")
-            .build();
+        let phrase =
+            Text::new("Please enter the mnemonic phrase: ").prompt()?;
 
-        let a = requestty::prompt_one(q)?;
-        let phrase = a.as_string().expect("answer to be a string");
-
-        match Mnemonic::from_phrase(phrase, Language::English) {
+        match Mnemonic::from_phrase(&phrase, Language::English) {
             Ok(phrase) => break Ok(phrase.to_string()),
 
             Err(err) if attempt > 2 => match err.downcast_ref::<ErrorKind>() {
@@ -144,12 +126,6 @@ pub(crate) fn request_mnemonic_phrase() -> anyhow::Result<String> {
             }
         }
     }
-}
-
-fn is_valid_dir(dir: &str) -> bool {
-    let mut p = std::path::PathBuf::new();
-    p.push(dir);
-    p.is_dir()
 }
 
 /// Use sha256 for Rusk Binary Format, and blake for the rest
@@ -171,77 +147,56 @@ pub(crate) fn request_dir(
     what_for: &str,
     profile: PathBuf,
 ) -> Result<std::path::PathBuf> {
-    let q = Question::input("name")
-        .message(format!("Please enter a directory to {}:", what_for))
-        .default(profile.as_os_str().to_str().expect("default dir"))
-        .validate_on_key(|dir, _| is_valid_dir(dir))
-        .validate(|dir, _| {
-            if is_valid_dir(dir) {
-                Ok(())
-            } else {
-                Err("Not a valid directory".to_string())
-            }
-        })
-        .build();
+    let validator = |dir: &str| {
+        let path = PathBuf::from(dir);
 
-    let a = requestty::prompt_one(q)?;
-    let mut p = std::path::PathBuf::new();
-    p.push(a.as_string().expect("answer to be a string"));
+        if path.is_dir() {
+            Ok(Validation::Valid)
+        } else {
+            Ok(Validation::Invalid("Not a valid directory".into()))
+        }
+    };
+
+    let q = Text::new(
+        format!("Please enter a directory to {}:", what_for).as_str(),
+    )
+    .with_default(profile.to_str().unwrap())
+    .with_validator(validator)
+    .prompt()?;
+
+    let p = PathBuf::from(q);
+
     Ok(p)
 }
 
 /// Asks the user for confirmation
 pub(crate) fn ask_confirm() -> anyhow::Result<bool> {
-    let q = requestty::Question::confirm("confirm")
-        .message("Transaction ready. Proceed?")
-        .build();
-    let a = requestty::prompt_one(q)?;
-    Ok(a.as_bool().expect("answer to be a bool"))
+    Ok(Confirm::new("Transaction ready. Proceed?")
+        .with_default(true)
+        .prompt()?)
 }
 
 /// Asks the user for confirmation before deleting cache
 pub(crate) fn ask_confirm_erase_cache(msg: &str) -> anyhow::Result<bool> {
-    let q = requestty::Question::confirm("confirm").message(msg).build();
-    let a = requestty::prompt_one(q)?;
-    Ok(a.as_bool().expect("answer to be a bool"))
+    Ok(Confirm::new(msg).prompt()?)
 }
 
 /// Request a receiver address
 pub(crate) fn request_rcvr_addr(addr_for: &str) -> anyhow::Result<Address> {
     // let the user input the receiver address
-    let q = Question::input("addr")
-        .message(format!("Please enter the {} address:", addr_for))
-        .validate_on_key(|addr, _| Address::from_str(addr).is_ok())
-        .validate(|addr, _| {
-            if Address::from_str(addr).is_ok() {
-                Ok(())
-            } else {
-                Err("Please introduce a valid DUSK address".to_string())
-            }
-        })
-        .build();
-
-    let a = requestty::prompt_one(q)?;
     Ok(Address::from_str(
-        a.as_string().expect("answer to be a string"),
+        &Text::new(format!("Please enter the {} address:", addr_for).as_str())
+            .with_validator(|addr: &str| {
+                if Address::from_str(addr).is_ok() {
+                    Ok(Validation::Valid)
+                } else {
+                    Ok(Validation::Invalid(
+                        "Please introduce a valid DUSK address".into(),
+                    ))
+                }
+            })
+            .prompt()?,
     )?)
-}
-
-/// Checks if the value is larger than the given min and smaller than the
-/// min of the balance and `MAX_CONVERTIBLE`.
-fn check_valid_denom(
-    value: f64,
-    min: Dusk,
-    balance: Dusk,
-) -> Result<(), String> {
-    let value = Dusk::from(value);
-    let max = std::cmp::min(balance, MAX_CONVERTIBLE);
-    match (min..=max).contains(&value) {
-        true => Ok(()),
-        false => {
-            Err(format!("The amount has to be between {} and {}", min, max))
-        }
-    }
 }
 
 /// Request an amount of token larger than a given min.
@@ -249,17 +204,43 @@ fn request_token(
     action: &str,
     min: Dusk,
     balance: Dusk,
+    default: Option<f64>,
 ) -> anyhow::Result<Dusk> {
-    let question = requestty::Question::float("amt")
-        .message(format!("Introduce the amount of DUSK to {}:", action))
-        .default(min.into())
-        .validate_on_key(|f, _| check_valid_denom(f, min, balance).is_ok())
-        .validate(|f, _| check_valid_denom(f, min, balance))
-        .build();
+    // Checks if the value is larger than the given min and smaller than the
+    // min of the balance and `MAX_CONVERTIBLE`.
+    let validator = move |value: &f64| {
+        let max = std::cmp::min(balance, MAX_CONVERTIBLE);
 
-    let a = requestty::prompt_one(question)?;
+        match (min..=max).contains(&Dusk::from(*value)) {
+            true => Ok(Validation::Valid),
+            false => Ok(Validation::Invalid(
+                format!("The amount has to be between {} and {}", min, max)
+                    .into(),
+            )),
+        }
+    };
 
-    Ok(a.as_float().expect("answer to be a float").into())
+    let msg = format!("Introduce dusk amount for {}:", action);
+
+    let amount_prompt: CustomType<f64> = CustomType {
+        message: &msg,
+        starting_input: None,
+        formatter: &|i| format!("{} DUSK", i),
+        default_value_formatter: &|i| format!("{} DUSK", i),
+        default,
+        validators: vec![Box::new(validator)],
+        placeholder: Some("123.45"),
+        error_message: "Please type a valid number.".into(),
+        help_message: "The number should use a dot as the decimal separator."
+            .into(),
+        parser: &|i| match i.parse::<f64>() {
+            Ok(val) => Ok(val),
+            Err(_) => Err(()),
+        },
+        render_config: RenderConfig::default(),
+    };
+
+    Ok(amount_prompt.prompt()?.into())
 }
 
 /// Request a positive amount of tokens
@@ -268,7 +249,8 @@ pub(crate) fn request_token_amt(
     balance: Dusk,
 ) -> anyhow::Result<Dusk> {
     let min = MIN_CONVERTIBLE;
-    request_token(action, min, balance)
+
+    request_token(action, min, balance, None)
 }
 
 /// Request amount of tokens that can be 0
@@ -277,32 +259,31 @@ pub(crate) fn request_optional_token_amt(
     balance: Dusk,
 ) -> anyhow::Result<Dusk> {
     let min = Dusk::from(0);
-    request_token(action, min, balance)
+
+    request_token(action, min, balance, None)
 }
 
 /// Request amount of tokens that can't be lower than MINIMUM_STAKE
 pub(crate) fn request_stake_token_amt(balance: Dusk) -> anyhow::Result<Dusk> {
     let min: Dusk = MINIMUM_STAKE.into();
-    request_token("stake", min, balance)
+
+    request_token("stake", min, balance, None)
 }
 
 /// Request gas limit
 pub(crate) fn request_gas_limit(default_gas_limit: u64) -> anyhow::Result<u64> {
-    let question = requestty::Question::int("amt")
-        .message("Introduce the gas limit for this transaction:")
-        .default(default_gas_limit as i64)
-        .validate_on_key(|n, _| n > (gas::MIN_LIMIT as i64))
-        .validate(|n, _| {
-            if n < gas::MIN_LIMIT as i64 {
-                Err("Gas limit too low".to_owned())
-            } else {
-                Ok(())
-            }
-        })
-        .build();
-
-    let a = requestty::prompt_one(question)?;
-    Ok(a.as_int().expect("answer to be an int") as u64)
+    Ok(
+        CustomType::<u64>::new("Introduce the gas limit for this transaction:")
+            .with_default(default_gas_limit)
+            .with_validator(|n: &u64| {
+                if *n < gas::MIN_LIMIT {
+                    Ok(Validation::Invalid("Gas limit too low".into()))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            })
+            .prompt()?,
+    )
 }
 
 /// Request gas price
@@ -316,50 +297,36 @@ pub(crate) fn request_gas_price(
         min_gas_price
     };
 
-    let default_gas_price = Dusk::from(default_gas_price).into();
-    let min_gas_price = Dusk::from(min_gas_price).into();
-
-    let question = requestty::Question::float("amt")
-        .message("Introduce the gas price for this transaction:")
-        .default(default_gas_price)
-        .validate_on_key(|f, _| {
-            check_valid_denom(f, MIN_CONVERTIBLE, MAX_CONVERTIBLE).is_ok()
-        })
-        .validate(|f, _| check_valid_denom(f, MIN_CONVERTIBLE, MAX_CONVERTIBLE))
-        .validate(|f, _| {
-            if f < min_gas_price {
-                Err("Gas limit too low".to_owned())
-            } else {
-                Ok(())
-            }
-        })
-        .build();
-
-    let a = requestty::prompt_one(question)?;
-    let price = Dusk::from(a.as_float().expect("answer to be a float"));
-    Ok(*price)
+    request_token(
+        "gas price",
+        Dusk::from(min_gas_price),
+        MAX_CONVERTIBLE,
+        Some(default_gas_price as f64),
+    )
+    .map(|dusk| *dusk)
 }
 
 pub(crate) fn request_str(
     name: &str,
     max_length: usize,
 ) -> anyhow::Result<String> {
-    let question = requestty::Question::input("string")
-        .message(format!("Introduce string for {}:", name))
-        .validate(|input, _| {
-            if input.len() > max_length {
-                Err(format!(
-                    "Input exceeds the maximum length of {} characters",
-                    max_length
-                ))
-            } else {
-                Ok(())
-            }
-        })
-        .build();
-
-    let a = requestty::prompt_one(question)?;
-    Ok(a.as_string().expect("answer to be a string").to_owned())
+    Ok(
+        Text::new(format!("Introduce string for {}:", name).as_str())
+            .with_validator(move |input: &str| {
+                if input.len() > max_length {
+                    Ok(Validation::Invalid(
+                        format!(
+                            "Input exceeds the maximum length of {} characters",
+                            max_length
+                        )
+                        .into(),
+                    ))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            })
+            .prompt()?,
+    )
 }
 
 pub enum TransactionModel {
@@ -367,98 +334,64 @@ pub enum TransactionModel {
     Public,
 }
 
-impl From<&str> for TransactionModel {
-    fn from(value: &str) -> Self {
-        match value {
-            "Shielded" => TransactionModel::Shielded,
-            "Public" => TransactionModel::Public,
-            _ => panic!("Unknown transaction model"),
+impl Display for TransactionModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            TransactionModel::Shielded => write!(f, "Shielded"),
+            TransactionModel::Public => write!(f, "Public"),
         }
     }
 }
 
 /// Request transaction model to use
 pub(crate) fn request_transaction_model() -> anyhow::Result<TransactionModel> {
-    let question = requestty::Question::select(
-        "Please specify the transaction model to use",
-    )
-    .choices(vec![Choice("Public".into()), "Shielded".into()])
-    .build();
+    let choices = vec![TransactionModel::Shielded, TransactionModel::Public];
 
-    let a = requestty::prompt_one(question)?;
-    Ok(a.as_list_item()
-        .expect("answer must be a list item")
-        .text
-        .as_str()
-        .into())
+    Ok(
+        Select::new("Please specify the transaction model to use", choices)
+            .prompt()?,
+    )
 }
 
 /// Request contract WASM file location
 pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
-    let question = requestty::Question::input("Location of the WASM contract")
-        .message("Location of the WASM file:")
-        .validate_on_key(|f, _| PathBuf::from(f).exists())
-        .validate(|f, _| {
-            PathBuf::from(f)
-                .exists()
-                .then_some(())
-                .ok_or("File not found".to_owned())
-        })
-        .build();
-
-    let a = requestty::prompt_one(question)?;
-    let location = a.as_string().expect("answer to be a string").to_owned();
-
-    Ok(PathBuf::from(location))
+    request_dir("Location of the WASM contract", PathBuf::new())
 }
 
 pub(crate) fn request_bytes(name: &str) -> anyhow::Result<Vec<u8>> {
-    let question = requestty::Question::input("bytes")
-        .message(format!("Introduce bytes for {}", name))
-        .validate_on_key(|f, _| hex::decode(f).is_ok())
-        .validate(|f, _| {
-            hex::decode(f)
-                .is_ok()
-                .then_some(())
-                .ok_or("Invalid hex string".to_owned())
-        })
-        .build();
+    let byte_string =
+        Text::new(format!("Introduce hex bytes for {}:", name).as_str())
+            .with_validator(|f: &str| match hex::decode(f) {
+                Ok(_) => Ok(Validation::Valid),
+                Err(_) => Ok(Validation::Invalid("Invalid hex string".into())),
+            })
+            .prompt()?;
 
-    let a = requestty::prompt_one(question)?;
-    let bytes = hex::decode(a.as_string().expect("answer to be a string"))?;
+    let bytes = hex::decode(byte_string)?;
 
     Ok(bytes)
 }
 
 pub(crate) fn request_nonce() -> anyhow::Result<u64> {
-    let question = requestty::Question::input("Contract Deployment nonce")
-        .message("Introduce a number for nonce")
-        .validate_on_key(|f, _| u64::from_str(f).is_ok())
-        .validate(|f, _| {
-            u64::from_str(f)
-                .is_ok()
-                .then_some(())
-                .ok_or("Invalid number".to_owned())
-        })
-        .build();
+    let nonce_string =
+        Text::new("Introduce a number for Contract Deployment nonce:")
+            .with_validator(|f: &str| match u64::from_str(f) {
+                Ok(_) => Ok(Validation::Valid),
+                Err(_) => Ok(Validation::Invalid("Invalid u64 nonce".into())),
+            })
+            .prompt()?;
 
-    let a = requestty::prompt_one(question)?;
-    let bytes = u64::from_str(a.as_string().expect("answer to be a string"))?;
+    let bytes = u64::from_str(&nonce_string)?;
 
     Ok(bytes)
 }
 
 /// Request Dusk block explorer to be opened
 pub(crate) fn launch_explorer(url: String) -> Result<()> {
-    let q = requestty::Question::confirm("launch")
-        .message("Launch block explorer?")
-        .build();
-
-    let a = requestty::prompt_one(q)?;
-    let open = a.as_bool().expect("answer to be a bool");
-    if open {
+    if Confirm::new("Launch block explorer?").prompt()? {
         open::that(url)?;
     }
+
     Ok(())
 }
 

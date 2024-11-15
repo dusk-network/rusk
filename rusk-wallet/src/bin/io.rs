@@ -5,10 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod args;
-mod gql;
 
 pub(crate) mod prompt;
 pub(crate) mod status;
 
 pub(crate) use args::WalletArgs;
-pub(crate) use gql::GraphQL;
