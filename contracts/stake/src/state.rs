@@ -68,6 +68,10 @@ impl StakeState {
         let prev_stake = self.get_stake(account).copied();
         let (loaded_stake, loaded_keys) = self.load_or_create_stake_mut(&keys);
 
+        if loaded_stake.amount.is_some() {
+            panic!("Can't stake twice for the same key");
+        }
+
         // Update the funds key with the newly provided one
         // This operation will rollback if the signature is invalid
         *loaded_keys = keys;
@@ -76,10 +80,6 @@ impl StakeState {
         // amount staked already
         if value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
-        }
-
-        if loaded_stake.amount.is_some() {
-            panic!("Can't stake twice for the same key");
         }
 
         // NOTE: exhausting the nonce is nearly impossible, since it
