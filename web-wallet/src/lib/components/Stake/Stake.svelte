@@ -67,12 +67,12 @@
   /** @type {GasStoreContent} */
   export let gasLimits;
 
-  /** @type {number} */
-  export let minAllowedStake;
+  /** @type {bigint} */
+  export let minimumStake;
 
   /** @type {number} */
   let stakeAmount = {
-    stake: minAllowedStake,
+    stake: minimumStake,
     unstake: staked,
     "withdraw-rewards": rewards,
   }[flow];
@@ -85,6 +85,9 @@
   let isGasValid = false;
 
   let { gasLimit, gasPrice } = gasSettings;
+
+  console.log({ minimumStake });
+  // console.log(typeof gasPrice);
 
   /** @type {Record<StakeType, string>} */
   const confirmLabels = {
@@ -125,11 +128,9 @@
   });
 
   $: fee = gasLimit * gasPrice;
-  $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), fee);
+  $: maxSpendable = luxToDusk(spendable);
   $: minStake =
-    maxSpendable > 0
-      ? Math.min(minAllowedStake, maxSpendable)
-      : minAllowedStake;
+    maxSpendable > 0n ? Math.min(minimumStake, maxSpendable) : minimumStake;
   $: isStakeAmountValid =
     stakeAmount >= minStake && stakeAmount <= maxSpendable;
   $: totalLuxFee = fee + duskToLux(stakeAmount);

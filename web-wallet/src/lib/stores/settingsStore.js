@@ -35,7 +35,6 @@ const initialState = {
   gasLimit: BigInt(import.meta.env.VITE_GAS_LIMIT_DEFAULT ?? 20000000),
   gasPrice: BigInt(import.meta.env.VITE_GAS_PRICE_DEFAULT ?? 1),
   hideStakingNotice: false,
-  minAllowedStake: parseInt(import.meta.env.VITE_MINIMUM_ALLOWED_STAKE, 10),
   userId: "",
 };
 
