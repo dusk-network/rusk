@@ -17,7 +17,6 @@ use tracing::info;
 use url::Url;
 
 use execution_core::{
-    license::LICENSE_CONTRACT,
     signatures::bls::PublicKey as AccountPublicKey,
     stake::{StakeAmount, StakeData, STAKE_CONTRACT},
     transfer::{
@@ -189,10 +188,6 @@ fn generate_empty_state<P: AsRef<Path>>(
         "../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
-    let license_code = include_bytes!(
-        "../../target/dusk/wasm32-unknown-unknown/release/license_contract.wasm"
-    );
-
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
     session.deploy(
         transfer_code,
@@ -208,15 +203,6 @@ fn generate_empty_state<P: AsRef<Path>>(
         ContractData::builder()
             .owner(snapshot.owner())
             .contract_id(STAKE_CONTRACT),
-        u64::MAX,
-    )?;
-
-    info!("{} Genesis License Contract", theme.action("Deploying"));
-    session.deploy(
-        license_code,
-        ContractData::builder()
-            .owner(snapshot.owner())
-            .contract_id(LICENSE_CONTRACT),
         u64::MAX,
     )?;
 
@@ -245,10 +231,6 @@ fn generate_empty_state<P: AsRef<Path>>(
     session
         .call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)
         .expect("root to be updated after pushing genesis note");
-
-    session
-        .call::<_, ()>(LICENSE_CONTRACT, "request_license", &(), u64::MAX)
-        .expect("license contract request license method should succeed");
 
     let commit_id = session.commit()?;
 
