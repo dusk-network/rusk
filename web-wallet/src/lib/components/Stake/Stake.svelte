@@ -9,6 +9,7 @@
     mdiDatabaseOutline,
   } from "@mdi/js";
 
+  import { DOCUMENTATION_LINKS } from "$lib/constants";
   import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
   import { logo } from "$lib/dusk/icons";
@@ -226,8 +227,7 @@
                 class="staking-warning__step-node-setup-link"
                 rel="noopener noreferrer"
                 target="_blank"
-                href="https://docs.dusk.network/getting-started/node-setup/overview"
-                >HERE</AppAnchor
+                href={DOCUMENTATION_LINKS.RUN_A_PROVISIONER}>HERE</AppAnchor
               >, and that I will lose funds if I have not done so correctly.
             </p>
 
