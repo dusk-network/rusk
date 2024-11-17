@@ -2,25 +2,32 @@
 
 exports[`Dashboard > should render a card when there is an error getting transactions 1`] = `
 <div>
-  <nav
-    class="dashboard-nav svelte-5szabu"
+  <div
+    class="dusk-card dusk-card--gap-default"
   >
-    <ul
-      class="dashboard-nav-list svelte-5szabu"
+     
+    <div
+      class="dusk-card__body-container"
     >
-      <li>
+      <nav
+        aria-label="Transaction and operations navigation"
+        class="dashboard-nav"
+      >
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="send"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Send
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -34,23 +41,23 @@ exports[`Dashboard > should render a card when there is an error getting transac
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-      <li>
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="receive"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Receive
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -64,23 +71,23 @@ exports[`Dashboard > should render a card when there is an error getting transac
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-      <li>
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="staking"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Stake
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -94,23 +101,23 @@ exports[`Dashboard > should render a card when there is an error getting transac
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-      <li>
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="allocate"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Shield / Unshield
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -124,23 +131,23 @@ exports[`Dashboard > should render a card when there is an error getting transac
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-      <li>
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="migrate"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Migrate
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -154,12 +161,13 @@ exports[`Dashboard > should render a card when there is an error getting transac
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-    </ul>
-  </nav>
+      </nav>
+    </div>
+     
+  </div>
+  
    
   <span>
     some text
@@ -224,25 +232,32 @@ exports[`Dashboard > should render a card when there is an error getting transac
 
 exports[`Dashboard > should render the dashboard page with the transactions after they are loaded 1`] = `
 <div>
-  <nav
-    class="dashboard-nav svelte-5szabu"
+  <div
+    class="dusk-card dusk-card--gap-default"
   >
-    <ul
-      class="dashboard-nav-list svelte-5szabu"
+     
+    <div
+      class="dusk-card__body-container"
     >
-      <li>
+      <nav
+        aria-label="Transaction and operations navigation"
+        class="dashboard-nav"
+      >
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="send"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Send
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -256,23 +271,23 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-      <li>
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="receive"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Receive
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -286,23 +301,23 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-      <li>
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="staking"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Stake
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -316,23 +331,23 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-      <li>
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="allocate"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Shield / Unshield
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -346,23 +361,23 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-      <li>
+        
         <a
-          class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+          class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
           href="migrate"
+          role="menuitem"
+          tabindex="0"
         >
           <span
-            class="dashboard-nav-item-label svelte-5szabu"
+            class="dashboard-nav__item-label svelte-16m2vzj"
           >
             Migrate
           </span>
            
           <span
-            class="dashboard-nav-item-icons svelte-5szabu"
+            class="dashboard-nav__item-icons svelte-16m2vzj"
           >
             
             <svg
@@ -376,12 +391,13 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
             </svg>
             
           </span>
-          
+           
         </a>
-         
-      </li>
-    </ul>
-  </nav>
+      </nav>
+    </div>
+     
+  </div>
+  
    
   <span>
     some text

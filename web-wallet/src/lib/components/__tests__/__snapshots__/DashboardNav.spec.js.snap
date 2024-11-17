@@ -1,55 +1,62 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`DashboardNav > renders the DashboardNav component 1`] = `
-<nav
-  class="dashboard-nav svelte-5szabu"
+<div
+  class="dusk-card dusk-card--gap-default"
 >
-  <ul
-    class="dashboard-nav-list svelte-5szabu"
+   
+  <div
+    class="dusk-card__body-container"
   >
-    <li>
+    <nav
+      aria-label="Transaction and operations navigation"
+      class="dashboard-nav"
+    >
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Something
         </span>
          
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Send
         </span>
          
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Receive
         </span>
          
         <span
-          class="dashboard-nav-item-icons svelte-5szabu"
+          class="dashboard-nav__item-icons svelte-16m2vzj"
         >
           
           <svg
@@ -63,23 +70,23 @@ exports[`DashboardNav > renders the DashboardNav component 1`] = `
           </svg>
           
         </span>
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Stake
         </span>
          
         <span
-          class="dashboard-nav-item-icons svelte-5szabu"
+          class="dashboard-nav__item-icons svelte-16m2vzj"
         >
           
           <svg
@@ -115,64 +122,71 @@ exports[`DashboardNav > renders the DashboardNav component 1`] = `
           </svg>
           
         </span>
-        
+         
       </a>
-       
-    </li>
-  </ul>
-</nav>
+    </nav>
+  </div>
+   
+</div>
 `;
 
 exports[`DashboardNav > should display icons if the item's icon array is present 1`] = `
-<nav
-  class="dashboard-nav svelte-5szabu"
+<div
+  class="dusk-card dusk-card--gap-default"
 >
-  <ul
-    class="dashboard-nav-list svelte-5szabu"
+   
+  <div
+    class="dusk-card__body-container"
   >
-    <li>
+    <nav
+      aria-label="Transaction and operations navigation"
+      class="dashboard-nav"
+    >
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Something
         </span>
          
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Send
         </span>
          
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Receive
         </span>
          
         <span
-          class="dashboard-nav-item-icons svelte-5szabu"
+          class="dashboard-nav__item-icons svelte-16m2vzj"
         >
           
           <svg
@@ -186,23 +200,23 @@ exports[`DashboardNav > should display icons if the item's icon array is present
           </svg>
           
         </span>
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Stake
         </span>
          
         <span
-          class="dashboard-nav-item-icons svelte-5szabu"
+          class="dashboard-nav__item-icons svelte-16m2vzj"
         >
           
           <svg
@@ -238,64 +252,71 @@ exports[`DashboardNav > should display icons if the item's icon array is present
           </svg>
           
         </span>
-        
+         
       </a>
-       
-    </li>
-  </ul>
-</nav>
+    </nav>
+  </div>
+   
+</div>
 `;
 
 exports[`DashboardNav > should not display icons if the item's icon array is empty 1`] = `
-<nav
-  class="dashboard-nav svelte-5szabu"
+<div
+  class="dusk-card dusk-card--gap-default"
 >
-  <ul
-    class="dashboard-nav-list svelte-5szabu"
+   
+  <div
+    class="dusk-card__body-container"
   >
-    <li>
+    <nav
+      aria-label="Transaction and operations navigation"
+      class="dashboard-nav"
+    >
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Something
         </span>
          
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Send
         </span>
          
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Receive
         </span>
          
         <span
-          class="dashboard-nav-item-icons svelte-5szabu"
+          class="dashboard-nav__item-icons svelte-16m2vzj"
         >
           
           <svg
@@ -309,23 +330,23 @@ exports[`DashboardNav > should not display icons if the item's icon array is emp
           </svg>
           
         </span>
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Stake
         </span>
          
         <span
-          class="dashboard-nav-item-icons svelte-5szabu"
+          class="dashboard-nav__item-icons svelte-16m2vzj"
         >
           
           <svg
@@ -361,64 +382,71 @@ exports[`DashboardNav > should not display icons if the item's icon array is emp
           </svg>
           
         </span>
-        
+         
       </a>
-       
-    </li>
-  </ul>
-</nav>
+    </nav>
+  </div>
+   
+</div>
 `;
 
 exports[`DashboardNav > should not display icons if the item's icons array is undefined 1`] = `
-<nav
-  class="dashboard-nav svelte-5szabu"
+<div
+  class="dusk-card dusk-card--gap-default"
 >
-  <ul
-    class="dashboard-nav-list svelte-5szabu"
+   
+  <div
+    class="dusk-card__body-container"
   >
-    <li>
+    <nav
+      aria-label="Transaction and operations navigation"
+      class="dashboard-nav"
+    >
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Something
         </span>
          
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Send
         </span>
          
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Receive
         </span>
          
         <span
-          class="dashboard-nav-item-icons svelte-5szabu"
+          class="dashboard-nav__item-icons svelte-16m2vzj"
         >
           
           <svg
@@ -432,23 +460,23 @@ exports[`DashboardNav > should not display icons if the item's icons array is un
           </svg>
           
         </span>
-        
+         
       </a>
-       
-    </li>
-    <li>
+      
       <a
-        class="dusk-anchor dusk-anchor--on-surface dashboard-nav-list__item"
+        class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
         href="#"
+        role="menuitem"
+        tabindex="0"
       >
         <span
-          class="dashboard-nav-item-label svelte-5szabu"
+          class="dashboard-nav__item-label svelte-16m2vzj"
         >
           Stake
         </span>
          
         <span
-          class="dashboard-nav-item-icons svelte-5szabu"
+          class="dashboard-nav__item-icons svelte-16m2vzj"
         >
           
           <svg
@@ -484,10 +512,10 @@ exports[`DashboardNav > should not display icons if the item's icons array is un
           </svg>
           
         </span>
-        
+         
       </a>
-       
-    </li>
-  </ul>
-</nav>
+    </nav>
+  </div>
+   
+</div>
 `;
