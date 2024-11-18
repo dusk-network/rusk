@@ -1,60 +1,55 @@
 <svelte:options immutable={true} />
 
 <script>
+  import { Card, Icon } from "$lib/dusk/components";
   import { AppAnchor } from "$lib/components";
-  import { Icon } from "$lib/dusk/components";
-  import { makeClassName } from "$lib/dusk/string";
-
-  /** @type {String | Undefined} */
-  export let className = undefined;
 
   /** @type {DashboardNavItem[]} */
   export let items;
 </script>
 
-<nav {...$$restProps} class={makeClassName(["dashboard-nav", className])}>
-  <ul class="dashboard-nav-list">
+<Card>
+  <nav class="dashboard-nav" aria-label="Transaction and operations navigation">
     {#each items as item (item.id)}
       {@const { icons, label, href } = item}
-      <li>
-        <AppAnchor {href} className="dashboard-nav-list__item">
-          <span class="dashboard-nav-item-label">{label}</span>
-          {#if icons && icons.length}
-            <span class="dashboard-nav-item-icons">
-              {#each icons as icon (icon.path)}
-                <Icon path={icon.path} />
-              {/each}
-            </span>
-          {/if}
-        </AppAnchor>
-      </li>
+      <AppAnchor
+        {href}
+        tabindex="0"
+        className="dashboard-nav__item"
+        role="menuitem"
+      >
+        <span class="dashboard-nav__item-label">{label}</span>
+        {#if icons && icons.length}
+          <span class="dashboard-nav__item-icons">
+            {#each icons as icon (icon.path)}
+              <Icon path={icon.path} />
+            {/each}
+          </span>
+        {/if}
+      </AppAnchor>
     {/each}
-  </ul>
-</nav>
+  </nav>
+</Card>
 
 <style lang="postcss">
   .dashboard-nav {
-    background-color: var(--surface-color);
-    border-radius: var(--control-border-radius-size);
-    padding: 0.5rem 1.375rem;
-    width: 100%;
-  }
-
-  .dashboard-nav-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    list-style: none;
-
     :global(&__item) {
       display: flex;
       flex-direction: row;
       align-items: center;
       justify-content: space-between;
-      gap: 0.625rem;
+      padding: 0.5rem 0;
+
+      &:first-child {
+        padding-top: 0;
+      }
+
+      &:last-child {
+        padding-bottom: 0;
+      }
     }
 
-    .dashboard-nav-item-label {
+    &__item-label {
       color: var(--on-surface-color);
       font-size: 1.125rem;
       font-style: normal;
@@ -62,7 +57,7 @@
       line-height: 1.6875rem;
     }
 
-    .dashboard-nav-item-icons {
+    &__item-icons {
       color: var(--on-surface-color);
       display: flex;
       flex-direction: row;

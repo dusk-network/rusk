@@ -48,32 +48,12 @@ describe("DashboardNav", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should pass additional class names and attributes to the rendered element", async () => {
-    const props = {
-      ...baseProps,
-      className: "foo bar",
-    };
-    const { container, rerender } = render(DashboardNav, {
-      ...baseOptions,
-      props,
-    });
-
-    expect(container.firstChild).toHaveClass("foo bar");
-
-    await rerender({
-      ...props,
-      className: "qux",
-    });
-
-    expect(container.firstChild).toHaveClass("qux");
-  });
-
   it("should not display icons if the item's icons array is undefined", () => {
     const { container } = render(DashboardNav, baseProps);
 
     expect(
       container.querySelector(
-        ".dashboard-nav-list > li:nth-child(1) > .dashboard-nav-list__item > .dashboard-nav-item-icons"
+        ".dashboard-nav > .dashboard-nav__item:nth-child(1) > .dashboard-nav__item-icons"
       )
     ).toBeNull();
 
@@ -85,7 +65,7 @@ describe("DashboardNav", () => {
 
     expect(
       container.querySelector(
-        ".dashboard-nav-list > li:nth-child(2) > .dashboard-nav-list__item > .dashboard-nav-item-icons"
+        ".dashboard-nav > .dashboard-nav__item:nth-child(2) > .dashboard-nav__item-icons"
       )
     ).toBeNull();
 
@@ -97,7 +77,7 @@ describe("DashboardNav", () => {
 
     expect(
       container.querySelector(
-        ".dashboard-nav-list > li:nth-child(3) > .dashboard-nav-list__item > .dashboard-nav-item-icons"
+        ".dashboard-nav > .dashboard-nav__item:nth-child(3) > .dashboard-nav__item-icons"
       )
     ).toBeTruthy();
 
