@@ -11,7 +11,6 @@
     setKey,
     when,
   } from "lamb";
-  import { mdiArrowLeft } from "@mdi/js";
   import { Gas } from "$lib/vendor/w3sper.js/src/mod";
 
   import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
@@ -23,25 +22,29 @@
     walletStore,
   } from "$lib/stores";
   import {
-    AppAnchorButton,
     ContractOperations,
     ContractStatusesList,
     Stake,
   } from "$lib/components";
-  import { Suspense, Throbber } from "$lib/dusk/components";
 
   /** @type {ContractDescriptor} */
   export let descriptor;
 
+  export let spendable = 0n;
+
+  $: [gasSettings, language, minAllowedStake] = collectSettings($settingsStore);
+  const duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
+
   const gasLimits = $gasStore;
 
-  /**
-   * Temporary replacement for the old `walletStore.getStakeInfo`
-   * function.
-   * The UI needs to be updated to just use the `stakeInfo` property
-   * directly.
-   */
-  const getStakeInfo = async () => $walletStore.stakeInfo;
+  /** @type {ContractOperation[]} */
+  let operations;
+
+  $: stakeInfo = $walletStore.stakeInfo;
+
+  $: if (stakeInfo) {
+    operations = getOperations();
+  }
 
   const collectSettings = collect([
     pick([
@@ -93,34 +96,33 @@
    * when the operation is enabled in the descriptor;
    * otherwise the descriptor takes precedence.
    *
-   * @param {ContractOperation[]} operations
-   * @param {StakeInfo} stakeInfo
    * @returns {ContractOperation[]}
    */
-  const getOperations = (operations, stakeInfo) =>
+  const getOperations = () =>
     map(
-      operations,
-      when(
-        hasKeyValue("disabled", false),
-        updateOperationDisabledStatus(stakeInfo)
-      )
+      descriptor.operations,
+      when(hasKeyValue("disabled", false), updateOperationDisabledStatus())
     );
 
   /**
-   * @param {StakeInfo} stakeInfo
-   * @param {bigint} spendable
    * @returns {ContractStatus[]}
    */
-  const getStatuses = (stakeInfo, spendable) => [
+  $: statuses = [
     {
       label: "Spendable",
       value: duskFormatter(luxToDusk(spendable)),
     },
     {
-      label: "Total Locked",
+      label: "Active Stake",
+      value: stakeInfo.amount
+        ? duskFormatter(luxToDusk(stakeInfo.amount.value))
+        : null,
+    },
+    {
+      label: "Penalized Stake",
       value: stakeInfo.amount
         ? duskFormatter(luxToDusk(stakeInfo.amount.locked))
-        : "N/A",
+        : null,
     },
     {
       label: "Rewards",
@@ -129,72 +131,43 @@
   ];
 
   /**
-   * @param {StakeInfo} stakeInfo
    * @returns {(operation: ContractOperation) => ContractOperation}
    */
-  const updateOperationDisabledStatus = (stakeInfo) => (operation) => ({
+  const updateOperationDisabledStatus = () => (operation) => ({
     ...operation,
     disabled: disablingConditions[operation.id]?.(stakeInfo) ?? true,
   });
 
   $: ({ currentOperation } = $operationsStore);
-  $: [gasSettings, language, minAllowedStake] = collectSettings($settingsStore);
   const { hideStakingNotice } = $settingsStore;
   $: ({ balance, syncStatus } = $walletStore);
   $: isSyncOK = !(syncStatus.isInProgress || !!syncStatus.error);
-  $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
+  $: if (!isSyncOK) {
+    disableAllOperations(descriptor.operations);
+  }
 </script>
 
 {#key currentOperation}
-  <Suspense
-    gap="medium"
-    errorMessage="Failed to retrieve stake info"
-    errorVariant="details"
-    waitFor={getStakeInfo()}
-  >
-    <svelte:fragment slot="pending-content">
-      {#if !syncStatus.isInProgress && !syncStatus.error}
-        <Throbber />
-      {:else}
-        <p>Data will load after a successful sync.</p>
-      {/if}
-    </svelte:fragment>
-    <svelte:fragment slot="success-content" let:result={stakeInfo}>
-      {@const statuses = getStatuses(stakeInfo, balance.shielded.spendable)}
-      {@const operations = isSyncOK
-        ? getOperations(descriptor.operations, stakeInfo)
-        : disableAllOperations(descriptor.operations)}
-      {#if isStakeOperation(currentOperation)}
-        <Stake
-          execute={executeOperations[currentOperation]}
-          flow={currentOperation}
-          formatter={duskFormatter}
-          {gasLimits}
-          {gasSettings}
-          {minAllowedStake}
-          on:operationChange
-          on:suppressStakingNotice
-          rewards={luxToDusk(stakeInfo.reward)}
-          spendable={balance.shielded.spendable}
-          staked={stakeInfo.amount ? luxToDusk(stakeInfo.amount.total) : 0}
-          {statuses}
-          {hideStakingNotice}
-        />
-      {:else}
-        <ContractStatusesList items={statuses} />
-        <ContractOperations items={operations} on:operationChange />
-      {/if}
-    </svelte:fragment>
-    <svelte:fragment slot="error-actions">
-      <AppAnchorButton
-        className="error-action"
-        href="/dashboard"
-        icon={{ path: mdiArrowLeft }}
-        text="Back"
-        variant="tertiary"
-      />
-    </svelte:fragment>
-  </Suspense>
+  {#if isStakeOperation(currentOperation)}
+    <Stake
+      execute={executeOperations[currentOperation]}
+      flow={currentOperation}
+      formatter={duskFormatter}
+      {gasLimits}
+      {gasSettings}
+      {minAllowedStake}
+      on:operationChange
+      on:suppressStakingNotice
+      rewards={luxToDusk(stakeInfo.reward)}
+      spendable={balance.unshielded.value}
+      staked={stakeInfo.amount ? luxToDusk(stakeInfo.amount.total) : 0}
+      {statuses}
+      {hideStakingNotice}
+    />
+  {:else}
+    <ContractStatusesList {statuses} />
+    <ContractOperations items={operations} on:operationChange />
+  {/if}
 {/key}
 
 <style>

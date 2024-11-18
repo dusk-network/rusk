@@ -203,7 +203,7 @@
             {/if}
           </Banner>
         {/if}
-        <ContractStatusesList items={statuses}>
+        <ContractStatusesList {statuses}>
           {#if enableAllocateButton}
             <AppAnchorButton
               className="allocate-button"
@@ -238,7 +238,7 @@
       }}
     >
       <div in:fade|global class="operation__send">
-        <ContractStatusesList items={statuses}>
+        <ContractStatusesList {statuses}>
           {#if enableAllocateButton}
             <AppAnchorButton
               className="allocate-button"
@@ -316,7 +316,7 @@
       }}
     >
       <div in:fade|global class="operation__send">
-        <ContractStatusesList items={statuses} />
+        <ContractStatusesList {statuses} />
 
         <Badge
           className="operation__review-notice"

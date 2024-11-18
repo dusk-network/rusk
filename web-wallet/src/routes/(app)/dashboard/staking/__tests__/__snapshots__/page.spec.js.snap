@@ -44,214 +44,183 @@ exports[`Staking > should render the staking page 1`] = `
     class="dusk-card__body-container"
   >
     <div
-      class="dusk-suspense dusk-suspense--medium-gap"
+      class="contract-statuses svelte-1up3579"
     >
-      <div
-        class="contract-statuses svelte-1up3579"
+      <dl
+        class="contract-statuses__list svelte-1up3579"
       >
-        <dl
-          class="contract-statuses__list svelte-1up3579"
+        <dt
+          class="contract-statuses__label svelte-1up3579"
         >
-          <dt
-            class="contract-statuses__label svelte-1up3579"
+          Spendable
+           
+        </dt>
+        <dd
+          class="contract-statuses__value svelte-1up3579"
+        >
+          <span>
+            0.000000000
+          </span>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="DUSK"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
           >
-            Spendable
-             
-          </dt>
-          <dd
-            class="contract-statuses__value svelte-1up3579"
+            <path
+              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+            />
+          </svg>
+          
+           
+        </dd>
+        <dt
+          class="contract-statuses__label svelte-1up3579"
+        >
+          Rewards
+           
+        </dt>
+        <dd
+          class="contract-statuses__value svelte-1up3579"
+        >
+          <span>
+            0.000000000
+          </span>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-text="DUSK"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
           >
-            <span>
-              0.000000000
-            </span>
-             
-            <svg
-              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-text="DUSK"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-              />
-            </svg>
-            
-             
-          </dd>
-          <dt
-            class="contract-statuses__label svelte-1up3579"
-          >
-            Total Locked
-             
-          </dt>
-          <dd
-            class="contract-statuses__value svelte-1up3579"
-          >
-            <span>
-              N/A
-            </span>
-             
-            <svg
-              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-text="DUSK"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-              />
-            </svg>
-            
-             
-          </dd>
-          <dt
-            class="contract-statuses__label svelte-1up3579"
-          >
-            Rewards
-             
-          </dt>
-          <dd
-            class="contract-statuses__value svelte-1up3579"
-          >
-            <span>
-              0.000000000
-            </span>
-             
-            <svg
-              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
-              data-tooltip-id="main-tooltip"
-              data-tooltip-text="DUSK"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
-              />
-            </svg>
-            
-             
-          </dd>
-        </dl>
-         
-      </div>
+            <path
+              d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+            />
+          </svg>
+          
+           
+        </dd>
+      </dl>
        
-      <menu
-        class="contract-operations svelte-1iyylnh"
-      >
-        <li
-          class="contract-operations__operation svelte-1iyylnh"
-        >
-          <button
-            class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
-            type="button"
-          >
-            <svg
-              class="dusk-icon dusk-icon--size--default dusk-button__icon"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M12 3C7.58 3 4 4.79 4 7V17C4 19.21 7.59 21 12 21S20 19.21 20 17V7C20 4.79 16.42 3 12 3M18 17C18 17.5 15.87 19 12 19S6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16S16.39 15.55 18 14.77V17M18 12.45C16.7 13.4 14.42 14 12 14C9.58 14 7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11C14.39 11 16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5C15.87 5 18 6.5 18 7S15.87 9 12 9Z"
-              />
-            </svg>
-            
-             
-            <span
-              class="dusk-button__text"
-            >
-              stake
-            </span>
-            
-          </button>
-        </li>
-        <li
-          class="contract-operations__operation svelte-1iyylnh"
-        >
-          <button
-            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
-            disabled=""
-            type="button"
-          >
-            <svg
-              class="dusk-icon dusk-icon--size--default dusk-button__icon"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M20 13.09V7C20 4.79 16.42 3 12 3S4 4.79 4 7V17C4 19.21 7.59 21 12 21C12.46 21 12.9 21 13.33 20.94C13.12 20.33 13 19.68 13 19L13 18.95C12.68 19 12.35 19 12 19C8.13 19 6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16C12.65 16 13.27 15.96 13.88 15.89C14.93 14.16 16.83 13 19 13C19.34 13 19.67 13.04 20 13.09M18 12.45C16.7 13.4 14.42 14 12 14S7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11S16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5 18 6.5 18 7 15.87 9 12 9M22 20L19 23L16 20H18V16H20V20H22Z"
-              />
-            </svg>
-            
-             
-            <span
-              class="dusk-button__text"
-            >
-              unstake
-            </span>
-            
-          </button>
-        </li>
-        <li
-          class="contract-operations__operation svelte-1iyylnh"
-        >
-          <button
-            class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
-            disabled=""
-            type="button"
-          >
-            <svg
-              class="dusk-icon dusk-icon--size--default dusk-button__icon"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M20 13.09V7C20 4.79 16.42 3 12 3S4 4.79 4 7V17C4 19.21 7.59 21 12 21C12.46 21 12.9 21 13.33 20.94C13.12 20.33 13 19.68 13 19L13 18.95C12.68 19 12.35 19 12 19C8.13 19 6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16C12.65 16 13.27 15.96 13.88 15.89C14.93 14.16 16.83 13 19 13C19.34 13 19.67 13.04 20 13.09M18 12.45C16.7 13.4 14.42 14 12 14S7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11S16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5 18 6.5 18 7 15.87 9 12 9M22 20L19 23L16 20H18V16H20V20H22Z"
-              />
-            </svg>
-            
-             
-            <span
-              class="dusk-button__text"
-            >
-              withdraw rewards
-            </span>
-            
-          </button>
-        </li>
-         
-        <li
-          class="contract-operations__operation svelte-1iyylnh"
-        >
-          <a
-            aria-disabled="false"
-            class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
-            href="/some-base-path/dashboard"
-          >
-            <svg
-              class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
-              role="graphics-symbol"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
-              />
-            </svg>
-            
-             
-            <span
-              class="dusk-anchor-button__text"
-            >
-              Back
-            </span>
-            
-            
-          </a>
-        </li>
-      </menu>
-      
     </div>
+     
+    <menu
+      class="contract-operations svelte-1iyylnh"
+    >
+      <li
+        class="contract-operations__operation svelte-1iyylnh"
+      >
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 3C7.58 3 4 4.79 4 7V17C4 19.21 7.59 21 12 21S20 19.21 20 17V7C20 4.79 16.42 3 12 3M18 17C18 17.5 15.87 19 12 19S6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16S16.39 15.55 18 14.77V17M18 12.45C16.7 13.4 14.42 14 12 14C9.58 14 7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11C14.39 11 16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5C15.87 5 18 6.5 18 7S15.87 9 12 9Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-button__text"
+          >
+            stake
+          </span>
+          
+        </button>
+      </li>
+      <li
+        class="contract-operations__operation svelte-1iyylnh"
+      >
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
+          disabled=""
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M20 13.09V7C20 4.79 16.42 3 12 3S4 4.79 4 7V17C4 19.21 7.59 21 12 21C12.46 21 12.9 21 13.33 20.94C13.12 20.33 13 19.68 13 19L13 18.95C12.68 19 12.35 19 12 19C8.13 19 6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16C12.65 16 13.27 15.96 13.88 15.89C14.93 14.16 16.83 13 19 13C19.34 13 19.67 13.04 20 13.09M18 12.45C16.7 13.4 14.42 14 12 14S7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11S16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5 18 6.5 18 7 15.87 9 12 9M22 20L19 23L16 20H18V16H20V20H22Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-button__text"
+          >
+            unstake
+          </span>
+          
+        </button>
+      </li>
+      <li
+        class="contract-operations__operation svelte-1iyylnh"
+      >
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
+          disabled=""
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M20 13.09V7C20 4.79 16.42 3 12 3S4 4.79 4 7V17C4 19.21 7.59 21 12 21C12.46 21 12.9 21 13.33 20.94C13.12 20.33 13 19.68 13 19L13 18.95C12.68 19 12.35 19 12 19C8.13 19 6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16C12.65 16 13.27 15.96 13.88 15.89C14.93 14.16 16.83 13 19 13C19.34 13 19.67 13.04 20 13.09M18 12.45C16.7 13.4 14.42 14 12 14S7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11S16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5 18 6.5 18 7 15.87 9 12 9M22 20L19 23L16 20H18V16H20V20H22Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-button__text"
+          >
+            withdraw rewards
+          </span>
+          
+        </button>
+      </li>
+       
+      <li
+        class="contract-operations__operation svelte-1iyylnh"
+      >
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled contract-operations__operation-button"
+          href="/some-base-path/dashboard"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+            />
+          </svg>
+          
+           
+          <span
+            class="dusk-anchor-button__text"
+          >
+            Back
+          </span>
+          
+          
+        </a>
+      </li>
+    </menu>
+    
     
   </div>
    

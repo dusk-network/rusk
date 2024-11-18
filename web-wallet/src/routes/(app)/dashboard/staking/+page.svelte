@@ -6,7 +6,9 @@
   import { StakeContract } from "$lib/containers";
   import { IconHeadingCard } from "$lib/containers/Cards";
   import { contractDescriptors, updateOperation } from "$lib/contracts";
-  import { settingsStore } from "$lib/stores";
+  import { settingsStore, walletStore } from "$lib/stores";
+
+  $: ({ balance } = $walletStore);
 
   /**
    * @param {keyof SettingsStoreContent} property
@@ -33,6 +35,7 @@
   >
     <StakeContract
       descriptor={contractDescriptors[2]}
+      spendable={balance.unshielded.value}
       on:operationChange={({ detail }) => updateOperation(detail)}
       on:suppressStakingNotice={() => updateSetting("hideStakingNotice", true)}
     />

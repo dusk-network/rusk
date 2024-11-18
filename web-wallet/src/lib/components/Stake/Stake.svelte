@@ -260,7 +260,7 @@
           disabled: isNextButtonDisabled,
         }}
       >
-        <ContractStatusesList items={statuses} />
+        <ContractStatusesList {statuses} />
         <div class="operation__amount-wrapper">
           <p>Amount:</p>
           <Button
@@ -328,7 +328,7 @@
       }}
     >
       <div in:fade|global class="operation__stake">
-        <ContractStatusesList items={statuses} />
+        <ContractStatusesList {statuses} />
         <Badge text="REVIEW TRANSACTION" variant="warning" />
         <StakeOverview
           label={overviewLabels[flow]}
