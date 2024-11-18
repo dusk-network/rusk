@@ -19,7 +19,7 @@
         role="menuitem"
       >
         <span class="dashboard-nav__item-label">{label}</span>
-        {#if icons && icons.length}
+        {#if icons?.length}
           <span class="dashboard-nav__item-icons">
             {#each icons as icon (icon.path)}
               <Icon path={icon.path} />
@@ -39,6 +39,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 0.5rem 0;
+      color: var(--on-surface-color) !important;
 
       &:first-child {
         padding-top: 0;
@@ -47,10 +48,14 @@
       &:last-child {
         padding-bottom: 0;
       }
+
+      &:hover {
+        color: var(--anchor-color-on-surface) !important;
+        text-decoration: none !important;
+      }
     }
 
     &__item-label {
-      color: var(--on-surface-color);
       font-size: 1.125rem;
       font-style: normal;
       font-weight: 500;
@@ -58,7 +63,6 @@
     }
 
     &__item-icons {
-      color: var(--on-surface-color);
       display: flex;
       flex-direction: row;
       gap: 0.625rem;
