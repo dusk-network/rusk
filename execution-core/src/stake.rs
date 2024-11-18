@@ -42,22 +42,16 @@ pub struct Stake {
     chain_id: u8,
     keys: StakeKeys,
     value: u64,
-    nonce: u64,
     signature: DoubleSignature,
 }
 
 impl Stake {
     const MESSAGE_SIZE: usize =
-        1 + BlsPublicKey::SIZE + BlsPublicKey::SIZE + u64::SIZE + u64::SIZE;
+        1 + BlsPublicKey::SIZE + BlsPublicKey::SIZE + u64::SIZE;
 
     /// Create a new stake.
     #[must_use]
-    pub fn new(
-        sk: &BlsSecretKey,
-        value: u64,
-        nonce: u64,
-        chain_id: u8,
-    ) -> Self {
+    pub fn new(sk: &BlsSecretKey, value: u64, chain_id: u8) -> Self {
         let key = BlsPublicKey::from(sk);
 
         let keys = StakeKeys {
@@ -69,7 +63,6 @@ impl Stake {
             chain_id,
             keys,
             value,
-            nonce,
             signature: DoubleSignature::default(),
         };
 
@@ -99,17 +92,6 @@ impl Stake {
     #[must_use]
     pub fn value(&self) -> u64 {
         self.value
-    }
-
-    /// Nonce used for replay protection. Nonces are strictly increasing and
-    /// incremental, meaning that for a transaction to be valid, only the
-    /// current nonce + 1 can be used.
-    ///
-    /// The current nonce is queryable via the stake contract in the form of
-    /// [`StakeData`].
-    #[must_use]
-    pub fn nonce(&self) -> u64 {
-        self.nonce
     }
 
     /// Returns the chain ID of the stake.
@@ -142,10 +124,6 @@ impl Stake {
 
         bytes[offset..offset + u64::SIZE]
             .copy_from_slice(&self.value.to_bytes());
-        offset += u64::SIZE;
-
-        bytes[offset..offset + u64::SIZE]
-            .copy_from_slice(&self.nonce.to_bytes());
 
         bytes
     }
@@ -258,13 +236,6 @@ pub struct StakeData {
     pub amount: Option<StakeAmount>,
     /// The reward for participating in consensus.
     pub reward: u64,
-    /// Nonce used for replay protection. Nonces are strictly increasing and
-    /// incremental, meaning that for a transaction to be valid, only the
-    /// current nonce + 1 can be used.
-    ///
-    /// The current nonce is queryable via the stake contract in the form of
-    /// [`StakeData`].
-    pub nonce: u64,
     /// Faults
     pub faults: u8,
     /// Hard Faults
@@ -300,7 +271,6 @@ impl StakeData {
     pub const EMPTY: Self = Self {
         amount: None,
         reward: 0,
-        nonce: 0,
         faults: 0,
         hard_faults: 0,
     };
@@ -333,7 +303,6 @@ impl StakeData {
         Self {
             amount,
             reward,
-            nonce: 0,
             faults: 0,
             hard_faults: 0,
         }
@@ -358,7 +327,7 @@ impl StakeData {
 }
 
 const STAKE_DATA_SIZE: usize =
-    u8::SIZE + StakeAmount::SIZE + u64::SIZE + u64::SIZE + u8::SIZE + u8::SIZE;
+    u8::SIZE + StakeAmount::SIZE + u64::SIZE + u8::SIZE + u8::SIZE;
 
 impl Serializable<STAKE_DATA_SIZE> for StakeData {
     type Error = dusk_bytes::Error;
@@ -380,7 +349,6 @@ impl Serializable<STAKE_DATA_SIZE> for StakeData {
         };
 
         let reward = u64::from_reader(&mut buf)?;
-        let nonce = u64::from_reader(&mut buf)?;
 
         let faults = u8::from_reader(&mut buf)?;
         let hard_faults = u8::from_reader(&mut buf)?;
@@ -388,7 +356,6 @@ impl Serializable<STAKE_DATA_SIZE> for StakeData {
         Ok(Self {
             amount,
             reward,
-            nonce,
             faults,
             hard_faults,
         })
@@ -413,7 +380,6 @@ impl Serializable<STAKE_DATA_SIZE> for StakeData {
         }
 
         writer.write(&self.reward.to_bytes());
-        writer.write(&self.nonce.to_bytes());
 
         writer.write(&self.faults.to_bytes());
         writer.write(&self.hard_faults.to_bytes());
