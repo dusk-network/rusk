@@ -126,7 +126,7 @@ type WalletStoreServices = {
   stake: (
     amount: bigint,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
-  ) => Promise<any>;
+  ) => Promise<TransactionInfo>;
 
   sync: (fromBlock?: bigint) => Promise<void>;
 
@@ -141,12 +141,14 @@ type WalletStoreServices = {
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<TransactionInfo>;
 
-  unstake: (gas: import("$lib/vendor/w3sper.js/src/mod").Gas) => Promise<any>;
+  unstake: (
+    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
+  ) => Promise<TransactionInfo>;
 
   withdrawReward: (
     amount: bigint,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
-  ) => Promise<any>;
+  ) => Promise<TransactionInfo>;
 };
 
 type WalletStore = Readable<WalletStoreContent> & WalletStoreServices;

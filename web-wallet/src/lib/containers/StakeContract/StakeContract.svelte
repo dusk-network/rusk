@@ -14,7 +14,6 @@
   import { Gas } from "$lib/vendor/w3sper.js/src/mod";
 
   import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
-  import { getLastTransactionHash } from "$lib/transactions";
   import {
     gasStore,
     operationsStore,
@@ -70,18 +69,18 @@
     stake: (amount, gasPrice, gasLimit) =>
       walletStore
         .stake(amount, new Gas({ limit: gasLimit, price: gasPrice }))
-        .then(getLastTransactionHash),
+        .then(getKey("hash")),
     unstake: (gasPrice, gasLimit) =>
       walletStore
         .unstake(new Gas({ limit: gasLimit, price: gasPrice }))
-        .then(getLastTransactionHash),
+        .then(getKey("hash")),
     "withdraw-rewards": (gasPrice, gasLimit) =>
       walletStore
         .withdrawReward(
           $walletStore.stakeInfo.reward,
           new Gas({ limit: gasLimit, price: gasPrice })
         )
-        .then(getLastTransactionHash),
+        .then(getKey("hash")),
   };
 
   /** @type {(operations: ContractOperation[]) => ContractOperation[]} */
