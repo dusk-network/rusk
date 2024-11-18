@@ -58,7 +58,6 @@ impl StakeState {
         let value = stake.value();
         let keys = *stake.keys();
         let account = &keys.account;
-        let nonce = stake.nonce();
         let signature = *stake.signature();
 
         if stake.chain_id() != self.chain_id() {
@@ -82,16 +81,6 @@ impl StakeState {
             panic!("The staked value is lower than the minimum amount!");
         }
 
-        // NOTE: exhausting the nonce is nearly impossible, since it
-        //       requires performing more than 18 quintillion stake operations.
-        //       Since this number is so large, we also skip overflow checks.
-        let incremented_nonce = loaded_stake.nonce + 1;
-
-        // check signature and nonce used are correct
-        if nonce != incremented_nonce {
-            panic!("Invalid nonce");
-        }
-
         let digest = stake.signature_message().to_vec();
         if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
             panic!("Invalid funds signature!");
@@ -107,7 +96,6 @@ impl StakeState {
                 .expect("Depositing funds into contract should succeed");
 
         // update the state accordingly
-        loaded_stake.nonce = nonce;
         loaded_stake.amount =
             Some(StakeAmount::new(value, rusk_abi::block_height()));
 

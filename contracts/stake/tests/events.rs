@@ -60,7 +60,6 @@ fn reward_slash() -> Result<(), PiecrustError> {
             eligibility: 0,
             locked: 0,
         }),
-        nonce: 0,
         faults: 0,
         hard_faults: 0,
     };
@@ -156,7 +155,6 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
             eligibility: block_height,
             locked: 0,
         }),
-        nonce: 0,
         faults: 0,
         hard_faults: 0,
     };
