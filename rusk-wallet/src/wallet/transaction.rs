@@ -263,8 +263,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             }
         }
 
-        let nonce = current_stake.map(|s| s.nonce).unwrap_or(0) + 1;
-
         let tx_cost = amt + gas.limit * gas.price;
         let inputs = state
             .tx_input_notes(profile_idx, tx_cost)
@@ -278,7 +276,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let stake = phoenix_stake(
             &mut rng, &sender_sk, &stake_sk, inputs, root, gas.limit,
-            gas.price, chain_id, amt, nonce, &Prover,
+            gas.price, chain_id, amt, &Prover,
         )?;
 
         sender_sk.zeroize();
@@ -319,8 +317,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             }
         }
 
-        let nonce = current_stake.map(|s| s.nonce).unwrap_or(0) + 1;
-
         let stake = moonlight_stake(
             &stake_sk,
             &stake_sk,
@@ -328,7 +324,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.limit,
             gas.price,
             moonlight_current_nonce,
-            nonce,
             chain_id,
         )?;
 
