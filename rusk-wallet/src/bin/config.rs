@@ -9,6 +9,8 @@ use std::collections::HashMap;
 use std::path::Path;
 use url::Url;
 
+use crate::Error;
+
 #[derive(Debug, Deserialize, Clone)]
 #[allow(dead_code)]
 pub(crate) struct Network {
@@ -38,22 +40,29 @@ fn read_to_string<P: AsRef<Path>>(path: P) -> io::Result<Option<String>> {
 
 impl Config {
     /// Attempt to load configuration from file
-    pub fn load(profile: &Path) -> anyhow::Result<Config> {
+    pub fn load(profile: &Path) -> Result<Config, Error> {
         let profile = profile.join("config.toml");
 
-        let mut global_config = dirs::home_dir().expect("OS not supported");
-        global_config.push(".config");
-        global_config.push(env!("CARGO_BIN_NAME"));
-        global_config.push("config.toml");
+        let mut global_config = dirs::home_dir();
 
-        let contents = read_to_string(profile)?
-            .or(read_to_string(&global_config)?)
-            .unwrap_or_else(|| {
-                include_str!("../../default.config.toml").to_string()
-            });
+        match global_config {
+            Some(ref mut path) => {
+                path.push(".config");
+                path.push(env!("CARGO_BIN_NAME"));
+                path.push("config.toml");
 
-        let network: Network = toml::from_str(&contents)?;
+                let contents = read_to_string(profile)?
+                    .or(read_to_string(&path)?)
+                    .unwrap_or_else(|| {
+                        include_str!("../../default.config.toml").to_string()
+                    });
 
-        Ok(Config { network })
+                let network: Network = toml::from_str(&contents)
+                    .map_err(|_| Error::NetworkNotFound)?;
+
+                Ok(Config { network })
+            }
+            None => Err(Error::OsNotSupported),
+        }
     }
 }

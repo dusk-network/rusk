@@ -131,7 +131,7 @@ async fn exec() -> anyhow::Result<()> {
     let cmd = args.command.clone();
 
     // Get the initial settings from the args
-    let settings_builder = Settings::args(args);
+    let settings_builder = Settings::args(args)?;
 
     // Obtain the wallet dir from the settings
     let wallet_dir = settings_builder.wallet_dir().clone();
@@ -357,7 +357,7 @@ async fn exec() -> anyhow::Result<()> {
                     let tx_id = hex::encode(hash.to_bytes());
 
                     // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(settings.state, status::headless);
+                    let gql = GraphQL::new(settings.state, status::headless)?;
                     gql.wait_for(&tx_id).await?;
 
                     println!("{tx_id}");

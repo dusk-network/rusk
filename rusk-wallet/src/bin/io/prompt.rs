@@ -36,7 +36,7 @@ pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
     let pwd = Password::new(msg)
         .with_display_toggle_enabled()
         .without_confirmation()
-        .with_display_mode(PasswordDisplayMode::Hidden)
+        .with_display_mode(PasswordDisplayMode::Masked)
         .prompt();
 
     pwd
@@ -157,12 +157,14 @@ pub(crate) fn request_dir(
         }
     };
 
-    let q = Text::new(
-        format!("Please enter a directory to {}:", what_for).as_str(),
-    )
-    .with_default(profile.to_str().unwrap())
-    .with_validator(validator)
-    .prompt()?;
+    let msg = format!("Please enter a directory to {}:", what_for);
+    let q = match profile.to_str() {
+        Some(p) => Text::new(msg.as_str())
+            .with_default(p)
+            .with_validator(validator)
+            .prompt(),
+        None => Text::new(msg.as_str()).with_validator(validator).prompt(),
+    }?;
 
     let p = PathBuf::from(q);
 
@@ -205,13 +207,13 @@ fn request_token(
     min: Dusk,
     balance: Dusk,
     default: Option<f64>,
-) -> anyhow::Result<Dusk> {
+) -> Result<Dusk, Error> {
     // Checks if the value is larger than the given min and smaller than the
     // min of the balance and `MAX_CONVERTIBLE`.
     let validator = move |value: &f64| {
         let max = std::cmp::min(balance, MAX_CONVERTIBLE);
 
-        match (min..=max).contains(&Dusk::from(*value)) {
+        match (min..=max).contains(&Dusk::try_from(*value)?) {
             true => Ok(Validation::Valid),
             false => Ok(Validation::Invalid(
                 format!("The amount has to be between {} and {}", min, max)
@@ -240,34 +242,34 @@ fn request_token(
         render_config: RenderConfig::default(),
     };
 
-    Ok(amount_prompt.prompt()?.into())
+    amount_prompt.prompt()?.try_into()
 }
 
 /// Request a positive amount of tokens
 pub(crate) fn request_token_amt(
     action: &str,
     balance: Dusk,
-) -> anyhow::Result<Dusk> {
+) -> Result<Dusk, Error> {
     let min = MIN_CONVERTIBLE;
 
-    request_token(action, min, balance, None)
+    request_token(action, min, balance, None).map_err(Error::from)
 }
 
 /// Request amount of tokens that can be 0
 pub(crate) fn request_optional_token_amt(
     action: &str,
     balance: Dusk,
-) -> anyhow::Result<Dusk> {
+) -> Result<Dusk, Error> {
     let min = Dusk::from(0);
 
-    request_token(action, min, balance, None)
+    request_token(action, min, balance, None).map_err(Error::from)
 }
 
 /// Request amount of tokens that can't be lower than MINIMUM_STAKE
-pub(crate) fn request_stake_token_amt(balance: Dusk) -> anyhow::Result<Dusk> {
+pub(crate) fn request_stake_token_amt(balance: Dusk) -> Result<Dusk, Error> {
     let min: Dusk = MINIMUM_STAKE.into();
 
-    request_token("stake", min, balance, None)
+    request_token("stake", min, balance, None).map_err(Error::from)
 }
 
 /// Request gas limit
@@ -290,7 +292,7 @@ pub(crate) fn request_gas_limit(default_gas_limit: u64) -> anyhow::Result<u64> {
 pub(crate) fn request_gas_price(
     min_gas_price: Lux,
     mempool_gas_prices: MempoolGasPrices,
-) -> anyhow::Result<Lux> {
+) -> Result<Lux, Error> {
     let default_gas_price = if mempool_gas_prices.average > min_gas_price {
         mempool_gas_prices.average
     } else {
@@ -304,6 +306,7 @@ pub(crate) fn request_gas_price(
         Some(default_gas_price as f64),
     )
     .map(|dusk| *dusk)
+    .map_err(Error::from)
 }
 
 pub(crate) fn request_str(

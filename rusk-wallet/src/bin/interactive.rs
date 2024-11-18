@@ -106,7 +106,7 @@ pub(crate) async fn run_loop(
                                     let gql = GraphQL::new(
                                         settings.state.to_string(),
                                         io::status::interactive,
-                                    );
+                                    )?;
                                     gql.wait_for(&tx_id).await?;
 
                                     if let Some(explorer) = &settings.explorer {
@@ -169,6 +169,8 @@ async fn profile_idx(
                         DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
                     )?;
 
+                // UNWRAP: we can safely unwrap here because we know the file is
+                // not None since we've checked the file version
                 wallet.save_to(WalletFile {
                     path: wallet.file().clone().unwrap().path,
                     pwd,
@@ -364,7 +366,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_price,
             memo,
         } => {
-            let sender = sender.as_ref().expect("sender to be a valid address");
+            let sender = sender.as_ref().ok_or(Error::BadAddress)?;
             sender.same_transaction_model(rcvr)?;
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", sender.preview());
@@ -385,8 +387,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let sender =
-                address.as_ref().expect("address to be a valid address");
+            let sender = address.as_ref().ok_or(Error::BadAddress)?;
             let max_fee = gas_limit * gas_price;
             let stake_to = wallet.public_address(wallet.find_index(sender)?)?;
             println!("   > Pay with {}", sender.preview());
@@ -403,8 +404,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let sender =
-                address.as_ref().expect("address to be a valid address");
+            let sender = address.as_ref().ok_or(Error::BadAddress)?;
             let unstake_from =
                 wallet.public_address(wallet.find_index(sender)?)?;
             let max_fee = gas_limit * gas_price;
@@ -424,8 +424,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let sender =
-                address.as_ref().expect("address to be a valid address");
+            let sender = address.as_ref().ok_or(Error::BadAddress)?;
             let max_fee = gas_limit * gas_price;
             let withdraw_from =
                 wallet.public_address(wallet.find_index(sender)?)?;
@@ -447,8 +446,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_limit,
             gas_price,
         } => {
-            let sender =
-                address.as_ref().expect("address to be a valid address");
+            let sender = address.as_ref().ok_or(Error::BadAddress)?;
             let code_len = code.metadata()?.len();
             let max_fee = gas_limit * gas_price;
 

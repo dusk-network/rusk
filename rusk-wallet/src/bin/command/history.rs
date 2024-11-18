@@ -66,7 +66,8 @@ pub(crate) async fn transaction_from_notes(
 ) -> anyhow::Result<Vec<TransactionHistory>> {
     notes.sort_by(|a, b| a.note.pos().cmp(b.note.pos()));
     let mut ret: Vec<TransactionHistory> = vec![];
-    let gql = GraphQL::new(settings.state.to_string(), io::status::interactive);
+    let gql =
+        GraphQL::new(settings.state.to_string(), io::status::interactive)?;
 
     let nullifiers = notes
         .iter()

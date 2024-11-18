@@ -131,7 +131,7 @@ impl Cache {
             let to_move = self
                 .db
                 .get_cf(&cf, key)?
-                .expect("Note must exists to be moved");
+                .ok_or(Error::CacheDatabaseCorrupted)?;
             self.db.put_cf(&spent_cf, key, to_move)?;
             self.db.delete_cf(&cf, n.to_bytes())?;
         }
@@ -148,11 +148,17 @@ impl Cache {
     /// Returns the last position of inserted notes. If no note has ever been
     /// inserted it returns None.
     pub(crate) fn last_pos(&self) -> Result<Option<u64>, Error> {
-        Ok(self.db.get(b"last_pos")?.map(|x| {
-            let buff: [u8; 8] = x.try_into().expect("Invalid u64 in cache db");
+        let last_pos = self.db.get(b"last_pos")?;
 
-            u64::from_be_bytes(buff)
-        }))
+        match last_pos {
+            Some(x) => {
+                let buff =
+                    x.try_into().map_err(|_| Error::CacheDatabaseCorrupted)?;
+
+                Ok(Some(u64::from_be_bytes(buff)))
+            }
+            None => Ok(None),
+        }
     }
 
     /// Returns an iterator over all unspent notes nullifier for the given pk.
