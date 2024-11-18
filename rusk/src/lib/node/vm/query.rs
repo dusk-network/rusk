@@ -25,10 +25,9 @@ impl Rusk {
         S: AsRef<str>,
         V: Into<Vec<u8>>,
     {
-        // For queries we set a point limit of effectively infinite and a block
-        // height of zero since this doesn't affect the result.
-        let mut session = self.session(0, None)?;
+        let mut session = self.query_session(None)?;
 
+        // For queries we set a point limit of effectively infinite
         session
             .call_raw(contract_id, fn_name.as_ref(), fn_arg, u64::MAX)
             .map(|receipt| receipt.data)
@@ -71,10 +70,9 @@ impl Rusk {
         R::Archived: Deserialize<R, Infallible>
             + for<'b> CheckBytes<DefaultValidator<'b>>,
     {
-        // For queries we set a point limit of effectively infinite and a block
-        // height of zero since this doesn't affect the result.
-        let mut session = self.session(0, None)?;
+        let mut session = self.query_session(None)?;
 
+        // For queries we set a point limit of effectively infinite
         let mut result = session
             .call(contract_id, call_name, call_arg, u64::MAX)?
             .data;
@@ -102,10 +100,9 @@ impl Rusk {
         A: for<'b> Serialize<StandardBufSerializer<'b>>,
         A::Archived: for<'b> bytecheck::CheckBytes<DefaultValidator<'b>>,
     {
-        // For queries we set a point limit of effectively infinite and a block
-        // height of zero since this doesn't affect the result.
-        let mut session = self.session(0, base_commit)?;
+        let mut session = self.query_session(base_commit)?;
 
+        // For feeder queries we use the gas limit set in the config
         session.feeder_call::<_, ()>(
             contract_id,
             call_name,
@@ -128,10 +125,9 @@ impl Rusk {
         S: AsRef<str>,
         V: Into<Vec<u8>>,
     {
-        // For queries we set a point limit of effectively infinite and a block
-        // height of zero since this doesn't affect the result.
-        let mut session = self.session(0, None)?;
+        let mut session = self.query_session(None)?;
 
+        // For feeder queries we use the gas limit set in the config
         session.feeder_call_raw(
             contract_id,
             call_name.as_ref(),

@@ -124,7 +124,7 @@ impl Rusk {
 
         let voters = &params.voters_pubkey[..];
 
-        let mut session = self.session(block_height, None)?;
+        let mut session = self.new_block_session(block_height, None)?;
 
         let mut block_gas_left = block_gas_limit;
 
@@ -179,7 +179,7 @@ impl Rusk {
                     // transaction, since it is technically valid.
                     if gas_spent > block_gas_left {
                         info!("Skipping {tx_id_hex} due gas_spent {gas_spent} greater than left: {block_gas_left}");
-                        session = self.session(block_height, None)?;
+                        session = self.new_block_session(block_height, None)?;
 
                         for spent_tx in &spent_txs {
                             // We know these transactions were correctly
@@ -267,7 +267,7 @@ impl Rusk {
         slashing: Vec<Slash>,
         voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let session = self.session(block_height, None)?;
+        let session = self.new_block_session(block_height, None)?;
 
         accept(
             session,
@@ -305,7 +305,7 @@ impl Rusk {
         VerificationOutput,
         Vec<ContractEvent>,
     )> {
-        let session = self.session(block_height, None)?;
+        let session = self.new_block_session(block_height, None)?;
 
         let (spent_txs, verification_output, session, events) = accept(
             session,
@@ -465,7 +465,56 @@ impl Rusk {
         self.query(STAKE_CONTRACT, "get_stake", pk)
     }
 
-    pub(crate) fn session(
+    /// Opens a session for a new block proposal/verification.
+    ///
+    /// Before returning the session, "before_state_transition" of Stake
+    /// Contract is called
+    pub(crate) fn new_block_session(
+        &self,
+        block_height: u64,
+        commit: Option<[u8; 32]>,
+    ) -> Result<Session> {
+        let mut session = self._session(block_height, commit)?;
+        let _: CallReceipt<()> = session
+            .call(STAKE_CONTRACT, "before_state_transition", &(), u64::MAX)
+            .expect("before_state_transition to success");
+        Ok(session)
+    }
+
+    /// Opens a session for query, setting a block height of zero since this
+    /// doesn't affect the result.
+    pub(crate) fn query_session(
+        &self,
+        commit: Option<[u8; 32]>,
+    ) -> Result<Session> {
+        self._session(0, commit)
+    }
+
+    /// Opens a new session with the specified block height and commit hash.
+    ///
+    /// # Warning
+    /// This is a low-level function intended for internal use only.
+    /// Directly invoking `_session` bypasses critical preconditions, such as
+    /// the "before_state_transition" call to the Stake Contract, which are
+    /// enforced by higher-level functions like `new_block_session`.
+    ///
+    /// Instead, use the public-facing functions like `new_block_session` or
+    /// `query_session` to ensure correct behavior and consistency.
+    ///
+    /// # Parameters
+    /// - `block_height`: The height of the block for which the session is
+    ///   created.
+    /// - `commit`: The optional commit hash. If not provided, the current tip
+    ///   is used.
+    ///
+    /// # Returns
+    /// - A `Result` containing a `Session` if successful, or an error if the
+    ///   session could not be created.
+    ///
+    /// # Errors
+    /// - Returns an error if the session could not be initialized with the
+    ///   given parameters.
+    fn _session(
         &self,
         block_height: u64,
         commit: Option<[u8; 32]>,
