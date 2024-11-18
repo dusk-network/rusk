@@ -149,6 +149,10 @@ impl StakeState {
 
         rusk_abi::emit("unstake", StakeEvent { keys: *keys, value });
 
+        if loaded_stake.reward == 0 {
+            self.stakes.remove(&unstake.account().to_bytes());
+        }
+
         let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
@@ -194,6 +198,10 @@ impl StakeState {
         // update the state accordingly
         loaded_stake.reward -= value;
         rusk_abi::emit("withdraw", StakeEvent { keys: *keys, value });
+
+        if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
+            self.stakes.remove(&account.to_bytes());
+        }
     }
 
     /// Gets a reference to a stake.
