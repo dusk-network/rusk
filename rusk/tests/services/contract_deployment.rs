@@ -363,6 +363,10 @@ pub async fn contract_deploy_charge() {
     logger();
     let f = Fixture::build(false);
 
+    let alice_bytecode = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+    );
+
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
         &f.rusk,
@@ -375,8 +379,21 @@ pub async fn contract_deploy_charge() {
         GAS_PRICE,
     );
     let after_bob_balance = f.wallet_balance();
+    make_and_execute_transaction_deploy(
+        &f.rusk,
+        &f.wallet,
+        alice_bytecode,
+        GAS_LIMIT,
+        0,
+        false,
+        false,
+        GAS_PRICE,
+    );
+    let after_alice_balance = f.wallet_balance();
     let bob_deployment_cost = before_balance - after_bob_balance;
-    assert!(bob_deployment_cost > 10_000_000);
+    let alice_deployment_cost = after_bob_balance - after_alice_balance;
+    assert!(bob_deployment_cost > alice_deployment_cost);
+    assert!(bob_deployment_cost - alice_deployment_cost > 10_000_000);
 }
 
 /// We deploy a contract with insufficient gas limit.
