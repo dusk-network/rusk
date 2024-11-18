@@ -5,7 +5,7 @@ import { ContractStatusesList } from "..";
 
 describe("ContractStatusesList", () => {
   const baseProps = {
-    items: [
+    statuses: [
       {
         label: "Spendable",
         value: "99,899.999724165",
@@ -36,7 +36,7 @@ describe("ContractStatusesList", () => {
   it("should be able to render the component without items", () => {
     const props = {
       ...baseProps,
-      items: [],
+      statuses: [],
     };
     const { container } = render(ContractStatusesList, {
       ...baseOptions,

@@ -5,12 +5,12 @@
   import { logo } from "$lib/dusk/icons";
 
   /** @type {ContractStatus[]} */
-  export let items;
+  export let statuses;
 </script>
 
 <div class="contract-statuses">
   <dl class="contract-statuses__list">
-    {#each items as status (status.label)}
+    {#each statuses.filter((status) => status.value !== null) as status (status.label)}
       <dt class="contract-statuses__label">
         {status.label}
       </dt>

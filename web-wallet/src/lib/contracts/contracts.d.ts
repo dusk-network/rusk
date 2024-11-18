@@ -19,7 +19,7 @@ type ContractOperation = {
 
 type ContractStatus = {
   label: string;
-  value: string;
+  value: string | null;
 };
 
 type StakeType = "stake" | "unstake" | "withdraw-rewards";
