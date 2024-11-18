@@ -172,9 +172,7 @@ impl TransferState {
             panic!("{PANIC_MSG}")
         }
 
-        let contract = mint.contract();
-
-        if mint.contract() != contract {
+        if mint.contract() != &STAKE_CONTRACT {
             panic!("Withdrawal should from the stake contract");
         }
 
