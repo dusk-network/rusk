@@ -31,7 +31,7 @@
 
   export let spendable = 0n;
 
-  $: [gasSettings, language, minAllowedStake] = collectSettings($settingsStore);
+  $: [gasSettings, language] = collectSettings($settingsStore);
   $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
 
   const gasLimits = $gasStore;
@@ -54,7 +54,6 @@
       "gasPriceLower",
     ]),
     getKey("language"),
-    getKey("minAllowedStake"),
   ]);
 
   /** @type {Record<string, (info: StakeInfo) => boolean>} */
@@ -139,7 +138,7 @@
 
   $: ({ currentOperation } = $operationsStore);
   const { hideStakingNotice } = $settingsStore;
-  $: ({ balance, syncStatus } = $walletStore);
+  $: ({ balance, minimumStake, syncStatus } = $walletStore);
   $: isSyncOK = !(syncStatus.isInProgress || !!syncStatus.error);
   $: if (!isSyncOK) {
     disableAllOperations(descriptor.operations);
@@ -154,7 +153,7 @@
       formatter={duskFormatter}
       {gasLimits}
       {gasSettings}
-      {minAllowedStake}
+      minAllowedStake={luxToDusk(minimumStake)}
       on:operationChange
       on:suppressStakingNotice
       rewards={luxToDusk(stakeInfo.reward)}

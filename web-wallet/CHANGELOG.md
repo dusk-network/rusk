@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
 - Add temporary link to the block explorer on the dashboard [#2882]
 - Update Staking-Related functionality to make use of w3sper [#3006]
+- Add minimum stake amount supplied by w3sper instead of using an env var [#3010]
 
 ### Changed
 
@@ -347,6 +348,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2990]: https://github.com/dusk-network/rusk/issues/2990
 [#3000]: https://github.com/dusk-network/rusk/issues/3000
 [#3006]: https://github.com/dusk-network/rusk/issues/3006
+[#3010]: https://github.com/dusk-network/rusk/issues/3010
 
 <!-- VERSIONS -->
 
