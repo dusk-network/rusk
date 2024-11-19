@@ -18,7 +18,6 @@ type SettingsStoreContent = {
   gasPrice: bigint;
   hideStakingNotice: boolean;
   language: string;
-  minAllowedStake: number;
   userId: string;
 };
 
