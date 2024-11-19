@@ -9,7 +9,7 @@
 use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
-use dusk_bytes::{DeserializableSlice, Serializable, Write};
+use dusk_bytes::Serializable;
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::signatures::bls::{
@@ -326,68 +326,6 @@ impl StakeData {
     }
 }
 
-const STAKE_DATA_SIZE: usize =
-    u8::SIZE + StakeAmount::SIZE + u64::SIZE + u8::SIZE + u8::SIZE;
-
-impl Serializable<STAKE_DATA_SIZE> for StakeData {
-    type Error = dusk_bytes::Error;
-
-    fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        let mut buf = &buf[..];
-
-        // if the tag is zero we skip the bytes
-        let tag = u8::from_reader(&mut buf)?;
-        let amount = match tag {
-            0 => {
-                buf = &buf[..StakeAmount::SIZE];
-                None
-            }
-            _ => Some(StakeAmount::from_reader(&mut buf)?),
-        };
-
-        let reward = u64::from_reader(&mut buf)?;
-
-        let faults = u8::from_reader(&mut buf)?;
-        let hard_faults = u8::from_reader(&mut buf)?;
-
-        Ok(Self {
-            amount,
-            reward,
-            faults,
-            hard_faults,
-        })
-    }
-
-    #[allow(unused_must_use)]
-    fn to_bytes(&self) -> [u8; Self::SIZE] {
-        const ZERO_AMOUNT: [u8; StakeAmount::SIZE] = [0u8; StakeAmount::SIZE];
-
-        let mut buf = [0u8; Self::SIZE];
-        let mut writer = &mut buf[..];
-
-        match &self.amount {
-            None => {
-                writer.write(&0u8.to_bytes());
-                writer.write(&ZERO_AMOUNT);
-            }
-            Some(amount) => {
-                writer.write(&1u8.to_bytes());
-                writer.write(&amount.to_bytes());
-            }
-        }
-
-        writer.write(&self.reward.to_bytes());
-
-        writer.write(&self.faults.to_bytes());
-        writer.write(&self.hard_faults.to_bytes());
-
-        buf
-    }
-}
-
 /// Value staked and eligibility.
 #[derive(
     Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
@@ -438,41 +376,6 @@ impl StakeAmount {
     #[must_use]
     pub fn total_funds(&self) -> u64 {
         self.value + self.locked
-    }
-}
-
-const STAKE_AMOUNT_SIZE: usize = u64::SIZE + u64::SIZE + u64::SIZE;
-
-impl Serializable<STAKE_AMOUNT_SIZE> for StakeAmount {
-    type Error = dusk_bytes::Error;
-
-    fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        let mut buf = &buf[..];
-
-        let value = u64::from_reader(&mut buf)?;
-        let locked = u64::from_reader(&mut buf)?;
-        let eligibility = u64::from_reader(&mut buf)?;
-
-        Ok(Self {
-            value,
-            locked,
-            eligibility,
-        })
-    }
-
-    #[allow(unused_must_use)]
-    fn to_bytes(&self) -> [u8; Self::SIZE] {
-        let mut buf = [0u8; Self::SIZE];
-        let mut writer = &mut buf[..];
-
-        writer.write(&self.value.to_bytes());
-        writer.write(&self.locked.to_bytes());
-        writer.write(&self.eligibility.to_bytes());
-
-        buf
     }
 }
 
