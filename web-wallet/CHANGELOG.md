@@ -9,18 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+- Update Transactions list design [#1922]
+
+### Removed
+
+### Fixed
+
+## [0.8.0] - 2024-11-19
+
+### Added
+
 - Added gas settings validation on Unstake / Widthdraw Rewards flows [#2000]
 - Add temporary link to the block explorer on the dashboard [#2882]
 - Update Staking-Related functionality to make use of w3sper [#3006]
 
 ### Changed
 
-- Update Transactions list design [#1922]
 - Update `Stake` to use `Stepper` [#2436]
 - Update Mnemonic (Authenticate) Enter key behavior [#2879]
 - Enhance Error Handling on Wallet Access Page [#2932]
-
-### Removed
 
 ### Fixed
 
@@ -353,6 +362,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[0.8.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.8.0
 [0.7.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.7.0
 [0.6.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.6.0
 [0.5.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.5.0
