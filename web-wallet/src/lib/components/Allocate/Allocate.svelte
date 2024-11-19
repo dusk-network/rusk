@@ -23,6 +23,7 @@
   import { GasFee, GasSettings, OperationResult } from "$lib/components";
   import { walletStore } from "$lib/stores";
   import { Gas } from "$lib/vendor/w3sper.js/src/mod";
+  import { MESSAGES } from "$lib/constants";
   import Banner from "../Banner/Banner.svelte";
 
   /** @type {(amount: number) => string} */
@@ -329,9 +330,10 @@
         errorMessage="Transaction failed"
         operation={allocate()}
         pendingMessage="Processing transaction"
-        successMessage="Transaction completed"
+        successMessage="Transaction created"
       >
         <svelte:fragment slot="success-content" let:result={hash}>
+          <p>{MESSAGES.TRANSACTION_CREATED}</p>
           {#if hash}
             <AnchorButton
               href={`/explorer/transactions/transaction?id=${hash}`}

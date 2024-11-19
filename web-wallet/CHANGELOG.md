@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Suggested words in the Mnemonic (Authenticate) are accessible using Tab [#2879]
 - Enhance Allocate flow on full amount allocation [#2938]
 - Broken link in the stake warning [#2990]
+- Change "Transaction created" copy [#2991]
 - Fix Dashboard navigation menu padding [#3000]
 
 ## [0.7.0] - 2024-11-11
@@ -345,6 +346,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2932]: https://github.com/dusk-network/rusk/issues/2932
 [#2938]: https://github.com/dusk-network/rusk/issues/2938
 [#2990]: https://github.com/dusk-network/rusk/issues/2990
+[#2991]: https://github.com/dusk-network/rusk/issues/2991
 [#3000]: https://github.com/dusk-network/rusk/issues/3000
 [#3006]: https://github.com/dusk-network/rusk/issues/3006
 

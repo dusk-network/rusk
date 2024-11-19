@@ -42,7 +42,7 @@
 >
   <svelte:fragment slot="success-content" let:result>
     <Icon path={mdiCheckDecagramOutline} size="large" />
-    <span>{successMessage}</span>
+    <b>{successMessage}</b>
     <slot name="success-content" {result} />
     <AppAnchorButton
       href="/dashboard"

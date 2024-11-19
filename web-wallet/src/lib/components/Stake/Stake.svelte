@@ -9,7 +9,7 @@
     mdiDatabaseOutline,
   } from "@mdi/js";
 
-  import { DOCUMENTATION_LINKS } from "$lib/constants";
+  import { DOCUMENTATION_LINKS, MESSAGES } from "$lib/constants";
   import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
   import { logo } from "$lib/dusk/icons";
@@ -365,9 +365,10 @@
           ? execute(duskToLux(stakeAmount), gasPrice, gasLimit)
           : execute(gasPrice, gasLimit)}
         pendingMessage="Processing transaction"
-        successMessage="Transaction completed"
+        successMessage="Transaction created"
       >
         <svelte:fragment slot="success-content" let:result={hash}>
+          <p>{MESSAGES.TRANSACTION_CREATED}</p>
           {#if hash}
             <AnchorButton
               href={`/explorer/transactions/transaction?id=${hash}`}
