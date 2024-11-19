@@ -279,7 +279,7 @@ describe("Send", () => {
 
       const explorerLink = getByRole("link", { name: /explorer/i });
 
-      expect(getByText("Transaction completed")).toBeInTheDocument();
+      expect(getByText("Transaction created")).toBeInTheDocument();
       expect(explorerLink).toHaveAttribute("target", "_blank");
       expect(explorerLink).toHaveAttribute("href", expectedExplorerLink);
     });
@@ -336,7 +336,7 @@ describe("Send", () => {
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
-      expect(getByText("Transaction completed")).toBeInTheDocument();
+      expect(getByText("Transaction created")).toBeInTheDocument();
       expect(() => getByRole("link", { name: /explorer/i })).toThrow();
     });
   });

@@ -105,9 +105,9 @@ exports[`OperationResult > should accept a custom message for the successful sta
   </svg>
   
    
-  <span>
-    Transaction completed
-  </span>
+  <b>
+    Transaction created
+  </b>
    
    
   <a
@@ -230,9 +230,9 @@ exports[`OperationResult > should be able to render the \`OperationResult\` in a
   </svg>
   
    
-  <span>
+  <b>
     Operation completed
-  </span>
+  </b>
    
    
   <a

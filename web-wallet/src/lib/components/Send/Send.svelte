@@ -32,6 +32,7 @@
     OperationResult,
     ScanQR,
   } from "$lib/components";
+  import { MESSAGES } from "$lib/constants";
 
   /** @type {(to: string, amount: number, gasPrice: bigint, gasLimit: bigint) => Promise<string>} */
   export let execute;
@@ -358,9 +359,10 @@
         errorMessage="Transaction failed"
         operation={execute(address, amount, gasPrice, gasLimit)}
         pendingMessage="Processing transaction"
-        successMessage="Transaction completed"
+        successMessage="Transaction created"
       >
         <svelte:fragment slot="success-content" let:result={hash}>
+          <p>{MESSAGES.TRANSACTION_CREATED}</p>
           {#if hash}
             <AnchorButton
               href={`/explorer/transactions/transaction?id=${hash}`}

@@ -54,7 +54,7 @@ describe("OperationResult", () => {
   it("should accept a custom message for the successful state", async () => {
     const props = {
       ...baseProps,
-      successMessage: "Transaction completed",
+      successMessage: "Transaction created",
     };
 
     const { container } = render(OperationResult, { ...baseOptions, props });
