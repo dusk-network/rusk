@@ -123,29 +123,31 @@ impl SettingsBuilder {
 }
 
 impl Settings {
-    pub fn args(args: WalletArgs) -> SettingsBuilder {
+    pub fn args(args: WalletArgs) -> Result<SettingsBuilder, Error> {
         let wallet_dir = if let Some(path) = &args.wallet_dir {
             path.clone()
         } else {
-            let mut path = dirs::home_dir().expect("OS not supported");
+            let mut path = dirs::home_dir().ok_or(Error::OsNotSupported)?;
             path.push(".dusk");
             path.push(env!("CARGO_BIN_NAME"));
             path
         };
 
-        SettingsBuilder { wallet_dir, args }
+        Ok(SettingsBuilder { wallet_dir, args })
     }
 
-    pub async fn check_state_con(&self) -> Result<(), reqwest::Error> {
-        RuesHttpClient::new(self.state.as_ref())
+    pub async fn check_state_con(&self) -> Result<(), Error> {
+        RuesHttpClient::new(self.state.as_ref())?
             .check_connection()
             .await
+            .map_err(Error::from)
     }
 
-    pub async fn check_prover_con(&self) -> Result<(), reqwest::Error> {
-        RuesHttpClient::new(self.prover.as_ref())
+    pub async fn check_prover_con(&self) -> Result<(), Error> {
+        RuesHttpClient::new(self.prover.as_ref())?
             .check_connection()
             .await
+            .map_err(Error::from)
     }
 }
 

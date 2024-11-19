@@ -95,7 +95,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             // derive the mnemonic seed
             let seed = Seed::new(&mnemonic, "");
             // Takes the mnemonic seed as bytes
-            let seed_bytes = seed.as_bytes().try_into().unwrap();
+            let seed_bytes = seed
+                .as_bytes()
+                .try_into()
+                .map_err(|_| Error::InvalidMnemonicPhrase)?;
 
             // Generate the default address at index 0
             let profiles = vec![Profile {
@@ -233,8 +236,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         status: fn(&str),
     ) -> Result<(), Error> {
         // attempt connection
-        let http_state = RuesHttpClient::new(rusk_addr);
-        let http_prover = RuesHttpClient::new(prov_addr);
+        let http_state = RuesHttpClient::new(rusk_addr)?;
+        let http_prover = RuesHttpClient::new(prov_addr)?;
 
         let state_status = http_state.check_connection().await;
         let prover_status = http_prover.check_connection().await;
@@ -302,15 +305,21 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         );
         let history = live_notes
             .chain(spent_notes)
-            .map(|(nullified_by, note, block_height)| {
-                let amount = note.value(Some(&vk)).unwrap();
-                DecodedNote {
-                    note,
-                    amount,
-                    block_height,
-                    nullified_by,
-                }
-            })
+            .flat_map(
+                |(nullified_by, note, block_height)| -> Result<_, Error> {
+                    let amount = note.value(Some(&vk));
+                    if let Ok(amount) = amount {
+                        Ok(DecodedNote {
+                            note,
+                            amount,
+                            block_height,
+                            nullified_by,
+                        })
+                    } else {
+                        Err(Error::WrongViewKey)
+                    }
+                },
+            )
             .collect();
 
         Ok(history)

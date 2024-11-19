@@ -26,13 +26,18 @@ pub struct RuesHttpClient {
 
 impl RuesHttpClient {
     /// Create a new HTTP Client
-    pub fn new<S: Into<String>>(uri: S) -> Self {
+    pub fn new<S: Into<String>>(uri: S) -> Result<Self, Error> {
         let client = reqwest::ClientBuilder::new()
             .connect_timeout(Duration::from_secs(30))
-            .build()
-            .expect("Client to be created");
-        let uri = uri.into();
-        Self { uri, client }
+            .build();
+
+        match client {
+            Ok(client) => Ok(Self {
+                uri: uri.into(),
+                client,
+            }),
+            Err(_) => Err(Error::HttpClient),
+        }
     }
 
     /// Utility for querying the rusk VM

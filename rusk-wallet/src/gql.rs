@@ -70,11 +70,14 @@ pub enum TxStatus {
 
 impl GraphQL {
     /// Create a new GraphQL wallet client
-    pub fn new<S: Into<String>>(url: S, status: fn(&str)) -> Self {
-        Self {
-            client: RuesHttpClient::new(url),
+    pub fn new<S: Into<String>>(
+        url: S,
+        status: fn(&str),
+    ) -> Result<Self, Error> {
+        Ok(Self {
+            client: RuesHttpClient::new(url)?,
             status,
-        }
+        })
     }
 
     /// Wait for a transaction to be confirmed (included in a block)
@@ -97,10 +100,7 @@ impl GraphQL {
     }
 
     /// Obtain transaction status
-    async fn tx_status(
-        &self,
-        tx_id: &str,
-    ) -> anyhow::Result<TxStatus, GraphQLError> {
+    async fn tx_status(&self, tx_id: &str) -> Result<TxStatus, Error> {
         let query =
             "query { tx(hash: \"####\") { id, err }}".replace("####", tx_id);
         let response = self.query(&query).await?;
@@ -117,7 +117,7 @@ impl GraphQL {
     pub async fn txs_for_block(
         &self,
         block_height: u64,
-    ) -> anyhow::Result<Vec<BlockTransaction>, GraphQLError> {
+    ) -> Result<Vec<BlockTransaction>, Error> {
         let query = "query { block(height: ####) { transactions {id, raw, gasSpent, err}}}"
             .replace("####", block_height.to_string().as_str());
 
@@ -130,8 +130,8 @@ impl GraphQL {
         for spent_tx in block.transactions {
             let tx_raw = hex::decode(&spent_tx.raw)
                 .map_err(|_| GraphQLError::TxStatus)?;
-            let ph_tx = Transaction::from_slice(&tx_raw).unwrap();
-
+            let ph_tx = Transaction::from_slice(&tx_raw)
+                .map_err(|_| GraphQLError::BytesError)?;
             ret.push(BlockTransaction {
                 tx: ph_tx,
                 id: spent_tx.id,
@@ -153,24 +153,21 @@ impl GraphQL {
 pub enum GraphQLError {
     /// Generic errors
     #[error("Error fetching data from the node: {0}")]
-    Generic(Error),
+    Generic(serde_json::Error),
     /// Failed to fetch transaction status
     #[error("Failed to obtain transaction status")]
     TxStatus,
     #[error("Failed to obtain block info")]
     /// Failed to obtain block info
     BlockInfo,
-}
-
-impl From<Error> for GraphQLError {
-    fn from(e: Error) -> Self {
-        Self::Generic(e)
-    }
+    /// Bytes decoding errors
+    #[error("A deserialization error occurred")]
+    BytesError,
 }
 
 impl From<serde_json::Error> for GraphQLError {
     fn from(e: serde_json::Error) -> Self {
-        Self::Generic(e.into())
+        Self::Generic(e)
     }
 }
 
@@ -185,14 +182,14 @@ impl GraphQL {
 
 #[ignore = "Leave it here just for manual tests"]
 #[tokio::test]
-async fn test() -> Result<(), Box<dyn std::error::Error>> {
+async fn test() -> Result<(), Error> {
     let gql = GraphQL {
         status: |s| {
             println!("{s}");
         },
         client: RuesHttpClient::new(
             "http://testnet.nodes.dusk.network:9500/graphql",
-        ),
+        )?,
     };
     let _ = gql
         .tx_status(

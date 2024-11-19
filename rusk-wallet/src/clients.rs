@@ -119,9 +119,15 @@ impl State {
     }
 
     pub(crate) fn cache(&self) -> Arc<Cache> {
-        let state = self.cache.lock().unwrap();
+        let state = self.cache.lock();
 
-        Arc::clone(&state)
+        // We can get an error if the thread holding the lock panicked while
+        // holding the lock. In this case, we can recover the guard from the
+        // poison error and return the guard to the caller.
+        match state {
+            Ok(guard) => Arc::clone(&guard),
+            Err(poisoned) => Arc::clone(&poisoned.into_inner()),
+        }
     }
 
     pub async fn register_sync(&mut self) -> Result<(), Error> {

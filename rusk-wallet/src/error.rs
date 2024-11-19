@@ -4,9 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use inquire::InquireError;
 use rand::Error as RngError;
 use std::io;
 use std::str::Utf8Error;
+
+use crate::gql::GraphQLError;
 
 /// Errors returned by this library
 #[derive(Debug, thiserror::Error)]
@@ -35,6 +38,9 @@ pub enum Error {
     /// Rkyv errors
     #[error("A serialization error occurred.")]
     Rkyv,
+    /// Error creating HTTP client
+    #[error("Cannot create HTTP client")]
+    HttpClient,
     /// Reqwest errors
     #[error("A request error occurred: {0}")]
     Reqwest(#[from] reqwest::Error),
@@ -57,6 +63,9 @@ pub enum Error {
     /// The note wasn't found in the note-tree of the transfer-contract
     #[error("Note wasn't found in transfer-contract")]
     NoteNotFound,
+    /// The note couldn't be decrypted with the provided ViewKey
+    #[error("Note couldn't be decrypted with the provided ViewKey")]
+    WrongViewKey,
     /// Not enough gas to perform this transaction
     #[error("Not enough gas to perform this transaction")]
     NotEnoughGas,
@@ -75,12 +84,18 @@ pub enum Error {
     /// Address does not belong to this wallet
     #[error("Address does not belong to this wallet")]
     AddressNotOwned,
+    /// No menu item selected
+    #[error("No menu item selected")]
+    NoMenuItemSelected,
     /// Mnemonic phrase is not valid
     #[error("Invalid mnemonic phrase")]
     InvalidMnemonicPhrase,
     /// Path provided is not a directory
     #[error("Path provided is not a directory")]
     NotDirectory,
+    /// Cannot get the path to the $HOME directory
+    #[error("OS not supported")]
+    OsNotSupported,
     /// Wallet file content is not valid
     #[error("Wallet file content is not valid")]
     WalletFileCorrupted,
@@ -137,6 +152,18 @@ pub enum Error {
     /// Contract file location not found
     #[error("Invalid WASM contract path provided")]
     InvalidWasmContractPath,
+    /// Invalid environment variable value
+    #[error("Invalid environment variable value {0}")]
+    InvalidEnvVar(String),
+    /// Conversion error
+    #[error("Conversion error: {0}")]
+    Conversion(String),
+    /// GraphQL error
+    #[error("GraphQL error: {0}")]
+    GraphQLError(GraphQLError),
+    /// Inquire error
+    #[error("Inquire error: {0}")]
+    InquireError(String),
 }
 
 impl From<dusk_bytes::Error> for Error {
@@ -176,5 +203,17 @@ impl From<execution_core::Error> for Error {
 impl From<rocksdb::Error> for Error {
     fn from(e: rocksdb::Error) -> Self {
         Self::RocksDB(e)
+    }
+}
+
+impl From<GraphQLError> for Error {
+    fn from(e: GraphQLError) -> Self {
+        Self::GraphQLError(e)
+    }
+}
+
+impl From<InquireError> for Error {
+    fn from(e: InquireError) -> Self {
+        Self::InquireError(e.to_string())
     }
 }
