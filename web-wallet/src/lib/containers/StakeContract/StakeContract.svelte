@@ -32,7 +32,7 @@
   export let spendable = 0n;
 
   $: [gasSettings, language, minAllowedStake] = collectSettings($settingsStore);
-  const duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
+  $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
 
   const gasLimits = $gasStore;
 
