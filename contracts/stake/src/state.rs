@@ -18,7 +18,8 @@ use execution_core::{
         StakeEvent, StakeFundOwner, StakeKeys, Withdraw, EPOCH, MINIMUM_STAKE,
         STAKE_CONTRACT, STAKE_WARNINGS,
     },
-    transfer::TRANSFER_CONTRACT,
+    transfer::{ReceiveFromContract, TRANSFER_CONTRACT},
+    ContractId,
 };
 
 use crate::*;
@@ -69,6 +70,15 @@ impl StakeState {
         }
     }
 
+    fn unwrap_contract_funds(funds: &StakeFundOwner) -> &ContractId {
+        match funds {
+            StakeFundOwner::Account(_) => {
+                panic!("expect StakeFundOwner::Contract")
+            }
+            StakeFundOwner::Contract(id) => id,
+        }
+    }
+
     pub fn stake(&mut self, stake: Stake) {
         let value = stake.value();
         let signature = *stake.signature();
@@ -100,6 +110,64 @@ impl StakeState {
         let _: () =
             rusk_abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
                 .expect("Depositing funds into contract should succeed");
+
+        let block_height = rusk_abi::block_height();
+        // update the state accordingly
+        let stake_event = match &mut loaded_stake.amount {
+            Some(amount) => {
+                let locked = if block_height >= amount.eligibility {
+                    value / 10
+                } else {
+                    // No penalties applied if the stake is not eligible yet
+                    0
+                };
+                let value = value - locked;
+                amount.locked += locked;
+                amount.value += value;
+                StakeEvent::new(*keys, value).locked(locked)
+            }
+            amount => {
+                let _ = amount.insert(StakeAmount::new(value, block_height));
+                StakeEvent::new(*keys, value)
+            }
+        };
+        rusk_abi::emit("stake", stake_event);
+
+        let key = keys.account.to_bytes();
+        self.previous_block_state
+            .entry(key)
+            .or_insert((prev_stake, account));
+    }
+
+    pub fn stake_from_contract(&mut self, recv: ReceiveFromContract) {
+        let stake: Stake =
+            rkyv::from_bytes(&recv.data).expect("Invalid stake received");
+        let value = stake.value();
+
+        if stake.chain_id() != self.chain_id() {
+            panic!("The stake must target the correct chain");
+        }
+
+        let account = stake.keys().account;
+        let prev_stake = self.get_stake(&stake.keys().account).copied();
+        let (loaded_stake, keys) = self.load_or_create_stake_mut(stake.keys());
+
+        let contract = Self::unwrap_contract_funds(&keys.funds);
+        assert_eq!(contract, &recv.contract, "Invalid contract caller");
+        assert_eq!(value, recv.value, "Stake amount mismatch");
+
+        if loaded_stake.amount.is_none() {
+            if value < MINIMUM_STAKE {
+                panic!("The staked value is lower than the minimum amount!");
+            }
+
+            // We verify the signature only when there is a new stake
+            let signature = stake.signature().account;
+            let digest = stake.signature_message().to_vec();
+            if !rusk_abi::verify_bls(digest, account, signature) {
+                panic!("Invalid account signature!");
+            }
+        }
 
         let block_height = rusk_abi::block_height();
         // update the state accordingly

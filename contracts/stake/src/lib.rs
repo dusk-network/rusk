@@ -67,6 +67,17 @@ unsafe fn get_version(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.get_version())
 }
 
+#[no_mangle]
+unsafe fn stake_from_contract(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |receive| {
+        assert_transfer_caller();
+        // TODO: ensure this is called by
+        // TRANSFER_CONTRACT::contract_to_contract
+        // assert_method_caller("contract_to_contract");
+        STATE.stake_from_contract(receive)
+    })
+}
+
 // "Feeder" queries
 
 #[no_mangle]
