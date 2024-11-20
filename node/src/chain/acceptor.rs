@@ -512,15 +512,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 );
                 match &change {
                     ProvisionerChange::Stake(stake_event) => {
-                        let amount =
-                            StakeAmount::new(stake_event.value, block_height);
-                        let replaced = new_prov.replace_stake(
-                            account,
-                            Stake::new(amount.value, amount.eligibility),
-                        );
-                        if let Some(replaced) = replaced {
-                            if replaced.value() > 0 {
-                                anyhow::bail!("Staking to an existing stake")
+                        match new_prov.get_member_mut(&account) {
+                            Some(stake) if stake.value() == 0 => anyhow::bail!(
+                                "Found an active stake with 0 amount"
+                            ),
+                            Some(stake) => stake.add(stake_event.value),
+                            None => {
+                                let amount = StakeAmount::new(
+                                    stake_event.value,
+                                    block_height,
+                                );
+                                let stake = Stake::new(
+                                    amount.value,
+                                    amount.eligibility,
+                                );
+                                new_prov.add_member_with_stake(account, stake);
                             }
                         }
                     }
