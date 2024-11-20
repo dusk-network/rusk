@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update Transactions list design [#1922]
+- Update stake warning's text [#3028]
 
 ### Removed
 
@@ -360,6 +361,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3000]: https://github.com/dusk-network/rusk/issues/3000
 [#3006]: https://github.com/dusk-network/rusk/issues/3006
 [#3010]: https://github.com/dusk-network/rusk/issues/3010
+[#3028]: https://github.com/dusk-network/rusk/issues/3028
 
 <!-- VERSIONS -->
 

@@ -455,7 +455,16 @@ exports[`Stake > should render the Stake notice 1`] = `
           >
             HERE
           </a>
-          , and that I will lose funds if I have not done so correctly.
+          , and that, if not done correctly, I may be subject to 
+          <a
+            class="dusk-anchor dusk-anchor--on-surface"
+            href="https://docs.dusk.network/operator/02-provisioner/#slashing"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            soft-slashing
+          </a>
+           penalties, requiring me to unstake and restake.
         </p>
          
         <div
