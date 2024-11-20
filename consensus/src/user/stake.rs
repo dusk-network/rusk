@@ -52,4 +52,9 @@ impl Stake {
     pub fn change_eligibility(&mut self, new_value: u64) {
         self.eligible_since = new_value;
     }
+
+    /// Add an amount to the stake
+    pub fn add(&mut self, add: u64) {
+        self.value += add
+    }
 }
