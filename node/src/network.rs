@@ -212,7 +212,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
 
         let mut encoded = vec![];
         msg.write(&mut encoded).map_err(|err| {
-            error!("could not encode message {msg:?}: {err}");
+            error!("could not encode message (version: {:?}, topics: {:?}, header: {:?}): {err}", msg.version(), msg.topic(), msg.header);
             anyhow::anyhow!("failed to broadcast: {err}")
         })?;
 
