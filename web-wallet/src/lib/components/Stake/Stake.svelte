@@ -228,7 +228,12 @@
                 rel="noopener noreferrer"
                 target="_blank"
                 href={DOCUMENTATION_LINKS.RUN_A_PROVISIONER}>HERE</AppAnchor
-              >, and that I will lose funds if I have not done so correctly.
+              >, and that, if not done correctly, I may be subject to <AppAnchor
+                class="staking-warning__step-node-setup-link"
+                href={DOCUMENTATION_LINKS.SLASHING}
+                rel="noopener noreferrer"
+                target="_blank">soft-slashing</AppAnchor
+              > penalties, requiring me to unstake and restake.
             </p>
 
             <Agreement
