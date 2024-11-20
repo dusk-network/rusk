@@ -81,7 +81,8 @@ pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Transaction {
-    payload: Payload,
+    /// Making this public to test something.
+    pub payload: Payload,
     proof: Vec<u8>,
 }
 

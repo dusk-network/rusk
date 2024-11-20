@@ -4,18 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::io;
 use std::net::{AddrParseError, SocketAddr};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use crate::{BoxedFilter, Message};
 use async_trait::async_trait;
+use execution_core::transfer::data::TransactionData;
+use execution_core::transfer::Transaction;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use metrics::counter;
 use node_data::ledger::to_str;
 use node_data::message::payload::{GetResource, Inv, Nonce};
-use node_data::message::{AsyncQueue, Metadata, PROTOCOL_VERSION};
+use node_data::message::{AsyncQueue, Metadata, Payload, PROTOCOL_VERSION};
 use node_data::{get_current_timestamp, Serializable};
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, trace, warn};
@@ -211,7 +214,24 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         };
 
         let mut encoded = vec![];
-        msg.write(&mut encoded).map_err(|err| {
+
+        let is_contract_deployment = |payload: &Payload| {
+            if let Payload::Transaction(ref t) = payload {
+                if let Transaction::Phoenix(ref t) = t.inner {
+                    if let Some(TransactionData::Deploy(_)) = t.payload.data {
+                        return true
+                    }
+                }
+            }
+            false
+        };
+
+        let msg_write_result = if is_contract_deployment(&msg.payload) {
+            Err(io::Error::new(io::ErrorKind::AddrInUse, "oh no, an error"))
+        } else {
+            msg.write(&mut encoded)
+        };
+        msg_write_result.map_err(|err| {
             error!("could not encode message {msg:?}: {err}");
             anyhow::anyhow!("failed to broadcast: {err}")
         })?;
