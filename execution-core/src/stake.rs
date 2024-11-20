@@ -197,8 +197,41 @@ impl Withdraw {
 pub struct StakeEvent {
     /// Keys associated to the event.
     pub keys: StakeKeys,
-    /// Value of the relevant operation, be it `stake`, `unstake`,`withdraw`
+    /// Effective value of the relevant operation, be it `stake`,
+    /// `unstake`,`withdraw`
     pub value: u64,
+    /// The locked amount involved in the operation (e.g., for `stake` or
+    /// `unstake`). Defaults to zero for operations that do not involve
+    /// locking.
+    pub locked: u64,
+}
+
+impl StakeEvent {
+    /// Creates a new `StakeEvent` with the specified keys and value.
+    ///
+    /// ### Parameters
+    /// - `keys`: The keys associated with the stake event.
+    /// - `value`: The effective value of the operation (e.g., `stake`,
+    ///   `unstake`, `withdraw`).
+    ///
+    /// The `locked` amount is initialized to zero by default.
+    #[must_use]
+    pub fn new(keys: StakeKeys, value: u64) -> Self {
+        Self {
+            keys,
+            value,
+            locked: 0,
+        }
+    }
+    /// Sets the locked amount for the `StakeEvent`.
+    ///
+    /// ### Parameters
+    /// - `locked`: The locked amount associated with the operation.
+    #[must_use]
+    pub fn locked(mut self, locked: u64) -> Self {
+        self.locked = locked;
+        self
+    }
 }
 
 /// Event emitted after a slash operation is performed.
