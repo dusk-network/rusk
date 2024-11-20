@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix UI not scrolling to top after wizard and sub-route navigation [#2997]
+
 ## [0.8.0] - 2024-11-19
 
 ### Added
@@ -357,6 +359,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2938]: https://github.com/dusk-network/rusk/issues/2938
 [#2990]: https://github.com/dusk-network/rusk/issues/2990
 [#2991]: https://github.com/dusk-network/rusk/issues/2991
+[#2997]: https://github.com/dusk-network/rusk/issues/2997
 [#3000]: https://github.com/dusk-network/rusk/issues/3000
 [#3006]: https://github.com/dusk-network/rusk/issues/3006
 [#3010]: https://github.com/dusk-network/rusk/issues/3010

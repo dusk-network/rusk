@@ -1,9 +1,5 @@
 <script>
-  /**
-   * Note: shieldedTokensPercentage props in `` is passed the same balance twice.
-   * This is because we currently don't have the separate balances
-   * for phoenix and moonlight.
-   */
+  import { afterNavigate } from "$app/navigation";
   import {
     mdiAlertOutline,
     mdiCogOutline,
@@ -23,6 +19,9 @@
   /** @type {import('./$types').LayoutData} */
   export let data;
 
+  /** @type {HTMLDivElement} */
+  let scrollContainer;
+
   /** @type {string} */
   let syncStatusLabel = "";
 
@@ -41,6 +40,12 @@
 
   const { currency, language } = $settingsStore;
   const { networkName } = $networkStore;
+
+  const scrollToTop = () => {
+    scrollContainer.scrollTo(0, 0);
+  };
+
+  afterNavigate(scrollToTop);
 
   $: ({ balance, currentProfile, profiles, syncStatus } = $walletStore);
   $: if (syncStatus.isInProgress) {
@@ -65,7 +70,11 @@
 />
 
 <section class="dashboard">
-  <div class="dashboard-content">
+  <div
+    class="dashboard-content"
+    bind:this={scrollContainer}
+    on:wizardstepchange={scrollToTop}
+  >
     <h2 class="sr-only">Dashboard</h2>
 
     <AddressPicker {currentProfile} {profiles} />
