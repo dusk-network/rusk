@@ -112,7 +112,7 @@ impl Provisioners {
 
     /// Adds a provisioner with stake.
     ///
-    /// It appends the stake if the given provisioner already exists.
+    /// If the provisioner already exists, no action is performed
     pub fn add_member_with_stake(
         &mut self,
         pubkey_bls: PublicKey,
