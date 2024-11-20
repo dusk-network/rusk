@@ -118,15 +118,15 @@ impl StakeState {
             .expect("A stake should exist in the map to be unstaked!");
         let prev_stake = Some(*loaded_stake);
 
-        // ensure there is a value staked, and that the withdrawal is exactly
-        // the same amount
+        // ensure there is a value staked, and that the withdrawal is not
+        // greater than the available funds
         let stake = loaded_stake
             .amount
-            .as_ref()
+            .as_mut()
             .expect("There must be an amount to unstake");
 
-        if value != stake.total_funds() {
-            panic!("Value withdrawn different from staked amount");
+        if value > stake.total_funds() {
+            panic!("Value to unstake higher than the staked amount");
         }
 
         // check signature is correct
@@ -144,13 +144,24 @@ impl StakeState {
             rusk_abi::call(TRANSFER_CONTRACT, "withdraw", transfer_withdraw)
                 .expect("Withdrawing stake should succeed");
 
-        // update the state accordingly
-        loaded_stake.amount = None;
+        let stake_event = if value > stake.value {
+            let from_locked = value - stake.value;
+            let from_stake = stake.value;
+            stake.value = 0;
+            stake.locked -= from_locked;
+            StakeEvent::new(*keys, from_stake).locked(from_locked)
+        } else {
+            stake.value -= value;
+            StakeEvent::new(*keys, value)
+        };
 
-        rusk_abi::emit("unstake", StakeEvent::new(*keys, value));
-
-        if loaded_stake.reward == 0 {
-            self.stakes.remove(&unstake.account().to_bytes());
+        rusk_abi::emit("unstake", stake_event);
+        if stake.total_funds() == 0 {
+            // update the state accordingly
+            loaded_stake.amount = None;
+            if loaded_stake.reward == 0 {
+                self.stakes.remove(&unstake.account().to_bytes());
+            }
         }
 
         let key = account.to_bytes();
