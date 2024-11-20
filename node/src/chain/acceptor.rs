@@ -524,8 +524,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             }
                         }
                     }
-                    ProvisionerChange::Unstake(_) => {
-                        new_prov.remove_stake(&account).ok_or(
+                    ProvisionerChange::Unstake(unstake_event) => {
+                        let unstaked = unstake_event.value;
+                        new_prov.sub_stake(&account, unstaked).ok_or(
                             anyhow::anyhow!("Unstake a not existing stake"),
                         )?;
                     }
