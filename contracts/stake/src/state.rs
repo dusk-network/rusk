@@ -15,8 +15,8 @@ use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
         next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeData,
-        StakeEvent, StakeKeys, Withdraw, EPOCH, MINIMUM_STAKE, STAKE_CONTRACT,
-        STAKE_WARNINGS,
+        StakeEvent, StakeFundOwner, StakeKeys, Withdraw, EPOCH, MINIMUM_STAKE,
+        STAKE_CONTRACT, STAKE_WARNINGS,
     },
     transfer::TRANSFER_CONTRACT,
 };
@@ -54,6 +54,21 @@ impl StakeState {
         self.previous_block_state.clear()
     }
 
+    fn unwrap_account_funds(funds: &StakeFundOwner) -> BlsPublicKey {
+        match funds {
+            StakeFundOwner::Account(public_key) => {
+                assert!(
+                    public_key.is_valid(),
+                    "Specified funds key is not valid"
+                );
+                *public_key
+            }
+            StakeFundOwner::Contract(_) => {
+                panic!("expect StakeFundOwner::Account")
+            }
+        }
+    }
+
     pub fn stake(&mut self, stake: Stake) {
         let value = stake.value();
         let signature = *stake.signature();
@@ -70,8 +85,10 @@ impl StakeState {
             panic!("The staked value is lower than the minimum amount!");
         }
 
+        let funds_key = Self::unwrap_account_funds(&keys.funds);
+
         let digest = stake.signature_message().to_vec();
-        if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
+        if !rusk_abi::verify_bls(digest.clone(), funds_key, signature.funds) {
             panic!("Invalid funds signature!");
         }
         if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
@@ -134,9 +151,11 @@ impl StakeState {
             panic!("Value to unstake higher than the staked amount");
         }
 
+        let funds_key = Self::unwrap_account_funds(&keys.funds);
+
         // check signature is correct
         let digest = unstake.signature_message();
-        if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
+        if !rusk_abi::verify_bls(digest.clone(), funds_key, signature.funds) {
             panic!("Invalid funds signature!");
         }
         if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
@@ -198,9 +217,11 @@ impl StakeState {
             panic!("Value to withdraw is higher than available reward");
         }
 
+        let funds_key = Self::unwrap_account_funds(&keys.funds);
+
         // check signature is correct
         let digest = withdraw.signature_message();
-        if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
+        if !rusk_abi::verify_bls(digest.clone(), funds_key, signature.funds) {
             panic!("Invalid funds signature!");
         }
         if !rusk_abi::verify_bls(digest, keys.account, signature.account) {

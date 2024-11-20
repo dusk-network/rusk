@@ -42,10 +42,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
 
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
-    let stake_pks = StakeKeys {
-        account: stake_pk,
-        funds: stake_pk,
-    };
+    let stake_pks = StakeKeys::single_key(stake_pk);
 
     let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
@@ -135,10 +132,7 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
 
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
-    let stake_pks = StakeKeys {
-        account: stake_pk,
-        funds: stake_pk,
-    };
+    let stake_pks = StakeKeys::single_key(stake_pk);
 
     let mut session = instantiate(rng, vm, &pk, GENESIS_VALUE);
 
