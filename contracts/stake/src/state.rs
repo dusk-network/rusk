@@ -99,7 +99,7 @@ impl StakeState {
         loaded_stake.amount =
             Some(StakeAmount::new(value, rusk_abi::block_height()));
 
-        rusk_abi::emit("stake", StakeEvent { keys, value });
+        rusk_abi::emit("stake", StakeEvent::new(keys, value));
 
         let key = account.to_bytes();
         self.previous_block_state
@@ -147,7 +147,7 @@ impl StakeState {
         // update the state accordingly
         loaded_stake.amount = None;
 
-        rusk_abi::emit("unstake", StakeEvent { keys: *keys, value });
+        rusk_abi::emit("unstake", StakeEvent::new(*keys, value));
 
         if loaded_stake.reward == 0 {
             self.stakes.remove(&unstake.account().to_bytes());
@@ -197,7 +197,7 @@ impl StakeState {
 
         // update the state accordingly
         loaded_stake.reward -= value;
-        rusk_abi::emit("withdraw", StakeEvent { keys: *keys, value });
+        rusk_abi::emit("withdraw", StakeEvent::new(*keys, value));
 
         if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
             self.stakes.remove(&account.to_bytes());
