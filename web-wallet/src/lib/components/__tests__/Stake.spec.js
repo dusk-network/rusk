@@ -55,10 +55,10 @@ describe("Stake", () => {
       gasPrice: 1n,
     },
     hideStakingNotice: true,
-    minAllowedStake: 1234,
-    rewards: 345,
+    minAllowedStake: 1_234_000_000_000n,
+    rewards: 345_000_000_000n,
     spendable: 10_000_000_000_000n,
-    staked: 278,
+    staked: 278_000_000_000n,
     statuses: [
       {
         label: "Spendable",
@@ -112,7 +112,7 @@ describe("Stake", () => {
 
     expect(nextButton).toBeEnabled();
     expect(amountInput.getAttribute("min")).toBe(
-      baseProps.minAllowedStake.toString()
+      luxToDusk(baseProps.minAllowedStake).toString()
     );
     expect(amountInput.getAttribute("max")).toBe(maxSpendable.toString());
     expect(container.firstChild).toMatchSnapshot();
@@ -138,7 +138,7 @@ describe("Stake", () => {
     await fireInput(amountInput, 1000);
     expect(nextButton).toBeDisabled();
     expect(amountInput.getAttribute("min")).toBe(
-      baseProps.minAllowedStake.toString()
+      luxToDusk(baseProps.minAllowedStake).toString()
     );
     expect(amountInput.getAttribute("max")).toBe(
       currentMaxSpendable.toString()
@@ -167,11 +167,11 @@ describe("Stake", () => {
     const useMaxButton = getByRole("button", { name: "USE MAX" });
     const amountInput = getByRole("spinbutton");
 
-    expect(amountInput).toHaveValue(baseProps.minAllowedStake);
+    expect(amountInput).toHaveValue(luxToDusk(baseProps.minAllowedStake));
 
     await fireEvent.click(useMaxButton);
 
-    expect(amountInput).toHaveValue(baseProps.minAllowedStake);
+    expect(amountInput).toHaveValue(luxToDusk(baseProps.minAllowedStake));
   });
 
   it("should not change the default amount (1) in the textbox if the user clicks the related button and the gas settings are invalid", async () => {
@@ -188,11 +188,11 @@ describe("Stake", () => {
     const useMaxButton = getByRole("button", { name: "USE MAX" });
     const amountInput = getByRole("spinbutton");
 
-    expect(amountInput).toHaveValue(baseProps.minAllowedStake);
+    expect(amountInput).toHaveValue(luxToDusk(baseProps.minAllowedStake));
 
     await fireEvent.click(useMaxButton);
 
-    expect(amountInput).toHaveValue(baseProps.minAllowedStake);
+    expect(amountInput).toHaveValue(luxToDusk(baseProps.minAllowedStake));
   });
 
   it("should disable the next button if the user enters an invalid amount", async () => {
@@ -232,7 +232,7 @@ describe("Stake", () => {
       const { getByRole, getByText } = render(Stake, baseProps);
       const amountInput = getByRole("spinbutton");
 
-      expect(amountInput).toHaveValue(baseProps.minAllowedStake);
+      expect(amountInput).toHaveValue(luxToDusk(baseProps.minAllowedStake));
 
       await fireEvent.click(getByRole("button", { name: "Next" }));
       await fireEvent.click(getByRole("button", { name: "Stake" }));
@@ -241,7 +241,7 @@ describe("Stake", () => {
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
-        duskToLux(baseProps.minAllowedStake),
+        baseProps.minAllowedStake,
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
