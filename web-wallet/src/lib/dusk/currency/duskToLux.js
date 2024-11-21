@@ -6,6 +6,6 @@ const scaleFactor = 1e9;
  */
 const duskToLux = (n) =>
   BigInt(Math.floor(n)) * BigInt(scaleFactor) +
-  BigInt(Math.floor((n % 1) * scaleFactor));
+  BigInt(Math.round((n % 1) * scaleFactor));
 
 export default duskToLux;
