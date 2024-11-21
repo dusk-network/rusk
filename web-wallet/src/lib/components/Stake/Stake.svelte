@@ -10,7 +10,7 @@
   } from "@mdi/js";
 
   import { DOCUMENTATION_LINKS, MESSAGES } from "$lib/constants";
-  import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
+  import { areValidGasSettings } from "$lib/contracts";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
   import { logo } from "$lib/dusk/icons";
 
@@ -47,45 +47,47 @@
   /** @type {(amount: number) => string} */
   export let formatter;
 
+  /** @type {GasStoreContent} */
+  export let gasLimits;
+
   /** @type {ContractGasSettings} */
   export let gasSettings;
 
-  /** @type {number} */
+  /** @type {boolean} */
+  export let hideStakingNotice;
+
+  /** @type {bigint} */
+  export let minAllowedStake;
+
+  /** @type {bigint} */
   export let rewards;
 
   /** @type {bigint} */
   export let spendable;
 
-  /** @type {number} */
+  /** @type {bigint} */
   export let staked;
 
   /** @type {ContractStatus[]} */
   export let statuses;
 
-  /** @type {boolean} */
-  export let hideStakingNotice;
-
-  /** @type {GasStoreContent} */
-  export let gasLimits;
-
-  /** @type {number} */
-  export let minAllowedStake;
-
-  /** @type {number} */
-  let stakeAmount = {
-    stake: minAllowedStake,
-    unstake: staked,
-    "withdraw-rewards": rewards,
-  }[flow];
-
-  /** @type {HTMLInputElement|null} */
-  let stakeInput;
-
-  /** @type {boolean} */
+  let activeStep = 0;
+  let { gasLimit, gasPrice } = gasSettings;
   let hideStakingNoticeNextTime = false;
   let isGasValid = false;
 
-  let { gasLimit, gasPrice } = gasSettings;
+  /**
+   * We are forced to keep `stakeAmount`
+   * as number if we want to use
+   * Svelte's binding.
+   */
+  let stakeAmount = luxToDusk(
+    {
+      stake: minAllowedStake,
+      unstake: staked,
+      "withdraw-rewards": rewards,
+    }[flow]
+  );
 
   /** @type {Record<StakeType, string>} */
   const confirmLabels = {
@@ -100,6 +102,8 @@
     unstake: "Unstake Amount",
     "withdraw-rewards": "Withdraw Rewards",
   };
+
+  const steps = getStepperSteps();
 
   const dispatch = createEventDispatcher();
   const resetOperation = () => dispatch("operationChange", "");
@@ -117,37 +121,6 @@
     }
   };
 
-  onMount(() => {
-    if (flow === "stake") {
-      stakeAmount = Math.min(minStake, stakeAmount);
-    }
-
-    isGasValid = areValidGasSettings(gasPrice, gasLimit);
-  });
-
-  $: fee = gasLimit * gasPrice;
-  $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), fee);
-  $: minStake =
-    maxSpendable > 0
-      ? Math.min(minAllowedStake, maxSpendable)
-      : minAllowedStake;
-  $: isStakeAmountValid =
-    stakeAmount >= minStake && stakeAmount <= maxSpendable;
-  $: totalLuxFee = fee + duskToLux(stakeAmount);
-  $: isFeeWithinLimit = totalLuxFee <= spendable;
-  $: isNextButtonDisabled =
-    flow === "stake"
-      ? !(isStakeAmountValid && isGasValid && isFeeWithinLimit)
-      : false;
-
-  function getWizardSteps() {
-    if (flow === "stake") {
-      return hideStakingNotice ? 3 : 4;
-    }
-
-    return 2;
-  }
-
   function getStepperSteps() {
     if (flow === "stake") {
       return hideStakingNotice
@@ -161,6 +134,14 @@
     }
 
     return [{ label: "Overview" }, { label: "Done" }];
+  }
+
+  function getWizardSteps() {
+    if (flow === "stake") {
+      return hideStakingNotice ? 3 : 4;
+    }
+
+    return 2;
   }
 
   function setMaxAmount() {
@@ -178,15 +159,32 @@
       return;
     }
 
-    if (stakeInput) {
-      stakeInput.value = maxSpendable.toString();
-    }
-
-    stakeAmount = maxSpendable;
+    stakeAmount = luxToDusk(maxSpendable);
   }
 
-  const steps = getStepperSteps();
-  let activeStep = 0;
+  onMount(() => {
+    if (flow === "stake") {
+      stakeAmount = Math.min(luxToDusk(minStake), stakeAmount);
+    }
+
+    isGasValid = areValidGasSettings(gasPrice, gasLimit);
+  });
+
+  $: fee = gasLimit * gasPrice;
+  $: maxSpendable = spendable - fee;
+  $: minStake =
+    maxSpendable > 0n && minAllowedStake > maxSpendable
+      ? maxSpendable
+      : minAllowedStake;
+  $: stakeAmountInLux = duskToLux(stakeAmount);
+  $: isStakeAmountValid =
+    stakeAmountInLux >= minStake && stakeAmountInLux <= maxSpendable;
+  $: totalLuxFee = fee + stakeAmountInLux;
+  $: isFeeWithinLimit = totalLuxFee <= spendable;
+  $: isNextButtonDisabled =
+    flow === "stake"
+      ? !(isStakeAmountValid && isGasValid && isFeeWithinLimit)
+      : false;
 </script>
 
 <div class="operation">
@@ -281,8 +279,8 @@
             className="operation__input-field"
             bind:value={stakeAmount}
             type="number"
-            min={minStake}
-            max={maxSpendable}
+            min={luxToDusk(minStake)}
+            max={luxToDusk(maxSpendable)}
             required
             step="0.000000001"
           />
@@ -367,7 +365,7 @@
         errorMessage="Transaction failed"
         onBeforeLeave={resetOperation}
         operation={flow === "stake"
-          ? execute(duskToLux(stakeAmount), gasPrice, gasLimit)
+          ? execute(stakeAmountInLux, gasPrice, gasLimit)
           : execute(gasPrice, gasLimit)}
         pendingMessage="Processing transaction"
         successMessage="Transaction created"

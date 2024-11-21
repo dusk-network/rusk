@@ -153,12 +153,12 @@
       formatter={duskFormatter}
       {gasLimits}
       {gasSettings}
-      minAllowedStake={luxToDusk(minimumStake)}
+      minAllowedStake={minimumStake}
       on:operationChange
       on:suppressStakingNotice
-      rewards={luxToDusk(stakeInfo.reward)}
+      rewards={stakeInfo.reward}
       spendable={balance.unshielded.value}
-      staked={stakeInfo.amount ? luxToDusk(stakeInfo.amount.total) : 0}
+      staked={stakeInfo.amount ? stakeInfo.amount.total : 0n}
       {statuses}
       {hideStakingNotice}
     />
