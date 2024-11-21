@@ -164,7 +164,6 @@ pub fn exec(
         "TxCircuitTwoTwo",
         "TxCircuitThreeTwo",
         "TxCircuitFourTwo",
-        "LicenseCircuit",
     ])?;
 
     run_stored_circuits_checks(keep_circuits, circuits)?;

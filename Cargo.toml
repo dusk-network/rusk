@@ -1,7 +1,5 @@
 [workspace]
 members = [
-    "circuits/license",
-
     # Test contracts
     "contracts/alice",
     "contracts/bob",
@@ -10,7 +8,6 @@ members = [
     # Genesis contracts
     "contracts/stake",
     "contracts/transfer",
-    "contracts/license",
 
     "execution-core",
     "wallet-core",
@@ -36,7 +33,6 @@ resolver = "2"
 # Workspace internal dependencies
 dusk-consensus = { version = "0.1.1-rc.3", path = "./consensus/" }
 execution-core = { version = "0.1.0", path = "./execution-core/" }
-license-circuits = { version = "0.1.0", path = "./circuits/license/" }
 node = { version = "0.1.0", path = "./node/" }
 node-data = { version = "0.1.0", path = "./node-data/" }
 rusk-abi = { version = "0.13.0-rc.0", path = "./rusk-abi/", default-features = false }
@@ -61,7 +57,6 @@ phoenix-core = { version = "=0.32.0", default-features = false }
 piecrust = "0.26.1-rc.0"
 piecrust-uplink = "=0.17.1"
 poseidon-merkle = "=0.7.0"
-zk-citadel = "=0.14.0"
 
 # External dependencies
 aes = "=0.7.5"

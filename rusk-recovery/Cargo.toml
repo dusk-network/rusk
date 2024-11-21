@@ -38,7 +38,6 @@ zip = { workspace = true, optional = true }
 cargo_toml = { workspace = true, optional = true }
 dusk-plonk = { workspace = true, features = ["rkyv-impl"], optional = true }
 lazy_static = { workspace = true, optional = true }
-license-circuits = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["full"], optional = true }
 
@@ -69,7 +68,6 @@ keys = [
     "cargo_toml",
     "dusk-plonk",
     "lazy_static",
-    "license-circuits",
     "reqwest",
     "tokio",
 ]

@@ -1,4 +1,4 @@
-all: keys wasm abi allcircuits state contracts rusk rusk-wallet web-wallet ## Build everything
+all: keys wasm abi state contracts rusk rusk-wallet web-wallet ## Build everything
 
 help: ## Display this help screen
 	@grep -h \
@@ -18,16 +18,12 @@ wasm: setup-compiler ## Generate the WASM for all the contracts and wallet-core
 	$(MAKE) -C ./contracts $@
 	$(MAKE) -C ./wallet-core $@
 
-allcircuits: ## Build circuit crates
-	$(MAKE) -j -C ./circuits all
-
 contracts: ## Execute the test for all contracts
 	$(MAKE) -j1 -C ./contracts all
 
 test: keys wasm ## Run the tests
 	$(MAKE) -C ./rusk-abi/ $@
 	$(MAKE) -C ./execution-core/ $@
-	$(MAKE) -j -C ./circuits $@
 	$(MAKE) state
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-recovery $@
@@ -41,7 +37,6 @@ test: keys wasm ## Run the tests
 			
 clippy: ## Run clippy
 	$(MAKE) -C ./execution-core/ $@
-	$(MAKE) -j -C ./circuits $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-abi $@
 	$(MAKE) -C ./rusk-profile $@
@@ -56,7 +51,6 @@ clippy: ## Run clippy
 
 doc: ## Run doc gen
 	$(MAKE) -C ./execution-core/ $@
-	$(MAKE) -j -C ./circuits $@
 	$(MAKE) -C ./consensus $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./node $@
@@ -98,4 +92,4 @@ COMPILER_VERSION=v0.2.0
 setup-compiler: ## Setup the Dusk Contract Compiler
 	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
 
-.PHONY: all abi keys state wasm allcircuits contracts test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet web-wallet setup-compiler
+.PHONY: all abi keys state wasm contracts test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet web-wallet setup-compiler

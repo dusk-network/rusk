@@ -19,9 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove STCO and WFCO [#1675]
+- Remove Citadel [#2989]
 
 ## [0.6.0] - 2023-12-14
 
+[#2989]: https://github.com/dusk-network/rusk/issues/2989
 [#2551]: https://github.com/dusk-network/rusk/issues/2551
 [#2536]: https://github.com/dusk-network/rusk/issues/2536
 [#1675]: https://github.com/dusk-network/rusk/issues/1675
