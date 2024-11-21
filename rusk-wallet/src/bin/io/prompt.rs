@@ -299,14 +299,12 @@ pub(crate) fn request_gas_price(
         min_gas_price
     };
 
-    request_token(
-        "gas price",
-        Dusk::from(min_gas_price),
-        MAX_CONVERTIBLE,
-        Some(default_gas_price as f64),
+    Ok(
+        CustomType::<u64>::new("Introduce the gas price for this transaction:")
+            .with_default(default_gas_price)
+            .with_formatter(&|val| format!("{} LUX", val))
+            .prompt()?,
     )
-    .map(|dusk| *dusk)
-    .map_err(Error::from)
 }
 
 pub(crate) fn request_str(
