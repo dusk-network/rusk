@@ -104,7 +104,9 @@ describe("Restore", async () => {
 
     expect(nextButton).toBeDisabled();
 
-    await fireEvent.click(getByRole("button", { name: "Paste seed phrase" }));
+    await fireEvent.click(
+      getByRole("button", { name: "Paste mnemonic phrase" })
+    );
 
     await tick();
     expect(nextButton).not.toBeDisabled();
@@ -123,7 +125,9 @@ describe("Restore", async () => {
 
     expect(get(toastList).length).toBe(0);
 
-    await fireEvent.click(getByRole("button", { name: "Paste seed phrase" }));
+    await fireEvent.click(
+      getByRole("button", { name: "Paste mnemonic phrase" })
+    );
     await tick();
 
     expect(get(toastList).length).toBe(1);
@@ -143,7 +147,9 @@ describe("Restore", async () => {
 
     expect(nextButton).toBeDisabled();
 
-    await fireEvent.click(getByRole("button", { name: "Paste seed phrase" }));
+    await fireEvent.click(
+      getByRole("button", { name: "Paste mnemonic phrase" })
+    );
     await tick();
     expect(nextButton).toBeEnabled();
     await fireEvent.click(nextButton);
@@ -186,7 +192,9 @@ describe("Restore", async () => {
 
     expect(nextButton).toBeDisabled();
 
-    await fireEvent.click(getByRole("button", { name: "Paste seed phrase" }));
+    await fireEvent.click(
+      getByRole("button", { name: "Paste mnemonic phrase" })
+    );
     await tick();
     expect(nextButton).toBeEnabled();
     await fireEvent.click(nextButton);

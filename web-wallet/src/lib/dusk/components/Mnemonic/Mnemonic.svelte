@@ -104,7 +104,7 @@
     currentInput &&
     findFirstNMatches(enDictionary, currentInput.toLowerCase(), 3);
 
-  const pasteSeed = () => {
+  const pasteMnemonic = () => {
     navigator.clipboard
       .readText()
       .then((data) => {
@@ -140,9 +140,9 @@
       {#if type === "authenticate" && shouldShowPaste}
         <Button
           icon={{ path: mdiContentPaste }}
-          text="Paste seed phrase"
+          text="Paste mnemonic phrase"
           variant="tertiary"
-          on:click={pasteSeed}
+          on:click={pasteMnemonic}
         />
       {/if}
       <Button

@@ -104,7 +104,7 @@ describe("Create", async () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should render the `Securely store your seed phrase!` agreement step after the ToS", async () => {
+  it("should render the `Securely store your mnemonic phrase!` agreement step after the ToS", async () => {
     const { container, getByRole } = render(Create);
 
     const mathRandomSpy = vi.spyOn(Math, "random").mockReturnValue(42);
@@ -116,7 +116,7 @@ describe("Create", async () => {
     mathRandomSpy.mockRestore();
   });
 
-  it("should not allow the user proceed unless both agreement checks are selected on the `Securely store your seed phrase!` step", async () => {
+  it("should not allow the user proceed unless both agreement checks are selected on the `Securely store your mnemonic phrase!` step", async () => {
     const { getByRole, getAllByRole } = render(Create);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));

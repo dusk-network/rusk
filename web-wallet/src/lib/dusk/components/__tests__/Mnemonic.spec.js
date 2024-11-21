@@ -3,10 +3,10 @@ import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { Mnemonic } from "..";
 
 /** @type {string[]} */
-const enteredSeed = [];
+const enteredMnemonicPhrase = [];
 
 /** @type {string[]} */
-const seed = [
+const mnemonic = [
   "auction",
   "tribe",
   "type",
@@ -27,7 +27,7 @@ describe("Mnemonic", () => {
   it('should render the "Mnemonic" component in the authenticate state', async () => {
     const { container } = render(Mnemonic, {
       props: {
-        enteredMnemonicPhrase: enteredSeed,
+        enteredMnemonicPhrase,
         type: "authenticate",
       },
     });
@@ -38,7 +38,7 @@ describe("Mnemonic", () => {
   it('should render the "Mnemonic" component in the validate state', () => {
     const { container } = render(Mnemonic, {
       props: {
-        mnemonicPhrase: seed,
+        mnemonicPhrase: mnemonic,
         type: "validate",
       },
     });
@@ -49,8 +49,8 @@ describe("Mnemonic", () => {
   it("should display all the words in the order they have been clicked", async () => {
     const { container, getAllByRole } = render(Mnemonic, {
       props: {
-        enteredMnemonicPhrase: enteredSeed,
-        mnemonicPhrase: seed,
+        enteredMnemonicPhrase,
+        mnemonicPhrase: mnemonic,
         type: "validate",
       },
     });
@@ -72,8 +72,8 @@ describe("Mnemonic", () => {
   it("should revert the most recent word on Undo click", async () => {
     const { container, getByText, getAllByRole } = render(Mnemonic, {
       props: {
-        enteredMnemonicPhrase: enteredSeed,
-        mnemonicPhrase: seed,
+        enteredMnemonicPhrase,
+        mnemonicPhrase: mnemonic,
         type: "validate",
       },
     });

@@ -15,7 +15,7 @@
   <Agreement
     checked={false}
     name="checkbox_five"
-    label="I understand that without my seed phrase I
+    label="I understand that without my mnemonic phrase I
 			cannot access my wallet and its assets."
   />
 </section>
