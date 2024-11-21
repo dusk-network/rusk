@@ -25,14 +25,35 @@
 
   $: ({ stepsCount, currentStep } = $wizardStore);
 
-  function handleBack() {
-    backButton?.action?.();
-    wizardStore.decrementStep();
+  /**
+   * Temporary measure to have a DOM event
+   * that bubbles up and can be listened from
+   * any parent.
+   *
+   * @param {Event} evt
+   */
+  function dispatchStepChange(evt) {
+    const stepChangeEvent = new CustomEvent("wizardstepchange", {
+      bubbles: true,
+      detail: { step: currentStep, stepsCount },
+    });
+
+    // @ts-ignore
+    evt.currentTarget?.closest(".dusk-wizard")?.dispatchEvent(stepChangeEvent);
   }
 
-  function handleNext() {
+  /** @param {Event} evt */
+  function handleBack(evt) {
+    backButton?.action?.();
+    wizardStore.decrementStep();
+    dispatchStepChange(evt);
+  }
+
+  /** @param {Event} evt */
+  function handleNext(evt) {
     nextButton?.action?.();
     wizardStore.incrementStep();
+    dispatchStepChange(evt);
   }
 
   /**
@@ -102,6 +123,7 @@
             <AppAnchorButton
               {...getButtonProps(backButton, "Back", mdiArrowLeft)}
               href={backButton?.href ?? "#"}
+              on:click={dispatchStepChange}
             />
           {:else}
             <Button
@@ -115,6 +137,7 @@
           <AppAnchorButton
             {...getButtonProps(nextButton, "Next", mdiArrowRight, true)}
             href={nextButton?.href ?? "#"}
+            on:click={dispatchStepChange}
           />
         {:else}
           <Button
