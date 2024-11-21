@@ -357,6 +357,18 @@ impl StakeData {
     pub const fn eligibility_from_height(block_height: u64) -> u64 {
         StakeAmount::eligibility_from_height(block_height)
     }
+
+    /// Check if there is no amount left to withdraw
+    ///
+    /// Return true if both stake and rewards are 0
+    pub fn is_empty(&self) -> bool {
+        let stake = self
+            .amount
+            .as_ref()
+            .map(StakeAmount::total_funds)
+            .unwrap_or_default();
+        self.reward + stake == 0
+    }
 }
 
 /// Value staked and eligibility.
