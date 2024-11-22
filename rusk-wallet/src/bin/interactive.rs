@@ -437,6 +437,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
         Command::Withdraw {
             address,
             gas_limit,
+            reward,
             gas_price,
         } => {
             let sender = address.as_ref().ok_or(Error::BadAddress)?;
@@ -447,6 +448,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             println!("   > Pay with {}", sender.preview());
             println!("   > Withdraw rewards from {}", withdraw_from.preview());
             println!("   > Receive rewards at {}", sender.preview());
+            println!("   > Amount withdrawing {} DUSK", reward);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
