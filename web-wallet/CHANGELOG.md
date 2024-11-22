@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix edge case in Dusk to Lux conversion [#3032]
 - Fix inconsistent terminology usage for "Mnemonic Phrase" [#3035]
 - Fix auto-sync not working after restoring a wallet [#3042]
+- Fix application crash on empty amount (Stake Flow) [#3036]
 
 ## [0.8.0] - 2024-11-19
 
@@ -370,6 +371,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3028]: https://github.com/dusk-network/rusk/issues/3028
 [#3032]: https://github.com/dusk-network/rusk/issues/3032
 [#3035]: https://github.com/dusk-network/rusk/issues/3035
+[#3036]: https://github.com/dusk-network/rusk/issues/3036
 [#3042]: https://github.com/dusk-network/rusk/issues/3042
 
 <!-- VERSIONS -->
