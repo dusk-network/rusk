@@ -1,5 +1,5 @@
 <script>
-  import { mdiShieldLock, mdiShieldOutline } from "@mdi/js";
+  import { mdiShieldLock, mdiShieldLockOpenOutline } from "@mdi/js";
   import { Badge, Icon } from "$lib/dusk/components";
   import "./TransactionType.css";
 
@@ -19,9 +19,9 @@
     data-tooltip-text={data.txtype}
     data-tooltip-place="top"
     data-tooltip-type="info"
-    path={data.txtype.toLowerCase() !== "moonlight"
-      ? mdiShieldLock
-      : mdiShieldOutline}
+    path={data.txtype.toLowerCase() === "moonlight"
+      ? mdiShieldLockOpenOutline
+      : mdiShieldLock}
     size="large"
   />
   <Badge text={data.method} maxlength={BADGE_TEXT_MAX_LENGTH} />
