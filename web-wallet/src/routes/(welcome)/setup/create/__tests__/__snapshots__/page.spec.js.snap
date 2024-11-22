@@ -2900,7 +2900,7 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
 </div>
 `;
 
-exports[`Create > should render the \`Securely store your seed phrase!\` agreement step after the ToS 1`] = `
+exports[`Create > should render the \`Securely store your mnemonic phrase!\` agreement step after the ToS 1`] = `
 <div
   class="dusk-wizard dusk-wizard--full-height"
 >
@@ -2977,7 +2977,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
           <h3
             class="h4"
           >
-            Securely store your seed phrase!
+            Securely store your mnemonic phrase!
           </h3>
            
         </div>
@@ -3002,7 +3002,7 @@ exports[`Create > should render the \`Securely store your seed phrase!\` agreeme
           class="dusk-agreement__label"
           for="dusk-checkbox-16"
         >
-          I understand that without my seed phrase I cannot access my wallet and its assets.
+          I understand that without my mnemonic phrase I cannot access my wallet and its assets.
         </label>
       </div>
        
@@ -3170,8 +3170,8 @@ exports[`Create > should render the Existing Wallet notice step of the Create fl
         <p>
           Initializing a new wallet will replace your existing local wallet cache,
       erasing any stored data. Ensure you have securely backed up your current
-      wallet's seed phrase to prevent loss. Proceeding without a backup can lead
-      to irreversible loss of access to your assets.
+      wallet's mnemonic phrase to prevent loss. Proceeding without a backup can
+      lead to irreversible loss of access to your assets.
         </p>
          
         <div

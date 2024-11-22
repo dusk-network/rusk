@@ -44,8 +44,8 @@ exports[`Restore > should render the Existing Wallet notice step of the Restore 
         <p>
           Initializing a new wallet will replace your existing local wallet cache,
       erasing any stored data. Ensure you have securely backed up your current
-      wallet's seed phrase to prevent loss. Proceeding without a backup can lead
-      to irreversible loss of access to your assets.
+      wallet's mnemonic phrase to prevent loss. Proceeding without a backup can
+      lead to irreversible loss of access to your assets.
         </p>
          
         <div
@@ -184,7 +184,7 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
             <span
               class="dusk-button__text"
             >
-              Paste seed phrase
+              Paste mnemonic phrase
             </span>
             
           </button>

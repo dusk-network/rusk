@@ -15,11 +15,11 @@
   $: isValid = agreementOneChecked && agreementTwoChecked;
 </script>
 
-<IconHeadingCard gap="medium" heading="Securely store your seed phrase!">
+<IconHeadingCard gap="medium" heading="Securely store your mnemonic phrase!">
   <Agreement
     name="mnemonic_agreement_one"
     bind:checked={agreementOneChecked}
-    label="I understand that without my seed phrase I cannot access my wallet and its assets."
+    label="I understand that without my mnemonic phrase I cannot access my wallet and its assets."
   />
   <Agreement
     name="mnemonic_agreement_two"

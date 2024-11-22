@@ -12,8 +12,8 @@
     <p>
       Initializing a new wallet will replace your existing local wallet cache,
       erasing any stored data. Ensure you have securely backed up your current
-      wallet's seed phrase to prevent loss. Proceeding without a backup can lead
-      to irreversible loss of access to your assets.
+      wallet's mnemonic phrase to prevent loss. Proceeding without a backup can
+      lead to irreversible loss of access to your assets.
     </p>
     <div class="actions">
       <AppAnchorButton
