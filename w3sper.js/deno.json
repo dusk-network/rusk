@@ -2,6 +2,10 @@
   "name": "@dusk/w3sper",
   "version": "0.1.0-beta.1",
   "exports": "./src/mod.js",
+  "imports": {
+    "@dusk/exu": "jsr:@dusk/exu@0.1.2",
+    "@dusk/w3sper": "./src/mod.js"
+  },
   "tasks": {
     "test": "deno test --allow-net --allow-read --allow-write --allow-run --allow-import",
     "wasm": "cd ../wallet-core && cargo wasm",

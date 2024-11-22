@@ -4,14 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import * as exu from "jsr:@dusk/exu@0.1.2";
+import * as exu from "@dusk/exu";
 import { none } from "./none.js";
 
 import { DriverError } from "./error.js";
 import * as DataBuffer from "./buffer.js";
 import { withAllocator } from "./alloc.js";
 
-const rng = () => new Uint8Array(32); //crypto.getRandomValues(new Uint8Array(32));
+const rng = () => crypto.getRandomValues(new Uint8Array(32));
 
 const uninit = Object.freeze([
   none`No Protocol Driver loaded yet. Call "load" first.`,
@@ -36,7 +36,6 @@ export function load(source, importsURL) {
   }
 
   // Parse known globals once.
-
   driverGlobals = protocolDriverModule.task(
     withAllocator(async function (_exports, allocator) {
       const { ptr, u32, u64 } = allocator.types;
@@ -51,14 +50,30 @@ export function load(source, importsURL) {
   )();
 }
 
-export function unload() {
+export async function unload() {
   if (protocolDriverModule instanceof none || driverGlobals instanceof none) {
-    return Promise.resolve();
-  } else {
-    return Promise.all([protocolDriverModule, driverGlobals]).then(() => {
-      [protocolDriverModule, driverGlobals] = uninit;
-    });
+    return;
   }
+
+  await Promise.all([protocolDriverModule, driverGlobals]);
+
+  [protocolDriverModule, driverGlobals] = uninit;
+}
+
+export function useAsProtocolDriver(source, importsURL) {
+  load(source, importsURL);
+
+  return {
+    cleanup() {
+      return unload();
+    },
+    then(onFulfilled, onRejected) {
+      return driverGlobals
+        .then(() => onFulfilled())
+        .catch(onRejected)
+        .finally(unload);
+    },
+  };
 }
 
 export async function opening(bytes) {

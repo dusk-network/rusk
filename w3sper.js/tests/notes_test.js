@@ -3,8 +3,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import { test, assert } from "./harness.js";
-import { ProfileGenerator, Bookkeeper } from "../src/mod.js";
+import { test, assert, getLocalWasmBuffer } from "./harness.js";
+import { ProfileGenerator, Bookkeeper } from "@dusk/w3sper";
 
 const hex = (bytes) =>
   Array.from(bytes)
@@ -18,12 +18,13 @@ const seeder = async () => SEED;
 const NOTES_RKYV = "./tests/assets/notes.rkyv";
 const notesBuffer = await Deno.readFile(NOTES_RKYV);
 
+// NOTE: This tests helps to check some of the protocol driver internals
 import * as ProtocolDriver from "../src/protocol-driver/mod.js";
-
-test.withLocalWasm = "release";
 
 // Test case for default profile
 test("owened notes balance", async () => {
+  ProtocolDriver.load(await getLocalWasmBuffer());
+
   const profiles = new ProfileGenerator(seeder);
 
   const owner1 = await Promise.all([
@@ -166,4 +167,6 @@ test("owened notes balance", async () => {
 
   picked = await ProtocolDriver.pickNotes(owner4, notes4[0], 1n);
   assert.equal(picked.size, 0);
+
+  await ProtocolDriver.unload();
 });

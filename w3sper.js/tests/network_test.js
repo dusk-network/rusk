@@ -4,17 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import {
-  Network,
-  ProfileGenerator,
-  Bookkeeper,
-  AddressSyncer,
-  AccountSyncer,
-} from "../src/mod.js";
+import { Network } from "@dusk/w3sper";
 
-import { test, assert, seeder, Treasury } from "./harness.js";
-
-test.withLocalWasm = "release";
+import { test, assert } from "./harness.js";
 
 test("Network connection", async () => {
   const network = new Network("http://localhost:8080/");

@@ -8,3 +8,4 @@ export * from "./network/mod.js";
 export * from "./profile.js";
 export * from "./bookkeeper.js";
 export * from "./transaction.js";
+export { useAsProtocolDriver } from "./protocol-driver/mod.js";

@@ -4,97 +4,87 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import {
-  test,
-  assert,
-} from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js";
+import { test, assert, getLocalWasmBuffer } from "./harness.js";
 
-import { Network, ProfileGenerator } from "../src/mod.js";
+import { ProfileGenerator, useAsProtocolDriver } from "@dusk/w3sper";
 
 // Define a seed for deterministic profile generation
 const SEED = new Uint8Array(64);
 const seeder = async () => SEED;
 
+// fetch local wasm
+const wasmBuffer = await getLocalWasmBuffer();
+
 // Test case for initial profile generation
 test("Initial Profile Generation", async () => {
-  const network = await Network.connect("http://localhost:8080/");
-
   const profiles = new ProfileGenerator(seeder);
 
   // Verify that the profile list is initially empty
   assert.equal(profiles.length, 0);
-
-  await network.disconnect();
 });
 
 // Test case for default profile
-test("Default Profile", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+test("Default Profile", () =>
+  useAsProtocolDriver(wasmBuffer).then(async () => {
+    const profiles = new ProfileGenerator(seeder);
+    const defaultProfile = await profiles.default;
 
-  const profiles = new ProfileGenerator(seeder);
-  const defaultProfile = await profiles.default;
+    // Validate the default profile's address and account details
+    assert.equal(
+      defaultProfile.address.toString(),
+      "ivmscertKgRyX8wNMJJsQcSVEyPsfSMUQXSAgeAPQXsndqFq9Pmknzhm61QvcEEdxPaGgxDS4RHpb6KKccrnSKN",
+    );
 
-  // Validate the default profile's address and account details
-  assert.equal(
-    defaultProfile.address.toString(),
-    "ivmscertKgRyX8wNMJJsQcSVEyPsfSMUQXSAgeAPQXsndqFq9Pmknzhm61QvcEEdxPaGgxDS4RHpb6KKccrnSKN",
-  );
+    assert.equal(
+      defaultProfile.account.toString(),
+      "qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3",
+    );
 
-  assert.equal(
-    defaultProfile.account.toString(),
-    "qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3",
-  );
+    // Ensure the default profile is indexed correctly
+    assert.equal(+defaultProfile, 0);
+    assert.equal(profiles.indexOf(defaultProfile), 0);
+    assert.equal(await profiles.at(0), defaultProfile);
+    assert.equal(await profiles.at(1), undefined);
 
-  // Ensure the default profile is indexed correctly
-  assert.equal(+defaultProfile, 0);
-  assert.equal(profiles.indexOf(defaultProfile), 0);
-  assert.equal(await profiles.at(0), defaultProfile);
-  assert.equal(await profiles.at(1), undefined);
+    // Ensure the default profile's keys (address and account) are indexed correctly
+    assert.equal(+defaultProfile, +defaultProfile.address);
+    assert.equal(+defaultProfile, +defaultProfile.account);
 
-  // Ensure the default profile's keys (address and account) are indexed correctly
-  assert.equal(+defaultProfile, +defaultProfile.address);
-  assert.equal(+defaultProfile, +defaultProfile.account);
-
-  // Verify that the profile list has been updated to include the default profile
-  assert.equal(profiles.length, 1);
-
-  await network.disconnect();
-});
+    // Verify that the profile list has been updated to include the default profile
+    assert.equal(profiles.length, 1);
+  }));
 
 // Test case for generating the next profile
-test("Next Profile Generation", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+test("Next Profile Generation", () =>
+  useAsProtocolDriver(wasmBuffer).then(async () => {
+    const profiles = new ProfileGenerator(seeder);
 
-  const profiles = new ProfileGenerator(seeder);
+    // Generate the next profile
+    const profile = await profiles.next();
 
-  // Generate the next profile
-  const profile = await profiles.next();
+    // Validate the next profile's address and account details
+    assert.equal(
+      profile.address.toString(),
+      "3MoVQ6VfGNu8fJ5GeHPRDVUfxcsDEmGXpWhvKhXY7F2dKCp7QWRw8RqPcbuJGdRqeTtxpuiwETnGAJLnhT4Kq4e8",
+    );
 
-  // Validate the next profile's address and account details
-  assert.equal(
-    profile.address.toString(),
-    "3MoVQ6VfGNu8fJ5GeHPRDVUfxcsDEmGXpWhvKhXY7F2dKCp7QWRw8RqPcbuJGdRqeTtxpuiwETnGAJLnhT4Kq4e8",
-  );
+    assert.equal(
+      profile.account.toString(),
+      "25omWWRyfcMjYNbQZVyc3rypYLi8UqZuthoJHqbCEriRX3z2EmnBaXWZLFL2NvzvDnkoYoHLGiSYQpmupNJj1sSdWNstqzfFEpiqvSNYw7gqvoEiU9FsEHUMG1ZyG3XgL8Rv",
+    );
 
-  assert.equal(
-    profile.account.toString(),
-    "25omWWRyfcMjYNbQZVyc3rypYLi8UqZuthoJHqbCEriRX3z2EmnBaXWZLFL2NvzvDnkoYoHLGiSYQpmupNJj1sSdWNstqzfFEpiqvSNYw7gqvoEiU9FsEHUMG1ZyG3XgL8Rv",
-  );
+    // Ensure the next profile is indexed correctly
+    assert.equal(+profile, 1);
+    assert.equal(profiles.indexOf(profile), 1);
+    assert.equal(await profiles.at(1), profile);
 
-  // Ensure the next profile is indexed correctly
-  assert.equal(+profile, 1);
-  assert.equal(profiles.indexOf(profile), 1);
-  assert.equal(await profiles.at(1), profile);
+    // Ensure the next profile's keys (address and account) are indexed correctly
+    assert.equal(+profile, +profile.address);
+    assert.equal(+profile, +profile.account);
 
-  // Ensure the next profile's keys (address and account) are indexed correctly
-  assert.equal(+profile, +profile.address);
-  assert.equal(+profile, +profile.account);
-
-  // Verify that the profile list has been updated to include the next profile
-  assert.equal(profiles.length, 2);
-
-  await network.disconnect();
-});
+    // Verify that the profile list has been updated to include the next profile
+    assert.equal(profiles.length, 2);
+  }));
 
 // Test case for ProfileGenerator type checking
 test("ProfileGenerator Type Checking", () => {

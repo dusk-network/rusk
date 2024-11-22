@@ -10,14 +10,12 @@ import {
   Bookkeeper,
   AddressSyncer,
   AccountSyncer,
-} from "../src/mod.js";
+} from "@dusk/w3sper";
 
 import { test, assert, seeder, Treasury } from "./harness.js";
 
-test.withLocalWasm = "release";
-
 test("Account Balance", async () => {
-  const network = new Network("http://localhost:8080/");
+  const network = await Network.connect("http://localhost:8080/");
 
   const user =
     "oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu";
@@ -28,6 +26,8 @@ test("Account Balance", async () => {
     nonce: 0n,
     value: 1_001_000_000_000_000n,
   });
+
+  await network.disconnect();
 });
 
 test("Balances synchronization", async () => {
