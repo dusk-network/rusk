@@ -1,7 +1,6 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { onDestroy } from "svelte";
   import { mdiCubeOutline } from "@mdi/js";
 
   import { ErrorAlert } from "$lib/dusk/components";
@@ -22,10 +21,6 @@
   }
 
   $: isValid = syncStarted && !syncStatus.isInProgress && !syncStatus.error;
-
-  onDestroy(() => {
-    walletStore.abortSync();
-  });
 </script>
 
 <IconHeadingCard icons={[mdiCubeOutline]} heading="Network Sync">
