@@ -176,7 +176,7 @@
     maxSpendable > 0n && minAllowedStake > maxSpendable
       ? maxSpendable
       : minAllowedStake;
-  $: stakeAmountInLux = duskToLux(stakeAmount);
+  $: stakeAmountInLux = stakeAmount ? duskToLux(stakeAmount) : 0n;
   $: isStakeAmountValid =
     stakeAmountInLux >= minStake && stakeAmountInLux <= maxSpendable;
   $: totalLuxFee = fee + stakeAmountInLux;
