@@ -516,6 +516,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn phoenix_stake_withdraw(
         &self,
         sender_idx: u8,
+        reward_amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let state = self.state()?;
@@ -532,11 +533,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let stake_pk = BlsPublicKey::from(&stake_sk);
 
-        let reward_amount = state
-            .fetch_stake(&stake_pk)
-            .await?
-            .map(|s| s.reward)
-            .unwrap_or_default();
+        let available_reward = self.get_stake_amount(sender_idx).await?;
+
+        // throw error if we try to withdraw more than available
+        if reward_amt > available_reward {
+            return Err(Error::NotEnoughBalance);
+        }
 
         let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
@@ -548,7 +550,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             &stake_owner_sk,
             inputs,
             root,
-            reward_amount,
+            *reward_amt,
             gas.limit,
             gas.price,
             chain_id,
@@ -571,6 +573,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn moonlight_stake_withdraw(
         &self,
         sender_idx: u8,
+        reward_amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
@@ -580,8 +583,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let nonce = state.fetch_account(pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
         let stake_info = state.fetch_stake(pk).await?;
-        let reward = stake_info.map(|s| s.reward).ok_or(Error::NoReward)?;
-        let reward = Dusk::from(reward);
+        let available_reward =
+            stake_info.map(|s| s.reward).ok_or(Error::NoReward)?;
+
+        // throw error if we try to withdraw more than available
+        if reward_amt > available_reward {
+            return Err(Error::NotEnoughBalance);
+        }
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);
 
