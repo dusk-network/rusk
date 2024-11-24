@@ -22,7 +22,7 @@ const mergeMap = (dest, source, lookup) => {
 export {
   test,
   assert,
-} from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js";
+} from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.1/mod.js";
 
 import { Bookmark } from "@dusk/w3sper";
 
