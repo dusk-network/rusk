@@ -729,7 +729,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// # Errors
     /// This method will error if the wallet cannot connect to the network or if
     /// the wallet doesn't have a stake.
-    pub async fn get_stake_amount(
+    pub async fn get_stake_reward(
         &self,
         sender_index: u8,
     ) -> Result<Dusk, Error> {
