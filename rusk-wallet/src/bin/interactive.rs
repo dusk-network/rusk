@@ -89,7 +89,15 @@ pub(crate) async fn run_loop(
             match op {
                 Ok(ProfileOp::Run(cmd)) => {
                     // request confirmation before running
-                    if confirm(&cmd, wallet)? {
+                    let confirm_prompt = match confirm(&cmd, wallet) {
+                        Ok(x) => x,
+                        Err(e) => match e.downcast_ref::<InquireError>() {
+                            Some(InquireError::OperationCanceled) => continue,
+                            _ => return Err(e),
+                        },
+                    };
+
+                    if confirm_prompt {
                         // run command
                         prompt::hide_cursor()?;
                         let result = cmd.run(wallet, settings).await;
@@ -379,6 +387,17 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
+
+            // check if we are sending to our own address
+            if wallet.claim(rcvr.clone()).is_ok() {
+                if !prompt::ask_self_send_confirm()? {
+                    // we throw operation cancelled error so it is handeled by
+                    // the event loop and we are just sent
+                    // back to the last screen
+                    return Err(InquireError::OperationCanceled.into());
+                }
+            }
+
             prompt::ask_confirm()
         }
         Command::Stake {

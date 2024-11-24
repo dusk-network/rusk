@@ -178,6 +178,12 @@ pub(crate) fn ask_confirm() -> anyhow::Result<bool> {
         .prompt()?)
 }
 
+/// Asks the user for confirmation
+pub(crate) fn ask_self_send_confirm() -> anyhow::Result<bool> {
+    Ok(Confirm::new("ALERT: You are transfering to an address which belongs to this wallet. Proceed?")
+        .prompt()?)
+}
+
 /// Asks the user for confirmation before deleting cache
 pub(crate) fn ask_confirm_erase_cache(msg: &str) -> anyhow::Result<bool> {
     Ok(Confirm::new(msg).prompt()?)
