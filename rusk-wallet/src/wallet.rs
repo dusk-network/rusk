@@ -625,7 +625,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Get the amount of stake rewards the user has
-    pub async fn get_stake_amount(
+    pub async fn get_stake_reward(
         &self,
         sender_index: u8,
     ) -> Result<Dusk, Error> {
