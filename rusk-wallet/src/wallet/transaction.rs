@@ -533,11 +533,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let stake_pk = BlsPublicKey::from(&stake_sk);
 
-        let available_reward = self.get_stake_amount(sender_idx).await?;
+        let available_reward = self.get_stake_reward(sender_idx).await?;
 
         // throw error if we try to withdraw more than available
         if reward_amt > available_reward {
-            return Err(Error::NotEnoughBalance);
+            return Err(Error::NotEnoughReward);
         }
 
         let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
@@ -588,7 +588,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         // throw error if we try to withdraw more than available
         if reward_amt > available_reward {
-            return Err(Error::NotEnoughBalance);
+            return Err(Error::NotEnoughReward);
         }
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);

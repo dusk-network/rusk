@@ -176,6 +176,9 @@ pub enum Error {
     /// Consensus keys error
     #[error("Error while saving consensus keys: {0}")]
     ConsensusKeysError(ConsensusKeysError),
+    /// Trying to withdraw more reward than the person has
+    #[error("Trying to withdraw more than existing reward")]
+    NotEnoughReward,
 }
 
 impl From<dusk_bytes::Error> for Error {
