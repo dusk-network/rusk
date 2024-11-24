@@ -95,7 +95,7 @@ pub(crate) async fn online(
     }
 
     let select = select?;
-    let max_withdraw = wallet.get_stake_amount(profile_idx).await?;
+    let max_withdraw = wallet.get_stake_reward(profile_idx).await?;
 
     let res = match select {
         MenuItem::Transfer => {
