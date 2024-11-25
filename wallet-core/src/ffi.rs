@@ -20,38 +20,35 @@ pub mod error;
 pub mod mem;
 pub mod panic;
 
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::{ptr, slice};
+
+use dusk_bytes::{DeserializableSlice, Serializable};
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT};
+use execution_core::transfer::data::{ContractCall, TransactionData};
+use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use execution_core::transfer::phoenix::{
+    ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
+    PublicKey as PhoenixPublicKey,
+};
+use execution_core::transfer::withdraw::WithdrawReplayToken;
+use execution_core::transfer::{phoenix, Transaction};
+use execution_core::BlsScalar;
+use rand_chacha::rand_core::SeedableRng;
+use rand_chacha::ChaCha12Rng;
+use rkyv::to_bytes;
+use zeroize::Zeroize;
+
 use crate::keys::{
     derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
     derive_phoenix_vk,
 };
 use crate::notes::{self, balance, owned, pick};
 use crate::Seed;
+
 use error::ErrorCode;
-
-use alloc::vec::Vec;
-use core::{ptr, slice};
-use dusk_bytes::{DeserializableSlice, Serializable};
-use execution_core::signatures::bls::PublicKey as BlsPublicKey;
-use execution_core::transfer::data::{ContractCall, TransactionData};
-use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
-use execution_core::transfer::phoenix;
-use execution_core::transfer::phoenix::{
-    ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
-    PublicKey as PhoenixPublicKey,
-};
-
-use execution_core::stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT};
-use execution_core::transfer::withdraw::WithdrawReplayToken;
-use execution_core::transfer::Transaction;
-use execution_core::BlsScalar;
-
-use zeroize::Zeroize;
-
-use rkyv::to_bytes;
-
-use rand_chacha::{rand_core::SeedableRng, ChaCha12Rng};
-
-use alloc::string::String;
 
 #[no_mangle]
 static KEY_SIZE: usize = BlsScalar::SIZE;

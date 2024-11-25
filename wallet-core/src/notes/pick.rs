@@ -8,10 +8,11 @@
 
 use alloc::vec::Vec;
 
-use crate::notes::owned::NoteList;
-use crate::notes::MAX_INPUT_NOTES;
 use execution_core::transfer::phoenix::{NoteLeaf, ViewKey as PhoenixViewKey};
 use execution_core::BlsScalar;
+
+use crate::notes::owned::NoteList;
+use crate::notes::MAX_INPUT_NOTES;
 
 /// Pick up to [`MAX_INPUT_NOTES`] notes to be used as input-notes in a
 /// transaction from a list of owned notes.

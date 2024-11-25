@@ -8,14 +8,14 @@
 
 use alloc::vec;
 use alloc::vec::Vec;
-
-use bytecheck::CheckBytes;
 use core::ops::Index;
 use core::slice::Iter;
-use execution_core::{
-    transfer::phoenix::{NoteLeaf, SecretKey as PhoenixSecretKey},
-    BlsScalar,
+
+use bytecheck::CheckBytes;
+use execution_core::transfer::phoenix::{
+    NoteLeaf, SecretKey as PhoenixSecretKey,
 };
+use execution_core::BlsScalar;
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// A collection of notes stored as key-value pairs.

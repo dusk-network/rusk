@@ -4,21 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use execution_core::transfer::phoenix::{
+    Note, NoteLeaf, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
+};
+use execution_core::JubJubScalar;
 use ff::Field;
-use rand::{rngs::StdRng, CryptoRng, RngCore, SeedableRng};
-
-use execution_core::{
-    transfer::phoenix::{
-        Note, NoteLeaf, PublicKey as PhoenixPublicKey,
-        SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
-    },
-    JubJubScalar,
-};
-
-use wallet_core::{
-    keys::derive_multiple_phoenix_sk, keys::derive_phoenix_sk, map_owned,
-    notes::owned::NoteList, phoenix_balance, pick_notes, BalanceInfo, Seed,
-};
+use rand::rngs::StdRng;
+use rand::{CryptoRng, RngCore, SeedableRng};
+use wallet_core::keys::{derive_multiple_phoenix_sk, derive_phoenix_sk};
+use wallet_core::notes::owned::NoteList;
+use wallet_core::{map_owned, phoenix_balance, pick_notes, BalanceInfo, Seed};
 
 /// Generate a note, useful for testing purposes
 fn gen_note<T: RngCore + CryptoRng>(
