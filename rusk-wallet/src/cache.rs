@@ -12,8 +12,8 @@ use execution_core::transfer::phoenix::NoteLeaf;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 
 use super::*;
-
-use crate::{clients::TREE_LEAF, error::Error};
+use crate::clients::TREE_LEAF;
+use crate::error::Error;
 
 type DB = DBWithThreadMode<MultiThreaded>;
 

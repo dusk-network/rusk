@@ -8,26 +8,24 @@ mod history;
 
 pub use history::TransactionHistory;
 
+use std::fmt;
+use std::path::PathBuf;
+
 use clap::Subcommand;
-use execution_core::{
-    stake::StakeData, transfer::data::ContractCall, BlsScalar,
-    CONTRACT_ID_BYTES,
+use execution_core::stake::StakeData;
+use execution_core::transfer::data::ContractCall;
+use execution_core::{BlsScalar, CONTRACT_ID_BYTES};
+use rusk_wallet::currency::{Dusk, Lux};
+use rusk_wallet::gas::{
+    Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
+    DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
 };
-use rusk_wallet::{
-    currency::{Dusk, Lux},
-    gas::{
-        Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT,
-        DEFAULT_LIMIT_TRANSFER, DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
-    },
-    Address, Error, Profile, Wallet, EPOCH, MAX_PROFILES,
-};
+use rusk_wallet::{Address, Error, Profile, Wallet, EPOCH, MAX_PROFILES};
 use wallet_core::BalanceInfo;
 
 use crate::io::prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
-
-use std::{fmt, path::PathBuf};
 
 /// Commands that can be run against the Dusk wallet
 #[allow(clippy::large_enum_variant)]

@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::clients::State;
-
 use wallet_core::Seed;
+
+use crate::clients::State;
 
 /// Provides a valid wallet seed to dusk_wallet_core
 #[derive(Clone)]

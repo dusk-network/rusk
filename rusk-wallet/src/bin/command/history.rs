@@ -8,9 +8,9 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
+use execution_core::transfer::Transaction;
+use execution_core::{dusk, from_dusk};
 use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
-
-use execution_core::{dusk, from_dusk, transfer::Transaction};
 
 use crate::io::{self};
 use crate::settings::Settings;

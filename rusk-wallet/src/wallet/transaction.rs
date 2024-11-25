@@ -6,26 +6,25 @@
 
 use std::fmt::Debug;
 
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::transfer::data::TransactionData;
+use execution_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
+use execution_core::transfer::Transaction;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use zeroize::Zeroize;
-
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    transfer::{
-        data::TransactionData, phoenix::PublicKey as PhoenixPublicKey,
-        Transaction,
-    },
-};
 use wallet_core::transaction::{
     moonlight, moonlight_deployment, moonlight_stake, moonlight_stake_reward,
     moonlight_to_phoenix, moonlight_unstake, phoenix, phoenix_deployment,
     phoenix_stake, phoenix_stake_reward, phoenix_to_moonlight, phoenix_unstake,
 };
+use zeroize::Zeroize;
 
-use crate::{clients::Prover, currency::Dusk, gas::Gas, Error};
-
-use super::{file::SecureWalletFile, Wallet};
+use super::file::SecureWalletFile;
+use super::Wallet;
+use crate::clients::Prover;
+use crate::currency::Dusk;
+use crate::gas::Gas;
+use crate::Error;
 
 impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Transfers funds between shielded addresses.

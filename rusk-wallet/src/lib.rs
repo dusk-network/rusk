@@ -27,24 +27,19 @@ pub mod currency;
 pub mod dat;
 pub mod gas;
 
-pub use rues::RuesHttpClient;
-
 pub use error::Error;
+pub use gql::{BlockTransaction, GraphQL};
+pub use rues::RuesHttpClient;
 pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
 };
 
-pub use gql::{BlockTransaction, GraphQL};
-
-use execution_core::{
-    dusk, from_dusk,
-    stake::StakeData,
-    transfer::phoenix::{
-        ArchivedNoteLeaf, Note, NoteOpening, PublicKey as PhoenixPublicKey,
-        SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
-    },
-    BlsScalar,
+use execution_core::stake::StakeData;
+use execution_core::transfer::phoenix::{
+    ArchivedNoteLeaf, Note, NoteOpening, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
+use execution_core::{dusk, from_dusk, BlsScalar};
 
 use currency::Dusk;
 

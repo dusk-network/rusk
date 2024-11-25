@@ -9,10 +9,10 @@
 //! graphql schema
 
 use execution_core::transfer::Transaction;
+use serde::Deserialize;
 use tokio::time::{sleep, Duration};
 
 use crate::{Error, RuesHttpClient};
-use serde::Deserialize;
 
 /// GraphQL is a helper struct that aggregates all queries done
 /// to the Dusk GraphQL database.

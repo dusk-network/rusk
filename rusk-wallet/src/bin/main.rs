@@ -12,26 +12,25 @@ mod settings;
 
 pub(crate) use command::{Command, RunResult};
 
+use std::fs::{self, File};
+use std::io::Write;
+
 use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Parser;
 use inquire::InquireError;
 use rocksdb::ErrorKind;
+use rusk_wallet::currency::Dusk;
+use rusk_wallet::dat::{self, LATEST_VERSION};
+use rusk_wallet::{
+    Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
+};
 use tracing::{error, info, warn, Level};
 
 use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
 
-use rusk_wallet::{
-    currency::Dusk,
-    dat::{self, LATEST_VERSION},
-    Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
-};
-
 use config::Config;
 use io::{prompt, status, WalletArgs};
-
-use std::fs::{self, File};
-use std::io::Write;
 
 #[derive(Debug, Clone)]
 pub(crate) struct WalletFile {

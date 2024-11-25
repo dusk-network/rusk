@@ -4,13 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::fmt;
 use std::hash::Hasher;
-use std::{fmt, str::FromStr};
+use std::str::FromStr;
+
+use dusk_bytes::{DeserializableSlice, Serializable};
 
 use super::*;
 use crate::Error;
-
-use dusk_bytes::{DeserializableSlice, Serializable};
 
 /// Address to perform a transaction with.
 #[derive(Clone, Eq)]
