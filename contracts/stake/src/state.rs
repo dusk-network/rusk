@@ -93,18 +93,23 @@ impl StakeState {
             rusk_abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
                 .expect("Depositing funds into contract should succeed");
 
+        let block_height = rusk_abi::block_height();
         // update the state accordingly
         let stake_event = match &mut loaded_stake.amount {
             Some(amount) => {
-                let locked = value / 10;
+                let locked = if block_height >= amount.eligibility {
+                    value / 10
+                } else {
+                    // No penalties applied if the stake is not eligible yet
+                    0
+                };
                 let value = value - locked;
                 amount.locked += locked;
                 amount.value += value;
                 StakeEvent::new(*loaded_keys, value).locked(locked)
             }
             amount => {
-                let _ = amount
-                    .insert(StakeAmount::new(value, rusk_abi::block_height()));
+                let _ = amount.insert(StakeAmount::new(value, block_height));
                 StakeEvent::new(*loaded_keys, value)
             }
         };
