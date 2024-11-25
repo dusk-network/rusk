@@ -15,10 +15,10 @@ use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
         next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeData,
-        StakeEvent, StakeFundOwner, StakeKeys, Withdraw, EPOCH, MINIMUM_STAKE,
-        STAKE_CONTRACT, STAKE_WARNINGS,
+        StakeEvent, StakeFundOwner, StakeKeys, Withdraw, WithdrawToContract,
+        EPOCH, MINIMUM_STAKE, STAKE_CONTRACT, STAKE_WARNINGS,
     },
-    transfer::{ReceiveFromContract, TRANSFER_CONTRACT},
+    transfer::{ContractToContract, ReceiveFromContract, TRANSFER_CONTRACT},
     ContractId,
 };
 
@@ -262,6 +262,78 @@ impl StakeState {
         self.previous_block_state
             .entry(key)
             .or_insert((prev_stake, account));
+    }
+
+    pub fn unstake_from_contract(&mut self, unstake: WithdrawToContract) {
+        let account = unstake.account();
+        let value = unstake.value();
+
+        let (loaded_stake, keys) = self
+            .get_stake_mut(account)
+            .expect("A stake should exist in the map to be unstaked!");
+        let prev_stake = Some(*loaded_stake);
+
+        // ensure there is a value staked, and that the withdrawal is not
+        // greater than the available funds
+        let stake = loaded_stake
+            .amount
+            .as_mut()
+            .expect("There must be an amount to unstake");
+
+        if value > stake.total_funds() {
+            panic!("Value to unstake higher than the staked amount");
+        }
+
+        let funds_key = Self::unwrap_contract_funds(&keys.funds);
+        let caller =
+            rusk_abi::caller().expect("unstake must be called by a contract");
+        assert_eq!(&caller, funds_key, "Invalid contract caller");
+
+        let to_contract = ContractToContract {
+            contract: caller,
+            fn_name: unstake.fn_name().into(),
+            value,
+            data: Vec::new(),
+        };
+
+        let _: () = rusk_abi::call(
+            TRANSFER_CONTRACT,
+            "contract_to_contract",
+            &to_contract,
+        )
+        .expect("Withdrawing stake to contract should succeed");
+
+        let stake_event = if value > stake.value {
+            let from_locked = value - stake.value;
+            let from_stake = stake.value;
+            stake.value = 0;
+            stake.locked -= from_locked;
+            StakeEvent::new(*keys, from_stake).locked(from_locked)
+        } else {
+            stake.value -= value;
+            StakeEvent::new(*keys, value)
+        };
+
+        rusk_abi::emit("unstake", stake_event);
+        if stake.total_funds() == 0 {
+            // update the state accordingly
+            loaded_stake.amount = None;
+            if loaded_stake.reward == 0 {
+                self.stakes.remove(&unstake.account().to_bytes());
+            }
+        }
+        // Note: We no longer enforce the minimum stake condition here to
+        // avoid locked funds exploit for contracts.
+        /*
+            } else if stake.total_funds() < MINIMUM_STAKE {
+                panic!("Stake left is lower than minimum stake");
+        }
+        */
+
+        let key = account.to_bytes();
+        self.previous_block_state
+            .entry(key)
+            .or_insert_with(|| (prev_stake, *account));
     }
 
     pub fn withdraw(&mut self, withdraw: Withdraw) {

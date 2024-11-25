@@ -78,6 +78,11 @@ unsafe fn stake_from_contract(arg_len: u32) -> u32 {
     })
 }
 
+#[no_mangle]
+unsafe fn unstake_from_contract(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |unstake| STATE.unstake_from_contract(unstake))
+}
+
 // "Feeder" queries
 
 #[no_mangle]
