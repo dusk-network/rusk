@@ -8,7 +8,7 @@
     mdiArrowUpBoldBoxOutline,
     mdiWalletOutline,
   } from "@mdi/js";
-  import { areValidGasSettings, deductLuxFeeFrom } from "$lib/contracts";
+  import { areValidGasSettings } from "$lib/contracts";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
   import { validateAddress } from "$lib/dusk/string";
   import { logo } from "$lib/dusk/icons";
@@ -96,7 +96,7 @@
   });
 
   $: fee = gasLimit * gasPrice;
-  $: maxSpendable = deductLuxFeeFrom(luxToDusk(spendable), fee);
+  $: maxSpendable = luxToDusk(spendable - fee);
   $: isAmountValid = amount >= minAmount && amount <= maxSpendable;
   $: totalLuxFee = fee + (amount ? duskToLux(amount) : 0n);
   $: isFeeWithinLimit = totalLuxFee <= spendable;

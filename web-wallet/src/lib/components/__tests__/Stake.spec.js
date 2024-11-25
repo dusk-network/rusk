@@ -8,7 +8,6 @@ import {
   vi,
 } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-import { deductLuxFeeFrom } from "$lib/contracts";
 import {
   createCurrencyFormatter,
   duskToLux,
@@ -79,9 +78,9 @@ describe("Stake", () => {
     target: document.body,
   };
 
-  const maxSpendable = deductLuxFeeFrom(
-    luxToDusk(baseProps.spendable),
-    baseProps.gasSettings.gasPrice * baseProps.gasSettings.gasLimit
+  const maxSpendableDusk = luxToDusk(
+    baseProps.spendable -
+      baseProps.gasSettings.gasPrice * baseProps.gasSettings.gasLimit
   );
 
   afterEach(() => {
@@ -114,7 +113,7 @@ describe("Stake", () => {
     expect(amountInput.getAttribute("min")).toBe(
       luxToDusk(baseProps.minAllowedStake).toString()
     );
-    expect(amountInput.getAttribute("max")).toBe(maxSpendable.toString());
+    expect(amountInput.getAttribute("max")).toBe(maxSpendableDusk.toString());
     expect(container.firstChild).toMatchSnapshot();
   });
 
@@ -127,9 +126,8 @@ describe("Stake", () => {
         gasPrice: 40000000n,
       },
     };
-    const currentMaxSpendable = deductLuxFeeFrom(
-      luxToDusk(props.spendable),
-      props.gasSettings.gasPrice * props.gasSettings.gasLimit
+    const currentMaxSpendableDusk = luxToDusk(
+      props.spendable - props.gasSettings.gasPrice * props.gasSettings.gasLimit
     );
     const { getByRole } = render(Stake, { ...baseOptions, props });
     const nextButton = getByRole("button", { name: "Next" });
@@ -141,7 +139,7 @@ describe("Stake", () => {
       luxToDusk(baseProps.minAllowedStake).toString()
     );
     expect(amountInput.getAttribute("max")).toBe(
-      currentMaxSpendable.toString()
+      currentMaxSpendableDusk.toString()
     );
   });
 
@@ -153,7 +151,7 @@ describe("Stake", () => {
 
     const amountInput = getByRole("spinbutton");
 
-    expect(amountInput).toHaveValue(maxSpendable);
+    expect(amountInput).toHaveValue(maxSpendableDusk);
   });
 
   it("should not change the default amount (min stake amount) in the textbox if the user clicks the related button and the balance is zero", async () => {
@@ -290,7 +288,7 @@ describe("Stake", () => {
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
-        duskToLux(maxSpendable),
+        duskToLux(maxSpendableDusk),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
