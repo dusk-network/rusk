@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix inconsistent terminology usage for "Mnemonic Phrase" [#3035]
 - Fix auto-sync not working after restoring a wallet [#3042]
 - Fix application crash on empty amount (Stake Flow) [#3036]
+- Fix incorrect fee deduction and negative UI display (Allocate flow) [#3056]
 
 ## [0.8.0] - 2024-11-19
 
@@ -373,6 +374,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3035]: https://github.com/dusk-network/rusk/issues/3035
 [#3036]: https://github.com/dusk-network/rusk/issues/3036
 [#3042]: https://github.com/dusk-network/rusk/issues/3042
+[#3056]: https://github.com/dusk-network/rusk/issues/3056
 
 <!-- VERSIONS -->
 

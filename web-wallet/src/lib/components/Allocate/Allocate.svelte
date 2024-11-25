@@ -69,8 +69,8 @@
 
     if (difference !== 0n) {
       const transactionInfo = isShielding
-        ? await walletStore.shield(difference - fee, gas)
-        : await walletStore.unshield(-difference - fee, gas);
+        ? await walletStore.shield(difference, gas)
+        : await walletStore.unshield(-difference, gas);
 
       return transactionInfo.hash;
     }
@@ -276,9 +276,7 @@
           </dt>
           <dd class="review-transaction__value operation__review-amount">
             <span>
-              {isShielding
-                ? `${formatter(luxToDusk(unshieldedBalance - unshielded - fee))} DUSK`
-                : `${formatter(luxToDusk(shieldedBalance - shielded - fee))} DUSK`}
+              {`${formatter(luxToDusk(isShielding ? difference : -difference))} DUSK`}
             </span>
             <Icon
               className="dusk-amount__icon"
@@ -319,8 +317,7 @@
           <p>
             The fee will be deducted from your <b
               >{isUnshielding ? "shielded" : "public"}</b
-            > balance, with the maximum estimated fee reserved before allocation.
-            This guarantees sufficient coverage for the transaction.
+            > balance.
           </p>
         </Banner>
       </div>
