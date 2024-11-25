@@ -6,6 +6,7 @@
 
 //! Types used by Dusk's stake contract.
 
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
@@ -131,6 +132,64 @@ impl Stake {
             .copy_from_slice(&self.value.to_bytes());
 
         bytes
+    }
+}
+
+/// Withdraw some value from the stake contract to a smart contract
+/// 
+/// This struct contains the information necessary to perform the withdrawal,
+/// including the account initiating the withdrawal, the amount being withdrawn,
+/// and the name of the function to invoke on the target contract.
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct WithdrawToContract {
+    account: BlsPublicKey,
+    value: u64,
+    fn_name: String,
+}
+
+impl WithdrawToContract {
+    /// Creates a new `WithdrawToContract` instance.
+    ///
+    /// # Parameters
+    /// - `account`: The BLS public key of the account initiating the
+    ///   withdrawal.
+    /// - `value`: The amount of the withdrawal in LUX
+    /// - `fn_name`: The name of the function to invoke on the target contract
+    ///   as callback for the `contract_to_contract` method.
+    ///
+    /// # Returns
+    /// A new `WithdrawToContract` instance with the specified account, value,
+    /// and function name.
+    pub fn new(
+        account: BlsPublicKey,
+        value: u64,
+        fn_name: impl Into<String>,
+    ) -> Self {
+        Self {
+            account,
+            value,
+            fn_name: fn_name.into(),
+        }
+    }
+
+    /// Returns the account initiating the withdrawal.
+    #[must_use]
+    pub fn account(&self) -> &BlsPublicKey {
+        &self.account
+    }
+
+    /// Returns the value (amount) of the withdrawal.
+    #[must_use]
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+
+    /// Returns the name of the callback function to invoke on the target
+    /// contract.
+    #[must_use]
+    pub fn fn_name(&self) -> &str {
+        &self.fn_name
     }
 }
 
