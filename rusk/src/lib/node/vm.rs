@@ -106,7 +106,7 @@ impl VMExecution for Rusk {
     }
 
     fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {
-        self.session(0, Some(commit))
+        self.query_session(Some(commit))
             .map_err(|e| anyhow::anyhow!("Cannot open session {e}"))?;
         self.set_current_commit(commit);
         Ok(())

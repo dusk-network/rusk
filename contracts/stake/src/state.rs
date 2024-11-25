@@ -37,10 +37,6 @@ pub struct StakeState {
     burnt_amount: u64,
     previous_block_state:
         BTreeMap<[u8; BlsPublicKey::SIZE], (Option<StakeData>, BlsPublicKey)>,
-    // This is needed just to keep track of blocks to automatically clear the
-    // prev_block_state. Future implementations will rely on
-    // `before_state_transition` to handle that
-    previous_block_height: u64,
 }
 
 const STAKE_CONTRACT_VERSION: u64 = 8;
@@ -51,7 +47,6 @@ impl StakeState {
             stakes: BTreeMap::new(),
             burnt_amount: 0u64,
             previous_block_state: BTreeMap::new(),
-            previous_block_height: 0,
         }
     }
 
@@ -59,17 +54,7 @@ impl StakeState {
         self.previous_block_state.clear()
     }
 
-    fn check_new_block(&mut self) {
-        let current_height = rusk_abi::block_height();
-        if current_height != self.previous_block_height {
-            self.previous_block_height = current_height;
-            self.on_new_block();
-        }
-    }
-
     pub fn stake(&mut self, stake: Stake) {
-        self.check_new_block();
-
         let value = stake.value();
         let keys = *stake.keys();
         let account = &keys.account;
@@ -135,8 +120,6 @@ impl StakeState {
     }
 
     pub fn unstake(&mut self, unstake: Withdraw) {
-        self.check_new_block();
-
         let transfer_withdraw = unstake.transfer_withdraw();
         let account = *unstake.account();
         let value = transfer_withdraw.value();
@@ -271,11 +254,6 @@ impl StakeState {
     ///
     /// *PANIC* If a stake does not exist in the map
     pub fn reward(&mut self, rewards: Vec<Reward>) {
-        // since we assure that reward is called at least once per block, this
-        // call is necessary to ensure that there are no inconsistencies in
-        // `prev_block_state`.
-        self.check_new_block();
-
         for reward in &rewards {
             let (stake, _) = self
                 .get_stake_mut(&reward.account)
@@ -307,8 +285,6 @@ impl StakeState {
     /// depleted and the provisioner eligibility is shifted to the
     /// next epoch as well
     pub fn slash(&mut self, account: &BlsPublicKey, to_slash: Option<u64>) {
-        self.check_new_block();
-
         let (stake, _) = self
             .get_stake_mut(account)
             .expect("The stake to slash should exist");
@@ -373,8 +349,6 @@ impl StakeState {
         to_slash: Option<u64>,
         severity: Option<u8>,
     ) {
-        self.check_new_block();
-
         let (stake, _) = self
             .get_stake_mut(account)
             .expect("The stake to slash should exist");
