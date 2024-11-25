@@ -383,6 +383,50 @@ impl StakeState {
         }
     }
 
+    pub fn withdraw_to_contract(&mut self, withdraw: WithdrawToContract) {
+        let account = withdraw.account();
+        let value = withdraw.value();
+
+        let (loaded_stake, keys) = self
+            .get_stake_mut(account)
+            .expect("A stake should exist in the map to get rewards!");
+
+        // ensure no 0 reward is executed,
+        if value == 0 {
+            panic!("Withdrawing 0 reward is not allowed");
+        }
+
+        // ensure that the withdrawal amount is not greater than the current
+        // reward
+        if value > loaded_stake.reward {
+            panic!("Value to withdraw is higher than available reward");
+        }
+
+        let funds_key = Self::unwrap_contract_funds(&keys.funds);
+        let caller =
+            rusk_abi::caller().expect("unstake must be called by a contract");
+        assert_eq!(&caller, funds_key, "Invalid contract caller");
+
+        let to_contract = ContractToContract {
+            contract: caller,
+            fn_name: withdraw.fn_name().into(),
+            value,
+            data: Vec::new(),
+        };
+
+        let _: () =
+            rusk_abi::call(TRANSFER_CONTRACT, "mint_to_contract", &to_contract)
+                .expect("Withdrawing reward to contract should succeed");
+
+        // update the state accordingly
+        loaded_stake.reward -= value;
+        rusk_abi::emit("withdraw", StakeEvent::new(*keys, value));
+
+        if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
+            self.stakes.remove(&account.to_bytes());
+        }
+    }
+
     /// Gets a reference to a stake.
     pub fn get_stake(&self, key: &BlsPublicKey) -> Option<&StakeData> {
         self.stakes.get(&key.to_bytes()).map(|(s, _)| s)

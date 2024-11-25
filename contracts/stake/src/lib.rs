@@ -83,6 +83,11 @@ unsafe fn unstake_from_contract(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |unstake| STATE.unstake_from_contract(unstake))
 }
 
+#[no_mangle]
+unsafe fn withdraw_to_contract(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |rewards| STATE.withdraw_to_contract(rewards))
+}
+
 // "Feeder" queries
 
 #[no_mangle]
