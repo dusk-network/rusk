@@ -1,6 +1,5 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-import { deductLuxFeeFrom } from "$lib/contracts";
 import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
 import { getAsHTMLElement } from "$lib/dusk/test-helpers";
 
@@ -137,9 +136,9 @@ describe("Send", () => {
     });
 
     it("should set the max amount in the textbox if the user clicks the related button", async () => {
-      const maxSpendable = deductLuxFeeFrom(
-        luxToDusk(baseProps.spendable),
-        baseProps.gasSettings.gasPrice * baseProps.gasSettings.gasLimit
+      const maxSpendableDusk = luxToDusk(
+        baseProps.spendable -
+          baseProps.gasSettings.gasPrice * baseProps.gasSettings.gasLimit
       );
       const { getByRole } = render(Send, baseProps);
 
@@ -151,7 +150,7 @@ describe("Send", () => {
 
       await fireEvent.click(useMaxButton);
 
-      expect(amountInput).toHaveValue(maxSpendable);
+      expect(amountInput).toHaveValue(maxSpendableDusk);
       expect(nextButton).toBeEnabled();
     });
 
