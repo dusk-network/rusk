@@ -7,6 +7,7 @@
 pub mod contract_deployment;
 pub mod conversion;
 pub mod deploy;
+pub mod finalization;
 pub mod gas_behavior;
 pub mod moonlight_stake;
 pub mod multi_transfer;
