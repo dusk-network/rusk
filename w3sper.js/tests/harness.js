@@ -19,41 +19,21 @@ const mergeMap = (dest, source, lookup) => {
   return;
 };
 
-import * as ProtocolDriver from "../src/protocol-driver/mod.js";
-import {
-  test as harnessTest,
+export {
+  test,
   assert,
 } from "http://rawcdn.githack.com/mio-mini/test-harness/0.1.0/mod.js";
 
-import { Bookmark } from "../src/mod.js";
+import { Bookmark } from "@dusk/w3sper";
 
-export { assert };
+const WASM_RELEASE_PATH =
+  "../target/wasm32-unknown-unknown/release/wallet_core.wasm";
 
-export async function test(name, fn) {
-  let path = "";
-  switch (test.withLocalWasm) {
-    case "debug":
-      path = "../target/wasm32-unknown-unknown/debug/wallet_core.wasm";
-      break;
-    case "release":
-      path = "../target/wasm32-unknown-unknown/release/wallet_core.wasm";
-      break;
+export function getLocalWasmBuffer() {
+  if (typeof Deno !== "undefined") {
+    return Deno.readFile(WASM_RELEASE_PATH);
   }
-
-  if (path.length > 0 && typeof Deno !== "undefined") {
-    const testFn = async (...args) => {
-      const wasm = await Deno.readFile(path);
-
-      ProtocolDriver.load(
-        wasm,
-        new URL("./assets/debug-imports.js", import.meta.url),
-      );
-
-      await Promise.resolve(fn(...args)).finally(ProtocolDriver.unload);
-    };
-
-    return harnessTest(name, testFn);
-  }
+  return Promise.reject("Can't accesso to file system");
 }
 
 // Define a seed for deterministic profile generation

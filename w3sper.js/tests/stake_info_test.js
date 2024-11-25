@@ -9,11 +9,9 @@ import {
   ProfileGenerator,
   Bookkeeper,
   AccountSyncer,
-} from "../src/mod.js";
+} from "@dusk/w3sper";
 
 import { test, assert, seeder, Treasury } from "./harness.js";
-
-test.withLocalWasm = "release";
 
 /**
  * Tests fetching the stake information using string representations
@@ -26,7 +24,7 @@ test("stake info without profiles", async () => {
     "ocXXBAafr7xFqQTpC1vfdSYdHMXerbPCED2apyUVpLjkuycsizDxwA6b9D7UW91kG58PFKqm9U9NmY9VSwufUFL5rVRSnFSYxbiKK658TF6XjHsHGBzavFJcxAzjjBRM4eF",
   ];
 
-  const network = new Network("http://localhost:8080/");
+  const network = await Network.connect("http://localhost:8080/");
   const syncer = new AccountSyncer(network);
 
   const stakes = await syncer.stakes(users);
@@ -52,6 +50,8 @@ test("stake info without profiles", async () => {
   assert.equal(stakes[1].nonce, 0n);
   assert.equal(stakes[1].faults, 0);
   assert.equal(stakes[1].hardFaults, 0);
+
+  await network.disconnect();
 });
 
 /**
@@ -62,10 +62,11 @@ test("stake info without profiles", async () => {
  * the use of a decoupled cache to retrieve and store the stake information.
  */
 test("stake info with treasury", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);
 
-  const network = new Network("http://localhost:8080/");
   const accounts = new AccountSyncer(network);
 
   const treasury = new Treasury(users);
@@ -104,4 +105,6 @@ test("stake info with treasury", async () => {
   assert.equal(stakes[1].nonce, 0n);
   assert.equal(stakes[1].faults, 0);
   assert.equal(stakes[1].hardFaults, 0);
+
+  await network.disconnect();
 });

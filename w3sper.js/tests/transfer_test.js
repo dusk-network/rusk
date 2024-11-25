@@ -6,49 +6,67 @@
 
 import {
   Network,
-  Gas,
   ProfileGenerator,
   Bookkeeper,
   Bookmark,
   AddressSyncer,
   AccountSyncer,
   Transfer,
-} from "../src/mod.js";
+  useAsProtocolDriver,
+} from "@dusk/w3sper";
 
-import { test, assert, seeder, Treasury } from "./harness.js";
-
-test.withLocalWasm = "release";
+import {
+  test,
+  assert,
+  seeder,
+  Treasury,
+  getLocalWasmBuffer,
+} from "./harness.js";
 
 test("Offline account transfers", async () => {
-  const profiles = new ProfileGenerator(seeder);
-  const users = await Promise.all([profiles.default, profiles.next()]);
-  const to =
-    "oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu";
+  // What is inside this block, uses a local protocol driver instead of fetching
+  // from the network, so it does not need to be connected.
+  // All transactions are signed locally.
+  const offlineOperations = useAsProtocolDriver(
+    await getLocalWasmBuffer(),
+  ).then(async () => {
+    const profiles = new ProfileGenerator(seeder);
+    const to =
+      "oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu";
 
-  const transfers = await Promise.all(
-    [77n, 22n].map((amount, nonce) =>
-      new Transfer(users[1])
-        .amount(amount)
-        .to(to)
-        .nonce(BigInt(nonce))
-        .chain(Network.LOCALNET)
-        .gas({ limit: 500_000_000n })
-        .build(),
-    ),
-  );
+    const users = await Promise.all([profiles.default, profiles.next()]);
 
-  assert.equal(
-    transfers[0].hash,
-    "72bc75e53d31afec67e32df825e5793594d937ae2c8d5b0726e833dc21db2b0d",
-  );
-  assert.equal(transfers[0].nonce, 1n);
+    const transfers = await Promise.all(
+      [77n, 22n].map((amount, nonce) =>
+        new Transfer(users[1])
+          .amount(amount)
+          .to(to)
+          .nonce(BigInt(nonce))
+          .chain(Network.LOCALNET)
+          .gas({ limit: 500_000_000n })
+          .build(),
+      ),
+    );
 
-  assert.equal(
-    transfers[1].hash,
-    "9b4039406a620b7537ab873e17c0ae5442afa4514a59f77b95644effd293936f",
-  );
-  assert.equal(transfers[1].nonce, 2n);
+    assert.equal(
+      transfers[0].hash,
+      "72bc75e53d31afec67e32df825e5793594d937ae2c8d5b0726e833dc21db2b0d",
+    );
+    assert.equal(transfers[0].nonce, 1n);
 
+    assert.equal(
+      transfers[1].hash,
+      "9b4039406a620b7537ab873e17c0ae5442afa4514a59f77b95644effd293936f",
+    );
+    assert.equal(transfers[1].nonce, 2n);
+
+    return { transfers, users };
+  });
+
+  const { transfers, users } = await offlineOperations;
+
+  // Here we gather the transactions generated "offline", we connect to the network,
+  // and propagate all of them
   const network = await Network.connect("http://localhost:8080/");
 
   const balances = await new AccountSyncer(network).balances(users);
