@@ -389,13 +389,13 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             }
 
             // check if we are sending to our own address
-            if wallet.claim(rcvr.clone()).is_ok() {
-                if !prompt::ask_self_send_confirm()? {
-                    // we throw operation cancelled error so it is handeled by
-                    // the event loop and we are just sent
-                    // back to the last screen
-                    return Err(InquireError::OperationCanceled.into());
-                }
+            if wallet.claim(rcvr.clone()).is_ok()
+                && !prompt::ask_self_send_confirm()?
+            {
+                // we throw operation cancelled error so it is handeled by
+                // the event loop and we are just sent
+                // back to the last screen
+                return Err(InquireError::OperationCanceled.into());
             }
 
             prompt::ask_confirm()
