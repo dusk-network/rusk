@@ -13,11 +13,11 @@
     },
     {
       label: "Testnet",
-      url: "https://testnet.apps.dusk.network/explorer",
+      url: "https://apps.testnet.dusk.network/explorer",
     },
     {
       label: "Devnet",
-      url: "https://devnet.apps.dusk.network/explorer",
+      url: "https://apps.devnet.dusk.network/explorer",
     },
   ];
 
