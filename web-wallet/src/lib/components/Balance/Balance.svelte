@@ -8,6 +8,8 @@
   import { logo } from "$lib/dusk/icons";
   import { createNumberFormatter } from "$lib/dusk/number";
 
+  import "./Balance.css";
+
   /** @type {string | undefined} */
   export let className = undefined;
 
@@ -54,16 +56,16 @@
     <h2 class="sr-only">Your Balance:</h2>
   </header>
   <p class="dusk-balance__dusk">
-    <strong>{duskFormatter(totalBalance)}</strong>
-    <strong>{tokenCurrency}</strong>
+    <span>{duskFormatter(totalBalance)}</span>
+    <span>{tokenCurrency}</span>
   </p>
   <p
     class="dusk-balance__fiat"
     class:dusk-balance__fiat--visible={fiatPrice !== undefined}
   >
-    <strong>
+    <span>
       {fiatFormatter(fiatPrice ? fiatPrice * totalBalance : 0)}
-    </strong>
+    </span>
   </p>
 
   <Card className="dusk-balance__usage-details">
@@ -101,30 +103,3 @@
     </div>
   </Card>
 </article>
-
-<style lang="postcss">
-  .dusk-balance__account {
-    display: flex;
-    justify-content: space-between;
-    background-color: var(--background-color);
-    padding: 0.625em 0.75em 0.625em 0.75em;
-    border-radius: 1.5em;
-  }
-
-  .dusk-balance__percentage,
-  .dusk-balance__value {
-    display: flex;
-    gap: var(--small-gap);
-    align-items: center;
-  }
-
-  :global(.dusk-balance) {
-    font-size: 1.25em;
-    font-weight: 500;
-    line-height: 1.5em;
-  }
-
-  .dusk-balance__fiat {
-    margin-bottom: 1em;
-  }
-</style>
