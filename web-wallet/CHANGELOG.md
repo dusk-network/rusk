@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add "Reset Wallet" explanatory copy (Settings) [#3061]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -377,6 +379,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3036]: https://github.com/dusk-network/rusk/issues/3036
 [#3042]: https://github.com/dusk-network/rusk/issues/3042
 [#3056]: https://github.com/dusk-network/rusk/issues/3056
+[#3061]: https://github.com/dusk-network/rusk/issues/3061
 
 <!-- VERSIONS -->
 

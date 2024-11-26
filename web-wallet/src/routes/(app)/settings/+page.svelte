@@ -175,22 +175,30 @@
     <article class="settings-group">
       <header class="settings-group__header">
         <Icon path={mdiRestoreAlert} />
-        <h3 class="h4 settings-group__heading">Danger zone</h3>
+        <h3 class="h4 settings-group__heading">Reset wallet</h3>
       </header>
-      <ErrorDetails
-        error={resetError}
-        summary="An error occurred while resetting the wallet. Please try again."
-      />
-      <Button
-        className="settings-group__button--state--danger"
-        disabled={syncStatus.isInProgress}
-        data-tooltip-disabled={!syncStatus.isInProgress}
-        data-tooltip-id="main-tooltip"
-        data-tooltip-text="Not allowed to reset while syncing"
-        data-tooltip-type="warning"
-        on:click={handleResetWalletClick}
-        text="Reset Wallet"
-      />
+      <div class="settings-group__multi-control-content">
+        <p>
+          Resetting your wallet clears the cache and restores default settings
+          without affecting your funds or transaction history. You’ll need your
+          mnemonic phrase to restore access, so ensure it’s securely stored
+          before proceeding.
+        </p>
+        <ErrorDetails
+          error={resetError}
+          summary="An error occurred while resetting the wallet. Please try again."
+        />
+        <Button
+          className="settings-group__button--state--danger"
+          disabled={syncStatus.isInProgress}
+          data-tooltip-disabled={!syncStatus.isInProgress}
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Not allowed to reset while syncing"
+          data-tooltip-type="warning"
+          on:click={handleResetWalletClick}
+          text="Reset Wallet"
+        />
+      </div>
     </article>
   </div>
 </section>
