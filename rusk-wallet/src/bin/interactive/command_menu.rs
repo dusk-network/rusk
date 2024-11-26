@@ -268,10 +268,10 @@ pub(crate) async fn online(
             ProfileOp::Run(Box::new(Command::Withdraw {
                 address: Some(addr),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                reward: prompt::request_token_amt(
+                reward: Some(prompt::request_token_amt(
                     "withdraw rewards",
                     max_withdraw,
-                )?,
+                )?),
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
                     mempool_gas_prices,

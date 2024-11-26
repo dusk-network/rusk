@@ -197,9 +197,11 @@ pub(crate) enum Command {
         #[arg(short, long)]
         address: Option<Address>,
 
-        /// Amount of rewards to withdraw from the stake contract
+        /// Amount of rewards to withdraw from the stake contract. If the
+        /// reward is not provided, all the rewards are withdrawn at
+        /// once
         #[arg(short, long)]
-        reward: Dusk,
+        reward: Option<Dusk>,
 
         /// Max amount of gas for this transaction
         #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
