@@ -73,7 +73,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
       </div>
        
       <article
-        class="dusk-balance svelte-ila1ms"
+        class="dusk-balance"
       >
         <header
           class="dusk-balance__header"
@@ -88,21 +88,21 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
         <p
           class="dusk-balance__dusk"
         >
-          <strong>
+          <span>
             3,517.500000000
-          </strong>
+          </span>
            
-          <strong>
+          <span>
             DUSK
-          </strong>
+          </span>
         </p>
          
         <p
-          class="dusk-balance__fiat svelte-ila1ms"
+          class="dusk-balance__fiat"
         >
-          <strong>
+          <span>
             $0.00
-          </strong>
+          </span>
         </p>
          
         <div
@@ -113,10 +113,10 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
             class="dusk-card__body-container"
           >
             <div
-              class="dusk-balance__account svelte-ila1ms"
+              class="dusk-balance__account"
             >
               <span
-                class="dusk-balance__percentage svelte-ila1ms"
+                class="dusk-balance__percentage"
               >
                 <svg
                   class="dusk-icon dusk-icon--size--default"
@@ -135,7 +135,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
               </span>
                
               <span
-                class="dusk-balance__value svelte-ila1ms"
+                class="dusk-balance__value"
               >
                 2,345.000000000
                 <svg
@@ -154,10 +154,10 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
             </div>
              
             <div
-              class="dusk-balance__account svelte-ila1ms"
+              class="dusk-balance__account"
             >
               <span
-                class="dusk-balance__percentage svelte-ila1ms"
+                class="dusk-balance__percentage"
               >
                 <svg
                   class="dusk-icon dusk-icon--size--default"
@@ -176,7 +176,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
               </span>
                
               <span
-                class="dusk-balance__value svelte-ila1ms"
+                class="dusk-balance__value"
               >
                 1,172.500000000
                 <svg
@@ -339,7 +339,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
     </div>
      
     <article
-      class="dusk-balance svelte-ila1ms"
+      class="dusk-balance"
     >
       <header
         class="dusk-balance__header"
@@ -354,21 +354,21 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
       <p
         class="dusk-balance__dusk"
       >
-        <strong>
+        <span>
           3,517.500000000
-        </strong>
+        </span>
          
-        <strong>
+        <span>
           DUSK
-        </strong>
+        </span>
       </p>
        
       <p
-        class="dusk-balance__fiat svelte-ila1ms"
+        class="dusk-balance__fiat"
       >
-        <strong>
+        <span>
           $0.00
-        </strong>
+        </span>
       </p>
        
       <div
@@ -379,10 +379,10 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
           class="dusk-card__body-container"
         >
           <div
-            class="dusk-balance__account svelte-ila1ms"
+            class="dusk-balance__account"
           >
             <span
-              class="dusk-balance__percentage svelte-ila1ms"
+              class="dusk-balance__percentage"
             >
               <svg
                 class="dusk-icon dusk-icon--size--default"
@@ -401,7 +401,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
             </span>
              
             <span
-              class="dusk-balance__value svelte-ila1ms"
+              class="dusk-balance__value"
             >
               2,345.000000000
               <svg
@@ -420,10 +420,10 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
           </div>
            
           <div
-            class="dusk-balance__account svelte-ila1ms"
+            class="dusk-balance__account"
           >
             <span
-              class="dusk-balance__percentage svelte-ila1ms"
+              class="dusk-balance__percentage"
             >
               <svg
                 class="dusk-icon dusk-icon--size--default"
@@ -442,7 +442,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
             </span>
              
             <span
-              class="dusk-balance__value svelte-ila1ms"
+              class="dusk-balance__value"
             >
               1,172.500000000
               <svg
@@ -605,7 +605,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
       </div>
        
       <article
-        class="dusk-balance svelte-ila1ms"
+        class="dusk-balance"
       >
         <header
           class="dusk-balance__header"
@@ -620,21 +620,21 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
         <p
           class="dusk-balance__dusk"
         >
-          <strong>
+          <span>
             3,517.500000000
-          </strong>
+          </span>
            
-          <strong>
+          <span>
             DUSK
-          </strong>
+          </span>
         </p>
          
         <p
-          class="dusk-balance__fiat svelte-ila1ms dusk-balance__fiat--visible"
+          class="dusk-balance__fiat dusk-balance__fiat--visible"
         >
-          <strong>
+          <span>
             $1,758.75
-          </strong>
+          </span>
         </p>
          
         <div
@@ -645,10 +645,10 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
             class="dusk-card__body-container"
           >
             <div
-              class="dusk-balance__account svelte-ila1ms"
+              class="dusk-balance__account"
             >
               <span
-                class="dusk-balance__percentage svelte-ila1ms"
+                class="dusk-balance__percentage"
               >
                 <svg
                   class="dusk-icon dusk-icon--size--default"
@@ -667,7 +667,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
               </span>
                
               <span
-                class="dusk-balance__value svelte-ila1ms"
+                class="dusk-balance__value"
               >
                 2,345.000000000
                 <svg
@@ -686,10 +686,10 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
             </div>
              
             <div
-              class="dusk-balance__account svelte-ila1ms"
+              class="dusk-balance__account"
             >
               <span
-                class="dusk-balance__percentage svelte-ila1ms"
+                class="dusk-balance__percentage"
               >
                 <svg
                   class="dusk-icon dusk-icon--size--default"
@@ -708,7 +708,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
               </span>
                
               <span
-                class="dusk-balance__value svelte-ila1ms"
+                class="dusk-balance__value"
               >
                 1,172.500000000
                 <svg
@@ -892,7 +892,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
     </div>
      
     <article
-      class="dusk-balance svelte-ila1ms"
+      class="dusk-balance"
     >
       <header
         class="dusk-balance__header"
@@ -907,21 +907,21 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
       <p
         class="dusk-balance__dusk"
       >
-        <strong>
+        <span>
           3,517.500000000
-        </strong>
+        </span>
          
-        <strong>
+        <span>
           DUSK
-        </strong>
+        </span>
       </p>
        
       <p
-        class="dusk-balance__fiat svelte-ila1ms dusk-balance__fiat--visible"
+        class="dusk-balance__fiat dusk-balance__fiat--visible"
       >
-        <strong>
+        <span>
           $1,758.75
-        </strong>
+        </span>
       </p>
        
       <div
@@ -932,10 +932,10 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
           class="dusk-card__body-container"
         >
           <div
-            class="dusk-balance__account svelte-ila1ms"
+            class="dusk-balance__account"
           >
             <span
-              class="dusk-balance__percentage svelte-ila1ms"
+              class="dusk-balance__percentage"
             >
               <svg
                 class="dusk-icon dusk-icon--size--default"
@@ -954,7 +954,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
             </span>
              
             <span
-              class="dusk-balance__value svelte-ila1ms"
+              class="dusk-balance__value"
             >
               2,345.000000000
               <svg
@@ -973,10 +973,10 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
           </div>
            
           <div
-            class="dusk-balance__account svelte-ila1ms"
+            class="dusk-balance__account"
           >
             <span
-              class="dusk-balance__percentage svelte-ila1ms"
+              class="dusk-balance__percentage"
             >
               <svg
                 class="dusk-icon dusk-icon--size--default"
@@ -995,7 +995,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
             </span>
              
             <span
-              class="dusk-balance__value svelte-ila1ms"
+              class="dusk-balance__value"
             >
               1,172.500000000
               <svg
@@ -1166,7 +1166,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
       </div>
        
       <article
-        class="dusk-balance svelte-ila1ms"
+        class="dusk-balance"
       >
         <header
           class="dusk-balance__header"
@@ -1181,21 +1181,21 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
         <p
           class="dusk-balance__dusk"
         >
-          <strong>
+          <span>
             3,517.500000000
-          </strong>
+          </span>
            
-          <strong>
+          <span>
             DUSK
-          </strong>
+          </span>
         </p>
          
         <p
-          class="dusk-balance__fiat svelte-ila1ms dusk-balance__fiat--visible"
+          class="dusk-balance__fiat dusk-balance__fiat--visible"
         >
-          <strong>
+          <span>
             $1,758.75
-          </strong>
+          </span>
         </p>
          
         <div
@@ -1206,10 +1206,10 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
             class="dusk-card__body-container"
           >
             <div
-              class="dusk-balance__account svelte-ila1ms"
+              class="dusk-balance__account"
             >
               <span
-                class="dusk-balance__percentage svelte-ila1ms"
+                class="dusk-balance__percentage"
               >
                 <svg
                   class="dusk-icon dusk-icon--size--default"
@@ -1228,7 +1228,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
               </span>
                
               <span
-                class="dusk-balance__value svelte-ila1ms"
+                class="dusk-balance__value"
               >
                 2,345.000000000
                 <svg
@@ -1247,10 +1247,10 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
             </div>
              
             <div
-              class="dusk-balance__account svelte-ila1ms"
+              class="dusk-balance__account"
             >
               <span
-                class="dusk-balance__percentage svelte-ila1ms"
+                class="dusk-balance__percentage"
               >
                 <svg
                   class="dusk-icon dusk-icon--size--default"
@@ -1269,7 +1269,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
               </span>
                
               <span
-                class="dusk-balance__value svelte-ila1ms"
+                class="dusk-balance__value"
               >
                 1,172.500000000
                 <svg

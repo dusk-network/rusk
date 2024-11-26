@@ -2,7 +2,7 @@
 
 exports[`Balance > renders the Balance component 1`] = `
 <article
-  class="dusk-balance svelte-ila1ms"
+  class="dusk-balance"
 >
   <header
     class="dusk-balance__header"
@@ -17,21 +17,21 @@ exports[`Balance > renders the Balance component 1`] = `
   <p
     class="dusk-balance__dusk"
   >
-    <strong>
+    <span>
       0.003000000
-    </strong>
+    </span>
      
-    <strong>
+    <span>
       DUSK
-    </strong>
+    </span>
   </p>
    
   <p
-    class="dusk-balance__fiat svelte-ila1ms dusk-balance__fiat--visible"
+    class="dusk-balance__fiat dusk-balance__fiat--visible"
   >
-    <strong>
+    <span>
       $0.03
-    </strong>
+    </span>
   </p>
    
   <div
@@ -42,10 +42,10 @@ exports[`Balance > renders the Balance component 1`] = `
       class="dusk-card__body-container"
     >
       <div
-        class="dusk-balance__account svelte-ila1ms"
+        class="dusk-balance__account"
       >
         <span
-          class="dusk-balance__percentage svelte-ila1ms"
+          class="dusk-balance__percentage"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -64,7 +64,7 @@ exports[`Balance > renders the Balance component 1`] = `
         </span>
          
         <span
-          class="dusk-balance__value svelte-ila1ms"
+          class="dusk-balance__value"
         >
           0.001000000
           <svg
@@ -83,10 +83,10 @@ exports[`Balance > renders the Balance component 1`] = `
       </div>
        
       <div
-        class="dusk-balance__account svelte-ila1ms"
+        class="dusk-balance__account"
       >
         <span
-          class="dusk-balance__percentage svelte-ila1ms"
+          class="dusk-balance__percentage"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -105,7 +105,7 @@ exports[`Balance > renders the Balance component 1`] = `
         </span>
          
         <span
-          class="dusk-balance__value svelte-ila1ms"
+          class="dusk-balance__value"
         >
           0.002000000
           <svg
@@ -131,7 +131,7 @@ exports[`Balance > renders the Balance component 1`] = `
 
 exports[`Balance > should not display the fiat value if the fiat price is \`undefined\` 1`] = `
 <article
-  class="dusk-balance svelte-ila1ms"
+  class="dusk-balance"
 >
   <header
     class="dusk-balance__header"
@@ -146,21 +146,21 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
   <p
     class="dusk-balance__dusk"
   >
-    <strong>
+    <span>
       0.003000000
-    </strong>
+    </span>
      
-    <strong>
+    <span>
       DUSK
-    </strong>
+    </span>
   </p>
    
   <p
-    class="dusk-balance__fiat svelte-ila1ms"
+    class="dusk-balance__fiat"
   >
-    <strong>
+    <span>
       $0.00
-    </strong>
+    </span>
   </p>
    
   <div
@@ -171,10 +171,10 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
       class="dusk-card__body-container"
     >
       <div
-        class="dusk-balance__account svelte-ila1ms"
+        class="dusk-balance__account"
       >
         <span
-          class="dusk-balance__percentage svelte-ila1ms"
+          class="dusk-balance__percentage"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -193,7 +193,7 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
         </span>
          
         <span
-          class="dusk-balance__value svelte-ila1ms"
+          class="dusk-balance__value"
         >
           0.001000000
           <svg
@@ -212,10 +212,10 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
       </div>
        
       <div
-        class="dusk-balance__account svelte-ila1ms"
+        class="dusk-balance__account"
       >
         <span
-          class="dusk-balance__percentage svelte-ila1ms"
+          class="dusk-balance__percentage"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -234,7 +234,7 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
         </span>
          
         <span
-          class="dusk-balance__value svelte-ila1ms"
+          class="dusk-balance__value"
         >
           0.002000000
           <svg
@@ -260,7 +260,7 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
 
 exports[`Balance > should update the Balance component when the props change 1`] = `
 <article
-  class="dusk-balance svelte-ila1ms"
+  class="dusk-balance"
 >
   <header
     class="dusk-balance__header"
@@ -275,21 +275,21 @@ exports[`Balance > should update the Balance component when the props change 1`]
   <p
     class="dusk-balance__dusk"
   >
-    <strong>
+    <span>
       0.003000000
-    </strong>
+    </span>
      
-    <strong>
+    <span>
       DUSK
-    </strong>
+    </span>
   </p>
    
   <p
-    class="dusk-balance__fiat svelte-ila1ms dusk-balance__fiat--visible"
+    class="dusk-balance__fiat dusk-balance__fiat--visible"
   >
-    <strong>
+    <span>
       $0.03
-    </strong>
+    </span>
   </p>
    
   <div
@@ -300,10 +300,10 @@ exports[`Balance > should update the Balance component when the props change 1`]
       class="dusk-card__body-container"
     >
       <div
-        class="dusk-balance__account svelte-ila1ms"
+        class="dusk-balance__account"
       >
         <span
-          class="dusk-balance__percentage svelte-ila1ms"
+          class="dusk-balance__percentage"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -322,7 +322,7 @@ exports[`Balance > should update the Balance component when the props change 1`]
         </span>
          
         <span
-          class="dusk-balance__value svelte-ila1ms"
+          class="dusk-balance__value"
         >
           0.001000000
           <svg
@@ -341,10 +341,10 @@ exports[`Balance > should update the Balance component when the props change 1`]
       </div>
        
       <div
-        class="dusk-balance__account svelte-ila1ms"
+        class="dusk-balance__account"
       >
         <span
-          class="dusk-balance__percentage svelte-ila1ms"
+          class="dusk-balance__percentage"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -363,7 +363,7 @@ exports[`Balance > should update the Balance component when the props change 1`]
         </span>
          
         <span
-          class="dusk-balance__value svelte-ila1ms"
+          class="dusk-balance__value"
         >
           0.002000000
           <svg
@@ -389,7 +389,7 @@ exports[`Balance > should update the Balance component when the props change 1`]
 
 exports[`Balance > should update the Balance component when the props change 2`] = `
 <article
-  class="dusk-balance svelte-ila1ms"
+  class="dusk-balance"
 >
   <header
     class="dusk-balance__header"
@@ -404,21 +404,21 @@ exports[`Balance > should update the Balance component when the props change 2`]
   <p
     class="dusk-balance__dusk"
   >
-    <strong>
+    <span>
       0,003000000
-    </strong>
+    </span>
      
-    <strong>
+    <span>
       DUSK
-    </strong>
+    </span>
   </p>
    
   <p
-    class="dusk-balance__fiat svelte-ila1ms dusk-balance__fiat--visible"
+    class="dusk-balance__fiat dusk-balance__fiat--visible"
   >
-    <strong>
+    <span>
       0,06 €
-    </strong>
+    </span>
   </p>
    
   <div
@@ -429,10 +429,10 @@ exports[`Balance > should update the Balance component when the props change 2`]
       class="dusk-card__body-container"
     >
       <div
-        class="dusk-balance__account svelte-ila1ms"
+        class="dusk-balance__account"
       >
         <span
-          class="dusk-balance__percentage svelte-ila1ms"
+          class="dusk-balance__percentage"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -451,7 +451,7 @@ exports[`Balance > should update the Balance component when the props change 2`]
         </span>
          
         <span
-          class="dusk-balance__value svelte-ila1ms"
+          class="dusk-balance__value"
         >
           0,000500000
           <svg
@@ -470,10 +470,10 @@ exports[`Balance > should update the Balance component when the props change 2`]
       </div>
        
       <div
-        class="dusk-balance__account svelte-ila1ms"
+        class="dusk-balance__account"
       >
         <span
-          class="dusk-balance__percentage svelte-ila1ms"
+          class="dusk-balance__percentage"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -492,7 +492,7 @@ exports[`Balance > should update the Balance component when the props change 2`]
         </span>
          
         <span
-          class="dusk-balance__value svelte-ila1ms"
+          class="dusk-balance__value"
         >
           0,002500000
           <svg
