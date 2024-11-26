@@ -87,7 +87,7 @@ pub(crate) async fn run_loop(
             match op {
                 Ok(ProfileOp::Run(cmd)) => {
                     // request confirmation before running
-                    if confirm(&cmd, wallet)? {
+                    if confirm(&cmd, wallet).await? {
                         // run command
                         prompt::hide_cursor()?;
                         let res = match cmd.run(wallet, settings).await {
@@ -368,7 +368,10 @@ async fn menu_wallet(
 }
 
 /// Request user confirmation for a transfer transaction
-fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
+async fn confirm(
+    cmd: &Command,
+    wallet: &Wallet<WalletFile>,
+) -> anyhow::Result<bool> {
     match cmd {
         Command::Transfer {
             sender,
@@ -441,9 +444,18 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_price,
         } => {
             let sender = address.as_ref().ok_or(Error::BadAddress)?;
+            let sender_index = wallet.find_index(sender)?;
             let max_fee = gas_limit * gas_price;
-            let withdraw_from =
-                wallet.public_address(wallet.find_index(sender)?)?;
+            let withdraw_from = wallet.public_address(sender_index)?;
+
+            let total_rewards = wallet.get_stake_reward(sender_index).await?;
+
+            // withdraw all rewards if no amt specified
+            let reward = if let Some(withdraw_reward) = reward {
+                withdraw_reward
+            } else {
+                &total_rewards
+            };
 
             println!("   > Pay with {}", sender.preview());
             println!("   > Withdraw rewards from {}", withdraw_from.preview());

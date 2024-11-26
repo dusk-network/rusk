@@ -733,12 +733,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self,
         sender_index: u8,
     ) -> Result<Dusk, Error> {
-        let state = self.state()?;
-        let pk = self.public_key(sender_index)?;
-
-        let stake_info = state.fetch_stake(pk).await?;
-        let available_reward =
-            stake_info.map(|s| s.reward).ok_or(Error::NoReward)?;
+        let available_reward = self
+            .stake_info(sender_index)
+            .await?
+            .ok_or(Error::NotStaked)?
+            .reward;
 
         Ok(Dusk::from(available_reward))
     }
