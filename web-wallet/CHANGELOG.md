@@ -9,14 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+- Update Transactions list design [#1922]
+
+### Removed
+
+### Fixed
+
+## [0.8.1] - 2024-11-26
+
+### Added
+
 - Add "Reset Wallet" explanatory copy (Settings) [#3061]
 
 ### Changed
 
-- Update Transactions list design [#1922]
 - Update stake warning's text [#3028]
-
-### Removed
 
 ### Fixed
 
@@ -386,6 +395,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[0.8.1]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.8.1
 [0.8.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.8.0
 [0.7.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.7.0
 [0.6.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.6.0
