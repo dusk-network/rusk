@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change WorldMap location [#2613]
 - Fetch network information locally [#2662]
 - Change Moonlight icon for consistency [#3038]
+- Change hosted Explorer links [#3064]
 
 ### Fixed
 
@@ -94,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2649]: https://github.com/dusk-network/rusk/issues/2649
 [#2662]: https://github.com/dusk-network/rusk/issues/2662
 [#3038]: https://github.com/dusk-network/rusk/issues/3038
+[#3064]: https://github.com/dusk-network/rusk/issues/3064
 
 <!-- VERSIONS -->
 

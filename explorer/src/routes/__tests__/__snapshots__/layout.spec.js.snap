@@ -165,7 +165,7 @@ exports[`Main layout > should render the app's main layout 1`] = `
         
         <a
           class="dusk-anchor dusk-anchor--off-surface footer__link"
-          href="https://testnet.apps.dusk.network/explorer"
+          href="https://apps.testnet.dusk.network/explorer"
         >
           Testnet
         </a>
@@ -173,7 +173,7 @@ exports[`Main layout > should render the app's main layout 1`] = `
         
         <a
           class="dusk-anchor dusk-anchor--off-surface footer__link"
-          href="https://devnet.apps.dusk.network/explorer"
+          href="https://apps.devnet.dusk.network/explorer"
         >
           Devnet
         </a>
