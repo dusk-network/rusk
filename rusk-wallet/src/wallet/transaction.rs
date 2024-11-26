@@ -472,7 +472,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn phoenix_stake_withdraw(
         &self,
         sender_idx: u8,
-        reward_amt: Dusk,
+        reward_amt: Option<Dusk>,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let state = self.state()?;
@@ -495,10 +495,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .map(|s| s.reward)
             .ok_or(Error::NoReward)?;
 
-        // throw error if we try to withdraw more than available
-        if reward_amt > available_reward {
-            return Err(Error::NotEnoughReward);
-        }
+        let reward_amt_withdrawn = if let Some(reward_amt) = reward_amt {
+            // throw error if we try to withdraw more than available
+            if reward_amt > available_reward {
+                return Err(Error::NotEnoughReward);
+            }
+
+            *reward_amt
+        } else {
+            // withdraw all the reward if no amt specified to withdraw
+            available_reward
+        };
 
         let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
@@ -510,7 +517,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             &stake_owner_sk,
             inputs,
             root,
-            *reward_amt,
+            reward_amt_withdrawn,
             gas.limit,
             gas.price,
             chain_id,
@@ -529,7 +536,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn moonlight_stake_withdraw(
         &self,
         sender_idx: u8,
-        reward_amt: Dusk,
+        reward_amt: Option<Dusk>,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
@@ -542,10 +549,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let available_reward =
             stake_info.map(|s| s.reward).ok_or(Error::NoReward)?;
 
-        // throw error if we try to withdraw more than available
-        if reward_amt > available_reward {
-            return Err(Error::NotEnoughReward);
-        }
+        let reward_amt_withdrawn = if let Some(reward_amt) = reward_amt {
+            // throw error if we try to withdraw more than available
+            if reward_amt > available_reward {
+                return Err(Error::NotEnoughReward);
+            }
+
+            *reward_amt
+        } else {
+            // withdraw all the reward if no amt specified to withdraw
+            available_reward
+        };
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);
 
