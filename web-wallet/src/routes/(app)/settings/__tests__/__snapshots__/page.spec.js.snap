@@ -482,44 +482,55 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         <h3
           class="h4 settings-group__heading svelte-zikvd5"
         >
-          Danger zone
+          Reset wallet
         </h3>
       </header>
        
-      <details
-        class="dusk-error-details dusk-error-details__details"
+      <div
+        class="settings-group__multi-control-content svelte-zikvd5"
       >
-        <summary
-          class="dusk-error-details__summary"
-        >
-          An error occurred while resetting the wallet. Please try again.
-        </summary>
+        <p>
+          Resetting your wallet clears the cache and restores default settings
+          without affecting your funds or transaction history. You’ll need your
+          mnemonic phrase to restore access, so ensure it’s securely stored
+          before proceeding.
+        </p>
          
-        <pre
-          class="dusk-error-details__error"
+        <details
+          class="dusk-error-details dusk-error-details__details"
         >
-          			
-          Clear data error
-          
+          <summary
+            class="dusk-error-details__summary"
+          >
+            An error occurred while resetting the wallet. Please try again.
+          </summary>
+           
+          <pre
+            class="dusk-error-details__error"
+          >
+            			
+            Clear data error
+            
 		
-        </pre>
-      </details>
-      
-       
-      <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default settings-group__button--state--danger"
-        data-tooltip-disabled="true"
-        data-tooltip-id="main-tooltip"
-        data-tooltip-text="Not allowed to reset while syncing"
-        data-tooltip-type="warning"
-        type="button"
-      >
-        <span
-          class="dusk-button__text"
+          </pre>
+        </details>
+        
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default settings-group__button--state--danger"
+          data-tooltip-disabled="true"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Not allowed to reset while syncing"
+          data-tooltip-type="warning"
+          type="button"
         >
-          Reset Wallet
-        </span>
-      </button>
+          <span
+            class="dusk-button__text"
+          >
+            Reset Wallet
+          </span>
+        </button>
+      </div>
     </article>
   </div>
 </section>
@@ -1007,26 +1018,37 @@ exports[`Settings > should render the settings page displaying the status of the
         <h3
           class="h4 settings-group__heading svelte-zikvd5"
         >
-          Danger zone
+          Reset wallet
         </h3>
       </header>
        
-      
-       
-      <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default settings-group__button--state--danger"
-        data-tooltip-disabled="true"
-        data-tooltip-id="main-tooltip"
-        data-tooltip-text="Not allowed to reset while syncing"
-        data-tooltip-type="warning"
-        type="button"
+      <div
+        class="settings-group__multi-control-content svelte-zikvd5"
       >
-        <span
-          class="dusk-button__text"
+        <p>
+          Resetting your wallet clears the cache and restores default settings
+          without affecting your funds or transaction history. You’ll need your
+          mnemonic phrase to restore access, so ensure it’s securely stored
+          before proceeding.
+        </p>
+         
+        
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default settings-group__button--state--danger"
+          data-tooltip-disabled="true"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Not allowed to reset while syncing"
+          data-tooltip-type="warning"
+          type="button"
         >
-          Reset Wallet
-        </span>
-      </button>
+          <span
+            class="dusk-button__text"
+          >
+            Reset Wallet
+          </span>
+        </button>
+      </div>
     </article>
   </div>
 </section>
@@ -1514,26 +1536,37 @@ exports[`Settings > should render the settings page displaying the status of the
         <h3
           class="h4 settings-group__heading svelte-zikvd5"
         >
-          Danger zone
+          Reset wallet
         </h3>
       </header>
        
-      
-       
-      <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default settings-group__button--state--danger"
-        data-tooltip-disabled="true"
-        data-tooltip-id="main-tooltip"
-        data-tooltip-text="Not allowed to reset while syncing"
-        data-tooltip-type="warning"
-        type="button"
+      <div
+        class="settings-group__multi-control-content svelte-zikvd5"
       >
-        <span
-          class="dusk-button__text"
+        <p>
+          Resetting your wallet clears the cache and restores default settings
+          without affecting your funds or transaction history. You’ll need your
+          mnemonic phrase to restore access, so ensure it’s securely stored
+          before proceeding.
+        </p>
+         
+        
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default settings-group__button--state--danger"
+          data-tooltip-disabled="true"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Not allowed to reset while syncing"
+          data-tooltip-type="warning"
+          type="button"
         >
-          Reset Wallet
-        </span>
-      </button>
+          <span
+            class="dusk-button__text"
+          >
+            Reset Wallet
+          </span>
+        </button>
+      </div>
     </article>
   </div>
 </section>
