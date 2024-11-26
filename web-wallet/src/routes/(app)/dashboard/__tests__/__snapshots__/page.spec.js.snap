@@ -21,13 +21,13 @@ exports[`Dashboard > should render a card when there is an error getting transac
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Send
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg
@@ -51,13 +51,13 @@ exports[`Dashboard > should render a card when there is an error getting transac
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Receive
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg
@@ -81,13 +81,13 @@ exports[`Dashboard > should render a card when there is an error getting transac
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Stake
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg
@@ -111,13 +111,13 @@ exports[`Dashboard > should render a card when there is an error getting transac
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Shield / Unshield
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg
@@ -141,13 +141,13 @@ exports[`Dashboard > should render a card when there is an error getting transac
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Migrate
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg
@@ -251,13 +251,13 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Send
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg
@@ -281,13 +281,13 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Receive
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg
@@ -311,13 +311,13 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Stake
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg
@@ -341,13 +341,13 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Shield / Unshield
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg
@@ -371,13 +371,13 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           tabindex="0"
         >
           <span
-            class="dashboard-nav__item-label svelte-16m2vzj"
+            class="dashboard-nav__item-label svelte-1opr8zc"
           >
             Migrate
           </span>
            
           <span
-            class="dashboard-nav__item-icons svelte-16m2vzj"
+            class="dashboard-nav__item-icons svelte-1opr8zc"
           >
             
             <svg

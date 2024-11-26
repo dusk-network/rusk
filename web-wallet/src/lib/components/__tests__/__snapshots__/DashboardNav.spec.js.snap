@@ -20,7 +20,7 @@ exports[`DashboardNav > renders the DashboardNav component 1`] = `
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Something
         </span>
@@ -35,7 +35,7 @@ exports[`DashboardNav > renders the DashboardNav component 1`] = `
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Send
         </span>
@@ -50,13 +50,13 @@ exports[`DashboardNav > renders the DashboardNav component 1`] = `
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Receive
         </span>
          
         <span
-          class="dashboard-nav__item-icons svelte-16m2vzj"
+          class="dashboard-nav__item-icons svelte-1opr8zc"
         >
           
           <svg
@@ -80,13 +80,13 @@ exports[`DashboardNav > renders the DashboardNav component 1`] = `
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Stake
         </span>
          
         <span
-          class="dashboard-nav__item-icons svelte-16m2vzj"
+          class="dashboard-nav__item-icons svelte-1opr8zc"
         >
           
           <svg
@@ -150,7 +150,7 @@ exports[`DashboardNav > should display icons if the item's icon array is present
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Something
         </span>
@@ -165,7 +165,7 @@ exports[`DashboardNav > should display icons if the item's icon array is present
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Send
         </span>
@@ -180,13 +180,13 @@ exports[`DashboardNav > should display icons if the item's icon array is present
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Receive
         </span>
          
         <span
-          class="dashboard-nav__item-icons svelte-16m2vzj"
+          class="dashboard-nav__item-icons svelte-1opr8zc"
         >
           
           <svg
@@ -210,13 +210,13 @@ exports[`DashboardNav > should display icons if the item's icon array is present
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Stake
         </span>
          
         <span
-          class="dashboard-nav__item-icons svelte-16m2vzj"
+          class="dashboard-nav__item-icons svelte-1opr8zc"
         >
           
           <svg
@@ -280,7 +280,7 @@ exports[`DashboardNav > should not display icons if the item's icon array is emp
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Something
         </span>
@@ -295,7 +295,7 @@ exports[`DashboardNav > should not display icons if the item's icon array is emp
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Send
         </span>
@@ -310,13 +310,13 @@ exports[`DashboardNav > should not display icons if the item's icon array is emp
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Receive
         </span>
          
         <span
-          class="dashboard-nav__item-icons svelte-16m2vzj"
+          class="dashboard-nav__item-icons svelte-1opr8zc"
         >
           
           <svg
@@ -340,13 +340,13 @@ exports[`DashboardNav > should not display icons if the item's icon array is emp
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Stake
         </span>
          
         <span
-          class="dashboard-nav__item-icons svelte-16m2vzj"
+          class="dashboard-nav__item-icons svelte-1opr8zc"
         >
           
           <svg
@@ -410,7 +410,7 @@ exports[`DashboardNav > should not display icons if the item's icons array is un
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Something
         </span>
@@ -425,7 +425,7 @@ exports[`DashboardNav > should not display icons if the item's icons array is un
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Send
         </span>
@@ -440,13 +440,13 @@ exports[`DashboardNav > should not display icons if the item's icons array is un
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Receive
         </span>
          
         <span
-          class="dashboard-nav__item-icons svelte-16m2vzj"
+          class="dashboard-nav__item-icons svelte-1opr8zc"
         >
           
           <svg
@@ -470,13 +470,13 @@ exports[`DashboardNav > should not display icons if the item's icons array is un
         tabindex="0"
       >
         <span
-          class="dashboard-nav__item-label svelte-16m2vzj"
+          class="dashboard-nav__item-label svelte-1opr8zc"
         >
           Stake
         </span>
          
         <span
-          class="dashboard-nav__item-icons svelte-16m2vzj"
+          class="dashboard-nav__item-icons svelte-1opr8zc"
         >
           
           <svg

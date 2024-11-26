@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhance Allocate flow on full amount allocation [#2938]
 - Broken link in the stake warning [#2990]
 - Change "Transaction created" copy [#2991]
+- Fix button hover style in Dashboard Navigation Menu [#2999]
 - Fix Dashboard navigation menu padding [#3000]
 
 ## [0.7.0] - 2024-11-11
@@ -365,6 +366,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2990]: https://github.com/dusk-network/rusk/issues/2990
 [#2991]: https://github.com/dusk-network/rusk/issues/2991
 [#2997]: https://github.com/dusk-network/rusk/issues/2997
+[#2999]: https://github.com/dusk-network/rusk/issues/2999
 [#3000]: https://github.com/dusk-network/rusk/issues/3000
 [#3006]: https://github.com/dusk-network/rusk/issues/3006
 [#3010]: https://github.com/dusk-network/rusk/issues/3010
