@@ -124,33 +124,6 @@ exports[`Send page > should render the send page 1`] = `
           class="operation__send svelte-npcavd"
         >
           <div
-            class="operation__address-wrapper svelte-npcavd"
-          >
-            <p>
-              Address:
-            </p>
-             
-            <button
-              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--small"
-              disabled=""
-              type="button"
-            >
-              <span
-                class="dusk-button__text"
-              >
-                SCAN QR
-              </span>
-            </button>
-          </div>
-           
-          <textarea
-            class="dusk-textbox dusk-textbox-multiline operation__send-address operation__send-address--invalid"
-            required=""
-          />
-          
-           
-           
-          <div
             class="contract-statuses svelte-1up3579"
           >
             <dl
@@ -185,20 +158,34 @@ exports[`Send page > should render the send page 1`] = `
               </dd>
             </dl>
              
-            <a
-              aria-disabled="false"
-              class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default allocate-button"
-              href="/some-base-path/dashboard/allocate"
+          </div>
+           
+          <div
+            class="operation__address-wrapper svelte-npcavd"
+          >
+            <p>
+              Address:
+            </p>
+             
+            <button
+              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--small"
+              disabled=""
+              type="button"
             >
               <span
-                class="dusk-anchor-button__text"
+                class="dusk-button__text"
               >
-                Shield more DUSK
+                SCAN QR
               </span>
-              
-            </a>
-            
+            </button>
           </div>
+           
+          <textarea
+            class="dusk-textbox dusk-textbox-multiline operation__send-address operation__send-address--invalid"
+            required=""
+          />
+          
+           
            
           <div
             class="scan svelte-1uf7z44"

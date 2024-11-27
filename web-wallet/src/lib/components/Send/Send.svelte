@@ -24,7 +24,6 @@
   } from "$lib/dusk/components";
   import { toast } from "$lib/dusk/components/Toast/store";
   import {
-    AppAnchorButton,
     Banner,
     ContractStatusesList,
     GasFee,
@@ -51,9 +50,6 @@
 
   /** @type {GasStoreContent} */
   export let gasLimits;
-
-  /** @type {boolean} */
-  export let enableAllocateButton = false;
 
   /** @type {boolean} */
   export let enableMoonlightTransactions = false;
@@ -171,6 +167,7 @@
       }}
     >
       <div in:fade|global class="operation__send">
+        <ContractStatusesList {statuses} />
         <div class="operation__address-wrapper">
           <p>Address:</p>
           <Button
@@ -204,16 +201,6 @@
             {/if}
           </Banner>
         {/if}
-        <ContractStatusesList {statuses}>
-          {#if enableAllocateButton}
-            <AppAnchorButton
-              className="allocate-button"
-              href="/dashboard/allocate"
-              text="Shield more DUSK"
-              variant="tertiary"
-            />
-          {/if}
-        </ContractStatusesList>
         <ScanQR
           bind:this={scanQrComponent}
           bind:scanner
@@ -239,16 +226,7 @@
       }}
     >
       <div in:fade|global class="operation__send">
-        <ContractStatusesList {statuses}>
-          {#if enableAllocateButton}
-            <AppAnchorButton
-              className="allocate-button"
-              href="/dashboard/allocate"
-              text="Shield more DUSK"
-              variant="tertiary"
-            />
-          {/if}
-        </ContractStatusesList>
+        <ContractStatusesList {statuses} />
 
         <div class="operation__amount-wrapper">
           <p>Amount:</p>
