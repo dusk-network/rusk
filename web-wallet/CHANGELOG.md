@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update Transactions list design [#1922]
 - Reword "Withdraw Rewards" operation to "Claim Rewards" [#3076]
+- Reword "Shield/Unshield" operation to "Allocate" [#3081]
 
 ### Removed
 
@@ -402,6 +403,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3071]: https://github.com/dusk-network/rusk/issues/3071
 [#3073]: https://github.com/dusk-network/rusk/issues/3073
 [#3076]: https://github.com/dusk-network/rusk/issues/3076
+[#3081]: https://github.com/dusk-network/rusk/issues/3081
 
 <!-- VERSIONS -->
 

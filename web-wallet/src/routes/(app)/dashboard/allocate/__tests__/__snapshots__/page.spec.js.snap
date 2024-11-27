@@ -17,7 +17,7 @@ exports[`Allocate > should render the allocation page 1`] = `
         <h3
           class="h4"
         >
-          Shield / Unshield
+          Allocate
         </h3>
          
         <div
