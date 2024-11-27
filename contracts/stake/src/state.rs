@@ -56,24 +56,15 @@ impl StakeState {
 
     pub fn stake(&mut self, stake: Stake) {
         let value = stake.value();
-        let mut keys = *stake.keys();
         let signature = *stake.signature();
 
         if stake.chain_id() != self.chain_id() {
             panic!("The stake must target the correct chain");
         }
 
-        let prev_stake = self.get_stake(&keys.account).copied();
-        let (loaded_stake, loaded_keys) = self.load_or_create_stake_mut(&keys);
-
-        if loaded_stake.is_empty() {
-            // Update the funds key with the newly provided one
-            // This operation will rollback if the signature is invalid
-            *loaded_keys = keys;
-        } else {
-            // Use the existing keys to verify signatures
-            keys = *loaded_keys;
-        }
+        let account = stake.keys().account;
+        let prev_stake = self.get_stake(&stake.keys().account).copied();
+        let (loaded_stake, keys) = self.load_or_create_stake_mut(stake.keys());
 
         if loaded_stake.amount.is_none() && value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
@@ -106,11 +97,11 @@ impl StakeState {
                 let value = value - locked;
                 amount.locked += locked;
                 amount.value += value;
-                StakeEvent::new(*loaded_keys, value).locked(locked)
+                StakeEvent::new(*keys, value).locked(locked)
             }
             amount => {
                 let _ = amount.insert(StakeAmount::new(value, block_height));
-                StakeEvent::new(*loaded_keys, value)
+                StakeEvent::new(*keys, value)
             }
         };
         rusk_abi::emit("stake", stake_event);
@@ -118,7 +109,7 @@ impl StakeState {
         let key = keys.account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert_with(|| (prev_stake, keys.account));
+            .or_insert((prev_stake, account));
     }
 
     pub fn unstake(&mut self, unstake: Withdraw) {
@@ -254,23 +245,25 @@ impl StakeState {
         self.stakes.insert(keys.account.to_bytes(), (stake, keys));
     }
 
-    /// Gets a mutable reference to the stake of a given `keys`. If said stake
-    /// doesn't exist, a default one is inserted and a mutable reference
-    /// returned.
+    /// Gets a mutable reference to the stake of a given `keys`.
+    ///
+    /// If said stake doesn't exist, a default one is inserted and a mutable
+    /// reference returned.
+    ///
+    /// # Panics
+    /// Panics if the provided keys doesn't match the existing (if any)
     pub(crate) fn load_or_create_stake_mut(
         &mut self,
         keys: &StakeKeys,
     ) -> &mut (StakeData, StakeKeys) {
         let key = keys.account.to_bytes();
-        let is_missing = self.stakes.get(&key).is_none();
 
-        if is_missing {
-            let stake = StakeData::EMPTY;
-            self.stakes.insert(key, (stake, *keys));
-        }
-
-        // SAFETY: unwrap is ok since we're sure we inserted an element
-        self.stakes.get_mut(&key).unwrap()
+        self.stakes
+            .entry(key)
+            .and_modify(|(_, loaded_keys)| {
+                assert_eq!(keys, loaded_keys, "Keys mismatch")
+            })
+            .or_insert_with(|| (StakeData::EMPTY, *keys))
     }
 
     /// Rewards a `account` with the given `value`.
