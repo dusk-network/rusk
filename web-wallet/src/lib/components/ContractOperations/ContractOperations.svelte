@@ -8,6 +8,7 @@
     mdiArrowUpBoldBoxOutline,
     mdiDatabaseArrowDownOutline,
     mdiDatabaseOutline,
+    mdiGiftOpenOutline,
     mdiHelpCircleOutline,
   } from "@mdi/js";
 
@@ -21,11 +22,11 @@
 
   /** @type {Record<string, string>} */
   const operationIcons = {
+    "claim-rewards": mdiGiftOpenOutline,
     receive: mdiArrowDownBoldBoxOutline,
     send: mdiArrowUpBoldBoxOutline,
     stake: mdiDatabaseOutline,
     unstake: mdiDatabaseArrowDownOutline,
-    "withdraw-rewards": mdiDatabaseArrowDownOutline,
   };
 </script>
 

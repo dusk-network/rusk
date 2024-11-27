@@ -37,8 +37,8 @@ export default [
       },
       {
         disabled: false,
-        id: "withdraw-rewards",
-        label: "withdraw rewards",
+        id: "claim-rewards",
+        label: "claim rewards",
         primary: false,
       },
     ],

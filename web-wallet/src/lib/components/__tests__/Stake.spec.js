@@ -349,7 +349,7 @@ describe("Stake", () => {
     });
   });
 
-  describe("Withdraw Rewards operation", () => {
+  describe("Claim Rewards operation", () => {
     const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
 
     beforeAll(() => {
@@ -360,15 +360,15 @@ describe("Stake", () => {
       vi.useRealTimers();
     });
 
-    it("should perform a withdraw rewards, give a success message and supply a link to see the transaction in the explorer", async () => {
+    it("should perform a claim rewards, give a success message and supply a link to see the transaction in the explorer", async () => {
       /** @type {import("svelte").ComponentProps<Stake>} */
-      const props = { ...baseProps, flow: "withdraw-rewards" };
+      const props = { ...baseProps, flow: "claim-rewards" };
 
       const { getByRole, getByText } = render(Stake, props);
 
       await vi.advanceTimersToNextTimerAsync();
 
-      await fireEvent.click(getByRole("button", { name: "Withdraw" }));
+      await fireEvent.click(getByRole("button", { name: "Claim" }));
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
@@ -387,7 +387,7 @@ describe("Stake", () => {
       /** @type {import("svelte").ComponentProps<Stake>} */
       const props = {
         ...baseProps,
-        flow: "unstake",
+        flow: "claim-rewards",
         gasSettings: { gasLimit: 29000000090n, gasPrice: 1n },
       };
 
@@ -395,9 +395,9 @@ describe("Stake", () => {
 
       await vi.advanceTimersToNextTimerAsync();
 
-      const unstakeButton = getByRole("button", { name: "Unstake" });
+      const claimButton = getByRole("button", { name: "Claim" });
 
-      expect(unstakeButton).toBeDisabled();
+      expect(claimButton).toBeDisabled();
     });
   });
 });

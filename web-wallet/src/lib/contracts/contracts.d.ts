@@ -22,4 +22,4 @@ type ContractStatus = {
   value: string | null;
 };
 
-type StakeType = "stake" | "unstake" | "withdraw-rewards";
+type StakeType = "stake" | "unstake" | "claim-rewards";
