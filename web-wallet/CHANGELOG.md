@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove "Shield More Dusk" CTA (Send flow) [#3073]
+
 ### Fixed
 
 - Fix "passphrase" terminology usage with "Mnemonic Phrase" [#3069]
@@ -397,6 +399,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3061]: https://github.com/dusk-network/rusk/issues/3061
 [#3069]: https://github.com/dusk-network/rusk/issues/3069
 [#3071]: https://github.com/dusk-network/rusk/issues/3071
+[#3073]: https://github.com/dusk-network/rusk/issues/3073
 
 <!-- VERSIONS -->
 

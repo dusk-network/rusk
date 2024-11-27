@@ -59,7 +59,6 @@
     {gasSettings}
     {spendable}
     {statuses}
-    enableAllocateButton={import.meta.env.VITE_FEATURE_ALLOCATE === "true"}
     enableMoonlightTransactions={import.meta.env
       .VITE_FEATURE_MOONLIGHT_TRANSACTIONS === "true"}
     on:keyChange={keyChangeHandler}
