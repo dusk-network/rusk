@@ -58,13 +58,20 @@
 
   /** @type {Record<string, (info: StakeInfo) => boolean>} */
   const disablingConditions = {
+    "claim-rewards": (info) => info.reward <= 0n,
     stake: (info) => !!info.amount,
     unstake: (info) => !info.amount || info.amount.total === 0n,
-    "withdraw-rewards": (info) => info.reward <= 0n,
   };
 
   /** @type {Record<StakeType, (...args: any[]) => Promise<string>>} */
   const executeOperations = {
+    "claim-rewards": (gasPrice, gasLimit) =>
+      walletStore
+        .claimRewards(
+          $walletStore.stakeInfo.reward,
+          new Gas({ limit: gasLimit, price: gasPrice })
+        )
+        .then(getKey("hash")),
     stake: (amount, gasPrice, gasLimit) =>
       walletStore
         .stake(amount, new Gas({ limit: gasLimit, price: gasPrice }))
@@ -73,13 +80,6 @@
       walletStore
         .unstake(new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getKey("hash")),
-    "withdraw-rewards": (gasPrice, gasLimit) =>
-      walletStore
-        .withdrawReward(
-          $walletStore.stakeInfo.reward,
-          new Gas({ limit: gasLimit, price: gasPrice })
-        )
-        .then(getKey("hash")),
   };
 
   /** @type {(operations: ContractOperation[]) => ContractOperation[]} */
@@ -87,7 +87,7 @@
 
   /** @type {(operationId: string) => operationId is StakeType} */
   const isStakeOperation = (operationId) =>
-    ["stake", "unstake", "withdraw-rewards"].includes(operationId);
+    ["stake", "unstake", "claim-rewards"].includes(operationId);
 
   /**
    * We want to update the disabled status ourselves only

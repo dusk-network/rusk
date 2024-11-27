@@ -7,6 +7,7 @@
     mdiAlertOutline,
     mdiDatabaseArrowDownOutline,
     mdiDatabaseOutline,
+    mdiGiftOpenOutline,
   } from "@mdi/js";
 
   import { DOCUMENTATION_LINKS, MESSAGES } from "$lib/constants";
@@ -83,24 +84,24 @@
    */
   let stakeAmount = luxToDusk(
     {
+      "claim-rewards": rewards,
       stake: minAllowedStake,
       unstake: staked,
-      "withdraw-rewards": rewards,
     }[flow]
   );
 
   /** @type {Record<StakeType, string>} */
   const confirmLabels = {
+    "claim-rewards": "Claim",
     stake: "Stake",
     unstake: "Unstake",
-    "withdraw-rewards": "Withdraw",
   };
 
   /** @type {Record<StakeType, string>} */
   const overviewLabels = {
+    "claim-rewards": "Rewards Amount",
     stake: "Amount",
     unstake: "Unstake Amount",
-    "withdraw-rewards": "Withdraw Rewards",
   };
 
   const steps = getStepperSteps();
@@ -323,7 +324,11 @@
         disabled: flow === "stake" ? stakeAmount === 0 : !isGasValid,
         icon: {
           path:
-            flow === "stake" ? mdiDatabaseOutline : mdiDatabaseArrowDownOutline,
+            flow === "unstake"
+              ? mdiDatabaseArrowDownOutline
+              : flow === "stake"
+                ? mdiDatabaseOutline
+                : mdiGiftOpenOutline,
           position: "before",
         },
         label: confirmLabels[flow],

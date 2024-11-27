@@ -323,7 +323,7 @@ describe("Wallet store", async () => {
     const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
 
     /**
-     * @typedef { "shield" | "stake" | "transfer" | "unshield" | "unstake" | "withdrawReward" } TransferMethod
+     * @typedef { "shield" | "stake" | "transfer" | "unshield" | "unstake" | "claimRewards" } TransferMethod
      */
 
     /**
@@ -524,8 +524,8 @@ describe("Wallet store", async () => {
       await walletStoreTransferCheck("unshield", [amount, gas]);
     });
 
-    it("should expose a method to withdraw the rewards", async () => {
-      await walletStoreTransferCheck("withdrawReward", [amount, gas]);
+    it("should expose a method to claim the rewards", async () => {
+      await walletStoreTransferCheck("claimRewards", [amount, gas]);
     });
   });
 

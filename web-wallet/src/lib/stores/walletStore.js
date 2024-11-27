@@ -403,8 +403,8 @@ const unstake = async (gas) =>
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
 
-/** @type {WalletStoreServices["withdrawReward"]} */
-const withdrawReward = async (amount, gas) =>
+/** @type {WalletStoreServices["claimRewards"]} */
+const claimRewards = async (amount, gas) =>
   sync()
     .then(networkStore.connect)
     .then((network) =>
@@ -418,6 +418,7 @@ const withdrawReward = async (amount, gas) =>
 /** @type {WalletStore} */
 export default {
   abortSync,
+  claimRewards,
   clearLocalData,
   clearLocalDataAndInit,
   getTransactionsHistory,
@@ -431,5 +432,4 @@ export default {
   transfer,
   unshield,
   unstake,
-  withdrawReward,
 };
