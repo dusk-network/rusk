@@ -2,6 +2,7 @@
 
 <script>
   import {
+    mdiAccountQuestionOutline,
     mdiApplicationCogOutline,
     mdiArrowLeft,
     mdiCheckNetworkOutline,
@@ -29,6 +30,7 @@
   import { areValidGasSettings } from "$lib/contracts";
   import { logout } from "$lib/navigation";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
+  import Anchor from "$lib/dusk/components/Anchor/Anchor.svelte";
 
   const confirmResetMessage =
     "Confirm you've saved your recovery phrase before resetting the wallet. Proceed?";
@@ -170,6 +172,31 @@
           />
         </label>
       </div>
+    </article>
+    <hr />
+    <article class="settings-group">
+      <header class="settings-group__header">
+        <Icon path={mdiAccountQuestionOutline} />
+        <h3 class="h4 settings-group__heading">Support</h3>
+      </header>
+      <p>
+        Need help or have feedback? Explore the <Anchor
+          rel="noopener noreferrer"
+          target="_blank"
+          href="https://docs.dusk.network">Dusk Docs</Anchor
+        >
+        for detailed documentation, join the
+        <Anchor
+          rel="noopener noreferrer"
+          target="_blank"
+          href="https://discord.gg/dusk-official">community Discord</Anchor
+        > for questions and discussions, and visit the
+        <Anchor
+          rel="noopener noreferrer"
+          target="_blank"
+          href="https://github.com/dusk-network/rusk">GitHub repository</Anchor
+        > to view known issues, report bugs, or share feedback.
+      </p>
     </article>
     <hr />
     <article class="settings-group">

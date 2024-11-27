@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add "Support" section under Settings [#3071]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -394,6 +396,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3056]: https://github.com/dusk-network/rusk/issues/3056
 [#3061]: https://github.com/dusk-network/rusk/issues/3061
 [#3069]: https://github.com/dusk-network/rusk/issues/3069
+[#3071]: https://github.com/dusk-network/rusk/issues/3071
 
 <!-- VERSIONS -->
 
