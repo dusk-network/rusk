@@ -97,6 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2662]: https://github.com/dusk-network/rusk/issues/2662
 [#3038]: https://github.com/dusk-network/rusk/issues/3038
 [#3064]: https://github.com/dusk-network/rusk/issues/3064
+[#3034]: https://github.com/dusk-network/rusk/issues/3034
 
 <!-- VERSIONS -->
 
