@@ -3048,7 +3048,7 @@ exports[`Create > should render the \`Securely store your mnemonic phrase!\` agr
       <strong
         class="banner__title"
       >
-        Dusk will not save and cannot retrieve your passphrase.
+        Dusk will not save and cannot retrieve your mnemonic phrase.
       </strong>
        
       <p>

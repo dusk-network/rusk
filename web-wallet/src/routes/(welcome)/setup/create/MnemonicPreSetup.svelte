@@ -30,7 +30,7 @@
 </IconHeadingCard>
 
 <Banner
-  title="Dusk will not save and cannot retrieve your passphrase."
+  title="Dusk will not save and cannot retrieve your mnemonic phrase."
   variant="warning"
 >
   <p>To proceed, please check all the relevant boxes.</p>
