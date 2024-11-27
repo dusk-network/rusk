@@ -176,6 +176,8 @@ impl StakeState {
             if loaded_stake.reward == 0 {
                 self.stakes.remove(&unstake.account().to_bytes());
             }
+        } else if stake.total_funds() < MINIMUM_STAKE {
+            panic!("Stake left is lower than minimum stake");
         }
 
         let key = account.to_bytes();
