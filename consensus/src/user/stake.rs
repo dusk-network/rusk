@@ -55,6 +55,9 @@ impl Stake {
 
     /// Add an amount to the stake
     pub fn add(&mut self, add: u64) {
+        // The value is the LUX representation of the stake,
+        // someone should own more than 18B DUSK in order to overflow
+        // (way more than our max supply)
         self.value += add
     }
 }
