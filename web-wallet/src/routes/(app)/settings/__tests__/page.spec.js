@@ -99,7 +99,7 @@ describe("Settings", () => {
     const { getByLabelText, getByRole } = render(Settings, {});
     const priceInput = asInput(getByLabelText(/price/i));
     const limitInput = asInput(getByLabelText(/limit/i));
-    const backButton = getByRole("link");
+    const backButton = getByRole("link", { name: /back/i });
 
     await fireInput(priceInput, 30000000);
     expect(backButton).toHaveAttribute("aria-disabled", "true");
