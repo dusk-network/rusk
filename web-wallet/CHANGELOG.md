@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix "passphrase" terminology usage with "Mnemonic Phrase" [#3069]
+
 ## [0.8.1] - 2024-11-26
 
 ### Added
@@ -391,6 +393,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3042]: https://github.com/dusk-network/rusk/issues/3042
 [#3056]: https://github.com/dusk-network/rusk/issues/3056
 [#3061]: https://github.com/dusk-network/rusk/issues/3061
+[#3069]: https://github.com/dusk-network/rusk/issues/3069
 
 <!-- VERSIONS -->
 
