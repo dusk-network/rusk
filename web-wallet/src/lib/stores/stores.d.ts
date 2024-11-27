@@ -140,7 +140,7 @@ type WalletStoreServices = {
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<TransactionInfo>;
 
-  unstake: (
+  withdrawStake: (
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<TransactionInfo>;
 

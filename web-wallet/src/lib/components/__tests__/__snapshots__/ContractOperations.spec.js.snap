@@ -114,7 +114,7 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       <span
         class="dusk-button__text"
       >
-        stake
+        Stake
       </span>
       
     </button>
@@ -140,7 +140,7 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       <span
         class="dusk-button__text"
       >
-        unstake
+        Withdraw Stake
       </span>
       
     </button>
@@ -166,7 +166,7 @@ exports[`ContractOperations > should render the \`ContractOperations\` component
       <span
         class="dusk-button__text"
       >
-        claim rewards
+        Claim Rewards
       </span>
       
     </button>

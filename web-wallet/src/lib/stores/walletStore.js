@@ -393,8 +393,8 @@ const unshield = async (amount, gas) =>
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
 
-/** @type {WalletStoreServices["unstake"]} */
-const unstake = async (gas) =>
+/** @type {WalletStoreServices["withdrawStake"]} */
+const withdrawStake = async (gas) =>
   sync()
     .then(networkStore.connect)
     .then((network) =>
@@ -431,5 +431,5 @@ export default {
   sync,
   transfer,
   unshield,
-  unstake,
+  withdrawStake,
 };

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update Transactions list design [#1922]
 - Reword "Withdraw Rewards" operation to "Claim Rewards" [#3076]
+- Reword "Unstake" operation to "Withdraw Stake" [#3079]
 
 ### Removed
 
@@ -402,6 +403,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3071]: https://github.com/dusk-network/rusk/issues/3071
 [#3073]: https://github.com/dusk-network/rusk/issues/3073
 [#3076]: https://github.com/dusk-network/rusk/issues/3076
+[#3079]: https://github.com/dusk-network/rusk/issues/3079
 
 <!-- VERSIONS -->
 

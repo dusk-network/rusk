@@ -297,7 +297,7 @@ describe("Stake", () => {
     });
   });
 
-  describe("Unstake operation", () => {
+  describe("Withdraw Stake operation", () => {
     const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
 
     beforeAll(() => {
@@ -308,15 +308,15 @@ describe("Stake", () => {
       vi.useRealTimers();
     });
 
-    it("should perform an ustake, give a success message and supply a link to see the transaction in the explorer", async () => {
+    it("should perform a withdraw stake, give a success message and supply a link to see the transaction in the explorer", async () => {
       /** @type {import("svelte").ComponentProps<Stake>} */
-      const props = { ...baseProps, flow: "unstake" };
+      const props = { ...baseProps, flow: "withdraw-stake" };
 
       const { getByRole, getByText } = render(Stake, props);
 
       await vi.advanceTimersToNextTimerAsync();
 
-      await fireEvent.click(getByRole("button", { name: "Unstake" }));
+      await fireEvent.click(getByRole("button", { name: "Withdraw" }));
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
@@ -331,11 +331,11 @@ describe("Stake", () => {
       expect(explorerLink).toHaveAttribute("href", expectedExplorerLink);
     });
 
-    it("should not allow to unstake, if wrong gas settings are provided", async () => {
+    it("should not allow to withdraw stake, if wrong gas settings are provided", async () => {
       /** @type {import("svelte").ComponentProps<Stake>} */
       const props = {
         ...baseProps,
-        flow: "unstake",
+        flow: "withdraw-stake",
         gasSettings: { gasLimit: 29000000090n, gasPrice: 1n },
       };
 
@@ -343,9 +343,9 @@ describe("Stake", () => {
 
       await vi.advanceTimersToNextTimerAsync();
 
-      const unstakeButton = getByRole("button", { name: "Unstake" });
+      const withdrawStakeButton = getByRole("button", { name: "Withdraw" });
 
-      expect(unstakeButton).toBeDisabled();
+      expect(withdrawStakeButton).toBeDisabled();
     });
   });
 
@@ -383,7 +383,7 @@ describe("Stake", () => {
       expect(explorerLink).toHaveAttribute("href", expectedExplorerLink);
     });
 
-    it("should not allow to unstake, if wrong gas settings are provided", async () => {
+    it("should not allow to claim rewards, if wrong gas settings are provided", async () => {
       /** @type {import("svelte").ComponentProps<Stake>} */
       const props = {
         ...baseProps,

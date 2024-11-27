@@ -323,7 +323,7 @@ describe("Wallet store", async () => {
     const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
 
     /**
-     * @typedef { "shield" | "stake" | "transfer" | "unshield" | "unstake" | "claimRewards" } TransferMethod
+     * @typedef { "shield" | "stake" | "transfer" | "unshield" | "withdrawStake" | "claimRewards" } TransferMethod
      */
 
     /**

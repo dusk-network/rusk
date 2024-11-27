@@ -26,19 +26,19 @@ export default [
       {
         disabled: false,
         id: "stake",
-        label: "stake",
+        label: "Stake",
         primary: true,
       },
       {
         disabled: false,
-        id: "unstake",
-        label: "unstake",
+        id: "withdraw-stake",
+        label: "Withdraw Stake",
         primary: false,
       },
       {
         disabled: false,
         id: "claim-rewards",
-        label: "claim rewards",
+        label: "Claim Rewards",
         primary: false,
       },
     ],

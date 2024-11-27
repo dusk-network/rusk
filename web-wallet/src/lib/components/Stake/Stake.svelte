@@ -86,7 +86,7 @@
     {
       "claim-rewards": rewards,
       stake: minAllowedStake,
-      unstake: staked,
+      "withdraw-stake": staked,
     }[flow]
   );
 
@@ -94,14 +94,14 @@
   const confirmLabels = {
     "claim-rewards": "Claim",
     stake: "Stake",
-    unstake: "Unstake",
+    "withdraw-stake": "Withdraw",
   };
 
   /** @type {Record<StakeType, string>} */
   const overviewLabels = {
     "claim-rewards": "Rewards Amount",
-    stake: "Amount",
-    unstake: "Unstake Amount",
+    stake: "Stake Amount",
+    "withdraw-stake": "Withdraw Amount",
   };
 
   const steps = getStepperSteps();
@@ -232,7 +232,7 @@
                 href={DOCUMENTATION_LINKS.SLASHING}
                 rel="noopener noreferrer"
                 target="_blank">soft-slashing</AppAnchor
-              > penalties, requiring me to unstake and restake.
+              > penalties, requiring me to withdraw stake and stake again.
             </p>
 
             <Agreement
@@ -324,7 +324,7 @@
         disabled: flow === "stake" ? stakeAmount === 0 : !isGasValid,
         icon: {
           path:
-            flow === "unstake"
+            flow === "withdraw-stake"
               ? mdiDatabaseArrowDownOutline
               : flow === "stake"
                 ? mdiDatabaseOutline

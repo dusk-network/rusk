@@ -26,7 +26,7 @@
     receive: mdiArrowDownBoldBoxOutline,
     send: mdiArrowUpBoldBoxOutline,
     stake: mdiDatabaseOutline,
-    unstake: mdiDatabaseArrowDownOutline,
+    "withdraw-stake": mdiDatabaseArrowDownOutline,
   };
 </script>
 

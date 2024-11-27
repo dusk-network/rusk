@@ -60,7 +60,7 @@
   const disablingConditions = {
     "claim-rewards": (info) => info.reward <= 0n,
     stake: (info) => !!info.amount,
-    unstake: (info) => !info.amount || info.amount.total === 0n,
+    "withdraw-stake": (info) => !info.amount || info.amount.total === 0n,
   };
 
   /** @type {Record<StakeType, (...args: any[]) => Promise<string>>} */
@@ -76,9 +76,9 @@
       walletStore
         .stake(amount, new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getKey("hash")),
-    unstake: (gasPrice, gasLimit) =>
+    "withdraw-stake": (gasPrice, gasLimit) =>
       walletStore
-        .unstake(new Gas({ limit: gasLimit, price: gasPrice }))
+        .withdrawStake(new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getKey("hash")),
   };
 
@@ -87,7 +87,7 @@
 
   /** @type {(operationId: string) => operationId is StakeType} */
   const isStakeOperation = (operationId) =>
-    ["stake", "unstake", "claim-rewards"].includes(operationId);
+    ["stake", "withdraw-stake", "claim-rewards"].includes(operationId);
 
   /**
    * We want to update the disabled status ourselves only
