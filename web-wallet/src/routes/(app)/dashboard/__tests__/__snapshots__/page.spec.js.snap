@@ -113,7 +113,7 @@ exports[`Dashboard > should render a card when there is an error getting transac
           <span
             class="dashboard-nav__item-label svelte-1opr8zc"
           >
-            Shield / Unshield
+            Allocate
           </span>
            
           <span
@@ -343,7 +343,7 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
           <span
             class="dashboard-nav__item-label svelte-1opr8zc"
           >
-            Shield / Unshield
+            Allocate
           </span>
            
           <span

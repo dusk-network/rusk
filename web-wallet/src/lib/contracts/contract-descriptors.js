@@ -46,7 +46,7 @@ export default [
   {
     enabled: import.meta.env.VITE_FEATURE_ALLOCATE === "true",
     id: "allocate",
-    label: "Shield / Unshield",
+    label: "Allocate",
     operations: [
       {
         disabled: false,
