@@ -18,7 +18,7 @@ use rusk_wallet::{
 };
 
 use crate::{
-    io::{self, prompt},
+    io::{self, prompt, GraphQL},
     settings::Settings,
     Command, GraphQL, RunResult, WalletFile,
 };

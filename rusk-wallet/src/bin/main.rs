@@ -18,11 +18,9 @@ use inquire::InquireError;
 use rocksdb::ErrorKind;
 use tracing::{error, info, warn, Level};
 
-use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
 
 use rusk_wallet::{
-    currency::Dusk,
     dat::{self, LATEST_VERSION},
     Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
 };
@@ -318,93 +316,20 @@ async fn exec() -> anyhow::Result<()> {
     match cmd {
         // if there is no command we are in interactive mode and need to run the
         // interactive loop
+        Some(cmd) => {
+            let run_res = cmd.run(&mut wallet, &settings).await?;
+
+            let mut stdout_res = run_res.to_string();
+
+            if want_json {
+                stdout_res = run_res.to_json();
+            }
+
+            println!("{stdout_res}");
+        }
         None => {
             wallet.register_sync().await?;
             interactive::run_loop(&mut wallet, &settings).await?;
-        }
-        // else we run the given command and print the result
-        Some(cmd) => {
-            match cmd.run(&mut wallet, &settings).await? {
-                RunResult::PhoenixBalance(balance, spendable) => {
-                    if spendable {
-                        println!("{}", Dusk::from(balance.spendable));
-                    } else {
-                        println!("{}", Dusk::from(balance.value));
-                    }
-                }
-                RunResult::MoonlightBalance(balance) => {
-                    println!("Total: {}", balance);
-                }
-                RunResult::Profile((profile_idx, profile)) => {
-                    println!(
-                        "> {}\n>   {}\n>   {}\n",
-                        Profile::index_string(profile_idx),
-                        profile.shielded_address_string(),
-                        profile.public_account_string(),
-                    );
-                }
-                RunResult::Profiles(addrs) => {
-                    for (profile_idx, profile) in addrs.iter().enumerate() {
-                        println!(
-                            "> {}\n>   {}\n>   {}\n\n",
-                            Profile::index_string(profile_idx as u8),
-                            profile.shielded_address_string(),
-                            profile.public_account_string(),
-                        );
-                    }
-                }
-                RunResult::Tx(hash) => {
-                    let tx_id = hex::encode(hash.to_bytes());
-
-                    // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(settings.state, status::headless)?;
-                    gql.wait_for(&tx_id).await?;
-
-                    println!("{tx_id}");
-                }
-                RunResult::StakeInfo(info, reward) => {
-                    let rewards = Dusk::from(info.reward);
-                    if reward {
-                        println!("{rewards}");
-                    } else {
-                        if let Some(amt) = info.amount {
-                            let amount = Dusk::from(amt.value);
-                            let locked = Dusk::from(amt.locked);
-                            let eligibility = amt.eligibility;
-                            let epoch = amt.eligibility / EPOCH;
-
-                            println!("Eligible stake: {amount} DUSK");
-                            println!(
-                                "Reclaimable slashed stake: {locked} DUSK"
-                            );
-                            println!("Stake active from block #{eligibility} (Epoch {epoch})");
-                        } else {
-                            println!("No active stake found for this key");
-                        }
-                        let faults = info.faults;
-                        let hard_faults = info.hard_faults;
-                        let rewards = Dusk::from(info.reward);
-
-                        println!("Slashes: {faults}");
-                        println!("Hard Slashes: {hard_faults}");
-                        println!("Accumulated rewards is: {rewards} DUSK");
-                    }
-                }
-                RunResult::ExportedKeys(pub_key, key_pair) => {
-                    println!("{},{}", pub_key.display(), key_pair.display())
-                }
-                RunResult::PhoenixHistory(transactions) => {
-                    println!("{}", TransactionHistory::header());
-                    for th in transactions {
-                        println!("{th}");
-                    }
-                }
-                RunResult::ContractId(id) => {
-                    println!("Contract ID: {:?}", id);
-                }
-                RunResult::Settings() => {}
-                RunResult::Create() | RunResult::Restore() => {}
-            }
         }
     }
 

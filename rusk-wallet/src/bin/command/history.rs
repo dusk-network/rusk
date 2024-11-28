@@ -11,6 +11,7 @@ use std::fmt::{self, Display};
 use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
 
 use execution_core::{dusk, from_dusk, transfer::Transaction};
+use serde_json::json;
 
 use crate::io::{self};
 use crate::settings::Settings;
@@ -30,6 +31,34 @@ impl TransactionHistory {
             "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12}",
             "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE"
         )
+    }
+
+    pub fn to_json(&self) -> serde_json::Value {
+        let dusk = self.amount / dusk(1.0) as f64;
+        let contract = match self.tx.call() {
+            None => "transfer",
+            Some(call) => &call.fn_name,
+        };
+
+        let fee = match self.direction {
+            TransactionDirection::In => "".into(),
+            TransactionDirection::Out => {
+                let fee = self.fee;
+                let fee = from_dusk(fee);
+                format!("{: >12.9}", fee)
+            }
+        };
+
+        let tx_id = &self.id;
+        let heigth = self.height;
+
+        json!({
+            "block": heigth,
+            "tx_id": tx_id,
+            "contract": contract,
+            "amount": dusk,
+            "fee": fee,
+        })
     }
 }
 
