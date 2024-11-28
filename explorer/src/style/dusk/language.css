@@ -10,10 +10,14 @@
   --secondary-color-variant-light: var(--cornflower-light);
   --surface-color: var(--magnolia);
   --danger-color: var(--error);
-  --error-color: var(--error);
-  --info-color: var(--info);
-  --success-color: var(--success);
-  --warning-color: var(--warning);
+  --error-color: var(--error-500);
+  --error-color-variant-dark: var(--error-700);
+  --info-color: var(--info-500);
+  --info-color-variant-dark: var(--info-700);
+  --success-color: var(--success-500);
+  --success-color-variant-dark: var(--success-700);
+  --warning-color: var(--warning-500);
+  --warning-color-variant-dark: var(--warning-700);
 
   --on-background-color: var(--smokey-black);
   --on-primary-color: var(--light-grey);
@@ -100,6 +104,12 @@
   /* Dividers */
 
   --divider-color-primary: var(--taupe-grey);
+
+  /* Banner */
+
+  --banner-info-color: var(--info-color-variant-dark);
+  --banner-warning-color: var(--warning-color-variant-dark);
+  --banner-error-color: var(--error-color-variant-dark);
 }
 
 :root.dark {
@@ -134,4 +144,10 @@
 
   --checkbox-control-border-color: var(--light-grey);
   --checkbox-control-checked-bg-color: var(--light-grey);
+
+  /* Banner */
+
+  --banner-info-color: var(--info-color);
+  --banner-warning-color: var(--warning-color);
+  --banner-error-color: var(--error-color);
 }

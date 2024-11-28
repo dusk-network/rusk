@@ -1,5 +1,7 @@
 type BadgeVariant = "neutral" | "success" | "warning" | "error" | "alt";
 
+type BannerVariant = "info" | "warning" | "error";
+
 type ButtonSize = "normal" | "small";
 
 type ButtonVariant = "primary" | "secondary" | "tertiary";

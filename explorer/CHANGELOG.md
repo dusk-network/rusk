@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add decode feature for `memo` field [#2527]
 - Add top node info in StatisticsPanel [#2613]
 - Add Provisioners page [#2649]
+- Check if transaction exists in mempool [#2877]
 
 ### Changed
 
@@ -67,8 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ISSUES -->
 
-[#2017]: https://github.com/dusk-network/rusk/issues/2017
 [#1892]: https://github.com/dusk-network/rusk/issues/1892
+[#2017]: https://github.com/dusk-network/rusk/issues/2017
 [#2025]: https://github.com/dusk-network/rusk/issues/2025
 [#2034]: https://github.com/dusk-network/rusk/issues/2034
 [#2036]: https://github.com/dusk-network/rusk/issues/2036
@@ -79,21 +80,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2059]: https://github.com/dusk-network/rusk/issues/2059
 [#2061]: https://github.com/dusk-network/rusk/issues/2061
 [#2159]: https://github.com/dusk-network/rusk/issues/2159
+[#2166]: https://github.com/dusk-network/rusk/issues/2166
 [#2220]: https://github.com/dusk-network/rusk/issues/2220
+[#2347]: https://github.com/dusk-network/rusk/issues/2347
 [#2348]: https://github.com/dusk-network/rusk/issues/2348
 [#2362]: https://github.com/dusk-network/rusk/issues/2362
 [#2363]: https://github.com/dusk-network/rusk/issues/2363
-[#2363]: https://github.com/dusk-network/rusk/issues/2347
 [#2364]: https://github.com/dusk-network/rusk/issues/2364
 [#2389]: https://github.com/dusk-network/rusk/issues/2389
 [#2527]: https://github.com/dusk-network/rusk/issues/2527
-[#2166]: https://github.com/dusk-network/rusk/issues/2166
 [#2585]: https://github.com/dusk-network/rusk/issues/2585
-[#2640]: https://github.com/dusk-network/rusk/issues/2640
-[#2668]: https://github.com/dusk-network/rusk/issues/2668
 [#2613]: https://github.com/dusk-network/rusk/issues/2613
+[#2640]: https://github.com/dusk-network/rusk/issues/2640
 [#2649]: https://github.com/dusk-network/rusk/issues/2649
 [#2662]: https://github.com/dusk-network/rusk/issues/2662
+[#2668]: https://github.com/dusk-network/rusk/issues/2668
+[#2877]: https://github.com/dusk-network/rusk/issues/2877
 [#3038]: https://github.com/dusk-network/rusk/issues/3038
 [#3064]: https://github.com/dusk-network/rusk/issues/3064
 

@@ -71,7 +71,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($id: String!) { block(hash: $id) {...BlockInfo} }\\n  ","topic":"gql"}",
+        "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo,\\n    txType\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($id: String!) { block(hash: $id) {...BlockInfo} }\\n  ","topic":"gql"}",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -183,7 +183,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($amount: Int!) { blocks(last: $amount) {...BlockInfo} }\\n  ","topic":"gql"}",
+        "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo,\\n    txType\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($amount: Int!) { blocks(last: $amount) {...BlockInfo} }\\n  ","topic":"gql"}",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -207,7 +207,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($amount: Int!) {\\n      blocks(last: $amount) {...BlockInfo},\\n      transactions(last: $amount) {...TransactionInfo}\\n    }\\n  ","topic":"gql"}",
+        "body": "{"data":"\\n    \\n\\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo,\\n    txType\\n  }\\n}\\n\\nfragment BlockInfo on Block {\\n  header {\\n    hash,\\n    gasLimit,\\n    height,\\n    prevBlockHash,\\n    seed,\\n    stateHash,\\n    timestamp,\\n    version\\n  },\\n  fees,\\n  gasSpent,\\n  reward,\\n  transactions {...TransactionInfo}\\n}\\n\\n    query($amount: Int!) {\\n      blocks(last: $amount) {...BlockInfo},\\n      transactions(last: $amount) {...TransactionInfo}\\n    }\\n  ","topic":"gql"}",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -338,7 +338,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "{"data":"\\n    \\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\n    query($id: String!) { tx(hash: $id) {...TransactionInfo} }\\n  ","topic":"gql"}",
+        "body": "{"data":"\\n    \\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo,\\n    txType\\n  }\\n}\\n\\n    query($id: String!) { tx(hash: $id) {...TransactionInfo} }\\n  ","topic":"gql"}",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -361,7 +361,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "{"data":"query($id: String!) { tx(hash: $id) { tx {json} } }","topic":"gql"}",
+        "body": "{"data":"query($id: String!) { tx(hash: $id) { tx { json } } }","topic":"gql"}",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -383,7 +383,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "{"data":"\\n    \\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo\\n    txType\\n  }\\n}\\n\\n    query($amount: Int!) { transactions(last: $amount) {...TransactionInfo} }\\n  ","topic":"gql"}",
+        "body": "{"data":"\\n    \\nfragment TransactionInfo on SpentTransaction {\\n\\tblockHash,\\n\\tblockHeight,\\n\\tblockTimestamp,\\n  err,\\n\\tgasSpent,\\n\\tid,\\n  tx {\\n    callData {\\n      contractId,\\n      data,\\n      fnName\\n    },\\n    gasLimit,\\n    gasPrice,\\n    id,\\n    isDeploy,\\n    memo,\\n    txType\\n  }\\n}\\n\\n    query($amount: Int!) { transactions(last: $amount) {...TransactionInfo} }\\n  ","topic":"gql"}",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -566,5 +566,33 @@ describe("duskAPI", () => {
     await expect(duskAPI.search("abc")).resolves.toStrictEqual([]);
 
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("should return a mempool message if the transaction is in the mempool", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(makeOKResponse({ tx: null }))
+      .mockResolvedValueOnce(makeOKResponse({ mempoolTx: true }));
+
+    await expect(duskAPI.getTransaction(fakeID)).resolves.toBe(
+      "This transaction is currently in the mempool and has not yet been confirmed. The transaction details will be displayed after confirmation."
+    );
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[1][0]).toStrictEqual(gqlExpectedURL);
+  });
+
+  it("should throw an error if the transaction is not found", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(makeOKResponse({ tx: null }))
+      .mockResolvedValueOnce(makeOKResponse({ mempoolTx: null }));
+
+    await expect(duskAPI.getTransaction(fakeID)).rejects.toThrow(
+      "Transaction not found"
+    );
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[1][0]).toStrictEqual(gqlExpectedURL);
   });
 });
