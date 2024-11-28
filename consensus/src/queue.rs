@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node_data::message::Message;
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt::Debug;
+
+use node_data::message::Message;
 use thiserror::Error;
 use tracing::warn;
 
@@ -122,9 +123,8 @@ impl<T: QueueMessage> MsgRegistry<T> {
 mod tests {
     use node_data::bls::PUBLIC_BLS_SIZE;
 
-    use crate::queue::MsgRegistry;
-
     use super::QueueMessage;
+    use crate::queue::MsgRegistry;
 
     #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
     struct Item(u64, u8, i32, node_data::bls::PublicKeyBytes);

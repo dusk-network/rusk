@@ -4,28 +4,29 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::sync::Arc;
+
+use async_trait::async_trait;
+use node_data::bls::PublicKeyBytes;
+use node_data::ledger::to_str;
+use node_data::message::payload::{Candidate, GetResource, Inv};
+use node_data::message::{
+    ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
+    WireMessage,
+};
+use tokio::sync::Mutex;
+use tracing::info;
+
 use crate::commons::{Database, RoundUpdate};
 use crate::config::{
     is_emergency_iter, MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS,
     MAX_NUMBER_OF_TRANSACTIONS,
 };
 use crate::errors::ConsensusError;
+use crate::iteration_ctx::RoundCommittees;
 use crate::merkle::merkle_root;
 use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::user::committee::Committee;
-use async_trait::async_trait;
-use node_data::bls::PublicKeyBytes;
-use node_data::ledger::to_str;
-use node_data::message::payload::{Candidate, GetResource, Inv};
-use tracing::info;
-
-use crate::iteration_ctx::RoundCommittees;
-use node_data::message::{
-    ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
-    WireMessage,
-};
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub struct ProposalHandler<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,

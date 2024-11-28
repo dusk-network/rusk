@@ -4,27 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::RoundUpdate;
-use crate::config::is_emergency_iter;
-use crate::errors::ConsensusError;
-use crate::msg_handler::{MsgHandler, StepOutcome};
-use crate::step_votes_reg::SafeAttestationInfoRegistry;
-
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Attestation;
-use node_data::{ledger, StepName};
-use tracing::{debug, error, info, warn};
-
-use crate::aggregator::{Aggregator, StepVote};
-
-use crate::iteration_ctx::RoundCommittees;
-use crate::quorum::verifiers::verify_votes;
 use node_data::message::payload::{Ratification, ValidationResult, Vote};
 use node_data::message::{
     payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
 };
+use node_data::{ledger, StepName};
+use tracing::{debug, error, info, warn};
 
+use crate::aggregator::{Aggregator, StepVote};
+use crate::commons::RoundUpdate;
+use crate::config::is_emergency_iter;
+use crate::errors::ConsensusError;
+use crate::iteration_ctx::RoundCommittees;
+use crate::msg_handler::{MsgHandler, StepOutcome};
+use crate::quorum::verifiers::verify_votes;
+use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 
 pub struct RatificationHandler {

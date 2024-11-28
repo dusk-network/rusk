@@ -8,8 +8,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use dusk_consensus::config::MAX_NUMBER_OF_TRANSACTIONS;
 use dusk_consensus::merkle::merkle_root;
 use rand::rngs::StdRng;
-use rand::RngCore;
-use rand::SeedableRng;
+use rand::{RngCore, SeedableRng};
 
 fn merkle(c: &mut Criterion) {
     let tx_hashes: Vec<_> = (0..MAX_NUMBER_OF_TRANSACTIONS)

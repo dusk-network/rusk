@@ -4,30 +4,29 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::aggregator::{Aggregator, StepVote};
-use crate::commons::{Database, RoundUpdate};
-use crate::config::is_emergency_iter;
-use crate::errors::ConsensusError;
-use crate::msg_handler::{MsgHandler, StepOutcome};
-use crate::step_votes_reg::SafeAttestationInfoRegistry;
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block, StepVotes};
-use node_data::StepName;
-use tracing::{debug, info, warn};
-
-use crate::user::committee::Committee;
-
-use crate::iteration_ctx::RoundCommittees;
 use node_data::message::payload::{
     GetResource, Inv, QuorumType, Validation, Vote,
 };
 use node_data::message::{
     payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
 };
-
-use std::sync::Arc;
+use node_data::StepName;
 use tokio::sync::Mutex;
+use tracing::{debug, info, warn};
+
+use crate::aggregator::{Aggregator, StepVote};
+use crate::commons::{Database, RoundUpdate};
+use crate::config::is_emergency_iter;
+use crate::errors::ConsensusError;
+use crate::iteration_ctx::RoundCommittees;
+use crate::msg_handler::{MsgHandler, StepOutcome};
+use crate::step_votes_reg::SafeAttestationInfoRegistry;
+use crate::user::committee::Committee;
 
 pub struct ValidationHandler<D: Database> {
     pub(crate) aggr: Aggregator<Validation>,

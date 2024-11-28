@@ -4,23 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::Database;
-use crate::execution_ctx::ExecutionCtx;
-use crate::msg_handler::{MsgHandler, StepOutcome};
-use crate::operations::Operations;
-use node_data::get_current_timestamp;
-use node_data::ledger::IterationsInfo;
-use node_data::message::Message;
 use std::cmp;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Mutex;
 
+use node_data::get_current_timestamp;
+use node_data::ledger::IterationsInfo;
+use node_data::message::Message;
+use tokio::sync::Mutex;
+use tracing::{debug, error, info};
+
+use crate::commons::Database;
 use crate::config;
 use crate::config::MINIMUM_BLOCK_TIME;
+use crate::execution_ctx::ExecutionCtx;
+use crate::msg_handler::{MsgHandler, StepOutcome};
+use crate::operations::Operations;
 use crate::proposal::block_generator::Generator;
 use crate::proposal::handler;
-use tracing::{debug, error, info};
 
 pub struct ProposalStep<T, D: Database>
 where

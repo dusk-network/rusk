@@ -7,12 +7,10 @@
 use std::io;
 
 use execution_core::signatures::bls::Error as BlsSigError;
-use node_data::{
-    bls::PublicKeyBytes,
-    ledger::{Hash, InvalidFault},
-    message::payload::{RatificationResult, Vote},
-    StepName,
-};
+use node_data::bls::PublicKeyBytes;
+use node_data::ledger::{Hash, InvalidFault};
+use node_data::message::payload::{RatificationResult, Vote};
+use node_data::StepName;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, Error)]

@@ -4,20 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Database, RoundUpdate};
-use crate::config::is_emergency_iter;
-use crate::execution_ctx::ExecutionCtx;
-use crate::operations::Operations;
+use std::sync::Arc;
 
-use crate::msg_handler::{MsgHandler, StepOutcome};
-use crate::ratification::handler;
 use node_data::message::payload::{self, QuorumType, ValidationResult};
 use node_data::message::{AsyncQueue, Message, Payload, SignedStepMessage};
 use node_data::{get_current_timestamp, message};
-use std::sync::Arc;
 use tokio::sync::Mutex;
-
 use tracing::{info, warn, Instrument};
+
+use crate::commons::{Database, RoundUpdate};
+use crate::config::is_emergency_iter;
+use crate::execution_ctx::ExecutionCtx;
+use crate::msg_handler::{MsgHandler, StepOutcome};
+use crate::operations::Operations;
+use crate::ratification::handler;
 
 pub struct RatificationStep {
     handler: Arc<Mutex<handler::RatificationHandler>>,

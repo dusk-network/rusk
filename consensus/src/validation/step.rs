@@ -4,12 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Database, RoundUpdate};
-use crate::config::is_emergency_iter;
-use crate::execution_ctx::ExecutionCtx;
-use crate::msg_handler::StepOutcome;
-use crate::operations::{Operations, Voter};
-use crate::validation::handler;
+use std::sync::Arc;
+
 use anyhow::anyhow;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
@@ -17,10 +13,16 @@ use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
     AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
 };
-use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, Instrument};
+
+use crate::commons::{Database, RoundUpdate};
+use crate::config::is_emergency_iter;
+use crate::execution_ctx::ExecutionCtx;
+use crate::msg_handler::StepOutcome;
+use crate::operations::{Operations, Voter};
+use crate::validation::handler;
 
 pub struct ValidationStep<T, D: Database> {
     handler: Arc<Mutex<handler::ValidationHandler<D>>>,

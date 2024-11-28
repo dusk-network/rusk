@@ -4,17 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
-
-use crate::errors::ConsensusError;
-use crate::iteration_ctx::IterationCtx;
-use crate::msg_handler::{MsgHandler, StepOutcome};
-use crate::operations::Operations;
-use crate::queue::{MsgRegistry, MsgRegistryError};
-
-use crate::step_votes_reg::SafeAttestationInfoRegistry;
-use crate::user::committee::Committee;
-use crate::user::provisioners::Provisioners;
+use std::sync::Arc;
+use std::time::Duration;
 
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Block;
@@ -23,18 +14,25 @@ use node_data::message::payload::{
 };
 use node_data::message::{AsyncQueue, Message, Payload, Topics};
 use node_data::StepName;
-
-use crate::config::{
-    is_emergency_iter, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
-};
-use crate::ratification::step::RatificationStep;
-use crate::validation::step::ValidationStep;
-use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace, warn};
+
+use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
+use crate::config::{
+    is_emergency_iter, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
+};
+use crate::errors::ConsensusError;
+use crate::iteration_ctx::IterationCtx;
+use crate::msg_handler::{MsgHandler, StepOutcome};
+use crate::operations::Operations;
+use crate::queue::{MsgRegistry, MsgRegistryError};
+use crate::ratification::step::RatificationStep;
+use crate::step_votes_reg::SafeAttestationInfoRegistry;
+use crate::user::committee::Committee;
+use crate::user::provisioners::Provisioners;
+use crate::validation::step::ValidationStep;
 
 /// ExecutionCtx encapsulates all data needed in the execution of consensus
 /// messages handlers.
