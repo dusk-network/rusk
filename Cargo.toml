@@ -3,6 +3,7 @@ members = [
     # Test contracts
     "contracts/alice",
     "contracts/bob",
+    "contracts/charlie",
     "contracts/host_fn",
 
     # Genesis contracts
