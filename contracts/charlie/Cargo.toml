@@ -1,0 +1,13 @@
+[package]
+name = "charlie"
+version = "0.3.0"
+edition = "2021"
+description = "A proxy staking contract used to test delegation and intermediary functionality"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+execution-core = { workspace = true }
+rusk-abi = { workspace = true, features = ["abi", "dlmalloc"] }
+rkyv = { workspace = true, features = ["size_32"] }
