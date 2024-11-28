@@ -19,7 +19,7 @@ use node_data::events::contract::ContractEvent;
 use async_graphql::{Context, FieldError};
 
 use super::data::deserialized_archive_data::*;
-use super::data::{MoonlightTransactions, NewAccountPublicKey};
+use super::data::{MoonlightTransfers, NewAccountPublicKey};
 use crate::http::chain::graphql::{DBContext, OptResult};
 
 pub async fn full_moonlight_history(
@@ -65,7 +65,7 @@ pub async fn full_moonlight_history(
     }
 }
 
-pub async fn moonlight_transactions(
+pub async fn fetch_moonlight_history(
     ctx: &Context<'_>,
     sender: Option<String>,
     receiver: Option<String>,
@@ -73,7 +73,7 @@ pub async fn moonlight_transactions(
     to_block: Option<u64>,
     max_count: Option<usize>,
     page_count: Option<usize>,
-) -> OptResult<MoonlightTransactions> {
+) -> OptResult<MoonlightTransfers> {
     let (_, archive) = ctx.data::<DBContext>()?;
 
     let sender: Option<AccountPublicKey> = sender
@@ -88,7 +88,7 @@ pub async fn moonlight_transactions(
     if let Some(moonlight_events) = archive.fetch_moonlight_history(
         sender, receiver, from_block, to_block, max_count, page_count,
     )? {
-        Ok(Some(MoonlightTransactions(moonlight_events)))
+        Ok(Some(MoonlightTransfers(moonlight_events)))
     } else {
         Ok(None)
     }
@@ -97,13 +97,13 @@ pub async fn moonlight_transactions(
 pub async fn moonlight_tx_by_memo(
     ctx: &Context<'_>,
     memo: Vec<u8>,
-) -> OptResult<MoonlightTransactions> {
+) -> OptResult<MoonlightTransfers> {
     let (_, archive) = ctx.data::<DBContext>()?;
 
     let moonlight_events = archive.moonlight_txs_by_memo(memo)?;
 
     if let Some(moonlight_events) = moonlight_events {
-        Ok(Some(MoonlightTransactions(moonlight_events)))
+        Ok(Some(MoonlightTransfers(moonlight_events)))
     } else {
         Ok(None)
     }

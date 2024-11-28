@@ -9,7 +9,7 @@ use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use node::archive::MoonlightGroup;
 
-pub struct MoonlightTransactions(pub Vec<MoonlightGroup>);
+pub struct MoonlightTransfers(pub Vec<MoonlightGroup>);
 
 pub struct ContractEvents(pub(super) serde_json::Value);
 
@@ -32,7 +32,7 @@ impl TryInto<NewAccountPublicKey> for String {
 }
 
 #[Object]
-impl MoonlightTransactions {
+impl MoonlightTransfers {
     pub async fn json(&self) -> serde_json::Value {
         serde_json::to_value(&self.0).unwrap_or_default()
     }
