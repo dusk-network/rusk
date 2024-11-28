@@ -55,12 +55,12 @@ impl StakeState {
         self.previous_block_state.clear()
     }
 
-    fn unwrap_account_funds(funds: &StakeFundOwner) -> BlsPublicKey {
-        match funds {
+    fn unwrap_account_owner(owner: &StakeFundOwner) -> BlsPublicKey {
+        match owner {
             StakeFundOwner::Account(public_key) => {
                 assert!(
                     public_key.is_valid(),
-                    "Specified funds key is not valid"
+                    "Specified owner key is not valid"
                 );
                 *public_key
             }
@@ -70,8 +70,8 @@ impl StakeState {
         }
     }
 
-    fn unwrap_contract_funds(funds: &StakeFundOwner) -> &ContractId {
-        match funds {
+    fn unwrap_contract_owner(owner: &StakeFundOwner) -> &ContractId {
+        match owner {
             StakeFundOwner::Account(_) => {
                 panic!("expect StakeFundOwner::Contract")
             }
@@ -95,11 +95,11 @@ impl StakeState {
             panic!("The staked value is lower than the minimum amount!");
         }
 
-        let funds_key = Self::unwrap_account_funds(&keys.funds);
+        let owner = Self::unwrap_account_owner(&keys.owner);
 
         let msg = stake.signature_message().to_vec();
-        if !rusk_abi::verify_bls(msg.clone(), funds_key, signature.funds) {
-            panic!("Invalid funds signature!");
+        if !rusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
+            panic!("Invalid owner signature!");
         }
         if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
@@ -152,7 +152,7 @@ impl StakeState {
         let prev_stake = self.get_stake(&stake.keys().account).copied();
         let (loaded_stake, keys) = self.load_or_create_stake_mut(stake.keys());
 
-        let contract = Self::unwrap_contract_funds(&keys.funds);
+        let contract = Self::unwrap_contract_owner(&keys.owner);
         assert_eq!(contract, &recv.contract, "Invalid contract caller");
         assert_eq!(value, recv.value, "Stake amount mismatch");
 
@@ -219,12 +219,12 @@ impl StakeState {
             panic!("Value to unstake higher than the staked amount");
         }
 
-        let funds_key = Self::unwrap_account_funds(&keys.funds);
+        let owner = Self::unwrap_account_owner(&keys.owner);
 
         // check signature is correct
         let msg = unstake.signature_message();
-        if !rusk_abi::verify_bls(msg.clone(), funds_key, signature.funds) {
-            panic!("Invalid funds signature!");
+        if !rusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
+            panic!("Invalid owner signature!");
         }
         if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
@@ -284,10 +284,10 @@ impl StakeState {
             panic!("Value to unstake higher than the staked amount");
         }
 
-        let funds_key = Self::unwrap_contract_funds(&keys.funds);
+        let owner = Self::unwrap_contract_owner(&keys.owner);
         let caller =
             rusk_abi::caller().expect("unstake must be called by a contract");
-        assert_eq!(&caller, funds_key, "Invalid contract caller");
+        assert_eq!(&caller, owner, "Invalid contract caller");
 
         let to_contract = ContractToContract {
             contract: caller,
@@ -357,12 +357,12 @@ impl StakeState {
             panic!("Value to withdraw is higher than available reward");
         }
 
-        let funds_key = Self::unwrap_account_funds(&keys.funds);
+        let owner = Self::unwrap_account_owner(&keys.owner);
 
         // check signature is correct
         let msg = withdraw.signature_message();
-        if !rusk_abi::verify_bls(msg.clone(), funds_key, signature.funds) {
-            panic!("Invalid funds signature!");
+        if !rusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
+            panic!("Invalid owner signature!");
         }
         if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
@@ -402,10 +402,10 @@ impl StakeState {
             panic!("Value to withdraw is higher than available reward");
         }
 
-        let funds_key = Self::unwrap_contract_funds(&keys.funds);
+        let owner = Self::unwrap_contract_owner(&keys.owner);
         let caller =
             rusk_abi::caller().expect("unstake must be called by a contract");
-        assert_eq!(&caller, funds_key, "Invalid contract caller");
+        assert_eq!(&caller, owner, "Invalid contract caller");
 
         let to_contract = ContractToContract {
             contract: caller,
