@@ -112,7 +112,7 @@ impl Provisioners {
 
     /// Adds a provisioner with stake.
     ///
-    /// It appends the stake if the given provisioner already exists.
+    /// If the provisioner already exists, no action is performed.
     pub fn add_member_with_stake(
         &mut self,
         pubkey_bls: PublicKey,
@@ -134,6 +134,28 @@ impl Provisioners {
         stake: Stake,
     ) -> Option<Stake> {
         self.members.insert(pubkey_bls, stake)
+    }
+
+    /// Subtract `amount` from a staker, returning the stake left
+    ///
+    /// Return None if the entry was not found or `amount` is higher than
+    /// current stake
+    pub fn sub_stake(
+        &mut self,
+        pubkey_bls: &PublicKey,
+        amount: u64,
+    ) -> Option<u64> {
+        let stake = self.members.get_mut(pubkey_bls)?;
+        if stake.value() < amount {
+            None
+        } else {
+            stake.subtract(amount);
+            let left = stake.value();
+            if left == 0 {
+                self.members.remove(pubkey_bls);
+            }
+            Some(left)
+        }
     }
 
     pub fn remove_stake(&mut self, pubkey_bls: &PublicKey) -> Option<Stake> {

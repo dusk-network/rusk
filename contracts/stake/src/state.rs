@@ -56,28 +56,17 @@ impl StakeState {
 
     pub fn stake(&mut self, stake: Stake) {
         let value = stake.value();
-        let keys = *stake.keys();
-        let account = &keys.account;
         let signature = *stake.signature();
 
         if stake.chain_id() != self.chain_id() {
             panic!("The stake must target the correct chain");
         }
 
-        let prev_stake = self.get_stake(account).copied();
-        let (loaded_stake, loaded_keys) = self.load_or_create_stake_mut(&keys);
+        let account = stake.keys().account;
+        let prev_stake = self.get_stake(&stake.keys().account).copied();
+        let (loaded_stake, keys) = self.load_or_create_stake_mut(stake.keys());
 
-        if loaded_stake.amount.is_some() {
-            panic!("Can't stake twice for the same key");
-        }
-
-        // Update the funds key with the newly provided one
-        // This operation will rollback if the signature is invalid
-        *loaded_keys = keys;
-
-        // ensure the stake is at least the minimum and that there isn't an
-        // amount staked already
-        if value < MINIMUM_STAKE {
+        if loaded_stake.amount.is_none() && value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
         }
 
@@ -95,16 +84,32 @@ impl StakeState {
             rusk_abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
                 .expect("Depositing funds into contract should succeed");
 
+        let block_height = rusk_abi::block_height();
         // update the state accordingly
-        loaded_stake.amount =
-            Some(StakeAmount::new(value, rusk_abi::block_height()));
+        let stake_event = match &mut loaded_stake.amount {
+            Some(amount) => {
+                let locked = if block_height >= amount.eligibility {
+                    value / 10
+                } else {
+                    // No penalties applied if the stake is not eligible yet
+                    0
+                };
+                let value = value - locked;
+                amount.locked += locked;
+                amount.value += value;
+                StakeEvent::new(*keys, value).locked(locked)
+            }
+            amount => {
+                let _ = amount.insert(StakeAmount::new(value, block_height));
+                StakeEvent::new(*keys, value)
+            }
+        };
+        rusk_abi::emit("stake", stake_event);
 
-        rusk_abi::emit("stake", StakeEvent { keys, value });
-
-        let key = account.to_bytes();
+        let key = keys.account.to_bytes();
         self.previous_block_state
             .entry(key)
-            .or_insert_with(|| (prev_stake, *account));
+            .or_insert((prev_stake, account));
     }
 
     pub fn unstake(&mut self, unstake: Withdraw) {
@@ -118,15 +123,15 @@ impl StakeState {
             .expect("A stake should exist in the map to be unstaked!");
         let prev_stake = Some(*loaded_stake);
 
-        // ensure there is a value staked, and that the withdrawal is exactly
-        // the same amount
+        // ensure there is a value staked, and that the withdrawal is not
+        // greater than the available funds
         let stake = loaded_stake
             .amount
-            .as_ref()
+            .as_mut()
             .expect("There must be an amount to unstake");
 
-        if value != stake.total_funds() {
-            panic!("Value withdrawn different from staked amount");
+        if value > stake.total_funds() {
+            panic!("Value to unstake higher than the staked amount");
         }
 
         // check signature is correct
@@ -144,13 +149,26 @@ impl StakeState {
             rusk_abi::call(TRANSFER_CONTRACT, "withdraw", transfer_withdraw)
                 .expect("Withdrawing stake should succeed");
 
-        // update the state accordingly
-        loaded_stake.amount = None;
+        let stake_event = if value > stake.value {
+            let from_locked = value - stake.value;
+            let from_stake = stake.value;
+            stake.value = 0;
+            stake.locked -= from_locked;
+            StakeEvent::new(*keys, from_stake).locked(from_locked)
+        } else {
+            stake.value -= value;
+            StakeEvent::new(*keys, value)
+        };
 
-        rusk_abi::emit("unstake", StakeEvent { keys: *keys, value });
-
-        if loaded_stake.reward == 0 {
-            self.stakes.remove(&unstake.account().to_bytes());
+        rusk_abi::emit("unstake", stake_event);
+        if stake.total_funds() == 0 {
+            // update the state accordingly
+            loaded_stake.amount = None;
+            if loaded_stake.reward == 0 {
+                self.stakes.remove(&unstake.account().to_bytes());
+            }
+        } else if stake.total_funds() < MINIMUM_STAKE {
+            panic!("Stake left is lower than minimum stake");
         }
 
         let key = account.to_bytes();
@@ -197,7 +215,7 @@ impl StakeState {
 
         // update the state accordingly
         loaded_stake.reward -= value;
-        rusk_abi::emit("withdraw", StakeEvent { keys: *keys, value });
+        rusk_abi::emit("withdraw", StakeEvent::new(*keys, value));
 
         if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
             self.stakes.remove(&account.to_bytes());
@@ -227,23 +245,25 @@ impl StakeState {
         self.stakes.insert(keys.account.to_bytes(), (stake, keys));
     }
 
-    /// Gets a mutable reference to the stake of a given `keys`. If said stake
-    /// doesn't exist, a default one is inserted and a mutable reference
-    /// returned.
+    /// Gets a mutable reference to the stake of a given `keys`.
+    ///
+    /// If said stake doesn't exist, a default one is inserted and a mutable
+    /// reference returned.
+    ///
+    /// # Panics
+    /// Panics if the provided keys doesn't match the existing (if any)
     pub(crate) fn load_or_create_stake_mut(
         &mut self,
         keys: &StakeKeys,
     ) -> &mut (StakeData, StakeKeys) {
         let key = keys.account.to_bytes();
-        let is_missing = self.stakes.get(&key).is_none();
 
-        if is_missing {
-            let stake = StakeData::EMPTY;
-            self.stakes.insert(key, (stake, *keys));
-        }
-
-        // SAFETY: unwrap is ok since we're sure we inserted an element
-        self.stakes.get_mut(&key).unwrap()
+        self.stakes
+            .entry(key)
+            .and_modify(|(_, loaded_keys)| {
+                assert_eq!(keys, loaded_keys, "Keys mismatch")
+            })
+            .or_insert_with(|| (StakeData::EMPTY, *keys))
     }
 
     /// Rewards a `account` with the given `value`.
