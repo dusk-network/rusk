@@ -45,28 +45,6 @@ unsafe fn withdraw(arg_len: u32) -> u32 {
     })
 }
 
-// Queries
-
-#[no_mangle]
-unsafe fn get_stake(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |pk| STATE.get_stake(&pk).cloned())
-}
-
-#[no_mangle]
-unsafe fn get_stake_keys(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |pk| STATE.get_stake_keys(&pk).cloned())
-}
-
-#[no_mangle]
-unsafe fn burnt_amount(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.burnt_amount())
-}
-
-#[no_mangle]
-unsafe fn get_version(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.get_version())
-}
-
 #[no_mangle]
 unsafe fn stake_from_contract(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |receive| {
@@ -90,6 +68,28 @@ unsafe fn unstake_from_contract(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn withdraw_to_contract(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |rewards| STATE.withdraw_to_contract(rewards))
+}
+
+// Queries
+
+#[no_mangle]
+unsafe fn get_stake(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |pk| STATE.get_stake(&pk).cloned())
+}
+
+#[no_mangle]
+unsafe fn get_stake_keys(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |pk| STATE.get_stake_keys(&pk).cloned())
+}
+
+#[no_mangle]
+unsafe fn burnt_amount(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.burnt_amount())
+}
+
+#[no_mangle]
+unsafe fn get_version(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.get_version())
 }
 
 // "Feeder" queries
