@@ -97,11 +97,11 @@ impl StakeState {
 
         let funds_key = Self::unwrap_account_funds(&keys.funds);
 
-        let digest = stake.signature_message().to_vec();
-        if !rusk_abi::verify_bls(digest.clone(), funds_key, signature.funds) {
+        let msg = stake.signature_message().to_vec();
+        if !rusk_abi::verify_bls(msg.clone(), funds_key, signature.funds) {
             panic!("Invalid funds signature!");
         }
-        if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
+        if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
         }
 
@@ -163,8 +163,8 @@ impl StakeState {
 
             // We verify the signature only when there is a new stake
             let signature = stake.signature().account;
-            let digest = stake.signature_message().to_vec();
-            if !rusk_abi::verify_bls(digest, account, signature) {
+            let msg = stake.signature_message().to_vec();
+            if !rusk_abi::verify_bls(msg, account, signature) {
                 panic!("Invalid account signature!");
             }
         }
@@ -222,11 +222,11 @@ impl StakeState {
         let funds_key = Self::unwrap_account_funds(&keys.funds);
 
         // check signature is correct
-        let digest = unstake.signature_message();
-        if !rusk_abi::verify_bls(digest.clone(), funds_key, signature.funds) {
+        let msg = unstake.signature_message();
+        if !rusk_abi::verify_bls(msg.clone(), funds_key, signature.funds) {
             panic!("Invalid funds signature!");
         }
-        if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
+        if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
         }
 
@@ -360,11 +360,11 @@ impl StakeState {
         let funds_key = Self::unwrap_account_funds(&keys.funds);
 
         // check signature is correct
-        let digest = withdraw.signature_message();
-        if !rusk_abi::verify_bls(digest.clone(), funds_key, signature.funds) {
+        let msg = withdraw.signature_message();
+        if !rusk_abi::verify_bls(msg.clone(), funds_key, signature.funds) {
             panic!("Invalid funds signature!");
         }
-        if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
+        if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
         }
 
