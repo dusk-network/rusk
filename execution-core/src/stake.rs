@@ -69,7 +69,7 @@ impl Stake {
 
         stake.signature = DoubleSignature {
             account: sk.sign(&msg),
-            funds: sk.sign(&msg),
+            owner: sk.sign(&msg),
         };
 
         stake
@@ -117,7 +117,7 @@ impl Stake {
             .copy_from_slice(&self.keys.account.to_bytes());
         offset += BlsPublicKey::SIZE;
 
-        match &self.keys.funds {
+        match &self.keys.owner {
             StakeFundOwner::Account(key) => bytes
                 [offset..offset + BlsPublicKey::SIZE]
                 .copy_from_slice(&key.to_bytes()),
@@ -219,7 +219,7 @@ impl Withdraw {
 
         stake_withdraw.signature = DoubleSignature {
             account: sk.sign(&msg),
-            funds: sk.sign(&msg),
+            owner: sk.sign(&msg),
         };
 
         stake_withdraw
@@ -354,12 +354,12 @@ pub struct StakeKeys {
     /// This field can represent ownership either through an individual account
     /// (`StakeFundOwner::Account`) or through a smart contract
     /// (`StakeFundOwner::Contract`).
-    pub funds: StakeFundOwner,
+    pub owner: StakeFundOwner,
 }
 
 impl StakeKeys {
     /// Creates a new `StakeKeys` instance where both the consensus key and the
-    /// funds key are set to the same account key.
+    /// owner key are set to the same account key.
     #[must_use]
     pub fn single_key(account: BlsPublicKey) -> Self {
         Self::new(account, account)
@@ -371,17 +371,17 @@ impl StakeKeys {
     /// # Parameters
     /// - `account`: The BLS public key used for consensus operations, such as
     ///   voting or producing blocks.
-    /// - `funds`: The owner of the funds, which can be either an account or a
+    /// - `owner`: The owner of the funds, which can be either an account or a
     ///   contract. This parameter is any type that implements
     ///   `Into<StakeFundOwner>`, allowing flexibility in how the funds owner is
     ///   specified.
     #[must_use]
     pub fn new<F: Into<StakeFundOwner>>(
         account: BlsPublicKey,
-        funds: F,
+        owner: F,
     ) -> Self {
-        let funds = funds.into();
-        Self { account, funds }
+        let owner = owner.into();
+        Self { account, owner }
     }
 }
 
@@ -430,8 +430,8 @@ impl From<ContractId> for StakeFundOwner {
 pub struct DoubleSignature {
     /// Signature created with the account key
     pub account: BlsSignature,
-    /// Signature created with the funds key
-    pub funds: BlsSignature,
+    /// Signature created with the owner key
+    pub owner: BlsSignature,
 }
 
 impl StakeData {
