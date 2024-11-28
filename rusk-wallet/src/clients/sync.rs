@@ -78,8 +78,6 @@ pub(crate) async fn sync_db(
             note_data.push((block_height, note));
         }
 
-        cache.insert_last_pos(last_pos)?;
-
         buffer = leaf_chunk.remainder().to_vec();
     }
 
@@ -93,6 +91,7 @@ pub(crate) async fn sync_db(
                         .await?
                         .first()
                         .is_some();
+
                 let note = (note.clone(), nullifier);
 
                 match spent {
@@ -118,6 +117,10 @@ pub(crate) async fn sync_db(
 
         sk.zeroize();
     }
+
+    // insert last post after the notes has been inserted
+    // to prevent false reporting of sync completion
+    cache.insert_last_pos(last_pos)?;
 
     Ok(())
 }

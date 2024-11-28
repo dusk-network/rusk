@@ -43,6 +43,7 @@ pub(crate) async fn run_loop(
 
                 command_menu::offline(profile_index, settings)
             } else {
+                let is_synced = wallet.is_synced().await?;
                 // get balance for this profile
                 let moonlight_bal =
                     wallet.get_moonlight_balance(profile_index).await?;
@@ -54,7 +55,6 @@ pub(crate) async fn run_loop(
                 // display profile information
                 // display shielded balance and keys information
                 println!("{}", profile.shielded_address_string());
-                let is_synced = wallet.is_synced().await?;
                 if is_synced {
                     println!(
                         "{0: <16} - Spendable: {phoenix_spendable}",
