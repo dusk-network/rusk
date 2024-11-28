@@ -24,7 +24,9 @@
     ContractOperations,
     ContractStatusesList,
     Stake,
+    Unstake,
   } from "$lib/components";
+  import { mdiDatabaseArrowDownOutline, mdiGiftOpenOutline } from "@mdi/js";
 
   /** @type {ContractDescriptor} */
   export let descriptor;
@@ -85,10 +87,6 @@
   /** @type {(operations: ContractOperation[]) => ContractOperation[]} */
   const disableAllOperations = mapWith(setKey("disabled", true));
 
-  /** @type {(operationId: string) => operationId is StakeType} */
-  const isStakeOperation = (operationId) =>
-    ["stake", "unstake", "claim-rewards"].includes(operationId);
-
   /**
    * We want to update the disabled status ourselves only
    * when the operation is enabled in the descriptor;
@@ -101,6 +99,21 @@
       descriptor.operations,
       when(hasKeyValue("disabled", false), updateOperationDisabledStatus())
     );
+
+  const getMaxUnstakeAmount = () => {
+    if (currentOperation === "unstake") {
+      return stakeInfo.amount ? stakeInfo.amount.total : 0n;
+    }
+
+    return stakeInfo.reward;
+  };
+  /**
+   * @returns {(operation: ContractOperation) => ContractOperation}
+   */
+  const updateOperationDisabledStatus = () => (operation) => ({
+    ...operation,
+    disabled: disablingConditions[operation.id]?.(stakeInfo) ?? true,
+  });
 
   /**
    * @returns {ContractStatus[]}
@@ -128,14 +141,6 @@
     },
   ];
 
-  /**
-   * @returns {(operation: ContractOperation) => ContractOperation}
-   */
-  const updateOperationDisabledStatus = () => (operation) => ({
-    ...operation,
-    disabled: disablingConditions[operation.id]?.(stakeInfo) ?? true,
-  });
-
   $: ({ currentOperation } = $operationsStore);
   const { hideStakingNotice } = $settingsStore;
   $: ({ balance, minimumStake, syncStatus } = $walletStore);
@@ -146,31 +151,40 @@
 </script>
 
 {#key currentOperation}
-  {#if isStakeOperation(currentOperation)}
+  {#if currentOperation === "stake"}
     <Stake
       execute={executeOperations[currentOperation]}
-      flow={currentOperation}
       formatter={duskFormatter}
       {gasLimits}
       {gasSettings}
       minAllowedStake={minimumStake}
       on:operationChange
       on:suppressStakingNotice
-      rewards={stakeInfo.reward}
       spendable={balance.unshielded.value}
-      staked={stakeInfo.amount ? stakeInfo.amount.total : 0n}
       {statuses}
       {hideStakingNotice}
+    />
+  {:else if currentOperation === "unstake" || currentOperation === "claim-rewards"}
+    <Unstake
+      execute={executeOperations[currentOperation]}
+      formatter={duskFormatter}
+      {gasLimits}
+      {gasSettings}
+      on:operationChange
+      {statuses}
+      maxAmount={getMaxUnstakeAmount()}
+      operationCtaLabel={currentOperation === "unstake"
+        ? "Unstake"
+        : "Claim Rewards"}
+      operationCtaIconPath={currentOperation === "unstake"
+        ? mdiDatabaseArrowDownOutline
+        : mdiGiftOpenOutline}
+      operationOverviewLabel={currentOperation === "unstake"
+        ? "Unstake Amount"
+        : "Rewards Amount"}
     />
   {:else}
     <ContractStatusesList {statuses} />
     <ContractOperations items={operations} on:operationChange />
   {/if}
 {/key}
-
-<style>
-  :global(.error-action) {
-    width: 100%;
-    text-align: left;
-  }
-</style>

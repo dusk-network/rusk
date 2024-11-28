@@ -464,7 +464,7 @@ exports[`Stake > should render the Stake notice 1`] = `
           >
             soft-slashing
           </a>
-           penalties, requiring me to unstake and restake.
+           penalties, requiring me to unstake and stake again.
         </p>
          
         <div
