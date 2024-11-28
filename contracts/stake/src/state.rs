@@ -58,7 +58,6 @@ impl StakeState {
         let value = stake.value();
         let keys = *stake.keys();
         let account = &keys.account;
-        let nonce = stake.nonce();
         let signature = *stake.signature();
 
         if stake.chain_id() != self.chain_id() {
@@ -68,6 +67,10 @@ impl StakeState {
         let prev_stake = self.get_stake(account).copied();
         let (loaded_stake, loaded_keys) = self.load_or_create_stake_mut(&keys);
 
+        if loaded_stake.amount.is_some() {
+            panic!("Can't stake twice for the same key");
+        }
+
         // Update the funds key with the newly provided one
         // This operation will rollback if the signature is invalid
         *loaded_keys = keys;
@@ -76,20 +79,6 @@ impl StakeState {
         // amount staked already
         if value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
-        }
-
-        if loaded_stake.amount.is_some() {
-            panic!("Can't stake twice for the same key");
-        }
-
-        // NOTE: exhausting the nonce is nearly impossible, since it
-        //       requires performing more than 18 quintillion stake operations.
-        //       Since this number is so large, we also skip overflow checks.
-        let incremented_nonce = loaded_stake.nonce + 1;
-
-        // check signature and nonce used are correct
-        if nonce != incremented_nonce {
-            panic!("Invalid nonce");
         }
 
         let digest = stake.signature_message().to_vec();
@@ -107,7 +96,6 @@ impl StakeState {
                 .expect("Depositing funds into contract should succeed");
 
         // update the state accordingly
-        loaded_stake.nonce = nonce;
         loaded_stake.amount =
             Some(StakeAmount::new(value, rusk_abi::block_height()));
 
@@ -161,6 +149,10 @@ impl StakeState {
 
         rusk_abi::emit("unstake", StakeEvent { keys: *keys, value });
 
+        if loaded_stake.reward == 0 {
+            self.stakes.remove(&unstake.account().to_bytes());
+        }
+
         let key = account.to_bytes();
         self.previous_block_state
             .entry(key)
@@ -206,6 +198,10 @@ impl StakeState {
         // update the state accordingly
         loaded_stake.reward -= value;
         rusk_abi::emit("withdraw", StakeEvent { keys: *keys, value });
+
+        if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
+            self.stakes.remove(&account.to_bytes());
+        }
     }
 
     /// Gets a reference to a stake.

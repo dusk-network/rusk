@@ -78,7 +78,7 @@ fn stake_withdraw_unstake() {
         chain_id(&mut session).expect("Getting the chain ID should succeed");
 
     // Fashion a Stake struct
-    let stake = Stake::new(&stake_sk, deposit, 1, chain_id);
+    let stake = Stake::new(&stake_sk, deposit, chain_id);
     let stake_bytes = rkyv::to_bytes::<_, 1024>(&stake)
         .expect("Should serialize Stake correctly")
         .to_vec();
@@ -128,7 +128,6 @@ fn stake_withdraw_unstake() {
         "Staked amount should match sent amount"
     );
     assert_eq!(stake_data.reward, 0, "Initial reward should be zero");
-    assert_eq!(stake_data.nonce, 1, "Nonce should be set to stake value");
 
     // ------
     // Add a reward to the staked key
@@ -164,7 +163,6 @@ fn stake_withdraw_unstake() {
         stake_data.reward, REWARD_AMOUNT,
         "Reward should be set to specified amount"
     );
-    assert_eq!(stake_data.nonce, 1, "Nonce should remain the same");
 
     // ------
     // Start withdrawing the reward just given to our key
@@ -265,7 +263,6 @@ fn stake_withdraw_unstake() {
         "Staked amount shouldn't have changed"
     );
     assert_eq!(stake_data.reward, 0, "Reward should be set to zero");
-    assert_eq!(stake_data.nonce, 1, "Nonce should remain the same");
 
     // ------
     // Start unstaking the previously staked amount

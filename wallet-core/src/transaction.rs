@@ -132,11 +132,6 @@ pub fn moonlight(
 
 /// Create a [`Transaction`] to stake from phoenix-notes.
 ///
-/// # Note
-/// The `stake_nonce` is NOT incremented and should be incremented
-/// by the caller of this function, if its not done so, rusk
-/// will throw 500 error
-///
 /// # Errors
 /// The creation of a transaction is not possible and will error if:
 /// - one of the input-notes doesn't belong to the `phoenix_sender_sk`
@@ -155,7 +150,6 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     gas_price: u64,
     chain_id: u8,
     stake_value: u64,
-    stake_nonce: u64,
     prover: &P,
 ) -> Result<Transaction, Error> {
     // in a staking transaction the receiver and refund-address is the sender
@@ -166,7 +160,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     let is_transfer = false;
     let deposit = stake_value;
 
-    let stake = Stake::new(stake_sk, stake_value, stake_nonce, chain_id);
+    let stake = Stake::new(stake_sk, stake_value, chain_id);
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
 
@@ -191,9 +185,8 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
 /// Create a [`Transaction`] to stake from a Moonlight account.
 ///
 /// # Note
-/// The `moonlight_nonce` and `stake_nonce` are NOT incremented
-/// and should be incremented by the caller of this function, if its not done
-/// so, rusk will throw 500 error
+/// The `moonlight_nonce` is NOT incremented and should be incremented by the
+/// caller of this function, if its not done so, rusk will throw 500 error
 ///
 /// # Errors
 /// The creation of this transaction doesn't error, but still returns a result
@@ -206,13 +199,12 @@ pub fn moonlight_stake(
     gas_limit: u64,
     gas_price: u64,
     moonlight_nonce: u64,
-    stake_nonce: u64,
     chain_id: u8,
 ) -> Result<Transaction, Error> {
     let transfer_value = 0;
     let deposit = stake_value;
 
-    let stake = Stake::new(stake_sk, stake_value, stake_nonce, chain_id);
+    let stake = Stake::new(stake_sk, stake_value, chain_id);
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
 

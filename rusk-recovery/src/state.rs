@@ -138,7 +138,6 @@ fn generate_stake_state(
         let stake = StakeData {
             amount,
             reward: staker.reward.unwrap_or_default(),
-            nonce: 0,
             faults: 0,
             hard_faults: 0,
         };

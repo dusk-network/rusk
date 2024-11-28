@@ -26,7 +26,7 @@ use core::{ptr, slice};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use execution_core::signatures::bls::PublicKey as BlsPublicKey;
-use execution_core::stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT};
+use execution_core::stake::{Stake, STAKE_CONTRACT};
 use execution_core::transfer::data::{ContractCall, TransactionData};
 use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use execution_core::transfer::phoenix::{
@@ -637,7 +637,6 @@ pub unsafe fn moonlight_stake(
     gas_price: *const u64,
     nonce: *const u64,
     chain_id: u8,
-    stake_nonce: *const u64,
     tx_ptr: *mut *mut u8,
     hash_ptr: &mut [u8; 64],
 ) -> ErrorCode {
@@ -647,7 +646,7 @@ pub unsafe fn moonlight_stake(
     let sender_sk = derive_bls_sk(&seed, sender_index);
     let stake_sk = sender_sk.clone();
 
-    let stake = Stake::new(&stake_sk, *stake_value, *stake_nonce, chain_id);
+    let stake = Stake::new(&stake_sk, *stake_value, chain_id);
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)
         .or(Err(ErrorCode::ContractCallError))?;
