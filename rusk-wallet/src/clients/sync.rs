@@ -7,10 +7,9 @@
 use futures::StreamExt;
 use rues::CONTRACTS_TARGET;
 
+use super::*;
 use crate::clients::{Cache, TRANSFER_CONTRACT};
 use crate::Error;
-
-use super::*;
 
 pub(crate) async fn sync_db(
     client: &RuesHttpClient,

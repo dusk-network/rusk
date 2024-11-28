@@ -4,16 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::ffi::error::ErrorCode;
-
+use alloc::alloc::{alloc, dealloc, Layout};
 use core::slice;
 
-use alloc::alloc::{alloc, dealloc, Layout};
 use bytecheck::CheckBytes;
-use rkyv::{
-    check_archived_root, de::deserializers::SharedDeserializeMap,
-    validation::validators::DefaultValidator, Archive, Deserialize,
-};
+use rkyv::de::deserializers::SharedDeserializeMap;
+use rkyv::validation::validators::DefaultValidator;
+use rkyv::{check_archived_root, Archive, Deserialize};
+
+use crate::ffi::error::ErrorCode;
 
 /// The alignment of the memory allocated by the FFI.
 ///

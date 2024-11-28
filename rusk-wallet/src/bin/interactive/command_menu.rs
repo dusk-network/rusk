@@ -8,18 +8,16 @@ use std::fmt::Display;
 
 use execution_core::transfer::data::MAX_MEMO_SIZE;
 use inquire::{InquireError, Select};
-use rusk_wallet::{
-    currency::Dusk,
-    gas::{
-        self, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_STAKE, DEFAULT_LIMIT_TRANSFER,
-        DEFAULT_PRICE, GAS_PER_DEPLOY_BYTE, MIN_PRICE_DEPLOYMENT,
-    },
-    Address, Wallet, MAX_FUNCTION_NAME_SIZE,
+use rusk_wallet::currency::Dusk;
+use rusk_wallet::gas::{
+    self, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_STAKE, DEFAULT_LIMIT_TRANSFER,
+    DEFAULT_PRICE, GAS_PER_DEPLOY_BYTE, MIN_PRICE_DEPLOYMENT,
 };
-
-use crate::{prompt, settings::Settings, Command, WalletFile};
+use rusk_wallet::{Address, Wallet, MAX_FUNCTION_NAME_SIZE};
 
 use super::ProfileOp;
+use crate::settings::Settings;
+use crate::{prompt, Command, WalletFile};
 
 /// The command-menu items
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]

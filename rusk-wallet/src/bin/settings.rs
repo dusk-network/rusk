@@ -4,15 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::config::Network;
-use crate::io::WalletArgs;
-
-use rusk_wallet::{Error, RuesHttpClient};
 use std::fmt;
 use std::path::PathBuf;
 
+use rusk_wallet::{Error, RuesHttpClient};
 use tracing::Level;
 use url::Url;
+
+use crate::config::Network;
+use crate::io::WalletArgs;
 
 #[derive(clap::ValueEnum, Debug, Clone)]
 pub(crate) enum LogFormat {

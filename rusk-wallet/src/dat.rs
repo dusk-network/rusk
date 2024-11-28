@@ -12,8 +12,7 @@ use std::io::Read;
 use wallet_core::Seed;
 
 use crate::crypto::decrypt;
-use crate::Error;
-use crate::WalletPath;
+use crate::{Error, WalletPath};
 
 /// Binary prefix for old Dusk wallet files
 pub const OLD_MAGIC: u32 = 0x1d0c15;

@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::Path;
+
+use serde::Deserialize;
 use url::Url;
 
 use crate::Error;

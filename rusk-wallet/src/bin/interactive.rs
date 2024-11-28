@@ -10,18 +10,13 @@ use std::fmt::Display;
 
 use bip39::{Language, Mnemonic, MnemonicType};
 use inquire::{InquireError, Select};
+use rusk_wallet::currency::Dusk;
+use rusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
+use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
 
-use rusk_wallet::{
-    currency::Dusk,
-    dat::{DatFileVersion, LATEST_VERSION},
-    Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES,
-};
-
-use crate::{
-    io::{self, prompt},
-    settings::Settings,
-    Command, GraphQL, RunResult, WalletFile,
-};
+use crate::io::{self, prompt};
+use crate::settings::Settings;
+use crate::{Command, GraphQL, RunResult, WalletFile};
 
 /// Run the interactive UX loop with a loaded wallet
 pub(crate) async fn run_loop(

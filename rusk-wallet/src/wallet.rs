@@ -17,40 +17,34 @@ use std::path::{Path, PathBuf};
 
 use bip39::{Language, Mnemonic, Seed};
 use dusk_bytes::Serializable;
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
+use execution_core::stake::StakeData;
+use execution_core::transfer::phoenix::{
+    Note, NoteLeaf, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
+};
+use execution_core::{BlsScalar, CONTRACT_ID_BYTES};
 use serde::Serialize;
+use wallet_core::prelude::keys::{
+    derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
+    derive_phoenix_vk,
+};
+use wallet_core::{phoenix_balance, BalanceInfo};
 use zeroize::Zeroize;
 
-use execution_core::{
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::StakeData,
-    transfer::phoenix::{
-        Note, NoteLeaf, PublicKey as PhoenixPublicKey,
-        SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
-    },
-    BlsScalar, CONTRACT_ID_BYTES,
+use crate::clients::State;
+use crate::crypto::encrypt;
+use crate::currency::Dusk;
+use crate::dat::{
+    self, version_bytes, DatFileVersion, FILE_TYPE, LATEST_VERSION, MAGIC,
+    RESERVED,
 };
-use wallet_core::{
-    phoenix_balance,
-    prelude::keys::{
-        derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
-        derive_phoenix_vk,
-    },
-    BalanceInfo,
-};
-
 use crate::gas::MempoolGasPrices;
-use crate::{
-    clients::State,
-    crypto::encrypt,
-    currency::Dusk,
-    dat::{
-        self, version_bytes, DatFileVersion, FILE_TYPE, LATEST_VERSION, MAGIC,
-        RESERVED,
-    },
-    rues::RuesHttpClient,
-    store::LocalStore,
-    Error,
-};
+use crate::rues::RuesHttpClient;
+use crate::store::LocalStore;
+use crate::Error;
 
 /// The interface to the Dusk Network
 ///
@@ -652,7 +646,8 @@ struct BlsKeyPair {
 }
 
 mod base64 {
-    use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+    use base64::engine::general_purpose::STANDARD as BASE64;
+    use base64::Engine;
     use serde::{Serialize, Serializer};
 
     pub fn serialize<S: Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
@@ -664,8 +659,9 @@ mod base64 {
 #[cfg(test)]
 mod tests {
 
-    use super::*;
     use tempfile::tempdir;
+
+    use super::*;
 
     const TEST_ADDR: &str = "2w7fRQW23Jn9Bgm1GQW9eC2bD9U883dAwqP7HAr2F8g1syzPQaPYrxSyyVZ81yDS5C1rv9L8KjdPBsvYawSx3QCW";
 

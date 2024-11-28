@@ -9,27 +9,26 @@
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
+use execution_core::stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT};
+use execution_core::transfer::data::{
+    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+};
+use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use execution_core::transfer::phoenix::{
+    Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
+};
+use execution_core::transfer::withdraw::{
+    Withdraw, WithdrawReceiver, WithdrawReplayToken,
+};
+use execution_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use execution_core::{BlsScalar, ContractId, Error, JubJubScalar};
 use ff::Field;
 use rand::{CryptoRng, RngCore};
 use zeroize::Zeroize;
-
-use execution_core::{
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT},
-    transfer::{
-        data::{
-            ContractBytecode, ContractCall, ContractDeploy, TransactionData,
-        },
-        moonlight::Transaction as MoonlightTransaction,
-        phoenix::{
-            Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
-            SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
-        },
-        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        Transaction, TRANSFER_CONTRACT,
-    },
-    BlsScalar, ContractId, Error, JubJubScalar,
-};
 
 /// An unproven-transaction is nearly identical to a [`PhoenixTransaction`] with
 /// the only difference being that it carries a serialized [`TxCircuitVec`]

@@ -6,38 +6,30 @@
 
 mod sync;
 
+use std::path::Path;
+use std::sync::{Arc, Mutex};
+
 use dusk_bytes::Serializable;
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    transfer::{
-        moonlight::AccountData,
-        phoenix::{Note, NoteLeaf, Prove},
-        Transaction,
-    },
-    Error as ExecutionCoreError,
-};
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::transfer::moonlight::AccountData;
+use execution_core::transfer::phoenix::{Note, NoteLeaf, Prove};
+use execution_core::transfer::Transaction;
+use execution_core::Error as ExecutionCoreError;
 use flume::Receiver;
 use rues::RuesHttpClient;
-use tokio::{
-    task::JoinHandle,
-    time::{sleep, Duration},
+use tokio::task::JoinHandle;
+use tokio::time::{sleep, Duration};
+use wallet_core::keys::{
+    derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
 };
-use wallet_core::{
-    keys::{derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk},
-    pick_notes,
-};
+use wallet_core::pick_notes;
 use zeroize::Zeroize;
 
-use std::{
-    path::Path,
-    sync::{Arc, Mutex},
-};
-
 use self::sync::sync_db;
-
-use super::{cache::Cache, *};
-
-use crate::{store::LocalStore, Error, MAX_PROFILES};
+use super::cache::Cache;
+use super::*;
+use crate::store::LocalStore;
+use crate::{Error, MAX_PROFILES};
 
 const TRANSFER_CONTRACT: &str =
     "0100000000000000000000000000000000000000000000000000000000000000";

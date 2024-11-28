@@ -4,10 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::path::PathBuf;
+
+use clap::{arg, Parser};
+
 use crate::settings::{LogFormat, LogLevel};
 use crate::Command;
-use clap::{arg, Parser};
-use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(

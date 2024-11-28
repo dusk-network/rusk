@@ -4,10 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use inquire::InquireError;
-use rand::Error as RngError;
 use std::io;
 use std::str::Utf8Error;
+
+use inquire::InquireError;
+use rand::Error as RngError;
 
 use crate::gql::GraphQLError;
 
