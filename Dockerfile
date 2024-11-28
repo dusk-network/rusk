@@ -12,6 +12,10 @@ ARG TARGETPLATFORM
 # See also https://github.com/docker/buildx/issues/510
 ENV TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
 
+# Features to include in the build
+# E.g., --build-arg CARGO_FEATURES="archive"
+ARG CARGO_FEATURES=""
+
 # Convert Docker platform arg to Rust target name,
 # and install nightly based on the Rust target
 RUN ARCH="$(echo $TARGETPLATFORM | sed 's/linux\///')" && \
@@ -29,7 +33,12 @@ RUN ARCH="$(echo $TARGETPLATFORM | sed 's/linux\///')" && \
 # Generate keys and compile genesis contracts
 RUN make keys
 RUN make wasm
-RUN cargo b --release -p rusk
+# Build rusk with default features and include CARGO_FEATURES
+RUN if [ -n "$CARGO_FEATURES" ]; then \
+    cargo build --release --features "$CARGO_FEATURES" -p rusk; \
+    else \
+    cargo build --release -p rusk; \
+    fi
 
 # --- Run stage ---
 FROM debian:bookworm-slim

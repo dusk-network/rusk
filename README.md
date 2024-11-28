@@ -115,10 +115,15 @@ See also `make help` for all the available commands
 
 It's also possible to run a local ephemeral node with Docker.
 
-To build the Docker image:
+To build the Docker image without archive:
 
 ```bash
 docker build -t rusk .
+```
+
+To build the Docker image with archive:
+```bash
+docker build -t rusk --build-arg CARGO_FEATURES="archive" .
 ```
 
 To run Rusk inside a Docker container:

@@ -15,7 +15,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        run: docker build -t rusk .
+        run: docker build -t rusk --build-arg CARGO_FEATURES="archive" .
 
       - name: Save Docker image
         run: docker save rusk:latest -o rusk_image.tar
