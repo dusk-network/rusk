@@ -200,12 +200,12 @@ impl Query {
         to_block: Option<u64>,
         max_count: Option<usize>,
         page_count: Option<usize>,
-    ) -> OptResult<MoonlightTransactions> {
+    ) -> OptResult<MoonlightTransfers> {
         if max_count == Some(0) {
             return Err(FieldError::new("MaxCount must be greater than 0"));
         }
 
-        moonlight_transactions(
+        fetch_moonlight_history(
             ctx, sender, receiver, from_block, to_block, max_count, page_count,
         )
         .await
@@ -216,7 +216,7 @@ impl Query {
         &self,
         ctx: &Context<'_>,
         memo: String,
-    ) -> OptResult<MoonlightTransactions> {
+    ) -> OptResult<MoonlightTransfers> {
         // convert String to Vec<u8>
         let memo = memo.into_bytes();
         moonlight_tx_by_memo(ctx, memo).await
