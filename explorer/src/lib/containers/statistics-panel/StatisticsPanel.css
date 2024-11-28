@@ -92,13 +92,7 @@
   }
 
   .statistics-panel__statistics-column:nth-child(5) {
-    grid-column: span 2;
-    text-align: center;
-  }
-
-  .statistics-panel__statistics-column:nth-child(5)
-    .statistics-panel__statistics-item-value-container {
-    justify-content: center;
+    display: contents;
   }
 
   .statistics-panel__statistics-item-value {
@@ -123,12 +117,6 @@
   }
 
   .statistics-panel__statistics-column:nth-child(5) {
-    grid-column: span 1;
-    text-align: start;
-  }
-
-  .statistics-panel__statistics-column:nth-child(5)
-    .statistics-panel__statistics-item-value-container {
-    justify-content: start;
+    display: flex;
   }
 }
