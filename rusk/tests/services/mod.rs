@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod contract_deployment;
+pub mod contract_stake;
 pub mod conversion;
 pub mod deploy;
 pub mod finalization;
