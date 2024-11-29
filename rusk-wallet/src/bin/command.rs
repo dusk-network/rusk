@@ -20,7 +20,10 @@ use rusk_wallet::gas::{
     Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
     DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
 };
-use rusk_wallet::{Address, Error, Profile, Wallet, EPOCH, MAX_PROFILES};
+use rusk_wallet::{
+    Address, Error, Profile, Wallet, EPOCH, MAX_CONTRACT_INIT_ARG_SIZE,
+    MAX_PROFILES,
+};
 use wallet_core::BalanceInfo;
 
 use crate::io::prompt;
@@ -591,10 +594,12 @@ impl Command {
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let init_args =
-                    rkyv::to_bytes::<String, { usize::MAX }>(&init_args)
-                        .map_err(|_| Error::Rkyv)?
-                        .to_vec();
+                let init_args = rkyv::to_bytes::<
+                    String,
+                    { MAX_CONTRACT_INIT_ARG_SIZE },
+                >(&init_args)
+                .map_err(|_| Error::Rkyv)?
+                .to_vec();
 
                 let tx = match address {
                     Address::Shielded(_) => {
