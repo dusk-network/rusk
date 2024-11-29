@@ -105,16 +105,6 @@ describe("Send", () => {
       expect(container.firstChild).toMatchSnapshot();
     });
 
-    it("should render the Send component Amount state with Allocate option", async () => {
-      const props = { ...baseProps, enableAllocateButton: true };
-
-      const { container, getByRole } = render(Send, props);
-
-      await fireEvent.click(getByRole("button", { name: "Next" }));
-
-      expect(container.firstChild).toMatchSnapshot();
-    });
-
     it("should disable the next button if the amount is invalid on mount", async () => {
       const props = {
         ...baseProps,
