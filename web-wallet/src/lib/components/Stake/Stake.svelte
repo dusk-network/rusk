@@ -33,6 +33,7 @@
   import { WarningCard } from "$lib/containers/Cards";
 
   import StakeOverview from "./StakeOverview.svelte";
+  import Banner from "../Banner/Banner.svelte";
 
   /** @type {(...args: any[]) => Promise<string>} */
   export let execute;
@@ -50,10 +51,10 @@
   export let hideStakingNotice;
 
   /** @type {bigint} */
-  export let minAllowedStake;
+  export let minStakeRequirement;
 
   /** @type {bigint} */
-  export let spendable;
+  export let availableBalance;
 
   /** @type {ContractStatus[]} */
   export let statuses;
@@ -68,7 +69,7 @@
    * as number if we want to use
    * Svelte's binding.
    */
-  let stakeAmount = luxToDusk(minAllowedStake);
+  let stakeAmount = luxToDusk(minStakeRequirement);
 
   const steps = getStepperSteps();
 
@@ -105,7 +106,7 @@
       return;
     }
 
-    if (spendable < fee) {
+    if (availableBalance < maxGasFee) {
       toast(
         "error",
         "You don't have enough DUSK to cover the transaction fee",
@@ -114,30 +115,47 @@
       return;
     }
 
-    stakeAmount = luxToDusk(maxSpendable);
+    stakeAmount = luxToDusk(maxSpendableAmount);
   }
 
   onMount(() => {
-    stakeAmount = Math.min(luxToDusk(minStake), stakeAmount);
     isGasValid = areValidGasSettings(gasPrice, gasLimit);
   });
 
-  // Derived values
-  $: fee = gasLimit * gasPrice;
-  $: maxSpendable = spendable - fee;
-  $: minStake =
-    maxSpendable > 0n && minAllowedStake > maxSpendable
-      ? maxSpendable
-      : minAllowedStake;
   $: stakeAmountInLux = stakeAmount ? duskToLux(stakeAmount) : 0n;
+
+  // Calculate the maximum gas fee based on the gas limit and gas price.
+  $: maxGasFee = gasLimit * gasPrice;
+
+  // Check if the available balance is sufficient to cover the max gas fee.
+  // This is a prerequisite for any transaction.
+  $: isBalanceSufficientForGas = availableBalance >= maxGasFee;
+
+  // Determine the maximum amount spendable for staking.
+  // If the available balance is less than the max gas fee, set it to 0n to avoid negative values.
+  $: maxSpendableAmount =
+    availableBalance >= maxGasFee ? availableBalance - maxGasFee : 0n;
+
+  // Validate that the stake amount is within allowable limits:
+  // - At least the minimum staking requirement.
+  // - At most the maximum spendable amount (after accounting for maximum gas fees).
   $: isStakeAmountValid =
-    stakeAmountInLux >= minStake && stakeAmountInLux <= maxSpendable;
-  $: totalLuxFee = fee + stakeAmountInLux;
-  $: isFeeWithinLimit = totalLuxFee <= spendable;
+    stakeAmountInLux >= minStakeRequirement &&
+    stakeAmountInLux <= maxSpendableAmount;
+
+  // Calculate the total amount for the transaction, which includes:
+  // - The maximum gas fee.
+  // - The user-specified stake amount (converted to Lux).
+  $: totalAmount = maxGasFee + stakeAmountInLux;
+
+  // Validate that the total amount is within the user's available balance.
+  $: isTotalAmountWithinAvailableBalance = totalAmount <= availableBalance;
+
   $: isNextButtonDisabled = !(
     isStakeAmountValid &&
     isGasValid &&
-    isFeeWithinLimit
+    isTotalAmountWithinAvailableBalance &&
+    isBalanceSufficientForGas
   );
 </script>
 
@@ -229,8 +247,8 @@
           className="operation__input-field"
           bind:value={stakeAmount}
           type="number"
-          min={luxToDusk(minStake)}
-          max={luxToDusk(maxSpendable)}
+          min={luxToDusk(minStakeRequirement)}
+          max={luxToDusk(maxSpendableAmount)}
           required
           step="0.000000001"
         />
@@ -243,7 +261,7 @@
 
       <GasSettings
         {formatter}
-        {fee}
+        fee={maxGasFee}
         limit={gasSettings.gasLimit}
         limitLower={gasLimits.gasLimitLower}
         limitUpper={gasLimits.gasLimitUpper}
@@ -251,6 +269,39 @@
         priceLower={gasLimits.gasPriceLower}
         on:gasSettings={setGasValues}
       />
+
+      {#if isNextButtonDisabled}
+        {#if !isBalanceSufficientForGas}
+          <Banner variant="error" title="Insufficient balance for gas fees">
+            <p>
+              Your current balance is too low to cover the required gas fees for
+              this transaction. Please deposit additional funds or reduce the
+              gas limit.
+            </p>
+          </Banner>
+        {:else if stakeAmountInLux < minStakeRequirement}
+          <Banner
+            variant="error"
+            title="Stake amount below minimum requirement"
+          >
+            <p>
+              The amount you are trying to stake is below the minimum staking
+              requirement of {luxToDusk(minStakeRequirement).toLocaleString()} DUSK.
+              Please enter a valid amount that meets this minimum.
+            </p>
+          </Banner>
+        {:else if stakeAmountInLux > maxSpendableAmount}
+          <Banner
+            variant="error"
+            title="Stake amount exceeds available balance"
+          >
+            <p>
+              The amount you are trying to stake exceeds your spendable balance
+              after accounting for gas fees. Please reduce your stake amount.
+            </p>
+          </Banner>
+        {/if}
+      {/if}
     </WizardStep>
 
     <!-- OPERATION OVERVIEW STEP  -->
@@ -276,7 +327,7 @@
         <ContractStatusesList {statuses} />
         <Badge text="REVIEW TRANSACTION" variant="warning" />
         <StakeOverview label="Amount" value={formatter(stakeAmount)} />
-        <GasFee {formatter} {fee} />
+        <GasFee {formatter} fee={maxGasFee} />
       </div>
     </WizardStep>
 

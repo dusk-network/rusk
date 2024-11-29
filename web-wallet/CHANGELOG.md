@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix "passphrase" terminology usage with "Mnemonic Phrase" [#3069]
+- Fix "Stake" flow validation [#3089]
 
 ## [0.8.1] - 2024-11-26
 
