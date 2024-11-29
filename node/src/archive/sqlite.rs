@@ -195,11 +195,11 @@ impl Archive {
         let mut conn = self.sqlite_archive.acquire().await?;
 
         let r = sqlx::query!(
-                r#"SELECT block_height FROM finalized_blocks WHERE block_height = ? AND block_hash = ?"#,
-                block_height, hex_block_hash
-            )
-            .fetch_optional(&mut *conn)
-            .await?;
+                    r#"SELECT block_height FROM finalized_blocks WHERE block_height = ? AND block_hash = ?"#,
+                    block_height, hex_block_hash
+                )
+                .fetch_optional(&mut *conn)
+                .await?;
 
         Ok(r.is_some())
     }
@@ -257,9 +257,10 @@ impl Archive {
     /// Finalize all data related to the block of the given hash in the archive.
     ///
     /// This also triggers the loading of the MoonlightTxEvents into the
-    /// moonlight db.
+    /// moonlight db. This also updates the last finalized block height
+    /// attribute.
     pub(super) async fn finalize_archive_data(
-        &self,
+        &mut self,
         current_block_height: u64,
         hex_block_hash: &str,
     ) -> Result<()> {
@@ -341,6 +342,8 @@ impl Archive {
 
         // Get the MoonlightTxEvents and load it into the moonlight db
         self.tl_moonlight(grouped_events)?;
+
+        self.last_finalized_block_height = finalized_block_height as u64;
 
         Ok(())
     }
@@ -568,7 +571,7 @@ mod tests {
     #[tokio::test]
     async fn test_delete_vm_events() {
         let path = test_dir();
-        let archive = Archive::create_or_open(path).await;
+        let mut archive = Archive::create_or_open(path).await;
         let blk_height = 1;
         let blk_hash = [5; 32];
         let hex_blk_hash = hex::encode(blk_hash);
