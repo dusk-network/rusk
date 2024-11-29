@@ -6,36 +6,31 @@
 
 extern crate alloc;
 
-use alloc::string::ToString;
-
 use execution_core::stake::{Stake, STAKE_CONTRACT};
 use execution_core::transfer::{ContractToContract, TRANSFER_CONTRACT};
 
 const SCRATCH_BUF_BYTES: usize = 256;
 
-/// Bob contract.
+/// Charlie contract.
 #[derive(Debug, Clone)]
 pub struct Charlie;
 impl Charlie {
     pub fn stake(&mut self, stake: Stake) {
         let value = stake.value();
-        let contract = STAKE_CONTRACT;
-        let fn_name = "stake_from_contract".to_string();
         let data = rkyv::to_bytes::<_, SCRATCH_BUF_BYTES>(&stake)
             .expect("stake to be rkyv serialized")
             .to_vec();
 
         // make call to transfer contract to transfer balance from the user to
         // this contract
-        let _: () =
-            rusk_abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
-                .expect("Depositing funds into contract should succeed");
+        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "deposit", &value)
+            .expect("Depositing funds into contract should succeed");
 
         let contract_to_contract = ContractToContract {
-            contract,
+            contract: STAKE_CONTRACT,
             value,
             data,
-            fn_name,
+            fn_name: "stake_from_contract".into(),
         };
 
         let _: () = rusk_abi::call(

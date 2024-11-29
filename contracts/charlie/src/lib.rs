@@ -4,24 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![cfg_attr(target_family = "wasm", no_std)]
-#![cfg(target_family = "wasm")]
-
-extern crate alloc;
+#![no_std]
 
 mod state;
 use state::Charlie;
 
-#[cfg(target_family = "wasm")]
-#[path = ""]
-mod wasm {
-    use super::*;
+#[no_mangle]
+static mut STATE: Charlie = Charlie;
 
-    #[no_mangle]
-    static mut STATE: Charlie = Charlie;
-
-    #[no_mangle]
-    unsafe fn stake(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |stake| STATE.stake(stake))
-    }
+#[no_mangle]
+unsafe fn stake(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |stake| STATE.stake(stake))
 }
