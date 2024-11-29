@@ -422,11 +422,13 @@ const unshield = async (amount, gas) =>
     .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["unstake"]} */
-const unstake = async (gas) =>
+const unstake = async (amount, gas) =>
   sync()
     .then(networkStore.connect)
     .then((network) =>
-      network.execute(bookkeeper.as(getCurrentProfile()).unstake().gas(gas))
+      network.execute(
+        bookkeeper.as(getCurrentProfile()).unstake(amount).gas(gas)
+      )
     )
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
