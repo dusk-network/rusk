@@ -75,6 +75,35 @@ impl Stake {
         stake
     }
 
+    /// Create a new stake.
+    #[must_use]
+    pub fn new_from_contract(
+        sk: &BlsSecretKey,
+        contract: ContractId,
+        value: u64,
+        chain_id: u8,
+    ) -> Self {
+        let key = BlsPublicKey::from(sk);
+
+        let keys = StakeKeys::new(key, contract);
+
+        let mut stake = Stake {
+            chain_id,
+            keys,
+            value,
+            signature: DoubleSignature::default(),
+        };
+
+        let msg = stake.signature_message();
+
+        stake.signature = DoubleSignature {
+            account: sk.sign(&msg),
+            owner: sk.sign(&msg),
+        };
+
+        stake
+    }
+
     /// Account to which the stake will belong.
     #[must_use]
     pub fn keys(&self) -> &StakeKeys {
