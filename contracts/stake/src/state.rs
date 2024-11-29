@@ -153,8 +153,8 @@ impl StakeState {
         let (loaded_stake, keys) = self.load_or_create_stake_mut(stake.keys());
 
         let contract = Self::unwrap_contract_owner(&keys.owner);
-        assert_eq!(contract, &recv.contract, "Invalid contract caller");
-        assert_eq!(value, recv.value, "Stake amount mismatch");
+        assert!(contract == &recv.contract, "Invalid contract caller");
+        assert!(value == recv.value, "Stake amount mismatch");
 
         if loaded_stake.amount.is_none() {
             if value < MINIMUM_STAKE {
@@ -287,7 +287,7 @@ impl StakeState {
         let owner = Self::unwrap_contract_owner(&keys.owner);
         let caller =
             rusk_abi::caller().expect("unstake must be called by a contract");
-        assert_eq!(&caller, owner, "Invalid contract caller");
+        assert!(&caller == owner, "Invalid contract caller");
 
         let to_contract = ContractToContract {
             contract: caller,
@@ -405,7 +405,7 @@ impl StakeState {
         let owner = Self::unwrap_contract_owner(&keys.owner);
         let caller =
             rusk_abi::caller().expect("unstake must be called by a contract");
-        assert_eq!(&caller, owner, "Invalid contract caller");
+        assert!(&caller == owner, "Invalid contract caller");
 
         let to_contract = ContractToContract {
             contract: caller,
@@ -466,7 +466,7 @@ impl StakeState {
         self.stakes
             .entry(key)
             .and_modify(|(_, loaded_keys)| {
-                assert_eq!(keys, loaded_keys, "Keys mismatch")
+                assert!(keys == loaded_keys, "Keys mismatch")
             })
             .or_insert_with(|| (StakeData::EMPTY, *keys))
     }
