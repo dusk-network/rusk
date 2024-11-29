@@ -264,6 +264,8 @@ exports[`Stake > should render the Stake component 1`] = `
        
     </div>
      
+    
+     
     <div
       class="dusk-wizard__step-navigation"
     >

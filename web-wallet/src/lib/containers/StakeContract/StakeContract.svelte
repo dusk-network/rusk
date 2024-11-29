@@ -157,10 +157,10 @@
       formatter={duskFormatter}
       {gasLimits}
       {gasSettings}
-      minAllowedStake={minimumStake}
+      minStakeRequirement={minimumStake}
       on:operationChange
       on:suppressStakingNotice
-      spendable={balance.unshielded.value}
+      availableBalance={balance.unshielded.value}
       {statuses}
       {hideStakingNotice}
     />
