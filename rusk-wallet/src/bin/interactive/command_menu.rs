@@ -263,7 +263,7 @@ pub(crate) async fn online(
             ProfileOp::Run(Box::new(Command::ContractDeploy {
                 address: Some(addr),
                 code,
-                init_args: prompt::request_bytes("init arguments")?,
+                init_args: prompt::request_str("init arguments", usize::MAX)?,
                 deploy_nonce: prompt::request_nonce()?,
                 gas_limit: prompt::request_gas_limit(gas_limit)?,
                 gas_price,

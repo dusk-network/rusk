@@ -241,7 +241,7 @@ pub(crate) enum Command {
 
         /// Arguments for init function
         #[arg(short, long)]
-        init_args: Vec<u8>,
+        init_args: String,
 
         /// Nonce used for the deploy transaction
         #[arg(short, long)]
@@ -591,6 +591,11 @@ impl Command {
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
+                let init_args =
+                    rkyv::to_bytes::<String, { usize::MAX }>(&init_args)
+                        .map_err(|_| Error::Rkyv)?
+                        .to_vec();
+
                 let tx = match address {
                     Address::Shielded(_) => {
                         wallet.sync().await?;

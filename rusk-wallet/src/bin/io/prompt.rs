@@ -5,26 +5,31 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::fmt::Display;
-use std::io::stdout;
 use std::path::PathBuf;
-use std::println;
 use std::str::FromStr;
+use std::{io::stdout, println};
+
+use crossterm::{
+    cursor::{Hide, Show},
+    ExecutableCommand,
+};
 
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
-use crossterm::cursor::{Hide, Show};
-use crossterm::ExecutableCommand;
 use execution_core::stake::MINIMUM_STAKE;
+
 use inquire::ui::RenderConfig;
 use inquire::validator::Validation;
 use inquire::{
     Confirm, CustomType, InquireError, Password, PasswordDisplayMode, Select,
     Text,
 };
-use rusk_wallet::currency::{Dusk, Lux};
-use rusk_wallet::dat::DatFileVersion;
-use rusk_wallet::gas::{self, MempoolGasPrices};
-use rusk_wallet::{Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE};
+use rusk_wallet::{
+    currency::{Dusk, Lux},
+    dat::DatFileVersion,
+    gas::{self, MempoolGasPrices},
+    Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE,
+};
 use sha2::{Digest, Sha256};
 
 pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
@@ -351,7 +356,22 @@ pub(crate) fn request_transaction_model() -> anyhow::Result<TransactionModel> {
 
 /// Request contract WASM file location
 pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
-    request_dir("Location of the WASM contract", PathBuf::new())
+    let validator = |path_str: &str| {
+        let path = PathBuf::from(path_str);
+        if path.extension().map_or(false, |ext| ext == "wasm") {
+            Ok(Validation::Valid)
+        } else {
+            Ok(Validation::Invalid("Not a valid directory".into()))
+        }
+    };
+
+    let q = Text::new("Please Enter location of the WASM contract:")
+        .with_validator(validator)
+        .prompt()?;
+
+    let p = PathBuf::from(q);
+
+    Ok(p)
 }
 
 pub(crate) fn request_bytes(name: &str) -> anyhow::Result<Vec<u8>> {

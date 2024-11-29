@@ -87,32 +87,27 @@ pub(crate) async fn run_loop(
                     if confirm(&cmd, wallet)? {
                         // run command
                         prompt::hide_cursor()?;
-                        let result = cmd.run(wallet, settings).await;
+                        let res = cmd.run(wallet, settings).await?;
+
                         prompt::show_cursor()?;
                         // output results
-                        match result {
-                            Ok(res) => {
-                                println!("\r{}", res);
-                                if let RunResult::Tx(hash) = res {
-                                    let tx_id = hex::encode(hash.to_bytes());
+                        println!("\r{}", res);
+                        if let RunResult::Tx(hash) = res {
+                            let tx_id = hex::encode(hash.to_bytes());
 
-                                    // Wait for transaction confirmation
-                                    // from network
-                                    let gql = GraphQL::new(
-                                        settings.state.to_string(),
-                                        io::status::interactive,
-                                    )?;
-                                    gql.wait_for(&tx_id).await?;
+                            // Wait for transaction confirmation
+                            // from network
+                            let gql = GraphQL::new(
+                                settings.state.to_string(),
+                                io::status::interactive,
+                            )?;
+                            gql.wait_for(&tx_id).await?;
 
-                                    if let Some(explorer) = &settings.explorer {
-                                        let url = format!("{explorer}{tx_id}");
-                                        println!("> URL: {url}");
-                                        prompt::launch_explorer(url)?;
-                                    }
-                                }
+                            if let Some(explorer) = &settings.explorer {
+                                let url = format!("{explorer}{tx_id}");
+                                println!("> URL: {url}");
+                                prompt::launch_explorer(url)?;
                             }
-
-                            Err(err) => return Err(err),
                         }
                     }
                 }
@@ -442,14 +437,25 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             gas_price,
         } => {
             let sender = address.as_ref().ok_or(Error::BadAddress)?;
+            let sender_index = wallet.find_index(sender)?;
             let code_len = code.metadata()?.len();
             let max_fee = gas_limit * gas_price;
+            let code_bytes = std::fs::read(code)?;
+
+            let contract_id = wallet.get_contract_id(
+                sender_index,
+                code_bytes,
+                *deploy_nonce,
+            )?;
+
+            let contract_id = hex::encode(contract_id);
 
             println!("   > Pay with {}", sender.preview());
             println!("   > Code len = {}", code_len);
             println!("   > Init args = {}", hex::encode(init_args));
             println!("   > Deploy nonce = {}", deploy_nonce);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+            println!("   > Calculated Contract Id = {}", contract_id);
             if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
