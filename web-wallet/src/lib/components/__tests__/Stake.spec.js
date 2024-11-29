@@ -40,9 +40,6 @@ describe("Stake", () => {
 
   const baseProps = {
     execute: vi.fn().mockResolvedValue(lastTxId),
-
-    /** @type {StakeType} */
-    flow: "stake",
     formatter,
     gasLimits: {
       gasLimitLower: 10000000n,
@@ -55,9 +52,7 @@ describe("Stake", () => {
     },
     hideStakingNotice: true,
     minAllowedStake: 1_234_000_000_000n,
-    rewards: 345_000_000_000n,
     spendable: 10_000_000_000_000n,
-    staked: 278_000_000_000n,
     statuses: [
       {
         label: "Spendable",
@@ -294,110 +289,6 @@ describe("Stake", () => {
       );
       expect(getByText("Transaction created")).toBeInTheDocument();
       expect(() => getByRole("link", { name: /explorer/i })).toThrow();
-    });
-  });
-
-  describe("Unstake operation", () => {
-    const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
-
-    beforeAll(() => {
-      vi.useFakeTimers();
-    });
-
-    afterAll(() => {
-      vi.useRealTimers();
-    });
-
-    it("should perform an ustake, give a success message and supply a link to see the transaction in the explorer", async () => {
-      /** @type {import("svelte").ComponentProps<Stake>} */
-      const props = { ...baseProps, flow: "unstake" };
-
-      const { getByRole, getByText } = render(Stake, props);
-
-      await vi.advanceTimersToNextTimerAsync();
-
-      await fireEvent.click(getByRole("button", { name: "Unstake" }));
-
-      expect(baseProps.execute).toHaveBeenCalledTimes(1);
-      expect(baseProps.execute).toHaveBeenCalledWith(
-        baseProps.gasSettings.gasPrice,
-        baseProps.gasSettings.gasLimit
-      );
-
-      const explorerLink = getByRole("link", { name: /explorer/i });
-
-      expect(getByText("Transaction created")).toBeInTheDocument();
-      expect(explorerLink).toHaveAttribute("target", "_blank");
-      expect(explorerLink).toHaveAttribute("href", expectedExplorerLink);
-    });
-
-    it("should not allow to unstake, if wrong gas settings are provided", async () => {
-      /** @type {import("svelte").ComponentProps<Stake>} */
-      const props = {
-        ...baseProps,
-        flow: "unstake",
-        gasSettings: { gasLimit: 29000000090n, gasPrice: 1n },
-      };
-
-      const { getByRole } = render(Stake, props);
-
-      await vi.advanceTimersToNextTimerAsync();
-
-      const unstakeButton = getByRole("button", { name: "Unstake" });
-
-      expect(unstakeButton).toBeDisabled();
-    });
-  });
-
-  describe("Claim Rewards operation", () => {
-    const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
-
-    beforeAll(() => {
-      vi.useFakeTimers();
-    });
-
-    afterAll(() => {
-      vi.useRealTimers();
-    });
-
-    it("should perform a claim rewards, give a success message and supply a link to see the transaction in the explorer", async () => {
-      /** @type {import("svelte").ComponentProps<Stake>} */
-      const props = { ...baseProps, flow: "claim-rewards" };
-
-      const { getByRole, getByText } = render(Stake, props);
-
-      await vi.advanceTimersToNextTimerAsync();
-
-      await fireEvent.click(getByRole("button", { name: "Claim" }));
-
-      expect(baseProps.execute).toHaveBeenCalledTimes(1);
-      expect(baseProps.execute).toHaveBeenCalledWith(
-        baseProps.gasSettings.gasPrice,
-        baseProps.gasSettings.gasLimit
-      );
-
-      const explorerLink = getByRole("link", { name: /explorer/i });
-
-      expect(getByText("Transaction created")).toBeInTheDocument();
-      expect(explorerLink).toHaveAttribute("target", "_blank");
-      expect(explorerLink).toHaveAttribute("href", expectedExplorerLink);
-    });
-
-    it("should not allow to unstake, if wrong gas settings are provided", async () => {
-      /** @type {import("svelte").ComponentProps<Stake>} */
-      const props = {
-        ...baseProps,
-        flow: "claim-rewards",
-        gasSettings: { gasLimit: 29000000090n, gasPrice: 1n },
-      };
-
-      const { getByRole } = render(Stake, props);
-
-      await vi.advanceTimersToNextTimerAsync();
-
-      const claimButton = getByRole("button", { name: "Claim" });
-
-      expect(claimButton).toBeDisabled();
     });
   });
 });

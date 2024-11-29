@@ -3,12 +3,7 @@
 <script>
   import { createEventDispatcher, onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import {
-    mdiAlertOutline,
-    mdiDatabaseArrowDownOutline,
-    mdiDatabaseOutline,
-    mdiGiftOpenOutline,
-  } from "@mdi/js";
+  import { mdiAlertOutline, mdiDatabaseOutline } from "@mdi/js";
 
   import { DOCUMENTATION_LINKS, MESSAGES } from "$lib/constants";
   import { areValidGasSettings } from "$lib/contracts";
@@ -42,9 +37,6 @@
   /** @type {(...args: any[]) => Promise<string>} */
   export let execute;
 
-  /** @type {StakeType} */
-  export let flow;
-
   /** @type {(amount: number) => string} */
   export let formatter;
 
@@ -61,13 +53,7 @@
   export let minAllowedStake;
 
   /** @type {bigint} */
-  export let rewards;
-
-  /** @type {bigint} */
   export let spendable;
-
-  /** @type {bigint} */
-  export let staked;
 
   /** @type {ContractStatus[]} */
   export let statuses;
@@ -82,27 +68,7 @@
    * as number if we want to use
    * Svelte's binding.
    */
-  let stakeAmount = luxToDusk(
-    {
-      "claim-rewards": rewards,
-      stake: minAllowedStake,
-      unstake: staked,
-    }[flow]
-  );
-
-  /** @type {Record<StakeType, string>} */
-  const confirmLabels = {
-    "claim-rewards": "Claim",
-    stake: "Stake",
-    unstake: "Unstake",
-  };
-
-  /** @type {Record<StakeType, string>} */
-  const overviewLabels = {
-    "claim-rewards": "Rewards Amount",
-    stake: "Amount",
-    unstake: "Unstake Amount",
-  };
+  let stakeAmount = luxToDusk(minAllowedStake);
 
   const steps = getStepperSteps();
 
@@ -123,26 +89,14 @@
   };
 
   function getStepperSteps() {
-    if (flow === "stake") {
-      return hideStakingNotice
-        ? [{ label: "Amount" }, { label: "Overview" }, { label: "Done" }]
-        : [
-            { label: "Notice" },
-            { label: "Amount" },
-            { label: "Overview" },
-            { label: "Done" },
-          ];
-    }
-
-    return [{ label: "Overview" }, { label: "Done" }];
-  }
-
-  function getWizardSteps() {
-    if (flow === "stake") {
-      return hideStakingNotice ? 3 : 4;
-    }
-
-    return 2;
+    return hideStakingNotice
+      ? [{ label: "Amount" }, { label: "Overview" }, { label: "Done" }]
+      : [
+          { label: "Notice" },
+          { label: "Amount" },
+          { label: "Overview" },
+          { label: "Done" },
+        ];
   }
 
   function setMaxAmount() {
@@ -164,13 +118,11 @@
   }
 
   onMount(() => {
-    if (flow === "stake") {
-      stakeAmount = Math.min(luxToDusk(minStake), stakeAmount);
-    }
-
+    stakeAmount = Math.min(luxToDusk(minStake), stakeAmount);
     isGasValid = areValidGasSettings(gasPrice, gasLimit);
   });
 
+  // Derived values
   $: fee = gasLimit * gasPrice;
   $: maxSpendable = spendable - fee;
   $: minStake =
@@ -182,196 +134,158 @@
     stakeAmountInLux >= minStake && stakeAmountInLux <= maxSpendable;
   $: totalLuxFee = fee + stakeAmountInLux;
   $: isFeeWithinLimit = totalLuxFee <= spendable;
-  $: isNextButtonDisabled =
-    flow === "stake"
-      ? !(isStakeAmountValid && isGasValid && isFeeWithinLimit)
-      : false;
+  $: isNextButtonDisabled = !(
+    isStakeAmountValid &&
+    isGasValid &&
+    isFeeWithinLimit
+  );
 </script>
 
 <div class="operation">
-  <Wizard steps={getWizardSteps()} let:key>
+  <Wizard steps={hideStakingNotice ? 3 : 4} let:key>
     <div slot="stepper">
       <Stepper {activeStep} {steps} showStepLabelWhenInactive={false} />
     </div>
 
-    {#if flow === "stake"}
-      {#if !hideStakingNotice}
-        <!-- STAKING NOTICE STEP -->
-        <WizardStep
-          step={0}
-          {key}
-          backButton={{
-            action: resetOperation,
-            disabled: false,
-          }}
-          nextButton={{
-            action: () => {
-              activeStep++;
-              if (hideStakingNoticeNextTime) {
-                suppressStakingNotice();
-              }
-            },
-            icon: null,
-            label: "Agree",
-            variant: "primary",
-          }}
-        >
-          <Badge text="WARNING" variant="warning" />
-          <WarningCard
-            onSurface
-            heading="Only stake if you have a node set up!"
-          >
-            <p class="staking-warning">
-              I understand that I have set up a node properly, as described <AppAnchor
-                class="staking-warning__step-node-setup-link"
-                rel="noopener noreferrer"
-                target="_blank"
-                href={DOCUMENTATION_LINKS.RUN_A_PROVISIONER}>HERE</AppAnchor
-              >, and that, if not done correctly, I may be subject to <AppAnchor
-                class="staking-warning__step-node-setup-link"
-                href={DOCUMENTATION_LINKS.SLASHING}
-                rel="noopener noreferrer"
-                target="_blank">soft-slashing</AppAnchor
-              > penalties, requiring me to unstake and restake.
-            </p>
-
-            <Agreement
-              className="staking-warning__agreement"
-              name="staking-warning"
-              label="Don't show this step again."
-              bind:checked={hideStakingNoticeNextTime}
-            />
-          </WarningCard>
-        </WizardStep>
-      {/if}
-
-      <!-- ENTER STAKING AMOUNT STEP -->
+    {#if !hideStakingNotice}
+      <!-- STAKING NOTICE STEP -->
       <WizardStep
-        step={hideStakingNotice ? 0 : 1}
+        step={0}
         {key}
         backButton={{
-          action: () => {
-            if (hideStakingNotice) {
-              resetOperation();
-            } else {
-              activeStep--;
-            }
-          },
+          action: resetOperation,
           disabled: false,
         }}
         nextButton={{
-          action: () => activeStep++,
-          disabled: isNextButtonDisabled,
+          action: () => {
+            activeStep++;
+            if (hideStakingNoticeNextTime) {
+              suppressStakingNotice();
+            }
+          },
+          icon: null,
+          label: "Agree",
+          variant: "primary",
         }}
       >
-        <ContractStatusesList {statuses} />
-        <div class="operation__amount-wrapper">
-          <p>Amount:</p>
-          <Button
-            size="small"
-            variant="tertiary"
-            on:click={setMaxAmount}
-            text="USE MAX"
-          />
-        </div>
+        <Badge text="WARNING" variant="warning" />
+        <WarningCard onSurface heading="Only stake if you have a node set up!">
+          <p class="staking-warning">
+            I understand that I have set up a node properly, as described <AppAnchor
+              class="staking-warning__step-node-setup-link"
+              rel="noopener noreferrer"
+              target="_blank"
+              href={DOCUMENTATION_LINKS.RUN_A_PROVISIONER}>HERE</AppAnchor
+            >, and that, if not done correctly, I may be subject to <AppAnchor
+              class="staking-warning__step-node-setup-link"
+              href={DOCUMENTATION_LINKS.SLASHING}
+              rel="noopener noreferrer"
+              target="_blank">soft-slashing</AppAnchor
+            > penalties, requiring me to unstake and stake again.
+          </p>
 
-        <div class="operation__input-wrapper">
-          <Textbox
-            className="operation__input-field"
-            bind:value={stakeAmount}
-            type="number"
-            min={luxToDusk(minStake)}
-            max={luxToDusk(maxSpendable)}
-            required
-            step="0.000000001"
+          <Agreement
+            className="staking-warning__agreement"
+            name="staking-warning"
+            label="Don't show this step again."
+            bind:checked={hideStakingNoticeNextTime}
           />
-          <Icon
-            data-tooltip-id="main-tooltip"
-            data-tooltip-text="DUSK"
-            path={logo}
-          />
-        </div>
-
-        <GasSettings
-          {formatter}
-          {fee}
-          limit={gasSettings.gasLimit}
-          limitLower={gasLimits.gasLimitLower}
-          limitUpper={gasLimits.gasLimitUpper}
-          price={gasSettings.gasPrice}
-          priceLower={gasLimits.gasPriceLower}
-          on:gasSettings={setGasValues}
-        />
+        </WarningCard>
       </WizardStep>
     {/if}
 
-    <!-- OPERATION OVERVIEW STEP  -->
+    <!-- ENTER STAKING AMOUNT STEP -->
     <WizardStep
-      step={flow === "stake" ? (hideStakingNotice ? 1 : 2) : 0}
+      step={hideStakingNotice ? 0 : 1}
       {key}
       backButton={{
         action: () => {
-          if (flow === "stake") {
-            activeStep--;
-          } else {
+          if (hideStakingNotice) {
             resetOperation();
+          } else {
+            activeStep--;
           }
         },
         disabled: false,
       }}
       nextButton={{
         action: () => activeStep++,
-        disabled: flow === "stake" ? stakeAmount === 0 : !isGasValid,
+        disabled: isNextButtonDisabled,
+      }}
+    >
+      <ContractStatusesList {statuses} />
+      <div class="operation__amount-wrapper">
+        <p>Amount:</p>
+        <Button
+          size="small"
+          variant="tertiary"
+          on:click={setMaxAmount}
+          text="USE MAX"
+        />
+      </div>
+
+      <div class="operation__input-wrapper">
+        <Textbox
+          className="operation__input-field"
+          bind:value={stakeAmount}
+          type="number"
+          min={luxToDusk(minStake)}
+          max={luxToDusk(maxSpendable)}
+          required
+          step="0.000000001"
+        />
+        <Icon
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="DUSK"
+          path={logo}
+        />
+      </div>
+
+      <GasSettings
+        {formatter}
+        {fee}
+        limit={gasSettings.gasLimit}
+        limitLower={gasLimits.gasLimitLower}
+        limitUpper={gasLimits.gasLimitUpper}
+        price={gasSettings.gasPrice}
+        priceLower={gasLimits.gasPriceLower}
+        on:gasSettings={setGasValues}
+      />
+    </WizardStep>
+
+    <!-- OPERATION OVERVIEW STEP  -->
+    <WizardStep
+      step={hideStakingNotice ? 1 : 2}
+      {key}
+      backButton={{
+        action: () => activeStep--,
+        disabled: false,
+      }}
+      nextButton={{
+        action: () => activeStep++,
+        disabled: stakeAmount === 0,
         icon: {
-          path:
-            flow === "unstake"
-              ? mdiDatabaseArrowDownOutline
-              : flow === "stake"
-                ? mdiDatabaseOutline
-                : mdiGiftOpenOutline,
+          path: mdiDatabaseOutline,
           position: "before",
         },
-        label: confirmLabels[flow],
+        label: "Stake",
         variant: "primary",
       }}
     >
       <div in:fade|global class="operation__stake">
         <ContractStatusesList {statuses} />
         <Badge text="REVIEW TRANSACTION" variant="warning" />
-        <StakeOverview
-          label={overviewLabels[flow]}
-          value={formatter(stakeAmount)}
-        />
-
-        {#if flow === "stake"}
-          <GasFee {formatter} {fee} />
-        {:else}
-          <GasSettings
-            {formatter}
-            {fee}
-            limit={gasSettings.gasLimit}
-            limitLower={gasLimits.gasLimitLower}
-            limitUpper={gasLimits.gasLimitUpper}
-            price={gasSettings.gasPrice}
-            priceLower={gasLimits.gasPriceLower}
-            on:gasSettings={setGasValues}
-          />
-        {/if}
+        <StakeOverview label="Amount" value={formatter(stakeAmount)} />
+        <GasFee {formatter} {fee} />
       </div>
     </WizardStep>
 
     <!-- OPERATION RESULT STEP  -->
-    <WizardStep
-      step={flow === "stake" ? (hideStakingNotice ? 2 : 3) : 1}
-      {key}
-      showNavigation={false}
-    >
+    <WizardStep step={hideStakingNotice ? 2 : 3} {key} showNavigation={false}>
       <OperationResult
         errorMessage="Transaction failed"
         onBeforeLeave={resetOperation}
-        operation={flow === "stake"
-          ? execute(stakeAmountInLux, gasPrice, gasLimit)
-          : execute(gasPrice, gasLimit)}
+        operation={execute(stakeAmountInLux, gasPrice, gasLimit)}
         pendingMessage="Processing transaction"
         successMessage="Transaction created"
       >

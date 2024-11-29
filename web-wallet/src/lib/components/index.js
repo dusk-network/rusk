@@ -24,3 +24,4 @@ export { default as Stake } from "./Stake/Stake.svelte";
 export { default as SyncBar } from "./SyncBar/SyncBar.svelte";
 export { default as Transactions } from "./Transactions/Transactions.svelte";
 export { default as UsageIndicator } from "./UsageIndicator/UsageIndicator.svelte";
+export { default as Unstake } from "./Stake/Unstake.svelte";
