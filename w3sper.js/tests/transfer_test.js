@@ -23,6 +23,67 @@ import {
   Treasury,
 } from "./harness.js";
 
+const getBlockHashByHeight = (network, height) =>
+  network
+    .query(`block(height: ${height}) { header { hash } }`)
+    .then((data) => data.block.header.hash);
+
+function waitForFinalizedBlock(network, blockHash) {
+  const { promise, reject, resolve } = Promise.withResolvers();
+  const controller = new AbortController();
+  const timeoutSignal = AbortSignal.timeout(10000);
+
+  timeoutSignal.addEventListener("abort", () => {
+    controller.abort();
+    reject(new Error(`Timeout: block ${blockHash} not finalized after 10s`));
+  });
+
+  network.blocks.withId(blockHash).on.statechange(
+    ({ payload }) => {
+      if (payload.state === "finalized") {
+        controller.abort();
+        resolve();
+      }
+    },
+    { signal: controller.signal }
+  );
+
+  return promise;
+}
+
+async function getTxsFromStream(txsStream) {
+  const result = [];
+
+  for await (const tx of txsStream) {
+    result.push(tx);
+  }
+
+  return result;
+}
+
+// As tests run in parellel, we can't put our history tests in
+// a separate file, so we add them to the bottom of this one
+// where we know which transfers are made.
+// This Map is to collect the performed transfers to be checked
+// later on in history tests.
+const collectedTransfers = new Map();
+
+/**
+ * @param {string} key
+ * @param {Object} info
+ * @param {string} info.from
+ * @param {string} info.hash
+ * @param {string} info.to
+ * @param {bigint} info.value
+ */
+function collectTransfer(key, info) {
+  if (!collectedTransfers.has(key)) {
+    collectedTransfers.set(key, []);
+  }
+
+  collectedTransfers.get(key).push(info);
+}
+
 test("Offline account transfers", async () => {
   // Since the tests files runs in parallel, there is no guarantee that the
   // `nonce` starts from `0`, so we need to fetch the current nonce for the
@@ -30,8 +91,13 @@ test("Offline account transfers", async () => {
 
   const network = await Network.connect("http://localhost:8080/");
 
+  // profile #1
   const from =
     "ocXXBAafr7xFqQTpC1vfdSYdHMXerbPCED2apyUVpLjkuycsizDxwA6b9D7UW91kG58PFKqm9U9NmY9VSwufUFL5rVRSnFSYxbiKK658TF6XjHsHGBzavFJcxAzjjBRM4eF";
+
+  // default profile
+  const to =
+    "oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu";
 
   const [balance] = await new AccountSyncer(network).balances([from]);
 
@@ -46,9 +112,6 @@ test("Offline account transfers", async () => {
     await getLocalWasmBuffer()
   ).then(async () => {
     const profiles = new ProfileGenerator(seeder);
-    const to =
-      "oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu";
-
     const users = await Promise.all([profiles.default, profiles.next()]);
 
     const transfers = await Promise.all(
@@ -78,11 +141,16 @@ test("Offline account transfers", async () => {
   const balances = await new AccountSyncer(network).balances(users);
 
   let { hash } = await network.execute(transfers[0]);
-
   let evt = await network.transactions.withId(hash).once.executed();
   let gasPaid = evt.gasPaid;
 
+  collectTransfer(from, { from, to, hash, value: -77n });
+  collectTransfer(to, { from, to, hash, value: 77n });
+
   ({ hash } = await network.execute(transfers[1]));
+
+  collectTransfer(from, { from, to, hash, value: -22n });
+  collectTransfer(to, { from, to, hash, value: 22n });
 
   evt = await network.transactions.withId(hash).once.executed();
   gasPaid += evt.gasPaid;
@@ -122,8 +190,15 @@ test("accounts", async () => {
     .gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
-
   const { gasPaid } = await network.transactions.withId(hash).once.executed();
+  const baseInfo = {
+    from: users[1].account.toString(),
+    hash,
+    to: users[0].account.toString(),
+  };
+
+  collectTransfer(baseInfo.from, { ...baseInfo, value: -77n });
+  collectTransfer(baseInfo.to, { ...baseInfo, value: 77n });
 
   await treasury.update({ accounts });
 
@@ -166,8 +241,15 @@ test("addresses", async () => {
     .gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
-
   const { gasPaid } = await network.transactions.withId(hash).once.executed();
+  const baseInfo = {
+    from: "Phoenix",
+    hash,
+    to: "Phoenix",
+  };
+
+  collectTransfer(users[1].address.toString(), { ...baseInfo, value: 11n });
+  collectTransfer(users[0].address.toString(), { ...baseInfo, value: -11n });
 
   await treasury.update({ addresses });
 
@@ -185,16 +267,17 @@ test("addresses", async () => {
 test("unshield", async () => {
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
+  const defaultProfile = await profiles.default;
 
   const accounts = new AccountSyncer(network);
   const addresses = new AddressSyncer(network);
 
-  const treasury = new Treasury([await profiles.default]);
+  const treasury = new Treasury([defaultProfile]);
 
   await treasury.update({ accounts, addresses });
 
   const bookkeeper = new Bookkeeper(treasury);
-  const bookentry = bookkeeper.as(await profiles.default);
+  const bookentry = bookkeeper.as(defaultProfile);
 
   const accountBalance = await bookentry.info.balance("account");
   const addressBalance = await bookentry.info.balance("address");
@@ -202,8 +285,18 @@ test("unshield", async () => {
   const transfer = bookentry.unshield(123n).gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
-
   const { gasPaid } = await network.transactions.withId(hash).once.executed();
+  const baseInfo = {
+    from: "Phoenix",
+    hash,
+    to: defaultProfile.account.toString(),
+  };
+
+  collectTransfer(baseInfo.to, { ...baseInfo, value: 123n });
+  collectTransfer(defaultProfile.address.toString(), {
+    ...baseInfo,
+    value: -123n,
+  });
 
   await treasury.update({ accounts, addresses });
 
@@ -219,16 +312,17 @@ test("unshield", async () => {
 test("shield", async () => {
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
+  const defaultProfile = await profiles.default;
 
   const accounts = new AccountSyncer(network);
   const addresses = new AddressSyncer(network);
 
-  const treasury = new Treasury([await profiles.default]);
+  const treasury = new Treasury([defaultProfile]);
 
   await treasury.update({ accounts, addresses });
 
   const bookkeeper = new Bookkeeper(treasury);
-  const bookentry = bookkeeper.as(await profiles.default);
+  const bookentry = bookkeeper.as(defaultProfile);
 
   const accountBalance = await bookentry.info.balance("account");
   const addressBalance = await bookentry.info.balance("address");
@@ -236,8 +330,18 @@ test("shield", async () => {
   const transfer = bookentry.shield(321n).gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
-
   const { gasPaid } = await network.transactions.withId(hash).once.executed();
+  const baseInfo = {
+    from: defaultProfile.account.toString(),
+    hash,
+    to: "Phoenix",
+  };
+
+  collectTransfer(baseInfo.from, { ...baseInfo, value: -321n });
+  collectTransfer(defaultProfile.address.toString(), {
+    ...baseInfo,
+    value: 321n,
+  });
 
   await treasury.update({ accounts, addresses });
 
@@ -272,6 +376,15 @@ test("account memo transfer", async () => {
 
   let evt = await network.transactions.withId(hash).once.executed();
 
+  const baseInfo = {
+    from: users[1].account.toString(),
+    hash,
+    to: users[0].account.toString(),
+  };
+
+  collectTransfer(baseInfo.from, { ...baseInfo, value: -1n });
+  collectTransfer(baseInfo.to, { ...baseInfo, value: 1n });
+
   assert.equal([...evt.memo()], [2, 4, 8, 16]);
 
   await treasury.update({ accounts });
@@ -286,6 +399,11 @@ test("account memo transfer", async () => {
   ({ hash } = await network.execute(transfer));
 
   evt = await network.transactions.withId(hash).once.executed();
+
+  baseInfo.hash = hash;
+
+  collectTransfer(baseInfo.from, { ...baseInfo, value: -1n });
+  collectTransfer(baseInfo.to, { ...baseInfo, value: 1n });
 
   // deno-fmt-ignore
   assert.equal(
@@ -327,6 +445,15 @@ test("address memo transfer", async () => {
 
   let evt = await network.transactions.withId(hash).once.executed();
 
+  const baseInfo = {
+    from: "Phoenix",
+    hash,
+    to: "Phoenix",
+  };
+
+  collectTransfer(users[1].address.toString(), { ...baseInfo, value: -1n });
+  collectTransfer(users[0].address.toString(), { ...baseInfo, value: 1n });
+
   assert.equal([...evt.memo()], [2, 4, 8, 16]);
 
   await treasury.update({ addresses });
@@ -341,6 +468,11 @@ test("address memo transfer", async () => {
   ({ hash } = await network.execute(transfer));
 
   evt = await network.transactions.withId(hash).once.executed();
+
+  baseInfo.hash = hash;
+
+  collectTransfer(users[1].address.toString(), { ...baseInfo, value: -1n });
+  collectTransfer(users[0].address.toString(), { ...baseInfo, value: 1n });
 
   // deno-fmt-ignore
   assert.equal(
@@ -359,3 +491,193 @@ test("address memo transfer", async () => {
 
   await network.disconnect();
 });
+
+test("address memo transfer using payload method", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+  const users = await Promise.all([profiles.default, profiles.next()]);
+  const addresses = new AddressSyncer(network);
+  const treasury = new Treasury(users);
+
+  await treasury.update({ addresses });
+
+  const bookkeeper = new Bookkeeper(treasury);
+
+  const memo_payload_1 = {
+    memo: new Uint8Array([2, 4, 8, 16]),
+  };
+
+  let transfer = bookkeeper
+    .as(users[1])
+    .transfer(1n)
+    .to(users[0].address)
+    .payload(memo_payload_1)
+    .gas({ limit: 500_000_000n });
+
+  let { hash } = await network.execute(transfer);
+
+  let evt = await network.transactions.withId(hash).once.executed();
+
+  const baseInfo = {
+    from: "Phoenix",
+    hash,
+    to: "Phoenix",
+  };
+
+  collectTransfer(users[1].address.toString(), { ...baseInfo, value: -1n });
+  collectTransfer(users[0].address.toString(), { ...baseInfo, value: 1n });
+
+  assert.equal([...evt.memo()], [2, 4, 8, 16]);
+
+  await treasury.update({ addresses });
+
+  const memo_payload_2 = {
+    memo: "Tarapia Tapioco, come fosse stringa",
+  };
+
+  transfer = bookkeeper
+    .as(users[1])
+    .transfer(1n)
+    .to(users[0].address)
+    .payload(memo_payload_2)
+    .gas({ limit: 500_000_000n });
+
+  ({ hash } = await network.execute(transfer));
+
+  evt = await network.transactions.withId(hash).once.executed();
+
+  baseInfo.hash = hash;
+
+  collectTransfer(users[1].address.toString(), { ...baseInfo, value: -1n });
+  collectTransfer(users[0].address.toString(), { ...baseInfo, value: 1n });
+
+  // deno-fmt-ignore
+  assert.equal(
+    [...evt.memo()],
+    [
+      84, 97, 114, 97, 112, 105, 97, 32, 84, 97, 112, 105, 111, 99, 111, 44, 32,
+      99, 111, 109, 101, 32, 102, 111, 115, 115, 101, 32, 115, 116, 114, 105,
+      110, 103, 97,
+    ]
+  );
+
+  assert.equal(
+    evt.memo({ as: "string" }),
+    "Tarapia Tapioco, come fosse stringa"
+  );
+
+  await network.disconnect();
+});
+
+test("account contract call transfer", async () => {
+  const GAS_LIMIT = 500_000_000n;
+  const METHOD = "get_version";
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+  const users = await Promise.all([profiles.default, profiles.next()]);
+  const accounts = new AccountSyncer(network);
+  const treasury = new Treasury(users);
+
+  await treasury.update({ accounts });
+
+  const bookkeeper = new Bookkeeper(treasury);
+
+  const payload = {
+    fnName: METHOD,
+    fnArgs: [],
+    contractId: [
+      0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+    ],
+  };
+
+  const transfer = bookkeeper
+    .as(users[1])
+    .transfer(1n)
+    .to(users[0].account)
+    .payload(payload)
+    .gas({ limit: GAS_LIMIT });
+
+  const { hash } = await network.execute(transfer);
+  const baseInfo = {
+    from: users[1].account.toString(),
+    hash,
+    to: users[0].account.toString(),
+  };
+
+  const evt = await network.transactions.withId(hash).once.executed();
+
+  collectTransfer(baseInfo.from, { ...baseInfo, value: -1n });
+  collectTransfer(baseInfo.to, { ...baseInfo, value: 1n });
+
+  assert.ok(!evt.payload.err, "contract call error");
+  assert.ok(evt.payload.gas_spent < GAS_LIMIT, "gas limit reached");
+
+  const { contract, fn_name } = evt.call();
+
+  assert.equal(
+    contract,
+    "0200000000000000000000000000000000000000000000000000000000000000"
+  );
+  assert.equal(fn_name, METHOD);
+
+  await treasury.update({ accounts });
+
+  await network.disconnect();
+});
+
+test("account transfers history", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profileGenerator = new ProfileGenerator(seeder);
+  const profiles = await Promise.all([
+    profileGenerator.default,
+    profileGenerator.next(),
+  ]);
+  const syncer = new AccountSyncer(network);
+
+  /**
+   * We need to wait for the block of the last transfer
+   * to be finalized to see it in the history.
+   * So we just wait for the current block height to be finalized.
+   */
+  await waitForFinalizedBlock(
+    network,
+    await getBlockHashByHeight(network, await network.blockHeight)
+  );
+
+  let streams = await syncer.history(profiles, { order: "desc" });
+  let txs = await Promise.all(streams.map(getTxsFromStream));
+
+  profiles.forEach((profile, idx) => {
+    const key = profile.account.toString();
+    const collected = collectedTransfers.get(key).toReversed();
+
+    assert.ok(txs[idx].length > 0);
+    assert.equal(txs[idx].length, collected.length);
+
+    for (let i = 0; i < txs[idx].length; i++) {
+      assert.equal(collected[i].from, txs[idx][i].from);
+      assert.equal(collected[i].hash, txs[idx][i].hash);
+      assert.equal(collected[i].to, txs[idx][i].to);
+      assert.equal(collected[i].value, txs[idx][i].value);
+    }
+  });
+
+  streams = await syncer.history(profiles, { limit: 1 });
+  txs = await Promise.all(streams.map(getTxsFromStream));
+
+  profiles.forEach((profile, idx) => {
+    const key = profile.account.toString();
+    const collected = collectedTransfers.get(key);
+
+    assert.equal(txs[idx].length, 1);
+    assert.equal(collected[0].from, txs[idx][0].from);
+    assert.equal(collected[0].hash, txs[idx][0].hash);
+    assert.equal(collected[0].to, txs[idx][0].to);
+    assert.equal(collected[0].value, txs[idx][0].value);
+  });
+
+  await network.disconnect();
+});
+// TODO aggiungere test con stream vuoto
+// TODO sembra ci siano 3 transfer altrove
