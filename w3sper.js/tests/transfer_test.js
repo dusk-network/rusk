@@ -23,6 +23,31 @@ import {
   Treasury,
 } from "./harness.js";
 
+async function getTxsFromStream(txsStream) {
+  const result = [];
+
+  for await (const tx of txsStream) {
+    result.push(tx);
+  }
+
+  return result;
+}
+
+// As tests run in parellel, we can't put our history tests in
+// a separate file, so we add them to the bottom of this one
+// where we know which transfers are made.
+// This Map is to collect the performed transfers to be checked
+// later on in history tests.
+const collectedTransfers = new Map();
+
+function collectTransfer(key, direction, hash, value) {
+  if (!collectedTransfers.has(key)) {
+    collectedTransfers.set(key, []);
+  }
+
+  collectedTransfers.get(key).push({ direction, hash, value });
+}
+
 test("Offline account transfers", async () => {
   // Since the tests files runs in parallel, there is no guarantee that the
   // `nonce` starts from `0`, so we need to fetch the current nonce for the
@@ -30,8 +55,13 @@ test("Offline account transfers", async () => {
 
   const network = await Network.connect("http://localhost:8080/");
 
+  // profile #1
   const from =
     "ocXXBAafr7xFqQTpC1vfdSYdHMXerbPCED2apyUVpLjkuycsizDxwA6b9D7UW91kG58PFKqm9U9NmY9VSwufUFL5rVRSnFSYxbiKK658TF6XjHsHGBzavFJcxAzjjBRM4eF";
+
+  // default profile
+  const to =
+    "oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu";
 
   const [balance] = await new AccountSyncer(network).balances([from]);
 
@@ -46,11 +76,7 @@ test("Offline account transfers", async () => {
     await getLocalWasmBuffer()
   ).then(async () => {
     const profiles = new ProfileGenerator(seeder);
-    const to =
-      "oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu";
-
     const users = await Promise.all([profiles.default, profiles.next()]);
-
     const transfers = await Promise.all(
       [77n, 22n].map((amount, nonce) =>
         new Transfer(users[1])
@@ -78,11 +104,16 @@ test("Offline account transfers", async () => {
   const balances = await new AccountSyncer(network).balances(users);
 
   let { hash } = await network.execute(transfers[0]);
-
   let evt = await network.transactions.withId(hash).once.executed();
   let gasPaid = evt.gasPaid;
 
+  collectTransfer(from, "out", hash, 77n);
+  collectTransfer(to, "in", hash, 77n);
+
   ({ hash } = await network.execute(transfers[1]));
+
+  collectTransfer(from, "out", hash, 22n);
+  collectTransfer(to, "in", hash, 22n);
 
   evt = await network.transactions.withId(hash).once.executed();
   gasPaid += evt.gasPaid;
@@ -122,8 +153,10 @@ test("accounts", async () => {
     .gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
-
   const { gasPaid } = await network.transactions.withId(hash).once.executed();
+
+  collectTransfer(users[1].account.toString(), "out", hash, 77n);
+  collectTransfer(users[0].account.toString(), "in", hash, 77n);
 
   await treasury.update({ accounts });
 
@@ -166,8 +199,10 @@ test("addresses", async () => {
     .gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
-
   const { gasPaid } = await network.transactions.withId(hash).once.executed();
+
+  collectTransfer(users[1].address.toString(), "out", hash, 11n);
+  collectTransfer(users[0].address.toString(), "in", hash, 11n);
 
   await treasury.update({ addresses });
 
@@ -185,16 +220,17 @@ test("addresses", async () => {
 test("unshield", async () => {
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
+  const defaultProfile = await profiles.default;
 
   const accounts = new AccountSyncer(network);
   const addresses = new AddressSyncer(network);
 
-  const treasury = new Treasury([await profiles.default]);
+  const treasury = new Treasury([defaultProfile]);
 
   await treasury.update({ accounts, addresses });
 
   const bookkeeper = new Bookkeeper(treasury);
-  const bookentry = bookkeeper.as(await profiles.default);
+  const bookentry = bookkeeper.as(defaultProfile);
 
   const accountBalance = await bookentry.info.balance("account");
   const addressBalance = await bookentry.info.balance("address");
@@ -202,8 +238,10 @@ test("unshield", async () => {
   const transfer = bookentry.unshield(123n).gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
-
   const { gasPaid } = await network.transactions.withId(hash).once.executed();
+
+  collectTransfer(defaultProfile.account.toString(), "out", hash, 123n);
+  collectTransfer(defaultProfile.address.toString(), "in", hash, 123n);
 
   await treasury.update({ accounts, addresses });
 
@@ -219,16 +257,17 @@ test("unshield", async () => {
 test("shield", async () => {
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
+  const defaultProfile = await profiles.default;
 
   const accounts = new AccountSyncer(network);
   const addresses = new AddressSyncer(network);
 
-  const treasury = new Treasury([await profiles.default]);
+  const treasury = new Treasury([defaultProfile]);
 
   await treasury.update({ accounts, addresses });
 
   const bookkeeper = new Bookkeeper(treasury);
-  const bookentry = bookkeeper.as(await profiles.default);
+  const bookentry = bookkeeper.as(defaultProfile);
 
   const accountBalance = await bookentry.info.balance("account");
   const addressBalance = await bookentry.info.balance("address");
@@ -236,8 +275,10 @@ test("shield", async () => {
   const transfer = bookentry.shield(321n).gas({ limit: 500_000_000n });
 
   const { hash } = await network.execute(transfer);
-
   const { gasPaid } = await network.transactions.withId(hash).once.executed();
+
+  collectTransfer(defaultProfile.address.toString(), "out", hash, 321n);
+  collectTransfer(defaultProfile.account.toString(), "in", hash, 321n);
 
   await treasury.update({ accounts, addresses });
 
@@ -272,6 +313,9 @@ test("account memo transfer", async () => {
 
   let evt = await network.transactions.withId(hash).once.executed();
 
+  collectTransfer(users[1].account.toString(), "out", hash, 1n);
+  collectTransfer(users[0].account.toString(), "in", hash, 1n);
+
   assert.equal([...evt.memo()], [2, 4, 8, 16]);
 
   await treasury.update({ accounts });
@@ -286,6 +330,9 @@ test("account memo transfer", async () => {
   ({ hash } = await network.execute(transfer));
 
   evt = await network.transactions.withId(hash).once.executed();
+
+  collectTransfer(users[1].account.toString(), "out", hash, 1n);
+  collectTransfer(users[0].account.toString(), "in", hash, 1n);
 
   // deno-fmt-ignore
   assert.equal(
@@ -328,6 +375,9 @@ test("address memo transfer", async () => {
 
   let evt = await network.transactions.withId(hash).once.executed();
 
+  collectTransfer(users[1].address.toString(), "out", hash, 1n);
+  collectTransfer(users[0].address.toString(), "in", hash, 1n);
+
   assert.equal([...evt.memo()], [2, 4, 8, 16]);
 
   await treasury.update({ addresses });
@@ -342,6 +392,9 @@ test("address memo transfer", async () => {
   ({ hash } = await network.execute(transfer));
 
   evt = await network.transactions.withId(hash).once.executed();
+
+  collectTransfer(users[1].address.toString(), "out", hash, 1n);
+  collectTransfer(users[0].address.toString(), "in", hash, 1n);
 
   // deno-fmt-ignore
   assert.equal(
@@ -360,4 +413,51 @@ test("address memo transfer", async () => {
 
   await network.disconnect();
   await cleanup(); // Remove when useAsProtocolDriver is removed.
+});
+
+test("account transfers history", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profileGenerator = new ProfileGenerator(seeder);
+  const profiles = await Promise.all([
+    profileGenerator.default,
+    profileGenerator.next(),
+  ]);
+  const syncer = new AccountSyncer(network);
+
+  let streams = await syncer.history(profiles, { order: "desc" });
+  let txs = await Promise.all(streams.map(getTxsFromStream));
+
+  profiles.forEach((profile, idx) => {
+    const key = profile.account.toString();
+    const collected = collectedTransfers.get(key).toReversed();
+
+    assert.ok(txs[idx].length > 0);
+    assert.equal(txs[idx].length, collected.length);
+
+    for (let i = 0; i < txs[idx].length; i++) {
+      // TODO wait for event parsing
+      // assert.equal(collected[i].direction, txs[idx][i].direction);
+      assert.equal(collected[i].hash, txs[idx][i].hash);
+      // TODO wait for event parsing
+      // assert.equal(collected[i].value, txs[idx][i].value);
+    }
+  });
+
+  streams = await syncer.history(profiles, { limit: 1 });
+  txs = await Promise.all(streams.map(getTxsFromStream));
+
+  profiles.forEach((profile, idx) => {
+    const key = profile.account.toString();
+    const collected = collectedTransfers.get(key);
+
+    assert.equal(txs[idx].length, 1);
+
+    // TODO wait for event parsing
+    // assert.equal(collected[0].direction, txs[idx][0].direction);
+    assert.equal(collected[0].hash, txs[idx][0].hash);
+    // TODO wait for event parsing
+    // assert.equal(collected[0].value, txs[idx][0].value);
+  });
+
+  await network.disconnect();
 });
