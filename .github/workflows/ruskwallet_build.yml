@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, macos-latest, macos-12, windows-latest]
+        os: [ubuntu-20.04, ubuntu-22.04, macos-latest, macos-12, windows-latest, arm-linux]
         compiler: [cargo]
         include:
           - os: ubuntu-20.04
@@ -42,6 +42,12 @@ jobs:
           - os: windows-latest
             compiler: cargo
             target: windows-x64
+
+          - os: arm-linux
+            compiler: cargo
+            target: linux-arm64
+            flags: --target=aarch64-unknown-linux-gnu
+            platform: aarch64-unknown-linux-gnu
 
     steps:
       - name: Checkout Repository
