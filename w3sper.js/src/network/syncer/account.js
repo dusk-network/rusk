@@ -6,6 +6,124 @@
 
 import * as ProtocolDriver from "../../protocol-driver/mod.js";
 import * as base58 from "../../encoders/b58.js";
+import { TRANSFER } from "../../transaction.js";
+
+const MAX_ENRICHMENTS_PER_PULL = 500;
+
+const emptyStream = new ReadableStream({
+  start(controller) {
+    controller.close();
+  },
+});
+
+function parseEvents(account, historyEntryEvents) {
+  let from = "N/A";
+  let to = "N/A";
+  let value = 0n;
+
+  for (const evt of historyEntryEvents) {
+    if (evt.target !== TRANSFER) {
+      continue;
+    }
+
+    switch (evt.topic) {
+      case "convert":
+        if (evt.data.receiver?.Moonlight === account) {
+          value += BigInt(evt.data.value);
+          from = "Phoenix";
+          to = account;
+        }
+
+        if (evt.data.sender === account) {
+          value -= BigInt(evt.data.value);
+          from = account;
+          to = "Phoenix";
+        }
+
+        break;
+
+      case "moonlight":
+        if (evt.data.receiver !== null) {
+          to = evt.data.receiver;
+
+          if (to === account) {
+            value += BigInt(evt.data.value);
+          }
+        }
+
+        from = evt.data.sender;
+
+        if (from === account) {
+          value -= BigInt(evt.data.value);
+        }
+
+        if (evt.data.refund_info?.[0] === account) {
+          /**
+           * No "else" branch here for now.
+           * This would be a edge case where we receive a gas
+           * refund from a transaction we are not part of.
+           *
+           * Needs to be discussed to choose how we want this
+           * to be represented.
+           */
+          if (to === account) {
+            value += BigInt(evt.data.refund_info[1]);
+          }
+        }
+
+        break;
+
+      case "mint":
+      case "withdraw":
+        if (evt.data.receiver?.Moonlight === account) {
+          value += BigInt(evt.data.value);
+        }
+
+        break;
+
+      case "deposit":
+        if (evt.data.sender === account) {
+          value -= BigInt(evt.data.value);
+        }
+
+        break;
+
+      case "contract_to_account":
+        if (evt.data.receiver === account) {
+          value += BigInt(evt.data.value);
+        }
+
+        break;
+    }
+  }
+
+  return { from, to, value };
+}
+
+function toW3sperHistoryEntry(account, historyEntry, gqlTransaction) {
+  const { from, to, value } = parseEvents(account, historyEntry.events);
+
+  return {
+    blockHash: gqlTransaction.blockHash,
+    blockHeight: BigInt(historyEntry.block_height),
+    blockTimestamp: gqlTransaction.blockTimestamp * 1000,
+    feePaid: BigInt(gqlTransaction.gasSpent * gqlTransaction.tx.gasPrice),
+    from,
+    gasLimit: BigInt(gqlTransaction.tx.gasLimit),
+    gasPrice: BigInt(gqlTransaction.tx.gasPrice),
+    gasSpent: BigInt(gqlTransaction.gasSpent),
+    hash: historyEntry.origin,
+    memo: gqlTransaction.tx.memo ?? "",
+    method: gqlTransaction.tx.isDeploy
+      ? "deploy"
+      : gqlTransaction.tx.callData?.fnName ?? "transfer",
+    owner: account,
+    success: gqlTransaction.err === null,
+    to,
+    type: "public",
+    value,
+  };
+}
 
 /**
  * Represents the value staked, locked, and eligibility of a stake.
@@ -142,6 +260,86 @@ export class AccountSyncer extends EventTarget {
     this.#network = network;
   }
 
+  #createHistoryStream(profile, entries, options) {
+    const { signal } = options;
+    const syncer = this;
+    const key = profile.account.toString();
+    const nextRange = {
+      from: 0,
+      to: Math.min(MAX_ENRICHMENTS_PER_PULL, entries.length),
+    };
+
+    return entries.length === 0
+      ? emptyStream
+      : new ReadableStream({
+          cancel(reason) {
+            console.log(`Account history stream canceled (${key}):`, reason);
+          },
+
+          async pull(controller) {
+            if (signal?.aborted) {
+              this.cancel(signal.reason ?? "Abort signal received");
+              controller.close();
+              return;
+            }
+
+            const subqueries = [];
+
+            for (let i = nextRange.from; i < nextRange.to; i++) {
+              subqueries.push(
+                `tx${i}: tx(hash: "${entries[i].origin}") {
+              blockHash,
+              blockTimestamp,
+              err,
+              gasSpent,
+              tx {
+                callData { fnName },
+                gasLimit,
+                gasPrice,
+                isDeploy,
+                memo
+              }
+            }`
+              );
+            }
+
+            const enriched = await syncer.#network
+              .query(subqueries.join(","), { signal })
+              .then((results) =>
+                Object.values(results).map((result, idx) =>
+                  toW3sperHistoryEntry(
+                    key,
+                    entries[nextRange.from + idx],
+                    result
+                  )
+                )
+              )
+              .catch((error) => {
+                console.error(`Error fetching account history (${key})`, error);
+                controller.error(error);
+              });
+
+            if (!enriched) {
+              return;
+            }
+
+            for (const enrichedTx of enriched) {
+              controller.enqueue(enrichedTx);
+            }
+
+            if (nextRange.to < entries.length) {
+              nextRange.from = nextRange.to;
+              nextRange.to = Math.min(
+                nextRange.from + MAX_ENRICHMENTS_PER_PULL,
+                entries.length
+              );
+            } else {
+              controller.close();
+            }
+          },
+        });
+  }
+
   /**
    * Fetches the balances for the given profiles.
    *
@@ -159,6 +357,50 @@ export class AccountSyncer extends EventTarget {
       .then((responses) => responses.map((resp) => resp.arrayBuffer()))
       .then((buffers) => Promise.all(buffers))
       .then((buffers) => buffers.map(parseBalance));
+  }
+
+  /**
+   * Fetches the moonlight transactions history for
+   * the given profiles.
+   *
+   * @param {Array<Object>} profiles
+   * @param {Object} [options={}]
+   * @param {bigint} [options.from]
+   * @param {number} [options.limit] Max entries per profile
+   * @param {string} [options.order="asc"] "asc" or "desc"
+   * @param {AbortSignal} [options.signal]
+   * @param {bigint} [options.to] Defaults to current block height
+   * @returns {Promise<ReadableStream[]>}
+   */
+  async history(profiles, options = {}) {
+    const limit = options.limit ?? Infinity;
+    const queryOptions = { signal: options.signal };
+    const toBlock = options.to ?? (await this.#network.blockHeight);
+
+    return Promise.all(
+      profiles.map((profile) =>
+        this.#network
+          .query(
+            `fullMoonlightHistory(
+            address: "${profile.account.toString()}",
+            fromBlock: ${options.from ?? 0n},
+            ord: "${options.order ?? "asc"}",
+            toBlock: ${toBlock}
+          ) { json }`,
+            queryOptions
+          )
+          .then((result) => result.fullMoonlightHistory?.json ?? [])
+          .then((historyEntries) =>
+            this.#createHistoryStream(
+              profile,
+              historyEntries.length <= limit
+                ? historyEntries
+                : historyEntries.slice(0, limit),
+              queryOptions
+            )
+          )
+      )
+    );
   }
 
   /**
