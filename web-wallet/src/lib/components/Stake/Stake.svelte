@@ -270,37 +270,29 @@
         on:gasSettings={setGasValues}
       />
 
-      {#if isNextButtonDisabled}
-        {#if !isBalanceSufficientForGas}
-          <Banner variant="error" title="Insufficient balance for gas fees">
-            <p>
-              Your current balance is too low to cover the required gas fees for
-              this transaction. Please deposit additional funds or reduce the
-              gas limit.
-            </p>
-          </Banner>
-        {:else if stakeAmountInLux < minStakeRequirement}
-          <Banner
-            variant="error"
-            title="Stake amount below minimum requirement"
-          >
-            <p>
-              The amount you are trying to stake is below the minimum staking
-              requirement of {luxToDusk(minStakeRequirement).toLocaleString()} DUSK.
-              Please enter a valid amount that meets this minimum.
-            </p>
-          </Banner>
-        {:else if stakeAmountInLux > maxSpendableAmount}
-          <Banner
-            variant="error"
-            title="Stake amount exceeds available balance"
-          >
-            <p>
-              The amount you are trying to stake exceeds your spendable balance
-              after accounting for gas fees. Please reduce your stake amount.
-            </p>
-          </Banner>
-        {/if}
+      {#if !isBalanceSufficientForGas}
+        <Banner variant="error" title="Insufficient balance for gas fees">
+          <p>
+            Your current balance is too low to cover the required gas fees for
+            this transaction. Please deposit additional funds or reduce the gas
+            limit.
+          </p>
+        </Banner>
+      {:else if stakeAmountInLux < minStakeRequirement}
+        <Banner variant="error" title="Stake amount below minimum requirement">
+          <p>
+            The amount you are trying to stake is below the minimum staking
+            requirement of {luxToDusk(minStakeRequirement).toLocaleString()} DUSK.
+            Please enter a valid amount that meets this minimum.
+          </p>
+        </Banner>
+      {:else if stakeAmountInLux > maxSpendableAmount}
+        <Banner variant="error" title="Stake amount exceeds available balance">
+          <p>
+            The amount you are trying to stake exceeds the spendable balance
+            after accounting for gas fees. Please reduce the stake amount.
+          </p>
+        </Banner>
       {/if}
     </WizardStep>
 
