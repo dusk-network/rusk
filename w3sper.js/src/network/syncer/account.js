@@ -155,14 +155,94 @@ export class AccountSyncer extends EventTarget {
   async balances(profiles) {
     const balances = await accountsIntoRaw(profiles).then((rawUsers) =>
       rawUsers.map((user) =>
-        this.#network.contracts.transferContract.call.account(user),
-      ),
+        this.#network.contracts.transferContract.call.account(user)
+      )
     );
 
     return Promise.all(balances)
       .then((responses) => responses.map((resp) => resp.arrayBuffer()))
       .then((buffers) => Promise.all(buffers))
       .then((buffers) => buffers.map(parseBalance));
+  }
+
+  /**
+   * Fetches the moonlight transactions history for
+   * the given profiles.
+   *
+   * @param {Array<Object>} profiles
+   * @param {Object} [options={}]
+   * @param {bigint} [options.from]
+   * @param {AbortSignal} [options.signal]
+   * @returns {ReadableStream}
+   */
+  history(profiles, options = {}) {
+    const max = (a, b) => (a > b ? a : b);
+    const HISTORY_CHUNK_SIZE = 100n;
+    const { signal } = options;
+
+    let data = [];
+    let idx = 0;
+
+    return new ReadableStream({
+      cancel(reason) {
+        console.log("Stream canceled:", reason);
+      },
+
+      async pull(controller) {
+        if (signal?.aborted) {
+          this.cancel(signal.reason ?? "Abort signal received");
+          controller.close();
+          return;
+        }
+
+        if (idx < data.length) {
+          controller.enqueue(data[idx++]);
+        } else {
+          controller.close();
+        }
+      },
+
+      start: async (controller) => {
+        const to = options.from ?? (await this.#network.blockHeight);
+        const from = max(0n, to - HISTORY_CHUNK_SIZE);
+
+        data = await Promise.all(
+          profiles.map((profile) => {
+            const key = profile.account.toString();
+
+            return Promise.all(
+              ["sender", "receiver"].map((type) =>
+                this.#network
+                  .query(
+                    `moonlightHistory(
+                      ${type}: "${key}",
+                      fromBlock: ${from},
+                      toBlock: ${to}
+                    ) { json }`,
+                    { signal }
+                  )
+                  .then((result) => result.moonlightHistory?.json ?? [])
+              )
+            );
+          })
+        )
+          .then((results) =>
+            results
+              .flat(2)
+              .map((data) => {
+                return {
+                  blockHeight: BigInt(data.block_height),
+                  id: data.origin,
+                };
+              })
+              .sort((a, b) => Number(b.blockHeight - a.blockHeight))
+          )
+          .catch((error) => {
+            console.error("Error fetching data", error);
+            controller.error(error);
+          });
+      },
+    });
   }
 
   /**
@@ -174,8 +254,8 @@ export class AccountSyncer extends EventTarget {
   async stakes(profiles) {
     const stakes = await accountsIntoRaw(profiles).then((rawUsers) =>
       rawUsers.map((user) =>
-        this.#network.contracts.stakeContract.call.get_stake(user),
-      ),
+        this.#network.contracts.stakeContract.call.get_stake(user)
+      )
     );
 
     return Promise.all(stakes)
