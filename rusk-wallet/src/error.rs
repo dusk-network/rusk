@@ -165,6 +165,9 @@ pub enum Error {
     /// Inquire error
     #[error("Inquire error: {0}")]
     InquireError(String),
+    /// Trying to withdraw more reward than the person has
+    #[error("Trying to withdraw more than existing reward")]
+    NotEnoughReward,
 }
 
 impl From<dusk_bytes::Error> for Error {

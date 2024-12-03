@@ -428,6 +428,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn phoenix_stake_withdraw(
         &self,
         sender_idx: u8,
+        reward_amt: Option<Dusk>,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let state = self.state()?;
@@ -442,11 +443,23 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
 
-        let reward_amount = state
+        let available_reward = state
             .fetch_stake(&BlsPublicKey::from(&stake_sk))
             .await?
             .map(|s| s.reward)
-            .unwrap_or(0);
+            .ok_or(Error::NoReward)?;
+
+        let reward_amt_withdrawn = if let Some(reward_amt) = reward_amt {
+            // throw error if we try to withdraw more than available
+            if reward_amt > available_reward {
+                return Err(Error::NotEnoughReward);
+            }
+
+            *reward_amt
+        } else {
+            // withdraw all the reward if no amt specified to withdraw
+            available_reward
+        };
 
         let withdraw = phoenix_stake_reward(
             &mut rng,
@@ -454,7 +467,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             &stake_sk,
             inputs,
             root,
-            reward_amount,
+            reward_amt_withdrawn,
             gas.limit,
             gas.price,
             chain_id,
@@ -472,6 +485,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn moonlight_stake_withdraw(
         &self,
         sender_idx: u8,
+        reward_amt: Option<Dusk>,
         gas: Gas,
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
@@ -481,14 +495,32 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let nonce = state.fetch_account(pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
         let stake_info = state.fetch_stake(pk).await?;
-        let reward = stake_info.map(|s| s.reward).ok_or(Error::NoReward)?;
-        let reward = Dusk::from(reward);
+        let available_reward =
+            stake_info.map(|s| s.reward).ok_or(Error::NoReward)?;
+
+        let reward_amt_withdrawn = if let Some(reward_amt) = reward_amt {
+            // throw error if we try to withdraw more than available
+            if reward_amt > available_reward {
+                return Err(Error::NotEnoughReward);
+            }
+
+            *reward_amt
+        } else {
+            // withdraw all the reward if no amt specified to withdraw
+            available_reward
+        };
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);
 
         let withdraw = moonlight_stake_reward(
-            &mut rng, &sender_sk, &sender_sk, *reward, gas.limit, gas.price,
-            nonce, chain_id,
+            &mut rng,
+            &sender_sk,
+            &sender_sk,
+            reward_amt_withdrawn,
+            gas.limit,
+            gas.price,
+            nonce,
+            chain_id,
         )?;
 
         sender_sk.zeroize();
