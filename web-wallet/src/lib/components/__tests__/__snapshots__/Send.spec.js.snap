@@ -198,6 +198,301 @@ exports[`Send > Address step > should display a warning if the address input is 
           </span>
         </button>
       </div>
+       
+    </div>
+     
+    <div
+      class="dusk-wizard__step-navigation"
+    >
+      <a
+        aria-disabled="false"
+        class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--default dusk-icon-button--labeled"
+        href="/some-base-path/dashboard"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+          />
+        </svg>
+        
+         
+        <span
+          class="dusk-anchor-button__text"
+        >
+          Back
+        </span>
+        
+        
+      </a>
+      
+       
+      <button
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
+        disabled=""
+        type="button"
+      >
+        <span
+          class="dusk-button__text"
+        >
+          Next
+        </span>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"
+          />
+        </svg>
+        
+      </button>
+    </div>
+    
+    
+     
+    
+     
+    
+     
+    
+  </div>
+</div>
+`;
+
+exports[`Send > Address step > should display a warning if the address input is self-referential 1`] = `
+<div
+  class="operation svelte-npcavd"
+>
+  <div
+    class="dusk-wizard"
+  >
+    <div
+      slot="stepper"
+    >
+      <div
+        class="dusk-stepper dusk-stepper--variant--primary"
+        style="--columns: 4; --progress-width: 0%;"
+      >
+        <span
+          aria-current="step"
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step dusk-stepper__step--processed"
+        >
+          1
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label"
+          id="step-some-generated-id"
+        >
+          Address
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          2
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Amount
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          3
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Review
+           
+        </span>
+        <span
+          aria-labelledby="step-some-generated-id"
+          class="dusk-stepper__step"
+        >
+          4
+        </span>
+         
+        <span
+          class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+          id="step-some-generated-id"
+        >
+          Done
+           
+        </span>
+        
+      </div>
+      
+    </div>
+     
+     
+     
+    <div
+      class="operation__send svelte-npcavd"
+    >
+      <div
+        class="contract-statuses svelte-1up3579"
+      >
+        <dl
+          class="contract-statuses__list svelte-1up3579"
+        >
+          <dt
+            class="contract-statuses__label svelte-1up3579"
+          >
+            Spendable
+             
+          </dt>
+          <dd
+            class="contract-statuses__value svelte-1up3579"
+          >
+            <span>
+              1,000.000000000
+            </span>
+             
+            <svg
+              class="dusk-icon dusk-icon--size--default contract-statuses__icon"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="DUSK"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+              />
+            </svg>
+            
+             
+          </dd>
+        </dl>
+         
+      </div>
+       
+      <div
+        class="operation__address-wrapper svelte-npcavd"
+      >
+        <p>
+          Address:
+        </p>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--small"
+          disabled=""
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            SCAN QR
+          </span>
+        </button>
+      </div>
+       
+      <textarea
+        class="dusk-textbox dusk-textbox-multiline operation__send-address "
+        required=""
+      />
+      
+       
+      <div
+        class="banner banner--warning"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--large banner__icon banner__icon--warning"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+          />
+        </svg>
+        
+         
+        <div>
+          <strong
+            class="banner__title"
+          >
+            Public account detected
+          </strong>
+           
+          <p>
+            Public transactions are currently unavailable.
+          </p>
+          
+        </div>
+      </div>
+       
+      <div
+        class="scan svelte-1uf7z44"
+      >
+        <video
+          class="svelte-1uf7z44"
+        >
+          <track
+            kind="captions"
+          />
+        </video>
+         
+        <div
+          class="scan__highlight svelte-1uf7z44"
+        />
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--small"
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            CLOSE
+          </span>
+        </button>
+      </div>
+       
+      <div
+        class="banner banner--warning"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--large banner__icon banner__icon--warning"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+          />
+        </svg>
+        
+         
+        <div>
+          <strong
+            class="banner__title"
+          >
+            Self-referential transaction detected
+          </strong>
+           
+          <p>
+            You are attempting to initiate a transaction with your own wallet
+              address as both the sender and the receiver. Self-referential
+              transactions may not have meaningful purpose and will incur gas
+              fees.
+          </p>
+        </div>
+      </div>
     </div>
      
     <div
@@ -435,6 +730,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
           </span>
         </button>
       </div>
+       
     </div>
      
     <div

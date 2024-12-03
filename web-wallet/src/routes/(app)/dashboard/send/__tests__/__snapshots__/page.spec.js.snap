@@ -213,6 +213,7 @@ exports[`Send page > should render the send page 1`] = `
               </span>
             </button>
           </div>
+           
         </div>
          
         <div
