@@ -57,8 +57,6 @@
   /** @type {boolean} */
   let isMemoDecoded = false;
 
-  $: classes = makeClassName(["transaction-details", className]);
-
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -70,6 +68,8 @@
 
     return () => resizeObserver.disconnect();
   });
+
+  $: classes = makeClassName(["transaction-details", className]);
 </script>
 
 <DataCard

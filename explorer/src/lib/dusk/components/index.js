@@ -1,5 +1,6 @@
 export { default as Anchor } from "./anchor/Anchor.svelte";
 export { default as AnchorButton } from "./anchor-button/AnchorButton.svelte";
+export { default as Banner } from "./banner/Banner.svelte";
 export { default as Badge } from "./badge/Badge.svelte";
 export { default as Button } from "./button/Button.svelte";
 export { default as Card } from "./card/Card.svelte";

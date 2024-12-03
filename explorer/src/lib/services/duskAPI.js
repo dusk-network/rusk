@@ -230,12 +230,26 @@ const duskAPI = {
 
   /**
    * @param {string} id
-   * @returns {Promise<Transaction>}
+   * @returns {Promise<Transaction | String>}
    */
   getTransaction(id) {
     return gqlGet(gqlQueries.getTransactionQueryInfo(id))
       .then(getKey("tx"))
-      .then(transformTransaction);
+      .then((tx) => {
+        if (tx === null) {
+          return gqlGet(gqlQueries.getMempoolTx(id))
+            .then(getKey("mempoolTx"))
+            .then((mempoolTx) => {
+              if (mempoolTx) {
+                return "This transaction is currently in the mempool and has not yet been confirmed. The transaction details will be displayed after confirmation.";
+              } else {
+                throw new Error("Transaction not found");
+              }
+            });
+        } else {
+          return transformTransaction(tx);
+        }
+      });
   },
 
   /**

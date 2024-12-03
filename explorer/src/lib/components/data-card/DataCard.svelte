@@ -26,7 +26,6 @@
   export let className = undefined;
 
   $: classes = makeClassName(["data-card", className]);
-
   $: hasEmptyData = Array.isArray(data) && data.length === 0;
 </script>
 

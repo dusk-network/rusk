@@ -16,7 +16,7 @@ fragment TransactionInfo on SpentTransaction {
     gasPrice,
     id,
     isDeploy,
-    memo
+    memo,
     txType
   }
 }
@@ -87,6 +87,12 @@ export const getLatestChainQueryInfo = (amount) => ({
 });
 
 /** @param {string} id */
+export const getMempoolTx = (id) => ({
+  query: "query($id: String!) { mempoolTx(hash: $id) { isDeploy } }",
+  variables: { id },
+});
+
+/** @param {string} id */
 export const getTransactionQueryInfo = (id) => ({
   query: `
     ${transactionFragment}
@@ -106,7 +112,7 @@ export const getTransactionsQueryInfo = (amount) => ({
 
 /** @param {string} id */
 export const getTransactionDetailsQueryInfo = (id) => ({
-  query: "query($id: String!) { tx(hash: $id) { tx {json} } }",
+  query: "query($id: String!) { tx(hash: $id) { tx { json } } }",
   variables: { id },
 });
 
