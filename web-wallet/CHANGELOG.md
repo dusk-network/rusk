@@ -9,13 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+- Update Transactions list design [#1922]
+
+### Removed
+
+### Fixed
+
+## [0.9.0] - 2024-12-03
+
+### Added
+
 - Add "Support" section under Settings [#3071]
 - Add user feedback for "Send" flow validation [#3098]
 - Add validation for self-referential transactions [#3099]
 
 ### Changed
 
-- Update Transactions list design [#1922]
 - Reword "Withdraw Rewards" operation to "Claim Rewards" [#3076]
 - Reword "Shield/Unshield" operation to "Allocate" [#3081]
 
@@ -413,6 +424,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[0.9.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.9.0
 [0.8.1]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.8.1
 [0.8.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.8.0
 [0.7.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.7.0
