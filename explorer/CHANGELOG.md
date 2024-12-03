@@ -9,63 +9,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Show the error message for failed transactions [#2220]
-- Add tooltip to current and pending stake showing the exact amount [#2363]
-- Add `memo` and `isDeploy` fields in transactions [#2362]
-- Add `txType` fields in transactions and display it [#2347]
-- Add `json` payload to block detail [#2364]
-- Add decode feature for `memo` field [#2527]
-- Add top node info in StatisticsPanel [#2613]
-- Add Provisioners page [#2649]
-- Check if transaction exists in mempool [#2877]
-
 ### Changed
 
-- Switch `raw` payload with `json` in transaction details [#2364]
-- Change the displayed value for average gas price to lux [#2416]
-- Change the blocks table header `FEE` to `GAS` and `AVG` to `AVG PRICE` and `TOTAL` to `USED` [#2416]
-- Change the tooltip info of the block rewards [#2166]
-- Hide "Show More" button if an error has occurred [#2585]
-- Update Footer layout [#2640]
-- Change WorldMap location [#2613]
-- Fetch network information locally [#2662]
-- Change Moonlight icon for consistency [#3038]
-- Change hosted Explorer links [#3064]
+### Removed
 
 ### Fixed
 
-- Fix Transactions Fee is not properly computed [#2348]
-- Fix shield icons used for tx type [#2389]
-- Fix Gas Used meter if Gas Limit is zero [#2668]
-- Fix Cluster Location Layout [#3034]
+## [0.3.0] - 2024-12-03
+
+### Added
+
+- Add error message for failed transactions [#2220]
+- Add tooltips to current and pending stake to show exact amounts [#2363]
+- Add `memo` and `isDeploy` fields to transactions [#2362]
+- Add `txType` fields in transactions [#2347]
+- Add `json` payload to block details [#2364]
+- Add decode feature for the `memo` field [#2527]
+- Add top node info to StatisticsPanel [#2613]
+- Add Provisioners page [#2649]
+- Add check for transaction existence in mempool [#2877]
+
+### Changed
+
+- Change `raw` payload to `json` in transaction details [#2364]
+- Change average gas price display value to “lux” [#2416]
+- Update blocks table headers – `FEE` to `GAS`, `AVG` to `AVG PRICE`, and `TOTAL` to `USED` [#2416]
+- Update block rewards tooltip information [#2166]
+- Hide "Show More" button when error occurs [#2585]
+- Update footer layout [#2640]
+- Change WorldMap location [#2613]
+- Change network info to fetch locally [#2662]
+- Update Moonlight icon for visual consistency [#3038]
+- Update hosted Explorer links [#3064]
+
+### Fixed
+
+- Fix improper computation of transaction fees [#2348]
+- Fix shield icons for transaction types [#2389]
+- Fix Gas Used meter behavior when Gas Limit is zero [#2668]
+- Fix Cluster Location layout [#3034]
 
 ## [0.2.0] - 2024-08-26
 
 ### Added
 
-- Add DEVNET to the dropdown select on the navbar [#2159]
-- Add conditional rendering for layout changes based on screen size [#2061]
-- Add accessible name to the gas used progress bar [#2037]
-- Add accessible name to the nav bar button on mobile [#2036]
-- Implement warning for stale market data [#1892]
+- Add DEVNET option to dropdown menu in the navbar [#2159]
+- Add conditional rendering for layout based on screen size [#2061]
+- Add accessible name to gas-used progress bar [#2037]
+- Add accessible name to navbar button on mobile [#2036]
+- Add warning for stale market data [#1892]
 
 ### Changed
 
-- Update Statistics Panel separator lines color [#2039]
-- Update Statistics Panel labels for clarity [#2034]
-- Update font-display to swap for custom fonts to improve performance [#2025]
+- Update separator line colors in StatisticsPanel [#2039]
+- Update labels in StatisticsPanel for clarity [#2034]
+- Update font-display to "swap" for custom fonts, improving performance [#2025]
 - Optimize auto re-renders of relative times [#2059]
 
 ### Fixed
 
-- Fix Average Fee Paid label [#2057]
+- Fix “Average Fee Paid” label [#2057]
 - Fix list items alignment on mobile [#2056]
 
 ## [0.1.0] - 2024-07-24
 
 ### Added
 
-- Create release for explorer module and add changelog file
+- Add initial release for the Explorer module [#2017]
 
 <!-- ISSUES -->
 
@@ -89,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2363]: https://github.com/dusk-network/rusk/issues/2363
 [#2364]: https://github.com/dusk-network/rusk/issues/2364
 [#2389]: https://github.com/dusk-network/rusk/issues/2389
+[#2416]: https://github.com/dusk-network/rusk/issues/2416
 [#2527]: https://github.com/dusk-network/rusk/issues/2527
 [#2585]: https://github.com/dusk-network/rusk/issues/2585
 [#2613]: https://github.com/dusk-network/rusk/issues/2613
@@ -97,12 +108,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2662]: https://github.com/dusk-network/rusk/issues/2662
 [#2668]: https://github.com/dusk-network/rusk/issues/2668
 [#2877]: https://github.com/dusk-network/rusk/issues/2877
+[#3034]: https://github.com/dusk-network/rusk/issues/3034
 [#3038]: https://github.com/dusk-network/rusk/issues/3038
 [#3064]: https://github.com/dusk-network/rusk/issues/3064
-[#3034]: https://github.com/dusk-network/rusk/issues/3034
 
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[0.3.0]: https://github.com/dusk-network/rusk/tree/explorer-0.3.0
 [0.2.0]: https://github.com/dusk-network/rusk/tree/explorer-0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/tree/explorer-0.1.0
