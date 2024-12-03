@@ -34,11 +34,6 @@
   /** @type {"shielded" | "unshielded"} */
   let spendableSource = "shielded";
 
-  $: [gasSettings, language] = collectSettings($settingsStore);
-  $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
-  $: ({ balance } = $walletStore);
-  $: [spendable, statuses] = getContractInfo(spendableSource, balance);
-
   /**
    * @param {CustomEvent<{ type: "account" | "address" | undefined}>} event
    */
@@ -49,10 +44,19 @@
       spendableSource = "shielded";
     }
   }
+
+  $: [gasSettings, language] = collectSettings($settingsStore);
+  $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
+  $: ({ balance, currentProfile } = $walletStore);
+  $: [spendable, statuses] = getContractInfo(spendableSource, balance);
+  $: shieldedAddress = currentProfile ? currentProfile.address.toString() : "";
+  $: publicAddress = currentProfile ? currentProfile.account.toString() : "";
 </script>
 
 <IconHeadingCard gap="medium" heading="Send" icons={[mdiArrowTopRight]} reverse>
   <Send
+    {shieldedAddress}
+    {publicAddress}
     execute={executeSend}
     formatter={duskFormatter}
     {gasLimits}

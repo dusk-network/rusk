@@ -1,13 +1,13 @@
-import { validateAddress } from "..";
+import { getAddressInfo } from "..";
 import { describe, expect, it } from "vitest";
 
-describe("validateAddress", () => {
-  const validAddresses = [
+describe("getAddressInfo", () => {
+  const validShieldedAddresses = [
     "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM",
     "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnM",
   ];
 
-  const validAccounts = [
+  const validPublicAddresses = [
     "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff",
     "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybf",
   ];
@@ -47,29 +47,51 @@ describe("validateAddress", () => {
     "47jNTgAhznIKCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM",
   ];
 
-  it("passes when supplied with a valid address", () => {
-    for (const address of validAddresses) {
-      const result = validateAddress(address);
+  // Shielded and public addresses for self-referential checks
+  const shieldedAddress =
+    "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM";
+  const publicAddress =
+    "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
 
+  it("passes with valid shielded addresses and checks self-referential status", () => {
+    for (const address of validShieldedAddresses) {
+      const result = getAddressInfo(address, shieldedAddress, publicAddress);
+
+      // Valid address should pass validation
       expect(result.isValid).toBe(true);
+
+      // Type should be "address"
       expect(result.type).toBe("address");
+
+      // Check if the address matches the shielded address
+      expect(result.isSelfReferential).toBe(address === shieldedAddress);
     }
   });
 
-  it("passes when supplied with a valid account", () => {
-    for (const account of validAccounts) {
-      const result = validateAddress(account);
+  it("passes with valid public addresses and checks self-referential status", () => {
+    for (const account of validPublicAddresses) {
+      const result = getAddressInfo(account, shieldedAddress, publicAddress);
 
+      // Valid account should pass validation
       expect(result.isValid).toBe(true);
+
+      // Type should be "account"
       expect(result.type).toBe("account");
+
+      // Check if the account matches the public address
+      expect(result.isSelfReferential).toBe(account === publicAddress);
     }
   });
 
   it("fails when supplied with an invalid input", () => {
     for (const input of invalidInputs) {
-      const result = validateAddress(input);
+      const result = getAddressInfo(input, shieldedAddress, publicAddress);
 
+      // Invalid inputs should fail validation
       expect(result.isValid).toBe(false);
+
+      // Self-referential check should not apply to invalid inputs
+      expect(result.isSelfReferential).toBeUndefined();
     }
   });
 });

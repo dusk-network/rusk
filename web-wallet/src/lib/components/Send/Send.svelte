@@ -10,7 +10,7 @@
   } from "@mdi/js";
   import { areValidGasSettings } from "$lib/contracts";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
-  import { validateAddress } from "$lib/dusk/string";
+  import { getAddressInfo } from "$lib/dusk/string";
   import { logo } from "$lib/dusk/icons";
   import {
     AnchorButton,
@@ -54,11 +54,17 @@
   /** @type {boolean} */
   export let enableMoonlightTransactions = false;
 
+  /** @type {string} */
+  export let shieldedAddress;
+
+  /** @type {string} */
+  export let publicAddress;
+
   /** @type {number} */
   let sendAmount = 1;
 
   /** @type {string} */
-  let address = "";
+  let sendToAddress = "";
 
   /** @type {import("qr-scanner").default} */
   let scanner;
@@ -113,10 +119,10 @@
    *
    * Note. This function can be removed when the VITE_FEATURE_MOONLIGHT_TRANSACTIONS flag is removed.
    *
-   * @param {{isValid: boolean, type?: "address" | "account"}} validationResult
+   * @param {{isValid: boolean, type?: "address" | "account", isSelfReferential? : boolean}} addressInfo
    */
-  function isValid(validationResult) {
-    return !validationResult.isValid
+  function isValid(addressInfo) {
+    return !addressInfo.isValid
       ? true
       : isMoonlightTransaction
         ? !enableMoonlightTransactions
@@ -158,12 +164,17 @@
     isBalanceSufficientForGas
   );
 
-  $: addressValidationResult = validateAddress(address);
-  $: isMoonlightTransaction = addressValidationResult.type === "account";
+  $: addressInfo = getAddressInfo(
+    sendToAddress,
+    shieldedAddress,
+    publicAddress
+  );
 
-  $: if (addressValidationResult.type) {
+  $: isMoonlightTransaction = addressInfo.type === "account";
+
+  $: if (addressInfo.type) {
     dispatch("keyChange", {
-      type: addressValidationResult.type,
+      type: addressInfo.type,
     });
   }
 </script>
@@ -184,7 +195,7 @@
       }}
       nextButton={{
         action: () => activeStep++,
-        disabled: isValid(addressValidationResult),
+        disabled: isValid(addressInfo),
       }}
     >
       <div in:fade|global class="operation__send">
@@ -202,11 +213,11 @@
         </div>
         <Textbox
           required
-          className={`operation__send-address ${!addressValidationResult.isValid ? "operation__send-address--invalid" : ""}`}
+          className={`operation__send-address ${!addressInfo.isValid ? "operation__send-address--invalid" : ""}`}
           type="multiline"
-          bind:value={address}
+          bind:value={sendToAddress}
         />
-        {#if addressValidationResult.type === "account"}
+        {#if addressInfo.type === "account"}
           <Banner
             title="Public account detected"
             variant={enableMoonlightTransactions ? "info" : "warning"}
@@ -226,9 +237,22 @@
           bind:this={scanQrComponent}
           bind:scanner
           on:scan={(event) => {
-            address = event.detail;
+            sendToAddress = event.detail;
           }}
         />
+        {#if addressInfo.isSelfReferential}
+          <Banner
+            variant="warning"
+            title="Self-referential transaction detected"
+          >
+            <p>
+              You are attempting to initiate a transaction with your own wallet
+              address as both the sender and the receiver. Self-referential
+              transactions may not have meaningful purpose and will incur gas
+              fees.
+            </p>
+          </Banner>
+        {/if}
       </div>
     </WizardStep>
     <!-- Amount Step -->
@@ -356,7 +380,7 @@
             <span>To:</span>
           </dt>
           <dd class="operation__review-address">
-            <span>{address}</span>
+            <span>{sendToAddress}</span>
           </dd>
         </dl>
 
@@ -367,7 +391,7 @@
     <WizardStep step={3} {key} showNavigation={false}>
       <OperationResult
         errorMessage="Transaction failed"
-        operation={execute(address, sendAmountInLux, gasPrice, gasLimit)}
+        operation={execute(sendToAddress, sendAmountInLux, gasPrice, gasLimit)}
         pendingMessage="Processing transaction"
         successMessage="Transaction created"
       >

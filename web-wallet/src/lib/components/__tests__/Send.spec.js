@@ -23,6 +23,10 @@ vi.mock("$lib/dusk/string", async (importOriginal) => {
 describe("Send", () => {
   const formatter = createCurrencyFormatter("en", "DUSK", 9);
   const lastTxId = "some-id";
+  const publicAddress =
+    "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
+  const shieldedAddress =
+    "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM";
   const baseProps = {
     availableBalance: 1_000_000_000_000n,
     execute: vi.fn().mockResolvedValue(lastTxId),
@@ -36,6 +40,8 @@ describe("Send", () => {
       gasLimit: 20000000n,
       gasPrice: 1n,
     },
+    publicAddress,
+    shieldedAddress,
     statuses: [
       {
         label: "Spendable",
@@ -46,12 +52,6 @@ describe("Send", () => {
 
   const invalidAddress =
     "aB5rL7yC2zK9eV3xH1gQ6fP4jD8sM0iU2oX7wG9nZ8lT3hU4jP5mK8nS6qJ3wF4aA9bB2cC5dD8eE7";
-
-  const address =
-    "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM";
-
-  const account =
-    "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
 
   afterEach(() => {
     cleanup();
@@ -89,13 +89,27 @@ describe("Send", () => {
 
     it("should display a warning if the address input is a public account", async () => {
       const { container, getByRole } = render(Send, baseProps);
+      const sendToAddress =
+        "aTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE5FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
       const addressInput = getByRole("textbox");
 
       await fireEvent.input(addressInput, {
-        target: { value: account },
+        target: { value: sendToAddress },
       });
 
-      expect(addressInput).toHaveValue(account);
+      expect(addressInput).toHaveValue(sendToAddress);
+      expect(container.firstChild).toMatchSnapshot();
+    });
+
+    it("should display a warning if the address input is self-referential", async () => {
+      const { container, getByRole } = render(Send, baseProps);
+      const addressInput = getByRole("textbox");
+
+      await fireEvent.input(addressInput, {
+        target: { value: publicAddress },
+      });
+
+      expect(addressInput).toHaveValue(publicAddress);
       expect(container.firstChild).toMatchSnapshot();
     });
   });
@@ -214,7 +228,9 @@ describe("Send", () => {
       const { container, getByRole } = render(Send, baseProps);
       const addressInput = getByRole("textbox");
 
-      await fireEvent.input(addressInput, { target: { value: address } });
+      await fireEvent.input(addressInput, {
+        target: { value: shieldedAddress },
+      });
       await fireEvent.click(getByRole("button", { name: "Next" }));
 
       const amountInput = getByRole("spinbutton");
@@ -232,7 +248,7 @@ describe("Send", () => {
       );
 
       expect(value.textContent).toBe(baseProps.formatter(amount));
-      expect(key.textContent).toBe(address);
+      expect(key.textContent).toBe(shieldedAddress);
       expect(container.firstChild).toMatchSnapshot();
     });
   });
@@ -251,7 +267,9 @@ describe("Send", () => {
       const { getByRole, getByText } = render(Send, baseProps);
       const addressInput = getByRole("textbox");
 
-      await fireEvent.input(addressInput, { target: { value: address } });
+      await fireEvent.input(addressInput, {
+        target: { value: shieldedAddress },
+      });
       await fireEvent.click(getByRole("button", { name: "Next" }));
 
       const amountInput = getByRole("spinbutton");
@@ -264,7 +282,7 @@ describe("Send", () => {
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
-        address,
+        shieldedAddress,
         duskToLux(amount),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
@@ -285,7 +303,9 @@ describe("Send", () => {
       const { getByRole, getByText } = render(Send, baseProps);
       const addressInput = getByRole("textbox");
 
-      await fireEvent.input(addressInput, { target: { value: address } });
+      await fireEvent.input(addressInput, {
+        target: { value: shieldedAddress },
+      });
       await fireEvent.click(getByRole("button", { name: "Next" }));
 
       const amountInput = getByRole("spinbutton");
@@ -297,7 +317,7 @@ describe("Send", () => {
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
-        address,
+        shieldedAddress,
         duskToLux(amount),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
@@ -312,7 +332,9 @@ describe("Send", () => {
       const { getByRole, getByText } = render(Send, baseProps);
       const addressInput = getByRole("textbox");
 
-      await fireEvent.input(addressInput, { target: { value: address } });
+      await fireEvent.input(addressInput, {
+        target: { value: shieldedAddress },
+      });
       await fireEvent.click(getByRole("button", { name: "Next" }));
 
       const amountInput = getByRole("spinbutton");
@@ -324,7 +346,7 @@ describe("Send", () => {
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
-        address,
+        shieldedAddress,
         duskToLux(amount),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
