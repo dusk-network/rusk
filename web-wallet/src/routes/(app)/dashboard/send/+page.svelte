@@ -57,7 +57,7 @@
     formatter={duskFormatter}
     {gasLimits}
     {gasSettings}
-    {spendable}
+    availableBalance={spendable}
     {statuses}
     enableMoonlightTransactions={import.meta.env
       .VITE_FEATURE_MOONLIGHT_TRANSACTIONS === "true"}

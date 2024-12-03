@@ -1,6 +1,10 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
+import {
+  createCurrencyFormatter,
+  duskToLux,
+  luxToDusk,
+} from "$lib/dusk/currency";
 import { getAsHTMLElement } from "$lib/dusk/test-helpers";
 
 import { Send } from "..";
@@ -20,6 +24,7 @@ describe("Send", () => {
   const formatter = createCurrencyFormatter("en", "DUSK", 9);
   const lastTxId = "some-id";
   const baseProps = {
+    availableBalance: 1_000_000_000_000n,
     execute: vi.fn().mockResolvedValue(lastTxId),
     formatter,
     gasLimits: {
@@ -31,7 +36,6 @@ describe("Send", () => {
       gasLimit: 20000000n,
       gasPrice: 1n,
     },
-    spendable: 1_000_000_000_000n,
     statuses: [
       {
         label: "Spendable",
@@ -127,7 +131,7 @@ describe("Send", () => {
 
     it("should set the max amount in the textbox if the user clicks the related button", async () => {
       const maxSpendableDusk = luxToDusk(
-        baseProps.spendable -
+        baseProps.availableBalance -
           baseProps.gasSettings.gasPrice * baseProps.gasSettings.gasLimit
       );
       const { getByRole } = render(Send, baseProps);
@@ -147,7 +151,7 @@ describe("Send", () => {
     it("should not change the default amount (1) in the textbox if the user clicks the related button and the balance is zero", async () => {
       const props = {
         ...baseProps,
-        spendable: 0n,
+        availableBalance: 0n,
       };
       const { getByRole } = render(Send, props);
 
@@ -261,7 +265,7 @@ describe("Send", () => {
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
         address,
-        amount,
+        duskToLux(amount),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -294,7 +298,7 @@ describe("Send", () => {
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
         address,
-        amount,
+        duskToLux(amount),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -321,7 +325,7 @@ describe("Send", () => {
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
         address,
-        amount,
+        duskToLux(amount),
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );

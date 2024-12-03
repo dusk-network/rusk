@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add "Support" section under Settings [#3071]
+- Add user feedback for "Send" flow validation [#3098]
 
 ### Changed
 
@@ -405,6 +406,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3073]: https://github.com/dusk-network/rusk/issues/3073
 [#3076]: https://github.com/dusk-network/rusk/issues/3076
 [#3081]: https://github.com/dusk-network/rusk/issues/3081
+[#3098]: https://github.com/dusk-network/rusk/issues/3098
 
 <!-- VERSIONS -->
 

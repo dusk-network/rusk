@@ -32,24 +32,7 @@ describe("executeSend", () => {
   it("should call the walletStore transfer method and execute the transaction", async () => {
     const duskAmount = 1000;
     const luxAmount = BigInt(duskAmount * 1e9);
-    const result = await executeSend("fake-address", duskAmount, 1n, 500n);
-
-    expect(walletStore.transfer).toHaveBeenCalledTimes(1);
-    expect(walletStore.transfer).toHaveBeenCalledWith(
-      "fake-address",
-      luxAmount,
-      expect.objectContaining({
-        limit: 500n,
-        price: 1n,
-      })
-    );
-    expect(result).toBe("some-tx-id");
-  });
-
-  it("should correctly convert decimal amounts in Dusk to Lux", async () => {
-    const duskAmount = 1234.56789;
-    const luxAmount = 1_234_567_890_000n;
-    const result = await executeSend("fake-address", duskAmount, 1n, 500n);
+    const result = await executeSend("fake-address", luxAmount, 1n, 500n);
 
     expect(walletStore.transfer).toHaveBeenCalledTimes(1);
     expect(walletStore.transfer).toHaveBeenCalledWith(
