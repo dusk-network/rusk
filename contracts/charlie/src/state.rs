@@ -6,8 +6,13 @@
 
 extern crate alloc;
 
-use execution_core::stake::{Stake, STAKE_CONTRACT};
-use execution_core::transfer::{ContractToContract, TRANSFER_CONTRACT};
+use execution_core::stake::{
+    Stake, Withdraw, WithdrawToContract, STAKE_CONTRACT,
+};
+use execution_core::transfer::{
+    withdraw::Withdraw as TransferWithdraw, ContractToContract,
+    ReceiveFromContract, TRANSFER_CONTRACT,
+};
 
 const SCRATCH_BUF_BYTES: usize = 256;
 
@@ -39,5 +44,36 @@ impl Charlie {
             &contract_to_contract,
         )
         .expect("Transferring to stake contract should succeed");
+    }
+
+    pub fn unstake(&mut self, unstake: Withdraw) {
+        let value = unstake.transfer_withdraw().value();
+        let data =
+            rkyv::to_bytes::<_, SCRATCH_BUF_BYTES>(unstake.transfer_withdraw())
+                .expect("withdraw to be rkyv serialized")
+                .to_vec();
+
+        let withdraw_to_contract = WithdrawToContract::new(
+            *unstake.account(),
+            value,
+            "receive_unstake",
+        )
+        .with_data(data);
+
+        let _: () = rusk_abi::call(
+            STAKE_CONTRACT,
+            "unstake_from_contract",
+            &withdraw_to_contract,
+        )
+        .expect("Unstake from stake contract should succeed");
+    }
+
+    pub fn receive_unstake(&mut self, receive: ReceiveFromContract) {
+        let withdraw: TransferWithdraw = rkyv::from_bytes(&receive.data)
+            .expect("withdraw to be rkyv deserialized");
+        // make call to the transfer contract to withdraw funds from this
+        // contract into the receiver specified by the withdrawal.
+        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw)
+            .expect("Withdrawing stake should succeed");
     }
 }
