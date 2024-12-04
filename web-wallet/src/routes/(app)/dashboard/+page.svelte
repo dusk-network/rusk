@@ -8,7 +8,6 @@
     mdiDatabaseOutline,
     mdiListBoxOutline,
     mdiSwapHorizontal,
-    mdiSwapVertical,
     mdiSync,
   } from "@mdi/js";
   import { AnchorButton, Icon } from "$lib/dusk/components";
@@ -30,20 +29,17 @@
       case "allocate":
         icons = [{ path: mdiSync }];
         break;
+      case "migrate":
+        icons = [{ path: mdiSwapHorizontal }];
+        break;
       case "receive":
         icons = [{ path: mdiArrowBottomLeft }];
         break;
       case "send":
         icons = [{ path: mdiArrowTopRight }];
         break;
-      case "staking":
+      case "stake":
         icons = [{ path: mdiDatabaseOutline }];
-        break;
-      case "transfer":
-        icons = [{ path: mdiSwapVertical }];
-        break;
-      case "migrate":
-        icons = [{ path: mdiSwapHorizontal }];
         break;
       default:
         break;
