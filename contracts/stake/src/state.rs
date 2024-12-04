@@ -267,6 +267,7 @@ impl StakeState {
     pub fn unstake_from_contract(&mut self, unstake: WithdrawToContract) {
         let account = unstake.account();
         let value = unstake.value();
+        let data = unstake.data().to_vec();
 
         let (loaded_stake, keys) = self
             .get_stake_mut(account)
@@ -293,7 +294,7 @@ impl StakeState {
             contract: caller,
             fn_name: unstake.fn_name().into(),
             value,
-            data: Vec::new(),
+            data,
         };
 
         let _: () = rusk_abi::call(
@@ -301,7 +302,7 @@ impl StakeState {
             "contract_to_contract",
             &to_contract,
         )
-        .expect("Withdrawing stake to contract should succeed");
+        .expect("Unstaking to contract should succeed");
 
         let stake_event = if value > stake.value {
             let from_locked = value - stake.value;
