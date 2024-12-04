@@ -7,11 +7,13 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::stake::{Stake, EPOCH, MINIMUM_STAKE};
+use execution_core::stake::{
+    self, Stake, Withdraw, WithdrawToContract, EPOCH, MINIMUM_STAKE,
+};
 
 use dusk_bytes::Serializable;
 use execution_core::transfer::data::ContractCall;
-use execution_core::transfer::Transaction;
+use execution_core::transfer::{self, Transaction};
 use execution_core::ContractId;
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
@@ -141,6 +143,7 @@ pub async fn stake_from_contract() -> Result<()> {
     let unstake = wallet
         .moonlight_unstake(&mut rng, 0, 0, GAS_LIMIT, 1)
         .expect("stake to be successful");
+
     execute_transaction(
         unstake,
         &rusk,
@@ -148,6 +151,41 @@ pub async fn stake_from_contract() -> Result<()> {
         "Panic: expect StakeFundOwner::Account",
     );
 
+    let unstake = stake::Withdraw::new(
+        &wallet.account_secret_key(0).unwrap(),
+        transfer::withdraw::Withdraw::new(
+            &mut rng,
+            &wallet.account_secret_key(0).unwrap(),
+            contract_id,
+            3 * MINIMUM_STAKE,
+            transfer::withdraw::WithdrawReceiver::Moonlight(
+                wallet.account_public_key(0).unwrap(),
+            ),
+            transfer::withdraw::WithdrawReplayToken::Moonlight(7),
+        ),
+    );
+
+    let prev_balance = wallet.get_account(0).unwrap().balance;
+    assert_eq!(
+        wallet
+            .get_stake(0)
+            .expect("stake to exists")
+            .amount
+            .unwrap()
+            .total_funds(),
+        3 * MINIMUM_STAKE
+    );
+    let call = ContractCall::new(contract_id, "unstake", &unstake)
+        .expect("call to be successful");
+    let unstake_from_contract = wallet
+        .moonlight_execute(0, 0, 0, GAS_LIMIT, GAS_PRICE, Some(call.clone()))
+        .expect("unstakes to be successful");
+    let tx = execute_transaction(unstake_from_contract, &rusk, 1, None);
+
+    assert_eq!(wallet.get_stake(0).expect("stake to exists").amount, None);
+    let new_balance = wallet.get_account(0).unwrap().balance;
+    let fee_paid = tx.gas_spent * GAS_PRICE;
+    assert_eq!(new_balance, prev_balance + 3 * MINIMUM_STAKE - fee_paid);
     Ok(())
 }
 
