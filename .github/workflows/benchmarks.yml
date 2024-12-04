@@ -8,7 +8,7 @@ on:
 jobs:
   # Job to run change detection
   changes:
-    runs-on: core
+    runs-on: ubuntu-latest
     permissions:
       pull-requests: read
     outputs:
