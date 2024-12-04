@@ -4,11 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::operations::Voter;
-use dusk_consensus::{
-    operations::{CallParams, VerificationOutput},
-    user::{provisioners::Provisioners, stake::Stake},
-};
+use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::user::provisioners::Provisioners;
+use dusk_consensus::user::stake::Stake;
 use execution_core::signatures::bls::PublicKey as BlsPublicKey;
 use execution_core::transfer::data::ContractBytecode;
 use execution_core::transfer::moonlight::AccountData;

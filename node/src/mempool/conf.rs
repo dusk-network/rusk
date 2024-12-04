@@ -4,8 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::fmt::Formatter;
+use std::time::Duration;
+
 use serde::{Deserialize, Serialize};
-use std::{fmt::Formatter, time::Duration};
 
 /// Mempool configuration parameters
 pub const DEFAULT_EXPIRY_TIME: Duration = Duration::from_secs(3 * 60 * 60 * 24); /* 3 days */

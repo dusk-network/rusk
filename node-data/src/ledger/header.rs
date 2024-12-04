@@ -6,9 +6,8 @@
 
 use serde::Serialize;
 
-use crate::message::{ConsensusHeader, MESSAGE_MAX_ITER};
-
 use super::*;
+use crate::message::{ConsensusHeader, MESSAGE_MAX_ITER};
 
 pub type Seed = Signature;
 #[derive(Eq, PartialEq, Clone, Serialize)]

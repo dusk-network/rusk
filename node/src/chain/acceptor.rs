@@ -4,17 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{self, ConsensusStorage, Ledger, Mempool, Metadata};
-use crate::{vm, Message, Network};
+use core::panic;
+use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{cmp, env};
+
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::TimeoutSet;
 use dusk_consensus::config::{
     MAX_ROUND_DISTANCE, MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
 };
 use dusk_consensus::errors::{ConsensusError, HeaderError};
+use dusk_consensus::operations::Voter;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_consensus::user::stake::Stake;
 use execution_core::signatures::bls;
+use execution_core::stake::{SlashEvent, StakeAmount, StakeEvent};
+use metrics::{counter, gauge, histogram};
 use node_data::bls::PublicKey;
 use node_data::events::contract::ContractEvent;
 use node_data::events::{
@@ -23,19 +30,10 @@ use node_data::events::{
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Slash,
 };
-use node_data::message::{AsyncQueue, Payload, Status};
-use rkyv::{check_archived_root, Deserialize, Infallible};
-
-use core::panic;
-use dusk_consensus::operations::Voter;
-use execution_core::stake::{SlashEvent, StakeAmount, StakeEvent};
-use metrics::{counter, gauge, histogram};
 use node_data::message::payload::{GetBlocks, Vote};
+use node_data::message::{AsyncQueue, Payload, Status};
 use node_data::{get_current_timestamp, Serializable, StepName};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::{cmp, env};
+use rkyv::{check_archived_root, Deserialize, Infallible};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{RwLock, RwLockReadGuard};
 use tracing::{debug, error, info, trace, warn};
@@ -47,6 +45,8 @@ use crate::database::rocksdb::{
     MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
     MD_STATE_ROOT_KEY,
 };
+use crate::database::{self, ConsensusStorage, Ledger, Mempool, Metadata};
+use crate::{vm, Message, Network};
 
 const CANDIDATES_DELETION_OFFSET: u64 = 10;
 

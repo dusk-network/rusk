@@ -10,13 +10,10 @@ use std::path::Path;
 pub mod rocksdb;
 
 use anyhow::Result;
-
 use node_data::ledger::{
     Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
 };
-use node_data::message::payload;
-use node_data::message::ConsensusHeader;
-
+use node_data::message::{payload, ConsensusHeader};
 use serde::{Deserialize, Serialize};
 
 pub struct LightBlock {

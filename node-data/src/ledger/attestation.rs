@@ -7,7 +7,6 @@
 use serde::Serialize;
 
 use super::*;
-
 use crate::message::payload::RatificationResult;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Serialize)]
@@ -113,9 +112,10 @@ impl IterationsInfo {
 
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
+    use rand::Rng;
+
     use super::*;
     use crate::bls;
-    use rand::Rng;
 
     impl<T> Dummy<T> for PublicKeyBytes {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {

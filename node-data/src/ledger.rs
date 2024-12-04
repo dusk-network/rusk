@@ -21,14 +21,14 @@ pub use attestation::{
     Attestation, IterationInfo, IterationsInfo, Signature, StepVotes,
 };
 
-use crate::bls::PublicKeyBytes;
-use crate::Serializable;
-
-use sha3::Digest;
 use std::io::{self, Read, Write};
 
 #[cfg(any(feature = "faker", test))]
 use fake::{Dummy, Fake, Faker};
+use sha3::Digest;
+
+use crate::bls::PublicKeyBytes;
+use crate::Serializable;
 
 /// Encode a byte array into a shortened HEX representation.
 pub fn to_str(bytes: &[u8]) -> String {

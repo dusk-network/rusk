@@ -4,16 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use core::result::Result as CoreResult;
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use core::result::Result as CoreResult;
 use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
-use node_data::events::contract::ContractEvent;
-use node_data::events::contract::OriginHash;
+use node_data::events::contract::{ContractEvent, OriginHash};
 use rocksdb::{
     BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice,
     LogLevel, OptimisticTransactionDB, Options,

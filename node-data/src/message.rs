@@ -4,6 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use core::fmt;
+use std::cmp::Ordering;
+use std::io::{self, Read, Write};
+use std::net::SocketAddr;
+
+use async_channel::TrySendError;
 use dusk_bytes::Serializable as DuskSerializable;
 use execution_core::signatures::bls::{
     Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
@@ -13,18 +19,10 @@ use execution_core::signatures::bls::{
 use payload::{Nonce, ValidationQuorum};
 use tracing::{error, warn};
 
+use self::payload::{Candidate, Ratification, Validation};
 use crate::bls::PublicKey;
 use crate::ledger::{to_str, Hash, Signature};
-use crate::StepName;
-use crate::{bls, ledger, Serializable};
-use core::fmt;
-use std::cmp::Ordering;
-use std::io::{self, Read, Write};
-use std::net::SocketAddr;
-
-use async_channel::TrySendError;
-
-use self::payload::{Candidate, Ratification, Validation};
+use crate::{bls, ledger, Serializable, StepName};
 
 /// Topic field position in the message binary representation
 pub const TOPIC_FIELD_POS: usize = 1 + 2 + 2;
@@ -507,16 +505,17 @@ impl From<payload::ValidationResult> for Payload {
 }
 
 pub mod payload {
-    use crate::ledger::{self, to_str, Attestation, Block, Hash, StepVotes};
-    use crate::{get_current_timestamp, Serializable};
     use std::fmt;
     use std::io::{self, Read, Write};
     use std::net::{
         IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6,
     };
 
-    use super::{ConsensusHeader, SignInfo};
     use serde::Serialize;
+
+    use super::{ConsensusHeader, SignInfo};
+    use crate::ledger::{self, to_str, Attestation, Block, Hash, StepVotes};
+    use crate::{get_current_timestamp, Serializable};
 
     #[derive(Debug, Clone)]
     #[cfg_attr(
@@ -1629,11 +1628,9 @@ impl std::fmt::Debug for SignInfo {
 #[allow(unused)]
 mod tests {
     use self::payload::ValidationResult;
-
     use super::*;
-    use crate::ledger;
     use crate::ledger::*;
-    use crate::Serializable;
+    use crate::{ledger, Serializable};
 
     #[test]
     fn test_serialize() {

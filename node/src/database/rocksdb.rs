@@ -4,38 +4,32 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{
-    ConsensusStorage, DatabaseOptions, Ledger, LightBlock, Metadata, Persist,
-    DB,
-};
-use anyhow::Result;
 use std::cell::RefCell;
+use std::collections::HashSet;
+use std::io::{Read, Write};
+use std::path::Path;
+use std::sync::Arc;
+use std::{io, vec};
 
+use anyhow::Result;
 use node_data::ledger::{
     Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
 };
-use node_data::message::payload;
-use node_data::message::ConsensusHeader;
+use node_data::message::{payload, ConsensusHeader};
 use node_data::Serializable;
-
-use crate::database::Mempool;
-
 use rocksdb::{
     AsColumnFamilyRef, BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor,
     DBAccess, DBRawIteratorWithThreadMode, IteratorMode, LogLevel,
     OptimisticTransactionDB, OptimisticTransactionOptions, Options,
     WriteOptions,
 };
-
-use std::collections::HashSet;
-use std::io;
-use std::io::Read;
-use std::io::Write;
-use std::path::Path;
-use std::sync::Arc;
-use std::vec;
-
 use tracing::info;
+
+use super::{
+    ConsensusStorage, DatabaseOptions, Ledger, LightBlock, Metadata, Persist,
+    DB,
+};
+use crate::database::Mempool;
 
 const CF_LEDGER_HEADER: &str = "cf_ledger_header";
 const CF_LEDGER_TXS: &str = "cf_ledger_txs";
@@ -1261,11 +1255,10 @@ impl node_data::Serializable for LightBlock {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
+    use fake::{Fake, Faker};
     use node_data::ledger;
 
-    use fake::{Fake, Faker};
+    use super::*;
 
     #[test]
     fn test_store_block() {

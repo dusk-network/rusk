@@ -13,12 +13,10 @@ mod genesis;
 mod header_validation;
 mod metrics;
 
-use self::acceptor::Acceptor;
-use self::fsm::SimpleFSM;
-use crate::database::rocksdb::MD_HASH_KEY;
-use crate::database::{Ledger, Metadata};
-use crate::{database, vm, Network};
-use crate::{LongLivedService, Message};
+use std::ops::Deref;
+use std::sync::Arc;
+use std::time::Duration;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use dusk_consensus::errors::ConsensusError;
@@ -27,14 +25,16 @@ use node_data::events::Event;
 use node_data::ledger::{to_str, BlockWithLabel, Label};
 use node_data::message::payload::RatificationResult;
 use node_data::message::{AsyncQueue, Payload, Topics};
-use std::ops::Deref;
-use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
-
 use tokio::time::{sleep_until, Instant};
 use tracing::{debug, error, info, warn};
+
+use self::acceptor::Acceptor;
+use self::fsm::SimpleFSM;
+use crate::database::rocksdb::MD_HASH_KEY;
+use crate::database::{Ledger, Metadata};
+use crate::{database, vm, LongLivedService, Message, Network};
 
 const TOPICS: &[u8] = &[
     Topics::Block as u8,

@@ -4,17 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::cmp::Ordering;
+
 use anyhow::{anyhow, Result};
 use node_data::ledger::Header;
-use std::cmp::Ordering;
 use tracing::info;
 
-use crate::{
-    database::{self},
-    vm, Network,
-};
-
 use super::acceptor::{Acceptor, RevertTarget};
+use crate::database::{self};
+use crate::{vm, Network};
 
 /// Wraps up any handlers or data needed by fallback to complete.
 pub(crate) struct WithContext<

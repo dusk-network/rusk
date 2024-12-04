@@ -116,8 +116,9 @@ impl From<ContractEvent> for Event {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use execution_core::ContractId;
+
+    use super::*;
 
     fn exec_core_event() -> Event {
         Event {

@@ -6,10 +6,9 @@
 
 pub mod conf;
 
-use crate::database::{Ledger, Mempool};
-use crate::mempool::conf::Params;
-use crate::vm::PreverificationResult;
-use crate::{database, vm, LongLivedService, Message, Network};
+use std::sync::Arc;
+use std::time::Duration;
+
 use async_trait::async_trait;
 use conf::{
     DEFAULT_DOWNLOAD_REDUNDANCY, DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL,
@@ -18,12 +17,15 @@ use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
 use node_data::ledger::{SpendingId, Transaction};
 use node_data::message::{payload, AsyncQueue, Payload, Topics};
-use std::sync::Arc;
-use std::time::Duration;
 use thiserror::Error;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
+
+use crate::database::{Ledger, Mempool};
+use crate::mempool::conf::Params;
+use crate::vm::PreverificationResult;
+use crate::{database, vm, LongLivedService, Message, Network};
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
 

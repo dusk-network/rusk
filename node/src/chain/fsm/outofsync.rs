@@ -6,19 +6,17 @@
 
 use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use std::time::Duration;
-use std::{sync::Arc, time::SystemTime};
-
-use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 
 use node_data::ledger::Block;
 use node_data::message::payload::{GetResource, Inv, Quorum};
-
-use crate::chain::acceptor::Acceptor;
-use crate::{database, vm, Network};
+use tokio::sync::RwLock;
+use tracing::{debug, info, warn};
 
 use super::PresyncInfo;
+use crate::chain::acceptor::Acceptor;
+use crate::{database, vm, Network};
 
 const MAX_POOL_BLOCKS_SIZE: usize = 1000;
 const MAX_BLOCKS_TO_REQUEST: u64 = 100;
