@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update Transactions list design [#1922]
+- Reword "Staking" header to "Stake" [#3113]
 
 ### Removed
 
@@ -420,6 +421,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3081]: https://github.com/dusk-network/rusk/issues/3081
 [#3098]: https://github.com/dusk-network/rusk/issues/3098
 [#3099]: https://github.com/dusk-network/rusk/issues/3099
+[#3113]: https://github.com/dusk-network/rusk/issues/3113
 
 <!-- VERSIONS -->
 

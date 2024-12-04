@@ -20,7 +20,7 @@ export default [
   },
   {
     enabled: import.meta.env.VITE_FEATURE_STAKE === "true",
-    id: "staking",
+    id: "stake",
     label: "Stake",
     operations: [
       {

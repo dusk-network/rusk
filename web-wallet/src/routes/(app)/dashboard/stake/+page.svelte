@@ -29,7 +29,7 @@
 {#if import.meta.env.VITE_FEATURE_STAKE || false}
   <IconHeadingCard
     gap="medium"
-    heading="Staking"
+    heading="Stake"
     icons={[mdiDatabaseOutline]}
     reverse
   >
