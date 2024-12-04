@@ -165,7 +165,7 @@ impl Stake {
 }
 
 /// Withdraw some value from the stake contract to a smart contract
-/// 
+///
 /// This struct contains the information necessary to perform the withdrawal,
 /// including the account initiating the withdrawal, the amount being withdrawn,
 /// and the name of the function to invoke on the target contract.
@@ -175,6 +175,7 @@ pub struct WithdrawToContract {
     account: BlsPublicKey,
     value: u64,
     fn_name: String,
+    data: Vec<u8>,
 }
 
 impl WithdrawToContract {
@@ -199,6 +200,7 @@ impl WithdrawToContract {
             account,
             value,
             fn_name: fn_name.into(),
+            data: Vec::new(),
         }
     }
 
@@ -219,6 +221,19 @@ impl WithdrawToContract {
     #[must_use]
     pub fn fn_name(&self) -> &str {
         &self.fn_name
+    }
+
+    /// Returns the data to be passed to the target contract.
+    #[must_use]
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    /// Set the data to be passed to the target contract.
+    #[must_use]
+    pub fn with_data(mut self, data: Vec<u8>) -> Self {
+        self.data = data;
+        self
     }
 }
 
