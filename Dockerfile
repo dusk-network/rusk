@@ -14,7 +14,7 @@ ENV TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
 
 # Features to include in the build
 # E.g., --build-arg CARGO_FEATURES="archive"
-ARG CARGO_FEATURES=""
+ARG CARGO_FEATURES="archive"
 
 # Convert Docker platform arg to Rust target name,
 # and install nightly based on the Rust target
