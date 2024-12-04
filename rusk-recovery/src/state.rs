@@ -9,31 +9,29 @@ use std::fs;
 use std::path::Path;
 
 use dusk_bytes::DeserializableSlice;
+use execution_core::signatures::bls::PublicKey as AccountPublicKey;
+use execution_core::stake::{StakeAmount, StakeData, STAKE_CONTRACT};
+use execution_core::transfer::phoenix::{Note, PublicKey, Sender};
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::{ContractId, JubJubScalar};
 use ff::Field;
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use rusk_abi::{ContractData, Session, VM};
+
 use tracing::info;
 use url::Url;
 
-use execution_core::{
-    signatures::bls::PublicKey as AccountPublicKey,
-    stake::{StakeAmount, StakeData, STAKE_CONTRACT},
-    transfer::{
-        phoenix::{Note, PublicKey, Sender},
-        TRANSFER_CONTRACT,
-    },
-    ContractId, JubJubScalar,
-};
-use rusk_abi::{ContractData, Session, VM};
-
 use crate::Theme;
-pub use snapshot::{GenesisStake, PhoenixBalance, Snapshot};
 
 mod http;
-mod snapshot;
-pub mod tar;
 mod zip;
+
+mod snapshot;
+pub use snapshot::{GenesisStake, PhoenixBalance, Snapshot};
+
+pub mod tar;
 
 pub const DEFAULT_SNAPSHOT: &str =
     include_str!("../config/testnet_remote.toml");

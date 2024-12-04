@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use http_req::request;
 use std::error::Error;
+
+use http_req::request;
 
 const MAX_REDIRECT: usize = 3;
 
