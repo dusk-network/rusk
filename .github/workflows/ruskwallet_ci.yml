@@ -74,4 +74,3 @@ jobs:
 
       - run: cargo check --target=aarch64-unknown-linux-gnu --release
         working-directory: ./rusk-wallet
-      
