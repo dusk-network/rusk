@@ -201,6 +201,25 @@ impl Archive {
 
         Ok(r.is_some())
     }
+
+    /// Gives you the next block height that contains a phoenix event from a
+    /// given starting block height
+    pub async fn next_phoenix(&self, block_height: i64) -> Result<Option<u64>> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        let r = sqlx::query!(
+            r#"SELECT block_height FROM finalized_blocks WHERE block_height > ? AND phoenix_present = 1"#,
+            block_height
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+
+        if let Some(record) = r {
+            Ok(Some(record.block_height as u64))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 /// Mutating methods for the SQLite Archive
@@ -281,8 +300,16 @@ impl Archive {
             .fetch_unfinalized_events_by_hash(hex_block_hash)
             .await?;
 
-        // Group events by origin (block height, TxHash) & throw away the ones
-        // that don't have an origin
+        /*
+        Cases of phoenix transfers that produced `Notes` as output:
+        1. Any PhoenixTransactionEvent (through notes & refund_note)
+        */
+        let phoenix_event_present = events.iter().any(|event| {
+            event.event.target.0 == execution_core::transfer::TRANSFER_CONTRACT
+                && event.event.topic == execution_core::transfer::PHOENIX_TOPIC
+        });
+
+        // Group events by origin (block height, OriginHash)
         let grouped_events = transformer::group_by_origins(
             events,
             finalized_block_height as u64,
@@ -292,8 +319,8 @@ impl Archive {
         // this data to another table
 
         sqlx::query!(
-            r#"INSERT INTO finalized_blocks (block_height, block_hash) VALUES (?, ?)"#,
-            finalized_block_height, hex_block_hash
+            r#"INSERT INTO finalized_blocks (block_height, block_hash, phoenix_present) VALUES (?, ?, ?)"#,
+            finalized_block_height, hex_block_hash, phoenix_event_present
         ).execute(&mut *tx).await?;
 
         sqlx::query!(

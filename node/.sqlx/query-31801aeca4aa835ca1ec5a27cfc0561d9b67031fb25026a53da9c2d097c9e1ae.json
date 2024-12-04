@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT block_height FROM finalized_blocks WHERE block_height > ? AND phoenix_present = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "block_height",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "31801aeca4aa835ca1ec5a27cfc0561d9b67031fb25026a53da9c2d097c9e1ae"
+}
