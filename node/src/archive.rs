@@ -18,7 +18,7 @@ mod sqlite;
 mod transformer;
 
 pub use archivist::ArchivistSrv;
-pub use moonlight::MoonlightGroup;
+pub use moonlight::{MoonlightGroup, Order};
 
 // Archive folder containing the sqlite database and the moonlight database
 const ARCHIVE_FOLDER_NAME: &str = "archive";
