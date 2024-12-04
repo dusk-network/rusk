@@ -13,7 +13,7 @@ use execution_core::transfer::{
     CONVERT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, TRANSFER_CONTRACT,
     WITHDRAW_TOPIC,
 };
-use node::archive::MoonlightGroup;
+use node::archive::{MoonlightGroup, Order};
 use node_data::events::contract::ContractEvent;
 
 use async_graphql::{Context, FieldError};
@@ -25,6 +25,7 @@ use crate::http::chain::graphql::{DBContext, OptResult};
 pub async fn full_moonlight_history(
     ctx: &Context<'_>,
     address: String,
+    ordering: Option<String>,
 ) -> OptResult<DeserializedMoonlightGroups> {
     let (_, archive) = ctx.data::<DBContext>()?;
     let v = bs58::decode(address).into_vec()?;
@@ -36,7 +37,13 @@ pub async fn full_moonlight_history(
     let pk = AccountPublicKey::from_bytes(&pk_bytes)
         .map_err(|_| anyhow::anyhow!("Failed to serialize given public key"))?;
 
-    let moonlight_groups = archive.full_moonlight_history(pk)?;
+    let ord = match ordering.unwrap_or_default().as_str() {
+        "asc" => Some(Order::Ascending),
+        "desc" => Some(Order::Descending),
+        _ => None,
+    };
+
+    let moonlight_groups = archive.full_moonlight_history(pk, ord)?;
 
     let mut deser_moonlight_groups = Vec::new();
 

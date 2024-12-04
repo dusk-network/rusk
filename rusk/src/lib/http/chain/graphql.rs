@@ -185,8 +185,9 @@ impl Query {
         &self,
         ctx: &Context<'_>,
         address: String,
+        ord: Option<String>,
     ) -> OptResult<DeserializedMoonlightGroups> {
-        full_moonlight_history(ctx, address).await
+        full_moonlight_history(ctx, address, ord).await
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -264,5 +265,19 @@ impl Query {
         } else {
             check_block(ctx, height, hash).await
         }
+    }
+
+    /// Get the next block height that contains a Phoenix event after the given
+    /// block height.
+    #[cfg(feature = "archive")]
+    async fn next_phoenix(
+        &self,
+        ctx: &Context<'_>,
+        height: i64,
+    ) -> OptResult<u64> {
+        let (_, archive) = ctx.data::<DBContext>()?;
+        let next_height = archive.next_phoenix(height).await?;
+
+        Ok(next_height)
     }
 }
