@@ -3,8 +3,8 @@ import { Gas } from "$lib/vendor/w3sper.js/src/mod";
 
 import { walletStore } from "$lib/stores";
 
-/** @type {(to: string, amount: bigint, gasPrice: bigint, gasLimit: bigint) => Promise<string>} */
-const executeSend = (to, amount, gasPrice, gasLimit) => {
+/** @type {(to: string, amount: bigint, gasPrice: bigint, gasLimit: bigint, memo: any) => Promise<string>} */
+const executeSend = (to, amount, gasPrice, gasLimit, memo) => {
   return walletStore
     .transfer(
       to,
@@ -12,7 +12,8 @@ const executeSend = (to, amount, gasPrice, gasLimit) => {
       new Gas({
         limit: gasLimit,
         price: gasPrice,
-      })
+      }),
+      memo
     )
     .then(getKey("hash"));
 };
