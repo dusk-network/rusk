@@ -39,20 +39,6 @@ describe("Unstake", () => {
       gasLimit: 20000000n,
       gasPrice: 1n,
     },
-    statuses: [
-      {
-        label: "Spendable",
-        value: "1,000.000000000",
-      },
-      {
-        label: "Total Locked",
-        value: "278.000000000",
-      },
-      {
-        label: "Rewards",
-        value: "345.000000000",
-      },
-    ],
   };
 
   afterEach(() => {

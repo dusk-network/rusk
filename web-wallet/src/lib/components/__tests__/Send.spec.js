@@ -42,12 +42,6 @@ describe("Send", () => {
     },
     publicAddress,
     shieldedAddress,
-    statuses: [
-      {
-        label: "Spendable",
-        value: "1,000.000000000",
-      },
-    ],
   };
 
   const invalidAddress =

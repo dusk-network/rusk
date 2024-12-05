@@ -3,7 +3,7 @@
 <script>
   import { collect, getKey, pick } from "lamb";
   import { mdiArrowTopRight } from "@mdi/js";
-  import { Send } from "$lib/components";
+  import { ContractStatusesList, Send } from "$lib/components";
   import { IconHeadingCard } from "$lib/containers/Cards";
   import { executeSend } from "$lib/contracts";
   import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
@@ -53,7 +53,8 @@
   $: publicAddress = currentProfile ? currentProfile.account.toString() : "";
 </script>
 
-<IconHeadingCard gap="medium" heading="Send" icons={[mdiArrowTopRight]} reverse>
+<IconHeadingCard gap="large" heading="Send" icons={[mdiArrowTopRight]} reverse>
+  <ContractStatusesList {statuses} />
   <Send
     {shieldedAddress}
     {publicAddress}
@@ -62,7 +63,6 @@
     {gasLimits}
     {gasSettings}
     availableBalance={spendable}
-    {statuses}
     enableMoonlightTransactions={import.meta.env
       .VITE_FEATURE_MOONLIGHT_TRANSACTIONS === "true"}
     on:keyChange={keyChangeHandler}

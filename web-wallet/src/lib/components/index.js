@@ -21,6 +21,7 @@ export { default as Receive } from "./Receive/Receive.svelte";
 export { default as Send } from "./Send/Send.svelte";
 export { default as ScanQR } from "./ScanQR/ScanQR.svelte";
 export { default as Stake } from "./Stake/Stake.svelte";
+export { default as StakeMaturityInfo } from "./StakeMaturityInfo/StakeMaturityInfo.svelte";
 export { default as SyncBar } from "./SyncBar/SyncBar.svelte";
 export { default as Transactions } from "./Transactions/Transactions.svelte";
 export { default as UsageIndicator } from "./UsageIndicator/UsageIndicator.svelte";
