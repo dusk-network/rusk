@@ -384,7 +384,7 @@ impl StakeState {
         }
     }
 
-    pub fn withdraw_to_contract(&mut self, withdraw: WithdrawToContract) {
+    pub fn withdraw_from_contract(&mut self, withdraw: WithdrawToContract) {
         let account = withdraw.account();
         let value = withdraw.value();
 
