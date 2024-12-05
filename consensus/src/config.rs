@@ -26,6 +26,7 @@ pub const MAX_BLOCK_SIZE: usize = 1_024 * 1_024;
 
 /// Emergency mode is enabled after 16 iterations
 pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = 16;
+pub const EMERGENCY_BLOCK_ITERATION: u8 = u8::MAX;
 
 pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(7);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);
@@ -82,6 +83,10 @@ pub fn ratification_extra() -> usize {
 /// Returns whether the current iteration is an emergency iteration
 pub fn is_emergency_iter(iter: u8) -> bool {
     iter >= EMERGENCY_MODE_ITERATION_THRESHOLD
+}
+
+pub fn is_emergency_block(iter: u8) -> bool {
+    iter == EMERGENCY_BLOCK_ITERATION
 }
 
 /// Returns if the next iteration generator needs to be excluded
