@@ -173,9 +173,9 @@ fn verify_candidate_msg(
     }
 
     // Verify tx_root
-    let tx_hashes: Vec<_> =
-        p.candidate.txs().iter().map(|t| t.hash()).collect();
-    let tx_root = merkle_root(&tx_hashes[..]);
+    let tx_digests: Vec<_> =
+        p.candidate.txs().iter().map(|t| t.digest()).collect();
+    let tx_root = merkle_root(&tx_digests[..]);
     if tx_root != p.candidate.header().txroot {
         return Err(ConsensusError::InvalidBlock);
     }
@@ -186,9 +186,9 @@ fn verify_candidate_msg(
     }
 
     // Verify fault_root
-    let fault_hashes: Vec<_> =
-        p.candidate.faults().iter().map(|t| t.hash()).collect();
-    let fault_root = merkle_root(&fault_hashes[..]);
+    let fault_digests: Vec<_> =
+        p.candidate.faults().iter().map(|t| t.digest()).collect();
+    let fault_root = merkle_root(&fault_digests[..]);
     if fault_root != p.candidate.header().faultroot {
         return Err(ConsensusError::InvalidBlock);
     }
