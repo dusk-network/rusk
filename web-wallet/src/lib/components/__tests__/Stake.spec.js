@@ -53,20 +53,6 @@ describe("Stake", () => {
     },
     hideStakingNotice: true,
     minStakeRequirement: 1_234_000_000_000n,
-    statuses: [
-      {
-        label: "Spendable",
-        value: "1,000.000000000",
-      },
-      {
-        label: "Total Locked",
-        value: "278.000000000",
-      },
-      {
-        label: "Rewards",
-        value: "345.000000000",
-      },
-    ],
   };
   const baseOptions = {
     props: baseProps,
