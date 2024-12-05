@@ -79,7 +79,7 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     pub(crate) db: Arc<RwLock<DB>>,
     pub(crate) vm: Arc<RwLock<VM>>,
     pub(crate) network: Arc<RwLock<N>>,
-
+    /// Sender channel for sending out RUES events
     event_sender: Sender<Event>,
 }
 
@@ -1049,7 +1049,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
 
                 if let Err(e) = self.event_sender.try_send(
-                    BlockEvent::Deleted {
+                    BlockEvent::Reverted {
                         hash: h.hash,
                         height: h.height,
                     }
@@ -1059,7 +1059,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 };
 
                 info!(
-                    event = "block deleted",
+                    event = "block reverted",
                     height = h.height,
                     iter = h.iteration,
                     label = ?label,
