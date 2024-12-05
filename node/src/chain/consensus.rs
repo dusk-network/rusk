@@ -296,7 +296,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         );
 
         validator
-            .execute_checks(candidate_header, expected_generator, true)
+            .execute_checks(candidate_header, expected_generator, false)
             .await
     }
 
