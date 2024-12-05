@@ -1362,6 +1362,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         header.height,
     );
     validator
-        .execute_checks(header, &expected_generator, false)
+        .execute_checks(header, &expected_generator, true)
         .await
 }
