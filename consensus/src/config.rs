@@ -32,6 +32,9 @@ pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(7);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);
 pub const TIMEOUT_INCREASE: Duration = Duration::from_secs(2);
 
+pub const EMERGENCY_BLOCK_MIN_TIMESTAMP: Duration =
+    Duration::from_secs(MAX_STEP_TIMEOUT.as_secs() * MESSAGE_MAX_ITER as u64);
+
 mod default {
     pub const MINIMUM_BLOCK_TIME: u64 = 10;
 }
