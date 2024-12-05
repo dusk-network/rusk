@@ -7,9 +7,7 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::stake::{
-    self, Stake, Withdraw, WithdrawToContract, EPOCH, MINIMUM_STAKE,
-};
+use execution_core::stake::{self, Stake, EPOCH, MINIMUM_STAKE};
 
 use dusk_bytes::Serializable;
 use execution_core::transfer::data::ContractCall;
@@ -25,7 +23,7 @@ use tempfile::tempdir;
 use test_wallet::{self as wallet};
 use tracing::info;
 
-use crate::common::state::{generator_procedure, new_state};
+use crate::common::state::{generator_procedure2, new_state};
 use crate::common::wallet::{TestStateClient, TestStore};
 use crate::common::*;
 
@@ -68,8 +66,11 @@ pub async fn stake_from_contract() -> Result<()> {
 
     info!("Contract ID: {:?}", contract_id);
 
+    let pk = wallet.account_public_key(0).unwrap();
+    let sk = wallet.account_secret_key(0).unwrap();
+
     let stake = Stake::new_from_contract(
-        &wallet.account_secret_key(0).unwrap(),
+        &sk,
         contract_id,
         MINIMUM_STAKE,
         rusk.chain_id().unwrap(),
@@ -86,7 +87,8 @@ pub async fn stake_from_contract() -> Result<()> {
             Some(call.clone()),
         )
         .expect("stake to be successful");
-    execute_transaction(stake_from_contract, &rusk, 1, None);
+    let tx = execute_transaction(stake_from_contract, &rusk, 1, None, None);
+    info!("Stake from contract - gas spent {:?}", tx.gas_spent);
 
     let stake = wallet.get_stake(0).expect("stake to be found");
     assert_eq!(
@@ -104,7 +106,8 @@ pub async fn stake_from_contract() -> Result<()> {
             Some(call.clone()),
         )
         .expect("stake to be successful");
-    execute_transaction(stake_from_contract, &rusk, 2, None);
+    let tx = execute_transaction(stake_from_contract, &rusk, 2, None, None);
+    info!("Stake from contract - gas spent {:?}", tx.gas_spent);
 
     let stake = wallet.get_stake(0).expect("stake to be found");
     assert_eq!(
@@ -122,7 +125,14 @@ pub async fn stake_from_contract() -> Result<()> {
             Some(call),
         )
         .expect("stake to be successful");
-    execute_transaction(stake_from_contract, &rusk, EPOCH * 2, None);
+    let tx = execute_transaction(
+        stake_from_contract,
+        &rusk,
+        EPOCH * 2,
+        None,
+        Some(pk),
+    );
+    info!("Stake from contract - gas spent {:?}", tx.gas_spent);
 
     let stake = wallet.get_stake(0).expect("stake to be found");
     assert_eq!(
@@ -138,7 +148,13 @@ pub async fn stake_from_contract() -> Result<()> {
     let stake_from_account = wallet
         .moonlight_stake(0, 0, 1000, GAS_LIMIT, 1)
         .expect("stake to be successful");
-    execute_transaction(stake_from_account, &rusk, 1, "Panic: Keys mismatch");
+    execute_transaction(
+        stake_from_account,
+        &rusk,
+        1,
+        "Panic: Keys mismatch",
+        None,
+    );
 
     let unstake = wallet
         .moonlight_unstake(&mut rng, 0, 0, GAS_LIMIT, 1)
@@ -149,18 +165,17 @@ pub async fn stake_from_contract() -> Result<()> {
         &rusk,
         1,
         "Panic: expect StakeFundOwner::Account",
+        None,
     );
 
     let unstake = stake::Withdraw::new(
-        &wallet.account_secret_key(0).unwrap(),
+        &sk,
         transfer::withdraw::Withdraw::new(
             &mut rng,
-            &wallet.account_secret_key(0).unwrap(),
+            &sk,
             contract_id,
             3 * MINIMUM_STAKE,
-            transfer::withdraw::WithdrawReceiver::Moonlight(
-                wallet.account_public_key(0).unwrap(),
-            ),
+            transfer::withdraw::WithdrawReceiver::Moonlight(pk),
             transfer::withdraw::WithdrawReplayToken::Moonlight(7),
         ),
     );
@@ -180,12 +195,40 @@ pub async fn stake_from_contract() -> Result<()> {
     let unstake_from_contract = wallet
         .moonlight_execute(0, 0, 0, GAS_LIMIT, GAS_PRICE, Some(call.clone()))
         .expect("unstakes to be successful");
-    let tx = execute_transaction(unstake_from_contract, &rusk, 1, None);
+    let tx = execute_transaction(unstake_from_contract, &rusk, 1, None, None);
+    info!("UnStake from contract - gas spent {:?}", tx.gas_spent);
 
     assert_eq!(wallet.get_stake(0).expect("stake to exists").amount, None);
     let new_balance = wallet.get_account(0).unwrap().balance;
     let fee_paid = tx.gas_spent * GAS_PRICE;
     assert_eq!(new_balance, prev_balance + 3 * MINIMUM_STAKE - fee_paid);
+
+    let current_reward = wallet.get_stake(0).expect("Stake to exists").reward;
+
+    let withdraw = stake::Withdraw::new(
+        &wallet.account_secret_key(0).unwrap(),
+        transfer::withdraw::Withdraw::new(
+            &mut rng,
+            &sk,
+            contract_id,
+            current_reward - 1,
+            transfer::withdraw::WithdrawReceiver::Moonlight(
+                wallet.account_public_key(0).unwrap(),
+            ),
+            transfer::withdraw::WithdrawReplayToken::Moonlight(8),
+        ),
+    );
+
+    let call = ContractCall::new(contract_id, "withdraw", &withdraw)
+        .expect("call to be successful");
+    let withdraw_from_contract = wallet
+        .moonlight_execute(0, 0, 0, GAS_LIMIT, GAS_PRICE, Some(call.clone()))
+        .expect("unstakes to be successful");
+    let tx = execute_transaction(withdraw_from_contract, &rusk, 1, None, None);
+    info!("Withdraw from contract - gas spent {:?}", tx.gas_spent);
+
+    assert_eq!(wallet.get_stake(0).expect("stake to exists").reward, 1);
+
     Ok(())
 }
 
@@ -212,7 +255,7 @@ fn deploy_proxy_contract(
         )
         .expect("Failed to create a deploy transaction");
 
-    execute_transaction(tx, rusk, BLOCK_HEIGHT, None);
+    execute_transaction(tx, rusk, BLOCK_HEIGHT, None, None);
     contract_id
 }
 
@@ -221,14 +264,16 @@ fn execute_transaction<'a, E: Into<Option<&'a str>>>(
     rusk: &Rusk,
     block_height: u64,
     expected_error: E,
+    generator: Option<execution_core::signatures::bls::PublicKey>,
 ) -> SpentTransaction {
-    let executed_txs = generator_procedure(
+    let (executed_txs, _) = generator_procedure2(
         &rusk,
         &[tx],
         block_height,
         BLOCK_GAS_LIMIT,
         vec![],
         None,
+        generator,
     )
     .expect("generator procedure to succeed");
     let tx = executed_txs
