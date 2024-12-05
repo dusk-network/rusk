@@ -7,21 +7,15 @@
 #![feature(lazy_cell)]
 pub mod common;
 
-use crate::common::*;
-
 use std::path::Path;
 use std::sync::{mpsc, Arc};
 
-use execution_core::{
-    transfer::{
-        phoenix::{
-            Note, NoteLeaf, PublicKey as PhoenixPublicKey,
-            SecretKey as PhoenixSecretKey,
-        },
-        TRANSFER_CONTRACT,
-    },
-    JubJubScalar, LUX,
+use execution_core::transfer::phoenix::{
+    Note, NoteLeaf, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey,
 };
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::{JubJubScalar, LUX};
 use ff::Field;
 use parking_lot::RwLockWriteGuard;
 use rand::prelude::*;
@@ -33,6 +27,7 @@ use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::state::new_state;
+use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
 const CHAIN_ID: u8 = 0xFA;
@@ -176,8 +171,9 @@ pub fn rusk_state_finalized() -> Result<()> {
 #[allow(dead_code)]
 // #[tokio::test(flavor = "multi_thread")]
 async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
-    use common::wallet::{TestStateClient, TestStore};
     use std::io::Write;
+
+    use common::wallet::{TestStateClient, TestStore};
 
     common::logger();
 
@@ -238,8 +234,9 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 // #[tokio::test(flavor = "multi_thread")]
 async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
-    use common::wallet::{TestStateClient, TestStore};
     use std::io::Write;
+
+    use common::wallet::{TestStateClient, TestStore};
 
     common::logger();
 

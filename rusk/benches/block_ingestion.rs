@@ -26,7 +26,7 @@ use rusk::Rusk;
 use rusk_recovery_tools::state::DUSK_CONSENSUS_KEY;
 use tempfile::tempdir;
 
-use common::state::new_state;
+use self::common::state::new_state;
 
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 

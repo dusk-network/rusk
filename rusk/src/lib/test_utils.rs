@@ -4,29 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::*;
-use crate::error::Error;
-use crate::node::{Rusk, RuskTip};
-
 use std::pin::Pin;
 use std::sync::mpsc;
 
 use dusk_bytes::DeserializableSlice;
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::{StakeData, STAKE_CONTRACT};
+use execution_core::transfer::phoenix::{Note, NoteLeaf, NoteOpening, ViewKey};
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::{BlsScalar, ContractId};
 use futures::Stream;
+use parking_lot::RwLockWriteGuard;
+use rusk_abi::VM;
 use tokio::spawn;
 use tracing::{error, info};
 
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    stake::{StakeData, STAKE_CONTRACT},
-    transfer::{
-        phoenix::{Note, NoteLeaf, NoteOpening, ViewKey},
-        TRANSFER_CONTRACT,
-    },
-    BlsScalar, ContractId,
-};
-use parking_lot::RwLockWriteGuard;
-use rusk_abi::VM;
+use super::*;
+use crate::error::Error;
+use crate::node::{Rusk, RuskTip};
 
 pub type StoredNote = (Note, u64);
 

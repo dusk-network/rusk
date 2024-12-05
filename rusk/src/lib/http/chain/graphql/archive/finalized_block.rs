@@ -6,8 +6,9 @@
 
 //! Module for GraphQL that only pertains to finalized blocks.
 
-use crate::http::chain::graphql::{DBContext, OptResult};
 use async_graphql::{Context, FieldError, FieldResult, Object};
+
+use crate::http::chain::graphql::{DBContext, OptResult};
 
 /// Check if a block height matches a block hash for a finalized block.
 pub async fn check_finalized_block(

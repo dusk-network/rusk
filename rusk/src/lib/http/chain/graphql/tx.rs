@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::*;
 use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{Mempool, Metadata};
+
+use super::*;
 
 pub async fn tx_by_hash(
     ctx: &Context<'_>,

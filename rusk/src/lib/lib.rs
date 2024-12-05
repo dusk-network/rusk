@@ -8,19 +8,20 @@
 
 mod bloom;
 mod error;
+pub use error::Error;
+
 pub mod gen_id;
 pub mod http;
 #[cfg(feature = "chain")]
 pub mod node;
 
 mod builder;
+pub use builder::Builder;
+
 pub mod verifier;
 mod version;
-
-pub use crate::error::Error;
 pub use version::{VERSION, VERSION_BUILD};
 
-pub use builder::Builder;
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[cfg(feature = "chain")]

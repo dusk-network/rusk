@@ -9,8 +9,7 @@ use std::time::Duration;
 
 use kadcast::config::Config as KadcastConfig;
 use node::chain::ChainSrv;
-use node::database::rocksdb;
-use node::database::{DatabaseOptions, DB};
+use node::database::{rocksdb, DatabaseOptions, DB};
 use node::databroker::conf::Params as BrokerParam;
 use node::databroker::DataBrokerSrv;
 use node::mempool::conf::Params as MempoolParam;
@@ -18,7 +17,6 @@ use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
-
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 #[cfg(feature = "archive")]

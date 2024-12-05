@@ -9,20 +9,12 @@
 #[cfg(feature = "chain")]
 mod chain;
 mod event;
+pub use event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
 #[cfg(feature = "prover")]
 mod prover;
 #[cfg(feature = "chain")]
 mod rusk;
 mod stream;
-
-pub(crate) use event::{
-    BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
-    RequestData, Target,
-};
-
-use execution_core::Event;
-use tokio::task::JoinError;
-use tracing::{debug, info, warn};
 
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -32,50 +24,45 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::str::FromStr;
-use std::sync::mpsc as std_mpsc;
-use std::sync::Arc;
+use std::sync::{mpsc as std_mpsc, Arc};
 use std::task::{Context, Poll};
 
+use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
-
+use execution_core::Event;
+use futures_util::stream::iter as stream_iter;
+use futures_util::{SinkExt, TryStreamExt};
+use http_body_util::{BodyExt, Full};
+use hyper::body::{self, Body, Bytes, Incoming};
+use hyper::http::{HeaderName, HeaderValue};
+use hyper::service::Service;
+use hyper::{HeaderMap, Method, Request, Response, StatusCode};
+use hyper_tungstenite::{tungstenite, HyperWebsocket};
+use hyper_util::rt::TokioIo;
+use hyper_util::server::conn::auto::Builder as HttpBuilder;
+#[cfg(feature = "node")]
+use node_data::events::contract::ContractEvent;
+use rand::rngs::OsRng;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::ToSocketAddrs;
 use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
+use tokio::task::JoinError;
 use tokio::{io, task};
 use tokio_stream::wrappers::{BroadcastStream, ReceiverStream};
 use tokio_stream::StreamExt;
 use tokio_util::either::Either;
-
-use http_body_util::{BodyExt, Full};
-use hyper::http::{HeaderName, HeaderValue};
-use hyper::service::Service;
-use hyper::{
-    body::{self, Body, Bytes, Incoming},
-    HeaderMap, Method, Request, Response, StatusCode,
-};
-use hyper_tungstenite::{tungstenite, HyperWebsocket};
-use hyper_util::server::conn::auto::Builder as HttpBuilder;
-
+use tracing::{debug, info, warn};
 use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::{CloseFrame, Message};
 
-use futures_util::stream::iter as stream_iter;
-use futures_util::{SinkExt, TryStreamExt};
-
-use anyhow::Error as AnyhowError;
-use hyper_util::rt::TokioIo;
-use rand::rngs::OsRng;
-
-#[cfg(feature = "node")]
-use node_data::events::contract::ContractEvent;
-
-use crate::http::event::FullOrStreamBody;
-use crate::VERSION;
-
-pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
-
+pub(crate) use self::event::{
+    BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
+    RequestData, Target,
+};
 use self::event::{MessageRequest, ResponseData, RuesEventUri, SessionId};
 use self::stream::{Listener, Stream};
+use crate::http::event::FullOrStreamBody;
+use crate::VERSION;
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 
@@ -939,17 +926,17 @@ pub trait HandleRequest: Send + Sync + 'static {
 
 #[cfg(test)]
 mod tests {
+    use std::net::TcpStream;
     use std::{fs, thread};
 
-    use super::*;
     use event::Event as EventRequest;
-
     use execution_core::ContractId;
     use node_data::events::contract::{
         ContractEvent, ContractTxEvent, WrappedContractId,
     };
-    use std::net::TcpStream;
     use tungstenite::client;
+
+    use super::*;
 
     /// A [`HandleRequest`] implementation that returns the same data
     struct TestHandle;

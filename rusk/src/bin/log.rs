@@ -5,13 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use tracing::subscriber::SetGlobalDefaultError;
-use tracing_subscriber::{
-    fmt::{
-        format::{DefaultFields, Format},
-        SubscriberBuilder,
-    },
-    EnvFilter,
-};
+use tracing_subscriber::fmt::format::{DefaultFields, Format};
+use tracing_subscriber::fmt::SubscriberBuilder;
+use tracing_subscriber::EnvFilter;
 
 pub struct Log {
     level: tracing::Level,

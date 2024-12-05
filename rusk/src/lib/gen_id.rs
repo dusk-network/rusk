@@ -30,9 +30,10 @@ pub fn gen_contract_id(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rand::rngs::StdRng;
     use rand::{RngCore, SeedableRng};
+
+    use super::*;
 
     #[test]
     fn test_gen_contract_id() {

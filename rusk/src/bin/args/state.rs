@@ -4,13 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::*;
-
 use std::{env, fs, io};
 
 use rusk_recovery_tools::state::{deploy, restore_state, tar};
 use rusk_recovery_tools::Theme;
 use tracing::info;
+
+use super::*;
 
 pub fn recovery_state(
     init: Option<PathBuf>,

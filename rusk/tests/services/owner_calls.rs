@@ -4,23 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bytecheck::CheckBytes;
-use dusk_bytes::Serializable;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use rkyv::validation::validators::DefaultValidator;
-use rkyv::{Archive, Deserialize, Infallible, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use execution_core::{
-    signatures::bls::{
-        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-        Signature as BlsSignature,
-    },
-    ContractId,
+use bytecheck::CheckBytes;
+use dusk_bytes::Serializable;
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    Signature as BlsSignature,
 };
+use execution_core::ContractId;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use rkyv::validation::validators::DefaultValidator;
+use rkyv::{Archive, Deserialize, Infallible, Serialize};
 use rusk::gen_id::gen_contract_id;
 use rusk::{Error, Result, Rusk};
 use rusk_abi::{CallReceipt, ContractData, Session};
@@ -31,9 +29,9 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_DEPLOYMENT_GAS_PRICE;
 use crate::common::state::{
-    DEFAULT_GAS_PER_DEPLOY_BYTE, DEFAULT_MIN_GAS_LIMIT,
+    DEFAULT_GAS_PER_DEPLOY_BYTE, DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+    DEFAULT_MIN_GAS_LIMIT,
 };
 use crate::common::wallet::{TestStateClient, TestStore};
 

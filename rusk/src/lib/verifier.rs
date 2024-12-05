@@ -6,16 +6,14 @@
 
 //! Prover service implementation for the Rusk server.
 
-use crate::error::Error;
-use crate::Result;
+use std::sync::LazyLock;
 
-use execution_core::transfer::{
-    moonlight::Transaction as MoonlightTransaction,
-    phoenix::Transaction as PhoenixTransaction,
-};
+use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use execution_core::transfer::phoenix::Transaction as PhoenixTransaction;
 use rusk_profile::Circuit as CircuitProfile;
 
-use std::sync::LazyLock;
+use crate::error::Error;
+use crate::Result;
 
 pub static VD_EXEC_1_2: LazyLock<Vec<u8>> =
     LazyLock::new(|| fetch_verifier("TxCircuitOneTwo"));

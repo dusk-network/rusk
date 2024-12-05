@@ -8,22 +8,18 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use crate::common::block::Block as BlockAwait;
-
 use dusk_bytes::Serializable;
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    stake::StakeData,
-    transfer::{
-        moonlight::AccountData,
-        phoenix::{Note, NoteOpening, ViewKey},
-    },
-    BlsScalar,
-};
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::StakeData;
+use execution_core::transfer::moonlight::AccountData;
+use execution_core::transfer::phoenix::{Note, NoteOpening, ViewKey};
+use execution_core::BlsScalar;
 use futures::StreamExt;
 use rusk::{Error, Result, Rusk};
 use test_wallet::{self as wallet, Store};
 use tracing::info;
+
+use crate::common::block::Block as BlockAwait;
 
 #[derive(Debug, Clone)]
 pub struct TestStore;
