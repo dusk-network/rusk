@@ -318,7 +318,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             LightBlock {
                 header: header.clone(),
                 transactions_ids: txs.iter().map(|t| t.inner.id()).collect(),
-                faults_ids: faults.iter().map(|f| f.hash()).collect(),
+                faults_digests: faults.iter().map(|f| f.digest()).collect(),
             }
             .write(&mut buf)?;
 
@@ -349,7 +349,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             for f in faults {
                 let mut d = vec![];
                 f.write(&mut d)?;
-                self.put_cf(cf, f.hash(), d)?;
+                self.put_cf(cf, f.digest(), d)?;
             }
         }
         self.store_block_label(header.height, &header.hash, label)?;
@@ -373,7 +373,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
             if block_height >= start_height {
                 hash = block.header.prev_block_hash.to_vec();
-                faults.extend(self.faults(&block.faults_ids)?);
+                faults.extend(self.faults(&block.faults_digests)?);
             } else {
                 break;
             }
@@ -410,7 +410,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             self.inner.delete_cf(self.ledger_txs_cf, tx.id())?;
         }
         for f in b.faults() {
-            self.inner.delete_cf(self.ledger_faults_cf, f.hash())?;
+            self.inner.delete_cf(self.ledger_faults_cf, f.digest())?;
         }
 
         self.inner.delete_cf(self.ledger_cf, b.header().hash)?;
@@ -422,11 +422,11 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self.inner.get_cf(self.ledger_cf, hash)?.is_some())
     }
 
-    fn faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>> {
-        if faults_ids.is_empty() {
+    fn faults(&self, faults_digests: &[[u8; 32]]) -> Result<Vec<Fault>> {
+        if faults_digests.is_empty() {
             return Ok(vec![]);
         }
-        let ids = faults_ids
+        let ids = faults_digests
             .iter()
             .map(|id| (self.ledger_faults_cf, id))
             .collect::<Vec<_>>();
@@ -468,7 +468,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 // Retrieve all faults ID with single call
                 let faults_buffer = self.inner.multi_get_cf(
                     record
-                        .faults_ids
+                        .faults_digests
                         .iter()
                         .map(|id| (self.ledger_faults_cf, id))
                         .collect::<Vec<(&ColumnFamily, &[u8; 32])>>(),
@@ -1203,12 +1203,12 @@ impl node_data::Serializable for LightBlock {
         }
 
         // Write faults count
-        let len = self.faults_ids.len() as u32;
+        let len = self.faults_digests.len() as u32;
         w.write_all(&len.to_le_bytes())?;
 
-        // Write faults hashes
-        for f_id in &self.faults_ids {
-            w.write_all(f_id)?;
+        // Write faults digests
+        for f_dig in &self.faults_digests {
+            w.write_all(f_dig)?;
         }
 
         Ok(())
@@ -1237,18 +1237,18 @@ impl node_data::Serializable for LightBlock {
         let len = Self::read_u32_le(r)?;
 
         // Read faults hashes
-        let mut faults_ids = vec![];
+        let mut faults_digests = vec![];
         for _ in 0..len {
-            let mut f_id = [0u8; 32];
-            r.read_exact(&mut f_id[..])?;
+            let mut f_dig = [0u8; 32];
+            r.read_exact(&mut f_dig[..])?;
 
-            faults_ids.push(f_id);
+            faults_digests.push(f_dig);
         }
 
         Ok(Self {
             header,
             transactions_ids,
-            faults_ids,
+            faults_digests,
         })
     }
 }
@@ -1300,8 +1300,8 @@ mod tests {
                 // well.
                 for pos in 0..b.faults().len() {
                     assert_eq!(
-                        db_blk.faults()[pos].hash(),
-                        b.faults()[pos].hash()
+                        db_blk.faults()[pos].digest(),
+                        b.faults()[pos].digest()
                     );
                 }
             });
