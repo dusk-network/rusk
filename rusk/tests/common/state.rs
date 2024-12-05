@@ -208,6 +208,7 @@ pub fn generator_procedure2(
     block_gas_limit: u64,
     missed_generators: Vec<BlsPublicKey>,
     expected: Option<ExecuteResult>,
+    generator: Option<BlsPublicKey>,
 ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
     let expected = expected.unwrap_or(ExecuteResult {
         executed: txs.len(),
@@ -219,7 +220,8 @@ pub fn generator_procedure2(
         rusk.preverify(tx)?;
     }
 
-    let generator_pubkey = node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY);
+    let generator = generator.unwrap_or(*DUSK_CONSENSUS_KEY);
+    let generator_pubkey = node_data::bls::PublicKey::new(generator);
     let generator_pubkey_bytes = *generator_pubkey.bytes();
     let round = block_height;
 
