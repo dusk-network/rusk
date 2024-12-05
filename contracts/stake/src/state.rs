@@ -473,23 +473,24 @@ impl StakeState {
             .or_insert_with(|| (StakeData::EMPTY, *keys))
     }
 
-    /// Rewards a `account` with the given `value`.
+    /// Rewards multiple accounts with the given rewards.
     ///
-    /// *PANIC* If a stake does not exist in the map
+    /// If a stake does not exist in the map, it is skipped.
     pub fn reward(&mut self, rewards: Vec<Reward>) {
-        for reward in &rewards {
-            let (stake, _) = self
-                .get_stake_mut(&reward.account)
-                .expect("Stake to exists to be rewarded");
+        let mut rewarded = Vec::new();
+        for reward in rewards {
+            if let Some((stake, _)) = self.get_stake_mut(&reward.account) {
+                // Reset faults counters
+                stake.faults = 0;
+                stake.hard_faults = 0;
 
-            // Reset faults counters
-            stake.faults = 0;
-            stake.hard_faults = 0;
-
-            stake.reward += reward.value;
+                stake.reward += reward.value;
+                rewarded.push(reward);
+            }
         }
-
-        rusk_abi::emit("reward", rewards);
+        if !rewarded.is_empty() {
+            rusk_abi::emit("reward", rewarded);
+        }
     }
 
     /// Total amount burned since the genesis
