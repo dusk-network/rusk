@@ -4,20 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::event::Event;
-use super::*;
+use std::sync::{mpsc, Arc};
+use std::thread;
 
 use dusk_bytes::Serializable;
+use execution_core::ContractId;
 use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
-use std::sync::{mpsc, Arc};
-use std::thread;
 use tokio::task;
 use tungstenite::http::request;
 
-use execution_core::ContractId;
-
+use super::event::Event;
+use super::*;
 use crate::node::Rusk;
 
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";

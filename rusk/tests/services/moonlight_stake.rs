@@ -4,15 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use execution_core::stake::MINIMUM_STAKE;
-
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use std::collections::HashMap;
 use tempfile::tempdir;
 use test_wallet::{self as wallet};
 use tracing::info;

@@ -6,6 +6,7 @@
 
 //! Module for GraphQL that is used for moonlight related data in the archive.
 
+use async_graphql::{Context, FieldError};
 use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use execution_core::transfer::{
@@ -15,8 +16,6 @@ use execution_core::transfer::{
 };
 use node::archive::MoonlightGroup;
 use node_data::events::contract::ContractEvent;
-
-use async_graphql::{Context, FieldError};
 
 use super::data::deserialized_archive_data::*;
 use super::data::{MoonlightTransactions, NewAccountPublicKey};

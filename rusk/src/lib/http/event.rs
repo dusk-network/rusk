@@ -4,20 +4,23 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::RUSK_VERSION_HEADER;
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+use std::pin::Pin;
+use std::str::{FromStr, Split};
+use std::sync::mpsc;
+use std::task::{Context, Poll};
 
-use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::engine::Engine;
 use bytecheck::CheckBytes;
 use execution_core::ContractId;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{stream, Stream, StreamExt};
 use http_body_util::{BodyExt, Either, Full, StreamBody};
-use hyper::body::{Buf, Frame};
+use hyper::body::{Body, Buf, Bytes, Frame, Incoming};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
-use hyper::{
-    body::{Body, Bytes, Incoming},
-    Request, Response,
-};
+use hyper::{Request, Response};
 use pin_project::pin_project;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
@@ -26,14 +29,9 @@ use semver::{Version, VersionReq};
 use serde::de::{Error, MapAccess, Unexpected, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
-use std::pin::Pin;
-use std::str::FromStr;
-use std::str::Split;
-use std::sync::mpsc;
-use std::task::{Context, Poll};
 use tungstenite::http::HeaderValue;
+
+use super::RUSK_VERSION_HEADER;
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
