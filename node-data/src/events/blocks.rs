@@ -12,6 +12,8 @@ pub const BLOCK_CONFIRMED: &str = "confirmed";
 
 /// Represents events related to blocks in the chain.
 ///
+/// # Variants
+///
 /// - `Accepted(&'b Block)`
 ///
 ///     Indicates that a block has been accepted into the chain.
@@ -27,6 +29,11 @@ pub const BLOCK_CONFIRMED: &str = "confirmed";
 ///       `"finalized"`, `"confirmed"`).
 ///
 ///     - `height: u64` Indicates at which block height the state changed.
+///
+/// - `Reverted`
+///
+///     Indicates that a block has been removed from the chain because it got
+/// reverted during consensus.
 #[derive(Clone, Debug)]
 pub enum BlockEvent<'b> {
     Accepted(&'b Block),
@@ -35,7 +42,7 @@ pub enum BlockEvent<'b> {
         state: &'static str,
         height: u64,
     },
-    Deleted {
+    Reverted {
         hash: Hash,
         height: u64,
     },
@@ -48,7 +55,7 @@ impl EventSource for BlockEvent<'_> {
         match self {
             Self::Accepted(_) => "accepted",
             Self::StateChange { .. } => "statechange",
-            BlockEvent::Deleted { .. } => "deleted",
+            Self::Reverted { .. } => "reverted",
         }
     }
     fn data(&self) -> Option<serde_json::Value> {
@@ -70,7 +77,7 @@ impl EventSource for BlockEvent<'_> {
                     "atHeight": height,
                 })
             }
-            BlockEvent::Deleted { height, .. } => {
+            BlockEvent::Reverted { height, .. } => {
                 serde_json::json!({
                     "atHeight": height,
                 })
@@ -82,7 +89,7 @@ impl EventSource for BlockEvent<'_> {
         let hash = match self {
             Self::Accepted(block) => block.header().hash,
             Self::StateChange { hash, .. } => *hash,
-            Self::Deleted { hash, .. } => *hash,
+            Self::Reverted { hash, .. } => *hash,
         };
         hex::encode(hash)
     }
