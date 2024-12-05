@@ -387,6 +387,7 @@ impl StakeState {
     pub fn withdraw_from_contract(&mut self, withdraw: WithdrawToContract) {
         let account = withdraw.account();
         let value = withdraw.value();
+        let data = withdraw.data().to_vec();
 
         let (loaded_stake, keys) = self
             .get_stake_mut(account)
@@ -412,7 +413,7 @@ impl StakeState {
             contract: caller,
             fn_name: withdraw.fn_name().into(),
             value,
-            data: Vec::new(),
+            data,
         };
 
         let _: () =
