@@ -4,15 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use blake3::Hasher;
-use serde::{Deserialize, Serialize};
-use tracing::info;
-use version_check::Version;
-
 use std::fs::{self, read, File};
 use std::io::prelude::*;
 use std::io::{self, ErrorKind};
 use std::path::PathBuf;
+
+use blake3::Hasher;
+use serde::{Deserialize, Serialize};
+use tracing::info;
+use version_check::Version;
 
 use crate::{
     extension, file_name, file_stem, get_rusk_circuits_dir, get_rusk_keys_dir,

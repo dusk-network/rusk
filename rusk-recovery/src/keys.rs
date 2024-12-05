@@ -4,20 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Theme;
+use std::sync::{mpsc, Mutex};
+use std::{io, thread};
+
 use dusk_plonk::prelude::{Compiler, PublicParameters};
 use execution_core::transfer::phoenix::TRANSCRIPT_LABEL;
-use once_cell::sync::Lazy;
-use std::{
-    io,
-    sync::{mpsc, Mutex},
-    thread,
-};
-
-use rusk_profile::Circuit as CircuitProfile;
-
 use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
+use rusk_profile::Circuit as CircuitProfile;
 use tracing::{info, warn};
+
+use crate::Theme;
 
 mod circuits;
 

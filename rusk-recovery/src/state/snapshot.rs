@@ -7,17 +7,16 @@
 use std::fmt::Debug;
 
 use dusk_bytes::Serializable;
-use execution_core::{
-    signatures::bls::PublicKey as AccountPublicKey,
-    transfer::phoenix::PublicKey as PhoenixPublicKey, Dusk,
-};
+use execution_core::signatures::bls::PublicKey as AccountPublicKey;
+use execution_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
+use execution_core::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
-mod stake;
-mod wrapper;
-
 use crate::state;
+
+mod stake;
 pub use stake::GenesisStake;
+mod wrapper;
 use wrapper::Wrapper;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
@@ -105,7 +104,6 @@ mod tests {
     use std::error::Error;
 
     use super::*;
-
     use crate::state;
 
     pub(crate) fn testnet_from_file() -> Result<Snapshot, Box<dyn Error>> {

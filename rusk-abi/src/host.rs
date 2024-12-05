@@ -9,24 +9,20 @@ use std::path::{Path, PathBuf};
 
 use dusk_bytes::DeserializableSlice;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
-use execution_core::{
-    groth16::{
-        bn254::{Bn254, G1Projective},
-        serialize::CanonicalDeserialize,
-        Groth16, PreparedVerifyingKey, Proof as Groth16Proof,
-    },
-    plonk::{Proof as PlonkProof, Verifier},
-    signatures::{
-        bls::{
-            MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
-            Signature as BlsSignature,
-        },
-        schnorr::{
-            PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
-        },
-    },
-    BlsScalar,
+use execution_core::groth16::bn254::{Bn254, G1Projective};
+use execution_core::groth16::serialize::CanonicalDeserialize;
+use execution_core::groth16::{
+    Groth16, PreparedVerifyingKey, Proof as Groth16Proof,
 };
+use execution_core::plonk::{Proof as PlonkProof, Verifier};
+use execution_core::signatures::bls::{
+    MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
+    Signature as BlsSignature,
+};
+use execution_core::signatures::schnorr::{
+    PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
+};
+use execution_core::BlsScalar;
 use piecrust::{Error as PiecrustError, Session, SessionData, VM};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};

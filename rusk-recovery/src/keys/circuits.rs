@@ -7,10 +7,9 @@
 use std::io::{self, ErrorKind};
 
 use cargo_toml::{Dependency, Manifest};
-use tracing::info;
-
 use dusk_plonk::prelude::Circuit;
 use execution_core::transfer::phoenix::{TxCircuit, NOTES_TREE_DEPTH};
+use tracing::info;
 
 type TxCircuitOneTwo = TxCircuit<NOTES_TREE_DEPTH, 1>;
 type TxCircuitTwoTwo = TxCircuit<NOTES_TREE_DEPTH, 2>;
