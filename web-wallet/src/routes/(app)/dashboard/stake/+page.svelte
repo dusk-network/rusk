@@ -7,8 +7,15 @@
   import { IconHeadingCard } from "$lib/containers/Cards";
   import { contractDescriptors, updateOperation } from "$lib/contracts";
   import { settingsStore, walletStore } from "$lib/stores";
+  import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
+  import { collect, getKey, pick } from "lamb";
+  import { ContractStatusesList } from "$lib/components";
+  import { createNumberFormatter } from "$lib/dusk/number";
+  import walletCache from "$lib/wallet-cache";
+  import StakeMaturityInfo from "$lib/components/StakeMaturityInfo/StakeMaturityInfo.svelte";
 
-  $: ({ balance } = $walletStore);
+  /** @type {bigint} */
+  let currentBlockHeight;
 
   /**
    * @param {keyof SettingsStoreContent} property
@@ -21,21 +28,88 @@
     }));
   }
 
+  function setLastBlockHeight() {
+    walletCache.getSyncInfo().then((syncInfo) => {
+      currentBlockHeight = syncInfo.blockHeight;
+    });
+  }
+
   onDestroy(() => {
     updateOperation("");
   });
+
+  const collectSettings = collect([
+    pick([
+      "gasLimit",
+      "gasLimitLower",
+      "gasLimitUpper",
+      "gasPrice",
+      "gasPriceLower",
+    ]),
+    getKey("language"),
+  ]);
+
+  $: numberFormatter = createNumberFormatter(language);
+  $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
+
+  $: ({ balance, stakeInfo } = $walletStore);
+  $: [gasSettings, language] = collectSettings($settingsStore);
+  $: if (stakeInfo) {
+    setLastBlockHeight();
+  }
+
+  /**
+   * @returns {ContractStatus[]}
+   */
+  $: statuses = [
+    {
+      label: "Spendable",
+      value: duskFormatter(luxToDusk(balance.unshielded.value)),
+    },
+    {
+      label: "Active Stake",
+      value: stakeInfo.amount
+        ? duskFormatter(luxToDusk(stakeInfo.amount.value))
+        : null,
+    },
+    {
+      label: "Penalized Stake",
+      value: stakeInfo.amount
+        ? duskFormatter(luxToDusk(stakeInfo.amount.locked))
+        : null,
+    },
+    {
+      label: "Rewards",
+      value: duskFormatter(luxToDusk(stakeInfo.reward)),
+    },
+  ];
+
+  $: shouldShowStakeEligibility =
+    stakeInfo.amount &&
+    currentBlockHeight &&
+    currentBlockHeight < stakeInfo.amount.eligibility;
 </script>
 
 {#if import.meta.env.VITE_FEATURE_STAKE || false}
   <IconHeadingCard
-    gap="medium"
+    gap="large"
     heading="Stake"
     icons={[mdiDatabaseOutline]}
     reverse
   >
+    <ContractStatusesList {statuses}>
+      {#if shouldShowStakeEligibility}
+        <StakeMaturityInfo
+          eligibility={stakeInfo?.amount?.eligibility ?? 0n}
+          formatter={numberFormatter}
+        />
+      {/if}
+    </ContractStatusesList>
     <StakeContract
+      {gasSettings}
+      {stakeInfo}
+      formatter={duskFormatter}
       descriptor={contractDescriptors[2]}
-      spendable={balance.unshielded.value}
       on:operationChange={({ detail }) => updateOperation(detail)}
       on:suppressStakingNotice={() => updateSetting("hideStakingNotice", true)}
     />
