@@ -15,9 +15,11 @@ use data::*;
 use tx::*;
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
-use execution_core::{transfer::TRANSFER_CONTRACT, ContractId};
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::ContractId;
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, DB};
+use node_data::ledger::Label;
 #[cfg(feature = "archive")]
 use {
     archive::data::deserialized_archive_data::DeserializedMoonlightGroups,
@@ -145,6 +147,39 @@ impl Query {
         mempool_by_hash(ctx, hash).await
     }
 
+    /// Get a pair of two tuples containing the height and hash of the last
+    /// block and the last finalized block.
+    async fn last_block_pair(
+        &self,
+        ctx: &Context<'_>,
+    ) -> FieldResult<BlockPair> {
+        let tip = last_block(ctx).await?;
+        let tip_height = tip.header().height;
+        let last_finalized_block =
+            ctx.data::<DBContext>()?.0.read().await.view(|v| {
+                // Start from the tip to check if it is final
+                for height in (0..=tip_height).rev() {
+                    if let Ok(Some((hash, Label::Final(_)))) =
+                        v.block_label_by_height(height)
+                    {
+                        let hash = hex::encode(hash);
+                        return Ok((height, hash));
+                    }
+                }
+
+                Err(anyhow::anyhow!(
+                    "could not fetch the last final block by height"
+                ))
+            })?;
+
+        let last_block = (tip_height, hex::encode(tip.header().hash));
+
+        Ok(BlockPair {
+            last_block,
+            last_finalized_block,
+        })
+    }
+
     #[cfg(feature = "archive")]
     async fn full_moonlight_history(
         &self,
@@ -229,26 +264,5 @@ impl Query {
         } else {
             check_block(ctx, height, hash).await
         }
-    }
-
-    /// Get a pair of two tuples containing the height and hash of the last
-    /// block and the last finalized block.
-    #[cfg(feature = "archive")]
-    async fn last_block_pair(
-        &self,
-        ctx: &Context<'_>,
-    ) -> FieldResult<BlockPair> {
-        let last_block = last_block(ctx).await?;
-        let (blk_height, blk_hash) = (
-            last_block.header().height,
-            hex::encode(last_block.header().hash),
-        );
-
-        let last_finalized_block = last_finalized_block(ctx).await?;
-
-        Ok(BlockPair {
-            last_block: (blk_height, blk_hash),
-            last_finalized_block,
-        })
     }
 }
