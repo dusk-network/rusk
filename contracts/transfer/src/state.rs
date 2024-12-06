@@ -13,6 +13,7 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use execution_core::stake::EPOCH;
+use execution_core::transfer::MINT_CONTRACT_TOPIC;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 
 use execution_core::{
@@ -215,7 +216,7 @@ impl TransferState {
             receiver: mint.contract,
             value: mint.value,
         };
-        rusk_abi::emit(MINT_TOPIC, mint_event);
+        rusk_abi::emit(MINT_CONTRACT_TOPIC, mint_event);
     }
 
     /// Withdraw from a contract's balance to a Phoenix note or a Moonlight
