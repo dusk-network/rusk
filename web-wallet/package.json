@@ -37,16 +37,14 @@
   "dependencies": {
     "@floating-ui/dom": "1.6.5",
     "@mdi/js": "7.4.47",
-    "@wagmi/connectors": "5.1.6",
-    "@wagmi/core": "2.13.4",
-    "@web3modal/wagmi": "5.1.0",
+    "@reown/appkit": "1.5.3",
+    "@reown/appkit-adapter-wagmi": "1.5.3",
     "bip39": "3.1.0",
     "css-doodle": "0.39.2",
     "dexie": "4.0.8",
     "lamb": "0.61.1",
     "qr-scanner": "1.4.2",
     "qrcode": "1.5.3",
-    "viem": "2.19.8",
     "web-streams-polyfill": "4.0.0"
   },
   "devDependencies": {

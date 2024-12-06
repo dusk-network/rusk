@@ -18,7 +18,7 @@ export const allowance = async (
   migrationContract
 ) => {
   try {
-    const balance = /** @type {bigint} */ (
+    return /** @type {bigint} */ (
       await readContract(wagmiConfig, {
         abi: ERC20Abi,
         address: stableCoinAddress,
@@ -26,11 +26,10 @@ export const allowance = async (
         functionName: "allowance",
       })
     );
-    return balance;
   } catch (e) {
     const errorMessage =
       e instanceof Error
-        ? `An error occurred while checking the spender ${e.message}`
+        ? `An error occurred while checking the spender: ${e.message}`
         : "An unexpected error occurred while checking the spender";
     throw new Error(errorMessage);
   }
@@ -56,7 +55,7 @@ export const approve = async (migrationContract, stableCoinAddress, value) => {
   } catch (e) {
     const errorMessage =
       e instanceof Error
-        ? `An error occurred while approving the stable coin ${e.message}`
+        ? `An error occurred while approving the stable coin: ${e.message}`
         : "An unexpected error occurred while approving the stable coin";
     throw new Error(errorMessage);
   }
@@ -72,7 +71,7 @@ export const approve = async (migrationContract, stableCoinAddress, value) => {
  */
 export const getBalanceOfCoin = async (userAddress, stableCoinAddress) => {
   try {
-    const balance = /** @type {bigint} */ (
+    return /** @type {bigint} */ (
       await readContract(wagmiConfig, {
         abi: ERC20Abi,
         address: stableCoinAddress,
@@ -80,16 +79,14 @@ export const getBalanceOfCoin = async (userAddress, stableCoinAddress) => {
         functionName: "balanceOf",
       })
     );
-    return balance;
   } catch (e) {
     const errorMessage =
       e instanceof Error
-        ? `An error occurred while checking the spender ${e.message}`
+        ? `An error occurred while checking the spender: ${e.message}`
         : "An unknown error occurred while checking the spender";
     throw new Error(errorMessage);
   }
 };
-
 /**
  *  Migrates the approved amount to the given account
  *
