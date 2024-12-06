@@ -6,10 +6,12 @@
 
 mod address;
 mod file;
+mod file_service;
 mod transaction;
 
 pub use address::{Address, Profile};
-pub use file::{SecureWalletFile, WalletPath};
+pub use file::{WalletFile, WalletPath};
+pub use file_service::{SecureWalletFile, WalletFilePath};
 
 use std::fmt::Debug;
 use std::fs;
@@ -38,8 +40,7 @@ use crate::clients::State;
 use crate::crypto::encrypt;
 use crate::currency::Dusk;
 use crate::dat::{
-    self, version_bytes, DatFileVersion, FILE_TYPE, LATEST_VERSION, MAGIC,
-    RESERVED,
+    version_bytes, DatFileVersion, FILE_TYPE, LATEST_VERSION, MAGIC, RESERVED,
 };
 use crate::gas::MempoolGasPrices;
 use crate::rues::RuesHttpClient;
@@ -64,7 +65,6 @@ pub struct Wallet<F: SecureWalletFile + Debug> {
     state: Option<State>,
     store: LocalStore,
     file: Option<F>,
-    file_version: Option<DatFileVersion>,
 }
 
 impl<F: SecureWalletFile + Debug> Wallet<F> {
@@ -106,7 +106,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 state: None,
                 store: LocalStore::from(seed_bytes),
                 file: None,
-                file_version: None,
             })
         } else {
             Err(Error::InvalidMnemonicPhrase)
@@ -115,25 +114,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Loads wallet given a session
     pub fn from_file(file: F) -> Result<Self, Error> {
-        let path = file.path();
-        let pwd = file.pwd();
-
-        // make sure file exists
-        let pb = path.inner().clone();
-        if !pb.is_file() {
-            return Err(Error::WalletFileMissing);
-        }
-
-        // attempt to load and decode wallet
-        let bytes = fs::read(&pb)?;
-
-        let file_version = dat::check_version(bytes.get(0..12))?;
-
-        let (seed, address_count) =
-            dat::get_seed_and_address(file_version, bytes, pwd)?;
+        // Get the seed and address count from the file
+        let (seed, address_count) = file.get_seed_and_address()?;
 
         // return early if its legacy
-        if let DatFileVersion::Legacy = file_version {
+        if let DatFileVersion::Legacy = file.version() {
             // Generate the default address at index 0
             let profiles = vec![Profile {
                 shielded_addr: derive_phoenix_pk(&seed, 0),
@@ -146,7 +131,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 store: LocalStore::from(seed),
                 state: None,
                 file: Some(file),
-                file_version: Some(DatFileVersion::Legacy),
             });
         }
 
@@ -163,7 +147,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             store: LocalStore::from(seed),
             state: None,
             file: Some(file),
-            file_version: Some(file_version),
         })
     }
 
@@ -196,7 +179,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 content.extend_from_slice(&payload);
 
                 // write the content to file
-                fs::write(&f.path().wallet, content)?;
+                fs::write(f.wallet_path(), content)?;
                 Ok(())
             }
             None => Err(Error::WalletFileMissing),
@@ -399,15 +382,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// get cache database path
     pub(crate) fn cache_path(&self) -> Result<PathBuf, Error> {
-        let cache_dir = {
-            if let Some(file) = &self.file {
-                file.path().cache_dir()
-            } else {
-                return Err(Error::WalletFileMissing);
-            }
-        };
-
-        Ok(cache_dir)
+        match self.file() {
+            Some(file) => Ok(file.cache_dir()),
+            None => Err(Error::WalletFileMissing),
+        }
     }
 
     /// Returns the shielded key for a given index.
@@ -573,10 +551,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Return the dat file version from memory or by reading the file
     /// In order to not read the file version more than once per execution
     pub fn get_file_version(&self) -> Result<DatFileVersion, Error> {
-        if let Some(file_version) = self.file_version {
-            Ok(file_version)
-        } else if let Some(file) = &self.file {
-            Ok(dat::read_file_version(file.path())?)
+        if let Some(file) = &self.file {
+            Ok(file.version())
         } else {
             Err(Error::WalletFileMissing)
         }
@@ -659,27 +635,13 @@ mod base64 {
 #[cfg(test)]
 mod tests {
 
+    use std::fs::File;
+
     use tempfile::tempdir;
 
     use super::*;
 
     const TEST_ADDR: &str = "2w7fRQW23Jn9Bgm1GQW9eC2bD9U883dAwqP7HAr2F8g1syzPQaPYrxSyyVZ81yDS5C1rv9L8KjdPBsvYawSx3QCW";
-
-    #[derive(Debug, Clone)]
-    struct WalletFile {
-        path: WalletPath,
-        pwd: Vec<u8>,
-    }
-
-    impl SecureWalletFile for WalletFile {
-        fn path(&self) -> &WalletPath {
-            &self.path
-        }
-
-        fn pwd(&self) -> &[u8] {
-            &self.pwd
-        }
-    }
 
     #[test]
     fn wallet_basics() -> Result<(), Box<dyn std::error::Error>> {
@@ -715,15 +677,23 @@ mod tests {
     fn save_and_load() -> Result<(), Box<dyn std::error::Error>> {
         // prepare a tmp path
         let dir = tempdir()?;
-        let path = dir.path().join("my_wallet.dat");
-        let path = WalletPath::from(path);
+        let tmp_file_path = dir.path().join("my_wallet.dat");
+        // we need to create a real file because the `WalletFile::try_from`
+        // checks if the file exists. The file will be deleted when the test
+        // ends.
+        let tmp_file = File::create(&tmp_file_path)?;
+        let path = WalletPath::try_from(tmp_file_path.clone()).unwrap();
 
         // we'll need a password too
         let pwd = blake3::hash("mypassword".as_bytes()).as_bytes().to_vec();
 
         // create and save
         let mut wallet: Wallet<WalletFile> = Wallet::new("uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic")?;
-        let file = WalletFile { path, pwd };
+        let file = WalletFile::new(
+            path,
+            pwd,
+            DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+        );
         wallet.save_to(file.clone())?;
 
         // load from file and check
@@ -732,6 +702,9 @@ mod tests {
         let original_addr = wallet.default_shielded_address();
         let loaded_addr = loaded_wallet.default_shielded_address();
         assert!(original_addr.eq(&loaded_addr));
+
+        drop(tmp_file);
+        dir.close()?;
 
         Ok(())
     }
