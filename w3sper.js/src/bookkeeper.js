@@ -5,13 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import * as ProtocolDriver from "../src/protocol-driver/mod.js";
-import { ProfileGenerator, Profile } from "./profile.js";
+import { Profile, ProfileGenerator } from "./profile.js";
 
 import {
-  Transfer,
-  UnshieldTransfer,
   ShieldTransfer,
   StakeTransfer,
+  Transfer,
+  UnshieldTransfer,
   UnstakeTransfer,
   WithdrawStakeRewardTransfer,
 } from "../src/transaction.js";
@@ -25,14 +25,9 @@ class BookEntry {
   }
 
   get info() {
-    const entry = this;
     return {
-      balance(type) {
-        return entry.bookkeeper.balance(entry.profile[type]);
-      },
-      stake() {
-        return entry.bookkeeper.stakeInfo(entry.profile.account);
-      },
+      balance: (type) => this.bookkeeper.balance(this.profile[type]),
+      stake: () => this.bookkeeper.stakeInfo(this.profile.account),
     };
   }
 
@@ -52,12 +47,16 @@ class BookEntry {
     return new StakeTransfer(this).amount(amount);
   }
 
-  unstake() {
-    return new UnstakeTransfer(this);
+  unstake(amount) {
+    return new UnstakeTransfer(this).amount(amount);
   }
 
   withdraw(amount) {
     return new WithdrawStakeRewardTransfer(this).amount(amount);
+  }
+
+  topup(amount) {
+    return new StakeTransfer(this, { topup: true }).amount(amount);
   }
 }
 
@@ -73,12 +72,13 @@ export class Bookkeeper {
     switch (type) {
       case "account":
         return await this.#treasury.account(identifier);
-      case "address":
+      case "address": {
         const notes = await this.#treasury.address(identifier);
         const seed = await ProfileGenerator.seedFrom(identifier);
         const index = +identifier;
 
         return ProtocolDriver.balance(seed, index, notes);
+      }
     }
   }
 

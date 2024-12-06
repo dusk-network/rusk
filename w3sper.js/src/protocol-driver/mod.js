@@ -843,11 +843,6 @@ export const stake = async (info) =>
     ptr.nonce = await malloc(8);
     await memcpy(ptr.nonce, nonce);
 
-    const stake_nonce = new Uint8Array(8);
-    new DataView(stake_nonce.buffer).setBigUint64(0, info.stake_nonce, true);
-    ptr.stake_nonce = await malloc(8);
-    await memcpy(ptr.stake_nonce, stake_nonce);
-
     let tx = await malloc(4);
     let hash = await malloc(64);
 
@@ -859,7 +854,6 @@ export const stake = async (info) =>
       ptr.gas_price,
       ptr.nonce,
       info.chainId,
-      ptr.stake_nonce,
       tx,
       hash,
     );

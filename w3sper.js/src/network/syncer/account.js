@@ -29,8 +29,8 @@ class StakeAmount {
 }
 
 /**
- * Holds information about a user's stake, including amount, reward,
- * and a nonce to prevent repeat attacks. Also tracks faults.
+ * Holds information about a user's stake, including amount, reward
+ * and tracks faults.
  */
 class StakeInfo {
   /** @type {StakeAmount|null} */
@@ -38,8 +38,6 @@ class StakeInfo {
   /** @type {bigint} */
   reward;
   /** @type {bigint} */
-  nonce;
-  /** @type {number} */
   faults;
   /** @type {number} */
   hardFaults;
@@ -47,7 +45,6 @@ class StakeInfo {
   constructor() {
     this.amount = null;
     this.reward = 0n;
-    this.nonce = 0n;
     this.faults = 0;
     this.hardFaults = 0;
   }
@@ -77,9 +74,8 @@ class StakeInfo {
     }
 
     stakeInfo.reward = view.getBigUint64(40, true);
-    stakeInfo.nonce = view.getBigUint64(48, true);
-    stakeInfo.faults = view.getUint8(56);
-    stakeInfo.hardFaults = view.getUint8(57);
+    stakeInfo.faults = view.getUint8(48);
+    stakeInfo.hardFaults = view.getUint8(49);
 
     return Object.freeze(stakeInfo);
   }
@@ -155,8 +151,8 @@ export class AccountSyncer extends EventTarget {
   async balances(profiles) {
     const balances = await accountsIntoRaw(profiles).then((rawUsers) =>
       rawUsers.map((user) =>
-        this.#network.contracts.transferContract.call.account(user),
-      ),
+        this.#network.contracts.transferContract.call.account(user)
+      )
     );
 
     return Promise.all(balances)
@@ -174,8 +170,8 @@ export class AccountSyncer extends EventTarget {
   async stakes(profiles) {
     const stakes = await accountsIntoRaw(profiles).then((rawUsers) =>
       rawUsers.map((user) =>
-        this.#network.contracts.stakeContract.call.get_stake(user),
-      ),
+        this.#network.contracts.stakeContract.call.get_stake(user)
+      )
     );
 
     return Promise.all(stakes)
