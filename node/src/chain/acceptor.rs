@@ -27,6 +27,7 @@ use rkyv::{check_archived_root, Deserialize, Infallible};
 use core::panic;
 use dusk_consensus::operations::Voter;
 use execution_core::stake::{SlashEvent, StakeEvent};
+use execution_core::CommitRoot;
 use metrics::{counter, gauge, histogram};
 use node_data::message::payload::Vote;
 use node_data::{get_current_timestamp, Serializable, StepName};
@@ -56,7 +57,7 @@ pub type RollingFinalityResult = ([u8; 32], BTreeMap<u64, [u8; 32]>);
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
-    Commit([u8; 32]),
+    Commit(CommitRoot),
     LastFinalizedState,
     LastEpoch,
 }
@@ -167,7 +168,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         if tip.inner().header().height > 0 {
             let changed_provisioners =
-                vm.read().await.get_changed_provisioners(tip_state_hash)?;
+                vm.read().await.get_changed_provisioners(
+                    CommitRoot::from_bytes(tip_state_hash),
+                )?;
             provisioners_list.apply_changes(changed_provisioners);
         }
 
@@ -190,11 +193,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         info!(
             event = "VM finalized state loaded",
-            state_root = hex::encode(state_root),
+            state_root = hex::encode(state_root.as_bytes()),
         );
 
-        if tip_height > 0 && tip_state_hash != state_root {
-            if let Err(error) = vm.read().await.move_to_commit(tip_state_hash) {
+        if tip_height > 0 && tip_state_hash != *state_root.as_bytes() {
+            if let Err(error) = vm
+                .read()
+                .await
+                .move_to_commit(CommitRoot::from_bytes(tip_state_hash))
+            {
                 warn!(
                     event = "Cannot move to tip_state_hash",
                     ?error,
@@ -430,11 +437,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })?;
 
         let vm = self.vm.read().await;
-        let current_prov = vm.get_provisioners(blk.header().state_hash)?;
+        let current_prov = vm.get_provisioners(CommitRoot::from_bytes(
+            blk.header().state_hash,
+        ))?;
         provisioners_list.update(current_prov);
 
-        let changed_provisioners =
-            vm.get_changed_provisioners(blk.header().state_hash)?;
+        let changed_provisioners = vm.get_changed_provisioners(
+            CommitRoot::from_bytes(blk.header().state_hash),
+        )?;
         provisioners_list.apply_changes(changed_provisioners);
 
         *tip = BlockWithLabel::new_with_label(blk.clone(), label);
@@ -519,7 +529,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                     assert_eq!(
                         header.state_hash,
-                        verification_output.state_root
+                        *verification_output.state_root.as_bytes()
                     );
                     assert_eq!(
                         header.event_bloom,
@@ -566,7 +576,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             if let Err(e) = selective_update {
                 warn!("Resync provisioners due to {e:?}");
                 let state_hash = blk.header().state_hash;
-                let new_prov = vm.get_provisioners(state_hash)?;
+                let new_prov =
+                    vm.get_provisioners(CommitRoot::from_bytes(state_hash))?;
                 provisioners_list.update_and_swap(new_prov)
             }
 
@@ -582,8 +593,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 let old_finals_to_merge = new_finals
                     .into_values()
                     .chain([prev_final_state])
+                    .map(CommitRoot::from_bytes)
                     .collect::<Vec<_>>();
-                vm.finalize_state(new_final_state, old_finals_to_merge)?;
+                vm.finalize_state(
+                    CommitRoot::from_bytes(new_final_state),
+                    old_finals_to_merge,
+                )?;
 
                 info!(src = "try_accept", event = "after finalize",);
             }
@@ -861,7 +876,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 info!(
                     event = "vm reverted",
-                    state_root = hex::encode(state_hash),
+                    state_root = hex::encode(state_hash.as_bytes()),
                     is_final = "true",
                 );
 
@@ -870,11 +885,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             RevertTarget::Commit(state_hash) => {
                 let vm = self.vm.read().await;
                 let state_hash = vm.revert(state_hash)?;
-                let is_final = vm.get_finalized_state_root()? == state_hash;
+                let is_final = vm.get_finalized_state_root()?.as_commit_root()
+                    == state_hash;
 
                 info!(
                     event = "vm reverted",
-                    state_root = hex::encode(state_hash),
+                    state_root = hex::encode(state_hash.as_bytes()),
                     is_final,
                 );
 
@@ -898,7 +914,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         || anyhow::anyhow!("could not fetch block label"),
                     )?;
 
-                if h.state_hash == target_state_hash {
+                if h.state_hash == *target_state_hash.as_bytes() {
                     return Ok((b, label));
                 }
 
@@ -943,7 +959,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
         })?;
 
-        if blk.header().state_hash != target_state_hash {
+        if blk.header().state_hash != *target_state_hash.as_bytes() {
             return Err(anyhow!("Failed to revert to proper state"));
         }
 
@@ -1159,15 +1175,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .vm
             .read()
             .await
-            .get_provisioners(prev_header.state_hash)?;
+            .get_provisioners(CommitRoot::from_bytes(prev_header.state_hash))?;
 
         let mut provisioners_list = ContextProvisioners::new(provisioners_list);
 
-        let changed_provisioners = self
-            .vm
-            .read()
-            .await
-            .get_changed_provisioners(prev_header.state_hash)?;
+        let changed_provisioners =
+            self.vm.read().await.get_changed_provisioners(
+                CommitRoot::from_bytes(prev_header.state_hash),
+            )?;
         provisioners_list.apply_changes(changed_provisioners);
 
         // Ensure header of the new block is valid according to prev_block

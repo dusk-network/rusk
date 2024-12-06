@@ -29,6 +29,7 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::Instant;
 use tracing::{debug, error, info, warn};
+use execution_core::CommitRoot;
 
 const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 
@@ -216,7 +217,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         })?;
 
                     match acc
-                        .try_revert(RevertTarget::Commit(prev_local_state_root))
+                        .try_revert(RevertTarget::Commit(CommitRoot::from_bytes(prev_local_state_root)))
                         .await
                     {
                         Ok(_) => {
@@ -603,7 +604,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         .try_revert(
                             local_header,
                             remote_header,
-                            RevertTarget::Commit(prev_state),
+                            RevertTarget::Commit(CommitRoot::from_bytes(prev_state)),
                         )
                         .await
                     {

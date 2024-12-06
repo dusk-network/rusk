@@ -36,6 +36,7 @@ use tokio::sync::RwLock;
 
 use tokio::time::{sleep_until, Instant};
 use tracing::{error, info, warn};
+use execution_core::CommitRoot;
 
 const TOPICS: &[u8] = &[
     Topics::Block as u8,
@@ -82,7 +83,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         }
 
         let state_hash = tip.inner().header().state_hash;
-        let provisioners_list = vm.read().await.get_provisioners(state_hash)?;
+        let provisioners_list = vm.read().await.get_provisioners(CommitRoot::from_bytes(state_hash))?;
 
         // Initialize Acceptor
         let acc = Acceptor::init_consensus(

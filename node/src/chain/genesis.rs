@@ -4,14 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_consensus::operations::StateRoot;
 use node_data::ledger::{Block, Header};
 
 /// Generates the genesis state for the chain per specified network type
-pub(crate) fn generate_block(state_hash: [u8; 32], timestamp: u64) -> Block {
+pub(crate) fn generate_block(state_hash: StateRoot, timestamp: u64) -> Block {
     Block::new(
         Header {
             timestamp,
-            state_hash,
+            state_hash: *state_hash.as_bytes(),
             ..Default::default()
         },
         vec![],
