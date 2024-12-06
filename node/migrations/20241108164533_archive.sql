@@ -28,9 +28,11 @@ CREATE TABLE finalized_blocks (
     id INTEGER PRIMARY KEY NOT NULL,
     block_height INTEGER NOT NULL,
     block_hash TEXT NOT NULL,
+    phoenix_present INTEGER NOT NULL,
 
     UNIQUE (block_height, block_hash)
     check(id = block_height)
+    check(phoenix_present IN (0, 1))
 ) STRICT;
 
 CREATE UNIQUE INDEX block_height_idx ON finalized_blocks (block_height);
