@@ -84,7 +84,9 @@ impl Rusk {
             )
             .into());
         }
-        let base_commit = CommitRoot::from_bytes([0u8; 32]);
+        let mut base_commit_a = [0u8; 32];
+        base_commit_a.copy_from_slice(&base_commit_bytes);
+        let base_commit = CommitRoot::from_bytes(base_commit_a);
 
         let vm = Arc::new(rusk_abi::new_vm(dir)?);
 

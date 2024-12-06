@@ -56,7 +56,11 @@ pub fn recovery_state(
             theme.success("Checked"),
             state_id_path.display()
         );
-        info!("{} {}", theme.action("Root"), hex::encode(commit_id.as_bytes()));
+        info!(
+            "{} {}",
+            theme.action("Root"),
+            hex::encode(commit_id.as_bytes())
+        );
 
         return Ok(());
     }
@@ -65,7 +69,11 @@ pub fn recovery_state(
 
     let (_, commit_id) = deploy(&state_dir, &init, |_| {})?;
 
-    info!("{} {}", theme.action("Final Root"), hex::encode(commit_id.as_bytes()));
+    info!(
+        "{} {}",
+        theme.action("Final Root"),
+        hex::encode(commit_id.as_bytes())
+    );
 
     info!(
         "{} network state at {}",

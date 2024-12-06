@@ -371,7 +371,7 @@ pub async fn multi_transfer() -> Result<()> {
 
     let original_root = rusk.state_root();
 
-    info!("Original Root: {:?}", hex::encode(original_root));
+    info!("Original Root: {:?}", hex::encode(original_root.as_bytes()));
 
     wallet_transfer(&rusk, &wallet, 1_000);
 
@@ -379,7 +379,7 @@ pub async fn multi_transfer() -> Result<()> {
     let new_root = rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
-        hex::encode(new_root)
+        hex::encode(new_root.as_bytes())
     );
     assert_ne!(original_root, new_root, "Root should have changed");
 
@@ -412,7 +412,7 @@ pub async fn multi_transfer_deploy() -> Result<()> {
 
     let original_root = rusk.state_root();
 
-    info!("Original Root: {:?}", hex::encode(original_root));
+    info!("Original Root: {:?}", hex::encode(original_root.as_bytes()));
 
     wallet_transfer_deploy(&rusk, &wallet, 1_000);
 
@@ -420,7 +420,7 @@ pub async fn multi_transfer_deploy() -> Result<()> {
     let new_root = rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
-        hex::encode(new_root)
+        hex::encode(new_root.as_bytes())
     );
     assert_ne!(original_root, new_root, "Root should have changed");
 

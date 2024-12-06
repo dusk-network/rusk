@@ -7,6 +7,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use execution_core::CommitRoot;
 use rusk::{Result, Rusk};
 use serde_json::Value;
 use tempfile::tempdir;
@@ -52,7 +53,7 @@ pub async fn deploy_fail() -> Result<()> {
     let finalize_at = 353;
 
     let mut state_to_delete = vec![];
-    let mut new_base = [0u8; 32];
+    let mut new_base = CommitRoot::from_bytes([0u8; 32]);
     let mut txs_by_height = BTreeMap::new();
     for t in txs.iter().rev() {
         let block_height = t.get("blockHeight").unwrap().as_u64().unwrap();
@@ -84,7 +85,10 @@ pub async fn deploy_fail() -> Result<()> {
         } else {
             unreachable!()
         }
-        println!("height: {block_height} - state: {}", hex::encode(state));
+        println!(
+            "height: {block_height} - state: {}",
+            hex::encode(state.as_bytes())
+        );
     }
 
     rusk_recovery_tools::state::restore_state(&tmp)?;

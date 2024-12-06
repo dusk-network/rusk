@@ -149,7 +149,7 @@ pub async fn wallet() -> Result<()> {
 
     let original_root = rusk.state_root();
 
-    info!("Original Root: {:?}", hex::encode(original_root));
+    info!("Original Root: {:?}", hex::encode(original_root.as_bytes()));
 
     wallet_transfer(&rusk, &wallet, 1_000, 2);
 
@@ -157,7 +157,7 @@ pub async fn wallet() -> Result<()> {
     let new_root = rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
-        hex::encode(new_root)
+        hex::encode(new_root.as_bytes())
     );
     assert_ne!(original_root, new_root, "Root should have changed");
 
@@ -167,7 +167,10 @@ pub async fn wallet() -> Result<()> {
     cache.write().unwrap().clear();
 
     // Check the state's root is back to the original one
-    info!("Root after reset: {:?}", hex::encode(rusk.state_root()));
+    info!(
+        "Root after reset: {:?}",
+        hex::encode(rusk.state_root().as_bytes())
+    );
     assert_eq!(original_root, rusk.state_root(), "Root be the same again");
 
     wallet_transfer(&rusk, &wallet, 1_000, 2);
@@ -175,7 +178,7 @@ pub async fn wallet() -> Result<()> {
     // Check the state's root is back to the original one
     info!(
         "New root after the 2nd transfer: {:?}",
-        hex::encode(rusk.state_root())
+        hex::encode(rusk.state_root().as_bytes())
     );
     assert_eq!(
         new_root,

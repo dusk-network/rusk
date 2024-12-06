@@ -161,7 +161,7 @@ pub async fn stake() -> Result<()> {
 
     let original_root = rusk.state_root();
 
-    info!("Original Root: {:?}", hex::encode(original_root));
+    info!("Original Root: {:?}", hex::encode(original_root.as_bytes()));
 
     // Perform some staking actions.
     wallet_stake(&rusk, &wallet, MINIMUM_STAKE);
@@ -170,7 +170,7 @@ pub async fn stake() -> Result<()> {
     let new_root = rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
-        hex::encode(new_root)
+        hex::encode(new_root.as_bytes())
     );
     assert_ne!(original_root, new_root, "Root should have changed");
 
@@ -254,7 +254,7 @@ pub async fn reward() -> Result<()> {
 
     let original_root = rusk.state_root();
 
-    info!("Original Root: {:?}", hex::encode(original_root));
+    info!("Original Root: {:?}", hex::encode(original_root.as_bytes()));
 
     // Perform some staking actions.
     wallet_reward(&rusk, &wallet);
@@ -263,7 +263,7 @@ pub async fn reward() -> Result<()> {
     let new_root = rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
-        hex::encode(new_root)
+        hex::encode(new_root.as_bytes())
     );
     assert_ne!(original_root, new_root, "Root should have changed");
 
@@ -291,7 +291,7 @@ pub async fn slash() -> Result<()> {
 
     let original_root = rusk.state_root();
 
-    info!("Original Root: {:?}", hex::encode(original_root));
+    info!("Original Root: {:?}", hex::encode(original_root.as_bytes()));
 
     let contract_balance = rusk
         .contract_balance(STAKE_CONTRACT)
@@ -479,7 +479,7 @@ pub async fn slash() -> Result<()> {
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
-    info!("New root: {}", hex::encode(new_root));
+    info!("New root: {}", hex::encode(new_root.as_bytes()));
     assert_ne!(original_root, new_root, "Root should have changed");
 
     Ok(())

@@ -122,7 +122,7 @@ impl Fixture {
 
         let original_root = rusk.state_root();
 
-        info!("Original Root: {:?}", hex::encode(original_root));
+        info!("Original Root: {:?}", hex::encode(original_root.as_bytes()));
 
         let bob_bytecode = include_bytes!(
             "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"

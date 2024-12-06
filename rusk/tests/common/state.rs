@@ -26,6 +26,7 @@ use node_data::{
     message::payload::Vote,
 };
 
+use rusk_abi::CommitRoot;
 use tokio::sync::broadcast;
 use tracing::info;
 
@@ -166,7 +167,7 @@ pub fn generator_procedure(
             height: block_height,
             gas_limit: block_gas_limit,
             generator_bls_pubkey: generator_pubkey_bytes,
-            state_hash: execute_output.state_root,
+            state_hash: *execute_output.state_root.as_bytes(),
             event_bloom: execute_output.event_bloom,
             failed_iterations,
             ..Default::default()
@@ -208,7 +209,7 @@ pub fn generator_procedure2(
     block_gas_limit: u64,
     missed_generators: Vec<BlsPublicKey>,
     expected: Option<ExecuteResult>,
-) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
+) -> anyhow::Result<(Vec<SpentTransaction>, CommitRoot)> {
     let expected = expected.unwrap_or(ExecuteResult {
         executed: txs.len(),
         discarded: 0,
@@ -272,7 +273,7 @@ pub fn generator_procedure2(
             height: block_height,
             gas_limit: block_gas_limit,
             generator_bls_pubkey: generator_pubkey_bytes,
-            state_hash: execute_output.state_root,
+            state_hash: *execute_output.state_root.as_bytes(),
             event_bloom: execute_output.event_bloom,
             failed_iterations,
             ..Default::default()
@@ -299,5 +300,5 @@ pub fn generator_procedure2(
         "Verification outputs should be equal"
     );
 
-    Ok((accept_txs, accept_output.state_root))
+    Ok((accept_txs, accept_output.state_root.as_commit_root()))
 }

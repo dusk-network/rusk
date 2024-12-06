@@ -183,7 +183,7 @@ pub async fn unspendable() -> Result<()> {
 
     let original_root = rusk.state_root();
 
-    info!("Original Root: {:?}", hex::encode(original_root));
+    info!("Original Root: {:?}", hex::encode(original_root.as_bytes()));
 
     make_transactions(&rusk, &wallet);
 
@@ -191,7 +191,7 @@ pub async fn unspendable() -> Result<()> {
     let new_root = rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
-        hex::encode(new_root)
+        hex::encode(new_root.as_bytes())
     );
     assert_ne!(original_root, new_root, "Root should have changed");
 
