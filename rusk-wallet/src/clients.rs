@@ -252,9 +252,6 @@ impl State {
         &self,
         pk: &BlsPublicKey,
     ) -> Result<AccountData, Error> {
-        let status = self.status;
-        status("Fetching account-data...");
-
         // the target type of the deserialization has to match the return type
         // of the contract-query
         let account: AccountData = rkyv::from_bytes(
@@ -264,8 +261,6 @@ impl State {
                 .await?,
         )
         .map_err(|_| Error::Rkyv)?;
-
-        status("account-data received!");
 
         Ok(account)
     }
@@ -279,9 +274,6 @@ impl State {
 
     /// Fetch the current root of the state.
     pub(crate) async fn fetch_root(&self) -> Result<BlsScalar, Error> {
-        let status = self.status;
-        status("Fetching root...");
-
         // the target type of the deserialization has to match the return type
         // of the contract-query
         let root: BlsScalar = rkyv::from_bytes(
@@ -292,8 +284,6 @@ impl State {
         )
         .map_err(|_| Error::Rkyv)?;
 
-        status("root received!");
-
         Ok(root)
     }
 
@@ -302,9 +292,6 @@ impl State {
         &self,
         pk: &BlsPublicKey,
     ) -> Result<Option<StakeData>, Error> {
-        let status = self.status;
-        status("Fetching stake...");
-
         // the target type of the deserialization has to match the return type
         // of the contract-query
         let stake_data: Option<StakeData> = rkyv::from_bytes(
@@ -315,10 +302,6 @@ impl State {
         )
         .map_err(|_| Error::Rkyv)?;
 
-        status("Stake received!");
-
-        println!("Staking address: {}", Address::Public(*pk));
-
         Ok(stake_data)
     }
 
@@ -327,9 +310,6 @@ impl State {
     }
 
     pub(crate) async fn fetch_chain_id(&self) -> Result<u8, Error> {
-        let status = self.status;
-        status("Fetching chain_id...");
-
         // the target type of the deserialization has to match the return type
         // of the contract-query
         let chain_id: u8 = rkyv::from_bytes(
@@ -344,16 +324,11 @@ impl State {
         )
         .map_err(|_| Error::Rkyv)?;
 
-        status("Chain id received!");
-
         Ok(chain_id)
     }
 
     /// Queries the node to find the merkle-tree opening for a specific note.
     async fn fetch_opening(&self, note: &Note) -> Result<NoteOpening, Error> {
-        let status = self.status;
-        status("Fetching note opening...");
-
         // the target type of the deserialization has to match the return type
         // of the contract-query
         let opening: Option<NoteOpening> = rkyv::from_bytes(
@@ -371,16 +346,11 @@ impl State {
         // return an error here if the note opening couldn't be fetched
         let opening = opening.ok_or(Error::NoteNotFound)?;
 
-        status("Note opening received!");
-
         Ok(opening)
     }
 
     /// Queries the transfer contract for the number of notes.
     pub async fn fetch_num_notes(&self) -> Result<u64, Error> {
-        let status = self.status;
-        status("Fetching note count...");
-
         // the target type of the deserialization has to match the return type
         // of the contract-query
         let note_count: u64 = rkyv::from_bytes(
@@ -394,8 +364,6 @@ impl State {
                 .await?,
         )
         .map_err(|_| Error::Rkyv)?;
-
-        status("Latest note count received!");
 
         Ok(note_count)
     }
