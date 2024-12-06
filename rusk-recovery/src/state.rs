@@ -26,7 +26,7 @@ use execution_core::{
     },
     ContractId, JubJubScalar,
 };
-use rusk_abi::{ContractData, Session, VM};
+use rusk_abi::{CommitRoot, ContractData, Session, VM};
 
 use crate::Theme;
 pub use snapshot::{GenesisStake, PhoenixBalance, Snapshot};
@@ -172,7 +172,7 @@ fn generate_stake_state(
 fn generate_empty_state<P: AsRef<Path>>(
     state_dir: P,
     snapshot: &Snapshot,
-) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
+) -> Result<(VM, CommitRoot), Box<dyn Error>> {
     let theme = Theme::default();
     info!("{} new network state", theme.action("Generating"));
 
@@ -252,7 +252,11 @@ fn generate_empty_state<P: AsRef<Path>>(
 
     let commit_id = session.commit()?;
 
-    info!("{} {}", theme.action("Empty Root"), hex::encode(commit_id));
+    info!(
+        "{} {}",
+        theme.action("Empty Root"),
+        hex::encode(commit_id.as_bytes())
+    );
 
     Ok((vm, commit_id))
 }
@@ -266,7 +270,7 @@ pub fn deploy<P: AsRef<Path>, F>(
     state_dir: P,
     snapshot: &Snapshot,
     closure: F,
-) -> Result<(VM, [u8; 32]), Box<dyn Error>>
+) -> Result<(VM, CommitRoot), Box<dyn Error>>
 where
     F: FnOnce(&mut Session),
 {
@@ -294,18 +298,22 @@ where
 
     info!("{} persisted id", theme.success("Storing"));
     let commit_id = session.commit()?;
-    fs::write(state_id_path, commit_id)?;
+    fs::write(state_id_path, commit_id.as_bytes())?;
 
     if old_commit_id != commit_id {
         info!(
             "{} {}",
             theme.action("Finalizing"),
-            hex::encode(old_commit_id)
+            hex::encode(old_commit_id.as_bytes())
         );
         vm.finalize_commit(old_commit_id)?;
     }
 
-    info!("{} {}", theme.action("Init Root"), hex::encode(commit_id));
+    info!(
+        "{} {}",
+        theme.action("Init Root"),
+        hex::encode(commit_id.as_bytes())
+    );
 
     Ok((vm, commit_id))
 }
@@ -313,7 +321,7 @@ where
 /// Restore a state from the given directory.
 pub fn restore_state<P: AsRef<Path>>(
     state_dir: P,
-) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
+) -> Result<(VM, CommitRoot), Box<dyn Error>> {
     let state_dir = state_dir.as_ref();
     let state_id_path = rusk_profile::to_rusk_state_id_path(state_dir);
 
@@ -331,16 +339,17 @@ pub fn restore_state<P: AsRef<Path>>(
     }
     let mut commit_id = [0u8; 32];
     commit_id.copy_from_slice(&commit_id_bytes);
+    let root = CommitRoot::from_bytes(commit_id);
 
     let vm = rusk_abi::new_vm(state_dir)?;
-    Ok((vm, commit_id))
+    Ok((vm, root))
 }
 
 /// Load a state file and save it into the rusk state directory.
 fn load_state<P: AsRef<Path>>(
     state_dir: P,
     url: &str,
-) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
+) -> Result<(VM, CommitRoot), Box<dyn Error>> {
     let state_dir = state_dir.as_ref();
     let state_id_path = rusk_profile::to_rusk_state_id_path(state_dir);
 
@@ -365,7 +374,7 @@ fn load_state<P: AsRef<Path>>(
     info!(
         "{} {}",
         Theme::default().action("Base Root"),
-        hex::encode(commit)
+        hex::encode(commit.as_bytes())
     );
 
     Ok((vm, commit))
