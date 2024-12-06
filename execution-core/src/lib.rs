@@ -53,8 +53,8 @@ pub mod signatures {
 }
 
 pub use piecrust_uplink::{
-    ContractError, ContractId, Event, StandardBufSerializer, ARGBUF_LEN,
-    CONTRACT_ID_BYTES,
+    CommitRoot, ContractError, ContractId, Event, StandardBufSerializer,
+    ARGBUF_LEN, CONTRACT_ID_BYTES,
 };
 
 /// Types and traits to create plonk circuits and generate and verify plonk
