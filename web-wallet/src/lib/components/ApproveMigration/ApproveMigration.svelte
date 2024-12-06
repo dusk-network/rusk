@@ -21,8 +21,6 @@
 
   $: ({ address } = $account);
 
-  let hasApprovedCoin = false;
-
   const dispatch = createEventDispatcher();
 
   const approvalTxStore = createDataStore(handleApprove);
@@ -48,27 +46,39 @@
   }
 
   async function handleApprove() {
-    dispatch("initApproval");
+    try {
+      dispatch("initApproval");
 
-    hasApprovedCoin = await checkAllowance();
+      // Check initial allowance
+      let isCoinApproved = await checkAllowance();
 
-    if (!hasApprovedCoin) {
+      if (isCoinApproved) {
+        dispatch("incrementStep");
+        return;
+      }
+
+      // Approve the transaction
       const txHash = await approve(migrationContract, chainContract, amount);
 
-      if (isHex(txHash)) {
-        dispatch("incrementStep");
-        await waitForTransactionReceipt(wagmiConfig, {
-          confirmations: 3,
-          hash: txHash,
-        });
-
-        hasApprovedCoin = await checkAllowance();
-      } else {
-        dispatch("errorApproval");
-        throw new Error("txHash is not a hex string");
+      if (!isHex(txHash)) {
+        throw new Error("Transaction hash is not a valid hex string.");
       }
-    } else {
-      dispatch("incrementStep");
+
+      // Wait for transaction confirmation
+      await waitForTransactionReceipt(wagmiConfig, {
+        confirmations: 3,
+        hash: txHash,
+      });
+
+      // Recheck allowance after approval
+      isCoinApproved = await checkAllowance();
+      if (isCoinApproved) {
+        dispatch("incrementStep");
+      } else {
+        throw new Error("Approval failed: Allowance was not updated.");
+      }
+    } catch {
+      dispatch("errorApproval");
     }
   }
 </script>
@@ -91,12 +101,12 @@
   {:else if isLoading}
     <div class="migrate__approve-approval">
       <Icon path={mdiTimerSand} />
-      <span>Approval in progress</span>
+      <span>Approval in progress...</span>
     </div>
   {:else if error}
     <div class="migrate__approve-approval">
       <Icon path={mdiAlertOutline} />
-      <span>An error occured during approval</span>
+      <span>An error occurred during approval</span>
     </div>
   {/if}
 
