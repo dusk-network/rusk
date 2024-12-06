@@ -96,7 +96,7 @@
   {:else if error}
     <div class="migrate__approve-approval">
       <Icon path={mdiAlertOutline} />
-      <span>An error occured during approval</span>
+      <span>An error occurred during approval</span>
     </div>
   {/if}
 
