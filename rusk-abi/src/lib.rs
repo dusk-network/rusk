@@ -62,8 +62,8 @@ pub use host::{
 };
 #[cfg(feature = "host")]
 pub use piecrust::{
-    CallReceipt, CallTree, CallTreeElem, ContractData, Error as PiecrustError,
-    PageOpening, Session, VM,
+    CallReceipt, CallTree, CallTreeElem, CommitRoot, ContractData,
+    Error as PiecrustError, PageOpening, Session, VM,
 };
 
 #[cfg(any(feature = "host", feature = "abi"))]

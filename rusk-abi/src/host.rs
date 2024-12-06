@@ -27,7 +27,7 @@ use execution_core::{
     },
     BlsScalar,
 };
-use piecrust::{Error as PiecrustError, Session, SessionData, VM};
+use piecrust::{CommitRoot, Error as PiecrustError, Session, SessionData, VM};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -39,7 +39,7 @@ use crate::{Metadata, Query};
 /// created using [`new_vm`] or [`new_ephemeral_vm`].
 pub fn new_session(
     vm: &VM,
-    base: [u8; 32],
+    base: CommitRoot,
     chain_id: u8,
     block_height: u64,
 ) -> Result<Session, PiecrustError> {
