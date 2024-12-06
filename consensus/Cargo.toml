@@ -25,6 +25,8 @@ node-data = { workspace = true }
 execution-core = { workspace = true, features = ["parallel"] }
 dusk-merkle = { workspace = true, features = ["size_32"] }
 thiserror = { workspace = true }
+rkyv = { workspace = true,  features = ["size_32"] }
+bytecheck = { workspace = true }
 
 [dev-dependencies]
 node-data = { workspace = true, features = ["faker"]}

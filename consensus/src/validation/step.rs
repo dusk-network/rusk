@@ -163,10 +163,12 @@ impl<T: Operations + 'static> ValidationStep<T> {
                     ));
                 }
 
-                if output.state_root != candidate.header().state_hash {
+                if output.state_root.as_bytes()
+                    != &candidate.header().state_hash
+                {
                     return Err(anyhow!(
                         "mismatch, state_hash: {}, candidate_state_hash: {}",
-                        hex::encode(output.state_root),
+                        hex::encode(output.state_root.as_bytes()),
                         hex::encode(candidate.header().state_hash)
                     ));
                 }

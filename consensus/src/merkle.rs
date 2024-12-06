@@ -4,17 +4,38 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use bytecheck::CheckBytes;
 use dusk_merkle::{Aggregate, Tree};
+use rkyv::{Archive, Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
 
 pub const ARITY: usize = 2;
 
-#[derive(Clone, Copy)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Archive,
+    Deserialize,
+    Serialize,
+    CheckBytes,
+)]
 pub struct Hash([u8; 32]);
 
 impl<I: Into<[u8; 32]>> From<I> for Hash {
     fn from(bytes: I) -> Self {
         Self(bytes.into())
+    }
+}
+
+impl Hash {
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        &self.0
     }
 }
 

@@ -137,7 +137,8 @@ impl<T: Operations> Generator<T> {
         let result =
             self.executor.execute_state_transition(call_params).await?;
 
-        blk_header.state_hash = result.verification_output.state_root;
+        blk_header.state_hash =
+            *result.verification_output.state_root.as_bytes();
         blk_header.event_bloom = result.verification_output.event_bloom;
 
         let tx_hashes: Vec<_> =
