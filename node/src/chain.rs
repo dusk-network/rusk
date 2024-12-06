@@ -53,6 +53,7 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     keys_path: String,
     acceptor: Option<Arc<RwLock<Acceptor<N, DB, VM>>>>,
     max_consensus_queue_size: usize,
+    /// Sender channel for sending out RUES events
     event_sender: Sender<Event>,
     genesis_timestamp: u64,
 }

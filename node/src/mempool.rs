@@ -58,6 +58,7 @@ impl From<anyhow::Error> for TxAcceptanceError {
 pub struct MempoolSrv {
     inbound: AsyncQueue<Message>,
     conf: Params,
+    /// Sender channel for sending out RUES events
     event_sender: Sender<Event>,
 }
 
