@@ -114,14 +114,13 @@ impl HttpConfig {
 }
 
 mod vec_header_map {
-    use super::*;
-
     use std::fmt;
 
+    use hyper::header::{HeaderName, HeaderValue};
     use serde::de::{Deserializer, Error as _, SeqAccess, Visitor};
     use serde::ser::{Error as _, SerializeSeq, Serializer};
 
-    use hyper::header::{HeaderName, HeaderValue};
+    use super::*;
 
     pub fn serialize<S>(
         headers: &HeaderMap,
@@ -191,8 +190,9 @@ mod vec_header_map {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use hyper::http::HeaderValue;
+
+    use super::*;
 
     #[test]
     fn serialize_config() {

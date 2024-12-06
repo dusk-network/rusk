@@ -4,28 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{path::Path, usize};
+use std::path::Path;
+use std::usize;
 
 use dusk_bytes::Serializable;
+use dusk_consensus::config::{
+    RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
+};
+use dusk_consensus::operations::CallParams;
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::transfer::Transaction;
 use node::vm::VMExecution;
+use node_data::bls::PublicKeyBytes;
+use node_data::ledger::{
+    Attestation, Block, Header, IterationsInfo, Slash, SpentTransaction,
+};
+use node_data::message::payload::Vote;
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot, DUSK_CONSENSUS_KEY};
-
-use dusk_consensus::{
-    config::{RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS},
-    operations::CallParams,
-};
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey, transfer::Transaction,
-};
-use node_data::{
-    bls::PublicKeyBytes,
-    ledger::{
-        Attestation, Block, Header, IterationsInfo, Slash, SpentTransaction,
-    },
-    message::payload::Vote,
-};
-
 use tokio::sync::broadcast;
 use tracing::info;
 

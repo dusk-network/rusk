@@ -48,7 +48,6 @@ impl ContractEvents {
 /// Interim solution for sending out deserialized event data
 /// TODO: #2773 add serde feature to execution-core
 pub mod deserialized_archive_data {
-    use super::*;
     use execution_core::stake::STAKE_CONTRACT;
     use execution_core::transfer::withdraw::WithdrawReceiver;
     use execution_core::transfer::{
@@ -61,6 +60,8 @@ pub mod deserialized_archive_data {
     };
     use serde::ser::SerializeStruct;
     use serde::{Deserialize, Serialize};
+
+    use super::*;
 
     #[serde_with::serde_as]
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

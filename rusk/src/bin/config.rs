@@ -20,17 +20,15 @@ pub mod http;
 use std::env;
 use std::str::FromStr;
 
+use serde::{Deserialize, Serialize};
+
+use self::http::HttpConfig;
 #[cfg(feature = "chain")]
 use self::{
     chain::ChainConfig, databroker::DataBrokerConfig, kadcast::KadcastConfig,
     mempool::MempoolConfig, telemetry::TelemetryConfig,
 };
-
-use serde::{Deserialize, Serialize};
-
 use crate::args::Args;
-
-use self::http::HttpConfig;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(crate) struct Config {
