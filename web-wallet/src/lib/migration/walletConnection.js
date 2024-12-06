@@ -33,7 +33,7 @@ export const wagmiConfig = wagmiAdapter.wagmiConfig;
 
 reconnect(wagmiConfig);
 
-// Create the Web3 modal with the WAGMI config
+// Create the Reown App Kit modal
 export const modal = createAppKit({
   adapters: [wagmiAdapter],
   features: {
@@ -65,4 +65,12 @@ export const accountBalance = (address) =>
     blockTag: "latest",
   });
 
-export const walletDisconnect = () => disconnect(wagmiConfig);
+export async function walletDisconnect() {
+  try {
+    await disconnect(wagmiConfig);
+    await modal.disconnect();
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("Error during wallet disconnect: ", error);
+  }
+}
