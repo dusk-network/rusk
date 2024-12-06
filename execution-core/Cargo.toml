@@ -28,6 +28,12 @@ ark-bn254 = { workspace = true, features = ["curve"], optional = true }
 ark-relations = { workspace = true, optional = true }
 ark-serialize = { workspace = true, optional = true }
 
+# serde support dependencies
+serde = { workspace = true, features = ["derive"], optional = true }
+bs58 = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+
 [dev-dependencies]
 rand = { workspace = true, features = ["std", "std_rng"] }
 
@@ -57,3 +63,5 @@ groth16 = [
 
 # Enables std feature for dusk-plonk
 std = ["dusk-plonk/std"]
+
+serde = ["dep:serde", "bs58", "serde_json", "hex"]

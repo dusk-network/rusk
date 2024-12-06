@@ -31,6 +31,11 @@ use phoenix::{
 };
 use withdraw::{Withdraw, WithdrawReceiver};
 
+#[cfg(feature = "serde")]
+use crate::serde_support;
+#[cfg(feature = "serde")]
+use serde::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};
+
 pub mod data;
 pub mod moonlight;
 pub mod phoenix;
@@ -505,20 +510,31 @@ pub struct PhoenixTransactionEvent {
 }
 
 /// Event data emitted on a moonlight transaction's completion.
+#[cfg_attr(feature = "serde", derive(SerdeSerialize, SerdeDeserialize))]
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct MoonlightTransactionEvent {
     /// The account that initiated the transaction.
+    #[cfg_attr(feature = "serde", serde(with = "serde_support::pubk"))]
     pub sender: AccountPublicKey,
     /// The receiver of the funds if any were transferred.
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_support::optional_pubk")
+    )]
     pub receiver: Option<AccountPublicKey>,
     /// Transfer amount
     pub value: u64,
     /// The memo included in the transaction.
+    #[cfg_attr(feature = "serde", serde(with = "serde_support::hex_serde"))]
     pub memo: Vec<u8>,
     /// Gas spent by the transaction.
     pub gas_spent: u64,
     /// Optional refund-info in the case that the refund-address is different
     /// from the sender.
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_support::pubk_u64_tuple")
+    )]
     pub refund_info: Option<(AccountPublicKey, u64)>,
 }
