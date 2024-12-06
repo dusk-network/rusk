@@ -2,13 +2,7 @@ import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 // eslint-disable-next-line import/no-unresolved
 import { bsc, mainnet, sepolia } from "@reown/appkit/networks";
-import {
-  disconnect,
-  getAccount,
-  getBalance,
-  reconnect,
-  watchAccount,
-} from "@wagmi/core";
+import { disconnect, getAccount, getBalance, watchAccount } from "@wagmi/core";
 import { readable } from "svelte/store";
 
 // Required project metadata
@@ -31,9 +25,7 @@ const wagmiAdapter = new WagmiAdapter({
 
 export const wagmiConfig = wagmiAdapter.wagmiConfig;
 
-reconnect(wagmiConfig);
-
-// Create the Web3 modal with the WAGMI config
+// Create the Reown App Kit modal
 export const modal = createAppKit({
   adapters: [wagmiAdapter],
   features: {
@@ -51,18 +43,22 @@ export const modal = createAppKit({
 // Note that this can change at will by the user outside
 // of the app itself
 export const account = readable(getAccount(wagmiConfig), (set) => {
-  watchAccount(wagmiConfig, {
+  set(getAccount(wagmiConfig));
+  return watchAccount(wagmiConfig, {
     onChange(newAccount) {
       set(newAccount);
     },
   });
 });
 
-/** @param {*} address */
+/** @param {`0x${string}`} address */
 export const accountBalance = (address) =>
   getBalance(wagmiConfig, {
     address: address,
     blockTag: "latest",
   });
 
-export const walletDisconnect = () => disconnect(wagmiConfig);
+export async function walletDisconnect() {
+  await disconnect(wagmiConfig);
+  await modal?.disconnect();
+}
