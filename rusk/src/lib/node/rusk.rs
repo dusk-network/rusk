@@ -20,7 +20,9 @@ use dusk_consensus::config::{
     validation_quorum, MAX_NUMBER_OF_TRANSACTIONS,
     RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
-use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::operations::{
+    CallParams, StateRoot, VerificationOutput, Voter,
+};
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{Reward, RewardReason, StakeData, STAKE_CONTRACT},
@@ -33,7 +35,7 @@ use execution_core::{
 use node::vm::bytecode_charge;
 use node_data::events::contract::{ContractEvent, ContractTxEvent};
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
-use rusk_abi::{CallReceipt, PiecrustError, Session};
+use rusk_abi::{CallReceipt, CommitRoot, PiecrustError, Session};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 #[cfg(feature = "archive")]
@@ -82,8 +84,7 @@ impl Rusk {
             )
             .into());
         }
-        let mut base_commit = [0u8; 32];
-        base_commit.copy_from_slice(&base_commit_bytes);
+        let base_commit = CommitRoot::from_bytes([0u8; 32]);
 
         let vm = Arc::new(rusk_abi::new_vm(dir)?);
 
@@ -243,13 +244,13 @@ impl Rusk {
 
         event_bloom.add_events(&coinbase_events);
 
-        let state_root = session.root();
+        let commit_root = session.root();
 
         Ok((
             spent_txs,
             discarded_txs,
             VerificationOutput {
-                state_root,
+                state_root: StateRoot::from_bytes(*commit_root.as_bytes()),
                 event_bloom: event_bloom.into(),
             },
         ))
@@ -363,39 +364,39 @@ impl Rusk {
 
     pub fn finalize_state(
         &self,
-        commit: [u8; 32],
-        to_delete: Vec<[u8; 32]>,
+        commit: CommitRoot,
+        to_delete: Vec<CommitRoot>,
     ) -> Result<()> {
         self.set_base_and_delete(commit, to_delete)?;
 
         let commit_id_path = to_rusk_state_id_path(&self.dir);
-        fs::write(commit_id_path, commit)?;
+        fs::write(commit_id_path, commit.as_bytes())?;
         Ok(())
     }
 
-    pub fn revert(&self, state_hash: [u8; 32]) -> Result<[u8; 32]> {
+    pub fn revert(&self, state_hash: CommitRoot) -> Result<CommitRoot> {
         let mut tip = self.tip.write();
 
         let commits = self.vm.commits();
         if !commits.contains(&state_hash) {
-            return Err(Error::CommitNotFound(state_hash));
+            return Err(Error::CommitNotFound(*state_hash.as_bytes()));
         }
 
         tip.current = state_hash;
         Ok(tip.current)
     }
 
-    pub fn revert_to_base_root(&self) -> Result<[u8; 32]> {
+    pub fn revert_to_base_root(&self) -> Result<CommitRoot> {
         self.revert(self.base_root())
     }
 
     /// Get the base root.
-    pub fn base_root(&self) -> [u8; 32] {
+    pub fn base_root(&self) -> CommitRoot {
         self.tip.read().base
     }
 
     /// Get the current state root.
-    pub fn state_root(&self) -> [u8; 32] {
+    pub fn state_root(&self) -> CommitRoot {
         self.tip.read().current
     }
 
@@ -411,7 +412,7 @@ impl Rusk {
     /// Returns the stakes.
     pub fn provisioners(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_commit: Option<CommitRoot>,
     ) -> Result<impl Iterator<Item = (StakeKeys, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
@@ -450,7 +451,7 @@ impl Rusk {
     /// state data before the last changes in the stake contract.
     pub fn last_provisioners_change(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_commit: Option<CommitRoot>,
     ) -> Result<Vec<(BlsPublicKey, Option<StakeData>)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(
@@ -474,7 +475,7 @@ impl Rusk {
     pub(crate) fn session(
         &self,
         block_height: u64,
-        commit: Option<[u8; 32]>,
+        commit: Option<CommitRoot>,
     ) -> Result<Session> {
         let commit = commit.unwrap_or_else(|| {
             let tip = self.tip.read();
@@ -491,15 +492,15 @@ impl Rusk {
         Ok(session)
     }
 
-    pub(crate) fn set_current_commit(&self, commit: [u8; 32]) {
+    pub(crate) fn set_current_commit(&self, commit: CommitRoot) {
         let mut tip = self.tip.write();
         tip.current = commit;
     }
 
     pub(crate) fn set_base_and_delete(
         &self,
-        base: [u8; 32],
-        to_delete: Vec<[u8; 32]>,
+        base: CommitRoot,
+        to_delete: Vec<CommitRoot>,
     ) -> Result<()> {
         self.tip.write().base = base;
         for d in to_delete {
@@ -616,13 +617,13 @@ fn accept(
     events.extend(coinbase_events);
 
     info!(src = "vm_accept", event = "before calculating root");
-    let state_root = session.root();
+    let commit_root = session.root();
     info!(src = "vm_accept", event = "after calculating root");
 
     Ok((
         spent_txs,
         VerificationOutput {
-            state_root,
+            state_root: StateRoot::from_bytes(*commit_root.as_bytes()),
             event_bloom: event_bloom.into(),
         },
         session,

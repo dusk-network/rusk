@@ -13,6 +13,7 @@ use bytecheck::CheckBytes;
 use execution_core::{ContractId, StandardBufSerializer};
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
+use rusk_abi::CommitRoot;
 
 impl Rusk {
     pub fn query_raw<S, V>(
@@ -96,7 +97,7 @@ impl Rusk {
         call_name: &str,
         call_arg: &A,
         feeder: mpsc::Sender<Vec<u8>>,
-        base_commit: Option<[u8; 32]>,
+        base_commit: Option<CommitRoot>,
     ) -> Result<()>
     where
         A: for<'b> Serialize<StandardBufSerializer<'b>>,

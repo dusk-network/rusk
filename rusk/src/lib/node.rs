@@ -18,7 +18,7 @@ use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
 use node::LongLivedService;
 use parking_lot::RwLock;
-use rusk_abi::VM;
+use rusk_abi::{CommitRoot, VM};
 use tokio::sync::broadcast;
 
 use crate::http::RuesEvent;
@@ -30,8 +30,8 @@ use {
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
-    pub current: [u8; 32],
-    pub base: [u8; 32],
+    pub current: CommitRoot,
+    pub base: CommitRoot,
 }
 
 #[derive(Clone)]

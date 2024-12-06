@@ -10,7 +10,9 @@ use node_data::events::contract::ContractEvent;
 use tracing::info;
 
 use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::operations::{
+    CallParams, StateRoot, VerificationOutput, Voter,
+};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use execution_core::{
@@ -20,6 +22,7 @@ use execution_core::{
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
+use rusk_abi::CommitRoot;
 
 use super::Rusk;
 
@@ -93,7 +96,7 @@ impl VMExecution for Rusk {
                 generator,
                 blk.txs().clone(),
                 Some(VerificationOutput {
-                    state_root: blk.header().state_hash,
+                    state_root: StateRoot::from_bytes(blk.header().state_hash),
                     event_bloom: blk.header().event_bloom,
                 }),
                 slashing,
@@ -104,7 +107,7 @@ impl VMExecution for Rusk {
         Ok((txs, verification_output, stake_events))
     }
 
-    fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {
+    fn move_to_commit(&self, commit: CommitRoot) -> anyhow::Result<()> {
         self.session(0, Some(commit))
             .map_err(|e| anyhow::anyhow!("Cannot open session {e}"))?;
         self.set_current_commit(commit);
@@ -113,8 +116,8 @@ impl VMExecution for Rusk {
 
     fn finalize_state(
         &self,
-        commit: [u8; 32],
-        to_delete: Vec<[u8; 32]>,
+        commit: CommitRoot,
+        to_delete: Vec<CommitRoot>,
     ) -> anyhow::Result<()> {
         info!("Received finalize request");
         self.finalize_state(commit, to_delete)
@@ -199,14 +202,14 @@ impl VMExecution for Rusk {
 
     fn get_provisioners(
         &self,
-        base_commit: [u8; 32],
+        base_commit: CommitRoot,
     ) -> anyhow::Result<Provisioners> {
         self.query_provisioners(Some(base_commit))
     }
 
     fn get_changed_provisioners(
         &self,
-        base_commit: [u8; 32],
+        base_commit: CommitRoot,
     ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
         self.query_provisioners_change(Some(base_commit))
     }
@@ -222,15 +225,15 @@ impl VMExecution for Rusk {
         Ok(stake)
     }
 
-    fn get_state_root(&self) -> anyhow::Result<[u8; 32]> {
-        Ok(self.state_root())
+    fn get_state_root(&self) -> anyhow::Result<StateRoot> {
+        Ok(StateRoot::from_commit_root(&self.state_root()))
     }
 
-    fn get_finalized_state_root(&self) -> anyhow::Result<[u8; 32]> {
-        Ok(self.base_root())
+    fn get_finalized_state_root(&self) -> anyhow::Result<StateRoot> {
+        Ok(StateRoot::from_commit_root(&self.base_root()))
     }
 
-    fn revert(&self, state_hash: [u8; 32]) -> anyhow::Result<[u8; 32]> {
+    fn revert(&self, state_hash: CommitRoot) -> anyhow::Result<CommitRoot> {
         let state_hash = self
             .revert(state_hash)
             .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
@@ -238,7 +241,7 @@ impl VMExecution for Rusk {
         Ok(state_hash)
     }
 
-    fn revert_to_finalized(&self) -> anyhow::Result<[u8; 32]> {
+    fn revert_to_finalized(&self) -> anyhow::Result<CommitRoot> {
         let state_hash = self.revert_to_base_root().map_err(|inner| {
             anyhow::anyhow!("Cannot revert to finalized: {inner}")
         })?;
@@ -275,7 +278,7 @@ where
 impl Rusk {
     fn query_provisioners(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_commit: Option<CommitRoot>,
     ) -> anyhow::Result<Provisioners> {
         info!("Received get_provisioners request");
         let provisioners = self
@@ -294,7 +297,7 @@ impl Rusk {
 
     fn query_provisioners_change(
         &self,
-        base_commit: Option<[u8; 32]>,
+        base_commit: Option<CommitRoot>,
     ) -> anyhow::Result<Vec<(PublicKey, Option<Stake>)>> {
         info!("Received get_provisioners_change request");
         Ok(self
