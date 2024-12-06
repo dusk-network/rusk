@@ -61,7 +61,7 @@
   {:else if isLoading && !migrationHash}
     <div class="migrate__execute-approval">
       <Icon path={mdiTimerSand} />
-      <span>Migration in progress</span>
+      <span>Migration in progress...</span>
     </div>
   {/if}
   {#if migrationHash && chain?.blockExplorers}
