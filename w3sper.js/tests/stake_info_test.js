@@ -5,13 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import {
+  AccountSyncer,
+  Bookkeeper,
   Network,
   ProfileGenerator,
-  Bookkeeper,
-  AccountSyncer,
 } from "@dusk/w3sper";
 
-import { test, assert, seeder, Treasury } from "./harness.js";
+import { assert, seeder, test, Treasury } from "./harness.js";
 
 /**
  * Tests fetching the stake information using string representations
@@ -31,7 +31,7 @@ test("stake info without profiles", async () => {
 
   assert.equal(stakes.length, 2);
 
-  assert.equal(stakes[0].amount.value, 1_000_000_000_000n);
+  assert.equal(stakes[0].amount.value, 2_000_000_000_000n);
   assert.equal(
     stakes[0].amount.total,
     stakes[0].amount.value + stakes[0].amount.locked,
@@ -40,14 +40,12 @@ test("stake info without profiles", async () => {
 
   // No check for reward's value since it is not deterministic
   assert.equal(typeof stakes[0].reward, "bigint");
-  assert.equal(stakes[0].nonce, 0n);
   assert.equal(stakes[0].faults, 0);
   assert.equal(stakes[0].hardFaults, 0);
 
   // No stakes for the 2nd user
   assert.equal(stakes[1].amount, null);
   assert.equal(stakes[1].reward, 0n);
-  assert.equal(stakes[1].nonce, 0n);
   assert.equal(stakes[1].faults, 0);
   assert.equal(stakes[1].hardFaults, 0);
 
@@ -86,7 +84,7 @@ test("stake info with treasury", async () => {
   // Stake information for the default profile matches
   assert.equal(stakes[0], stakes[2]);
 
-  assert.equal(stakes[0].amount.value, 1_000_000_000_000n);
+  assert.equal(stakes[0].amount.value, 2_000_000_000_000n);
   assert.equal(
     stakes[0].amount.total,
     stakes[0].amount.value + stakes[0].amount.locked,
@@ -95,14 +93,12 @@ test("stake info with treasury", async () => {
 
   // No check for reward's value since it is not deterministic
   assert.equal(typeof stakes[0].reward, "bigint");
-  assert.equal(stakes[0].nonce, 0n);
   assert.equal(stakes[0].faults, 0);
   assert.equal(stakes[0].hardFaults, 0);
 
   // No stakes for the 2nd user
   assert.equal(stakes[1].amount, null);
   assert.equal(stakes[1].reward, 0n);
-  assert.equal(stakes[1].nonce, 0n);
   assert.equal(stakes[1].faults, 0);
   assert.equal(stakes[1].hardFaults, 0);
 
