@@ -20,8 +20,7 @@ import "fake-indexeddb/auto";
 import { IntersectionObserver } from "./src/lib/dusk/mocks";
 
 // Mocking wallet connection modules
-vi.mock("@wagmi/core");
-vi.mock("@web3modal/wagmi");
+vi.mock("@reown/appkit");
 
 vi.mock("./src/lib/vendor/w3sper.js/src/protocol-driver/mod", async () => ({
   ...(await import("./src/__mocks__/ProtocolDriver.js")),

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update Transactions list design [#1922]
 - Reword "Staking" header to "Stake" [#3113]
+- Upgrade Migration Feature to Use Reown AppKit [#3129]
 
 ### Removed
 
@@ -422,6 +423,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3098]: https://github.com/dusk-network/rusk/issues/3098
 [#3099]: https://github.com/dusk-network/rusk/issues/3099
 [#3113]: https://github.com/dusk-network/rusk/issues/3113
+[#3129]: https://github.com/dusk-network/rusk/issues/3129
 
 <!-- VERSIONS -->
 

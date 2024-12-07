@@ -1,4 +1,7 @@
-import { createWeb3Modal, defaultWagmiConfig } from "@web3modal/wagmi";
+import { createAppKit } from "@reown/appkit";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+// eslint-disable-next-line import/no-unresolved
+import { bsc, mainnet, sepolia } from "@reown/appkit/networks";
 import {
   disconnect,
   getAccount,
@@ -7,7 +10,6 @@ import {
   watchAccount,
 } from "@wagmi/core";
 import { readable } from "svelte/store";
-import { bsc, mainnet, sepolia } from "viem/chains";
 
 // Required project metadata
 const projectId = "b5303e1c8374b100fbb7f181884fef28";
@@ -18,26 +20,31 @@ const metadata = {
   url: "https://127.0.0.1:5173/dashboard/",
 };
 
-/** @type {[import("viem").Chain, import("viem").Chain, import("viem").Chain]} */
-const chains = [sepolia, bsc, mainnet];
+/** @typedef {import("@reown/appkit/networks").AppKitNetwork} AppKitNetwork */
+/** @type {[AppKitNetwork, ...AppKitNetwork[]]} */
+const networks = [sepolia, bsc, mainnet];
 
-export const wagmiConfig = defaultWagmiConfig({
-  auth: { email: false },
-  chains,
-  metadata,
+const wagmiAdapter = new WagmiAdapter({
+  networks,
   projectId,
 });
+
+export const wagmiConfig = wagmiAdapter.wagmiConfig;
+
 reconnect(wagmiConfig);
 
 // Create the Web3 modal with the WAGMI config
-export const modal = createWeb3Modal({
-  allowUnsupportedChain: false,
-  enableAnalytics: false,
-  enableOnramp: false,
-  enableSwaps: false,
+export const modal = createAppKit({
+  adapters: [wagmiAdapter],
+  features: {
+    analytics: false,
+    onramp: false,
+    swaps: false,
+  },
+  metadata,
+  networks,
   projectId,
   themeMode: "dark",
-  wagmiConfig,
 });
 
 // Svelte store to track the current account, and update if a new account is set
@@ -53,6 +60,9 @@ export const account = readable(getAccount(wagmiConfig), (set) => {
 
 /** @param {*} address */
 export const accountBalance = (address) =>
-  getBalance(wagmiConfig, { address: address, blockTag: "latest" });
+  getBalance(wagmiConfig, {
+    address: address,
+    blockTag: "latest",
+  });
 
 export const walletDisconnect = () => disconnect(wagmiConfig);
