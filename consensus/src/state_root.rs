@@ -4,10 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::borrow::Borrow;
 use bytecheck::CheckBytes;
 use execution_core::CommitRoot;
 use rkyv::{Archive, Deserialize, Serialize};
+use std::borrow::Borrow;
 
 use crate::merkle::Hash;
 
@@ -33,9 +33,6 @@ impl StateRoot {
     pub fn from_bytes(a: [u8; 32]) -> Self {
         Self(Hash::from(a))
     }
-    // pub fn as_hash(&self) -> &Hash {
-    //     &self.0
-    // }
     pub fn as_bytes(&self) -> &[u8; 32] {
         self.0.as_bytes()
     }
