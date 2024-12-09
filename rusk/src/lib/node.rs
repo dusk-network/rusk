@@ -18,10 +18,11 @@ use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
 use node::LongLivedService;
 use parking_lot::RwLock;
-use rusk_abi::{CommitRoot, VM};
+use rusk_abi::VM;
 use tokio::sync::broadcast;
 
 use crate::http::RuesEvent;
+use dusk_consensus::state_root::StateRoot;
 pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
 use {
@@ -30,8 +31,8 @@ use {
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
-    pub current: CommitRoot,
-    pub base: CommitRoot,
+    pub current: StateRoot,
+    pub base: StateRoot,
 }
 
 #[derive(Clone)]

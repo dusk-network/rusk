@@ -10,9 +10,8 @@ use node_data::events::contract::ContractEvent;
 use tracing::info;
 
 use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::{
-    CallParams, StateRoot, VerificationOutput, Voter,
-};
+use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::state_root::StateRoot;
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use execution_core::{
@@ -226,19 +225,19 @@ impl VMExecution for Rusk {
     }
 
     fn get_state_root(&self) -> anyhow::Result<StateRoot> {
-        Ok(StateRoot::from_commit_root(&self.state_root()))
+        Ok(self.state_root())
     }
 
     fn get_finalized_state_root(&self) -> anyhow::Result<StateRoot> {
-        Ok(StateRoot::from_commit_root(&self.base_root()))
+        Ok(self.base_root())
     }
 
     fn revert(&self, state_hash: CommitRoot) -> anyhow::Result<CommitRoot> {
         let state_hash = self
-            .revert(state_hash)
+            .revert(StateRoot::from_commit_root(&state_hash))
             .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
 
-        Ok(state_hash)
+        Ok(state_hash.as_commit_root())
     }
 
     fn revert_to_finalized(&self) -> anyhow::Result<CommitRoot> {
@@ -246,7 +245,7 @@ impl VMExecution for Rusk {
             anyhow::anyhow!("Cannot revert to finalized: {inner}")
         })?;
 
-        Ok(state_hash)
+        Ok(state_hash.as_commit_root())
     }
 
     fn get_block_gas_limit(&self) -> u64 {

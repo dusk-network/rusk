@@ -20,9 +20,8 @@ use dusk_consensus::config::{
     validation_quorum, MAX_NUMBER_OF_TRANSACTIONS,
     RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
-use dusk_consensus::operations::{
-    CallParams, StateRoot, VerificationOutput, Voter,
-};
+use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::state_root::StateRoot;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{Reward, RewardReason, StakeData, STAKE_CONTRACT},
@@ -86,7 +85,7 @@ impl Rusk {
         }
         let mut base_commit_a = [0u8; 32];
         base_commit_a.copy_from_slice(&base_commit_bytes);
-        let base_commit = CommitRoot::from_bytes(base_commit_a);
+        let base_commit = StateRoot::from_bytes(base_commit_a);
 
         let vm = Arc::new(rusk_abi::new_vm(dir)?);
 
@@ -376,29 +375,30 @@ impl Rusk {
         Ok(())
     }
 
-    pub fn revert(&self, state_hash: CommitRoot) -> Result<CommitRoot> {
+    pub fn revert(&self, state_hash: StateRoot) -> Result<StateRoot> {
         let mut tip = self.tip.write();
 
         let commits = self.vm.commits();
-        if !commits.contains(&state_hash) {
-            return Err(Error::CommitNotFound(*state_hash.as_bytes()));
+        let commit_hash = state_hash.as_commit_root();
+        if !commits.contains(&commit_hash) {
+            return Err(Error::CommitNotFound(*commit_hash.as_bytes()));
         }
 
         tip.current = state_hash;
         Ok(tip.current)
     }
 
-    pub fn revert_to_base_root(&self) -> Result<CommitRoot> {
+    pub fn revert_to_base_root(&self) -> Result<StateRoot> {
         self.revert(self.base_root())
     }
 
     /// Get the base root.
-    pub fn base_root(&self) -> CommitRoot {
+    pub fn base_root(&self) -> StateRoot {
         self.tip.read().base
     }
 
     /// Get the current state root.
-    pub fn state_root(&self) -> CommitRoot {
+    pub fn state_root(&self) -> StateRoot {
         self.tip.read().current
     }
 
@@ -481,7 +481,7 @@ impl Rusk {
     ) -> Result<Session> {
         let commit = commit.unwrap_or_else(|| {
             let tip = self.tip.read();
-            tip.current
+            tip.current.as_commit_root()
         });
 
         let session = rusk_abi::new_session(
@@ -496,7 +496,7 @@ impl Rusk {
 
     pub(crate) fn set_current_commit(&self, commit: CommitRoot) {
         let mut tip = self.tip.write();
-        tip.current = commit;
+        tip.current = StateRoot::from_commit_root(&commit);
     }
 
     pub(crate) fn set_base_and_delete(
@@ -504,7 +504,7 @@ impl Rusk {
         base: CommitRoot,
         to_delete: Vec<CommitRoot>,
     ) -> Result<()> {
-        self.tip.write().base = base;
+        self.tip.write().base = StateRoot::from_commit_root(&base);
         for d in to_delete {
             self.vm.finalize_commit(d)?;
         }
