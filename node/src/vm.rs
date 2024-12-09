@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::operations::{StateRoot, Voter};
+use dusk_consensus::operations::Voter;
+use dusk_consensus::state_root::StateRoot;
 use dusk_consensus::{
     operations::{CallParams, VerificationOutput},
     user::{provisioners::Provisioners, stake::Stake},

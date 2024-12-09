@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::operations::StateRoot;
+use dusk_consensus::state_root::StateRoot;
 use node_data::ledger::{Block, Header};
 
 /// Generates the genesis state for the chain per specified network type
