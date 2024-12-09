@@ -5,13 +5,17 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable;
-use rkyv::{check_archived_root, Deserialize, Infallible};
-
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    stake::{Reward, SlashEvent, StakeEvent},
-    Event,
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::{
+    Reward, SlashEvent, StakeData, StakeEvent, STAKE_CONTRACT,
 };
+use execution_core::transfer::moonlight::AccountData;
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::{ContractError, Event};
+use rkyv::{check_archived_root, Deserialize, Infallible};
+use rusk_abi::Session;
+
+use super::utils::GAS_LIMIT;
 
 pub fn assert_event<S>(
     events: &Vec<Event>,
@@ -79,5 +83,67 @@ pub fn assert_slash_event<S, E: Into<Option<u64>>>(
         }
     } else {
         panic!("{topic} topic cannot be verified with assert_slash_event");
+    }
+}
+
+pub fn assert_moonlight(
+    moonlight_pk: &BlsPublicKey,
+    expected_balance: u64,
+    expected_nonce: u64,
+    session: &mut Session,
+) {
+    let moonlight_account: AccountData = session
+        .call(TRANSFER_CONTRACT, "account", moonlight_pk, GAS_LIMIT)
+        .map(|r| r.data)
+        .expect("Getting the sender account should succeed");
+    assert_eq!(
+        moonlight_account.balance, expected_balance,
+        "The sender moonlight account should have its genesis value"
+    );
+    assert_eq!(moonlight_account.nonce, expected_nonce);
+}
+
+pub fn assert_stake(
+    stake_pk: &BlsPublicKey,
+    expected_stake: u64,
+    expected_reward: u64,
+    session: &mut Session,
+) {
+    let stake_data: Option<StakeData> = session
+        .call(STAKE_CONTRACT, "get_stake", stake_pk, GAS_LIMIT)
+        .expect("Getting the stake should succeed")
+        .data;
+    let stake_data =
+        stake_data.expect("There should be a stake for the given key");
+
+    let amount = stake_data.amount.expect("There should be an amount staked");
+
+    assert_eq!(
+        amount.value, expected_stake,
+        "Staked amount should match sent amount"
+    );
+    assert_eq!(
+        stake_data.reward, expected_reward,
+        "Initial reward should be zero"
+    );
+}
+
+// ContractError doesn't impl PartialEq so adding this here
+pub fn assert_contract_error(
+    receipt_error: &Result<Vec<u8>, ContractError>,
+    expected_error: &ContractError,
+) {
+    match (receipt_error, expected_error) {
+        (
+            Err(ContractError::Panic(receipt_msg)),
+            ContractError::Panic(expected_msg),
+        ) => assert!(receipt_msg == expected_msg),
+        (Err(ContractError::OutOfGas), ContractError::OutOfGas) => {}
+        (Err(ContractError::DoesNotExist), ContractError::DoesNotExist) => {}
+        (Err(ContractError::Unknown), ContractError::Unknown) => {}
+        _ => panic!(
+            "contract error not as expected. Result: {:?}\nExpected: {:?}",
+            receipt_error, expected_error
+        ),
     }
 }
