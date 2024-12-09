@@ -3,23 +3,23 @@
 [[phoenix_balance]]
 address = '68UiBbsJ4PumJyVpS91VbffhKgq9p6QaLC8QCqzgLiKBX71mvCswmeViTHDsBJ3RMwsVcxBSkZ3HbjHAL9qCNxh'
 seed = 0xdead_beef
-notes = [1_000_000_000_000]
+notes = [699_000_000_000_000]
 
 # Faucet wallet
 
 [[moonlight_account]]
 address = 'tUWiZxKqtVrP2uxqUAc593p1T5BW5MhPzjh8D2M32WFYpqjtBLbTAw6VhMN7BKYpaDjcy82GizsQ2pAgmguGTF9Bks3qNCDF3sDrpVWMXTJTWNGWgueHezvopEvUtZUs4mC'
-balance = 500_000_000_000_000_000
+balance = 9_000_000_000_000_000
 
 # Faucet wallets (Fulvio)
 
 [[moonlight_account]]
 address = 'pR8NnsQ9Le2hyuEgx2fk4RuZTngkz9T7WfkdDKSJmnfRYMmkNUPhFYXNAeatxsYiixgqq4iKfSCVuo7NhFkLgrbn1VTTweLhPXocUQ4rfxMLRajebdCcPxp46ddSVMpu2Nf'
-balance = 500_000_000_000_000_000
+balance = 75_000_000_000_000_000
 
 [[moonlight_account]]
 address = 'uzUXZAWqhJB1e2czyAPvUk1MaRP4t6CMEQHBGP4ixYem7kphpbW7yF3kkGyMD5agJ7oDH7yQPwcGxgsC1PxrRDAELXMR76eqLcU2ck2oWVYRgxc16yWuCQ8PzHZrs9Qi1Vu'
-balance = 500_000_000_000_000_000
+balance = 75_000_000_000_000_000
 
 # ETH bridge wallet
 
