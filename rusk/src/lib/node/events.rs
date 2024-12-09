@@ -15,7 +15,7 @@ use tokio::sync::mpsc::Receiver;
 use tracing::error;
 #[cfg(feature = "archive")]
 use {
-    node_data::archive::ArchivalData, node_data::events::BLOCK_FINALIZED,
+    node_data::archive::ArchivalData, node_data::events::BlockState,
     serde_json::Value, tokio::sync::mpsc::Sender,
 };
 
@@ -64,7 +64,7 @@ impl<N: Network, DB: database::DB, VM: node::vm::VMExecution>
                                     .and_then(Value::as_u64)
                                     .unwrap_or_default();
 
-                                if state == BLOCK_FINALIZED {
+                                if state == BlockState::Finalized.as_str() {
                                     if let Err(e) = self
                                         .archivist_sender
                                         .try_send(ArchivalData::FinalizedBlock(

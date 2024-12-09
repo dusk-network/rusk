@@ -9,7 +9,7 @@ mod transactions;
 
 pub mod contract;
 
-pub use blocks::{BlockEvent, BLOCK_CONFIRMED, BLOCK_FINALIZED};
+pub use blocks::{BlockEvent, BlockState};
 pub use transactions::TransactionEvent;
 
 /// Represents an event in the system, including its source (`component`),
