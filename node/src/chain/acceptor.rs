@@ -439,9 +439,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })?;
 
         let vm = self.vm.read().await;
-        let current_prov = vm.get_provisioners(CommitRoot::from_bytes(
-            blk.header().state_hash,
-        ))?;
+        let current_prov = vm.get_provisioners(
+            StateRoot::from_bytes(blk.header().state_hash).as_commit_root(),
+        )?;
         provisioners_list.update(current_prov);
 
         let changed_provisioners = vm.get_changed_provisioners(
@@ -874,29 +874,29 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let target_state_hash = match target {
             RevertTarget::LastFinalizedState => {
                 let vm = self.vm.read().await;
-                let state_hash = vm.revert_to_finalized()?;
+                let state_root = vm.revert_to_finalized()?;
 
                 info!(
                     event = "vm reverted",
-                    state_root = hex::encode(state_hash.as_bytes()),
+                    state_root = hex::encode(state_root.as_bytes()),
                     is_final = "true",
                 );
 
-                anyhow::Ok(state_hash)
+                anyhow::Ok(state_root)
             }
-            RevertTarget::Commit(state_hash) => {
+            RevertTarget::Commit(state_root) => {
                 let vm = self.vm.read().await;
-                let state_hash = vm.revert(state_hash)?;
+                let state_root = vm.revert(state_root)?;
                 let is_final = vm.get_finalized_state_root()?.as_commit_root()
-                    == state_hash;
+                    == state_root;
 
                 info!(
                     event = "vm reverted",
-                    state_root = hex::encode(state_hash.as_bytes()),
+                    state_root = hex::encode(state_root.as_bytes()),
                     is_final,
                 );
 
-                anyhow::Ok(state_hash)
+                anyhow::Ok(state_root)
             }
             RevertTarget::LastEpoch => unimplemented!(),
         }?;
@@ -916,9 +916,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         || anyhow::anyhow!("could not fetch block label"),
                     )?;
 
-                if h.state_hash
-                    == *StateRoot::from_commit_root(target_state_hash)
-                        .as_bytes()
+                if StateRoot::from_bytes(h.state_hash)
+                    == StateRoot::from_commit_root(target_state_hash)
                 {
                     return Ok((b, label));
                 }
