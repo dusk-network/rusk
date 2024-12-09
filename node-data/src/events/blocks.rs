@@ -7,8 +7,35 @@
 use super::*;
 use crate::ledger::{Block, Hash};
 
-pub const BLOCK_FINALIZED: &str = "finalized";
-pub const BLOCK_CONFIRMED: &str = "confirmed";
+/// Represents the state of an accepted block in the chain.
+///
+/// # Variants
+///
+/// - `Confirmed` - The block has been confirmed. This means a succeeding block
+///   has been accepted.
+/// - `Finalized` - The block has been finalized i.e., reached finality.
+///
+/// # Methods
+///
+/// - `as_str() -> &'static str` - Returns the string representation of the
+///   block state.
+#[derive(Clone, Debug)]
+pub enum BlockState {
+    Confirmed,
+    Finalized,
+}
+
+impl BlockState {
+    const BLOCK_CONFIRMED: &'static str = "confirmed";
+    const BLOCK_FINALIZED: &'static str = "finalized";
+
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Self::Confirmed => Self::BLOCK_CONFIRMED,
+            Self::Finalized => Self::BLOCK_FINALIZED,
+        }
+    }
+}
 
 /// Represents events related to blocks in the chain.
 ///
@@ -20,26 +47,26 @@ pub const BLOCK_CONFIRMED: &str = "confirmed";
 ///
 /// - `StateChange`
 ///
-///     Represents a change in the state of a block.
+///     Represents a change in the state of an accepted block.
 ///
 ///     - `hash: Hash` The unique identifier of the block whose state has
 ///       changed.
 ///
-///     - `state: &'static str` Describes the new state of the block (e.g.,
-///       `"finalized"`, `"confirmed"`).
+///     - `state: BlockState` Describes the new state of the block (can be
+///       either `Confirmed` or `Finalized`).
 ///
 ///     - `height: u64` Indicates at which block height the state changed.
 ///
 /// - `Reverted`
 ///
 ///     Indicates that a block has been removed from the chain because it got
-/// reverted during consensus.
+///     reverted during consensus.
 #[derive(Clone, Debug)]
 pub enum BlockEvent<'b> {
     Accepted(&'b Block),
     StateChange {
         hash: Hash,
-        state: &'static str,
+        state: BlockState,
         height: u64,
     },
     Reverted {
@@ -73,7 +100,7 @@ impl EventSource for BlockEvent<'_> {
             }
             Self::StateChange { state, height, .. } => {
                 serde_json::json!({
-                    "state": state,
+                    "state": state.as_str(),
                     "atHeight": height,
                 })
             }

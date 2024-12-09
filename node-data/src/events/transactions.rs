@@ -18,6 +18,9 @@ use crate::ledger::{Hash, SpentTransaction, Transaction};
 ///     Indicates that a transaction has been removed from the mempool. The
 ///     `Hash` represents the unique identifier of the removed transaction.
 ///
+///     This event is triggered when a transaction is removed from the mempool
+///     or discarded from the mempool.
+///
 /// - `Included(&'t Transaction)`
 ///
 ///     A transaction has been included in the mempool.
@@ -25,6 +28,12 @@ use crate::ledger::{Hash, SpentTransaction, Transaction};
 /// - `Executed(&'t SpentTransaction)`
 ///
 ///     Denotes that a transaction has been executed into an accepted block.
+///     Executed transactions also include failed transaction, as they have been
+///     spent and were correctly executed according to any contract logic.
+///     (including logic that triggers panics)
+///
+///     - A "successful" transaction: executed and the `err` field is `None`.
+///     - A "failed" transaction: executed and the `err` field is `Some`.
 #[derive(Clone, Debug)]
 pub enum TransactionEvent<'t> {
     Removed(Hash),
