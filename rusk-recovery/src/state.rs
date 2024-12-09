@@ -41,16 +41,17 @@ pub const DEFAULT_SNAPSHOT: &str =
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 const GENESIS_CHAIN_ID: u8 = 0xFA;
 
-pub static DUSK_KEY: Lazy<PublicKey> = Lazy::new(|| {
-    let addr = include_str!("../assets/dusk.address");
-    let bytes = bs58::decode(addr).into_vec().expect("valid hex");
-    PublicKey::from_slice(&bytes).expect("dusk should have a valid key")
+pub static FAUCET_PHOENIX_KEY: Lazy<PublicKey> = Lazy::new(|| {
+    let addr = include_str!("../assets/faucet.address");
+    let bytes = bs58::decode(addr).into_vec().expect("valid bs58");
+    PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
 });
 
-pub static FAUCET_KEY: Lazy<PublicKey> = Lazy::new(|| {
-    let addr = include_str!("../assets/faucet.address");
-    let bytes = bs58::decode(addr).into_vec().expect("valid hex");
-    PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
+pub static FAUCET_MOONLIGHT_KEY: Lazy<AccountPublicKey> = Lazy::new(|| {
+    let addr = include_str!("../assets/faucet.moonlight.address");
+    let bytes = bs58::decode(addr).into_vec().expect("valid bs58");
+    AccountPublicKey::from_slice(&bytes)
+        .expect("faucet should have a valid key")
 });
 
 pub static DUSK_CONSENSUS_KEY: Lazy<AccountPublicKey> = Lazy::new(|| {
