@@ -22,6 +22,7 @@ mod proposal;
 pub mod queue;
 pub mod quorum;
 mod ratification;
+pub mod state_root;
 mod step_votes_reg;
 mod validation;
 

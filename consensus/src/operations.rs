@@ -7,54 +7,15 @@
 use std::fmt;
 use std::time::Duration;
 
-use bytecheck::CheckBytes;
-use execution_core::CommitRoot;
 use node_data::bls::PublicKey;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{
     Block, Fault, Header, Slash, SpentTransaction, Transaction,
 };
 use node_data::StepName;
-use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::errors::*;
-use crate::merkle::Hash;
-
-#[derive(
-    Debug,
-    Copy,
-    Clone,
-    Archive,
-    Deserialize,
-    Serialize,
-    PartialOrd,
-    Ord,
-    PartialEq,
-    Eq,
-)]
-#[archive_attr(derive(CheckBytes))]
-pub struct StateRoot(Hash);
-
-impl StateRoot {
-    pub fn from(h: Hash) -> Self {
-        Self(h)
-    }
-    pub fn from_bytes(a: [u8; 32]) -> Self {
-        Self(Hash::from(a))
-    }
-    // pub fn as_hash(&self) -> &Hash {
-    //     &self.0
-    // }
-    pub fn as_bytes(&self) -> &[u8; 32] {
-        self.0.as_bytes()
-    }
-    pub fn as_commit_root(&self) -> CommitRoot {
-        CommitRoot::from_bytes(*self.0.as_bytes())
-    }
-    pub fn from_commit_root(commit_root: &CommitRoot) -> Self {
-        StateRoot::from_bytes(*commit_root.as_bytes())
-    }
-}
+use crate::state_root::StateRoot;
 
 pub type EventBloom = [u8; 256];
 pub type Voter = (PublicKey, usize);
