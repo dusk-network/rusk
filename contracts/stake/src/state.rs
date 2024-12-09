@@ -477,19 +477,23 @@ impl StakeState {
     ///
     /// If a stake does not exist in the map, it is skipped.
     pub fn reward(&mut self, rewards: Vec<Reward>) {
-        let mut rewarded = Vec::new();
-        for reward in rewards {
-            if let Some((stake, _)) = self.get_stake_mut(&reward.account) {
-                // Reset faults counters
-                stake.faults = 0;
-                stake.hard_faults = 0;
+        for reward in &rewards {
+            let stake =
+                if let Some((stake, _)) = self.get_stake_mut(&reward.account) {
+                    // Reset faults counters
+                    stake.faults = 0;
+                    stake.hard_faults = 0;
+                    stake
+                } else {
+                    let keys = StakeKeys::single_key(reward.account);
+                    let (stake, _) = self.load_or_create_stake_mut(&keys);
+                    stake
+                };
 
-                stake.reward += reward.value;
-                rewarded.push(reward);
-            }
+            stake.reward += reward.value;
         }
-        if !rewarded.is_empty() {
-            rusk_abi::emit("reward", rewarded);
+        if !rewards.is_empty() {
+            rusk_abi::emit("reward", rewards);
         }
     }
 
