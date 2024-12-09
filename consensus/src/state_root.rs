@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::borrow::Borrow;
 use bytecheck::CheckBytes;
 use execution_core::CommitRoot;
 use rkyv::{Archive, Deserialize, Serialize};
@@ -41,7 +42,7 @@ impl StateRoot {
     pub fn as_commit_root(&self) -> CommitRoot {
         CommitRoot::from_bytes(*self.0.as_bytes())
     }
-    pub fn from_commit_root(commit_root: &CommitRoot) -> Self {
-        StateRoot::from_bytes(*commit_root.as_bytes())
+    pub fn from_commit_root<T: Borrow<CommitRoot>>(commit_root: T) -> Self {
+        StateRoot::from_bytes(*commit_root.borrow().as_bytes())
     }
 }
