@@ -5,19 +5,24 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable;
-use rkyv::{check_archived_root, Deserialize, Infallible};
-
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    stake::{Reward, SlashEvent, StakeEvent},
-    Event,
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::{
+    Reward, SlashEvent, StakeData, StakeEvent, STAKE_CONTRACT,
 };
+use execution_core::transfer::moonlight::AccountData;
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::{ContractError, Event};
+use rkyv::{check_archived_root, Deserialize, Infallible};
+use rusk_abi::Session;
+
+use super::utils::GAS_LIMIT;
 
 pub fn assert_event<S>(
     events: &Vec<Event>,
     topic: S,
     should_pk: &BlsPublicKey,
-    should_amount: u64,
+    should_value: u64,
+    should_locked: u64,
 ) where
     S: AsRef<str>,
 {
@@ -27,25 +32,31 @@ pub fn assert_event<S>(
         .find(|e| e.topic == topic)
         .expect(&format!("event: {topic} should exist in the event list",));
 
-    if topic == "reward" {
-        let reward_event_data = rkyv::from_bytes::<Vec<Reward>>(&event.data)
-            .expect("Reward event data should deserialize correctly");
+    match topic {
+        "reward" => {
+            let reward_event_data =
+                rkyv::from_bytes::<Vec<Reward>>(&event.data)
+                    .expect("Reward event data should deserialize correctly");
 
-        assert!(reward_event_data.iter().any(|reward| {
-            &reward.account == should_pk && reward.value == should_amount
-        }))
-    } else {
-        let staking_event_data =
-            check_archived_root::<StakeEvent>(event.data.as_slice())
-                .expect("Stake event data should deserialize correctly");
-        let staking_event_data: StakeEvent = staking_event_data
-            .deserialize(&mut Infallible)
-            .expect("Infallible");
-        assert_eq!(staking_event_data.value, should_amount);
-        assert_eq!(
-            staking_event_data.keys.account.to_bytes(),
-            should_pk.to_bytes()
-        );
+            assert!(reward_event_data.iter().any(|reward| {
+                &reward.account == should_pk && reward.value == should_value
+            }))
+        }
+        "stake" => {
+            let staking_event_data =
+                check_archived_root::<StakeEvent>(event.data.as_slice())
+                    .expect("Stake event data should deserialize correctly");
+            let staking_event_data: StakeEvent = staking_event_data
+                .deserialize(&mut Infallible)
+                .expect("Infallible");
+            assert_eq!(staking_event_data.value, should_value);
+            assert_eq!(staking_event_data.locked, should_locked);
+            assert_eq!(
+                staking_event_data.keys.account.to_bytes(),
+                should_pk.to_bytes()
+            );
+        }
+        _ => {}
     }
 }
 
@@ -79,5 +90,76 @@ pub fn assert_slash_event<S, E: Into<Option<u64>>>(
         }
     } else {
         panic!("{topic} topic cannot be verified with assert_slash_event");
+    }
+}
+
+pub fn assert_moonlight(
+    session: &mut Session,
+    moonlight_pk: &BlsPublicKey,
+    expected_balance: u64,
+    expected_nonce: u64,
+) {
+    let moonlight_account: AccountData = session
+        .call(TRANSFER_CONTRACT, "account", moonlight_pk, GAS_LIMIT)
+        .map(|r| r.data)
+        .expect("Getting the moonlight account should succeed");
+    assert_eq!(
+        moonlight_account.balance, expected_balance,
+        "Moonlight balance should match expected amount"
+    );
+    assert_eq!(
+        moonlight_account.nonce, expected_nonce,
+        "Moonlight nonce should match expected nonce"
+    );
+}
+
+pub fn assert_stake(
+    session: &mut Session,
+    stake_pk: &BlsPublicKey,
+    expected_total: u64,
+    expected_locked: u64,
+    expected_reward: u64,
+) {
+    let stake_data: Option<StakeData> = session
+        .call(STAKE_CONTRACT, "get_stake", stake_pk, GAS_LIMIT)
+        .expect("Getting the stake should succeed")
+        .data;
+    let stake_data =
+        stake_data.expect("There should be a stake for the given key");
+
+    let amount = stake_data.amount.expect("There should be an amount staked");
+
+    assert_eq!(
+        amount.total_funds(),
+        expected_total,
+        "Total funds should match expected amount"
+    );
+    assert_eq!(
+        amount.locked, expected_locked,
+        "Locked funds should match expected amount"
+    );
+    assert_eq!(
+        stake_data.reward, expected_reward,
+        "Stake reward should match expected amount"
+    );
+}
+
+// `ContractError` doesn't implement `PartialEq` so adding this here
+pub fn assert_contract_error(
+    receipt_error: &Result<Vec<u8>, ContractError>,
+    expected_error: &ContractError,
+) {
+    match (receipt_error, expected_error) {
+        (
+            Err(ContractError::Panic(receipt_msg)),
+            ContractError::Panic(expected_msg),
+        ) => assert!(receipt_msg == expected_msg),
+        (Err(ContractError::OutOfGas), ContractError::OutOfGas) => {}
+        (Err(ContractError::DoesNotExist), ContractError::DoesNotExist) => {}
+        (Err(ContractError::Unknown), ContractError::Unknown) => {}
+        _ => panic!(
+            "Contract error not as expected.\nError: {:?}\nExpected: {:?}",
+            receipt_error, expected_error
+        ),
     }
 }

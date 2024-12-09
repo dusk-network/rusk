@@ -83,7 +83,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
 
     let receipt =
         session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
-    assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
+    assert_event(&receipt.events, "reward", &stake_pk, reward_amount, 0);
 
     let receipt = session.call::<_, ()>(
         STAKE_CONTRACT,
@@ -227,7 +227,7 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
 
     let receipt =
         session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
-    assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
+    assert_event(&receipt.events, "reward", &stake_pk, reward_amount, 0);
 
     // Simple hard fault post-reward (slash 10%)
     // Rewards should reset 'hard_faults'
