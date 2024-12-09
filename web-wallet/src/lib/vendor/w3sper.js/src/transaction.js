@@ -10,7 +10,7 @@ export const TRANSFER =
 
 import { AddressSyncer } from "./network/syncer/address.js";
 import * as ProtocolDriver from "./protocol-driver/mod.js";
-import { ProfileGenerator, Profile } from "./profile.js";
+import { Profile, ProfileGenerator } from "./profile.js";
 import * as base58 from "./encoders/b58.js";
 import { Gas } from "./gas.js";
 
@@ -53,7 +53,7 @@ export class Transfer extends BasicTransfer {
 
   to(value) {
     let builder;
-    let identifier = String(value);
+    const identifier = String(value);
     switch (ProfileGenerator.typeOf(identifier)) {
       case "account":
         builder = new AccountTransfer(this.bookentry);
@@ -118,7 +118,7 @@ class AccountTransfer extends Transfer {
 
     nonce += 1n;
 
-    let [buffer, hash] = await ProtocolDriver.moonlight({
+    const [buffer, hash] = await ProtocolDriver.moonlight({
       sender,
       receiver,
       transfer_value,
@@ -184,7 +184,7 @@ class AddressTransfer extends Transfer {
     const { chainId } = await network.node.info;
 
     // Create the unproven transaction
-    let [tx, circuits] = await ProtocolDriver.phoenix({
+    const [tx, circuits] = await ProtocolDriver.phoenix({
       sender,
       receiver,
       inputs,
@@ -246,7 +246,7 @@ export class UnshieldTransfer extends BasicTransfer {
     const { chainId } = await network.node.info;
 
     // Create the unproven transaction
-    let [tx, circuits] = await ProtocolDriver.unshield({
+    const [tx, circuits] = await ProtocolDriver.unshield({
       profile,
       inputs,
       openings,
@@ -280,7 +280,7 @@ export class ShieldTransfer extends BasicTransfer {
   async build(network) {
     const { attributes } = this;
     const { amount: allocate_value, gas } = attributes;
-    const { profile, bookkeeper } = this.bookentry;
+    const { profile } = this.bookentry;
 
     // Get the chain id from the network
     const { chainId } = await network.node.info;
@@ -290,7 +290,7 @@ export class ShieldTransfer extends BasicTransfer {
 
     nonce += 1n;
 
-    let [buffer, hash] = await ProtocolDriver.shield({
+    const [buffer, hash] = await ProtocolDriver.shield({
       profile,
       allocate_value,
       gas_limit: gas.limit,
@@ -308,35 +308,45 @@ export class ShieldTransfer extends BasicTransfer {
 }
 
 export class StakeTransfer extends BasicTransfer {
-  constructor(from) {
+  constructor(from, options = {}) {
     super(from);
+    this[_attributes].topup = Boolean(options.topup) || false;
   }
 
   async build(network) {
     const { attributes } = this;
-    const { amount: stake_value, gas } = attributes;
+    const { amount: stake_value, gas, topup: isTopup } = attributes;
     const { profile, bookkeeper } = this.bookentry;
 
     const minimumStake = await bookkeeper.minimumStake;
 
-    if (stake_value < minimumStake) {
-      throw new Error(`Stake value must be greater than ${minimumStake}`);
+    if (!isTopup && stake_value < minimumStake) {
+      throw new RangeError(
+        `Stake amount must be greater or equal than ${minimumStake}`
+      );
     }
 
     // Get the chain id from the network
     const { chainId } = await network.node.info;
 
-    // Obtain the nonces
+    // Obtain the infos
     let { nonce } = await this.bookentry.info.balance("account");
-    let { nonce: stake_nonce } = await this.bookentry.info.stake();
+    const stakeInfo = await this.bookentry.info.stake();
+    const hasStake = stakeInfo.amount !== null;
+
+    if (hasStake && !isTopup) {
+      throw new Error(
+        "Stake already exists. Use `topup` to add to the current stake"
+      );
+    } else if (!hasStake && isTopup) {
+      throw new Error("No stake to topup. Use `stake` to create a new stake");
+    }
 
     nonce += 1n;
-    stake_nonce += 1n;
 
-    let [buffer, hash] = await ProtocolDriver.stake({
+    const [buffer, hash] = await ProtocolDriver.stake({
       profile,
       stake_value,
-      stake_nonce,
       gas_limit: gas.limit,
       gas_price: gas.price,
       nonce,
@@ -358,7 +368,7 @@ export class UnstakeTransfer extends BasicTransfer {
 
   async build(network) {
     const { attributes } = this;
-    const { gas } = attributes;
+    const { gas, amount: unstake_amount } = attributes;
     const { profile } = this.bookentry;
 
     // Get the chain id from the network
@@ -368,13 +378,28 @@ export class UnstakeTransfer extends BasicTransfer {
     let { nonce } = await this.bookentry.info.balance("account");
 
     // Obtain the staked amount
-    let { amount } = await this.bookentry.info.stake();
+    const { amount } = await this.bookentry.info.stake();
+
+    const minimumStake = await this.bookentry.bookkeeper.minimumStake;
 
     nonce += 1n;
 
-    let [buffer, hash] = await ProtocolDriver.unstake({
+    const unstake_value =
+      typeof unstake_amount === "bigint" && unstake_amount < amount.total
+        ? unstake_amount
+        : amount.total;
+
+    const remainingStake = amount.total - unstake_value;
+
+    if (remainingStake > 0n && remainingStake < minimumStake) {
+      throw new RangeError(
+        `Remaining stake must be greater or equal than ${minimumStake}`
+      );
+    }
+
+    const [buffer, hash] = await ProtocolDriver.unstake({
       profile,
-      unstake_value: amount.total,
+      unstake_value,
       gas_limit: gas.limit,
       gas_price: gas.price,
       nonce,
@@ -406,23 +431,23 @@ export class WithdrawStakeRewardTransfer extends BasicTransfer {
     let { nonce } = await this.bookentry.info.balance("account");
 
     // Obtain the staked amount
-    let { reward } = await this.bookentry.info.stake();
+    const { reward } = await this.bookentry.info.stake();
 
     if (!reward) {
       throw new Error(`No stake available to withdraw the reward from`);
     } else if (reward_amount > reward) {
-      throw new Error(
+      throw new RangeError(
         `The withdrawn reward amount must be less or equal to ${reward}`
       );
     } else if (!reward_amount) {
-      throw new Error(
+      throw new RangeError(
         `Can't withdraw an empty reward amount. I mean, you could, but it would be pointless.`
       );
     }
 
     nonce += 1n;
 
-    let [buffer, hash] = await ProtocolDriver.withdraw({
+    const [buffer, hash] = await ProtocolDriver.withdraw({
       profile,
       reward_amount,
       gas_limit: gas.limit,

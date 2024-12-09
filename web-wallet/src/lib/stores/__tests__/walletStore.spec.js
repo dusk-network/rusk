@@ -121,7 +121,6 @@ describe("Wallet store", async () => {
       amount: null,
       faults: 0,
       hardFaults: 0,
-      nonce: 0n,
       reward: 0n,
     },
     syncStatus: {
@@ -323,7 +322,7 @@ describe("Wallet store", async () => {
     const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
 
     /**
-     * @typedef { "shield" | "stake" | "transfer" | "unshield" | "unstake" | "claimRewards" } TransferMethod
+     * @typedef { "claimRewards" | "shield" | "stake" | "transfer" | "unshield" | "unstake" } TransferMethod
      */
 
     /**
@@ -365,13 +364,23 @@ describe("Wallet store", async () => {
           nonce: newNonce,
         });
 
-        expectedTx = isMoonlightTransfer
-          ? {
-              amount,
-              gas,
-              to: toMoonlight,
-            }
-          : { amount, gas };
+        if (isMoonlightTransfer) {
+          expectedTx = { amount, gas, to: toMoonlight };
+        } else {
+          switch (method) {
+            case "stake":
+              expectedTx = { amount, gas, topup: false };
+              break;
+
+            case "unstake":
+              expectedTx = { amount: undefined, gas };
+              break;
+
+            default:
+              expectedTx = { amount, gas };
+              break;
+          }
+        }
       }
 
       // @ts-ignore here args can't be inferred apparently
@@ -504,6 +513,10 @@ describe("Wallet store", async () => {
       setPendingNotesSpy.mockRestore();
     });
 
+    it("should expose a method to claim the rewards", async () => {
+      await walletStoreTransferCheck("claimRewards", [amount, gas]);
+    });
+
     it("should expose a method to shield a given amount from the unshielded account", async () => {
       await walletStoreTransferCheck("shield", [amount, gas]);
     });
@@ -524,8 +537,8 @@ describe("Wallet store", async () => {
       await walletStoreTransferCheck("unshield", [amount, gas]);
     });
 
-    it("should expose a method to claim the rewards", async () => {
-      await walletStoreTransferCheck("claimRewards", [amount, gas]);
+    it("should expose a method to unstake the staked amount", async () => {
+      await walletStoreTransferCheck("unstake", [gas]);
     });
   });
 

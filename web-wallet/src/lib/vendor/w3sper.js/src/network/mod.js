@@ -19,16 +19,6 @@ export { AddressSyncer } from "./syncer/address.js";
 export { AccountSyncer } from "./syncer/account.js";
 export { Bookmark } from "./bookmark.js";
 
-const abortable = (signal) =>
-  new Promise((resolve, reject) =>
-    signal?.aborted ? reject(signal.reason) : resolve(signal)
-  );
-
-const once = (target, topic) =>
-  new Promise((resolve) =>
-    target.addEventListener(topic, resolve, { once: true })
-  );
-
 export class Network {
   #rues;
   node;
@@ -84,8 +74,8 @@ export class Network {
   // I suspect is a GraphQL limitation. In the meantime we convert the `Number`
   // to a `BigInt` for consistency and future proof of the API's consumers.
   get blockHeight() {
-    return this.query("query { block(height: -1) { header { height } }}").then(
-      (body) => BigInt(body?.block?.header?.height ?? 0)
+    return this.query("block(height: -1) { header { height } }").then((body) =>
+      BigInt(body?.block?.header?.height ?? 0)
     );
   }
 
@@ -113,6 +103,8 @@ export class Network {
   }
 
   async query(gql, options = {}) {
+    gql = gql ? `query { ${gql} }` : "";
+
     const response = await this.#rues.scope("graphql").call.query(gql, options);
 
     switch (response.status) {
