@@ -31,6 +31,7 @@ use rusk::Result;
 use rusk_abi::VM;
 use tempfile::tempdir;
 use tracing::info;
+use dusk_consensus::state_root::StateRoot;
 
 use crate::common::state::new_state;
 
@@ -84,7 +85,7 @@ where
     rusk.with_tip(|mut tip, vm| {
         let current_commit = tip.current;
         let mut session =
-            rusk_abi::new_session(vm, current_commit, CHAIN_ID, BLOCK_HEIGHT)
+            rusk_abi::new_session(vm, current_commit.as_commit_root(), CHAIN_ID, BLOCK_HEIGHT)
                 .expect("current commit should exist");
 
         session
@@ -100,7 +101,7 @@ where
             .expect("Updating root should succeed");
 
         let commit_id = session.commit().expect("Committing should succeed");
-        tip.current = commit_id;
+        tip.current = StateRoot::from_commit_root(commit_id);
 
         after_push(tip, vm)
     })

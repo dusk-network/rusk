@@ -496,7 +496,7 @@ impl Rusk {
 
     pub(crate) fn set_current_commit(&self, commit: CommitRoot) {
         let mut tip = self.tip.write();
-        tip.current = StateRoot::from_commit_root(&commit);
+        tip.current = StateRoot::from_commit_root(commit);
     }
 
     pub(crate) fn set_base_and_delete(
@@ -504,7 +504,7 @@ impl Rusk {
         base: CommitRoot,
         to_delete: Vec<CommitRoot>,
     ) -> Result<()> {
-        self.tip.write().base = StateRoot::from_commit_root(&base);
+        self.tip.write().base = StateRoot::from_commit_root(base);
         for d in to_delete {
             self.vm.finalize_commit(d)?;
         }

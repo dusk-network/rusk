@@ -230,7 +230,7 @@ impl Fixture {
         let commit = self.rusk.state_root();
         let vm = rusk_abi::new_vm(self.path.as_path())
             .expect("VM creation should succeed");
-        let mut session = rusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
+        let mut session = rusk_abi::new_session(&vm, commit.as_commit_root(), CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,
@@ -248,7 +248,7 @@ impl Fixture {
         let commit = self.rusk.state_root();
         let vm = rusk_abi::new_vm(self.path.as_path())
             .expect("VM creation should succeed");
-        let mut session = rusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
+        let mut session = rusk_abi::new_session(&vm, commit.as_commit_root(), CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,

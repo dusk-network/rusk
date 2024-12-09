@@ -73,12 +73,12 @@ pub fn new_state_with_chainid<P: AsRef<Path>>(
 
     assert_eq!(
         commit_id,
-        rusk.state_root(),
+        rusk.state_root().as_commit_root(),
         "The current commit should be the commit of the initial state"
     );
     assert_eq!(
         commit_id,
-        rusk.base_root(),
+        rusk.base_root().as_commit_root(),
         "The base commit should be the commit of the initial state"
     );
 
