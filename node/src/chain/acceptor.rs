@@ -26,6 +26,7 @@ use rkyv::{check_archived_root, Deserialize, Infallible};
 
 use core::panic;
 use dusk_consensus::operations::Voter;
+use dusk_consensus::state_root::StateRoot;
 use execution_core::stake::{SlashEvent, StakeEvent};
 use execution_core::CommitRoot;
 use metrics::{counter, gauge, histogram};
@@ -162,15 +163,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         event_sender: Sender<Event>,
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
-        let tip_state_hash = tip.inner().header().state_hash;
+        let tip_state_root =
+            StateRoot::from_bytes(tip.inner().header().state_hash);
 
         let mut provisioners_list = ContextProvisioners::new(provisioners_list);
 
         if tip.inner().header().height > 0 {
-            let changed_provisioners =
-                vm.read().await.get_changed_provisioners(
-                    CommitRoot::from_bytes(tip_state_hash),
-                )?;
+            let changed_provisioners = vm
+                .read()
+                .await
+                .get_changed_provisioners(tip_state_root.as_commit_root())?;
             provisioners_list.apply_changes(changed_provisioners);
         }
 
@@ -196,16 +198,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             state_root = hex::encode(state_root.as_bytes()),
         );
 
-        if tip_height > 0 && tip_state_hash != *state_root.as_bytes() {
+        if tip_height > 0 && tip_state_root != state_root {
             if let Err(error) = vm
                 .read()
                 .await
-                .move_to_commit(CommitRoot::from_bytes(tip_state_hash))
+                .move_to_commit(tip_state_root.as_commit_root())
             {
                 warn!(
                     event = "Cannot move to tip_state_hash",
                     ?error,
-                    state_root = hex::encode(tip_state_hash)
+                    state_root = hex::encode(tip_state_root.as_bytes())
                 );
 
                 info!("revert to last finalized state");
@@ -214,7 +216,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             } else {
                 info!(
                     event = "VM accepted state loaded",
-                    state_root = hex::encode(tip_state_hash),
+                    state_root = hex::encode(tip_state_root.as_bytes()),
                 );
             }
         }
@@ -443,7 +445,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         provisioners_list.update(current_prov);
 
         let changed_provisioners = vm.get_changed_provisioners(
-            CommitRoot::from_bytes(blk.header().state_hash),
+            StateRoot::from_bytes(blk.header().state_hash).as_commit_root(),
         )?;
         provisioners_list.apply_changes(changed_provisioners);
 
@@ -528,8 +530,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     est_elapsed_time = start.elapsed();
 
                     assert_eq!(
-                        header.state_hash,
-                        *verification_output.state_root.as_bytes()
+                        StateRoot::from_bytes(header.state_hash),
+                        verification_output.state_root
                     );
                     assert_eq!(
                         header.event_bloom,
@@ -575,9 +577,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             if let Err(e) = selective_update {
                 warn!("Resync provisioners due to {e:?}");
-                let state_hash = blk.header().state_hash;
+                let state_root = StateRoot::from_bytes(blk.header().state_hash);
                 let new_prov =
-                    vm.get_provisioners(CommitRoot::from_bytes(state_hash))?;
+                    vm.get_provisioners(state_root.as_commit_root())?;
                 provisioners_list.update_and_swap(new_prov)
             }
 
@@ -914,7 +916,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         || anyhow::anyhow!("could not fetch block label"),
                     )?;
 
-                if h.state_hash == *target_state_hash.as_bytes() {
+                if h.state_hash
+                    == *StateRoot::from_commit_root(target_state_hash)
+                        .as_bytes()
+                {
                     return Ok((b, label));
                 }
 
@@ -959,7 +964,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
         })?;
 
-        if blk.header().state_hash != *target_state_hash.as_bytes() {
+        if StateRoot::from_bytes(blk.header().state_hash)
+            != StateRoot::from_commit_root(target_state_hash)
+        {
             return Err(anyhow!("Failed to revert to proper state"));
         }
 
@@ -1171,17 +1178,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             ))
         })?;
 
-        let provisioners_list = self
-            .vm
-            .read()
-            .await
-            .get_provisioners(CommitRoot::from_bytes(prev_header.state_hash))?;
+        let provisioners_list = self.vm.read().await.get_provisioners(
+            StateRoot::from_bytes(prev_header.state_hash).as_commit_root(),
+        )?;
 
         let mut provisioners_list = ContextProvisioners::new(provisioners_list);
 
         let changed_provisioners =
             self.vm.read().await.get_changed_provisioners(
-                CommitRoot::from_bytes(prev_header.state_hash),
+                StateRoot::from_bytes(prev_header.state_hash).as_commit_root(),
             )?;
         provisioners_list.apply_changes(changed_provisioners);
 
