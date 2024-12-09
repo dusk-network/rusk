@@ -72,6 +72,7 @@ recovery-state: ## Build network state
 		--features recovery-state \
 		--release \
 		-- recovery state \
+		--force \
 		--init $(INITFILE)
 
 .PHONY: test help clippy build build-bench bench recovery-keys recovery-state rusk
