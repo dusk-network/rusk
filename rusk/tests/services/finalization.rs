@@ -53,6 +53,7 @@ fn empty_blocks(rusk: &Rusk, blocks: u64, finalize: bool) -> Vec<[u8; 32]> {
             BLOCK_GAS_LIMIT,
             vec![],
             None,
+            None,
         )
         .expect("block to be created");
         if finalize {

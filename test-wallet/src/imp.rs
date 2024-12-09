@@ -31,7 +31,7 @@ use rkyv::validation::validators::CheckDeserializeError;
 use rusk_prover::LocalProver;
 use wallet_core::keys::{derive_bls_sk, derive_phoenix_sk};
 use wallet_core::transaction::{
-    moonlight_deployment, moonlight_stake, moonlight_stake_reward,
+    moonlight, moonlight_deployment, moonlight_stake, moonlight_stake_reward,
     moonlight_to_phoenix, moonlight_unstake, phoenix as phoenix_transaction,
     phoenix_deployment, phoenix_stake, phoenix_stake_reward,
     phoenix_to_moonlight, phoenix_unstake,
@@ -336,6 +336,48 @@ where
         }
 
         Ok(notes_openings)
+    }
+
+    /// Executes a generic contract call, paying gas from a public account.
+    #[allow(clippy::too_many_arguments)]
+    pub fn moonlight_execute(
+        &self,
+        sender_idx: u8,
+        transfer_value: u64,
+        deposit: u64,
+        gas_limit: u64,
+        gas_price: u64,
+        exec: Option<impl Into<TransactionData>>,
+    ) -> Result<Transaction, Error<S, SC>> {
+        let state = self.state();
+
+        let mut sender_sk = self.account_secret_key(sender_idx)?;
+        let sender = self.account_public_key(sender_idx)?;
+
+        let account = state
+            .fetch_account(&sender)
+            .map_err(Error::from_state_err)?;
+
+        // technically this check is not necessary, but it's nice to not spam
+        // the network with transactions that are unspendable.
+        let nonce = account.nonce + 1;
+
+        let chain_id = state.fetch_chain_id().map_err(Error::from_state_err)?;
+
+        let tx = moonlight(
+            &sender_sk,
+            None,
+            transfer_value,
+            deposit,
+            gas_limit,
+            gas_price,
+            nonce,
+            chain_id,
+            exec,
+        )?;
+
+        sender_sk.zeroize();
+        Ok(tx)
     }
 
     /// Execute a generic contract call or deployment, using Phoenix notes to

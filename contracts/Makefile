@@ -1,4 +1,4 @@
-SUBDIRS := alice bob transfer stake host_fn
+SUBDIRS := alice bob charlie transfer stake host_fn
 
 all: $(SUBDIRS) ## Build all the contracts
 

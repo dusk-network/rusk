@@ -45,6 +45,33 @@ unsafe fn withdraw(arg_len: u32) -> u32 {
     })
 }
 
+#[no_mangle]
+unsafe fn stake_from_contract(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |receive| {
+        // Assert is called from the transfer contract
+        assert_transfer_caller();
+        // Assert is not called directly by "spend_and_execute"
+        // (it's supposed to be called by
+        // TRANSFER_CONTRACT::contract_to_contract ICC)
+        if rusk_abi::callstack().len() < 2 {
+            panic!("Cannot be called by a root ICC")
+        }
+        STATE.stake_from_contract(receive)
+    })
+}
+
+#[no_mangle]
+unsafe fn unstake_from_contract(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |unstake| STATE.unstake_from_contract(unstake))
+}
+
+#[no_mangle]
+unsafe fn withdraw_from_contract(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |rewards| {
+        STATE.withdraw_from_contract(rewards)
+    })
+}
+
 // Queries
 
 #[no_mangle]

@@ -13,6 +13,7 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use execution_core::stake::EPOCH;
+use execution_core::transfer::MINT_CONTRACT_TOPIC;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 
 use execution_core::{
@@ -179,6 +180,43 @@ impl TransferState {
         self.mint_withdrawal("mint", &mint);
 
         rusk_abi::emit(MINT_TOPIC, WithdrawEvent::from(mint));
+    }
+
+    /// Mint more Dusk to be owned by a contract.
+    ///
+    /// This can only be called by the stake contract, and will increase the
+    /// total amount of circulating Dusk. It is intended to be called during the
+    /// execution of the `withdraw_to_contract` function, and the amount minted
+    /// should conform to the consensus emission schedule.
+    ///
+    /// # Safety
+    /// We assume on trust that the value sent by the stake contract is
+    /// according to consensus rules.
+    pub fn mint_to_contract(&mut self, mint: ContractToContract) {
+        const PANIC_MSG: &str = "Can only be called by the stake contract";
+        let caller = rusk_abi::caller().expect(PANIC_MSG);
+        assert_eq!(caller, STAKE_CONTRACT, "{PANIC_MSG}");
+
+        let receiver_balance =
+            self.contract_balances.entry(mint.contract).or_insert(0);
+
+        *receiver_balance += mint.value;
+
+        let receive = ReceiveFromContract {
+            contract: STAKE_CONTRACT,
+            value: mint.value,
+            data: mint.data,
+        };
+
+        rusk_abi::call::<_, ()>(mint.contract, &mint.fn_name, &receive)
+            .expect("Calling receiver should succeed");
+
+        let mint_event = ContractToContractEvent {
+            sender: STAKE_CONTRACT,
+            receiver: mint.contract,
+            value: mint.value,
+        };
+        rusk_abi::emit(MINT_CONTRACT_TOPIC, mint_event);
     }
 
     /// Withdraw from a contract's balance to a Phoenix note or a Moonlight

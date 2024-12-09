@@ -10,7 +10,9 @@ use std::path::Path;
 
 use dusk_bytes::DeserializableSlice;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
-use execution_core::stake::{StakeAmount, StakeData, STAKE_CONTRACT};
+use execution_core::stake::{
+    StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT,
+};
 use execution_core::transfer::phoenix::{Note, PublicKey, Sender};
 use execution_core::transfer::TRANSFER_CONTRACT;
 use execution_core::{ContractId, JubJubScalar};
@@ -208,8 +210,7 @@ fn generate_empty_state<P: AsRef<Path>>(
             STAKE_CONTRACT,
             "insert_stake",
             &(
-                *DUSK_CONSENSUS_KEY,
-                *DUSK_CONSENSUS_KEY,
+                StakeKeys::single_key(*DUSK_CONSENSUS_KEY),
                 StakeData::default(),
             ),
             u64::MAX,

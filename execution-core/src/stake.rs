@@ -6,10 +6,12 @@
 
 //! Types used by Dusk's stake contract.
 
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
+use piecrust_uplink::CONTRACT_ID_BYTES;
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::signatures::bls::{
@@ -54,10 +56,7 @@ impl Stake {
     pub fn new(sk: &BlsSecretKey, value: u64, chain_id: u8) -> Self {
         let key = BlsPublicKey::from(sk);
 
-        let keys = StakeKeys {
-            account: key,
-            funds: key,
-        };
+        let keys = StakeKeys::single_key(key);
 
         let mut stake = Stake {
             chain_id,
@@ -70,7 +69,36 @@ impl Stake {
 
         stake.signature = DoubleSignature {
             account: sk.sign(&msg),
-            funds: sk.sign(&msg),
+            owner: sk.sign(&msg),
+        };
+
+        stake
+    }
+
+    /// Create a new stake.
+    #[must_use]
+    pub fn new_from_contract(
+        sk: &BlsSecretKey,
+        contract: ContractId,
+        value: u64,
+        chain_id: u8,
+    ) -> Self {
+        let key = BlsPublicKey::from(sk);
+
+        let keys = StakeKeys::new(key, contract);
+
+        let mut stake = Stake {
+            chain_id,
+            keys,
+            value,
+            signature: DoubleSignature::default(),
+        };
+
+        let msg = stake.signature_message();
+
+        stake.signature = DoubleSignature {
+            account: sk.sign(&msg),
+            owner: sk.sign(&msg),
         };
 
         stake
@@ -118,14 +146,94 @@ impl Stake {
             .copy_from_slice(&self.keys.account.to_bytes());
         offset += BlsPublicKey::SIZE;
 
-        bytes[offset..offset + BlsPublicKey::SIZE]
-            .copy_from_slice(&self.keys.funds.to_bytes());
+        match &self.keys.owner {
+            StakeFundOwner::Account(key) => bytes
+                [offset..offset + BlsPublicKey::SIZE]
+                .copy_from_slice(&key.to_bytes()),
+            StakeFundOwner::Contract(contract_id) => bytes
+                [offset..offset + CONTRACT_ID_BYTES]
+                .copy_from_slice(&contract_id.to_bytes()),
+        }
+
         offset += BlsPublicKey::SIZE;
 
         bytes[offset..offset + u64::SIZE]
             .copy_from_slice(&self.value.to_bytes());
 
         bytes
+    }
+}
+
+/// Withdraw some value from the stake contract to a smart contract
+///
+/// This struct contains the information necessary to perform the withdrawal,
+/// including the account initiating the withdrawal, the amount being withdrawn,
+/// and the name of the function to invoke on the target contract.
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct WithdrawToContract {
+    account: BlsPublicKey,
+    value: u64,
+    fn_name: String,
+    data: Vec<u8>,
+}
+
+impl WithdrawToContract {
+    /// Creates a new `WithdrawToContract` instance.
+    ///
+    /// # Parameters
+    /// - `account`: The BLS public key of the account initiating the
+    ///   withdrawal.
+    /// - `value`: The amount of the withdrawal in LUX
+    /// - `fn_name`: The name of the function to invoke on the target contract
+    ///   as callback for the `contract_to_contract` method.
+    ///
+    /// # Returns
+    /// A new `WithdrawToContract` instance with the specified account, value,
+    /// and function name.
+    pub fn new(
+        account: BlsPublicKey,
+        value: u64,
+        fn_name: impl Into<String>,
+    ) -> Self {
+        Self {
+            account,
+            value,
+            fn_name: fn_name.into(),
+            data: Vec::new(),
+        }
+    }
+
+    /// Returns the account initiating the withdrawal.
+    #[must_use]
+    pub fn account(&self) -> &BlsPublicKey {
+        &self.account
+    }
+
+    /// Returns the value (amount) of the withdrawal.
+    #[must_use]
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+
+    /// Returns the name of the callback function to invoke on the target
+    /// contract.
+    #[must_use]
+    pub fn fn_name(&self) -> &str {
+        &self.fn_name
+    }
+
+    /// Returns the data to be passed to the target contract.
+    #[must_use]
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    /// Set the data to be passed to the target contract.
+    #[must_use]
+    pub fn with_data(mut self, data: Vec<u8>) -> Self {
+        self.data = data;
+        self
     }
 }
 
@@ -155,7 +263,7 @@ impl Withdraw {
 
         stake_withdraw.signature = DoubleSignature {
             account: sk.sign(&msg),
-            funds: sk.sign(&msg),
+            owner: sk.sign(&msg),
         };
 
         stake_withdraw
@@ -281,10 +389,81 @@ pub struct StakeData {
 )]
 #[archive_attr(derive(CheckBytes))]
 pub struct StakeKeys {
-    /// Key used for the consensus
+    /// Key used for consensus operations, such as voting or producing blocks.
     pub account: BlsPublicKey,
-    /// Key used for handle funds (stake/unstake/withdraw)
-    pub funds: BlsPublicKey,
+
+    /// Key used to manage funds for operations like staking, unstaking, or
+    /// withdrawing.
+    ///
+    /// This field can represent ownership either through an individual account
+    /// (`StakeFundOwner::Account`) or through a smart contract
+    /// (`StakeFundOwner::Contract`).
+    pub owner: StakeFundOwner,
+}
+
+impl StakeKeys {
+    /// Creates a new `StakeKeys` instance where both the consensus key and the
+    /// owner key are set to the same account key.
+    #[must_use]
+    pub fn single_key(account: BlsPublicKey) -> Self {
+        Self::new(account, account)
+    }
+
+    /// Creates a new `StakeKeys` instance with the specified account and funds
+    /// owner.
+    ///
+    /// # Parameters
+    /// - `account`: The BLS public key used for consensus operations, such as
+    ///   voting or producing blocks.
+    /// - `owner`: The owner of the funds, which can be either an account or a
+    ///   contract. This parameter is any type that implements
+    ///   `Into<StakeFundOwner>`, allowing flexibility in how the funds owner is
+    ///   specified.
+    #[must_use]
+    pub fn new<F: Into<StakeFundOwner>>(
+        account: BlsPublicKey,
+        owner: F,
+    ) -> Self {
+        let owner = owner.into();
+        Self { account, owner }
+    }
+}
+
+/// Data used to check ownership of funds
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
+)]
+#[archive_attr(derive(CheckBytes))]
+pub enum StakeFundOwner {
+    /// Represents an account-based owner identified by a BLS public key.
+    ///
+    /// This variant is used when the stake funds are associated directly with
+    /// an individual account.
+    Account(BlsPublicKey),
+
+    /// Represents a contract-based owner identified by a contract ID.
+    ///
+    /// This variant is used when the stake funds are managed or associated
+    /// with a specific smart contract.
+    Contract(ContractId),
+}
+
+impl Default for StakeFundOwner {
+    fn default() -> Self {
+        BlsPublicKey::default().into()
+    }
+}
+
+impl From<BlsPublicKey> for StakeFundOwner {
+    fn from(value: BlsPublicKey) -> Self {
+        Self::Account(value)
+    }
+}
+
+impl From<ContractId> for StakeFundOwner {
+    fn from(value: ContractId) -> Self {
+        Self::Contract(value)
+    }
 }
 
 /// Signature used to handle funds (stake/unstake/withdraw)
@@ -295,8 +474,8 @@ pub struct StakeKeys {
 pub struct DoubleSignature {
     /// Signature created with the account key
     pub account: BlsSignature,
-    /// Signature created with the funds key
-    pub funds: BlsSignature,
+    /// Signature created with the owner key
+    pub owner: BlsSignature,
 }
 
 impl StakeData {

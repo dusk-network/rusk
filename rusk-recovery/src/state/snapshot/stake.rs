@@ -26,9 +26,6 @@ impl GenesisStake {
     }
 
     pub fn to_stake_keys(&self) -> StakeKeys {
-        StakeKeys {
-            account: *self.address(),
-            funds: *self.address(),
-        }
+        StakeKeys::single_key(*self.address())
     }
 }

@@ -15,10 +15,11 @@ use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
         next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeData,
-        StakeEvent, StakeKeys, Withdraw, EPOCH, MINIMUM_STAKE, STAKE_CONTRACT,
-        STAKE_WARNINGS,
+        StakeEvent, StakeFundOwner, StakeKeys, Withdraw, WithdrawToContract,
+        EPOCH, MINIMUM_STAKE, STAKE_CONTRACT, STAKE_WARNINGS,
     },
-    transfer::TRANSFER_CONTRACT,
+    transfer::{ContractToContract, ReceiveFromContract, TRANSFER_CONTRACT},
+    ContractId,
 };
 
 use crate::*;
@@ -54,6 +55,30 @@ impl StakeState {
         self.previous_block_state.clear()
     }
 
+    fn unwrap_account_owner(owner: &StakeFundOwner) -> BlsPublicKey {
+        match owner {
+            StakeFundOwner::Account(public_key) => {
+                assert!(
+                    public_key.is_valid(),
+                    "Specified owner key is not valid"
+                );
+                *public_key
+            }
+            StakeFundOwner::Contract(_) => {
+                panic!("expect StakeFundOwner::Account")
+            }
+        }
+    }
+
+    fn unwrap_contract_owner(owner: &StakeFundOwner) -> &ContractId {
+        match owner {
+            StakeFundOwner::Account(_) => {
+                panic!("expect StakeFundOwner::Contract")
+            }
+            StakeFundOwner::Contract(id) => id,
+        }
+    }
+
     pub fn stake(&mut self, stake: Stake) {
         let value = stake.value();
         let signature = *stake.signature();
@@ -70,11 +95,13 @@ impl StakeState {
             panic!("The staked value is lower than the minimum amount!");
         }
 
-        let digest = stake.signature_message().to_vec();
-        if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
-            panic!("Invalid funds signature!");
+        let owner = Self::unwrap_account_owner(&keys.owner);
+
+        let msg = stake.signature_message().to_vec();
+        if !rusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
+            panic!("Invalid owner signature!");
         }
-        if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
+        if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
         }
 
@@ -83,6 +110,64 @@ impl StakeState {
         let _: () =
             rusk_abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
                 .expect("Depositing funds into contract should succeed");
+
+        let block_height = rusk_abi::block_height();
+        // update the state accordingly
+        let stake_event = match &mut loaded_stake.amount {
+            Some(amount) => {
+                let locked = if block_height >= amount.eligibility {
+                    value / 10
+                } else {
+                    // No penalties applied if the stake is not eligible yet
+                    0
+                };
+                let value = value - locked;
+                amount.locked += locked;
+                amount.value += value;
+                StakeEvent::new(*keys, value).locked(locked)
+            }
+            amount => {
+                let _ = amount.insert(StakeAmount::new(value, block_height));
+                StakeEvent::new(*keys, value)
+            }
+        };
+        rusk_abi::emit("stake", stake_event);
+
+        let key = keys.account.to_bytes();
+        self.previous_block_state
+            .entry(key)
+            .or_insert((prev_stake, account));
+    }
+
+    pub fn stake_from_contract(&mut self, recv: ReceiveFromContract) {
+        let stake: Stake =
+            rkyv::from_bytes(&recv.data).expect("Invalid stake received");
+        let value = stake.value();
+
+        if stake.chain_id() != self.chain_id() {
+            panic!("The stake must target the correct chain");
+        }
+
+        let account = stake.keys().account;
+        let prev_stake = self.get_stake(&stake.keys().account).copied();
+        let (loaded_stake, keys) = self.load_or_create_stake_mut(stake.keys());
+
+        let contract = Self::unwrap_contract_owner(&keys.owner);
+        assert!(contract == &recv.contract, "Invalid contract caller");
+        assert!(value == recv.value, "Stake amount mismatch");
+
+        if loaded_stake.amount.is_none() {
+            if value < MINIMUM_STAKE {
+                panic!("The staked value is lower than the minimum amount!");
+            }
+
+            // We verify the signature only when there is a new stake
+            let signature = stake.signature().account;
+            let msg = stake.signature_message().to_vec();
+            if !rusk_abi::verify_bls(msg, account, signature) {
+                panic!("Invalid account signature!");
+            }
+        }
 
         let block_height = rusk_abi::block_height();
         // update the state accordingly
@@ -134,12 +219,14 @@ impl StakeState {
             panic!("Value to unstake higher than the staked amount");
         }
 
+        let owner = Self::unwrap_account_owner(&keys.owner);
+
         // check signature is correct
-        let digest = unstake.signature_message();
-        if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
-            panic!("Invalid funds signature!");
+        let msg = unstake.signature_message();
+        if !rusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
+            panic!("Invalid owner signature!");
         }
-        if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
+        if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
         }
 
@@ -177,6 +264,79 @@ impl StakeState {
             .or_insert((prev_stake, account));
     }
 
+    pub fn unstake_from_contract(&mut self, unstake: WithdrawToContract) {
+        let account = unstake.account();
+        let value = unstake.value();
+        let data = unstake.data().to_vec();
+
+        let (loaded_stake, keys) = self
+            .get_stake_mut(account)
+            .expect("A stake should exist in the map to be unstaked!");
+        let prev_stake = Some(*loaded_stake);
+
+        // ensure there is a value staked, and that the withdrawal is not
+        // greater than the available funds
+        let stake = loaded_stake
+            .amount
+            .as_mut()
+            .expect("There must be an amount to unstake");
+
+        if value > stake.total_funds() {
+            panic!("Value to unstake higher than the staked amount");
+        }
+
+        let owner = Self::unwrap_contract_owner(&keys.owner);
+        let caller =
+            rusk_abi::caller().expect("unstake must be called by a contract");
+        assert!(&caller == owner, "Invalid contract caller");
+
+        let to_contract = ContractToContract {
+            contract: caller,
+            fn_name: unstake.fn_name().into(),
+            value,
+            data,
+        };
+
+        let _: () = rusk_abi::call(
+            TRANSFER_CONTRACT,
+            "contract_to_contract",
+            &to_contract,
+        )
+        .expect("Unstaking to contract should succeed");
+
+        let stake_event = if value > stake.value {
+            let from_locked = value - stake.value;
+            let from_stake = stake.value;
+            stake.value = 0;
+            stake.locked -= from_locked;
+            StakeEvent::new(*keys, from_stake).locked(from_locked)
+        } else {
+            stake.value -= value;
+            StakeEvent::new(*keys, value)
+        };
+
+        rusk_abi::emit("unstake", stake_event);
+        if stake.total_funds() == 0 {
+            // update the state accordingly
+            loaded_stake.amount = None;
+            if loaded_stake.reward == 0 {
+                self.stakes.remove(&unstake.account().to_bytes());
+            }
+        }
+        // Note: We no longer enforce the minimum stake condition here to
+        // avoid locked funds exploit for contracts.
+        /*
+            } else if stake.total_funds() < MINIMUM_STAKE {
+                panic!("Stake left is lower than minimum stake");
+        }
+        */
+
+        let key = account.to_bytes();
+        self.previous_block_state
+            .entry(key)
+            .or_insert_with(|| (prev_stake, *account));
+    }
+
     pub fn withdraw(&mut self, withdraw: Withdraw) {
         let transfer_withdraw = withdraw.transfer_withdraw();
         let account = withdraw.account();
@@ -198,12 +358,14 @@ impl StakeState {
             panic!("Value to withdraw is higher than available reward");
         }
 
+        let owner = Self::unwrap_account_owner(&keys.owner);
+
         // check signature is correct
-        let digest = withdraw.signature_message();
-        if !rusk_abi::verify_bls(digest.clone(), keys.funds, signature.funds) {
-            panic!("Invalid funds signature!");
+        let msg = withdraw.signature_message();
+        if !rusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
+            panic!("Invalid owner signature!");
         }
-        if !rusk_abi::verify_bls(digest, keys.account, signature.account) {
+        if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
         }
 
@@ -212,6 +374,51 @@ impl StakeState {
         let _: () =
             rusk_abi::call(TRANSFER_CONTRACT, "mint", transfer_withdraw)
                 .expect("Withdrawing reward should succeed");
+
+        // update the state accordingly
+        loaded_stake.reward -= value;
+        rusk_abi::emit("withdraw", StakeEvent::new(*keys, value));
+
+        if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
+            self.stakes.remove(&account.to_bytes());
+        }
+    }
+
+    pub fn withdraw_from_contract(&mut self, withdraw: WithdrawToContract) {
+        let account = withdraw.account();
+        let value = withdraw.value();
+        let data = withdraw.data().to_vec();
+
+        let (loaded_stake, keys) = self
+            .get_stake_mut(account)
+            .expect("A stake should exist in the map to get rewards!");
+
+        // ensure no 0 reward is executed,
+        if value == 0 {
+            panic!("Withdrawing 0 reward is not allowed");
+        }
+
+        // ensure that the withdrawal amount is not greater than the current
+        // reward
+        if value > loaded_stake.reward {
+            panic!("Value to withdraw is higher than available reward");
+        }
+
+        let owner = Self::unwrap_contract_owner(&keys.owner);
+        let caller =
+            rusk_abi::caller().expect("unstake must be called by a contract");
+        assert!(&caller == owner, "Invalid contract caller");
+
+        let to_contract = ContractToContract {
+            contract: caller,
+            fn_name: withdraw.fn_name().into(),
+            value,
+            data,
+        };
+
+        let _: () =
+            rusk_abi::call(TRANSFER_CONTRACT, "mint_to_contract", &to_contract)
+                .expect("Withdrawing reward to contract should succeed");
 
         // update the state accordingly
         loaded_stake.reward -= value;
@@ -261,28 +468,33 @@ impl StakeState {
         self.stakes
             .entry(key)
             .and_modify(|(_, loaded_keys)| {
-                assert_eq!(keys, loaded_keys, "Keys mismatch")
+                assert!(keys == loaded_keys, "Keys mismatch")
             })
             .or_insert_with(|| (StakeData::EMPTY, *keys))
     }
 
-    /// Rewards a `account` with the given `value`.
+    /// Rewards multiple accounts with the given rewards.
     ///
-    /// *PANIC* If a stake does not exist in the map
+    /// If a stake does not exist in the map, it is skipped.
     pub fn reward(&mut self, rewards: Vec<Reward>) {
         for reward in &rewards {
-            let (stake, _) = self
-                .get_stake_mut(&reward.account)
-                .expect("Stake to exists to be rewarded");
-
-            // Reset faults counters
-            stake.faults = 0;
-            stake.hard_faults = 0;
+            let stake =
+                if let Some((stake, _)) = self.get_stake_mut(&reward.account) {
+                    // Reset faults counters
+                    stake.faults = 0;
+                    stake.hard_faults = 0;
+                    stake
+                } else {
+                    let keys = StakeKeys::single_key(reward.account);
+                    let (stake, _) = self.load_or_create_stake_mut(&keys);
+                    stake
+                };
 
             stake.reward += reward.value;
         }
-
-        rusk_abi::emit("reward", rewards);
+        if !rewards.is_empty() {
+            rusk_abi::emit("reward", rewards);
+        }
     }
 
     /// Total amount burned since the genesis

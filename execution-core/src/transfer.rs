@@ -58,6 +58,8 @@ pub const DEPOSIT_TOPIC: &str = "deposit";
 pub const CONVERT_TOPIC: &str = "convert";
 /// Topic for the mint event.
 pub const MINT_TOPIC: &str = "mint";
+/// Topic for the mint to contract event.
+pub const MINT_CONTRACT_TOPIC: &str = "mint_c";
 
 /// The transaction used by the transfer contract.
 #[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
