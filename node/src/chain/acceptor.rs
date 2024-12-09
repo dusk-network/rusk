@@ -24,9 +24,7 @@ use execution_core::stake::{SlashEvent, StakeAmount, StakeEvent};
 use metrics::{counter, gauge, histogram};
 use node_data::bls::PublicKey;
 use node_data::events::contract::ContractEvent;
-use node_data::events::{
-    BlockEvent, Event, TransactionEvent, BLOCK_CONFIRMED, BLOCK_FINALIZED,
-};
+use node_data::events::{BlockEvent, BlockState, Event, TransactionEvent};
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Slash,
 };
@@ -918,7 +916,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                         let event = BlockEvent::StateChange {
                             hash: *hash,
-                            state: BLOCK_CONFIRMED,
+                            state: BlockState::Confirmed,
                             height: current_height,
                         };
                         events.push(event.into());
@@ -952,7 +950,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     label = Label::Final(finalized_after);
                     let event = BlockEvent::StateChange {
                         hash,
-                        state: BLOCK_FINALIZED,
+                        state: BlockState::Finalized,
                         height: current_height,
                     };
                     events.push(event.into());
