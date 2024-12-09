@@ -251,7 +251,7 @@ impl Rusk {
             spent_txs,
             discarded_txs,
             VerificationOutput {
-                state_root: StateRoot::from_bytes(*commit_root.as_bytes()),
+                state_root: StateRoot::from_commit_root(commit_root),
                 event_bloom: event_bloom.into(),
             },
         ))
@@ -625,7 +625,7 @@ fn accept(
     Ok((
         spent_txs,
         VerificationOutput {
-            state_root: StateRoot::from_bytes(*commit_root.as_bytes()),
+            state_root: StateRoot::from_commit_root(commit_root),
             event_bloom: event_bloom.into(),
         },
         session,

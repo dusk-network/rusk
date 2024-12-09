@@ -233,9 +233,9 @@ impl VMExecution for Rusk {
     }
 
     fn revert(&self, state_hash: CommitRoot) -> anyhow::Result<CommitRoot> {
-        let state_hash = self
-            .revert(StateRoot::from_commit_root(state_hash))
-            .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
+        let state_hash =
+            self.revert(StateRoot::from_commit_root(state_hash))
+                .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
 
         Ok(state_hash.as_commit_root())
     }
