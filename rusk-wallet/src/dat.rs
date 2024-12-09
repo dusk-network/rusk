@@ -9,10 +9,7 @@
 use std::fs;
 use std::io::Read;
 
-use wallet_core::Seed;
-
-use crate::crypto::decrypt;
-use crate::{Error, WalletPath};
+use crate::{Error, WalletFilePath, WalletPath};
 
 /// Binary prefix for old Dusk wallet files
 pub const OLD_MAGIC: u32 = 0x1d0c15;
@@ -36,89 +33,6 @@ pub enum DatFileVersion {
     OldWalletCli(Version),
     /// The newest one. All new saves are saved in this file format
     RuskBinaryFileFormat(Version),
-}
-
-impl DatFileVersion {
-    /// Checks if the file version is older than the latest Rust Binary file
-    /// format
-    pub fn is_old(&self) -> bool {
-        matches!(self, Self::Legacy | Self::OldWalletCli(_))
-    }
-}
-
-/// Make sense of the payload and return it
-pub(crate) fn get_seed_and_address(
-    file: DatFileVersion,
-    mut bytes: Vec<u8>,
-    pwd: &[u8],
-) -> Result<(Seed, u8), Error> {
-    match file {
-        DatFileVersion::Legacy => {
-            if bytes[1] == 0 && bytes[2] == 0 {
-                bytes.drain(..3);
-            }
-
-            bytes = decrypt(&bytes, pwd)?;
-
-            // get our seed
-            let seed = bytes[..]
-                .try_into()
-                .map_err(|_| Error::WalletFileCorrupted)?;
-
-            Ok((seed, 1))
-        }
-        DatFileVersion::OldWalletCli((major, minor, _, _, _)) => {
-            bytes.drain(..5);
-
-            let result: Result<(Seed, u8), Error> = match (major, minor) {
-                (1, 0) => {
-                    let content = decrypt(&bytes, pwd)?;
-                    let buff = &content[..];
-
-                    let seed = buff
-                        .try_into()
-                        .map_err(|_| Error::WalletFileCorrupted)?;
-
-                    Ok((seed, 1))
-                }
-                (2, 0) => {
-                    let content = decrypt(&bytes, pwd)?;
-                    let buff = &content[..];
-
-                    // extract seed
-                    let seed = buff
-                        .try_into()
-                        .map_err(|_| Error::WalletFileCorrupted)?;
-
-                    // extract addresses count
-                    Ok((seed, buff[0]))
-                }
-                _ => Err(Error::UnknownFileVersion(major, minor)),
-            };
-
-            result
-        }
-        DatFileVersion::RuskBinaryFileFormat(_) => {
-            let rest = bytes.get(12..(12 + 96));
-            if let Some(rest) = rest {
-                let content = decrypt(rest, pwd)?;
-
-                if let Some(seed_buff) = content.get(0..65) {
-                    let seed = seed_buff[0..64]
-                        .try_into()
-                        .map_err(|_| Error::WalletFileCorrupted)?;
-
-                    let count = &seed_buff[64..65];
-
-                    Ok((seed, count[0]))
-                } else {
-                    Err(Error::WalletFileCorrupted)
-                }
-            } else {
-                Err(Error::WalletFileCorrupted)
-            }
-        }
-    }
 }
 
 /// From the first 12 bytes of the file (header), we check version
@@ -193,8 +107,10 @@ pub(crate) fn check_version(
 
 /// Read the first 12 bytes of the dat file and get the file version from
 /// there
-pub fn read_file_version(file: &WalletPath) -> Result<DatFileVersion, Error> {
-    let path = &file.wallet;
+pub fn read_file_version(
+    wallet_file_path: &WalletPath,
+) -> Result<DatFileVersion, Error> {
+    let path = &wallet_file_path.wallet_path();
 
     // make sure file exists
     if !path.is_file() {

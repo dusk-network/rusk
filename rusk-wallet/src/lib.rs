@@ -31,7 +31,8 @@ pub use error::Error;
 pub use gql::{BlockTransaction, GraphQL};
 pub use rues::RuesHttpClient;
 pub use wallet::{
-    Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
+    Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletFile,
+    WalletFilePath, WalletPath,
 };
 
 use execution_core::stake::StakeData;

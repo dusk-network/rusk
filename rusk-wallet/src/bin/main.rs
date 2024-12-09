@@ -11,6 +11,7 @@ mod io;
 mod settings;
 
 pub(crate) use command::{Command, RunResult};
+use rusk_wallet::{WalletFilePath, WalletPath};
 
 use std::fs::{self, File};
 use std::io::Write;
@@ -19,34 +20,19 @@ use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Parser;
 use inquire::InquireError;
 use rocksdb::ErrorKind;
-use rusk_wallet::currency::Dusk;
-use rusk_wallet::dat::{self, LATEST_VERSION};
-use rusk_wallet::{
-    Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
-};
 use tracing::{error, info, warn, Level};
 
 use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
 
+use rusk_wallet::{
+    currency::Dusk,
+    dat::{self, LATEST_VERSION},
+    Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletFile, EPOCH,
+};
+
 use config::Config;
 use io::{prompt, status, WalletArgs};
-
-#[derive(Debug, Clone)]
-pub(crate) struct WalletFile {
-    path: WalletPath,
-    pwd: Vec<u8>,
-}
-
-impl SecureWalletFile for WalletFile {
-    fn path(&self) -> &WalletPath {
-        &self.path
-    }
-
-    fn pwd(&self) -> &[u8] {
-        &self.pwd
-    }
-}
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
@@ -139,7 +125,7 @@ async fn exec() -> anyhow::Result<()> {
 
     // prepare wallet path
     let mut wallet_path =
-        WalletPath::from(wallet_dir.as_path().join("wallet.dat"));
+        WalletPath::try_from(wallet_dir.as_path().join("wallet.dat"))?;
 
     // load configuration (or use default)
     let cfg = Config::load(&wallet_dir)?;
@@ -193,6 +179,7 @@ async fn exec() -> anyhow::Result<()> {
         return Ok(());
     };
 
+    // get the wallet file version
     let file_version = dat::read_file_version(&wallet_path);
 
     // get our wallet ready
@@ -232,10 +219,7 @@ async fn exec() -> anyhow::Result<()> {
                 // create wallet
                 let mut w = Wallet::new(mnemonic)?;
 
-                w.save_to(WalletFile {
-                    path: wallet_path,
-                    pwd,
-                })?;
+                w.save_to(WalletFile::new(wallet_path, pwd, file_version?))?;
 
                 w
             }
@@ -253,10 +237,11 @@ async fn exec() -> anyhow::Result<()> {
                             file_version,
                         )?;
 
-                        let w = Wallet::from_file(WalletFile {
-                            path: file.clone(),
-                            pwd: pwd.clone(),
-                        })?;
+                        let w = Wallet::from_file(WalletFile::new(
+                            file.clone(),
+                            pwd.clone(),
+                            file_version,
+                        ))?;
 
                         (w, pwd)
                     }
@@ -279,10 +264,7 @@ async fn exec() -> anyhow::Result<()> {
                     }
                 };
 
-                w.save_to(WalletFile {
-                    path: wallet_path,
-                    pwd,
-                })?;
+                w.save_to(WalletFile::new(wallet_path, pwd, file_version?))?;
 
                 w
             }
@@ -297,10 +279,11 @@ async fn exec() -> anyhow::Result<()> {
                     file_version,
                 )?;
 
-                Wallet::from_file(WalletFile {
-                    path: wallet_path,
+                Wallet::from_file(WalletFile::new(
+                    wallet_path,
                     pwd,
-                })?
+                    file_version,
+                ))?
             }
         },
     };
