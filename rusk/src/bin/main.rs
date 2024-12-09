@@ -10,17 +10,12 @@ mod config;
 mod ephemeral;
 mod log;
 
+use clap::Parser;
+use log::Log;
+use rusk::http::HttpServerConfig;
+use rusk::{Builder, Result};
 #[cfg(feature = "chain")]
 use tracing::info;
-
-use clap::Parser;
-
-use log::Log;
-
-use rusk::Builder;
-
-use rusk::http::HttpServerConfig;
-use rusk::Result;
 
 use crate::config::Config;
 

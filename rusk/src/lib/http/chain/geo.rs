@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::*;
 use std::time::{Duration, Instant};
+
+use super::*;
 
 static CACHE: RwLock<(Option<Instant>, Vec<Value>)> =
     RwLock::const_new((None, Vec::new()));

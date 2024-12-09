@@ -10,14 +10,14 @@ mod block;
 mod data;
 mod tx;
 
-use block::*;
-use data::*;
-use tx::*;
+use std::sync::Arc;
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
-use execution_core::{transfer::TRANSFER_CONTRACT, ContractId};
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::ContractId;
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, DB};
+use tokio::sync::RwLock;
 #[cfg(feature = "archive")]
 use {
     archive::data::deserialized_archive_data::DeserializedMoonlightGroups,
@@ -28,8 +28,9 @@ use {
     node::archive::{Archive, MoonlightGroup},
 };
 
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use self::block::*;
+use self::data::*;
+use self::tx::*;
 
 #[cfg(feature = "archive")]
 pub type DBContext = (Arc<RwLock<Backend>>, Archive);
