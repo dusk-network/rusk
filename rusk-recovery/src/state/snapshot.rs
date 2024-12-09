@@ -48,7 +48,7 @@ impl MoonlightAccount {
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Snapshot {
     base_state: Option<String>,
-    owner: Option<Wrapper<PhoenixPublicKey, { PhoenixPublicKey::SIZE }>>,
+    owner: Option<Wrapper<AccountPublicKey, { AccountPublicKey::SIZE }>>,
 
     // This "serde skip" workaround seems needed as per https://github.com/toml-rs/toml-rs/issues/384
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
@@ -88,8 +88,8 @@ impl Snapshot {
     }
 
     /// Return the owner of the smart contract.
-    pub fn owner(&self) -> [u8; PhoenixPublicKey::SIZE] {
-        let dusk = Wrapper::from(*state::DUSK_KEY);
+    pub fn owner(&self) -> [u8; AccountPublicKey::SIZE] {
+        let dusk = Wrapper::from(*state::DUSK_CONSENSUS_KEY);
         self.owner.as_ref().unwrap_or(&dusk).to_bytes()
     }
 
@@ -102,6 +102,8 @@ impl Snapshot {
 mod tests {
 
     use std::error::Error;
+
+    use execution_core::stake::MINIMUM_STAKE;
 
     use super::*;
     use crate::state;
@@ -116,16 +118,25 @@ mod tests {
     fn testnet_toml() -> Result<(), Box<dyn Error>> {
         let testnet = testnet_from_file()?;
 
-        testnet
+        let faucet_phoenix = testnet
             .phoenix_balance
             .iter()
-            .find(|b| b.address().eq(&*state::FAUCET_KEY))
-            .expect("Testnet must have faucet configured");
+            .any(|b| b.address().eq(&*state::FAUCET_PHOENIX_KEY));
 
-        testnet
-            .stakes()
-            .next()
-            .expect("Testnet must have at least a provisioner configured");
+        let faucet_moonlight = testnet
+            .moonlight_account
+            .iter()
+            .any(|b| b.address().eq(&*state::FAUCET_MOONLIGHT_KEY));
+
+        if !faucet_phoenix && !faucet_moonlight {
+            panic!("Testnet must have faucet configured");
+        }
+
+        if !testnet.stakes().any(|s| {
+            s.amount >= MINIMUM_STAKE && s.eligibility.unwrap_or_default() == 0
+        }) {
+            panic!("Testnet must have at least a provisioner configured");
+        }
 
         Ok(())
     }
