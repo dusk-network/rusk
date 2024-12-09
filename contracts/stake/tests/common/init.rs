@@ -4,24 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use rand::{CryptoRng, RngCore};
-
-use execution_core::{
-    stake::STAKE_CONTRACT,
-    transfer::{
-        phoenix::{Note, PublicKey as PhoenixPublicKey},
-        TRANSFER_CONTRACT,
-    },
-    JubJubScalar,
+use execution_core::stake::STAKE_CONTRACT;
+use execution_core::transfer::{
+    phoenix::{Note, PublicKey as PhoenixPublicKey},
+    TRANSFER_CONTRACT,
 };
+use execution_core::JubJubScalar;
 use ff::Field;
+use rand::{CryptoRng, RngCore};
 use rusk_abi::{ContractData, Session, VM};
 
-use crate::common::utils::update_root;
+use crate::common::utils::{update_root, GAS_LIMIT};
 
 const OWNER: [u8; 32] = [0; 32];
 pub const CHAIN_ID: u8 = 0xFA;
-const POINT_LIMIT: u64 = 0x100_000_000;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note owned by the given public spend key.
@@ -31,35 +27,37 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
     pk: &PhoenixPublicKey,
     genesis_value: u64,
 ) -> Session {
+    let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
+
+    // deploy transfer-contract
     let transfer_bytecode = include_bytes!(
         "../../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
-    let stake_bytecode = include_bytes!(
-        "../../../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
-    );
-
-    let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
-
     session
         .deploy(
             transfer_bytecode,
             ContractData::builder()
                 .owner(OWNER)
                 .contract_id(TRANSFER_CONTRACT),
-            POINT_LIMIT,
+            GAS_LIMIT,
         )
         .expect("Deploying the transfer contract should succeed");
 
+    // deploy stake-contract
+    let stake_bytecode = include_bytes!(
+        "../../../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
+    );
     session
         .deploy(
             stake_bytecode,
             ContractData::builder()
                 .owner(OWNER)
                 .contract_id(STAKE_CONTRACT),
-            POINT_LIMIT,
+            GAS_LIMIT,
         )
         .expect("Deploying the stake contract should succeed");
 
+    // create genesis-note
     let sender_blinder = [
         JubJubScalar::random(&mut *rng),
         JubJubScalar::random(&mut *rng),
@@ -73,10 +71,11 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
             TRANSFER_CONTRACT,
             "push_note",
             &(0u64, genesis_note),
-            POINT_LIMIT,
+            GAS_LIMIT,
         )
         .expect("Pushing genesis note should succeed");
 
+    // update root of the tree of notes after genesis note has been pushed
     update_root(&mut session).expect("Updating the root should succeed");
 
     // sets the block height for all subsequent operations to 1
