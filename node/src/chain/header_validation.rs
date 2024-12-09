@@ -77,7 +77,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         header: &ledger::Header,
         expected_generator: &PublicKeyBytes,
-        disable_att_check: bool,
+        check_attestation: bool,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
         let generator =
             self.verify_block_generator(header, expected_generator)?;
@@ -86,7 +86,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         let prev_block_voters = self.verify_prev_block_cert(header).await?;
 
         let mut block_voters = vec![];
-        if !disable_att_check {
+        if check_attestation {
             (_, _, block_voters) = verify_att(
                 &header.att,
                 header.to_consensus_header(),
