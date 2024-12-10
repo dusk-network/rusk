@@ -145,7 +145,6 @@ describe("WalletTreasury", () => {
           }),
           faults: expect.any(Number),
           hardFaults: expect.any(Number),
-          nonce: expect.any(BigInt),
           reward: expect.any(BigInt),
         })
       );

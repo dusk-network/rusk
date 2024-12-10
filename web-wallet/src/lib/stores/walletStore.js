@@ -44,7 +44,6 @@ const initialState = {
     amount: null,
     faults: 0,
     hardFaults: 0,
-    nonce: 0n,
     reward: 0n,
   },
   syncStatus: {
@@ -184,6 +183,18 @@ const clearLocalDataAndInit = (profileGenerator, syncFromBlock) =>
   clearLocalData().then(() => {
     return init(profileGenerator, syncFromBlock);
   });
+
+/** @type {WalletStoreServices["claimRewards"]} */
+const claimRewards = async (amount, gas) =>
+  sync()
+    .then(networkStore.connect)
+    .then((network) =>
+      network.execute(
+        bookkeeper.as(getCurrentProfile()).withdraw(amount).gas(gas)
+      )
+    )
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["getTransactionsHistory"]} */
 const getTransactionsHistory = async () => transactions;
@@ -399,18 +410,6 @@ const unstake = async (gas) =>
     .then(networkStore.connect)
     .then((network) =>
       network.execute(bookkeeper.as(getCurrentProfile()).unstake().gas(gas))
-    )
-    .then(updateCacheAfterTransaction)
-    .then(passThruWithEffects(observeTxRemoval));
-
-/** @type {WalletStoreServices["claimRewards"]} */
-const claimRewards = async (amount, gas) =>
-  sync()
-    .then(networkStore.connect)
-    .then((network) =>
-      network.execute(
-        bookkeeper.as(getCurrentProfile()).withdraw(amount).gas(gas)
-      )
     )
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));

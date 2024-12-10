@@ -20,3 +20,5 @@ export async function getMinimumStake() {
 export function load() {}
 
 export async function unload() {}
+
+export function useAsProtocolDriver() {}
