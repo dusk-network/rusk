@@ -106,7 +106,7 @@ fn stake_withdraw_unstake() {
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
 
-    assert_event(&receipt.events, "stake", &stake_pk, deposit);
+    assert_event(&receipt.events, "stake", &stake_pk, deposit, 0);
 
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
@@ -144,7 +144,7 @@ fn stake_withdraw_unstake() {
         .call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, POINT_LIMIT)
         .expect("Rewarding a key should succeed");
 
-    assert_event(&receipt.events, "reward", &stake_pk, REWARD_AMOUNT);
+    assert_event(&receipt.events, "reward", &stake_pk, REWARD_AMOUNT, 0);
 
     let stake_data: Option<StakeData> = session
         .call(STAKE_CONTRACT, "get_stake", &stake_pk, POINT_LIMIT)
@@ -241,7 +241,7 @@ fn stake_withdraw_unstake() {
     let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
 
-    assert_event(&receipt.events, "withdraw", &stake_pk, REWARD_AMOUNT);
+    assert_event(&receipt.events, "withdraw", &stake_pk, REWARD_AMOUNT, 0);
 
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
@@ -360,5 +360,5 @@ fn stake_withdraw_unstake() {
 
     println!("UNSTAKE : {gas_spent} gas");
 
-    assert_event(&receipt.events, "unstake", &stake_pk, INITIAL_STAKE);
+    assert_event(&receipt.events, "unstake", &stake_pk, INITIAL_STAKE, 0);
 }
