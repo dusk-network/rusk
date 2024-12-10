@@ -26,10 +26,14 @@ pub const MAX_BLOCK_SIZE: usize = 1_024 * 1_024;
 
 /// Emergency mode is enabled after 16 iterations
 pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = 16;
+pub const EMERGENCY_BLOCK_ITERATION: u8 = u8::MAX;
 
 pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(7);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);
 pub const TIMEOUT_INCREASE: Duration = Duration::from_secs(2);
+
+pub const EMERGENCY_BLOCK_MIN_TIMESTAMP: Duration =
+    Duration::from_secs(MAX_STEP_TIMEOUT.as_secs() * MESSAGE_MAX_ITER as u64);
 
 mod default {
     pub const MINIMUM_BLOCK_TIME: u64 = 10;
@@ -82,6 +86,10 @@ pub fn ratification_extra() -> usize {
 /// Returns whether the current iteration is an emergency iteration
 pub fn is_emergency_iter(iter: u8) -> bool {
     iter >= EMERGENCY_MODE_ITERATION_THRESHOLD
+}
+
+pub fn is_emergency_block(iter: u8) -> bool {
+    iter == EMERGENCY_BLOCK_ITERATION
 }
 
 /// Returns if the next iteration generator needs to be excluded

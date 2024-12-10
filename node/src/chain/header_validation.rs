@@ -9,7 +9,8 @@ use std::sync::Arc;
 
 use dusk_bytes::Serializable;
 use dusk_consensus::config::{
-    is_emergency_iter, MINIMUM_BLOCK_TIME, RELAX_ITERATION_THRESHOLD,
+    is_emergency_block, is_emergency_iter, EMERGENCY_BLOCK_MIN_TIMESTAMP,
+    MINIMUM_BLOCK_TIME, RELAX_ITERATION_THRESHOLD,
 };
 use dusk_consensus::errors::{
     AttestationError, FailedIterationError, HeaderError,
@@ -77,7 +78,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         header: &ledger::Header,
         expected_generator: &PublicKeyBytes,
-        disable_att_check: bool,
+        check_attestation: bool,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
         let generator =
             self.verify_block_generator(header, expected_generator)?;
@@ -86,7 +87,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         let prev_block_voters = self.verify_prev_block_cert(header).await?;
 
         let mut block_voters = vec![];
-        if !disable_att_check {
+        if check_attestation {
             (_, _, block_voters) = verify_att(
                 &header.att,
                 header.to_consensus_header(),
@@ -166,6 +167,21 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         // Ensure rule of minimum block time is addressed
         if candidate_block.timestamp
             < self.prev_header.timestamp + *MINIMUM_BLOCK_TIME
+        {
+            return Err(HeaderError::BlockTimeLess);
+        }
+
+        // The Emergency Block can only be produced after all iterations in a
+        // round have failed. To ensure Dusk (or anyone in possess of the Dusk
+        // private key) is not able to shortcircuit a round with an arbitrary
+        // block, nodes should only accept an Emergency Block if its timestamp
+        // is higher than the maximum time needed to run all round iterations.
+        // This guarantees the network has enough time to actually produce a
+        // block, if possible.
+        if is_emergency_block(candidate_block.iteration)
+            && candidate_block.timestamp
+                < self.prev_header.timestamp
+                    + EMERGENCY_BLOCK_MIN_TIMESTAMP.as_secs()
         {
             return Err(HeaderError::BlockTimeLess);
         }
