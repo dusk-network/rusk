@@ -113,7 +113,7 @@
     }
   }
 
-  /** Emits the switchChain event to the thrid-party wallet when the ExclusiveChoice UI is interacted with  */
+  /** Emits the switchChain event to the third-party wallet when the ExclusiveChoice UI is interacted with  */
   // @ts-ignore
   async function onChainSwitch(e) {
     if (!isConnected) {
@@ -295,7 +295,9 @@
       </div>
 
       <Textbox
-        className="migrate__input-field"
+        className="migrate__input-field {!isAmountValid
+          ? 'migrate__input-field--invalid'
+          : ''}"
         bind:value={amount}
         required
         type="text"
@@ -441,5 +443,9 @@
 
   :global(.dusk-textbox.migrate__input-field) {
     background-color: var(--non-button-control-bg-color);
+  }
+
+  :global(.dusk-textbox.migrate__input-field--invalid) {
+    color: var(--error-color);
   }
 </style>
