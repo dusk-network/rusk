@@ -378,3 +378,47 @@ fn nonsense_bytes_fails() -> Result<(), Error> {
     }
     Ok(())
 }
+
+#[cfg(feature = "serde")]
+mod serde_serialization {
+    use super::{AccountPublicKey, AccountSecretKey, SeedableRng, StdRng};
+    use execution_core::transfer::MoonlightTransactionEvent;
+    use rand::{Rng, RngCore};
+
+    fn moonlight_tx_event(rng: &mut StdRng) -> MoonlightTransactionEvent {
+        let mut memo = Vec::new();
+        memo.resize(50, 0);
+        rng.fill_bytes(&mut memo);
+        MoonlightTransactionEvent {
+            sender: AccountPublicKey::from(&AccountSecretKey::random(rng)),
+            receiver: if rng.gen_bool(0.5) {
+                Some(AccountPublicKey::from(&AccountSecretKey::random(rng)))
+            } else {
+                None
+            },
+            value: rng.gen(),
+            memo,
+            gas_spent: rng.gen(),
+            refund_info: if rng.gen_bool(0.5) {
+                Some((
+                    AccountPublicKey::from(&AccountSecretKey::random(rng)),
+                    rng.gen(),
+                ))
+            } else {
+                None
+            },
+        }
+    }
+
+    #[test]
+    fn moonlight_tx_event_serde() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let tx_event: MoonlightTransactionEvent = moonlight_tx_event(&mut rng);
+        let ser = serde_json::to_string(&tx_event);
+        println!("{:?}", ser);
+        assert!(ser.is_ok());
+        let deser = serde_json::from_str(&ser.unwrap());
+        assert!(deser.is_ok());
+        assert_eq!(tx_event, deser.unwrap());
+    }
+}

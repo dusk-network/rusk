@@ -26,6 +26,9 @@ pub use error::Error;
 mod dusk;
 pub use dusk::{dusk, from_dusk, Dusk, LUX};
 
+#[cfg(feature = "serde")]
+mod serde_support;
+
 // elliptic curve types
 pub use dusk_bls12_381::BlsScalar;
 pub use dusk_jubjub::{
