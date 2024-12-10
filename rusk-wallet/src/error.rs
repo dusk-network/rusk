@@ -153,6 +153,9 @@ pub enum Error {
     /// Contract file location not found
     #[error("Invalid WASM contract path provided")]
     InvalidWasmContractPath,
+    /// Invalid wallet file path
+    #[error("Invalid wallet file path")]
+    InvalidWalletFilePath,
     /// Invalid environment variable value
     #[error("Invalid environment variable value {0}")]
     InvalidEnvVar(String),

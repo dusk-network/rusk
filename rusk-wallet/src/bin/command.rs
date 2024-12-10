@@ -21,14 +21,14 @@ use rusk_wallet::gas::{
     DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
 };
 use rusk_wallet::{
-    Address, Error, Profile, Wallet, EPOCH, MAX_CONTRACT_INIT_ARG_SIZE,
-    MAX_PROFILES,
+    Address, Error, Profile, Wallet, WalletPath, EPOCH,
+    MAX_CONTRACT_INIT_ARG_SIZE, MAX_PROFILES,
 };
 use wallet_core::BalanceInfo;
 
 use crate::io::prompt;
 use crate::settings::Settings;
-use crate::{WalletFile, WalletPath};
+use crate::WalletFile;
 
 /// Commands that can be run against the Dusk wallet
 #[allow(clippy::large_enum_variant)]

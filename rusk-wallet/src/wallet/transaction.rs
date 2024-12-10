@@ -19,12 +19,12 @@ use wallet_core::transaction::{
 };
 use zeroize::Zeroize;
 
-use super::file::SecureWalletFile;
 use super::Wallet;
 use crate::clients::Prover;
 use crate::currency::Dusk;
 use crate::gas::Gas;
 use crate::Error;
+use crate::SecureWalletFile;
 
 impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Transfers funds between shielded addresses.

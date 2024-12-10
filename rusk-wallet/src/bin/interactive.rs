@@ -10,9 +10,13 @@ use std::fmt::Display;
 
 use bip39::{Language, Mnemonic, MnemonicType};
 use inquire::{InquireError, Select};
+
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
-use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
+use rusk_wallet::{
+    Address, Error, Profile, SecureWalletFile, Wallet, WalletFilePath,
+    WalletPath, MAX_PROFILES,
+};
 
 use crate::io::{self, prompt};
 use crate::settings::Settings;
@@ -138,6 +142,9 @@ async fn profile_idx(
     match menu_profile(wallet)? {
         ProfileSelect::Index(index, _) => Ok(index),
         ProfileSelect::New => {
+            // get the wallet file
+            let file = wallet.file().clone().ok_or(Error::WalletFileMissing)?;
+
             if wallet.profiles().len() >= MAX_PROFILES {
                 println!(
                         "Cannot create more profiles, this wallet only supports up to {MAX_PROFILES} profiles"
@@ -147,24 +154,22 @@ async fn profile_idx(
             }
 
             let profile_idx = wallet.add_profile();
-            let file_version = wallet.get_file_version()?;
 
             let password = &settings.password;
             // if the version file is old, ask for password and save as
             // latest dat file
-            if file_version.is_old() {
+            if file.is_old() {
                 let pwd = prompt::request_auth(
                         "Updating your wallet data file, please enter your wallet password ",
                         password,
                         DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
                     )?;
 
-                // UNWRAP: we can safely unwrap here because we know the file is
-                // not None since we've checked the file version
-                wallet.save_to(WalletFile {
-                    path: wallet.file().clone().unwrap().path,
+                wallet.save_to(WalletFile::new(
+                    file.path().clone(),
                     pwd,
-                })?;
+                    DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+                ))?;
             } else {
                 // else just save
                 wallet.save()?;
@@ -231,8 +236,10 @@ pub(crate) async fn load_wallet(
     settings: &Settings,
     file_version: Result<DatFileVersion, Error>,
 ) -> anyhow::Result<Wallet<WalletFile>> {
-    let wallet_found =
-        wallet_path.inner().exists().then(|| wallet_path.clone());
+    let wallet_found = wallet_path
+        .wallet_path()
+        .exists()
+        .then(|| wallet_path.clone());
 
     let password = &settings.password;
 
@@ -247,10 +254,11 @@ pub(crate) async fn load_wallet(
                     password,
                     file_version,
                 )?;
-                match Wallet::from_file(WalletFile {
-                    path: path.clone(),
+                match Wallet::from_file(WalletFile::new(
+                    path.clone(),
                     pwd,
-                }) {
+                    file_version,
+                )) {
                     Ok(wallet) => break wallet,
                     Err(_) if attempt > 2 => {
                         Err(Error::AttemptsExhausted)?;
@@ -277,7 +285,11 @@ pub(crate) async fn load_wallet(
             // create and store the wallet
             let mut w = Wallet::new(mnemonic)?;
             let path = wallet_path.clone();
-            w.save_to(WalletFile { path, pwd })?;
+            w.save_to(WalletFile::new(
+                path,
+                pwd,
+                DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+            ))?;
             w
         }
         MainMenu::Recover => {
@@ -292,7 +304,11 @@ pub(crate) async fn load_wallet(
             // create and store the recovered wallet
             let mut w = Wallet::new(phrase)?;
             let path = wallet_path.clone();
-            w.save_to(WalletFile { path, pwd })?;
+            w.save_to(WalletFile::new(
+                path,
+                pwd,
+                DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+            ))?;
             w
         }
         MainMenu::Exit => std::process::exit(0),
@@ -493,7 +509,7 @@ impl Display for MainMenu {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             MainMenu::Load(path) => {
-                write!(f, "Load wallet from {}", path.wallet.display())
+                write!(f, "Load wallet from {}", path.wallet_path().display())
             }
             MainMenu::Create => write!(f, "Create a new wallet"),
             MainMenu::Recover => {
