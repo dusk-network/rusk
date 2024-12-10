@@ -239,7 +239,7 @@ describe("Dashboard Layout", () => {
   it("should render the dashboard layout in the error state", async () => {
     const { container } = render(Layout, baseProps);
     const getRetryButton = () =>
-      container.querySelector(".footer__actions-button--retry");
+      container.querySelector('[aria-label="Retry synchronization"]');
 
     expect(getStatusWrapper(container, "error")).toBeNull();
     expect(getRetryButton()).toBeNull();

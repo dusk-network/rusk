@@ -4,6 +4,7 @@
     mdiAlertOutline,
     mdiCogOutline,
     mdiLink,
+    mdiLogout,
     mdiRestore,
     mdiTimerSand,
   } from "@mdi/js";
@@ -15,6 +16,7 @@
     Balance,
     SyncBar,
   } from "$lib/components";
+  import { logout } from "$lib/navigation";
 
   /** @type {import('./$types').LayoutData} */
   export let data;
@@ -91,65 +93,69 @@
     <slot />
   </div>
   <footer class="footer">
-    <nav class="footer__navigation">
-      <div class="footer__network-status">
-        <Icon
-          className="footer__network-status-icon footer__network-status-icon--{iconVariant}"
-          data-tooltip-disabled={!syncStatus.error}
-          data-tooltip-id="main-tooltip"
-          data-tooltip-text={syncStatus.error?.message}
-          data-tooltip-type="error"
-          path={networkStatusIconPath}
-          size="large"
-        />
-        <div class="footer__network-message">
-          {#if syncStatusLabel && !syncStatus.isInProgress}
-            <span>{syncStatusLabel}</span>
-          {/if}
-          {#if syncStatus.isInProgress}
-            <span>
-              {syncStatusLabel} –
-              <b
-                >Syncing... {syncStatus.progress
-                  ? `${(syncStatus.progress * 100).toFixed(0)}%`
-                  : ""}</b
-              >
-            </span>
-            {#if syncStatus.progress}
-              <SyncBar
-                from={syncStatus.from}
-                last={syncStatus.last}
-                progress={syncStatus.progress}
-              />
-            {/if}
-          {/if}
-        </div>
-      </div>
-      <div class="footer__actions">
-        {#if syncStatus.error}
-          <Button
-            aria-label="Retry synchronization"
-            className="footer__actions-button footer__actions-button--retry"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-text="Retry synchronization"
-            icon={{ path: mdiRestore, size: "large" }}
-            on:click={() => {
-              walletStore.sync();
-            }}
-            variant="secondary"
-          />
+    <div class="footer__network-status">
+      <Icon
+        className="footer__network-status-icon footer__network-status-icon--{iconVariant}"
+        data-tooltip-disabled={!syncStatus.error}
+        data-tooltip-id="main-tooltip"
+        data-tooltip-text={syncStatus.error?.message}
+        data-tooltip-type="error"
+        path={networkStatusIconPath}
+        size="large"
+      />
+      <div class="footer__network-message">
+        {#if syncStatusLabel && !syncStatus.isInProgress}
+          <span>{syncStatusLabel}</span>
         {/if}
-        <AppAnchorButton
-          variant="secondary"
-          className="footer__actions-button footer__actions-button--settings"
-          icon={{ path: mdiCogOutline, size: "large" }}
-          href="/settings"
-          aria-label="Settings"
-          data-tooltip-id="main-tooltip"
-          data-tooltip-text="Settings"
-        />
+        {#if syncStatus.isInProgress}
+          <span>
+            {syncStatusLabel} –
+            <b
+              >Syncing... {syncStatus.progress
+                ? `${(syncStatus.progress * 100).toFixed(0)}%`
+                : ""}</b
+            >
+          </span>
+          {#if syncStatus.progress}
+            <SyncBar
+              from={syncStatus.from}
+              last={syncStatus.last}
+              progress={syncStatus.progress}
+            />
+          {/if}
+        {/if}
       </div>
-    </nav>
+    </div>
+    <div class="footer__actions">
+      {#if syncStatus.error}
+        <Button
+          aria-label="Retry synchronization"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Retry synchronization"
+          icon={{ path: mdiRestore, size: "large" }}
+          on:click={() => {
+            walletStore.sync();
+          }}
+          variant="secondary"
+        />
+      {/if}
+      <AppAnchorButton
+        variant="secondary"
+        icon={{ path: mdiCogOutline, size: "large" }}
+        href="/settings"
+        aria-label="Settings"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-text="Settings"
+      />
+      <Button
+        variant="secondary"
+        icon={{ path: mdiLogout, size: "large" }}
+        aria-label="Log out"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-text="Log out"
+        on:click={() => logout(false)}
+      />
+    </div>
   </footer>
 </section>
 
@@ -175,14 +181,10 @@
 
   .footer {
     width: 100%;
-
-    &__navigation {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.75rem;
-      align-items: center;
-      width: 100%;
-    }
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: flex-end;
 
     &__actions {
       display: flex;
@@ -193,7 +195,7 @@
 
     &__network-status {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: var(--small-gap);
       line-height: 150%;
       text-transform: capitalize;

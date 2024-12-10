@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add logout button to main layout [#3159]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -424,6 +426,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3099]: https://github.com/dusk-network/rusk/issues/3099
 [#3113]: https://github.com/dusk-network/rusk/issues/3113
 [#3129]: https://github.com/dusk-network/rusk/issues/3129
+[#3159]: https://github.com/dusk-network/rusk/issues/3159
 
 <!-- VERSIONS -->
 
