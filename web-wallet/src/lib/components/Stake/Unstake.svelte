@@ -15,11 +15,7 @@
     Wizard,
     WizardStep,
   } from "$lib/dusk/components";
-  import {
-    ContractStatusesList,
-    GasSettings,
-    OperationResult,
-  } from "$lib/components";
+  import { GasSettings, OperationResult } from "$lib/components";
 
   import StakeOverview from "./StakeOverview.svelte";
 
@@ -37,9 +33,6 @@
 
   /** @type {bigint} */
   export let maxAmount;
-
-  /** @type {ContractStatus[]} */
-  export let statuses;
 
   /** @type {string} */
   export let operationCtaLabel;
@@ -111,7 +104,6 @@
       }}
     >
       <div in:fade|global class="operation__unstake">
-        <ContractStatusesList {statuses} />
         <Badge text="REVIEW TRANSACTION" variant="warning" />
         <StakeOverview
           label={operationOverviewLabel}

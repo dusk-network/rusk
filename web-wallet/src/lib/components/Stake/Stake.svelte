@@ -24,7 +24,6 @@
   import { toast } from "$lib/dusk/components/Toast/store";
   import {
     AppAnchor,
-    ContractStatusesList,
     GasFee,
     GasSettings,
     OperationResult,
@@ -55,9 +54,6 @@
 
   /** @type {bigint} */
   export let availableBalance;
-
-  /** @type {ContractStatus[]} */
-  export let statuses;
 
   let activeStep = 0;
   let { gasLimit, gasPrice } = gasSettings;
@@ -231,7 +227,6 @@
         disabled: isNextButtonDisabled,
       }}
     >
-      <ContractStatusesList {statuses} />
       <div class="operation__amount-wrapper">
         <p>Amount:</p>
         <Button
@@ -316,7 +311,6 @@
       }}
     >
       <div in:fade|global class="operation__stake">
-        <ContractStatusesList {statuses} />
         <Badge text="REVIEW TRANSACTION" variant="warning" />
         <StakeOverview label="Amount" value={formatter(stakeAmount)} />
         <GasFee {formatter} fee={maxGasFee} />
