@@ -5,14 +5,12 @@
     mdiAccountQuestionOutline,
     mdiApplicationCogOutline,
     mdiArrowLeft,
-    mdiCheckNetworkOutline,
     mdiGasStationOutline,
     mdiRestoreAlert,
   } from "@mdi/js";
   import { mapWith, rename } from "lamb";
-
   import {
-    Badge,
+    Anchor,
     Button,
     ErrorDetails,
     Icon,
@@ -21,16 +19,10 @@
   } from "$lib/dusk/components";
   import { AppAnchorButton, GasControls } from "$lib/components";
   import { currencies } from "$lib/dusk/currency";
-  import {
-    gasStore,
-    networkStore,
-    settingsStore,
-    walletStore,
-  } from "$lib/stores";
+  import { gasStore, settingsStore, walletStore } from "$lib/stores";
   import { areValidGasSettings } from "$lib/contracts";
   import { logout } from "$lib/navigation";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
-  import Anchor from "$lib/dusk/components/Anchor/Anchor.svelte";
 
   const confirmResetMessage =
     "Confirm you've saved your recovery phrase before resetting the wallet. Proceed?";
@@ -60,7 +52,6 @@
   const currenciesToOptions = mapWith(currencyToOption);
   const { currency, darkMode, gasLimit, gasPrice } = $settingsStore;
   const { gasLimitLower, gasLimitUpper, gasPriceLower } = $gasStore;
-  const { networkName } = $networkStore;
 
   let isDarkMode = darkMode;
   let isGasValid = false;
@@ -69,12 +60,6 @@
   let resetError = null;
 
   $: ({ syncStatus } = $walletStore);
-  $: ({ connected } = $networkStore);
-
-  /** @type {import("svelte").ComponentProps<Badge>} */
-  $: connectedBadgeProps = connected
-    ? { text: "Online", variant: "success" }
-    : { text: "Offline", variant: "error" };
 </script>
 
 <section class="settings">
@@ -83,20 +68,6 @@
   </header>
 
   <div class="settings__content">
-    <hr />
-    <article class="settings-group">
-      <header class="settings-group__header settings-group__header--network">
-        <div class="settings-group__header">
-          <Icon path={mdiCheckNetworkOutline} />
-          <h3 class="h4 settings-group__heading">Network</h3>
-        </div>
-        <Badge {...connectedBadgeProps} />
-      </header>
-      <strong class="h1 settings-group__label">
-        {networkName}
-      </strong>
-    </article>
-    <hr />
     <article class="settings-group">
       <header class="settings-group__header">
         <Icon path={mdiGasStationOutline} />
@@ -135,26 +106,10 @@
       </header>
       <div class="settings-group__multi-control-content">
         <label
-          class="settings-group__control settings-group__control--switch"
-          for={undefined}
-        >
-          <span>Dark mode</span>
-          <Switch
-            bind:value={isDarkMode}
-            on:change={() => {
-              settingsStore.update((store) => {
-                store.darkMode = isDarkMode;
-
-                return store;
-              });
-            }}
-          />
-        </label>
-        <label
           class="settings-group__control settings-group__control--with-label"
           for={undefined}
         >
-          <span>Currency</span>
+          <span>Currency:</span>
           <Select
             className="settings-group__control settings-group__control--with-label"
             value={currency}
@@ -169,6 +124,22 @@
               });
             }}
             options={currenciesToOptions(currencies)}
+          />
+        </label>
+        <label
+          class="settings-group__control settings-group__control--switch"
+          for={undefined}
+        >
+          <span>Dark mode</span>
+          <Switch
+            bind:value={isDarkMode}
+            on:change={() => {
+              settingsStore.update((store) => {
+                store.darkMode = isDarkMode;
+
+                return store;
+              });
+            }}
           />
         </label>
       </div>
@@ -280,15 +251,6 @@
       display: flex;
       align-items: center;
       gap: 0.75em;
-
-      &--network {
-        width: 100%;
-        justify-content: space-between;
-      }
-    }
-
-    &__label {
-      text-transform: capitalize;
     }
 
     &__heading {

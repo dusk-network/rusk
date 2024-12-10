@@ -2,10 +2,10 @@
 
 exports[`Settings > Resetting the wallet > should show an error if clearing local data fails 1`] = `
 <section
-  class="settings svelte-zikvd5"
+  class="settings svelte-1mpdn76"
 >
   <header
-    class="settings__header svelte-zikvd5"
+    class="settings__header svelte-1mpdn76"
   >
     <h2>
       Settings
@@ -13,58 +13,13 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
   </header>
    
   <div
-    class="settings__content svelte-zikvd5"
+    class="settings__content svelte-1mpdn76"
   >
-    <hr />
-     
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header settings-group__header--network svelte-zikvd5"
-      >
-        <div
-          class="settings-group__header svelte-zikvd5"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M15,20A1,1 0 0,0 14,19H13V17H17A2,2 0 0,0 19,15V5A2,2 0 0,0 17,3H7A2,2 0 0,0 5,5V15A2,2 0 0,0 7,17H11V19H10A1,1 0 0,0 9,20H2V22H9A1,1 0 0,0 10,23H14A1,1 0 0,0 15,22H22V20H15M7,15V5H17V15H7M8,10.37L9.24,9.13L10.93,10.83L14.76,7L16,8.5L10.93,13.57L8,10.37Z"
-            />
-          </svg>
-          
-           
-          <h3
-            class="h4 settings-group__heading svelte-zikvd5"
-          >
-            Network
-          </h3>
-        </div>
-         
-        <span
-          class="dusk-badge dusk-badge--variant-success"
-        >
-          Online
-        </span>
-      </header>
-       
-      <strong
-        class="h1 settings-group__label svelte-zikvd5"
-      >
-        unknown
-      </strong>
-    </article>
-     
-    <hr />
-     
-    <article
-      class="settings-group svelte-zikvd5"
-    >
-      <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -78,14 +33,14 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Gas
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-zikvd5"
+        class="settings-group__multi-control-content svelte-1mpdn76"
       >
         <label
           class="gas-control svelte-1p4ekyk"
@@ -130,10 +85,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
     <hr />
      
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -147,38 +102,22 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Preferences
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-zikvd5"
+        class="settings-group__multi-control-content svelte-1mpdn76"
       >
         <label
-          class="settings-group__control settings-group__control--switch svelte-zikvd5"
-        >
-          <span>
-            Dark mode
-          </span>
-           
-          <div
-            aria-checked="false"
-            aria-disabled="false"
-            class="dusk-switch"
-            role="switch"
-            tabindex="0"
-          />
-        </label>
-         
-        <label
-          class="settings-group__control settings-group__control--with-label svelte-zikvd5"
+          class="settings-group__control settings-group__control--with-label svelte-1mpdn76"
         >
           <span
-            class="svelte-zikvd5"
+            class="svelte-1mpdn76"
           >
-            Currency
+            Currency:
           </span>
            
           <select
@@ -457,16 +396,32 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
             
           </select>
         </label>
+         
+        <label
+          class="settings-group__control settings-group__control--switch svelte-1mpdn76"
+        >
+          <span>
+            Dark mode
+          </span>
+           
+          <div
+            aria-checked="false"
+            aria-disabled="false"
+            class="dusk-switch"
+            role="switch"
+            tabindex="0"
+          />
+        </label>
       </div>
     </article>
      
     <hr />
      
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -480,7 +435,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Support
         </h3>
@@ -524,10 +479,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
     <hr />
      
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -541,14 +496,14 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Reset wallet
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-zikvd5"
+        class="settings-group__multi-control-content svelte-1mpdn76"
       >
         <p>
           Resetting your wallet clears the cache and restores default settings
@@ -599,10 +554,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
 
 exports[`Settings > should render the settings page displaying the status of the network 1`] = `
 <section
-  class="settings svelte-zikvd5"
+  class="settings svelte-1mpdn76"
 >
   <header
-    class="settings__header svelte-zikvd5"
+    class="settings__header svelte-1mpdn76"
   >
     <h2>
       Settings
@@ -610,58 +565,13 @@ exports[`Settings > should render the settings page displaying the status of the
   </header>
    
   <div
-    class="settings__content svelte-zikvd5"
+    class="settings__content svelte-1mpdn76"
   >
-    <hr />
-     
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header settings-group__header--network svelte-zikvd5"
-      >
-        <div
-          class="settings-group__header svelte-zikvd5"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M15,20A1,1 0 0,0 14,19H13V17H17A2,2 0 0,0 19,15V5A2,2 0 0,0 17,3H7A2,2 0 0,0 5,5V15A2,2 0 0,0 7,17H11V19H10A1,1 0 0,0 9,20H2V22H9A1,1 0 0,0 10,23H14A1,1 0 0,0 15,22H22V20H15M7,15V5H17V15H7M8,10.37L9.24,9.13L10.93,10.83L14.76,7L16,8.5L10.93,13.57L8,10.37Z"
-            />
-          </svg>
-          
-           
-          <h3
-            class="h4 settings-group__heading svelte-zikvd5"
-          >
-            Network
-          </h3>
-        </div>
-         
-        <span
-          class="dusk-badge dusk-badge--variant-success"
-        >
-          Online
-        </span>
-      </header>
-       
-      <strong
-        class="h1 settings-group__label svelte-zikvd5"
-      >
-        unknown
-      </strong>
-    </article>
-     
-    <hr />
-     
-    <article
-      class="settings-group svelte-zikvd5"
-    >
-      <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -675,14 +585,14 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Gas
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-zikvd5"
+        class="settings-group__multi-control-content svelte-1mpdn76"
       >
         <label
           class="gas-control svelte-1p4ekyk"
@@ -727,10 +637,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -744,38 +654,22 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Preferences
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-zikvd5"
+        class="settings-group__multi-control-content svelte-1mpdn76"
       >
         <label
-          class="settings-group__control settings-group__control--switch svelte-zikvd5"
-        >
-          <span>
-            Dark mode
-          </span>
-           
-          <div
-            aria-checked="false"
-            aria-disabled="false"
-            class="dusk-switch"
-            role="switch"
-            tabindex="0"
-          />
-        </label>
-         
-        <label
-          class="settings-group__control settings-group__control--with-label svelte-zikvd5"
+          class="settings-group__control settings-group__control--with-label svelte-1mpdn76"
         >
           <span
-            class="svelte-zikvd5"
+            class="svelte-1mpdn76"
           >
-            Currency
+            Currency:
           </span>
            
           <select
@@ -1054,16 +948,32 @@ exports[`Settings > should render the settings page displaying the status of the
             
           </select>
         </label>
+         
+        <label
+          class="settings-group__control settings-group__control--switch svelte-1mpdn76"
+        >
+          <span>
+            Dark mode
+          </span>
+           
+          <div
+            aria-checked="false"
+            aria-disabled="false"
+            class="dusk-switch"
+            role="switch"
+            tabindex="0"
+          />
+        </label>
       </div>
     </article>
      
     <hr />
      
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1077,7 +987,7 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Support
         </h3>
@@ -1121,10 +1031,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1138,14 +1048,14 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Reset wallet
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-zikvd5"
+        class="settings-group__multi-control-content svelte-1mpdn76"
       >
         <p>
           Resetting your wallet clears the cache and restores default settings
@@ -1178,10 +1088,10 @@ exports[`Settings > should render the settings page displaying the status of the
 
 exports[`Settings > should render the settings page displaying the status of the network 2`] = `
 <section
-  class="settings svelte-zikvd5"
+  class="settings svelte-1mpdn76"
 >
   <header
-    class="settings__header svelte-zikvd5"
+    class="settings__header svelte-1mpdn76"
   >
     <h2>
       Settings
@@ -1189,58 +1099,13 @@ exports[`Settings > should render the settings page displaying the status of the
   </header>
    
   <div
-    class="settings__content svelte-zikvd5"
+    class="settings__content svelte-1mpdn76"
   >
-    <hr />
-     
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header settings-group__header--network svelte-zikvd5"
-      >
-        <div
-          class="settings-group__header svelte-zikvd5"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M15,20A1,1 0 0,0 14,19H13V17H17A2,2 0 0,0 19,15V5A2,2 0 0,0 17,3H7A2,2 0 0,0 5,5V15A2,2 0 0,0 7,17H11V19H10A1,1 0 0,0 9,20H2V22H9A1,1 0 0,0 10,23H14A1,1 0 0,0 15,22H22V20H15M7,15V5H17V15H7M8,10.37L9.24,9.13L10.93,10.83L14.76,7L16,8.5L10.93,13.57L8,10.37Z"
-            />
-          </svg>
-          
-           
-          <h3
-            class="h4 settings-group__heading svelte-zikvd5"
-          >
-            Network
-          </h3>
-        </div>
-         
-        <span
-          class="dusk-badge dusk-badge--variant-success"
-        >
-          Online
-        </span>
-      </header>
-       
-      <strong
-        class="h1 settings-group__label svelte-zikvd5"
-      >
-        unknown
-      </strong>
-    </article>
-     
-    <hr />
-     
-    <article
-      class="settings-group svelte-zikvd5"
-    >
-      <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1254,14 +1119,14 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Gas
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-zikvd5"
+        class="settings-group__multi-control-content svelte-1mpdn76"
       >
         <label
           class="gas-control svelte-1p4ekyk"
@@ -1306,10 +1171,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1323,38 +1188,22 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Preferences
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-zikvd5"
+        class="settings-group__multi-control-content svelte-1mpdn76"
       >
         <label
-          class="settings-group__control settings-group__control--switch svelte-zikvd5"
-        >
-          <span>
-            Dark mode
-          </span>
-           
-          <div
-            aria-checked="false"
-            aria-disabled="false"
-            class="dusk-switch"
-            role="switch"
-            tabindex="0"
-          />
-        </label>
-         
-        <label
-          class="settings-group__control settings-group__control--with-label svelte-zikvd5"
+          class="settings-group__control settings-group__control--with-label svelte-1mpdn76"
         >
           <span
-            class="svelte-zikvd5"
+            class="svelte-1mpdn76"
           >
-            Currency
+            Currency:
           </span>
            
           <select
@@ -1633,16 +1482,32 @@ exports[`Settings > should render the settings page displaying the status of the
             
           </select>
         </label>
+         
+        <label
+          class="settings-group__control settings-group__control--switch svelte-1mpdn76"
+        >
+          <span>
+            Dark mode
+          </span>
+           
+          <div
+            aria-checked="false"
+            aria-disabled="false"
+            class="dusk-switch"
+            role="switch"
+            tabindex="0"
+          />
+        </label>
       </div>
     </article>
      
     <hr />
      
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1656,7 +1521,7 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Support
         </h3>
@@ -1700,10 +1565,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-zikvd5"
+      class="settings-group svelte-1mpdn76"
     >
       <header
-        class="settings-group__header svelte-zikvd5"
+        class="settings-group__header svelte-1mpdn76"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1717,14 +1582,14 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-zikvd5"
+          class="h4 settings-group__heading svelte-1mpdn76"
         >
           Reset wallet
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-zikvd5"
+        class="settings-group__multi-control-content svelte-1mpdn76"
       >
         <p>
           Resetting your wallet clears the cache and restores default settings
