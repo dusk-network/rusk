@@ -4,10 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::io;
+
 use clap::builder::BoolishValueParser;
 use clap::Subcommand;
 use rusk_recovery_tools::Theme;
-use std::io;
 use tracing::info;
 
 #[allow(clippy::large_enum_variant)]

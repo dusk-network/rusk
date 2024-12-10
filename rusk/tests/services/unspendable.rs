@@ -8,10 +8,8 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::transfer::{
-    data::{ContractCall, TransactionData},
-    TRANSFER_CONTRACT,
-};
+use execution_core::transfer::data::{ContractCall, TransactionData};
+use execution_core::transfer::TRANSFER_CONTRACT;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};

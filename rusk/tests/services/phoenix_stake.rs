@@ -4,21 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::stake::MINIMUM_STAKE;
-use execution_core::{
-    dusk,
-    signatures::bls::PublicKey as BlsPublicKey,
-    stake::{StakeAmount, STAKE_CONTRACT},
-    transfer::data::ContractCall,
-};
-
+use execution_core::dusk;
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::{StakeAmount, MINIMUM_STAKE, STAKE_CONTRACT};
+use execution_core::transfer::data::ContractCall;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use std::collections::HashMap;
 use tempfile::tempdir;
 use test_wallet::{self as wallet};
 use tracing::info;

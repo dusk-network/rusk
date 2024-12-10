@@ -5,6 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod events;
+pub(crate) use events::ChainEventStreamer;
+
 mod rusk;
 mod vm;
 
@@ -13,20 +15,18 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use execution_core::{dusk, Dusk};
-
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
 use node::LongLivedService;
 use parking_lot::RwLock;
 use rusk_abi::VM;
 use tokio::sync::broadcast;
-
-use crate::http::RuesEvent;
-pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
 use {
     node::archive::Archive, node_data::archive::ArchivalData, tokio::sync::mpsc,
 };
+
+use crate::http::RuesEvent;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
