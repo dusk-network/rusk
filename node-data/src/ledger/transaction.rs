@@ -55,14 +55,16 @@ pub struct SpentTransaction {
 }
 
 impl Transaction {
-    /// Computes the hash of the transaction.
+    /// Computes the hash digest of the entire transaction data.
     ///
-    /// This method returns the hash of the entire
+    /// This method returns the Sha3 256 digest of the entire
     /// transaction in its serialized form
+    ///
+    /// The digest hash is currently only being used in the merkle tree.
     ///
     /// ### Returns
     /// An array of 32 bytes representing the hash of the transaction.
-    pub fn hash(&self) -> [u8; 32] {
+    pub fn digest(&self) -> [u8; 32] {
         sha3::Sha3_256::digest(self.inner.to_var_bytes()).into()
     }
 

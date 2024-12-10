@@ -113,15 +113,15 @@ impl<T: Operations> Generator<T> {
 
         // We always write the faults len in a u32
         let mut faults_size = u32::SIZE;
-        let faults_hashes: Vec<_> = faults
+        let fault_digests: Vec<_> = faults
             .iter()
             .map(|f| {
                 faults_size += f.size();
-                f.hash()
+                f.digest()
             })
             .collect();
 
-        blk_header.faultroot = merkle_root(&faults_hashes);
+        blk_header.faultroot = merkle_root(&fault_digests);
 
         // We know for sure that this operation cannot underflow
         let max_txs_bytes = MAX_BLOCK_SIZE - header_size - faults_size;
@@ -140,10 +140,10 @@ impl<T: Operations> Generator<T> {
         blk_header.state_hash = result.verification_output.state_root;
         blk_header.event_bloom = result.verification_output.event_bloom;
 
-        let tx_hashes: Vec<_> =
-            result.txs.iter().map(|t| t.inner.hash()).collect();
+        let tx_digests: Vec<_> =
+            result.txs.iter().map(|t| t.inner.digest()).collect();
         let txs: Vec<_> = result.txs.into_iter().map(|t| t.inner).collect();
-        blk_header.txroot = merkle_root(&tx_hashes[..]);
+        blk_header.txroot = merkle_root(&tx_digests[..]);
 
         blk_header.timestamp = max(
             ru.timestamp() + *MINIMUM_BLOCK_TIME,
