@@ -1146,7 +1146,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let final_block = self.db.read().await.view(|v| {
             let prev_height = tip.inner().header().height - 1;
 
-            for height in (0..prev_height).rev() {
+            for height in (0..=prev_height).rev() {
                 if let Ok(Some((hash, Label::Final(_)))) =
                     v.block_label_by_height(height)
                 {
