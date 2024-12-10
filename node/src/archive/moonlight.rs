@@ -28,7 +28,7 @@ use crate::archive::{Archive, ArchiveOptions};
 /// Subfolder containing the moonlight database.
 const MOONLIGHT_DB_FOLDER_NAME: &str = "moonlight.db";
 
-/// Default max count for moonlight transactions returned.
+/// Default max count for moonlight transfers returned.
 const DEFAULT_MAX_COUNT: usize = 1000;
 
 // Column family names.
@@ -42,11 +42,26 @@ const CF_M_OUTFLOW_ADDRESS_TX: &str = "cf_m_outflow_address_tx";
 /// Memo to MoonlightTx mapping (in- & outlfows)
 const CF_M_MEMO_TX: &str = "cf_m_memo_tx";
 
-/// Group of events belonging to a single Moonlight transaction and additional
-/// metadata.
+/// Order of the transfers.
 ///
-/// The underlying Vec<ContractEvent> contains at least one event that
-/// relates to a moonlight in- or outflow.
+/// Ascending means the oldest transfer is first and the newest is last.
+/// Descending means the newest transfer is first and the oldest is last.
+///
+/// New & old is defined by the block height. The higher the block height, the
+/// newer the transfer.
+pub enum Order {
+    /// Ascending from oldest to newest.
+    Ascending,
+    /// Descending from newest to oldest.
+    Descending,
+}
+
+/// Group of events belonging to a single Moonlight **transaction** and
+/// additional metadata.
+///
+/// One Moonlight transaction can contain multiple events and multiple transfers
+/// of assets. The underlying Vec<ContractEvent> contains at least one event
+/// that relates to a moonlight in- or outflow.
 ///
 /// This can be a "moonlight" event or
 /// a "withdraw", "mint", or "convert" event, where there is a Moonlight
@@ -235,7 +250,10 @@ impl Archive {
     pub fn full_moonlight_history(
         &self,
         pk: AccountPublicKey,
+        ord: Option<Order>,
     ) -> Result<Option<Vec<MoonlightGroup>>> {
+        let order = ord.unwrap_or(Order::Ascending);
+
         let inflows = self.fetch_moonlight_history(
             Some(pk),
             None,
@@ -268,6 +286,10 @@ impl Archive {
             .sort_unstable_by_key(|tx| (tx.block_height(), *tx.origin()));
         // Remove all duplicates (can be, if tx to self were sent)
         moonlight_groups.dedup();
+
+        if let Order::Descending = order {
+            moonlight_groups.reverse();
+        }
 
         if moonlight_groups.is_empty() {
             Ok(None)
@@ -335,7 +357,7 @@ impl Archive {
         }
     }
 
-    /// Get a vector of `MoonlightTx` that relate to moonlight
+    /// Get a vector of `EventIdentifier` that relate to moonlight
     /// transfers with the specified sender & receiver.
     ///
     ///
@@ -354,7 +376,7 @@ impl Archive {
     /// If both sender and receiver are None, an error is returned.
     /// If both sender and receiver are Some, the intersection of transactions
     /// is returned.
-    pub fn fetch_moonlight_transactions(
+    pub fn fetch_moonlight_event_ident(
         &self,
         sender: Option<AccountPublicKey>,
         receiver: Option<AccountPublicKey>,
@@ -415,7 +437,7 @@ impl Archive {
         max_count: Option<usize>,
         page_count: Option<usize>,
     ) -> Result<Option<Vec<MoonlightGroup>>> {
-        let moonlight_tx = self.fetch_moonlight_transactions(
+        let moonlight_tx = self.fetch_moonlight_event_ident(
             sender, receiver, from_block, to_block, max_count, page_count,
         )?;
 
@@ -1003,21 +1025,21 @@ mod tests {
 
         assert_eq!(address_outflow_mappings.len(), 4);
         assert_eq!(address_inflow_mappings.len(), 6);
-        // combine both, 4+6 = 10 moonlight transactions
+        // combine both, 4+6 = 10 moonlight tx
         let mut address_flow_mappings = address_outflow_mappings;
         address_flow_mappings.extend(address_inflow_mappings);
         address_flow_mappings.sort_by_key(|(_, mtx)| mtx.origin().clone());
 
         address_flow_mappings.dedup();
 
-        // Now it should be 6, 3 less because 3 transactions were the sent to
+        // Now it should be 6, 3 less because 3 tx were the sent to
         // self and are now duplicates in the inflow & outflow list
         assert_eq!(address_flow_mappings.len(), 7);
 
         println!("{:?}", memo_mappings);
         assert_eq!(memo_mappings.len(), 3);
 
-        // 6 moonlight groups means 6 transactions containing moonlight related
+        // 6 moonlight groups means 6 tx containing moonlight related
         // events
         assert_eq!(moonlight_tx_mappings.len(), 6);
     }
@@ -1028,7 +1050,7 @@ mod tests {
         let archive = Archive::create_or_open(path).await;
 
         let pk = AccountPublicKey::default();
-        assert!(archive.full_moonlight_history(pk).unwrap().is_none());
+        assert!(archive.full_moonlight_history(pk, None).unwrap().is_none());
 
         let block_events = block_events();
 
@@ -1054,7 +1076,7 @@ mod tests {
         assert_eq!(fetched_moonlight_tx.len(), 6);
 
         let fetched_events =
-            archive.full_moonlight_history(pk).unwrap().unwrap();
+            archive.full_moonlight_history(pk, None).unwrap().unwrap();
         assert_eq!(fetched_events.len(), 6);
 
         for moonlight_events in fetched_events {
@@ -1112,7 +1134,7 @@ mod tests {
         let path = test_dir();
         let archive = Archive::create_or_open(path).await;
         let pk = AccountPublicKey::default();
-        assert!(archive.full_moonlight_history(pk).unwrap().is_none());
+        assert!(archive.full_moonlight_history(pk, None).unwrap().is_none());
 
         let block_events = block_events();
         let event_groups = transformer::group_by_origins(block_events, 1);
@@ -1217,7 +1239,7 @@ mod tests {
 
         // Receiver only
         let moonlight_txs = archive
-            .fetch_moonlight_transactions(
+            .fetch_moonlight_event_ident(
                 None,
                 Some(AccountPublicKey::default()),
                 None,
@@ -1232,7 +1254,7 @@ mod tests {
 
         // Sender only
         let moonlight_txs = archive
-            .fetch_moonlight_transactions(
+            .fetch_moonlight_event_ident(
                 Some(AccountPublicKey::default()),
                 None,
                 None,
@@ -1256,7 +1278,7 @@ mod tests {
 
         // Limit from block height 100 to 150
         let moonlight_txs = archive
-            .fetch_moonlight_transactions(
+            .fetch_moonlight_event_ident(
                 Some(AccountPublicKey::default()),
                 None,
                 Some(100),
@@ -1277,7 +1299,7 @@ mod tests {
         // specified Since all test data sends to own wallet, this
         // should be the same as moonlight_txs above
         let moonlight_txs_both = archive
-            .fetch_moonlight_transactions(
+            .fetch_moonlight_event_ident(
                 Some(AccountPublicKey::default()),
                 Some(AccountPublicKey::default()),
                 Some(100),
@@ -1293,7 +1315,7 @@ mod tests {
 
         // Limit from block height 100 to 150 but max_count is 5
         let moonlight_txs = archive
-            .fetch_moonlight_transactions(
+            .fetch_moonlight_event_ident(
                 Some(AccountPublicKey::default()),
                 None,
                 Some(100),
@@ -1314,7 +1336,7 @@ mod tests {
         // and page_count is used
         for p in 1..=5 {
             let moonlight_txs = archive
-                .fetch_moonlight_transactions(
+                .fetch_moonlight_event_ident(
                     Some(AccountPublicKey::default()),
                     None,
                     Some(100),
@@ -1354,7 +1376,7 @@ mod tests {
         for i in 0..amount {
             // sender only
             let s_moonlight_txs = archive
-                .fetch_moonlight_transactions(
+                .fetch_moonlight_event_ident(
                     Some(senders[i]),
                     None,
                     None,
@@ -1369,7 +1391,7 @@ mod tests {
 
             // receiver only
             let r_moonlight_txs = archive
-                .fetch_moonlight_transactions(
+                .fetch_moonlight_event_ident(
                     None,
                     Some(receivers[i]),
                     None,
@@ -1384,7 +1406,7 @@ mod tests {
 
             // both sender and receiver
             let s_r_moonlight_txs = archive
-                .fetch_moonlight_transactions(
+                .fetch_moonlight_event_ident(
                     Some(senders[i]),
                     Some(receivers[i]),
                     None,
@@ -1404,7 +1426,7 @@ mod tests {
         // Limit from block height 100 to 150
         let num = 100;
         let moonlight_txs = archive
-            .fetch_moonlight_transactions(
+            .fetch_moonlight_event_ident(
                 Some(senders[num]),
                 None,
                 Some((num + 1) as u64),
@@ -1421,7 +1443,7 @@ mod tests {
         // Limit from block height 100 to 150 and both sender, receiver
         // specified
         let moonlight_txs_both = archive
-            .fetch_moonlight_transactions(
+            .fetch_moonlight_event_ident(
                 Some(senders[num]),
                 Some(receivers[num]),
                 Some((num + 1) as u64),
@@ -1437,7 +1459,7 @@ mod tests {
 
         // Limit from block height 100 to 150 but max_count is 0
         assert!(archive
-            .fetch_moonlight_transactions(
+            .fetch_moonlight_event_ident(
                 Some(senders[num]),
                 None,
                 Some((num + 1) as u64),
@@ -1447,5 +1469,51 @@ mod tests {
             )
             .unwrap()
             .is_none());
+    }
+
+    #[tokio::test]
+    async fn test_tl_moonlight_fetch_ord() {
+        let path = test_dir();
+        let archive = Archive::create_or_open(path).await;
+
+        let pk = AccountPublicKey::default();
+        assert!(archive.full_moonlight_history(pk, None).unwrap().is_none());
+
+        let block_events = block_events();
+
+        let event_groups = transformer::group_by_origins(block_events, 1);
+
+        // Store block events in the archive
+        archive.tl_moonlight(event_groups).unwrap();
+
+        let inflows = archive.get_moonlight_inflow_tx(pk).unwrap();
+        let outflows = archive.get_moonlight_outflow_tx(pk).unwrap();
+
+        // Unwrap and combine inflows and outflows
+        let mut fetched_moonlight_tx = inflows
+            .unwrap()
+            .into_iter()
+            .chain(outflows.unwrap())
+            .collect::<Vec<EventIdentifier>>();
+
+        assert_eq!(fetched_moonlight_tx.len(), 9);
+
+        fetched_moonlight_tx.sort_by_key(|mtx| mtx.origin().clone());
+        fetched_moonlight_tx.dedup();
+        assert_eq!(fetched_moonlight_tx.len(), 6);
+
+        let mut fetched_events =
+            archive.full_moonlight_history(pk, None).unwrap().unwrap();
+        assert_eq!(fetched_events.len(), 6);
+
+        let fetched_events_reverse_order = archive
+            .full_moonlight_history(pk, Some(super::Order::Descending))
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(fetched_events_reverse_order.len(), 6);
+
+        fetched_events.reverse();
+        assert_eq!(fetched_events_reverse_order, fetched_events,);
     }
 }
