@@ -6,13 +6,14 @@
 
 extern crate alloc;
 use alloc::string::String;
+
 use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
-use execution_core::{
-    signatures::bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
-    transfer::ReceiveFromContract,
-    ContractId,
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, Signature as BlsSignature,
 };
+use execution_core::transfer::ReceiveFromContract;
+use execution_core::ContractId;
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]

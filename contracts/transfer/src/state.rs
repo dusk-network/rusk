@@ -4,43 +4,38 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::error::Error;
-use crate::tree::Tree;
-use crate::verifier_data::tx_circuit_verifier;
-
 use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
-use execution_core::stake::EPOCH;
-use execution_core::transfer::MINT_CONTRACT_TOPIC;
-use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
-
-use execution_core::{
-    signatures::bls::PublicKey as AccountPublicKey,
-    stake::STAKE_CONTRACT,
-    transfer::{
-        moonlight::{AccountData, Transaction as MoonlightTransaction},
-        phoenix::{
-            Note, NoteLeaf, NoteOpening, Sender,
-            Transaction as PhoenixTransaction,
-        },
-        withdraw::{
-            Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
-        },
-        ContractToAccount, ContractToAccountEvent, ContractToContract,
-        ContractToContractEvent, ConvertEvent, DepositEvent,
-        MoonlightTransactionEvent, PhoenixTransactionEvent,
-        ReceiveFromContract, Transaction, WithdrawEvent,
-        CONTRACT_TO_ACCOUNT_TOPIC, CONTRACT_TO_CONTRACT_TOPIC, CONVERT_TOPIC,
-        DEPOSIT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, PANIC_NONCE_NOT_READY,
-        PHOENIX_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
-    },
-    BlsScalar, ContractError, ContractId,
+use execution_core::signatures::bls::PublicKey as AccountPublicKey;
+use execution_core::stake::{EPOCH, STAKE_CONTRACT};
+use execution_core::transfer::moonlight::{
+    AccountData, Transaction as MoonlightTransaction,
 };
-
-use crate::transitory;
+use execution_core::transfer::phoenix::{
+    Note, NoteLeaf, NoteOpening, Sender, Transaction as PhoenixTransaction,
+};
+use execution_core::transfer::withdraw::{
+    Withdraw, WithdrawReceiver, WithdrawReplayToken, WithdrawSignature,
+};
+use execution_core::transfer::{
+    ContractToAccount, ContractToAccountEvent, ContractToContract,
+    ContractToContractEvent, ConvertEvent, DepositEvent,
+    MoonlightTransactionEvent, PhoenixTransactionEvent, ReceiveFromContract,
+    Transaction, WithdrawEvent, CONTRACT_TO_ACCOUNT_TOPIC,
+    CONTRACT_TO_CONTRACT_TOPIC, CONVERT_TOPIC, DEPOSIT_TOPIC,
+    MINT_CONTRACT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, PANIC_NONCE_NOT_READY,
+    PHOENIX_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
+};
+use execution_core::{BlsScalar, ContractError, ContractId};
+use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use transitory::Deposit;
+
+use crate::error::Error;
+use crate::transitory;
+use crate::tree::Tree;
+use crate::verifier_data::tx_circuit_verifier;
 
 /// Number of roots stored
 pub const MAX_ROOTS: usize = 2 * EPOCH as usize;
