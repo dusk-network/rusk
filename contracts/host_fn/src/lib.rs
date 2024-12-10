@@ -12,18 +12,13 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
-use execution_core::{
-    signatures::{
-        bls::{
-            MultisigSignature, PublicKey as BlsPublicKey,
-            Signature as BlsSignature,
-        },
-        schnorr::{
-            PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
-        },
-    },
-    BlsScalar,
+use execution_core::signatures::bls::{
+    MultisigSignature, PublicKey as BlsPublicKey, Signature as BlsSignature,
 };
+use execution_core::signatures::schnorr::{
+    PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
+};
+use execution_core::BlsScalar;
 
 static mut STATE: HostFnTest = HostFnTest;
 

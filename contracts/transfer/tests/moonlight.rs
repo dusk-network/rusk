@@ -6,33 +6,33 @@
 
 pub mod common;
 
+use execution_core::signatures::bls::{
+    PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
+};
+use execution_core::transfer::data::{ContractCall, TransactionData};
+use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use execution_core::transfer::phoenix::{
+    Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    ViewKey as PhoenixViewKey,
+};
+use execution_core::transfer::withdraw::{
+    Withdraw, WithdrawReceiver, WithdrawReplayToken,
+};
+use execution_core::transfer::{
+    ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
+};
+use execution_core::{
+    dusk, BlsScalar, ContractError, ContractId, JubJubScalar, LUX,
+};
+use ff::Field;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use rusk_abi::{ContractData, Session};
+
 use crate::common::utils::{
     account, chain_id, contract_balance, execute, existing_nullifiers,
     filter_notes_owned_by, leaves_from_height, owned_notes_value, update_root,
 };
-
-use ff::Field;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-
-use execution_core::{
-    dusk,
-    signatures::bls::{
-        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
-    },
-    transfer::{
-        data::{ContractCall, TransactionData},
-        moonlight::Transaction as MoonlightTransaction,
-        phoenix::{
-            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            ViewKey as PhoenixViewKey,
-        },
-        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
-    },
-    BlsScalar, ContractError, ContractId, JubJubScalar, LUX,
-};
-use rusk_abi::{ContractData, Session};
 
 const MOONLIGHT_GENESIS_VALUE: u64 = dusk(1_000.0);
 const MOONLIGHT_GENESIS_NONCE: u64 = 0;

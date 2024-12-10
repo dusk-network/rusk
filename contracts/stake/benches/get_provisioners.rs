@@ -4,16 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::sync::mpsc;
+
 use criterion::{criterion_group, criterion_main, Criterion};
-use execution_core::{
-    stake::{StakeData, STAKE_CONTRACT},
-    transfer::TRANSFER_CONTRACT,
-    BlsPublicKey, BlsSecretKey,
-};
+use execution_core::stake::{StakeData, STAKE_CONTRACT};
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::{BlsPublicKey, BlsSecretKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::{ContractData, PiecrustError, Session, VM};
-use std::sync::mpsc;
 
 const SAMPLE_SIZE: usize = 10;
 const NUM_STAKES: usize = 1000;

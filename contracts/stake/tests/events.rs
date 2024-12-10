@@ -7,22 +7,19 @@
 pub mod common;
 
 use common::assert::assert_slash_event;
+use execution_core::dusk;
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
+use execution_core::stake::{
+    Reward, RewardReason, StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT,
+};
+use execution_core::transfer::phoenix::{
+    PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+};
+use execution_core::transfer::TRANSFER_CONTRACT;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-
-use execution_core::{
-    dusk,
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{
-        Reward, RewardReason, StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT,
-    },
-    transfer::{
-        phoenix::{
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-        },
-        TRANSFER_CONTRACT,
-    },
-};
 use rusk_abi::PiecrustError;
 
 use crate::common::assert::assert_event;

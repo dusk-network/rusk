@@ -5,13 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable;
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::{Reward, SlashEvent, StakeEvent};
+use execution_core::Event;
 use rkyv::{check_archived_root, Deserialize, Infallible};
-
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    stake::{Reward, SlashEvent, StakeEvent},
-    Event,
-};
 
 pub fn assert_event<S>(
     events: &Vec<Event>,

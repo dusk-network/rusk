@@ -4,17 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use rand::{CryptoRng, RngCore};
-
-use execution_core::{
-    stake::STAKE_CONTRACT,
-    transfer::{
-        phoenix::{Note, PublicKey as PhoenixPublicKey},
-        TRANSFER_CONTRACT,
-    },
-    JubJubScalar,
-};
+use execution_core::stake::STAKE_CONTRACT;
+use execution_core::transfer::phoenix::{Note, PublicKey as PhoenixPublicKey};
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::JubJubScalar;
 use ff::Field;
+use rand::{CryptoRng, RngCore};
 use rusk_abi::{ContractData, Session, VM};
 
 use crate::common::utils::update_root;

@@ -14,8 +14,8 @@ mod state;
 #[cfg(target_family = "wasm")]
 #[path = ""]
 mod wasm {
+    use self::state::Alice;
     use super::*;
-    use state::Alice;
 
     static mut STATE: Alice = state::Alice;
 
