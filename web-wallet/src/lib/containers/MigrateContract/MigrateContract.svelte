@@ -4,7 +4,7 @@
   import { mdiArrowLeft, mdiArrowRight, mdiWalletOutline } from "@mdi/js";
   import { getAccount, switchChain } from "@wagmi/core";
   import { formatUnits, parseUnits } from "viem";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { tokens } from "./tokenConfig";
   import { getDecimalSeparator } from "$lib/dusk/number";
   import {
@@ -73,9 +73,6 @@
 
   /** @type {string} */
   let amount = "";
-
-  /** @type {HTMLInputElement | null} */
-  let amountInput;
 
   /** @type {boolean} */
   let isMigrationInitialized = false;
@@ -150,10 +147,6 @@
     );
   }
 
-  function incrementStep() {
-    migrationStep++;
-  }
-
   /**
    * @param {string} numberAsString
    * @returns {string}
@@ -172,28 +165,21 @@
       screenWidth = entry.contentRect.width;
     });
 
-    (async () => {
-      if (isConnected) {
-        await walletDisconnect();
+    const handleModalEvents = async (
+      /** @type {{ data: { event: string; }; }} */ e
+    ) => {
+      if (e.data.event === "CONNECT_SUCCESS") {
+        switchToSelectedChain();
+        connectedWalletBalance = await getBalance();
       }
+    };
 
-      modal.subscribeEvents(async (e) => {
-        if (e.data.event === "CONNECT_SUCCESS") {
-          switchToSelectedChain();
-          connectedWalletBalance = await getBalance();
-        }
-      });
+    resizeObserver.observe(document.body);
+    modal.subscribeEvents(handleModalEvents);
 
-      amountInput = document.querySelector(".migrate__input-field");
-
-      resizeObserver.observe(document.body);
-    })();
-
-    return () => resizeObserver.disconnect();
-  });
-
-  onDestroy(async () => {
-    await walletDisconnect();
+    return () => {
+      resizeObserver.disconnect();
+    };
   });
 </script>
 
@@ -279,15 +265,7 @@
           size="small"
           variant="tertiary"
           on:click={() => {
-            if (amountInput) {
-              amountInput.value = formatUnits(
-                connectedWalletBalance,
-                ercDecimals
-              );
-            }
-            amount = slashDecimals(
-              formatUnits(connectedWalletBalance, ercDecimals)
-            );
+            amount = formatUnits(connectedWalletBalance, ercDecimals);
           }}
           text="USE MAX"
           disabled={isInputDisabled}
@@ -313,7 +291,7 @@
 
       {#if migrationStep === 0}
         <ApproveMigration
-          on:incrementStep={incrementStep}
+          on:incrementStep={() => migrationStep++}
           on:initApproval={() => {
             isInputDisabled = true;
           }}

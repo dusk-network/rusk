@@ -4,6 +4,7 @@
   import { onDestroy } from "svelte";
   import { MigrateContract } from "$lib/containers";
   import { networkStore, operationsStore } from "$lib/stores";
+  import { walletDisconnect } from "$lib/migration/walletConnection";
 
   /** @param {string} id */
   function updateOperation(id) {
@@ -14,6 +15,7 @@
   }
 
   onDestroy(() => {
+    walletDisconnect();
     updateOperation("");
   });
 
