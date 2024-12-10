@@ -17,6 +17,7 @@
     AppAnchorButton,
     AppImage,
     ApproveMigration,
+    Banner,
     ExecuteMigration,
   } from "$lib/components";
   import {
@@ -236,21 +237,23 @@
       bind:value={selectedChain}
       on:change={onChainSwitch}
     />
-    {#if isConnected && address && connectedWalletBalance}
+    {#if isConnected && address}
       <p class="migrate__token-header">Connected Wallet:</p>
       <p class="migrate__token-address">
         {middleEllipsis(address, calculateAdaptiveCharCount(screenWidth))}
       </p>
       <div class="migrate__token-balance">
         Balance: <span
-          >{slashDecimals(formatUnits(connectedWalletBalance, ercDecimals))}
+          >{slashDecimals(
+            formatUnits(connectedWalletBalance ?? 0n, ercDecimals)
+          )}
           {selectedChain} DUSK</span
         >
       </div>
     {/if}
   </div>
 
-  {#if isConnected && connectedWalletBalance}
+  {#if isConnected && address && connectedWalletBalance}
     <div class="migrate__amount">
       <div class="migrate__amount-header">
         <div class="migrate__amount-token">
@@ -332,9 +335,17 @@
   {#if !isConnected}
     <Button
       icon={{ path: mdiWalletOutline }}
-      text={`CONNECT TO  ${selectedChain === tokens[network]["ERC-20"].name ? "ETHEREUM" : "BSC"}`}
-      on:click={() => {
-        modal.open();
+      text={`CONNECT TO ${selectedChain === tokens[network]["ERC-20"].name ? "ETHEREUM" : "BSC"}`}
+      on:click={() => modal.open()}
+    />
+  {:else if !connectedWalletBalance}
+    <Banner variant="warning" title="No DUSK available">
+      <p>The connected wallet has no DUSK tokens available.</p>
+    </Banner>
+    <Button
+      text="Disconnect"
+      on:click={async () => {
+        await walletDisconnect();
       }}
     />
   {:else if !isMigrationInitialized && address}
