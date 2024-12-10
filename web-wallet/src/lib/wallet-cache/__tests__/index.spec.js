@@ -198,7 +198,6 @@ describe("Wallet cache", () => {
         amount: null,
         faults: 0,
         hardFaults: 0,
-        nonce: 0n,
         reward: 0n,
       });
     });

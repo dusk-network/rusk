@@ -12,7 +12,7 @@ import { DriverError } from "./error.js";
 import * as DataBuffer from "./buffer.js";
 import { withAllocator } from "./alloc.js";
 
-const rng = () => new Uint8Array(32); //crypto.getRandomValues(new Uint8Array(32));
+const rng = () => crypto.getRandomValues(new Uint8Array(32));
 
 const uninit = Object.freeze([
   none`No Protocol Driver loaded yet. Call "load" first.`,
@@ -37,7 +37,6 @@ export function load(source, importsURL) {
   }
 
   // Parse known globals once.
-
   driverGlobals = protocolDriverModule.task(
     withAllocator(async function (_exports, allocator) {
       const { ptr, u32, u64 } = allocator.types;
@@ -52,14 +51,30 @@ export function load(source, importsURL) {
   )();
 }
 
-export function unload() {
+export async function unload() {
   if (protocolDriverModule instanceof none || driverGlobals instanceof none) {
-    return Promise.resolve();
-  } else {
-    return Promise.all([protocolDriverModule, driverGlobals]).then(() => {
-      [protocolDriverModule, driverGlobals] = uninit;
-    });
+    return;
   }
+
+  await Promise.all([protocolDriverModule, driverGlobals]);
+
+  [protocolDriverModule, driverGlobals] = uninit;
+}
+
+export function useAsProtocolDriver(source, importsURL) {
+  load(source, importsURL);
+
+  return {
+    cleanup() {
+      return unload();
+    },
+    then(onFulfilled, onRejected) {
+      return driverGlobals
+        .then(() => onFulfilled())
+        .catch(onRejected)
+        .finally(unload);
+    },
+  };
 }
 
 export async function opening(bytes) {
@@ -829,11 +844,6 @@ export const stake = async (info) =>
     ptr.nonce = await malloc(8);
     await memcpy(ptr.nonce, nonce);
 
-    const stake_nonce = new Uint8Array(8);
-    new DataView(stake_nonce.buffer).setBigUint64(0, info.stake_nonce, true);
-    ptr.stake_nonce = await malloc(8);
-    await memcpy(ptr.stake_nonce, stake_nonce);
-
     let tx = await malloc(4);
     let hash = await malloc(64);
 
@@ -845,7 +855,6 @@ export const stake = async (info) =>
       ptr.gas_price,
       ptr.nonce,
       info.chainId,
-      ptr.stake_nonce,
       tx,
       hash
     );
