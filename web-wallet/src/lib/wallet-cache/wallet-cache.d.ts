@@ -1,3 +1,16 @@
+/**
+ * Sync info coming from the unspent
+ * notes stream, enriched with the
+ * block hash.
+ */
+type NotesSyncInfo = {
+  block: {
+    hash: string;
+    height: bigint;
+  };
+  bookmark: bigint;
+};
+
 type WalletCacheBalanceInfo = {
   address: string;
   balance: {
@@ -68,10 +81,7 @@ type WalletCacheDbPendingNoteInfo = Omit<
   nullifier: ArrayBuffer;
 };
 
-type WalletCacheSyncInfo = {
-  blockHeight: bigint;
-  bookmark: bigint;
-};
+type WalletCacheSyncInfo = NotesSyncInfo & { lastFinalizedBlockHeight: bigint };
 
 type WalletCacheTableName =
   | "balancesInfo"

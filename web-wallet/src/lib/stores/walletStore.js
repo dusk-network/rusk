@@ -272,6 +272,7 @@ const stake = async (amount, gas) =>
     .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["sync"]} */
+// eslint-disable-next-line max-statements
 async function sync(fromBlock) {
   const store = get(walletStore);
 
@@ -295,21 +296,42 @@ async function sync(fromBlock) {
 
     syncController = new AbortController();
 
-    const walletCacheSyncInfo = await walletCache.getSyncInfo();
+    const { block, bookmark, lastFinalizedBlockHeight } =
+      await walletCache.getSyncInfo();
+
+    /** @type {bigint | Bookmark} */
+    let from;
 
     /*
      * Unless the user wants to sync from a specific block height,
-     * we restart from the last stored bookmark.
+     * we try to restart from the last stored bookmark.
+     * Before doing that we compare the block hash we have in cache
+     * with the hash at the same block height on the network: if
+     * they don't match then a block has been rejected, we can't
+     * use our bookmark, and our only safe option is to restart
+     * from the last finalized block we have cached.
      */
-    const from = fromBlock ?? Bookmark.from(walletCacheSyncInfo.bookmark);
+    if (fromBlock) {
+      from = fromBlock;
+    } else {
+      const isLocalCacheValid = await networkStore
+        .checkBlock(block.height, block.hash)
+        .catch(() => false);
 
-    let lastBlockHeight = 0n;
+      from = isLocalCacheValid
+        ? Bookmark.from(bookmark)
+        : lastFinalizedBlockHeight;
+    }
+
+    if (from === 0n) {
+      await walletCache.clear();
+    }
 
     update((currentStore) => ({
       ...currentStore,
       syncStatus: {
         ...currentStore.syncStatus,
-        from: fromBlock ?? walletCacheSyncInfo.blockHeight,
+        from: from instanceof Bookmark ? block.height : from,
       },
     }));
 
@@ -325,14 +347,9 @@ async function sync(fromBlock) {
               progress: detail.progress,
             },
           }));
-
-          lastBlockHeight = detail.blocks.last;
         };
 
         await treasury.update(from, syncIterationListener, signal);
-
-        // updating the last block height in the cache sync info
-        await walletCache.setLastBlockHeight(lastBlockHeight);
       })
       .then(() => {
         if (syncController?.signal.aborted) {

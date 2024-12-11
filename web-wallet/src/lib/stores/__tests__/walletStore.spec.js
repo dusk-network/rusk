@@ -22,7 +22,7 @@ import walletCache from "$lib/wallet-cache";
 import WalletTreasury from "$lib/wallet-treasury";
 import { getSeedFromMnemonic } from "$lib/wallet";
 
-import { walletStore } from "..";
+import { networkStore, walletStore } from "..";
 
 describe("Wallet store", async () => {
   vi.useFakeTimers();
@@ -94,9 +94,14 @@ describe("Wallet store", async () => {
   const setCachedStakeInfoSpy = vi
     .spyOn(walletCache, "setStakeInfo")
     .mockResolvedValue(undefined);
-  const setLastBlockHeightSpy = vi.spyOn(walletCache, "setLastBlockHeight");
   const setProfilesSpy = vi.spyOn(WalletTreasury.prototype, "setProfiles");
   const treasuryUpdateSpy = vi.spyOn(WalletTreasury.prototype, "update");
+
+  vi.spyOn(networkStore, "checkBlock").mockResolvedValue(true);
+  vi.spyOn(networkStore, "getBlockHashByHeight").mockResolvedValue(
+    "some-block-hash"
+  );
+  vi.spyOn(networkStore, "getLastFinalizedBlockHeight").mockResolvedValue(121n);
 
   const seed = getSeedFromMnemonic(generateMnemonic());
   const profileGenerator = new ProfileGenerator(async () => seed);
@@ -192,16 +197,11 @@ describe("Wallet store", async () => {
         treasuryUpdateSpy.mock.invocationCallOrder[0]
       );
       expect(treasuryUpdateSpy).toHaveBeenCalledTimes(1);
-      expect(setLastBlockHeightSpy).toHaveBeenCalledTimes(1);
       expect(balanceSpy).toHaveBeenCalledTimes(2);
       expect(balanceSpy).toHaveBeenNthCalledWith(1, defaultProfile.address);
       expect(balanceSpy).toHaveBeenNthCalledWith(2, defaultProfile.account);
       expect(stakeInfoSpy).toHaveBeenCalledTimes(1);
       expect(stakeInfoSpy).toHaveBeenCalledWith(defaultProfile.account);
-      expect(setLastBlockHeightSpy).toHaveBeenCalledWith(expect.any(BigInt));
-      expect(setLastBlockHeightSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
-        treasuryUpdateSpy.mock.invocationCallOrder[0]
-      );
       expect(balanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
         treasuryUpdateSpy.mock.invocationCallOrder[0]
       );
@@ -227,6 +227,7 @@ describe("Wallet store", async () => {
       expect(setCachedStakeInfoSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
         stakeInfoSpy.mock.invocationCallOrder[0]
       );
+
       expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
       expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
       expect(clearTimeoutSpy.mock.invocationCallOrder[0]).toBeLessThan(
@@ -276,8 +277,8 @@ describe("Wallet store", async () => {
 
       walletStore.abortSync();
 
-      expect(abortControllerSpy).toHaveBeenCalledTimes(1);
       expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
+      expect(abortControllerSpy).toHaveBeenCalledTimes(1);
 
       await vi.runAllTimersAsync();
 
@@ -564,13 +565,10 @@ describe("Wallet store", async () => {
 
       treasuryUpdateSpy.mockClear();
       balanceSpy.mockClear();
+      cacheClearSpy.mockClear();
       stakeInfoSpy.mockClear();
       setCachedBalanceSpy.mockClear();
       setCachedStakeInfoSpy.mockClear();
-    });
-
-    afterEach(async () => {
-      cacheClearSpy.mockClear();
     });
 
     afterAll(() => {

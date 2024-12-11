@@ -9,7 +9,6 @@ import {
   mapWith,
   pairs,
   pipe,
-  setKey,
   skipIf,
   unless,
   updateKey,
@@ -60,6 +59,30 @@ class WalletCache {
   /** @type {Dexie} */
   #db;
 
+  /** @type {WalletCacheBalanceInfo["balance"]} */
+  #emptyBalanceInfo = Object.freeze({
+    shielded: { spendable: 0n, value: 0n },
+    unshielded: { nonce: 0n, value: 0n },
+  });
+
+  /** @type {StakeInfo} */
+  #emptyStakeInfo = Object.freeze({
+    amount: null,
+    faults: 0,
+    hardFaults: 0,
+    reward: 0n,
+  });
+
+  /** @type {WalletCacheSyncInfo} */
+  #emptySyncInfo = Object.freeze({
+    block: {
+      hash: "",
+      height: 0n,
+    },
+    bookmark: 0n,
+    lastFinalizedBlockHeight: 0n,
+  });
+
   /**
    * @template {WalletCacheTableName} TName
    * @template {boolean} PK
@@ -89,30 +112,54 @@ class WalletCache {
   constructor() {
     const db = new Dexie("@dusk-network/wallet-cache", { autoOpen: true });
 
-    db.version(2).stores({
-      balancesInfo: "address",
-      pendingNotesInfo: "nullifier,txId",
-      spentNotes: "nullifier,address",
-      stakeInfo: "account",
-      syncInfo: "++",
-      unspentNotes: "nullifier,address",
-    });
+    db.version(3)
+      .stores({
+        balancesInfo: "address",
+        pendingNotesInfo: "nullifier,txId",
+        spentNotes: "nullifier,address",
+        stakeInfo: "account",
+        syncInfo: "++",
+        unspentNotes: "nullifier,address",
+      })
+      .upgrade((tx) =>
+        tx
+          .table("syncInfo")
+          .toCollection()
+          .modify((old, ref) => {
+            ref.value = {
+              ...this.#emptySyncInfo,
+              block: {
+                ...this.#emptySyncInfo.block,
+                height: old.blockHeight,
+              },
+              bookmark: old.bookmark,
+              lastFinalizedBlockHeight: 0n,
+            };
+          })
+      );
 
     this.#db = db;
   }
 
   /**
+   * While adding notes we clear and re-create the sync info based
+   * on what we receive in the note stream, but we keep the
+   * current `lastFinalizedBlockHeight`.
+   * The sync info there is not complete and needs to be enriched
+   * at the end of the sync process by calling `setSyncInfo`.
+   *
    * @param {WalletCacheNote[]} notes
-   * @param {WalletCacheSyncInfo} syncInfo
+   * @param {NotesSyncInfo} notesSyncInfo
    * @returns {Promise<void>}
    */
-  addUnspentNotes(notes, syncInfo) {
+  addUnspentNotes(notes, notesSyncInfo) {
     return this.#db
       .transaction("rw", ["syncInfo", "unspentNotes"], async () => {
+        const currentSyncInfo = await this.getSyncInfo();
         const syncInfoTable = this.#db.table("syncInfo");
 
         await syncInfoTable.clear();
-        await syncInfoTable.add(syncInfo);
+        await syncInfoTable.add({ ...currentSyncInfo, ...notesSyncInfo });
         await this.#db.table("unspentNotes").bulkPut(notes);
       })
       .finally(() => this.#db.close({ disableAutoOpen: false }));
@@ -132,12 +179,7 @@ class WalletCache {
       addresses: [address],
     })
       .then(getPath("0.balance"))
-      .then(
-        when(isUndefined, () => ({
-          shielded: { spendable: 0n, value: 0n },
-          unshielded: { nonce: 0n, value: 0n },
-        }))
-      );
+      .then(when(isUndefined, () => this.#emptyBalanceInfo));
   }
 
   /**
@@ -182,12 +224,7 @@ class WalletCache {
       .then(
         condition(
           isUndefined,
-          () => ({
-            amount: null,
-            faults: 0,
-            hardFaults: 0,
-            reward: 0n,
-          }),
+          () => this.#emptyStakeInfo,
 
           // we reinstate the `total` getter if the
           // amount is not `null`
@@ -210,7 +247,7 @@ class WalletCache {
   getSyncInfo() {
     return this.#getEntriesFrom("syncInfo", false)
       .then(head)
-      .then(when(isUndefined, () => ({ blockHeight: 0n, bookmark: 0n })));
+      .then(when(isUndefined, () => this.#emptySyncInfo));
   }
 
   /**
@@ -273,25 +310,6 @@ class WalletCache {
   }
 
   /**
-   * @param {bigint} n
-   * @returns {Promise<void>}
-   */
-  setLastBlockHeight(n) {
-    return this.getSyncInfo()
-      .then(setKey("blockHeight", n))
-      .then(async (syncInfo) => {
-        return this.#db
-          .transaction("rw", "syncInfo", async () => {
-            const syncInfoTable = this.#db.table("syncInfo");
-
-            await syncInfoTable.clear();
-            await syncInfoTable.add(syncInfo);
-          })
-          .finally(() => this.#db.close({ disableAutoOpen: false }));
-      });
-  }
-
-  /**
    * @param {Uint8Array[]} nullifiers
    * @param {string} txId
    * @returns {Promise<void>}
@@ -314,6 +332,21 @@ class WalletCache {
     await this.#db
       .table("stakeInfo")
       .put({ account, stakeInfo })
+      .finally(() => this.#db.close({ disableAutoOpen: false }));
+  }
+
+  /**
+   * @param {WalletCacheSyncInfo} syncInfo
+   * @returns {Promise<void>}
+   */
+  setSyncInfo(syncInfo) {
+    return this.#db
+      .transaction("rw", "syncInfo", async () => {
+        const syncInfoTable = this.#db.table("syncInfo");
+
+        await syncInfoTable.clear();
+        await syncInfoTable.add(syncInfo);
+      })
       .finally(() => this.#db.close({ disableAutoOpen: false }));
   }
 

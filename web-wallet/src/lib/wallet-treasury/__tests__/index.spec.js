@@ -1,4 +1,13 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { mapWith, pluckFrom } from "lamb";
 
 import mockedWalletStore from "../../../__mocks__/mockedWalletStore";
@@ -9,6 +18,7 @@ import {
   getCacheDatabase,
   sortNullifiers,
 } from "$lib/test-helpers";
+import networkStore from "$lib/stores/networkStore";
 
 import WalletTreasury from "..";
 
@@ -16,6 +26,9 @@ describe("WalletTreasury", () => {
   /** @type {WalletTreasury} */
   let walletTreasury;
 
+  const getBlockHashByHeightSpy = vi
+    .spyOn(networkStore, "getBlockHashByHeight")
+    .mockResolvedValue("fake-block-hash");
   const { profiles } = mockedWalletStore.getMockedStoreValue();
   const db = getCacheDatabase();
 
@@ -30,6 +43,11 @@ describe("WalletTreasury", () => {
   afterEach(async () => {
     await getCacheDatabase().delete({ disableAutoOpen: false });
     await fillCacheDatabase();
+    getBlockHashByHeightSpy.mockClear();
+  });
+
+  afterAll(() => {
+    getBlockHashByHeightSpy.mockRestore();
   });
 
   describe("Treasury interface", () => {

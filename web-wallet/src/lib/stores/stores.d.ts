@@ -51,6 +51,7 @@ type NetworkSyncerOptions = {
 };
 
 type NetworkStoreServices = {
+  checkBlock: (height: bigint, hash: string) => Promise<boolean>;
   connect: () => Promise<import("$lib/vendor/w3sper.js/src/mod").Network>;
   disconnect: () => Promise<void>;
   getAccountSyncer: (
@@ -59,7 +60,9 @@ type NetworkStoreServices = {
   getAddressSyncer: (
     options?: NetworkSyncerOptions
   ) => Promise<import("$lib/vendor/w3sper.js/src/mod").AddressSyncer>;
+  getBlockHashByHeight: (height: bigint) => Promise<string>;
   getCurrentBlockHeight: () => Promise<bigint>;
+  getLastFinalizedBlockHeight: () => Promise<bigint>;
   init: () => Promise<void>;
 };
 

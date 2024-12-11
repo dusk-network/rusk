@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add notice for stake maturity [#2981]
+- Add capability to maintain cache consistency in case of rejected blocks [#3156]
 
 ### Changed
 
@@ -429,6 +430,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3099]: https://github.com/dusk-network/rusk/issues/3099
 [#3113]: https://github.com/dusk-network/rusk/issues/3113
 [#3129]: https://github.com/dusk-network/rusk/issues/3129
+[#3156]: https://github.com/dusk-network/rusk/issues/3156
 [#3160]: https://github.com/dusk-network/rusk/issues/3160
 
 <!-- VERSIONS -->

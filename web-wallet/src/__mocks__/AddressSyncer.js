@@ -67,7 +67,7 @@ class AddressSyncerMock extends AddressSyncer {
           return;
         }
 
-        /** @type {WalletCacheSyncInfo} */
+        /** @type {{ blockHeight: bigint, bookmark: bigint }} */
         const syncInfo = {
           blockHeight: 50n * BigInt(currentChunk),
           bookmark: 100n * BigInt(currentChunk),
