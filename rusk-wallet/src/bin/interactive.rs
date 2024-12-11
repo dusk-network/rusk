@@ -92,22 +92,26 @@ pub(crate) async fn run_loop(
                         prompt::show_cursor()?;
                         // output results
                         println!("\r{}", res);
-                        if let RunResult::Tx(hash) = res {
-                            let tx_id = hex::encode(hash.to_bytes());
+                        match res {
+                            RunResult::Tx(hash)
+                            | RunResult::ContractCall(hash, _) => {
+                                let tx_id = hex::encode(hash.to_bytes());
 
-                            // Wait for transaction confirmation
-                            // from network
-                            let gql = GraphQL::new(
-                                settings.state.to_string(),
-                                io::status::interactive,
-                            )?;
-                            gql.wait_for(&tx_id).await?;
+                                // Wait for transaction confirmation
+                                // from network
+                                let gql = GraphQL::new(
+                                    settings.state.to_string(),
+                                    io::status::interactive,
+                                )?;
+                                gql.wait_for(&tx_id).await?;
 
-                            if let Some(explorer) = &settings.explorer {
-                                let url = format!("{explorer}{tx_id}");
-                                println!("> URL: {url}");
-                                prompt::launch_explorer(url)?;
+                                if let Some(explorer) = &settings.explorer {
+                                    let url = format!("{explorer}{tx_id}");
+                                    println!("> URL: {url}");
+                                    prompt::launch_explorer(url)?;
+                                }
                             }
+                            _ => (),
                         }
                     }
                 }

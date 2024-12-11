@@ -589,6 +589,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let db_pos = state.cache().last_pos()?.unwrap_or(0);
         let network_last_pos = state.fetch_num_notes().await? - 1;
 
+        println!("{} {}", db_pos, network_last_pos);
+
         Ok(network_last_pos == db_pos)
     }
 
@@ -622,6 +624,23 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let gas_prices: MempoolGasPrices = serde_json::from_slice(&response)?;
 
         Ok(gas_prices)
+    }
+
+    /// do a contract call over http
+    pub async fn http_contract_call(
+        &self,
+        contract_id: String,
+        fn_name: &str,
+        fn_args: &str,
+    ) -> Result<String, Error> {
+        let client = self.state()?.client();
+
+        // query the rusk vm
+        let response = client
+            .call("contracts", Some(contract_id), fn_name, fn_args.as_bytes())
+            .await?;
+
+        Ok(String::from_utf8_lossy(&response).to_string())
     }
 }
 

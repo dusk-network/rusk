@@ -401,6 +401,17 @@ async fn exec() -> anyhow::Result<()> {
                 RunResult::ContractId(id) => {
                     println!("Contract ID: {:?}", id);
                 }
+                RunResult::ContractCall(scalar, result) => {
+                    let tx_id = hex::encode(scalar.to_bytes());
+
+                    // Wait for transaction confirmation from network
+                    let gql = GraphQL::new(settings.state, status::headless)?;
+                    gql.wait_for(&tx_id).await?;
+
+                    println!("{tx_id}");
+
+                    println!("HTTP call result: {:?}", result);
+                }
                 RunResult::Settings() => {}
                 RunResult::Create() | RunResult::Restore() => {}
             }
