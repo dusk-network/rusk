@@ -54,8 +54,11 @@ impl RuesHttpClient {
     {
         let data = rkyv::to_bytes(value).map_err(|_| Error::Rkyv)?.to_vec();
 
+        let contract: Option<&str> = contract.into();
+        let contract: Option<String> = contract.map(|e| e.to_owned());
+
         let response = self
-            .call_raw(CONTRACTS_TARGET, contract.into(), method, &data, false)
+            .call_raw(CONTRACTS_TARGET, contract, method, &data, false)
             .await?;
 
         Ok(response.bytes().await?.to_vec())
@@ -79,7 +82,7 @@ impl RuesHttpClient {
         request: &[u8],
     ) -> Result<Vec<u8>, Error>
     where
-        E: Into<Option<&'static str>>,
+        E: Into<Option<String>>,
     {
         let response =
             self.call_raw(target, entity, topic, request, false).await?;
@@ -97,7 +100,7 @@ impl RuesHttpClient {
         feed: bool,
     ) -> Result<Response, Error>
     where
-        E: Into<Option<&'static str>>,
+        E: Into<Option<String>>,
     {
         let uri = &self.uri;
         let entity = entity.into().map(|e| format!(":{e}")).unwrap_or_default();
