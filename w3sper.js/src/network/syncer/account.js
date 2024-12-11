@@ -37,7 +37,7 @@ class StakeInfo {
   amount;
   /** @type {bigint} */
   reward;
-  /** @type {bigint} */
+  /** @type {number} */
   faults;
   /** @type {number} */
   hardFaults;
