@@ -1,0 +1,65 @@
+name: Compile Rusk Binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      dusk_blockchain_ref:
+        description: "Git branch, ref, or SHA to checkout"
+        required: true
+        default: "master"
+
+jobs:
+  build_and_publish:
+    name: Build Rusk binaries for ${{ matrix.os }} (${{ matrix.features }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, macos-12, arm-linux]
+        compiler: [cargo]
+        features: [default, archive]
+        include:
+          - os: ubuntu-24.04
+            target: linux-x64-libssl3
+          - os: macos-12
+            target: macos-arm64
+            flags: --target=aarch64-apple-darwin
+          - os: arm-linux
+            target: linux-arm64
+            flags: --target=aarch64-unknown-linux-gnu
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.dusk_blockchain_ref }}
+
+      - name: Install Rust toolchain
+        uses: dsherret/rust-toolchain-file@v1
+
+      - name: Add ARM target for Apple silicon
+        run: rustup target add aarch64-apple-darwin
+        if: ${{ matrix.os == 'macos-12' }}
+
+      - name: Build Rusk binary
+        shell: bash
+        working-directory: ./rusk
+        run: cargo build --release --features "${{ matrix.features }}" ${{ matrix.flags }}
+
+      - name: Extract Version
+        run: |
+          export SEMVER=$(cargo pkgid --manifest-path ./rusk/Cargo.toml | perl -lpe 's/.*\@(.*)/$1/')
+          echo "SEMVER=$SEMVER" >> $GITHUB_ENV
+
+      - name: Package Binaries
+        run: |
+          mkdir rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
+          mv target/release/rusk rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
+          tar -czvf rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}.tar.gz \
+            rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
+
+      - name: Upload Binaries as Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: rusk-binaries-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
+          path: ./*.tar.gz
+          retention-days: 5
