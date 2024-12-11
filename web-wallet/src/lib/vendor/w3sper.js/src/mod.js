@@ -9,3 +9,5 @@ export * from "./network/mod.js";
 export * from "./profile.js";
 export * from "./bookkeeper.js";
 export * from "./transaction.js";
+export * as lux from "./lux.js";
+export { useAsProtocolDriver } from "./protocol-driver/mod.js";

@@ -10,6 +10,5 @@ export default {
   },
   faults: 0,
   hardFaults: 0,
-  nonce: 0n,
   reward: 11022842680864n,
 };
