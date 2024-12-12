@@ -612,12 +612,6 @@ impl Command {
                     .http_contract_call(contract_id, &fn_name, fn_args)
                     .await?;
 
-                let http_call = if let Some(x) = http_call {
-                    x.to_string()
-                } else {
-                    "<empty>".to_string()
-                };
-
                 Ok(RunResult::ContractCall(tx.hash(), http_call))
             }
 
@@ -709,7 +703,7 @@ pub enum RunResult<'a> {
     Profile((u8, &'a Profile)),
     Profiles(&'a Vec<Profile>),
     ContractId([u8; CONTRACT_ID_BYTES]),
-    ContractCall(BlsScalar, String),
+    ContractCall(BlsScalar, Vec<u8>),
     ExportedKeys(PathBuf, PathBuf),
     Create(),
     Restore(),
@@ -787,11 +781,11 @@ impl fmt::Display for RunResult<'_> {
             ContractId(bytes) => {
                 write!(f, "> Contract ID: {}", hex::encode(bytes))
             }
-            ContractCall(scalar, string) => {
+            ContractCall(scalar, bytes) => {
                 let hash = hex::encode(scalar.to_bytes());
                 writeln!(f, "> Contract call transaction hash: {hash}",)?;
 
-                writeln!(f, "> Http contract query: {string}",)
+                writeln!(f, "> Http contract query: {:?}", bytes)
             }
             ExportedKeys(pk, kp) => {
                 let pk = pk.display();
