@@ -6,24 +6,21 @@
 
 use std::sync::mpsc;
 
-use rand::rngs::StdRng;
-
-use execution_core::{
-    transfer::{
-        data::TransactionData,
-        phoenix::{
-            Note, NoteLeaf, NoteOpening, NoteTreeItem,
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            Transaction as PhoenixTransaction, ViewKey as PhoenixViewKey,
-        },
-        Transaction, TRANSFER_CONTRACT,
-    },
-    BlsScalar, ContractError,
+use execution_core::transfer::data::TransactionData;
+use execution_core::transfer::phoenix::{
+    Note, NoteLeaf, NoteOpening, NoteTreeItem, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
+    ViewKey as PhoenixViewKey,
 };
+use execution_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use execution_core::LUX;
+use execution_core::{BlsScalar, ContractError};
+use rand::rngs::StdRng;
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 use rusk_prover::LocalProver;
 
-const POINT_LIMIT: u64 = 0x100000000;
+pub const GAS_LIMIT: u64 = 0x100_000_000;
+pub const GAS_PRICE: u64 = LUX;
 
 pub fn leaves_from_height(
     session: &mut Session,
@@ -55,7 +52,7 @@ pub fn leaves_from_pos(
         TRANSFER_CONTRACT,
         "leaves_from_pos",
         &pos,
-        POINT_LIMIT,
+        GAS_LIMIT,
         feeder,
     )?;
 
@@ -67,13 +64,13 @@ pub fn leaves_from_pos(
 
 pub fn update_root(session: &mut Session) -> Result<(), PiecrustError> {
     session
-        .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "update_root", &(), GAS_LIMIT)
         .map(|r| r.data)
 }
 
 pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
     session
-        .call(TRANSFER_CONTRACT, "root", &(), POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "root", &(), GAS_LIMIT)
         .map(|r| r.data)
 }
 
@@ -82,13 +79,13 @@ pub fn opening(
     pos: u64,
 ) -> Result<Option<NoteOpening>, PiecrustError> {
     session
-        .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "opening", &pos, GAS_LIMIT)
         .map(|r| r.data)
 }
 
 pub fn chain_id(session: &mut Session) -> Result<u8, PiecrustError> {
     session
-        .call(TRANSFER_CONTRACT, "chain_id", &(), POINT_LIMIT)
+        .call(TRANSFER_CONTRACT, "chain_id", &(), GAS_LIMIT)
         .map(|r| r.data)
 }
 
@@ -146,15 +143,21 @@ pub fn create_transaction<const I: usize>(
     session: &mut Session,
     sender_sk: &PhoenixSecretKey,
     refund_pk: &PhoenixPublicKey,
-    receiver_pk: &PhoenixPublicKey,
     gas_limit: u64,
     gas_price: u64,
     input_pos: [u64; I],
-    transfer_value: u64,
-    obfuscated_transaction: bool,
     deposit: u64,
     data: Option<impl Into<TransactionData>>,
 ) -> Transaction {
+    // in stake transactions the sender, receiver and refund keys are the same
+    let receiver_pk = refund_pk;
+
+    // in stake transactions there is no transfer value
+    let transfer_value = 0;
+
+    // in stake transactions the transfer-note is transparent
+    let obfuscate_transfer_note = false;
+
     // Get the root of the tree of phoenix-notes.
     let root = root(session).expect("Getting the anchor should be successful");
 
@@ -192,7 +195,7 @@ pub fn create_transaction<const I: usize>(
         inputs,
         root,
         transfer_value,
-        obfuscated_transaction,
+        obfuscate_transfer_note,
         deposit,
         gas_limit,
         gas_price,
