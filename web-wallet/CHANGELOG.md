@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove "Network" section from Settings [#3160]
+
 ### Fixed
 
 ## [0.9.0] - 2024-12-03
@@ -424,6 +426,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3099]: https://github.com/dusk-network/rusk/issues/3099
 [#3113]: https://github.com/dusk-network/rusk/issues/3113
 [#3129]: https://github.com/dusk-network/rusk/issues/3129
+[#3160]: https://github.com/dusk-network/rusk/issues/3160
 
 <!-- VERSIONS -->
 
