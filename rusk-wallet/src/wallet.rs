@@ -630,7 +630,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         contract_id: String,
         fn_name: &str,
         fn_args: Vec<u8>,
-    ) -> Result<Option<u32>, Error> {
+    ) -> Result<Vec<u8>, Error> {
         let client = self.state()?.client();
 
         // query the rusk vm
@@ -638,17 +638,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .call("contracts", Some(contract_id), fn_name, &fn_args)
             .await?;
 
-        if !response.is_empty() {
-            // wasm can only return u32 right now
-            // NOTE: This will fail if the contract returns a u64
-            // for a 64 bit contract
-            let value: u32 =
-                rkyv::from_bytes(&response).map_err(|_| Error::Rkyv)?;
-
-            Ok(Some(value))
-        } else {
-            Ok(None)
-        }
+        Ok(response)
     }
 }
 
