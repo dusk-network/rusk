@@ -185,8 +185,9 @@ impl Query {
         &self,
         ctx: &Context<'_>,
         address: String,
+        ord: Option<String>,
     ) -> OptResult<DeserializedMoonlightGroups> {
-        full_moonlight_history(ctx, address).await
+        full_moonlight_history(ctx, address, ord).await
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -200,12 +201,12 @@ impl Query {
         to_block: Option<u64>,
         max_count: Option<usize>,
         page_count: Option<usize>,
-    ) -> OptResult<MoonlightTransactions> {
+    ) -> OptResult<MoonlightTransfers> {
         if max_count == Some(0) {
             return Err(FieldError::new("MaxCount must be greater than 0"));
         }
 
-        moonlight_transactions(
+        fetch_moonlight_history(
             ctx, sender, receiver, from_block, to_block, max_count, page_count,
         )
         .await
@@ -216,7 +217,7 @@ impl Query {
         &self,
         ctx: &Context<'_>,
         memo: String,
-    ) -> OptResult<MoonlightTransactions> {
+    ) -> OptResult<MoonlightTransfers> {
         // convert String to Vec<u8>
         let memo = memo.into_bytes();
         moonlight_tx_by_memo(ctx, memo).await
@@ -264,5 +265,19 @@ impl Query {
         } else {
             check_block(ctx, height, hash).await
         }
+    }
+
+    /// Get the next block height that contains a Phoenix event after the given
+    /// block height.
+    #[cfg(feature = "archive")]
+    async fn next_phoenix(
+        &self,
+        ctx: &Context<'_>,
+        height: i64,
+    ) -> OptResult<u64> {
+        let (_, archive) = ctx.data::<DBContext>()?;
+        let next_height = archive.next_phoenix(height).await?;
+
+        Ok(next_height)
     }
 }

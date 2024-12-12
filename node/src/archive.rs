@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 use rocksdb::OptimisticTransactionDB;
 use sqlx::sqlite::SqlitePool;
+use tracing::debug;
 
 mod archivist;
 mod moonlight;
@@ -17,7 +18,7 @@ mod sqlite;
 mod transformer;
 
 pub use archivist::ArchivistSrv;
-pub use moonlight::MoonlightGroup;
+pub use moonlight::{MoonlightGroup, Order};
 
 // Archive folder containing the sqlite database and the moonlight database
 const ARCHIVE_FOLDER_NAME: &str = "archive";
@@ -35,6 +36,8 @@ pub struct Archive {
     sqlite_archive: SqlitePool,
     // The moonlight database.
     moonlight_db: Arc<OptimisticTransactionDB>,
+    // last finalized block height known to the archive
+    last_finalized_block_height: u64,
 }
 
 impl Archive {
@@ -59,10 +62,39 @@ impl Archive {
         let sqlite_archive = Self::create_or_open_sqlite(&path).await;
         let moonlight_db =
             Self::create_or_open_moonlight_db(&path, ArchiveOptions::default());
-        Self {
+
+        let mut self_archive = Self {
             sqlite_archive,
             moonlight_db,
-        }
+            last_finalized_block_height: 0,
+        };
+
+        let last_finalized_block_height = match self_archive
+            .fetch_last_finalized_block()
+            .await
+        {
+            Ok((height, _)) => height,
+            Err(e) => {
+                // If the error is sqlx::Error::RowNotFound then it is fine
+                // during sync from scratch
+                debug!("Error fetching last finalized block height during archive initialization: {e}");
+                0
+            }
+        };
+
+        self_archive.last_finalized_block_height = last_finalized_block_height;
+
+        self_archive
+    }
+
+    /// Returns the last finalized block height cached in the archive.
+    ///
+    /// # Note
+    /// This is defined as the last finalized block height that was stored in
+    /// the archive. This means also that it is the last height that the
+    /// specific archive is aware of.
+    pub fn last_finalized_block_height(&self) -> u64 {
+        self.last_finalized_block_height
     }
 }
 
