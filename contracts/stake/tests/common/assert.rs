@@ -149,3 +149,23 @@ pub fn assert_stake(
         assert!(stake_data.is_none());
     }
 }
+
+pub fn assert_moonlight(
+    session: &mut Session,
+    moonlight_pk: &BlsPublicKey,
+    expected_balance: u64,
+    expected_nonce: u64,
+) {
+    let moonlight_account: AccountData = session
+        .call(TRANSFER_CONTRACT, "account", moonlight_pk, GAS_LIMIT)
+        .map(|r| r.data)
+        .expect("Getting the moonlight account should succeed");
+    assert_eq!(
+        moonlight_account.balance, expected_balance,
+        "Moonlight balance incorrect"
+    );
+    assert_eq!(
+        moonlight_account.nonce, expected_nonce,
+        "Moonlight nonce incorrect"
+    );
+}
