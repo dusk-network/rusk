@@ -221,6 +221,10 @@ impl SpentTransaction {
         self.0.block_height
     }
 
+    pub async fn error(&self) -> Option<String> {
+        self.0.err
+    }
+
     pub async fn block_timestamp(
         &self,
         ctx: &async_graphql::Context<'_>,
