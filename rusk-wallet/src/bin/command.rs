@@ -577,8 +577,6 @@ impl Command {
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
-                println!("{:?}", fn_args);
-
                 let call =
                     ContractCall::new(contract_id, fn_name.clone(), &fn_args)
                         .map_err(|_| Error::Rkyv)?;
@@ -609,11 +607,16 @@ impl Command {
                 }?;
 
                 let contract_id = hex::encode(contract_id);
-                let fn_args = hex::encode(fn_args);
 
                 let http_call = wallet
-                    .http_contract_call(contract_id, &fn_name, &fn_args)
+                    .http_contract_call(contract_id, &fn_name, fn_args)
                     .await?;
+
+                let http_call = if let Some(x) = http_call {
+                    x.to_string()
+                } else {
+                    "<empty>".to_string()
+                };
 
                 Ok(RunResult::ContractCall(tx.hash(), http_call))
             }

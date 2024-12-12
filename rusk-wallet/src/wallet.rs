@@ -589,8 +589,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let db_pos = state.cache().last_pos()?.unwrap_or(0);
         let network_last_pos = state.fetch_num_notes().await? - 1;
 
-        println!("{} {}", db_pos, network_last_pos);
-
         Ok(network_last_pos == db_pos)
     }
 
@@ -631,16 +629,26 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &self,
         contract_id: String,
         fn_name: &str,
-        fn_args: &str,
-    ) -> Result<String, Error> {
+        fn_args: Vec<u8>,
+    ) -> Result<Option<u32>, Error> {
         let client = self.state()?.client();
 
         // query the rusk vm
         let response = client
-            .call("contracts", Some(contract_id), fn_name, fn_args.as_bytes())
+            .call("contracts", Some(contract_id), fn_name, &fn_args)
             .await?;
 
-        Ok(String::from_utf8_lossy(&response).to_string())
+        if !response.is_empty() {
+            // wasm can only return u32 right now
+            // NOTE: This will fail if the contract returns a u64
+            // for a 64 bit contract
+            let value: u32 =
+                rkyv::from_bytes(&response).map_err(|_| Error::Rkyv)?;
+
+            Ok(Some(value))
+        } else {
+            Ok(None)
+        }
     }
 }
 
