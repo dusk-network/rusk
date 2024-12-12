@@ -25,7 +25,6 @@
   import { toast } from "$lib/dusk/components/Toast/store";
   import {
     Banner,
-    ContractStatusesList,
     GasFee,
     GasSettings,
     OperationResult,
@@ -44,9 +43,6 @@
 
   /** @type {bigint} */
   export let availableBalance;
-
-  /** @type {ContractStatus[]} */
-  export let statuses;
 
   /** @type {GasStoreContent} */
   export let gasLimits;
@@ -199,7 +195,6 @@
       }}
     >
       <div in:fade|global class="operation__send">
-        <ContractStatusesList {statuses} />
         <div class="operation__address-wrapper">
           <p>Address:</p>
           <Button
@@ -268,8 +263,6 @@
       }}
     >
       <div in:fade|global class="operation__send">
-        <ContractStatusesList {statuses} />
-
         <div class="operation__amount-wrapper">
           <p>Amount:</p>
           <Button
@@ -350,8 +343,6 @@
       }}
     >
       <div in:fade|global class="operation__send">
-        <ContractStatusesList {statuses} />
-
         <Badge
           className="operation__review-notice"
           text="REVIEW TRANSACTION"

@@ -1,62 +1,34 @@
 <svelte:options immutable={true} />
 
 <script>
-  import {
-    collect,
-    getKey,
-    hasKeyValue,
-    map,
-    mapWith,
-    pick,
-    setKey,
-    when,
-  } from "lamb";
+  import { getKey, hasKeyValue, map, mapWith, setKey, when } from "lamb";
   import { Gas } from "$lib/vendor/w3sper.js/src/mod";
-
-  import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
   import {
     gasStore,
     operationsStore,
     settingsStore,
     walletStore,
   } from "$lib/stores";
-  import {
-    ContractOperations,
-    ContractStatusesList,
-    Stake,
-    Unstake,
-  } from "$lib/components";
+  import { ContractOperations, Stake, Unstake } from "$lib/components";
   import { mdiDatabaseArrowDownOutline, mdiGiftOpenOutline } from "@mdi/js";
 
   /** @type {ContractDescriptor} */
   export let descriptor;
 
-  export let spendable = 0n;
+  /** @type {ContractGasSettings} */
+  export let gasSettings;
 
-  $: [gasSettings, language] = collectSettings($settingsStore);
-  $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
+  /** @type {StakeInfo} */
+  export let stakeInfo;
 
-  const gasLimits = $gasStore;
+  /** @type {(value: number | bigint) => string} */
+  export let formatter;
 
   /** @type {ContractOperation[]} */
   let operations;
 
-  $: stakeInfo = $walletStore.stakeInfo;
-
-  $: if (stakeInfo) {
-    operations = getOperations();
-  }
-
-  const collectSettings = collect([
-    pick([
-      "gasLimit",
-      "gasLimitLower",
-      "gasLimitUpper",
-      "gasPrice",
-      "gasPriceLower",
-    ]),
-    getKey("language"),
-  ]);
+  const gasLimits = $gasStore;
+  const { hideStakingNotice } = $settingsStore;
 
   /** @type {Record<string, (info: StakeInfo) => boolean>} */
   const disablingConditions = {
@@ -115,34 +87,10 @@
     disabled: disablingConditions[operation.id]?.(stakeInfo) ?? true,
   });
 
-  /**
-   * @returns {ContractStatus[]}
-   */
-  $: statuses = [
-    {
-      label: "Spendable",
-      value: duskFormatter(luxToDusk(spendable)),
-    },
-    {
-      label: "Active Stake",
-      value: stakeInfo.amount
-        ? duskFormatter(luxToDusk(stakeInfo.amount.value))
-        : null,
-    },
-    {
-      label: "Penalized Stake",
-      value: stakeInfo.amount
-        ? duskFormatter(luxToDusk(stakeInfo.amount.locked))
-        : null,
-    },
-    {
-      label: "Rewards",
-      value: duskFormatter(luxToDusk(stakeInfo.reward)),
-    },
-  ];
-
+  $: if (stakeInfo) {
+    operations = getOperations();
+  }
   $: ({ currentOperation } = $operationsStore);
-  const { hideStakingNotice } = $settingsStore;
   $: ({ balance, minimumStake, syncStatus } = $walletStore);
   $: isSyncOK = !(syncStatus.isInProgress || !!syncStatus.error);
   $: if (!isSyncOK) {
@@ -154,24 +102,22 @@
   {#if currentOperation === "stake"}
     <Stake
       execute={executeOperations[currentOperation]}
-      formatter={duskFormatter}
+      {formatter}
       {gasLimits}
       {gasSettings}
       minStakeRequirement={minimumStake}
       on:operationChange
       on:suppressStakingNotice
       availableBalance={balance.unshielded.value}
-      {statuses}
       {hideStakingNotice}
     />
   {:else if currentOperation === "unstake" || currentOperation === "claim-rewards"}
     <Unstake
       execute={executeOperations[currentOperation]}
-      formatter={duskFormatter}
+      {formatter}
       {gasLimits}
       {gasSettings}
       on:operationChange
-      {statuses}
       maxAmount={getMaxUnstakeAmount()}
       operationCtaLabel={currentOperation === "unstake"
         ? "Unstake"
@@ -184,7 +130,6 @@
         : "Rewards Amount"}
     />
   {:else}
-    <ContractStatusesList {statuses} />
     <ContractOperations items={operations} on:operationChange />
   {/if}
 {/key}

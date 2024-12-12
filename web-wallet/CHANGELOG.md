@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add notice for stake maturity [#2981]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -402,6 +404,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2920]: https://github.com/dusk-network/rusk/issues/2920
 [#2932]: https://github.com/dusk-network/rusk/issues/2932
 [#2938]: https://github.com/dusk-network/rusk/issues/2938
+[#2981]: https://github.com/dusk-network/rusk/issues/2981
 [#2990]: https://github.com/dusk-network/rusk/issues/2990
 [#2991]: https://github.com/dusk-network/rusk/issues/2991
 [#2994]: https://github.com/dusk-network/rusk/issues/2994
