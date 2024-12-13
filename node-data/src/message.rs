@@ -28,9 +28,6 @@ use crate::{bls, ledger, Serializable, StepName};
 pub const TOPIC_FIELD_POS: usize = 1 + 2 + 2;
 pub const PROTOCOL_VERSION: Version = Version(1, 0, 2);
 
-/// Max value for iteration.
-pub const MESSAGE_MAX_ITER: u8 = 50;
-
 /// Block version
 pub const BLOCK_HEADER_VERSION: u8 = 1;
 
@@ -373,14 +370,6 @@ impl Serializable for ConsensusHeader {
         let prev_block_hash = Self::read_bytes(r)?;
         let round = Self::read_u64_le(r)?;
         let iteration = Self::read_u8(r)?;
-
-        // Iteration is 0-based
-        if iteration >= MESSAGE_MAX_ITER {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("Invalid iteration {iteration})"),
-            ));
-        }
 
         Ok(ConsensusHeader {
             prev_block_hash,

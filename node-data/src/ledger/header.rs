@@ -7,7 +7,7 @@
 use serde::Serialize;
 
 use super::*;
-use crate::message::{ConsensusHeader, MESSAGE_MAX_ITER};
+use crate::message::ConsensusHeader;
 
 pub type Seed = Signature;
 #[derive(Eq, PartialEq, Clone, Serialize)]
@@ -153,14 +153,6 @@ impl Header {
         let faultroot = Self::read_bytes(r)?;
         let gas_limit = Self::read_u64_le(r)?;
         let iteration = Self::read_u8(r)?;
-
-        // Iteration is 0-based
-        if iteration >= MESSAGE_MAX_ITER {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("Invalid iteration {iteration})"),
-            ));
-        }
 
         let prev_block_cert = Attestation::read(r)?;
         let failed_iterations = IterationsInfo::read(r)?;
