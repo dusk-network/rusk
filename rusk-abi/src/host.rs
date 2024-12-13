@@ -7,6 +7,7 @@
 use alloc::vec::Vec;
 use std::path::{Path, PathBuf};
 
+use blake2b_simd::Params;
 use dusk_bytes::DeserializableSlice;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use execution_core::groth16::bn254::{Bn254, G1Projective};
@@ -22,14 +23,100 @@ use execution_core::signatures::bls::{
 use execution_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
 };
-use execution_core::BlsScalar;
-use piecrust::{Error as PiecrustError, Session, SessionData, VM};
+use execution_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use execution_core::{BlsScalar, ContractError};
+use piecrust::{
+    CallReceipt, ContractId, Error as PiecrustError, Session, SessionData,
+    CONTRACT_ID_BYTES, VM,
+};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 
 mod cache;
+mod deploy;
 
 use crate::{Metadata, Query};
+
+/// Executes a transaction, returning the receipt of the call and the gas spent.
+/// The following steps are performed:
+///
+/// 1. Check if the transaction contains contract deployment data, and if so,
+///    verifies if gas limit is enough for deployment and if the gas price is
+///    sufficient for deployment. If either gas price or gas limit is not
+///    sufficient for deployment, transaction is discarded.
+///
+/// 2. Call the "spend_and_execute" function on the transfer contract with
+///    unlimited gas. If this fails, an error is returned. If an error is
+///    returned the transaction should be considered unspendable/invalid, but no
+///    re-execution of previous transactions is required.
+///
+/// 3. If the transaction contains contract deployment data, additional checks
+///    are performed and if they pass, deployment is executed. The following
+///    checks are performed:
+///    - gas limit should be is smaller than deploy charge plus gas used for
+///      spending funds
+///    - transaction's bytecode's bytes are consistent with bytecode's hash
+///    Deployment execution may fail for deployment-specific reasons, such as
+///    for example:
+///    - contract already deployed
+///    - corrupted bytecode
+///    If deployment execution fails, the entire gas limit is consumed and error
+///    is returned.
+///
+/// 4. Call the "refund" function on the transfer contract with unlimited gas.
+///    The amount charged depends on the gas spent by the transaction, and the
+///    optional contract call in steps 2 or 3.
+///
+/// Note that deployment transaction will never be re-executed for reasons
+/// related to deployment, as it is either discarded or it charges the
+/// full gas limit. It might be re-executed only if some other transaction
+/// failed to fit the block.
+pub fn execute(
+    session: &mut Session,
+    tx: &Transaction,
+    gas_per_deploy_byte: u64,
+    min_deployment_gas_price: u64,
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+    // Transaction will be discarded if it is a deployment transaction
+    // with gas limit smaller than deploy charge.
+    deploy::pre_check(tx, gas_per_deploy_byte, min_deployment_gas_price)?;
+
+    // Spend the inputs and execute the call. If this errors the transaction is
+    // unspendable.
+    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
+        TRANSFER_CONTRACT,
+        "spend_and_execute",
+        // if it's a deploy tx, we need to strip the bytecode before passing it
+        // to the transfer contract
+        tx.strip_off_bytecode().as_ref().unwrap_or(tx),
+        tx.gas_limit(),
+    )?;
+
+    // If this is a deployment transaction and the call to "spend_and_execute"
+    // was successful, we can now deploy the contract.
+    deploy::contract(session, tx, gas_per_deploy_byte, &mut receipt);
+
+    // Ensure all gas is consumed if there's an error in the contract call
+    if receipt.data.is_err() {
+        receipt.gas_spent = receipt.gas_limit;
+    }
+
+    // Refund the appropriate amount to the transaction. This call is guaranteed
+    // to never error. If it does, then a programming error has occurred. As
+    // such, the call to `Result::expect` is warranted.
+    let refund_receipt = session
+        .call::<_, ()>(
+            TRANSFER_CONTRACT,
+            "refund",
+            &receipt.gas_spent,
+            u64::MAX,
+        )
+        .expect("Refunding must succeed");
+
+    receipt.events.extend(refund_receipt.events);
+
+    Ok(receipt)
+}
 
 /// Create a new session based on the given `vm`. The vm *must* have been
 /// created using [`new_vm`] or [`new_ephemeral_vm`].
@@ -245,4 +332,57 @@ pub fn verify_bls_multisig(
         .expect("aggregation should succeed");
 
     akey.verify(&sig, &msg).is_ok()
+}
+
+/// Generate a [`ContractId`] address from:
+/// - slice of bytes,
+/// - nonce
+/// - owner
+pub fn gen_contract_id(
+    bytes: impl AsRef<[u8]>,
+    nonce: u64,
+    owner: impl AsRef<[u8]>,
+) -> ContractId {
+    let mut hasher = Params::new().hash_length(CONTRACT_ID_BYTES).to_state();
+    hasher.update(bytes.as_ref());
+    hasher.update(&nonce.to_le_bytes()[..]);
+    hasher.update(owner.as_ref());
+    let hash_bytes: [u8; CONTRACT_ID_BYTES] = hasher
+        .finalize()
+        .as_bytes()
+        .try_into()
+        .expect("the hash result is exactly `CONTRACT_ID_BYTES` long");
+    ContractId::from_bytes(hash_bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::rngs::StdRng;
+    use rand::{RngCore, SeedableRng};
+
+    #[test]
+    fn test_gen_contract_id() {
+        let mut rng = StdRng::seed_from_u64(42);
+
+        let mut bytes = vec![0; 1000];
+        rng.fill_bytes(&mut bytes);
+
+        let nonce = rng.next_u64();
+
+        let mut owner = vec![0, 100];
+        rng.fill_bytes(&mut owner);
+
+        let contract_id =
+            gen_contract_id(bytes.as_slice(), nonce, owner.as_slice());
+
+        assert_eq!(
+            contract_id.as_bytes(),
+            [
+                45, 168, 182, 39, 119, 137, 168, 140, 114, 21, 120, 158, 34,
+                126, 244, 221, 151, 72, 109, 178, 82, 229, 84, 128, 92, 123,
+                135, 74, 23, 224, 119, 133
+            ]
+        );
+    }
 }

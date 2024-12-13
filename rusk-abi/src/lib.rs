@@ -57,9 +57,9 @@ pub use piecrust_uplink::{
 mod host;
 #[cfg(feature = "host")]
 pub use host::{
-    hash, new_ephemeral_vm, new_genesis_session, new_session, new_vm,
-    poseidon_hash, verify_bls, verify_bls_multisig, verify_plonk,
-    verify_schnorr,
+    execute, gen_contract_id, hash, new_ephemeral_vm, new_genesis_session,
+    new_session, new_vm, poseidon_hash, verify_bls, verify_bls_multisig,
+    verify_plonk, verify_schnorr,
 };
 #[cfg(feature = "host")]
 pub use piecrust::{
