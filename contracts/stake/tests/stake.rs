@@ -6,26 +6,25 @@
 
 pub mod common;
 
+use execution_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
+use execution_core::stake::{
+    Reward, RewardReason, Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT,
+};
+use execution_core::transfer::data::ContractCall;
+use execution_core::transfer::phoenix::{
+    PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    ViewKey as PhoenixViewKey,
+};
+use execution_core::transfer::withdraw::{
+    Withdraw, WithdrawReceiver, WithdrawReplayToken,
+};
+use execution_core::{dusk, JubJubScalar};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-
-use execution_core::{
-    dusk,
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{
-        Reward, RewardReason, Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT,
-    },
-    transfer::{
-        data::ContractCall,
-        phoenix::{
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            ViewKey as PhoenixViewKey,
-        },
-        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-    },
-    JubJubScalar,
-};
+use rusk_abi::execute;
 
 use crate::common::assert::{
     assert_reward_event, assert_stake, assert_stake_event,
@@ -89,7 +88,7 @@ fn stake_withdraw_unstake() {
     );
 
     let receipt =
-        execute(&mut session, tx).expect("Executing TX should succeed");
+        execute(&mut session, &tx, 0, 0).expect("Executing TX should succeed");
 
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
@@ -184,7 +183,7 @@ fn stake_withdraw_unstake() {
         .expect("Instantiating new session should succeed");
 
     let receipt =
-        execute(&mut session, tx).expect("Executing TX should succeed");
+        execute(&mut session, &tx, 0, 0).expect("Executing TX should succeed");
 
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
@@ -280,7 +279,7 @@ fn stake_withdraw_unstake() {
         .expect("Instantiating new session should succeed");
 
     let receipt =
-        execute(&mut session, tx).expect("Executing TX should succeed");
+        execute(&mut session, &tx, 0, 0).expect("Executing TX should succeed");
     update_root(&mut session).expect("Updating the root should succeed");
 
     let gas_spent = receipt.gas_spent;

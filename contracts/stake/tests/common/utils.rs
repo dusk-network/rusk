@@ -13,10 +13,9 @@ use execution_core::transfer::phoenix::{
     ViewKey as PhoenixViewKey,
 };
 use execution_core::transfer::{Transaction, TRANSFER_CONTRACT};
-use execution_core::LUX;
-use execution_core::{BlsScalar, ContractError};
+use execution_core::{BlsScalar, LUX};
 use rand::rngs::StdRng;
-use rusk_abi::{CallReceipt, PiecrustError, Session};
+use rusk_abi::{PiecrustError, Session};
 use rusk_prover::LocalProver;
 
 pub const GAS_LIMIT: u64 = 0x100_000_000;
@@ -96,44 +95,6 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
     iter.into_iter()
         .filter(|note| vk.owns(note.stealth_address()))
         .collect()
-}
-
-/// Executes a transaction, returning the call receipt
-pub fn execute(
-    session: &mut Session,
-    tx: impl Into<Transaction>,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
-    let tx = tx.into();
-
-    // Spend the inputs and execute the call. If this errors the transaction is
-    // unspendable.
-    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "spend_and_execute",
-        &tx,
-        tx.gas_limit(),
-    )?;
-
-    // Ensure all gas is consumed if there's an error in the contract call
-    if receipt.data.is_err() {
-        receipt.gas_spent = receipt.gas_limit;
-    }
-
-    // Refund the appropriate amount to the transaction. This call is guaranteed
-    // to never error. If it does, then a programming error has occurred. As
-    // such, the call to `Result::expect` is warranted.
-    let refund_receipt = session
-        .call::<_, ()>(
-            TRANSFER_CONTRACT,
-            "refund",
-            &receipt.gas_spent,
-            u64::MAX,
-        )
-        .expect("Refunding must succeed");
-
-    receipt.events.extend(refund_receipt.events);
-
-    Ok(receipt)
 }
 
 /// Generate a TxCircuit given the sender secret-key, receiver public-key, the
