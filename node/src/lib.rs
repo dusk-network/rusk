@@ -30,6 +30,8 @@ use tokio::sync::RwLock;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
+pub use rusk_recovery_tools::state::DUSK_CONSENSUS_KEY;
+
 /// Filter is used by Network implementor to filter messages before re-routing
 /// them. It's like the middleware in HTTP pipeline.
 ///

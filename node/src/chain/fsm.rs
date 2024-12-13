@@ -13,6 +13,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use dusk_consensus::config::is_emergency_block;
 use metrics::counter;
 use node_data::ledger::{to_str, Attestation, Block};
 use node_data::message::payload::{Inv, Quorum, RatificationResult, Vote};
@@ -191,7 +192,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
         // Try attach the Attestation, if necessary
         // If can't find the Attestation, the block is discarded
-        if !Self::is_block_attested(&blk) {
+        // unless it's an Emergency Blocks, which have no Attestation
+        if !Self::is_block_attested(&blk)
+            && !is_emergency_block(blk.header().iteration)
+        {
             if let Err(err) = self.attach_blk_att(&mut blk) {
                 warn!(event = "block discarded", ?err);
                 return Ok(None);

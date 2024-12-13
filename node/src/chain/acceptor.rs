@@ -13,7 +13,8 @@ use std::{cmp, env};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::TimeoutSet;
 use dusk_consensus::config::{
-    MAX_ROUND_DISTANCE, MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
+    is_emergency_block, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
+    MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
 };
 use dusk_consensus::errors::{ConsensusError, HeaderError};
 use dusk_consensus::operations::Voter;
@@ -44,7 +45,7 @@ use crate::database::rocksdb::{
     MD_STATE_ROOT_KEY,
 };
 use crate::database::{self, ConsensusStorage, Ledger, Mempool, Metadata};
-use crate::{vm, Message, Network};
+use crate::{vm, Message, Network, DUSK_CONSENSUS_KEY};
 
 const CANDIDATES_DELETION_OFFSET: u64 = 10;
 
@@ -627,7 +628,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         if iteration == 0 {
             return;
         }
-        for iter in 0..iteration {
+
+        // In case of Emergency Block, which iteration number is u8::MAX, we
+        // count failed iterations up to CONSENSUS_MAX_ITER
+        let last_iter = cmp::min(iteration, CONSENSUS_MAX_ITER);
+
+        for iter in 0..last_iter {
             let generator =
                 provisioners_list.get_generator(iter, seed, round).to_bs58();
             warn!(event = "missed iteration", height = round, iter, generator);
@@ -1355,13 +1361,29 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
 ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
+    // Set the expected generator to the one extracted by Deterministic
+    // Sortition, or, in case of Emergency Block, to the Dusk Consensus Key
+    let (expected_generator, check_att) =
+        if is_emergency_block(header.iteration) {
+            let dusk_key = PublicKey::new(*DUSK_CONSENSUS_KEY);
+            let dusk_key_bytes = dusk_key.bytes();
+
+            // We disable the Attestation check since it's not needed to accept
+            // an Emergency Block
+            (*dusk_key_bytes, false)
+        } else {
+            let iter_generator = provisioners.current().get_generator(
+                header.iteration,
+                prev_header.seed,
+                header.height,
+            );
+
+            (iter_generator, true)
+        };
+
+    // Verify header validity
     let validator = Validator::new(db, prev_header, provisioners);
-    let expected_generator = provisioners.current().get_generator(
-        header.iteration,
-        prev_header.seed,
-        header.height,
-    );
     validator
-        .execute_checks(header, &expected_generator, true)
+        .execute_checks(header, &expected_generator, check_att)
         .await
 }
