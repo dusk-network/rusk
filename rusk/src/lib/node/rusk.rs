@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::path::Path;
-use std::sync::{mpsc, Arc, LazyLock};
+use std::sync::{mpsc, Arc};
 use std::time::{Duration, Instant};
 use std::{fs, io};
 
@@ -14,7 +14,7 @@ use execution_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use tracing::info;
 
-use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_bytes::Serializable;
 use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
     validation_quorum, MAX_NUMBER_OF_TRANSACTIONS,
@@ -31,6 +31,7 @@ use execution_core::{
     BlsScalar, ContractError, Dusk, Event,
 };
 use node::vm::bytecode_charge;
+use node::DUSK_CONSENSUS_KEY;
 use node_data::events::contract::{ContractEvent, ContractTxEvent};
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use rusk_abi::{CallReceipt, PiecrustError, Session};
@@ -45,12 +46,6 @@ use crate::http::RuesEvent;
 use crate::node::{coinbase_value, Rusk, RuskTip};
 use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result};
-
-pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
-    let dusk_cpk_bytes = include_bytes!("../../assets/dusk.cpk");
-    BlsPublicKey::from_slice(dusk_cpk_bytes)
-        .expect("Dusk consensus public key to be valid")
-});
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
@@ -855,7 +850,7 @@ fn reward_slash_and_update_root(
     });
 
     rewards.push(Reward {
-        account: *DUSK_KEY,
+        account: *DUSK_CONSENSUS_KEY,
         value: dusk_value,
         reason: RewardReason::Other,
     });
