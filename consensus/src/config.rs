@@ -32,6 +32,19 @@ pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(7);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);
 pub const TIMEOUT_INCREASE: Duration = Duration::from_secs(2);
 
+// MIN_EMERGENCY_BLOCK_TIME is the minimum time that should elapse since the
+// previous block's timestamp for an Emergency Block to be valid. This value
+// should be enough to allow other candidates in the same round to be generated
+// and accepted.
+// The value is obtained by accounting for all possible iterations in a round,
+// plus the iteration of the previous block. This is necessary because the
+// reference timestamp is the one of the Candidate creation, which is at the
+// beginning of the iteration
+const MAX_ITER_TIMEOUT: u64 = MAX_STEP_TIMEOUT.as_secs() * 3;
+const CONSENSUS_MAX_ITER_EXT: u64 = CONSENSUS_MAX_ITER as u64 + 1;
+pub const MIN_EMERGENCY_BLOCK_TIME: Duration =
+    Duration::from_secs(MAX_ITER_TIMEOUT * CONSENSUS_MAX_ITER_EXT);
+
 mod default {
     pub const MINIMUM_BLOCK_TIME: u64 = 10;
 }
