@@ -10,9 +10,8 @@ import { walletStore } from "$lib/stores";
  * @param {boolean} isForced
  * @returns {ReturnType<goto>}
  */
-const logout = (isForced) => {
+const logout = async (isForced) => {
   walletStore.reset();
-
   return goto(`/${isForced ? "forced-logout" : ""}`);
 };
 
