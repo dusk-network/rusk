@@ -18,7 +18,7 @@ use tracing::{debug, info};
 use crate::commons::RoundUpdate;
 use crate::config::{MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MINIMUM_BLOCK_TIME};
 use crate::merkle::merkle_root;
-use crate::operations::{CallParams, Operations, Voter};
+use crate::operations::{CallParams, Operations};
 
 pub struct Generator<T: Operations> {
     executor: Arc<T>,
@@ -35,35 +35,9 @@ impl<T: Operations> Generator<T> {
         iteration: u8,
         failed_iterations: IterationsInfo,
     ) -> Result<Message, crate::errors::OperationError> {
-        // Sign seed
-        let seed: [u8; 48] = ru
-            .secret_key
-            .sign_multisig(ru.pubkey_bls.inner(), &ru.seed().inner()[..])
-            .to_bytes();
-
-        let start = Instant::now();
-
         let candidate = self
-            .generate_block(
-                ru,
-                Seed::from(seed),
-                iteration,
-                failed_iterations,
-                &[],
-                ru.att_voters(),
-            )
+            .generate_block(ru, iteration, failed_iterations, &[])
             .await?;
-
-        info!(
-            event = "Candidate generated",
-            hash = &to_str(&candidate.header().hash),
-            round = candidate.header().height,
-            iter = candidate.header().iteration,
-            prev_block = &to_str(&candidate.header().prev_block_hash),
-            gas_limit = candidate.header().gas_limit,
-            state_hash = &to_str(&candidate.header().state_hash),
-            dur = format!("{:?}ms", start.elapsed().as_millis()),
-        );
 
         let mut candidate_msg = Candidate { candidate };
 
@@ -74,15 +48,22 @@ impl<T: Operations> Generator<T> {
         Ok(candidate_msg.into())
     }
 
-    async fn generate_block(
+    pub async fn generate_block(
         &self,
         ru: &RoundUpdate,
-        seed: Seed,
         iteration: u8,
         failed_iterations: IterationsInfo,
         faults: &[Fault],
-        voters: &[Voter],
     ) -> Result<Block, crate::errors::OperationError> {
+        let start = Instant::now();
+
+        // Sign seed
+        let seed_sig: [u8; 48] = ru
+            .secret_key
+            .sign_multisig(ru.pubkey_bls.inner(), &ru.seed().inner()[..])
+            .to_bytes();
+        let seed = Seed::from(seed_sig);
+
         // Limit number of faults in the block
         let faults = if faults.len() > MAX_NUMBER_OF_FAULTS {
             &faults[..MAX_NUMBER_OF_FAULTS]
@@ -128,6 +109,7 @@ impl<T: Operations> Generator<T> {
 
         // We know for sure that this operation cannot underflow
         let max_txs_bytes = MAX_BLOCK_SIZE - header_size - faults_size;
+        let voters = ru.att_voters();
 
         let call_params = CallParams {
             round: ru.round,
@@ -154,10 +136,23 @@ impl<T: Operations> Generator<T> {
             get_current_timestamp(),
         );
 
-        Block::new(blk_header, txs, faults.to_vec()).map_err(|e| {
-            crate::errors::OperationError::InvalidEST(anyhow::anyhow!(
-                "Cannot create new block {e}",
-            ))
-        })
+        match Block::new(blk_header, txs, faults.to_vec()) {
+            Ok(blk) => {
+                info!(
+                    event = "Block generated",
+                    round = blk.header().height,
+                    iter = blk.header().iteration,
+                    prev_block = &to_str(&blk.header().prev_block_hash),
+                    hash = &to_str(&blk.header().hash),
+                    gas_limit = blk.header().gas_limit,
+                    state_hash = &to_str(&blk.header().state_hash),
+                    dur = format!("{:?}ms", start.elapsed().as_millis()),
+                );
+                Ok(blk)
+            }
+            Err(e) => Err(crate::errors::OperationError::InvalidEST(
+                anyhow::anyhow!("Cannot create new block {e}",),
+            )),
+        }
     }
 }
