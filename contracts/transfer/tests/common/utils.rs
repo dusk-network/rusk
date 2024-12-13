@@ -11,9 +11,9 @@ use execution_core::transfer::moonlight::AccountData;
 use execution_core::transfer::phoenix::{
     Note, NoteLeaf, ViewKey as PhoenixViewKey,
 };
-use execution_core::transfer::{Transaction, TRANSFER_CONTRACT};
-use execution_core::{BlsScalar, ContractError, ContractId};
-use rusk_abi::{CallReceipt, PiecrustError, Session};
+use execution_core::transfer::TRANSFER_CONTRACT;
+use execution_core::{BlsScalar, ContractId};
+use rusk_abi::{PiecrustError, Session};
 
 const GAS_LIMIT: u64 = 0x10_000_000;
 
@@ -30,40 +30,6 @@ pub fn chain_id(session: &mut Session) -> Result<u8, PiecrustError> {
     session
         .call(TRANSFER_CONTRACT, "chain_id", &(), GAS_LIMIT)
         .map(|r| r.data)
-}
-
-/// Executes a transaction.
-/// Returns result containing gas spent.
-pub fn execute(
-    session: &mut Session,
-    tx: impl Into<Transaction>,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
-    let tx = tx.into();
-
-    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "spend_and_execute",
-        &tx,
-        tx.gas_limit(),
-    )?;
-
-    // Ensure all gas is consumed if there's an error in the contract call
-    if receipt.data.is_err() {
-        receipt.gas_spent = receipt.gas_limit;
-    }
-
-    let refund_receipt = session
-        .call::<_, ()>(
-            TRANSFER_CONTRACT,
-            "refund",
-            &receipt.gas_spent,
-            u64::MAX,
-        )
-        .expect("Refunding must succeed");
-
-    receipt.events.extend(refund_receipt.events);
-
-    Ok(receipt)
 }
 
 // moonlight helper functions
