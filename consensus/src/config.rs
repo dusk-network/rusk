@@ -8,10 +8,10 @@ use std::env;
 use std::sync::LazyLock;
 use std::time::Duration;
 
-use node_data::message::{MESSAGE_MAX_FAILED_ITERATIONS, MESSAGE_MAX_ITER};
+use node_data::message::MESSAGE_MAX_FAILED_ITERATIONS;
 
 /// Maximum number of iterations Consensus runs per a single round.
-pub const CONSENSUS_MAX_ITER: u8 = MESSAGE_MAX_ITER;
+pub const CONSENSUS_MAX_ITER: u8 = 50;
 
 /// Total credits of steps committees
 pub const PROPOSAL_COMMITTEE_CREDITS: usize = 1;
