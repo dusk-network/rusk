@@ -360,7 +360,7 @@ exports[`Stake > should render the Stake notice 1`] = `
           I understand that I have set up a node properly, as described 
           <a
             class="dusk-anchor dusk-anchor--on-surface"
-            href="https://docs.dusk.network/operator/02-provisioner/"
+            href="https://docs.dusk.network/operator/provisioner/"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -369,7 +369,7 @@ exports[`Stake > should render the Stake notice 1`] = `
           , and that, if not done correctly, I may be subject to 
           <a
             class="dusk-anchor dusk-anchor--on-surface"
-            href="https://docs.dusk.network/operator/02-provisioner/#slashing"
+            href="https://docs.dusk.network/operator/provisioner/#slashing"
             rel="noopener noreferrer"
             target="_blank"
           >
