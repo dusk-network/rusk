@@ -285,6 +285,17 @@ impl Transaction {
         })
     }
 
+    /// Returns gas charge for the deployment of a contract bytecode.
+    /// This will be zero if the transaction is not a deploy transaction.
+    #[must_use]
+    pub fn deploy_charge(&self, gas_per_deploy_byte: u64) -> u64 {
+        let bytecode_len = self
+            .deploy()
+            .map(|deploy_contract| deploy_contract.bytecode.bytes.len())
+            .unwrap_or_default();
+        bytecode_len as u64 * gas_per_deploy_byte
+    }
+
     /// Serialize the transaction into a byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
