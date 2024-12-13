@@ -25,7 +25,7 @@ use execution_core::{
 };
 use rusk_abi::PiecrustError;
 
-use crate::common::assert::assert_event;
+use crate::common::assert::assert_reward_event;
 use crate::common::init::instantiate;
 
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
@@ -83,7 +83,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
 
     let receipt =
         session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
-    assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
+    assert_reward_event(&receipt.events, "reward", &stake_pk, reward_amount);
 
     let receipt = session.call::<_, ()>(
         STAKE_CONTRACT,
@@ -227,7 +227,7 @@ fn stake_hard_slash() -> Result<(), PiecrustError> {
 
     let receipt =
         session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
-    assert_event(&receipt.events, "reward", &stake_pk, reward_amount);
+    assert_reward_event(&receipt.events, "reward", &stake_pk, reward_amount);
 
     // Simple hard fault post-reward (slash 10%)
     // Rewards should reset 'hard_faults'
