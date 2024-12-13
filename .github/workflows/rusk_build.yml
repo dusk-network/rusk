@@ -14,13 +14,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-12, arm-linux]
+        os: [ubuntu-24.04, macos-15, arm-linux]
         compiler: [cargo]
         features: [default, archive]
         include:
           - os: ubuntu-24.04
-            target: linux-x64-libssl3
-          - os: macos-12
+            target: linux-x64
+          - os: macos-15
             target: macos-arm64
             flags: --target=aarch64-apple-darwin
           - os: arm-linux
@@ -38,7 +38,15 @@ jobs:
 
       - name: Add ARM target for Apple silicon
         run: rustup target add aarch64-apple-darwin
-        if: ${{ matrix.os == 'macos-12' }}
+        if: ${{ matrix.os == 'macos-15' }}
+
+      - name: Compile keys
+        shell: bash
+        run: make keys
+
+      - name: Compile WASM Contracts
+        shell: bash
+        run: make wasm
 
       - name: Build Rusk binary
         shell: bash
@@ -47,7 +55,7 @@ jobs:
 
       - name: Extract Version
         run: |
-          export SEMVER=$(cargo pkgid --manifest-path ./rusk/Cargo.toml | perl -lpe 's/.*\@(.*)/$1/')
+          export SEMVER=$(cargo pkgid --manifest-path ./rusk/Cargo.toml | sed -E 's/.*#([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
           echo "SEMVER=$SEMVER" >> $GITHUB_ENV
 
       - name: Package Binaries
@@ -58,8 +66,8 @@ jobs:
             rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
 
       - name: Upload Binaries as Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: rusk-binaries-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
-          path: ./*.tar.gz
+          name: rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
+          path: ./rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}.tar.gz
           retention-days: 5
