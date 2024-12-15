@@ -9,17 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+- Update Transactions list design [#1922]
+
+### Removed
+
+### Fixed
+
+## [0.10.0] - 2024-12-17
+
+### Added
+
 - Add notice for stake maturity [#2981]
 - Add capability to maintain cache consistency in case of rejected blocks [#3156]
 - Add button to reset gas settings to their defaults [#3178]
 
 ### Changed
 
-- Update Transactions list design [#1922]
 - Reword "Staking" header to "Stake" [#3113]
 - Upgrade Migration Feature to Use Reown AppKit [#3129]
 - Update default gas settings values [#3178]
 - Update AddressPicker to show Default Profile label [#3179]
+- Enhanced migration workflow, activated new migration contracts [#3203]
 
 ### Removed
 
@@ -442,10 +454,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3160]: https://github.com/dusk-network/rusk/issues/3160
 [#3178]: https://github.com/dusk-network/rusk/issues/3178
 [#3179]: https://github.com/dusk-network/rusk/issues/3179
+[#3203]: https://github.com/dusk-network/rusk/issues/3203
 
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[0.10.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.10.0
 [0.9.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.9.0
 [0.8.1]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.8.1
 [0.8.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.8.0
