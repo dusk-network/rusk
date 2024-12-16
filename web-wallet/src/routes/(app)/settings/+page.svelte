@@ -24,7 +24,9 @@
   import { logout } from "$lib/navigation";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
 
-  const confirmResetMessage =
+  const confirmResetGasMessage =
+    "Are you sure you want to reset the gas settings to their defaults?";
+  const confirmResetWalletMessage =
     "Confirm you've saved your recovery phrase before resetting the wallet. Proceed?";
 
   const resetWallet = () =>
@@ -39,9 +41,16 @@
         resetError = err;
       });
 
+  function handleResetGasSettingsClick() {
+    // eslint-disable-next-line no-alert
+    if (confirm(confirmResetGasMessage)) {
+      settingsStore.resetGasSettings();
+    }
+  }
+
   function handleResetWalletClick() {
     // eslint-disable-next-line no-alert
-    if (confirm(confirmResetMessage)) {
+    if (confirm(confirmResetWalletMessage)) {
       resetError = null;
       resetWallet();
     }
@@ -50,16 +59,15 @@
   /** @type {(currency: { code: string, currency: string }) => SelectOption} */
   const currencyToOption = rename({ code: "value", currency: "label" });
   const currenciesToOptions = mapWith(currencyToOption);
-  const { currency, darkMode, gasLimit, gasPrice } = $settingsStore;
   const { gasLimitLower, gasLimitUpper, gasPriceLower } = $gasStore;
 
-  let isDarkMode = darkMode;
   let isGasValid = false;
 
   /** @type {Error | null} */
   let resetError = null;
 
   $: ({ syncStatus } = $walletStore);
+  $: ({ currency, darkMode, gasLimit, gasPrice } = $settingsStore);
 </script>
 
 <section class="settings">
@@ -76,18 +84,16 @@
       <div class="settings-group__multi-control-content">
         <GasControls
           on:gasSettings={(event) => {
-            isGasValid = areValidGasSettings(
-              event.detail.price,
-              event.detail.limit
-            );
+            const { limit, price } = event.detail;
+
+            isGasValid = areValidGasSettings(price, limit);
 
             if (isGasValid) {
-              settingsStore.update((store) => {
-                store.gasLimit = event.detail.limit;
-                store.gasPrice = event.detail.price;
-
-                return store;
-              });
+              settingsStore.update((store) => ({
+                ...store,
+                gasLimit: limit,
+                gasPrice: price,
+              }));
             }
           }}
           limit={gasLimit}
@@ -95,6 +101,10 @@
           limitUpper={gasLimitUpper}
           price={gasPrice}
           priceLower={gasPriceLower}
+        />
+        <Button
+          on:click={handleResetGasSettingsClick}
+          text="Reset to defaults"
         />
       </div>
     </article>
@@ -132,14 +142,14 @@
         >
           <span>Dark mode</span>
           <Switch
-            bind:value={isDarkMode}
-            on:change={() => {
+            on:change={(event) => {
               settingsStore.update((store) => {
-                store.darkMode = isDarkMode;
+                store.darkMode = event.detail;
 
                 return store;
               });
             }}
+            value={darkMode}
           />
         </label>
       </div>

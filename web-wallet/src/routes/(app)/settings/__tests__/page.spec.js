@@ -8,10 +8,16 @@ import {
   vi,
 } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
+import { get } from "svelte/store";
 
 import mockedWalletStore from "../../../../__mocks__/mockedWalletStore";
 import * as navigation from "$lib/navigation";
-import { networkStore, settingsStore, walletStore } from "$lib/stores";
+import {
+  gasStore,
+  networkStore,
+  settingsStore,
+  walletStore,
+} from "$lib/stores";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
 
 import Settings from "../+page.svelte";
@@ -77,9 +83,9 @@ describe("Settings", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("should disable the reset button while a sync is in progress", async () => {
+  it("should disable the reset wallet button while a sync is in progress", async () => {
     const { getByRole } = render(Settings);
-    const resetButton = getByRole("button", { name: /reset/i });
+    const resetButton = getByRole("button", { name: /reset wallet/i });
 
     expect(resetButton).not.toHaveAttribute("disabled");
     expect(resetButton).toHaveAttribute("data-tooltip-disabled", "true");
@@ -96,19 +102,24 @@ describe("Settings", () => {
   });
 
   it('should disable the "Back" button if invalid gas limit or price are introduced', async () => {
+    const { gasLimitLower, gasLimitUpper, gasPriceLower } = get(gasStore);
     const { getByLabelText, getByRole } = render(Settings, {});
     const priceInput = asInput(getByLabelText(/price/i));
     const limitInput = asInput(getByLabelText(/limit/i));
     const backButton = getByRole("link", { name: /back/i });
 
-    await fireInput(priceInput, 30000000);
+    await fireInput(priceInput, String(gasPriceLower - 1n));
     expect(backButton).toHaveAttribute("aria-disabled", "true");
-    await fireInput(priceInput, 20000000);
+    await fireInput(priceInput, gasPriceLower.toString());
     expect(backButton).toHaveAttribute("aria-disabled", "false");
 
-    await fireInput(limitInput, 3000000000);
+    await fireInput(limitInput, String(gasLimitLower - 1n));
     expect(backButton).toHaveAttribute("aria-disabled", "true");
-    await fireInput(limitInput, 20000000);
+    await fireInput(limitInput, gasLimitLower.toString());
+    expect(backButton).toHaveAttribute("aria-disabled", "false");
+    await fireInput(limitInput, String(gasLimitUpper + 1n));
+    expect(backButton).toHaveAttribute("aria-disabled", "true");
+    await fireInput(limitInput, gasLimitUpper.toString());
     expect(backButton).toHaveAttribute("aria-disabled", "false");
   });
 
@@ -146,9 +157,9 @@ describe("Settings", () => {
       loginInfoStorageSpy.mockRestore();
     });
 
-    it("should clear local data, settings, and login info before logging out the user if the reset button is clicked and the user confirms the operation", async () => {
+    it("should clear local data, settings, and login info before logging out the user if the reset wallet button is clicked and the user confirms the operation", async () => {
       const { getByRole } = render(Settings);
-      const resetButton = getByRole("button", { name: /reset/i });
+      const resetButton = getByRole("button", { name: /reset wallet/i });
 
       await fireEvent.click(resetButton);
 
@@ -167,7 +178,7 @@ describe("Settings", () => {
       confirmSpy.mockReturnValueOnce(false);
 
       const { getByRole } = render(Settings);
-      const resetButton = getByRole("button", { name: /reset/i });
+      const resetButton = getByRole("button", { name: /reset wallet/i });
 
       await fireEvent.click(resetButton);
 
@@ -185,7 +196,7 @@ describe("Settings", () => {
       clearDataSpy.mockRejectedValueOnce(new Error("Clear data error"));
 
       const { container, getByRole } = render(Settings);
-      const resetButton = getByRole("button", { name: /reset/i });
+      const resetButton = getByRole("button", { name: /reset wallet/i });
 
       await fireEvent.click(resetButton);
 

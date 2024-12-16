@@ -126,6 +126,45 @@ describe("Settings store", () => {
 
       expect(get(settingsStore)).toBe(settingsStoreContent);
     });
+
+    it("should expose a method to reset the gas settings to their defaults", () => {
+      const newStateWithoutGas = {
+        currency: "FAKE CURRENCY",
+        darkMode: !settingsStoreContent.darkMode,
+        dashboardTransactionLimit:
+          settingsStoreContent.dashboardTransactionLimit + 1,
+        hideStakingNotice: !settingsStoreContent.hideStakingNotice,
+        language: "FAKE LANGUAGE",
+        userId: "FAKE USER ID",
+      };
+      const newState = {
+        ...newStateWithoutGas,
+        gasLimit: settingsStoreContent.gasLimit * 2n,
+        gasPrice: settingsStoreContent.gasPrice * 15n,
+      };
+      const expectedState = {
+        ...settingsStoreContent,
+        ...newStateWithoutGas,
+      };
+
+      settingsStore.set(newState);
+
+      expect(get(settingsStore)).toBe(newState);
+
+      settingsStore.resetGasSettings();
+
+      expect(get(settingsStore)).toStrictEqual(expectedState);
+      expect(
+        JSON.parse(
+          // @ts-ignore
+          localStorage.getItem(`${CONFIG.LOCAL_STORAGE_APP_KEY}-preferences`)
+        )
+      ).toStrictEqual({
+        ...expectedState,
+        gasLimit: `${expectedState.gasLimit}n`,
+        gasPrice: `${expectedState.gasPrice}n`,
+      });
+    });
   });
 
   describe("In a non browser environment", () => {

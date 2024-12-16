@@ -32,7 +32,7 @@ const initialState = {
   ...browserDefaults,
   currency: "USD",
   dashboardTransactionLimit: 5,
-  gasLimit: BigInt(import.meta.env.VITE_GAS_LIMIT_DEFAULT ?? 20000000),
+  gasLimit: BigInt(import.meta.env.VITE_GAS_LIMIT_DEFAULT ?? 100_000_000),
   gasPrice: BigInt(import.meta.env.VITE_GAS_PRICE_DEFAULT ?? 1),
   hideStakingNotice: false,
   userId: "",
@@ -71,9 +71,18 @@ const { set, subscribe, update } = settingsStore;
 // Reset store to initial state
 const reset = () => set(initialState);
 
+// Resets only gas settings to their defaults.
+const resetGasSettings = () =>
+  update((current) => ({
+    ...current,
+    gasLimit: initialState.gasLimit,
+    gasPrice: initialState.gasPrice,
+  }));
+
 /** @type {SettingsStore} */
 export default {
   reset,
+  resetGasSettings,
   set,
   subscribe,
   update,
