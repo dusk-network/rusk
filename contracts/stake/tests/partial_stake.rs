@@ -52,6 +52,7 @@ fn stake() -> Result<(), PiecrustError> {
     let tx = moonlight_stake(
         &moonlight_sk,
         &stake_sk,
+        &stake_sk,
         stake_1,
         GAS_LIMIT,
         GAS_PRICE,
@@ -78,6 +79,7 @@ fn stake() -> Result<(), PiecrustError> {
     nonce += 1;
     let tx = moonlight_stake(
         &moonlight_sk,
+        &stake_sk,
         &stake_sk,
         stake_2,
         GAS_LIMIT,
@@ -111,6 +113,7 @@ fn stake() -> Result<(), PiecrustError> {
     nonce += 1;
     let tx = moonlight_stake(
         &moonlight_sk,
+        &stake_sk,
         &stake_sk,
         stake_3,
         GAS_LIMIT,
@@ -146,6 +149,7 @@ fn stake() -> Result<(), PiecrustError> {
     let tx = moonlight_stake(
         &moonlight_sk,
         &stake_sk,
+        &stake_sk,
         stake_4,
         GAS_LIMIT,
         GAS_PRICE,
@@ -179,6 +183,7 @@ fn unstake() -> Result<(), PiecrustError> {
     let tx = moonlight_stake(
         &moonlight_sk,
         &stake_sk,
+        &stake_sk,
         STAKE_VALUE,
         GAS_LIMIT,
         GAS_PRICE,
@@ -199,6 +204,7 @@ fn unstake() -> Result<(), PiecrustError> {
     let tx = moonlight_unstake(
         rng,
         &moonlight_sk,
+        &stake_sk,
         &stake_sk,
         unstake_1,
         GAS_LIMIT,
@@ -229,6 +235,7 @@ fn unstake() -> Result<(), PiecrustError> {
     let tx = moonlight_stake(
         &moonlight_sk,
         &stake_sk,
+        &stake_sk,
         unstake_1,
         GAS_LIMIT,
         GAS_PRICE,
@@ -253,6 +260,7 @@ fn unstake() -> Result<(), PiecrustError> {
     let tx = moonlight_unstake(
         rng,
         &moonlight_sk,
+        &stake_sk,
         &stake_sk,
         unstake_2,
         GAS_LIMIT,
@@ -290,6 +298,7 @@ fn unstake() -> Result<(), PiecrustError> {
     let tx = moonlight_unstake(
         rng,
         &moonlight_sk,
+        &stake_sk,
         &stake_sk,
         unstake_3,
         GAS_LIMIT,
@@ -333,6 +342,7 @@ fn withdraw_reward() -> Result<(), PiecrustError> {
     let tx = moonlight_stake(
         &moonlight_sk,
         &stake_sk,
+        &stake_sk,
         STAKE_VALUE,
         GAS_LIMIT,
         GAS_PRICE,
@@ -356,6 +366,7 @@ fn withdraw_reward() -> Result<(), PiecrustError> {
     let tx = moonlight_stake_reward(
         rng,
         &moonlight_sk,
+        &stake_sk,
         &stake_sk,
         reward_withdawal_1,
         GAS_LIMIT,
@@ -390,6 +401,7 @@ fn withdraw_reward() -> Result<(), PiecrustError> {
     let tx = moonlight_stake_reward(
         rng,
         &moonlight_sk,
+        &stake_sk,
         &stake_sk,
         reward_withdawal_2,
         GAS_LIMIT,

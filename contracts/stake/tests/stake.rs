@@ -64,7 +64,7 @@ fn stake_withdraw_unstake() {
     // Stake
 
     // Fashion a Stake struct
-    let stake = Stake::new(&stake_sk, INITIAL_STAKE, CHAIN_ID);
+    let stake = Stake::new(&stake_sk, &stake_sk, INITIAL_STAKE, CHAIN_ID);
     let stake_bytes = rkyv::to_bytes::<_, 1024>(&stake)
         .expect("Should serialize Stake correctly")
         .to_vec();
@@ -153,7 +153,7 @@ fn stake_withdraw_unstake() {
             input_notes[1].gen_nullifier(&phoenix_sender_sk),
         ]),
     );
-    let withdraw = StakeWithdraw::new(&stake_sk, withdraw);
+    let withdraw = StakeWithdraw::new(&stake_sk, &stake_sk, withdraw);
 
     let withdraw_bytes = rkyv::to_bytes::<_, 2048>(&withdraw)
         .expect("Serializing Withdraw should succeed")
@@ -248,7 +248,7 @@ fn stake_withdraw_unstake() {
         ]),
     );
 
-    let unstake = StakeWithdraw::new(&stake_sk, withdraw);
+    let unstake = StakeWithdraw::new(&stake_sk, &stake_sk, withdraw);
 
     let unstake_bytes = rkyv::to_bytes::<_, 2048>(&unstake)
         .expect("Serializing Unstake should succeed")
