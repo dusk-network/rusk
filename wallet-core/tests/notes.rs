@@ -4,11 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use execution_core::transfer::phoenix::{
+use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use execution_core::JubJubScalar;
+use dusk_core::JubJubScalar;
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
