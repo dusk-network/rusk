@@ -6,8 +6,8 @@
 
 use alloc::vec::Vec;
 
-use execution_core::transfer::Transaction;
-use execution_core::ContractError;
+use dusk_core::transfer::Transaction;
+use dusk_core::ContractError;
 use piecrust::{CallReceipt, Error as PiecrustError, Session};
 
 use crate::gen_contract_id;

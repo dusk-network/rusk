@@ -9,22 +9,22 @@ use std::path::{Path, PathBuf};
 
 use blake2b_simd::Params;
 use dusk_bytes::DeserializableSlice;
-use dusk_poseidon::{Domain, Hash as PoseidonHash};
-use execution_core::groth16::bn254::{Bn254, G1Projective};
-use execution_core::groth16::serialize::CanonicalDeserialize;
-use execution_core::groth16::{
+use dusk_core::groth16::bn254::{Bn254, G1Projective};
+use dusk_core::groth16::serialize::CanonicalDeserialize;
+use dusk_core::groth16::{
     Groth16, PreparedVerifyingKey, Proof as Groth16Proof,
 };
-use execution_core::plonk::{Proof as PlonkProof, Verifier};
-use execution_core::signatures::bls::{
+use dusk_core::plonk::{Proof as PlonkProof, Verifier};
+use dusk_core::signatures::bls::{
     MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
     Signature as BlsSignature,
 };
-use execution_core::signatures::schnorr::{
+use dusk_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
 };
-use execution_core::transfer::{Transaction, TRANSFER_CONTRACT};
-use execution_core::{BlsScalar, ContractError};
+use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use dusk_core::{BlsScalar, ContractError};
+use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use piecrust::{
     CallReceipt, ContractId, Error as PiecrustError, Session, SessionData,
     CONTRACT_ID_BYTES, VM,
