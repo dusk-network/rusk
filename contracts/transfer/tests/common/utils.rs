@@ -6,13 +6,11 @@
 
 use std::sync::mpsc;
 
-use execution_core::signatures::bls::PublicKey as AccountPublicKey;
-use execution_core::transfer::moonlight::AccountData;
-use execution_core::transfer::phoenix::{
-    Note, NoteLeaf, ViewKey as PhoenixViewKey,
-};
-use execution_core::transfer::TRANSFER_CONTRACT;
-use execution_core::{BlsScalar, ContractId};
+use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::transfer::moonlight::AccountData;
+use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey as PhoenixViewKey};
+use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::{BlsScalar, ContractId};
 use rusk_abi::{PiecrustError, Session};
 
 const GAS_LIMIT: u64 = 0x10_000_000;

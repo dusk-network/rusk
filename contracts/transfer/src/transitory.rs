@@ -16,7 +16,7 @@ use core::ptr::{self, addr_of_mut};
 
 use alloc::vec::Vec;
 
-use execution_core::{
+use dusk_core::{
     signatures::bls::PublicKey as AccountPublicKey,
     transfer::{
         moonlight::Transaction as MoonlightTransaction,
