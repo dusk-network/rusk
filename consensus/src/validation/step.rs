@@ -103,7 +103,14 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
                     error!(event = "invalid faults", ?err);
                     Vote::Invalid(header.hash)
                 } else {
-                    match Self::call_vst(candidate, &voters, &executor).await {
+                    match Self::call_vst(
+                        ru.state_root(),
+                        candidate,
+                        &voters,
+                        &executor,
+                    )
+                    .await
+                    {
                         Ok(_) => Vote::Valid(header.hash),
                         Err(err) => {
                             error!(event = "failed_vst_call", ?err);
@@ -154,11 +161,15 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     }
 
     async fn call_vst(
+        prev_commit: [u8; 32],
         candidate: &Block,
         voters: &[Voter],
         executor: &Arc<T>,
     ) -> anyhow::Result<()> {
-        match executor.verify_state_transition(candidate, voters).await {
+        match executor
+            .verify_state_transition(prev_commit, candidate, voters)
+            .await
+        {
             Ok(output) => {
                 // Ensure the `event_bloom` and `state_root` returned
                 // from the VST call are the

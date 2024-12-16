@@ -26,6 +26,7 @@ pub struct CallParams {
     pub to_slash: Vec<Slash>,
     pub voters_pubkey: Vec<Voter>,
     pub max_txs_bytes: usize,
+    pub prev_state_root: StateRoot,
 }
 
 #[derive(Default)]
@@ -77,6 +78,7 @@ pub trait Operations: Send + Sync {
 
     async fn verify_state_transition(
         &self,
+        prev_commit: StateRoot,
         blk: &Block,
         voters: &[Voter],
     ) -> Result<VerificationOutput, OperationError>;
