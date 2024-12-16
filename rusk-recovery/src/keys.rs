@@ -7,8 +7,8 @@
 use std::sync::{mpsc, Mutex};
 use std::{io, thread};
 
+use dusk_core::transfer::phoenix::TRANSCRIPT_LABEL;
 use dusk_plonk::prelude::{Compiler, PublicParameters};
-use execution_core::transfer::phoenix::TRANSCRIPT_LABEL;
 use lazy_static::lazy_static;
 use once_cell::sync::Lazy;
 use rusk_profile::Circuit as CircuitProfile;
