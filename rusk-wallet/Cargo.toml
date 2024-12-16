@@ -44,7 +44,7 @@ blake2b_simd = { workspace = true }
 
 zeroize = { workspace = true, features = ["derive"] }
 wallet-core = { workspace = true }
-execution-core = { workspace = true }
+dusk-core = { workspace = true }
 
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = [

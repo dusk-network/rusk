@@ -6,7 +6,7 @@
 
 use std::fmt::Display;
 
-use execution_core::transfer::data::MAX_MEMO_SIZE;
+use dusk_core::transfer::data::MAX_MEMO_SIZE;
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::gas::{

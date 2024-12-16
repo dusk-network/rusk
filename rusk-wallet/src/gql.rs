@@ -8,7 +8,7 @@
 //! The <node-url>/on/gaphql/query if queried with empty bytes returns the
 //! graphql schema
 
-use execution_core::transfer::Transaction;
+use dusk_core::transfer::Transaction;
 use serde::Deserialize;
 use tokio::time::{sleep, Duration};
 
@@ -25,9 +25,9 @@ pub struct GraphQL {
 }
 
 /// The tx_for_block returns a Vec<BlockTransaction> which contains
-/// the execution-core transaction, its id hash and gas spent
+/// the dusk-core transaction, its id hash and gas spent
 pub struct BlockTransaction {
-    /// The execution-core transaction struct obtained from GraphQL endpoint
+    /// The dusk-core transaction struct obtained from GraphQL endpoint
     pub tx: Transaction,
     /// The hash of the transaction or the id of the transaction in string utf8
     pub id: String,
