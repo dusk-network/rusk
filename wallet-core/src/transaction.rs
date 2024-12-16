@@ -144,6 +144,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     inputs: Vec<(Note, NoteOpening)>,
     root: BlsScalar,
     gas_limit: u64,
@@ -160,7 +161,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
     let is_transfer = false;
     let deposit = stake_value;
 
-    let stake = Stake::new(stake_sk, stake_value, chain_id);
+    let stake = Stake::new(stake_sk, stake_owner_sk, stake_value, chain_id);
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
 
@@ -195,6 +196,7 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
 pub fn moonlight_stake(
     moonlight_sender_sk: &BlsSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     stake_value: u64,
     gas_limit: u64,
     gas_price: u64,
@@ -204,7 +206,7 @@ pub fn moonlight_stake(
     let transfer_value = 0;
     let deposit = stake_value;
 
-    let stake = Stake::new(stake_sk, stake_value, chain_id);
+    let stake = Stake::new(stake_sk, stake_owner_sk, stake_value, chain_id);
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
 
@@ -236,6 +238,7 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     inputs: Vec<(Note, NoteOpening, BlsScalar)>,
     root: BlsScalar,
     reward_amount: u64,
@@ -268,6 +271,7 @@ pub fn phoenix_stake_reward<R: RngCore + CryptoRng, P: Prove>(
         rng,
         phoenix_sender_sk,
         stake_sk,
+        stake_owner_sk,
         gas_payment_token,
         reward_amount,
     )?;
@@ -304,6 +308,7 @@ pub fn moonlight_stake_reward<R: RngCore + CryptoRng>(
     rng: &mut R,
     moonlight_sender_sk: &BlsSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     reward_amount: u64,
     gas_limit: u64,
     gas_price: u64,
@@ -319,6 +324,7 @@ pub fn moonlight_stake_reward<R: RngCore + CryptoRng>(
         rng,
         moonlight_sender_sk,
         stake_sk,
+        stake_owner_sk,
         gas_payment_token,
         reward_amount,
     )?;
@@ -350,6 +356,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     inputs: Vec<(Note, NoteOpening, BlsScalar)>,
     root: BlsScalar,
     unstake_value: u64,
@@ -382,6 +389,7 @@ pub fn phoenix_unstake<R: RngCore + CryptoRng, P: Prove>(
         rng,
         phoenix_sender_sk,
         stake_sk,
+        stake_owner_sk,
         gas_payment_token,
         unstake_value,
     )?;
@@ -418,6 +426,7 @@ pub fn moonlight_unstake<R: RngCore + CryptoRng>(
     rng: &mut R,
     moonlight_sender_sk: &BlsSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     unstake_value: u64,
     gas_limit: u64,
     gas_price: u64,
@@ -433,6 +442,7 @@ pub fn moonlight_unstake<R: RngCore + CryptoRng>(
         rng,
         moonlight_sender_sk,
         stake_sk,
+        stake_owner_sk,
         gas_payment_token,
         unstake_value,
     )?;
@@ -698,6 +708,7 @@ fn stake_reward_to_phoenix<R: RngCore + CryptoRng>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     gas_payment_token: WithdrawReplayToken,
     reward_amount: u64,
 ) -> Result<ContractCall, Error> {
@@ -709,7 +720,8 @@ fn stake_reward_to_phoenix<R: RngCore + CryptoRng>(
         reward_amount,
     );
 
-    let reward_withdraw = StakeWithdraw::new(stake_sk, withdraw);
+    let reward_withdraw =
+        StakeWithdraw::new(stake_sk, stake_owner_sk, withdraw);
 
     ContractCall::new(STAKE_CONTRACT, "withdraw", &reward_withdraw)
 }
@@ -718,6 +730,7 @@ pub(crate) fn stake_reward_to_moonlight<R: RngCore + CryptoRng>(
     rng: &mut R,
     moonlight_receiver_sk: &BlsSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     gas_payment_token: WithdrawReplayToken,
     reward_amount: u64,
 ) -> Result<ContractCall, Error> {
@@ -729,7 +742,8 @@ pub(crate) fn stake_reward_to_moonlight<R: RngCore + CryptoRng>(
         reward_amount,
     );
 
-    let reward_withdraw = StakeWithdraw::new(stake_sk, withdraw);
+    let reward_withdraw =
+        StakeWithdraw::new(stake_sk, stake_owner_sk, withdraw);
 
     ContractCall::new(STAKE_CONTRACT, "withdraw", &reward_withdraw)
 }
@@ -738,6 +752,7 @@ fn unstake_to_phoenix<R: RngCore + CryptoRng>(
     rng: &mut R,
     phoenix_sender_sk: &PhoenixSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     gas_payment_token: WithdrawReplayToken,
     unstake_value: u64,
 ) -> Result<ContractCall, Error> {
@@ -749,7 +764,7 @@ fn unstake_to_phoenix<R: RngCore + CryptoRng>(
         unstake_value,
     );
 
-    let unstake = StakeWithdraw::new(stake_sk, withdraw);
+    let unstake = StakeWithdraw::new(stake_sk, stake_owner_sk, withdraw);
 
     ContractCall::new(STAKE_CONTRACT, "unstake", &unstake)
 }
@@ -758,6 +773,7 @@ pub(crate) fn unstake_to_moonlight<R: RngCore + CryptoRng>(
     rng: &mut R,
     moonlight_receiver_sk: &BlsSecretKey,
     stake_sk: &BlsSecretKey,
+    stake_owner_sk: &BlsSecretKey,
     gas_payment_token: WithdrawReplayToken,
     unstake_value: u64,
 ) -> Result<ContractCall, Error> {
@@ -769,7 +785,7 @@ pub(crate) fn unstake_to_moonlight<R: RngCore + CryptoRng>(
         unstake_value,
     );
 
-    let unstake = StakeWithdraw::new(stake_sk, withdraw);
+    let unstake = StakeWithdraw::new(stake_sk, stake_owner_sk, withdraw);
 
     ContractCall::new(STAKE_CONTRACT, "unstake", &unstake)
 }
