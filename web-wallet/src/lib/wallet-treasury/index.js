@@ -13,6 +13,28 @@ class WalletTreasury {
   /** @type {StakeInfo[]} */
   #accountStakeInfo = [];
 
+  /**
+   * @param {bigint} lastBlockHeight
+   * @returns {Promise<WalletCacheSyncInfo>}
+   */
+  async #getEnrichedSyncInfo(lastBlockHeight) {
+    const [currentSyncInfo, lastBlockHash, lastFinalizedBlockHeight] =
+      await Promise.all([
+        walletCache.getSyncInfo(),
+        networkStore.getBlockHashByHeight(lastBlockHeight).catch(() => ""),
+        networkStore.getLastFinalizedBlockHeight().catch(() => 0n),
+      ]);
+
+    return {
+      block: {
+        hash: lastBlockHash,
+        height: lastBlockHeight,
+      },
+      bookmark: currentSyncInfo.bookmark,
+      lastFinalizedBlockHeight,
+    };
+  }
+
   /** @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles */
   constructor(profiles = []) {
     this.#profiles = profiles;
@@ -86,8 +108,17 @@ class WalletTreasury {
    */
   // eslint-disable-next-line max-statements
   async update(from, syncIterationListener, signal) {
+    let lastBlockHeight = 0n;
+
+    /** @type {(evt: CustomEvent) => void} */
+    const lastBlockHeightListener = ({ detail }) => {
+      lastBlockHeight = detail.blocks.last;
+    };
     const accountSyncer = await networkStore.getAccountSyncer();
     const addressSyncer = await networkStore.getAddressSyncer({ signal });
+
+    // @ts-ignore
+    addressSyncer.addEventListener("synciteration", lastBlockHeightListener);
 
     // @ts-ignore
     addressSyncer.addEventListener("synciteration", syncIterationListener);
@@ -102,10 +133,28 @@ class WalletTreasury {
       signal,
     });
 
-    for await (const [notesInfo, syncInfo] of notesStream) {
+    /**
+     * For each chunk of data in the stream we enrich the sync
+     * info with the block hash, that will be used to check that
+     * our local state is consistent with the remote one.
+     * This way we can ensure that if a user interrupts the sync
+     * while it's still in progress we can safely resume it from
+     * the stored bookmark if no block has been rejected in the
+     * meantime.
+     */
+    for await (const [notesInfo, streamSyncInfo] of notesStream) {
+      const notesSyncInfo = {
+        block: {
+          hash: await networkStore
+            .getBlockHashByHeight(streamSyncInfo.blockHeight)
+            .catch(() => ""),
+          height: streamSyncInfo.blockHeight,
+        },
+        bookmark: streamSyncInfo.bookmark,
+      };
       await walletCache.addUnspentNotes(
         walletCache.toCacheNotes(notesInfo, this.#profiles),
-        syncInfo
+        notesSyncInfo
       );
     }
 
@@ -158,6 +207,21 @@ class WalletTreasury {
 
       await walletCache.unspendNotes(nullifiersToUnspend);
     }
+
+    /**
+     * We enrich the sync info by retrieving the hash of the last
+     * processed block and the height of the last finalized block.
+     * We'll use this information at the start of the sync
+     * to determine if a block has been rejected, so that we can
+     * fix our local cache state by syncing from the last finalized
+     * block height.
+     */
+    await walletCache.setSyncInfo(
+      await this.#getEnrichedSyncInfo(lastBlockHeight)
+    );
+
+    // @ts-ignore
+    addressSyncer.removeEventListener("synciteration", lastBlockHeightListener);
 
     // @ts-ignore
     addressSyncer.removeEventListener("synciteration", syncIterationListener);

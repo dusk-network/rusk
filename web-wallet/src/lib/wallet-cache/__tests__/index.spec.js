@@ -6,7 +6,6 @@ import {
   drop,
   filterWith,
   getKey,
-  mapValues,
   mapWith,
   partitionWith,
   pluck,
@@ -202,7 +201,7 @@ describe("Wallet cache", () => {
       });
     });
 
-    it("should expose a method to retrieve the sync info, which returns `{ blockHeight: 0n, bookmark: 0n }` if there is no info stored", async () => {
+    it("should expose a method to retrieve the sync info, which returns empty info if there is no info stored", async () => {
       await expect(walletCache.getSyncInfo()).resolves.toStrictEqual(
         cacheSyncInfo[0]
       );
@@ -210,8 +209,12 @@ describe("Wallet cache", () => {
       await walletCache.clear();
 
       await expect(walletCache.getSyncInfo()).resolves.toStrictEqual({
-        blockHeight: 0n,
+        block: {
+          hash: "",
+          height: 0n,
+        },
         bookmark: 0n,
+        lastFinalizedBlockHeight: 0n,
       });
     });
 
@@ -282,6 +285,9 @@ describe("Wallet cache", () => {
     /** @type {WalletCacheSyncInfo} */
     let currentSyncInfo;
 
+    /** @type {NotesSyncInfo} */
+    let newNotesSyncInfo;
+
     /** @type {WalletCacheSyncInfo} */
     let newSyncInfo;
 
@@ -300,10 +306,21 @@ describe("Wallet cache", () => {
     beforeEach(async () => {
       currentSyncInfo = await walletCache.getSyncInfo();
 
-      expect(currentSyncInfo.blockHeight).toBeGreaterThan(0n);
+      expect(currentSyncInfo.block.height).toBeGreaterThan(0n);
       expect(currentSyncInfo.bookmark).toBeGreaterThan(0n);
 
-      newSyncInfo = mapValues(currentSyncInfo, add(999n));
+      newNotesSyncInfo = {
+        block: {
+          hash: "",
+          height: currentSyncInfo.block.height + 99n,
+        },
+        bookmark: currentSyncInfo.bookmark + 90n,
+      };
+
+      newSyncInfo = {
+        ...newNotesSyncInfo,
+        lastFinalizedBlockHeight: currentSyncInfo.lastFinalizedBlockHeight,
+      };
     });
 
     it("should expose a method to add new notes to the unspent list", async () => {
@@ -335,7 +352,7 @@ describe("Wallet cache", () => {
         unspentNotesToAdd
       );
 
-      await walletCache.addUnspentNotes(newNotes, newSyncInfo);
+      await walletCache.addUnspentNotes(newNotes, newNotesSyncInfo);
 
       await expect(
         walletCache.getUnspentNotes().then(sortByNullifier)
@@ -350,7 +367,7 @@ describe("Wallet cache", () => {
       const newNotes = cacheSpentNotes.concat({});
 
       await expect(
-        walletCache.addUnspentNotes(newNotes, newSyncInfo)
+        walletCache.addUnspentNotes(newNotes, newNotesSyncInfo)
       ).rejects.toBeInstanceOf(Error);
 
       expect(sortByNullifier(cacheUnspentNotes)).toStrictEqual(
@@ -615,29 +632,6 @@ describe("Wallet cache", () => {
       ).resolves.toStrictEqual(modifiedBalance);
     });
 
-    it("should expose a method to update the last block height", async () => {
-      const currentSyncInfo = await walletCache.getSyncInfo();
-      const newBlockHeight = currentSyncInfo.blockHeight * 2n;
-
-      await walletCache.setLastBlockHeight(newBlockHeight);
-
-      await expect(walletCache.getSyncInfo()).resolves.toStrictEqual({
-        ...currentSyncInfo,
-        blockHeight: newBlockHeight,
-      });
-    });
-
-    it("should leave the last block height as it is if an error occurs while writing the new value", async () => {
-      const currentSyncInfo = await walletCache.getSyncInfo();
-
-      // @ts-expect-error We are passing an invalid value on purpose
-      await expect(walletCache.setLastBlockHeight(() => {})).rejects.toThrow();
-
-      await expect(walletCache.getSyncInfo()).resolves.toStrictEqual(
-        currentSyncInfo
-      );
-    });
-
     it("should expose a method to set a note as pending", async () => {
       const existingPendingNullifiersAsStrings = await walletCache
         .getPendingNotesInfo()
@@ -720,6 +714,25 @@ describe("Wallet cache", () => {
       await expect(
         walletCache.getStakeInfo(cacheStakeInfo[0].account)
       ).resolves.toStrictEqual(modifiedStakeInfo);
+    });
+
+    it("should expose a method to replace the current stored sync info", async () => {
+      const currentSyncInfo = await walletCache.getSyncInfo();
+      const newSyncInfo = {
+        block: {
+          hash: "some-new-hash",
+          height: currentSyncInfo.block.height + 35n,
+        },
+        bookmark: currentSyncInfo.bookmark + 10n,
+        lastFinalizedBlockHeight:
+          currentSyncInfo.lastFinalizedBlockHeight + 25n,
+      };
+
+      await walletCache.setSyncInfo(newSyncInfo);
+
+      await expect(walletCache.getSyncInfo()).resolves.toStrictEqual(
+        newSyncInfo
+      );
     });
 
     it("should expose a method to convert notes in the w3sper map format into the one used by the cache", () => {
