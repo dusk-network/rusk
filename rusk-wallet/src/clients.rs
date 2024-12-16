@@ -11,6 +11,7 @@ use std::sync::{Arc, Mutex};
 
 use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::{StakeFundOwner, StakeKeys};
 use execution_core::transfer::moonlight::AccountData;
 use execution_core::transfer::phoenix::{Note, NoteLeaf, Prove};
 use execution_core::transfer::Transaction;
@@ -320,6 +321,33 @@ impl State {
         println!("Staking address: {}", Address::Public(*pk));
 
         Ok(stake_data)
+    }
+
+    /// Get the stake owner of a given stake account.
+    pub(crate) async fn fetch_stake_owner(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<Option<StakeFundOwner>, Error> {
+        let status = self.status;
+        status("Fetching stake owner...");
+
+        // the target type of the deserialization has to match the return type
+        // of the contract-query
+        let stake_keys: Option<StakeKeys> = rkyv::from_bytes(
+            &self
+                .client
+                .contract_query::<_, _, 1024>(
+                    STAKE_CONTRACT,
+                    "get_stake_keys",
+                    pk,
+                )
+                .await?,
+        )
+        .map_err(|_| Error::Rkyv)?;
+
+        let stake_owner = stake_keys.map(|keys| keys.owner);
+
+        Ok(stake_owner)
     }
 
     pub(crate) fn store(&self) -> &LocalStore {

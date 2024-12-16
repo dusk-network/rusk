@@ -373,6 +373,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
         }
         Command::Stake {
             address,
+            owner,
             amt,
             gas_limit,
             gas_price,
@@ -380,8 +381,10 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             let sender = address.as_ref().ok_or(Error::BadAddress)?;
             let max_fee = gas_limit * gas_price;
             let stake_to = wallet.public_address(wallet.find_index(sender)?)?;
+            let owner = owner.as_ref().unwrap_or(&stake_to);
             println!("   > Pay with {}", sender.preview());
             println!("   > Stake to {}", stake_to.preview());
+            println!("   > Stake owner {}", owner.preview());
             println!("   > Amount to stake = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             if let Address::Public(_) = sender {
