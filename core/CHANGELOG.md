@@ -23,5 +23,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add types, type-alias, functionality, re-exports and modules to interact with the execution layer of dusk-network
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/execution-core-0.1.0...HEAD
-[0.1.0]: https://github.com/dusk-network/rusk/releases/tag/execution-core-0.1.0
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-core-0.1.0...HEAD
+[0.1.0]: https://github.com/dusk-network/rusk/releases/tag/dusk-core-0.1.0
