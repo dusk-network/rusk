@@ -12,11 +12,11 @@ use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
-use execution_core::stake::EPOCH;
-use execution_core::transfer::MINT_CONTRACT_TOPIC;
+use dusk_core::stake::EPOCH;
+use dusk_core::transfer::MINT_CONTRACT_TOPIC;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 
-use execution_core::{
+use dusk_core::{
     signatures::bls::PublicKey as AccountPublicKey,
     stake::STAKE_CONTRACT,
     transfer::{

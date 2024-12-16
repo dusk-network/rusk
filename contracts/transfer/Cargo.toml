@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-execution-core = { workspace = true }
+dusk-core = { workspace = true }
 ringbuffer = { workspace = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]

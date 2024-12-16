@@ -5,11 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use core::fmt;
-use execution_core::Error as ExecutionError;
+use dusk_core::Error as ExecutionError;
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    /// Wrapper of execution-core error type.
+    /// Wrapper of dusk-core error type.
     Execution(ExecutionError),
     /// A contract balance is not sufficient for the requested withdrawal
     NotEnoughBalance,

@@ -15,23 +15,22 @@ use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-use execution_core::{
-    dusk,
-    signatures::bls::{
-        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
-    },
-    transfer::{
-        data::{ContractCall, TransactionData},
-        moonlight::Transaction as MoonlightTransaction,
-        phoenix::{
-            Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            ViewKey as PhoenixViewKey,
-        },
-        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
-    },
-    BlsScalar, ContractError, ContractId, JubJubScalar, LUX,
+use dusk_core::signatures::bls::{
+    PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
+use dusk_core::transfer::data::{ContractCall, TransactionData};
+use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use dusk_core::transfer::phoenix::{
+    Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    ViewKey as PhoenixViewKey,
+};
+use dusk_core::transfer::withdraw::{
+    Withdraw, WithdrawReceiver, WithdrawReplayToken,
+};
+use dusk_core::transfer::{
+    ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
+};
+use dusk_core::{dusk, ContractError, ContractId, JubJubScalar, LUX};
 use rusk_abi::{ContractData, Session};
 
 const MOONLIGHT_GENESIS_VALUE: u64 = dusk(1_000.0);
