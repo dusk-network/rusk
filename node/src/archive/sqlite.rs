@@ -305,8 +305,8 @@ impl Archive {
         1. Any PhoenixTransactionEvent (through notes & refund_note)
         */
         let phoenix_event_present = events.iter().any(|event| {
-            event.event.target.0 == execution_core::transfer::TRANSFER_CONTRACT
-                && event.event.topic == execution_core::transfer::PHOENIX_TOPIC
+            event.event.target.0 == dusk_core::transfer::TRANSFER_CONTRACT
+                && event.event.topic == dusk_core::transfer::PHOENIX_TOPIC
         });
 
         // Group events by origin (block height, OriginHash)
@@ -501,7 +501,7 @@ mod tests {
     use std::env;
     use std::path::PathBuf;
 
-    use execution_core::ContractId;
+    use dusk_core::ContractId;
     use node_data::events::contract::{ContractEvent, WrappedContractId};
     use rand::distributions::Alphanumeric;
     use rand::Rng;
