@@ -255,10 +255,15 @@ pub struct Withdraw {
 }
 
 impl Withdraw {
-    /// Create a new withdraw call.
+    /// Create a new withdraw call specifying the owner.
     #[must_use]
-    pub fn new(sk: &BlsSecretKey, withdraw: TransferWithdraw) -> Self {
-        let account = BlsPublicKey::from(sk);
+    pub fn new(
+        account_sk: &BlsSecretKey,
+        owner_sk: &BlsSecretKey,
+        withdraw: TransferWithdraw,
+    ) -> Self {
+        let account = BlsPublicKey::from(account_sk);
+
         let mut stake_withdraw = Withdraw {
             account,
             withdraw,
@@ -268,11 +273,20 @@ impl Withdraw {
         let msg = stake_withdraw.signature_message();
 
         stake_withdraw.signature = DoubleSignature {
-            account: sk.sign(&msg),
-            owner: sk.sign(&msg),
+            account: account_sk.sign(&msg),
+            owner: owner_sk.sign(&msg),
         };
 
         stake_withdraw
+    }
+
+    /// Create a new withdraw call using the same account as the owner.
+    #[must_use]
+    pub fn with_single_key(
+        sk: &BlsSecretKey,
+        withdraw: TransferWithdraw,
+    ) -> Self {
+        Self::new(sk, sk, withdraw)
     }
 
     /// The public key to withdraw from.
