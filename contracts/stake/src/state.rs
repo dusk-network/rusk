@@ -11,7 +11,7 @@ use core::cmp::min;
 
 use dusk_bytes::Serializable;
 
-use execution_core::{
+use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
         next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeData,
