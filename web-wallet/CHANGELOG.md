@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Reword "Withdraw Rewards" operation to "Claim Rewards" [#3076]
 - Reword "Shield/Unshield" operation to "Allocate" [#3081]
+- Update `@media` rules to remove outer padding on small screens [#2945]
 
 ### Removed
 
@@ -404,6 +405,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2920]: https://github.com/dusk-network/rusk/issues/2920
 [#2932]: https://github.com/dusk-network/rusk/issues/2932
 [#2938]: https://github.com/dusk-network/rusk/issues/2938
+[#2945]: https://github.com/dusk-network/rusk/issues/2945
 [#2981]: https://github.com/dusk-network/rusk/issues/2981
 [#2990]: https://github.com/dusk-network/rusk/issues/2990
 [#2991]: https://github.com/dusk-network/rusk/issues/2991
