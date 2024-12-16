@@ -8,11 +8,12 @@
   } from "@mdi/js";
   import { waitForTransactionReceipt } from "@wagmi/core";
   import { isHex } from "viem";
-  import { AppAnchor } from "$lib/components";
+  import { AppAnchor, Banner } from "$lib/components";
   import { Button, Icon } from "$lib/dusk/components";
   import { account, wagmiConfig } from "$lib/migration/walletConnection";
   import { migrate } from "$lib/migration/migration";
   import { createDataStore } from "$lib/dusk/svelte-stores";
+  import { createEventDispatcher } from "svelte";
 
   /** @type {bigint} */
   export let amount;
@@ -22,6 +23,8 @@
 
   /** @type {HexString} */
   export let migrationContract;
+
+  const dispatch = createEventDispatcher();
 
   /** @type {string} */
   let migrationHash = "";
@@ -37,10 +40,15 @@
 
     if (isHex(txHash)) {
       migrationHash = txHash;
-      return waitForTransactionReceipt(wagmiConfig, {
+      const result = await waitForTransactionReceipt(wagmiConfig, {
         confirmations: 10,
         hash: txHash,
       });
+      if (result.status === "success") {
+        dispatch("incrementStep");
+      } else {
+        throw new Error("Could not validate the transaction receipt");
+      }
     } else {
       throw new Error("txHash is not a hex string");
     }
@@ -66,19 +74,19 @@
   {/if}
   {#if migrationHash && chain?.blockExplorers}
     <div class="migrate__execute-approval">
-      <Icon path={mdiCheckDecagramOutline} />
+      <Icon path={mdiTimerSand} />
       <span>Migration has been submitted</span>
     </div>
-    <div class="migrate__execute-notice">
-      <span
-        >Migration takes some minutes to complete. Your transaction is being
-        executed and you can check it <AppAnchor
+    <Banner title="Migration in progress..." variant="info">
+      <p>
+        Migration takes some minutes to complete. Your transaction is being
+        executed and you can check its status <AppAnchor
           href={`${chain.blockExplorers.default.url}/tx/${migrationHash}`}
           target="_blank"
           rel="noopener noreferrer">here</AppAnchor
-        >.</span
-      >
-    </div>
+        >.
+      </p>
+    </Banner>
   {/if}
   {#if (isLoading || !data || error) && !migrationHash}
     <Button
@@ -94,16 +102,6 @@
     display: flex;
     justify-content: center;
     flex-direction: column;
-
-    &-notice {
-      font-size: 0.875em;
-      line-height: 1.3125em;
-      padding: 1em 1.375em;
-      border-radius: 0.675em;
-      border: 1px solid var(--primary-color);
-      margin-top: 0.625em;
-      margin-bottom: 1em;
-    }
 
     &-approval {
       display: flex;

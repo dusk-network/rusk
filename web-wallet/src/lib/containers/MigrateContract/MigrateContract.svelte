@@ -1,7 +1,12 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { mdiArrowLeft, mdiArrowRight, mdiWalletOutline } from "@mdi/js";
+  import {
+    mdiArrowLeft,
+    mdiArrowRight,
+    mdiCheckDecagramOutline,
+    mdiWalletOutline,
+  } from "@mdi/js";
   import { getAccount, switchChain } from "@wagmi/core";
   import { formatUnits, parseUnits } from "viem";
   import { onMount } from "svelte";
@@ -22,6 +27,7 @@
   } from "$lib/components";
   import {
     Button,
+    Card,
     ExclusiveChoice,
     Icon,
     Stepper,
@@ -258,10 +264,10 @@
         )}
       </p>
       <span class="migrate__token-balance">
+        Balance:
         {#if connectedWalletBalance === undefined}
-          Loading Balance...
+          <span>Loading...</span>
         {:else}
-          Balance:
           <span
             >{slashDecimals(
               formatUnits(connectedWalletBalance ?? 0n, ercDecimals)
@@ -320,9 +326,8 @@
   {/if}
 
   {#if walletState.isConnected && isAmountValid && isMigrationInitialized}
-    <div class="migrate__wizard">
-      <Stepper steps={2} activeStep={migrationStep} variant="secondary" />
-
+    <Card gap="small">
+      <Stepper steps={3} activeStep={migrationStep} />
       {#if migrationStep === 0}
         <ApproveMigration
           on:incrementStep={() => migrationStep++}
@@ -336,14 +341,20 @@
           chainContract={tokens[network][selectedChain].contract}
           migrationContract={tokens[network][selectedChain].migrationContract}
         />
-      {:else}
+      {:else if migrationStep === 1}
         <ExecuteMigration
+          on:incrementStep={() => migrationStep++}
           amount={parseUnits(amount.replace(",", "."), ercDecimals)}
           currentAddress={walletState.address ?? ""}
           migrationContract={tokens[network][selectedChain].migrationContract}
         />
+      {:else}
+        <div class="migrate__execute">
+          <Icon path={mdiCheckDecagramOutline} />
+          <p>Migration completed successfully!</p>
+        </div>
       {/if}
-    </div>
+    </Card>
   {/if}
 
   {#if !walletState.isConnected}
@@ -392,6 +403,14 @@
     flex-direction: column;
     gap: var(--default-gap);
     padding: 1.25em;
+
+    &__execute {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--default-gap);
+      padding: 2.25em 0;
+    }
 
     &__header {
       display: flex;
