@@ -12,7 +12,7 @@
 
 extern crate alloc;
 
-use execution_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::TRANSFER_CONTRACT;
 
 mod state;
 use state::StakeState;

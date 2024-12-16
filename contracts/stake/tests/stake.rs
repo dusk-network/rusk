@@ -6,21 +6,21 @@
 
 pub mod common;
 
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use execution_core::stake::{
+use dusk_core::stake::{
     Reward, RewardReason, Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT,
 };
-use execution_core::transfer::data::ContractCall;
-use execution_core::transfer::phoenix::{
+use dusk_core::transfer::data::ContractCall;
+use dusk_core::transfer::phoenix::{
     PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
     ViewKey as PhoenixViewKey,
 };
-use execution_core::transfer::withdraw::{
+use dusk_core::transfer::withdraw::{
     Withdraw, WithdrawReceiver, WithdrawReplayToken,
 };
-use execution_core::{dusk, JubJubScalar};
+use dusk_core::{dusk, JubJubScalar};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
