@@ -12,6 +12,7 @@ use execution_core::transfer::data::ContractBytecode;
 use execution_core::transfer::moonlight::AccountData;
 use node_data::events::contract::ContractEvent;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
+use std::cmp::max;
 
 #[derive(Default)]
 pub struct Config {}
@@ -85,6 +86,7 @@ pub trait VMExecution: Send + Sync + 'static {
     fn gas_per_deploy_byte(&self) -> u64;
     fn min_deployment_gas_price(&self) -> u64;
     fn min_gas_limit(&self) -> u64;
+    fn min_deploy_points(&self) -> u64;
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -102,6 +104,10 @@ pub enum PreverificationResult {
 pub fn bytecode_charge(
     bytecode: &ContractBytecode,
     gas_per_deploy_byte: u64,
+    min_deploy_points: u64,
 ) -> u64 {
-    bytecode.bytes.len() as u64 * gas_per_deploy_byte
+    max(
+        bytecode.bytes.len() as u64 * gas_per_deploy_byte,
+        min_deploy_points,
+    )
 }
