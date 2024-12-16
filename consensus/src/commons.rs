@@ -10,7 +10,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use execution_core::signatures::bls::SecretKey as BlsSecretKey;
+use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
 use node_data::bls::PublicKey;
 use node_data::ledger::*;
 use node_data::message::{
