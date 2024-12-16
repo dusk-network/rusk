@@ -222,8 +222,11 @@ impl MempoolSrv {
             }
 
             let gas_per_deploy_byte = vm.gas_per_deploy_byte();
-            let min_gas_limit =
-                vm::bytecode_charge(&deploy.bytecode, gas_per_deploy_byte);
+            let min_gas_limit = vm::bytecode_charge(
+                &deploy.bytecode,
+                gas_per_deploy_byte,
+                vm.min_deploy_points(),
+            );
             if tx.inner.gas_limit() < min_gas_limit {
                 return Err(TxAcceptanceError::GasLimitTooLow(min_gas_limit));
             }
