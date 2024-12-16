@@ -495,6 +495,15 @@ export const phoenix = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
+    const data = serializeMemo(info.data);
+
+    if (data) {
+      ptr.data = await malloc(data.byteLength);
+      await memcpy(ptr.data, data);
+    } else {
+      ptr.data = null;
+    }
+
     let tx = await malloc(4);
     let proof = await malloc(4);
 
@@ -513,7 +522,7 @@ export const phoenix = async (info) =>
       ptr.gas_limit,
       ptr.gas_price,
       info.chainId,
-      info.data,
+      ptr.data,
       tx,
       proof
     );

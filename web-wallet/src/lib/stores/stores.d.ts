@@ -139,6 +139,7 @@ type WalletStoreServices = {
   transfer: (
     to: string,
     amount: bigint,
+    memo: string,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<TransactionInfo>;
 

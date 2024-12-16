@@ -380,7 +380,7 @@ async function sync(fromBlock) {
 }
 
 /** @type {WalletStoreServices["transfer"]} */
-const transfer = async (to, amount, gas) =>
+const transfer = async (to, amount, memo, gas) =>
   sync()
     .then(networkStore.connect)
     .then((network) => {
@@ -388,6 +388,7 @@ const transfer = async (to, amount, gas) =>
         .as(getCurrentProfile())
         .transfer(amount)
         .to(to)
+        .memo(memo)
         .gas(gas);
 
       return network.execute(

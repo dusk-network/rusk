@@ -309,6 +309,7 @@ describe("Wallet store", async () => {
       "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
     const amount = 150_000_000_000n;
     const gas = new Gas({ limit: 500n, price: 1n });
+    const memo = "";
 
     const phoenixTxResult = {
       hash: "some-tx-id",
@@ -364,6 +365,7 @@ describe("Wallet store", async () => {
         expectedTx = {
           amount,
           gas,
+          memo,
           obfuscated: true,
           to: toPhoenix,
         };
@@ -374,7 +376,7 @@ describe("Wallet store", async () => {
         });
 
         if (isMoonlightTransfer) {
-          expectedTx = { amount, gas, to: toMoonlight };
+          expectedTx = { amount, gas, memo, to: toMoonlight };
         } else {
           switch (method) {
             case "stake":
@@ -525,11 +527,21 @@ describe("Wallet store", async () => {
     });
 
     it("should expose a method to execute a phoenix transfer, if the receiver is a phoenix address", async () => {
-      await walletStoreTransferCheck("transfer", [toPhoenix, amount, gas]);
+      await walletStoreTransferCheck("transfer", [
+        toPhoenix,
+        amount,
+        memo,
+        gas,
+      ]);
     });
 
     it("should use the moonlight account and shouldn't obfuscate the transaction if the receiver is a moonlight account", async () => {
-      await walletStoreTransferCheck("transfer", [toMoonlight, amount, gas]);
+      await walletStoreTransferCheck("transfer", [
+        toMoonlight,
+        amount,
+        memo,
+        gas,
+      ]);
     });
 
     it("should expose a method to unshield a given amount from the shielded account", async () => {
