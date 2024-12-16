@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use execution_core::{dusk, Dusk};
+use dusk_core::{dusk, Dusk};
 
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;

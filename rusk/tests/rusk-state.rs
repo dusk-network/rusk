@@ -12,7 +12,7 @@ use crate::common::*;
 use std::path::Path;
 use std::sync::{mpsc, Arc};
 
-use execution_core::{
+use dusk_core::{
     transfer::{
         phoenix::{
             Note, NoteLeaf, PublicKey as PhoenixPublicKey,

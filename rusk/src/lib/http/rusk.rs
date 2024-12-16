@@ -16,7 +16,7 @@ use std::thread;
 use tokio::task;
 use tungstenite::http::request;
 
-use execution_core::ContractId;
+use dusk_core::ContractId;
 
 use crate::node::Rusk;
 

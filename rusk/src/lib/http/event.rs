@@ -8,7 +8,7 @@ use super::RUSK_VERSION_HEADER;
 
 use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
 use bytecheck::CheckBytes;
-use execution_core::ContractId;
+use dusk_core::ContractId;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{stream, Stream, StreamExt};
 use http_body_util::{BodyExt, Either, Full, StreamBody};

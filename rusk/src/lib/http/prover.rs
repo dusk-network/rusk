@@ -6,7 +6,7 @@
 
 use anyhow::anyhow;
 
-use execution_core::transfer::phoenix::Prove;
+use dusk_core::transfer::phoenix::Prove;
 use rusk_prover::LocalProver;
 
 use super::*;

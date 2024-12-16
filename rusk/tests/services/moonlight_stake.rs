@@ -7,7 +7,7 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::stake::MINIMUM_STAKE;
+use dusk_core::stake::MINIMUM_STAKE;
 
 use rand::prelude::*;
 use rand::rngs::StdRng;
