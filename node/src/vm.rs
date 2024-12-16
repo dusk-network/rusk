@@ -7,8 +7,8 @@
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
-use execution_core::signatures::bls::PublicKey as BlsPublicKey;
-use execution_core::transfer::moonlight::AccountData;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::transfer::moonlight::AccountData;
 use node_data::events::contract::ContractEvent;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 

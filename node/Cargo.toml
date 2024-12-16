@@ -24,7 +24,7 @@ rkyv = { workspace = true }
 rocksdb = { workspace = true }
 dusk-bytes = { workspace = true }
 node-data = { workspace = true }
-execution-core = { workspace = true }
+dusk-core = { workspace = true }
 smallvec = { workspace = true }
 
 serde = { workspace = true }

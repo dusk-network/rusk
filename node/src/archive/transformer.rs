@@ -6,9 +6,9 @@
 
 use std::collections::BTreeMap;
 
-use execution_core::signatures::bls::PublicKey as AccountPublicKey;
-use execution_core::transfer::withdraw::WithdrawReceiver;
-use execution_core::transfer::{
+use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::transfer::withdraw::WithdrawReceiver;
+use dusk_core::transfer::{
     ConvertEvent, MoonlightTransactionEvent, WithdrawEvent, CONVERT_TOPIC,
     MINT_TOPIC, MOONLIGHT_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
 };
