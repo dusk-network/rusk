@@ -6,10 +6,8 @@
 
 extern crate alloc;
 
-use execution_core::stake::{
-    Stake, Withdraw, WithdrawToContract, STAKE_CONTRACT,
-};
-use execution_core::transfer::{
+use dusk_core::stake::{Stake, Withdraw, WithdrawToContract, STAKE_CONTRACT};
+use dusk_core::transfer::{
     withdraw::Withdraw as TransferWithdraw, ContractToContract,
     ReceiveFromContract, TRANSFER_CONTRACT,
 };
