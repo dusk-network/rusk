@@ -6,7 +6,7 @@
 
 use std::io::{self, Read, Write};
 
-use execution_core::transfer::Transaction as ProtocolTransaction;
+use dusk_core::transfer::Transaction as ProtocolTransaction;
 
 use crate::bls::PublicKeyBytes;
 use crate::ledger::{

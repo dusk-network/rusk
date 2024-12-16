@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 
-use execution_core::transfer::RefundAddress;
+use dusk_core::transfer::RefundAddress;
 
 use super::*;
 use crate::ledger::{Hash, SpentTransaction, Transaction};
@@ -70,7 +70,7 @@ impl EventSource for TransactionEvent<'_> {
 use base64::engine::general_purpose::STANDARD as BASE64_ENGINE;
 use base64::Engine;
 use dusk_bytes::Serializable;
-use execution_core::transfer::Transaction as ProtocolTransaction;
+use dusk_core::transfer::Transaction as ProtocolTransaction;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 impl Serialize for Transaction {
@@ -162,10 +162,10 @@ impl Serialize for Transaction {
     }
 }
 
-struct Note<'a>(&'a execution_core::transfer::phoenix::Note);
+struct Note<'a>(&'a dusk_core::transfer::phoenix::Note);
 
-impl<'a> From<&'a execution_core::transfer::phoenix::Note> for Note<'a> {
-    fn from(value: &'a execution_core::transfer::phoenix::Note) -> Self {
+impl<'a> From<&'a dusk_core::transfer::phoenix::Note> for Note<'a> {
+    fn from(value: &'a dusk_core::transfer::phoenix::Note) -> Self {
         Self(value)
     }
 }

@@ -7,8 +7,8 @@
 use std::io;
 
 use dusk_bytes::Serializable as DuskSerializable;
-use execution_core::signatures::bls;
-use execution_core::transfer::Transaction as ProtocolTransaction;
+use dusk_core::signatures::bls;
+use dusk_core::transfer::Transaction as ProtocolTransaction;
 use serde::Serialize;
 use sha3::Digest;
 
@@ -145,13 +145,13 @@ impl SpendingId {
 
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
-    use execution_core::transfer::data::{ContractCall, TransactionData};
-    use execution_core::transfer::phoenix::{
+    use dusk_core::transfer::data::{ContractCall, TransactionData};
+    use dusk_core::transfer::phoenix::{
         Fee, Note, Payload as PhoenixPayload, PublicKey as PhoenixPublicKey,
         SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
         TxSkeleton,
     };
-    use execution_core::{BlsScalar, JubJubScalar};
+    use dusk_core::{BlsScalar, JubJubScalar};
     use rand::Rng;
 
     use super::*;

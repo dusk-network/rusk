@@ -15,7 +15,7 @@ use base64::Engine;
 use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, BlockModeError, Cbc};
 use dusk_bytes::{DeserializableSlice, Serializable};
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use rand::rngs::StdRng;
