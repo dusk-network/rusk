@@ -930,19 +930,23 @@ fn slash(session: &mut Session, slash: Vec<Slash>) -> Result<Vec<Event>> {
                 &(provisioner, None::<u64>),
                 u64::MAX,
             ),
+            // INFO: Hard Slashing is currently "relaxed" to Soft Slashing as a
+            // safety measure for the initial period after mainnet launch.
+            // Proper behavior should be restored in the future
             node_data::ledger::SlashType::Hard => session.call::<_, ()>(
                 STAKE_CONTRACT,
-                "hard_slash",
-                &(provisioner, None::<u64>, None::<u8>),
+                "slash",
+                &(provisioner, None::<u64>),
                 u64::MAX,
             ),
-            node_data::ledger::SlashType::HardWithSeverity(severity) => session
-                .call::<_, ()>(
+            node_data::ledger::SlashType::HardWithSeverity(_severity) => {
+                session.call::<_, ()>(
                     STAKE_CONTRACT,
-                    "hard_slash",
-                    &(provisioner, None::<u64>, Some(severity)),
+                    "slash",
+                    &(provisioner, None::<u64>),
                     u64::MAX,
-                ),
+                )
+            }
         }?;
         events.extend(r.events);
     }
