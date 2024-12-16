@@ -45,6 +45,7 @@ impl VMExecution for Rusk {
 
     fn verify_state_transition(
         &self,
+        prev_commit: [u8; 32],
         blk: &Block,
         voters: &[Voter],
     ) -> anyhow::Result<VerificationOutput> {
@@ -57,6 +58,7 @@ impl VMExecution for Rusk {
 
         let (_, verification_output) = self
             .verify_transactions(
+                prev_commit,
                 blk.header().height,
                 blk.header().hash,
                 blk.header().gas_limit,
@@ -72,6 +74,7 @@ impl VMExecution for Rusk {
 
     fn accept(
         &self,
+        prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
     ) -> anyhow::Result<(
@@ -88,6 +91,7 @@ impl VMExecution for Rusk {
 
         let (txs, verification_output, stake_events) = self
             .accept_transactions(
+                prev_root,
                 blk.header().height,
                 blk.header().gas_limit,
                 blk.header().hash,
