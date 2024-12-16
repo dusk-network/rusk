@@ -44,6 +44,7 @@ pub struct Rusk {
     pub(crate) gas_per_deploy_byte: u64,
     pub(crate) min_deployment_gas_price: u64,
     pub(crate) min_gas_limit: u64,
+    pub(crate) min_deploy_points: u64,
     pub(crate) feeder_gas_limit: u64,
     pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,

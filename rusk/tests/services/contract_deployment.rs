@@ -25,6 +25,7 @@ use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::DEFAULT_MIN_DEPLOYMENT_GAS_PRICE;
+use crate::common::state::DEFAULT_MIN_DEPLOY_POINTS;
 use crate::common::state::{generator_procedure, ExecuteResult};
 use crate::common::state::{
     DEFAULT_GAS_PER_DEPLOY_BYTE, DEFAULT_MIN_GAS_LIMIT,
@@ -106,6 +107,7 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
         DEFAULT_GAS_PER_DEPLOY_BYTE,
         DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
         DEFAULT_MIN_GAS_LIMIT,
+        DEFAULT_MIN_DEPLOY_POINTS,
         BLOCK_GAS_LIMIT,
         u64::MAX,
         sender,
