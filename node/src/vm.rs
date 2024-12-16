@@ -29,12 +29,14 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn verify_state_transition(
         &self,
+        prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
     ) -> anyhow::Result<VerificationOutput>;
 
     fn accept(
         &self,
+        prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
     ) -> anyhow::Result<(

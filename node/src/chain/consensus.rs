@@ -315,6 +315,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
     async fn verify_state_transition(
         &self,
+        prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
     ) -> Result<VerificationOutput, OperationError> {
@@ -322,7 +323,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
         let vm = self.vm.read().await;
 
-        vm.verify_state_transition(blk, voters)
+        vm.verify_state_transition(prev_root, blk, voters)
             .map_err(OperationError::InvalidVST)
     }
 
