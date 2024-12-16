@@ -51,12 +51,18 @@ impl Stake {
     const MESSAGE_SIZE: usize =
         1 + BlsPublicKey::SIZE + BlsPublicKey::SIZE + u64::SIZE;
 
-    /// Create a new stake.
+    /// Create a new stake specifying the owner.
     #[must_use]
-    pub fn new(sk: &BlsSecretKey, value: u64, chain_id: u8) -> Self {
-        let key = BlsPublicKey::from(sk);
+    pub fn new(
+        account_sk: &BlsSecretKey,
+        owner_sk: &BlsSecretKey,
+        value: u64,
+        chain_id: u8,
+    ) -> Self {
+        let account = BlsPublicKey::from(account_sk);
+        let owner = BlsPublicKey::from(owner_sk);
 
-        let keys = StakeKeys::single_key(key);
+        let keys = StakeKeys::new(account, owner);
 
         let mut stake = Stake {
             chain_id,
@@ -68,14 +74,14 @@ impl Stake {
         let msg = stake.signature_message();
 
         stake.signature = DoubleSignature {
-            account: sk.sign(&msg),
-            owner: sk.sign(&msg),
+            account: account_sk.sign(&msg),
+            owner: owner_sk.sign(&msg),
         };
 
         stake
     }
 
-    /// Create a new stake.
+    /// Create a new stake from a contract.
     #[must_use]
     pub fn new_from_contract(
         sk: &BlsSecretKey,
