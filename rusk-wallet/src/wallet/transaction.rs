@@ -6,11 +6,11 @@
 
 use std::fmt::Debug;
 
-use execution_core::signatures::bls::PublicKey as BlsPublicKey;
-use execution_core::stake::StakeFundOwner;
-use execution_core::transfer::data::TransactionData;
-use execution_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
-use execution_core::transfer::Transaction;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::StakeFundOwner;
+use dusk_core::transfer::data::TransactionData;
+use dusk_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
+use dusk_core::transfer::Transaction;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use wallet_core::transaction::{

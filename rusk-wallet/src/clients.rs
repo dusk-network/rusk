@@ -10,12 +10,12 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use dusk_bytes::Serializable;
-use execution_core::signatures::bls::PublicKey as BlsPublicKey;
-use execution_core::stake::{StakeFundOwner, StakeKeys};
-use execution_core::transfer::moonlight::AccountData;
-use execution_core::transfer::phoenix::{Note, NoteLeaf, Prove};
-use execution_core::transfer::Transaction;
-use execution_core::Error as ExecutionCoreError;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::{StakeFundOwner, StakeKeys};
+use dusk_core::transfer::moonlight::AccountData;
+use dusk_core::transfer::phoenix::{Note, NoteLeaf, Prove};
+use dusk_core::transfer::Transaction;
+use dusk_core::Error as ExecutionCoreError;
 use flume::Receiver;
 use rues::RuesHttpClient;
 use tokio::task::JoinHandle;

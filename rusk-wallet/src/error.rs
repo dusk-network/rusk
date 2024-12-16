@@ -129,7 +129,7 @@ pub enum Error {
     /// The cache database couldn't find column family required
     #[error("Cache database corrupted")]
     CacheDatabaseCorrupted,
-    /// Prover errors from execution-core
+    /// Prover errors from dusk-core
     #[error("Prover Error: {0}")]
     ProverError(String),
     /// Memo provided is too large
@@ -176,9 +176,9 @@ impl From<block_modes::InvalidKeyIvLength> for Error {
     }
 }
 
-impl From<execution_core::Error> for Error {
-    fn from(e: execution_core::Error) -> Self {
-        use execution_core::Error::*;
+impl From<dusk_core::Error> for Error {
+    fn from(e: dusk_core::Error) -> Self {
+        use dusk_core::Error::*;
 
         match e {
             InsufficientBalance => Self::NotEnoughBalance,
