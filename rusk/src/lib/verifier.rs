@@ -9,7 +9,7 @@
 use crate::error::Error;
 use crate::Result;
 
-use execution_core::transfer::{
+use dusk_core::transfer::{
     moonlight::Transaction as MoonlightTransaction,
     phoenix::Transaction as PhoenixTransaction,
 };

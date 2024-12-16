@@ -8,7 +8,7 @@ use super::event::Event;
 use super::*;
 
 use dusk_bytes::Serializable;
-use execution_core::stake::StakeFundOwner;
+use dusk_core::stake::StakeFundOwner;
 use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
@@ -17,7 +17,7 @@ use std::thread;
 use tokio::task;
 use tungstenite::http::request;
 
-use execution_core::ContractId;
+use dusk_core::ContractId;
 
 use crate::node::Rusk;
 
