@@ -157,7 +157,12 @@ fieldset {
 
 @media (max-width: 500px), (max-height: 500px) {
   body {
-    padding: 1rem;
+    padding: 0;
+    background-color: var(--background-color);
+  }
+
+  #outer-container {
+    border-radius: 0;
   }
 }
 
