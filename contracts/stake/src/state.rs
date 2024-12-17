@@ -98,20 +98,20 @@ impl StakeState {
         let owner = Self::unwrap_account_owner(&keys.owner);
 
         let msg = stake.signature_message().to_vec();
-        if !rusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
+        if !dusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
             panic!("Invalid owner signature!");
         }
-        if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
+        if !dusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
         }
 
         // make call to transfer contract to transfer balance from the user to
         // this contract
         let _: () =
-            rusk_abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
+            dusk_abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
                 .expect("Depositing funds into contract should succeed");
 
-        let block_height = rusk_abi::block_height();
+        let block_height = dusk_abi::block_height();
         // update the state accordingly
         let stake_event = match &mut loaded_stake.amount {
             Some(amount) => {
@@ -131,7 +131,7 @@ impl StakeState {
                 StakeEvent::new(*keys, value)
             }
         };
-        rusk_abi::emit("stake", stake_event);
+        dusk_abi::emit("stake", stake_event);
 
         let key = keys.account.to_bytes();
         self.previous_block_state
@@ -164,12 +164,12 @@ impl StakeState {
             // We verify the signature only when there is a new stake
             let signature = stake.signature().account;
             let msg = stake.signature_message().to_vec();
-            if !rusk_abi::verify_bls(msg, account, signature) {
+            if !dusk_abi::verify_bls(msg, account, signature) {
                 panic!("Invalid account signature!");
             }
         }
 
-        let block_height = rusk_abi::block_height();
+        let block_height = dusk_abi::block_height();
         // update the state accordingly
         let stake_event = match &mut loaded_stake.amount {
             Some(amount) => {
@@ -189,7 +189,7 @@ impl StakeState {
                 StakeEvent::new(*keys, value)
             }
         };
-        rusk_abi::emit("stake", stake_event);
+        dusk_abi::emit("stake", stake_event);
 
         let key = keys.account.to_bytes();
         self.previous_block_state
@@ -223,17 +223,17 @@ impl StakeState {
 
         // check signature is correct
         let msg = unstake.signature_message();
-        if !rusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
+        if !dusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
             panic!("Invalid owner signature!");
         }
-        if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
+        if !dusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
         }
 
         // make call to the transfer contract to withdraw funds from this
         // contract into the receiver specified by the withdrawal.
         let _: () =
-            rusk_abi::call(TRANSFER_CONTRACT, "withdraw", transfer_withdraw)
+            dusk_abi::call(TRANSFER_CONTRACT, "withdraw", transfer_withdraw)
                 .expect("Withdrawing stake should succeed");
 
         let stake_event = if value > stake.value {
@@ -247,7 +247,7 @@ impl StakeState {
             StakeEvent::new(*keys, value)
         };
 
-        rusk_abi::emit("unstake", stake_event);
+        dusk_abi::emit("unstake", stake_event);
         if stake.total_funds() == 0 {
             // update the state accordingly
             loaded_stake.amount = None;
@@ -287,7 +287,7 @@ impl StakeState {
 
         let owner = Self::unwrap_contract_owner(&keys.owner);
         let caller =
-            rusk_abi::caller().expect("unstake must be called by a contract");
+            dusk_abi::caller().expect("unstake must be called by a contract");
         assert!(&caller == owner, "Invalid contract caller");
 
         let to_contract = ContractToContract {
@@ -297,7 +297,7 @@ impl StakeState {
             data,
         };
 
-        let _: () = rusk_abi::call(
+        let _: () = dusk_abi::call(
             TRANSFER_CONTRACT,
             "contract_to_contract",
             &to_contract,
@@ -315,7 +315,7 @@ impl StakeState {
             StakeEvent::new(*keys, value)
         };
 
-        rusk_abi::emit("unstake", stake_event);
+        dusk_abi::emit("unstake", stake_event);
         if stake.total_funds() == 0 {
             // update the state accordingly
             loaded_stake.amount = None;
@@ -362,22 +362,22 @@ impl StakeState {
 
         // check signature is correct
         let msg = withdraw.signature_message();
-        if !rusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
+        if !dusk_abi::verify_bls(msg.clone(), owner, signature.owner) {
             panic!("Invalid owner signature!");
         }
-        if !rusk_abi::verify_bls(msg, keys.account, signature.account) {
+        if !dusk_abi::verify_bls(msg, keys.account, signature.account) {
             panic!("Invalid account signature!");
         }
 
         // make call to the transfer contract to withdraw funds from this
         // contract into the receiver specified by the withdrawal.
         let _: () =
-            rusk_abi::call(TRANSFER_CONTRACT, "mint", transfer_withdraw)
+            dusk_abi::call(TRANSFER_CONTRACT, "mint", transfer_withdraw)
                 .expect("Withdrawing reward should succeed");
 
         // update the state accordingly
         loaded_stake.reward -= value;
-        rusk_abi::emit("withdraw", StakeEvent::new(*keys, value));
+        dusk_abi::emit("withdraw", StakeEvent::new(*keys, value));
 
         if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
             self.stakes.remove(&account.to_bytes());
@@ -406,7 +406,7 @@ impl StakeState {
 
         let owner = Self::unwrap_contract_owner(&keys.owner);
         let caller =
-            rusk_abi::caller().expect("unstake must be called by a contract");
+            dusk_abi::caller().expect("unstake must be called by a contract");
         assert!(&caller == owner, "Invalid contract caller");
 
         let to_contract = ContractToContract {
@@ -417,12 +417,12 @@ impl StakeState {
         };
 
         let _: () =
-            rusk_abi::call(TRANSFER_CONTRACT, "mint_to_contract", &to_contract)
+            dusk_abi::call(TRANSFER_CONTRACT, "mint_to_contract", &to_contract)
                 .expect("Withdrawing reward to contract should succeed");
 
         // update the state accordingly
         loaded_stake.reward -= value;
-        rusk_abi::emit("withdraw", StakeEvent::new(*keys, value));
+        dusk_abi::emit("withdraw", StakeEvent::new(*keys, value));
 
         if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
             self.stakes.remove(&account.to_bytes());
@@ -493,7 +493,7 @@ impl StakeState {
             stake.reward += reward.value;
         }
         if !rewards.is_empty() {
-            rusk_abi::emit("reward", rewards);
+            dusk_abi::emit("reward", rewards);
         }
     }
 
@@ -537,7 +537,7 @@ impl StakeState {
             let to_shift = effective_faults * EPOCH;
 
             stake_amount.eligibility =
-                next_epoch(rusk_abi::block_height()) + to_shift;
+                next_epoch(dusk_abi::block_height()) + to_shift;
         }
 
         // Slash the provided amount or calculate the percentage according to
@@ -551,7 +551,7 @@ impl StakeState {
         }
 
         if to_slash > 0 || effective_faults > 0 {
-            rusk_abi::emit(
+            dusk_abi::emit(
                 "slash",
                 SlashEvent {
                     account: *account,
@@ -597,7 +597,7 @@ impl StakeState {
         // The stake is shifted (aka suspended) for the rest of the current
         // epoch plus hard_faults epochs
         let to_shift = hard_faults * EPOCH;
-        let next_eligibility = next_epoch(rusk_abi::block_height()) + to_shift;
+        let next_eligibility = next_epoch(dusk_abi::block_height()) + to_shift;
         stake_amount.eligibility = next_eligibility;
 
         // Slash the provided amount or calculate the percentage according to
@@ -615,7 +615,7 @@ impl StakeState {
             self.burnt_amount += to_slash;
         }
 
-        rusk_abi::emit(
+        dusk_abi::emit(
             "hard_slash",
             SlashEvent {
                 account: *account,
@@ -638,18 +638,18 @@ impl StakeState {
     /// Feeds the host with the stakes.
     pub fn stakes(&self) {
         for (stake_data, account) in self.stakes.values() {
-            rusk_abi::feed((*account, *stake_data));
+            dusk_abi::feed((*account, *stake_data));
         }
     }
 
     fn chain_id(&self) -> u8 {
-        rusk_abi::chain_id()
+        dusk_abi::chain_id()
     }
 
     fn deduct_contract_balance(amount: u64) {
         // Update the module balance to reflect the change in the amount
         // withdrawable from the contract
-        let _: () = rusk_abi::call(
+        let _: () = dusk_abi::call(
             TRANSFER_CONTRACT,
             "sub_contract_balance",
             &(STAKE_CONTRACT, amount),
@@ -660,7 +660,7 @@ impl StakeState {
     /// Feeds the host with previous state of the changed provisioners.
     pub fn prev_state_changes(&self) {
         for (stake_data, account) in self.previous_block_state.values() {
-            rusk_abi::feed((*account, *stake_data));
+            dusk_abi::feed((*account, *stake_data));
         }
     }
 }

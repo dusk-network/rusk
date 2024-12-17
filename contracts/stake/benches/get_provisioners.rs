@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use criterion::{criterion_group, criterion_main, Criterion};
+use dusk_abi::{ContractData, PiecrustError, Session, VM};
 use dusk_core::{
     stake::{StakeData, STAKE_CONTRACT},
     transfer::TRANSFER_CONTRACT,
@@ -12,7 +13,6 @@ use dusk_core::{
 };
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
-use rusk_abi::{ContractData, PiecrustError, Session, VM};
 use std::sync::mpsc;
 
 const SAMPLE_SIZE: usize = 10;
@@ -40,7 +40,7 @@ fn instantiate(vm: &VM) -> Session {
         "../../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
-    let mut session = rusk_abi::new_genesis_session(vm);
+    let mut session = dusk_abi::new_genesis_session(vm);
 
     session
         .deploy(
@@ -62,7 +62,7 @@ fn instantiate(vm: &VM) -> Session {
 
     let base = session.commit().expect("Committing should succeed");
 
-    rusk_abi::new_session(vm, base, 1)
+    dusk_abi::new_session(vm, base, 1)
         .expect("Instantiating new session should succeed")
 }
 
@@ -106,7 +106,7 @@ fn do_insert_stake<Rng: RngCore + CryptoRng>(
 fn get_provisioners(c: &mut Criterion) {
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut rusk_abi::new_ephemeral_vm()
+    let vm = &mut dusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
     let mut session = instantiate(vm);

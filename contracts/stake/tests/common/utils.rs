@@ -6,6 +6,7 @@
 
 use std::sync::mpsc;
 
+use dusk_abi::{PiecrustError, Session};
 use dusk_core::transfer::data::TransactionData;
 use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, NoteOpening, NoteTreeItem, PublicKey as PhoenixPublicKey,
@@ -15,7 +16,6 @@ use dusk_core::transfer::phoenix::{
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use dusk_core::{BlsScalar, LUX};
 use rand::rngs::StdRng;
-use rusk_abi::{PiecrustError, Session};
 use rusk_prover::LocalProver;
 
 pub const GAS_LIMIT: u64 = 0x100_000_000;

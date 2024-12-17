@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_abi::Session;
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{
@@ -13,7 +14,6 @@ use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::Event;
 use rkyv::{check_archived_root, Deserialize, Infallible};
-use rusk_abi::Session;
 
 use super::utils::GAS_LIMIT;
 

@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_abi::{ContractData, Session, VM};
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::{
     phoenix::{Note, PublicKey as PhoenixPublicKey},
@@ -12,7 +13,6 @@ use dusk_core::transfer::{
 use dusk_core::JubJubScalar;
 use ff::Field;
 use rand::{CryptoRng, RngCore};
-use rusk_abi::{ContractData, Session, VM};
 
 use crate::common::utils::{update_root, GAS_LIMIT};
 
@@ -27,7 +27,7 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
     pk: &PhoenixPublicKey,
     genesis_value: u64,
 ) -> Session {
-    let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
+    let mut session = dusk_abi::new_genesis_session(vm, CHAIN_ID);
 
     // deploy transfer-contract
     let transfer_bytecode = include_bytes!(
@@ -81,6 +81,6 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
 
-    rusk_abi::new_session(vm, base, CHAIN_ID, 1)
+    dusk_abi::new_session(vm, base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed")
 }
