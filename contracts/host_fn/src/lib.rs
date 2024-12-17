@@ -32,11 +32,11 @@ pub struct HostFnTest;
 
 impl HostFnTest {
     pub fn hash(&self, bytes: Vec<u8>) -> BlsScalar {
-        rusk_abi::hash(bytes)
+        dusk_abi::hash(bytes)
     }
 
     pub fn poseidon_hash(&self, scalars: Vec<BlsScalar>) -> BlsScalar {
-        rusk_abi::poseidon_hash(scalars)
+        dusk_abi::poseidon_hash(scalars)
     }
 
     pub fn verify_plonk(
@@ -45,7 +45,7 @@ impl HostFnTest {
         proof: Vec<u8>,
         public_inputs: Vec<BlsScalar>,
     ) -> bool {
-        rusk_abi::verify_plonk(verifier_data, proof, public_inputs)
+        dusk_abi::verify_plonk(verifier_data, proof, public_inputs)
     }
 
     pub fn verify_groth16_bn254(
@@ -54,7 +54,7 @@ impl HostFnTest {
         proof: Vec<u8>,
         inputs: Vec<u8>,
     ) -> bool {
-        rusk_abi::verify_groth16_bn254(pvk, proof, inputs)
+        dusk_abi::verify_groth16_bn254(pvk, proof, inputs)
     }
 
     pub fn verify_schnorr(
@@ -63,7 +63,7 @@ impl HostFnTest {
         pk: SchnorrPublicKey,
         sig: SchnorrSignature,
     ) -> bool {
-        rusk_abi::verify_schnorr(msg, pk, sig)
+        dusk_abi::verify_schnorr(msg, pk, sig)
     }
 
     pub fn verify_bls(
@@ -72,7 +72,7 @@ impl HostFnTest {
         pk: BlsPublicKey,
         sig: BlsSignature,
     ) -> bool {
-        rusk_abi::verify_bls(msg, pk, sig)
+        dusk_abi::verify_bls(msg, pk, sig)
     }
 
     pub fn verify_bls_multisig(
@@ -81,87 +81,87 @@ impl HostFnTest {
         keys: Vec<BlsPublicKey>,
         sig: MultisigSignature,
     ) -> bool {
-        rusk_abi::verify_bls_multisig(msg, keys, sig)
+        dusk_abi::verify_bls_multisig(msg, keys, sig)
     }
 
     pub fn chain_id(&self) -> u8 {
-        rusk_abi::chain_id()
+        dusk_abi::chain_id()
     }
 
     pub fn block_height(&self) -> u64 {
-        rusk_abi::block_height()
+        dusk_abi::block_height()
     }
 
     pub fn owner(&self) -> BlsPublicKey {
-        rusk_abi::self_owner()
+        dusk_abi::self_owner()
     }
 
     pub fn owner_raw(&self) -> [u8; BlsPublicKey::SIZE] {
-        rusk_abi::self_owner_raw()
+        dusk_abi::self_owner_raw()
     }
 }
 
 #[no_mangle]
 unsafe fn hash(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |scalars| STATE.hash(scalars))
+    dusk_abi::wrap_call(arg_len, |scalars| STATE.hash(scalars))
 }
 
 #[no_mangle]
 unsafe fn poseidon_hash(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |scalars| STATE.poseidon_hash(scalars))
+    dusk_abi::wrap_call(arg_len, |scalars| STATE.poseidon_hash(scalars))
 }
 
 #[no_mangle]
 unsafe fn verify_plonk(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(verifier_data, proof, public_inputs)| {
+    dusk_abi::wrap_call(arg_len, |(verifier_data, proof, public_inputs)| {
         STATE.verify_plonk(verifier_data, proof, public_inputs)
     })
 }
 
 #[no_mangle]
 unsafe fn verify_groth16_bn254(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(pvk, proof, inputs)| {
+    dusk_abi::wrap_call(arg_len, |(pvk, proof, inputs)| {
         STATE.verify_groth16_bn254(pvk, proof, inputs)
     })
 }
 
 #[no_mangle]
 unsafe fn verify_schnorr(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(msg, pk, sig)| {
+    dusk_abi::wrap_call(arg_len, |(msg, pk, sig)| {
         STATE.verify_schnorr(msg, pk, sig)
     })
 }
 
 #[no_mangle]
 unsafe fn verify_bls(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(msg, pk, sig)| {
+    dusk_abi::wrap_call(arg_len, |(msg, pk, sig)| {
         STATE.verify_bls(msg, pk, sig)
     })
 }
 
 #[no_mangle]
 unsafe fn verify_bls_multisig(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(msg, keys, sig)| {
+    dusk_abi::wrap_call(arg_len, |(msg, keys, sig)| {
         STATE.verify_bls_multisig(msg, keys, sig)
     })
 }
 
 #[no_mangle]
 unsafe fn chain_id(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.chain_id())
+    dusk_abi::wrap_call(arg_len, |_: ()| STATE.chain_id())
 }
 
 #[no_mangle]
 unsafe fn block_height(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.block_height())
+    dusk_abi::wrap_call(arg_len, |_: ()| STATE.block_height())
 }
 
 #[no_mangle]
 unsafe fn contract_owner(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.owner())
+    dusk_abi::wrap_call(arg_len, |_: ()| STATE.owner())
 }
 
 #[no_mangle]
 unsafe fn contract_owner_raw(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.owner_raw())
+    dusk_abi::wrap_call(arg_len, |_: ()| STATE.owner_raw())
 }
