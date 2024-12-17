@@ -70,9 +70,6 @@ pub enum Error {
     /// Not enough gas to perform this transaction
     #[error("Not enough gas to perform this transaction")]
     NotEnoughGas,
-    /// A stake already exists for this key
-    #[error("A stake already exists for this key")]
-    AlreadyStaked,
     /// A stake does not exist for this key
     #[error("A stake does not exist for this key")]
     NotStaked,

@@ -258,13 +258,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut stake_sk = self.derive_bls_sk(profile_idx);
 
         let stake_pk = self.public_key(profile_idx)?;
-        let current_stake = state.fetch_stake(stake_pk).await?;
-        if let Some(stake) = current_stake {
-            if stake.amount.is_some() {
-                return Err(Error::AlreadyStaked);
-            }
-        }
-
         let stake_owner_idx = match self.find_stake_owner_idx(stake_pk).await {
             Ok(state_idx) => {
                 if let Some(owner_idx) = owner_idx {
@@ -338,13 +331,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let chain_id = state.fetch_chain_id().await?;
         let moonlight_current_nonce =
             state.fetch_account(stake_pk).await?.nonce + 1;
-
-        let current_stake = state.fetch_stake(stake_pk).await?;
-        if let Some(stake) = current_stake {
-            if stake.amount.is_some() {
-                return Err(Error::AlreadyStaked);
-            }
-        }
 
         let stake_owner_idx = match self.find_stake_owner_idx(stake_pk).await {
             Ok(state_idx) => {
