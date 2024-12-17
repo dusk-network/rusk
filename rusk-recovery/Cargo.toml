@@ -29,7 +29,7 @@ flate2 = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
 http_req = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
-rusk-abi = { workspace = true, features = ["host"], optional = true }
+dusk-abi = { workspace = true, features = ["host"], optional = true }
 tar = { workspace = true, optional = true }
 url = { workspace = true, optional = true }
 zip = { workspace = true, optional = true }
@@ -56,7 +56,7 @@ state = [
     "hex",
     "http_req",
     "rand",
-    "rusk-abi",
+    "dusk-abi",
     "tar",
     "url",
     "zip",
