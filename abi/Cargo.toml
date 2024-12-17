@@ -1,6 +1,6 @@
 [package]
-name = "rusk-abi"
-version = "0.13.0-rc.0"
+name = "dusk-abi"
+version = "0.1.0"
 edition = "2021"
 
 repository = "https://github.com/dusk-network/rusk"
@@ -32,18 +32,18 @@ ff = { workspace = true }
 # By default, we include the contract writing features.
 default = ["abi", "dlmalloc"]
 
-# These are the features available for when one wishes to use `rusk-abi` as a
+# These are the features available for when one wishes to use `dusk-abi` as a
 # contract.
 abi = ["piecrust-uplink"]
 debug = ["abi", "piecrust-uplink/debug"]
 dlmalloc = ["piecrust-uplink/dlmalloc"]
 
-# These are the features available for when one wishes to use `rusk-abi` as a
+# These are the features available for when one wishes to use `dusk-abi` as a
 # host.
 host = ["piecrust", "lru", "dusk-core/parallel", "blake2b_simd", "dusk-poseidon", "rkyv"]
 host_debug = ["piecrust/debug", "lru"]
 
 [[test]]
-name = "test-rusk-abi"
+name = "test-dusk-abi"
 path = "tests/lib.rs"
 required-features = ["host"]
