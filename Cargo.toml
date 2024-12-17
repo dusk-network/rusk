@@ -10,14 +10,15 @@ members = [
     "contracts/stake",
     "contracts/transfer",
 
+    # libraries on crates.io
     "core",
+    "abi",
     "wallet-core",
 
     "rusk-prover",
 
     "rusk-recovery",
     "rusk-profile",
-    "rusk-abi",
     "rusk",
 
     "node-data",
@@ -36,7 +37,7 @@ dusk-consensus = { version = "0.1.1-rc.3", path = "./consensus/" }
 dusk-core = { version = "0.1.0", path = "./core/" }
 node = { version = "0.1.0", path = "./node/" }
 node-data = { version = "0.1.0", path = "./node-data/" }
-rusk-abi = { version = "0.13.0-rc.0", path = "./rusk-abi/", default-features = false }
+dusk-abi = { version = "0.1.0", path = "./abi/", default-features = false }
 rusk-profile = { version = "0.6.0", path = "./rusk-profile/" }
 rusk-prover = { version = "0.5.0", path = "./rusk-prover/" }
 rusk-recovery = { version = "0.6.0", path = "./rusk-recovery/" }
