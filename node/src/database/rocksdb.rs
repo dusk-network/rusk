@@ -531,6 +531,22 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(tx)
     }
 
+    fn ledger_txs(&self, tx_ids: Vec<&[u8; 32]>) -> Result<Vec<SpentTransaction>> {
+        let txs = self.inner.multi_get_opt(self.ledger_txs_cf, &tx_ids)?.map(
+            |txs| {
+                txs.into_iter()
+                    .map(|tx| {
+                        tx.and_then(|blob| {
+                            SpentTransaction::read(&mut &blob[..]).map_err(Into::into)
+                        })
+                    })
+                    .collect::<Result<Vec<_>>>()
+            },
+        );
+
+        Ok(txs)
+    }
+
     /// Returns true if the transaction exists in the
     /// ledger
     ///
