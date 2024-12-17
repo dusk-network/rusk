@@ -622,6 +622,20 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         Ok(gas_prices)
     }
+
+    /// Get the amount of stake rewards the user has
+    pub async fn get_stake_reward(
+        &self,
+        sender_index: u8,
+    ) -> Result<Dusk, Error> {
+        let available_reward = self
+            .stake_info(sender_index)
+            .await?
+            .ok_or(Error::NotStaked)?
+            .reward;
+
+        Ok(Dusk::from(available_reward))
+    }
 }
 
 /// This structs represent a Note decoded enriched with useful chain information
