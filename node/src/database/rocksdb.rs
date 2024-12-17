@@ -894,16 +894,25 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
             deleted.push(h);
 
             if cascade {
+                let mut dependants = vec![];
                 // Get the next spending id (aka next nonce tx)
                 // retrieve tx_id and delete it
-                if let Some(spending_id) = tx.next_spending_id() {
-                    for tx_id in
-                        self.mempool_txs_by_spendable_ids(&[spending_id])
-                    {
-                        let cascade_deleted =
-                            self.delete_mempool_tx(tx_id, cascade)?;
-                        deleted.extend(cascade_deleted);
+                let mut next_spending_id = tx.next_spending_id();
+                while let Some(spending_id) = next_spending_id {
+                    next_spending_id = spending_id.next();
+                    let next_txs =
+                        self.mempool_txs_by_spendable_ids(&[spending_id]);
+                    if next_txs.is_empty() {
+                        break;
                     }
+                    dependants.extend(next_txs);
+                }
+
+                // delete all dependants
+                for tx_id in dependants {
+                    let cascade_deleted =
+                        self.delete_mempool_tx(tx_id, false)?;
+                    deleted.extend(cascade_deleted);
                 }
             }
         }

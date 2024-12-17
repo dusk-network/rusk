@@ -120,11 +120,19 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
                     // Remove expired transactions from the mempool
                     db.read().await.update(|db| {
-                        let expired_txs = db.mempool_expired_txs(expiration_time)?;
+                        let expired_txs = db.mempool_expired_txs(expiration_time).unwrap_or_else(|e| {
+                            error!("cannot get expired txs: {e}");
+                            vec![]
+                        });
                         for tx_id in expired_txs {
                             info!(event = "expired_tx", hash = hex::encode(tx_id));
-                            for deleted_tx_id in db.delete_mempool_tx(tx_id, true)? {
+                            let deleted_txs = db.delete_mempool_tx(tx_id, true).unwrap_or_else(|e| {
+                                error!("cannot delete expired tx: {e}");
+                                vec![]
+                            });
+                            for deleted_tx_id in deleted_txs{
                                 let event = TransactionEvent::Removed(deleted_tx_id);
+                                info!(event = "mempool_deleted", hash = hex::encode(deleted_tx_id));
                                 if let Err(e) = self.event_sender.try_send(event.into()) {
                                     warn!("cannot notify mempool removed transaction {e}")
                                 };

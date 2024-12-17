@@ -141,6 +141,15 @@ impl SpendingId {
             }
         }
     }
+
+    pub fn next(&self) -> Option<SpendingId> {
+        match self {
+            SpendingId::Nullifier(_) => None,
+            SpendingId::AccountNonce(account, nonce) => {
+                Some(SpendingId::AccountNonce(*account, nonce + 1))
+            }
+        }
+    }
 }
 
 #[cfg(any(feature = "faker", test))]
