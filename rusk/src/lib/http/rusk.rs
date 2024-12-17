@@ -8,6 +8,7 @@ use super::event::Event;
 use super::*;
 
 use dusk_bytes::Serializable;
+use execution_core::stake::StakeFundOwner;
 use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
@@ -131,6 +132,7 @@ impl Rusk {
             .provisioners(None)
             .expect("Cannot query state for provisioners")
             .map(|(key, stake)| {
+                let owner = StakeOwner::from(&key.owner);
                 let key = bs58::encode(key.account.to_bytes()).into_string();
                 let amount = stake.amount.unwrap_or_default();
 
@@ -142,6 +144,7 @@ impl Rusk {
                     reward: stake.reward,
                     faults: stake.faults,
                     hard_faults: stake.hard_faults,
+                    owner,
                 }
             })
             .collect();
@@ -164,4 +167,24 @@ struct Provisioner {
     reward: u64,
     faults: u8,
     hard_faults: u8,
+    owner: StakeOwner,
+}
+
+#[derive(Serialize)]
+enum StakeOwner {
+    Account(String),
+    Contract(String),
+}
+
+impl From<&StakeFundOwner> for StakeOwner {
+    fn from(value: &StakeFundOwner) -> Self {
+        match value {
+            StakeFundOwner::Account(account) => StakeOwner::Account(
+                bs58::encode(account.to_bytes()).into_string(),
+            ),
+            StakeFundOwner::Contract(contract) => {
+                StakeOwner::Contract(hex::encode(contract.as_bytes()))
+            }
+        }
+    }
 }
