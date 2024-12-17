@@ -165,16 +165,8 @@ impl VMExecution for Rusk {
                     .gas_limit()
                     .checked_mul(tx.gas_price())
                     .and_then(|v| v.checked_add(tx.value()))
-                    .and_then(|v| v.checked_add(tx.deposit()));
-
-                let max_value = match max_value {
-                    Some(x) => x,
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "Value spent will overflow"
-                        ))
-                    }
-                };
+                    .and_then(|v| v.checked_add(tx.deposit()))
+                    .ok_or(anyhow::anyhow!("Value spent will overflow"))?;
 
                 if max_value > account_data.balance {
                     return Err(anyhow::anyhow!(
