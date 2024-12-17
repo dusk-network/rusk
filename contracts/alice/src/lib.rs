@@ -21,26 +21,26 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn ping(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |()| STATE.ping())
+        dusk_abi::wrap_call(arg_len, |()| STATE.ping())
     }
 
     #[no_mangle]
     unsafe fn withdraw(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw(arg))
+        dusk_abi::wrap_call(arg_len, |arg| STATE.withdraw(arg))
     }
 
     #[no_mangle]
     unsafe fn deposit(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.deposit(arg))
+        dusk_abi::wrap_call(arg_len, |arg| STATE.deposit(arg))
     }
 
     #[no_mangle]
     unsafe fn contract_to_contract(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.contract_to_contract(arg))
+        dusk_abi::wrap_call(arg_len, |arg| STATE.contract_to_contract(arg))
     }
 
     #[no_mangle]
     unsafe fn contract_to_account(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.contract_to_account(arg))
+        dusk_abi::wrap_call(arg_len, |arg| STATE.contract_to_account(arg))
     }
 }
