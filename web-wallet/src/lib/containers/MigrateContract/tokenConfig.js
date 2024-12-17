@@ -1,35 +1,33 @@
 import { bsc, mainnet, sepolia } from "viem/chains";
 
-const mainnetMigrateContract = import.meta.env.VITE_MIGRATE_CONTRACT;
-
 /** @type {Tokens} */
 export const tokens = {
   mainnet: {
     "BEP-20": {
       chainId: bsc.id,
-      contract: "0xb2bd0749dbe21f623d9baba856d3b0f0e1bfec9c",
-      migrationContract: mainnetMigrateContract,
+      migrationContract: "0x9f5d1c067710fc6ed49a6444afd69b64799a57b6",
       name: "BEP-20",
+      tokenContract: "0xb2bd0749dbe21f623d9baba856d3b0f0e1bfec9c",
     },
     "ERC-20": {
       chainId: mainnet.id,
-      contract: "0x940a2db1b7008b6c776d4faaca729d6d4a4aa551",
-      migrationContract: mainnetMigrateContract,
+      migrationContract: "0x9f5d1c067710fc6ed49a6444afd69b64799a57b6",
       name: "ERC-20",
+      tokenContract: "0x940a2db1b7008b6c776d4faaca729d6d4a4aa551",
     },
   },
   testnet: {
     "BEP-20": {
       chainId: sepolia.id,
-      contract: "0xC416f5d2AE6BAec2a23f412Df11166afC35CAba2",
-      migrationContract: "0x9f5d1c067710fc6ed49a6444afd69b64799a57b6",
+      migrationContract: "0x1Bb81fbd735854Ed901aD7Aa1f5F72F64E5841Fc",
       name: "BEP-20",
+      tokenContract: "0xC416f5d2AE6BAec2a23f412Df11166afC35CAba2",
     },
     "ERC-20": {
       chainId: sepolia.id,
-      contract: "0x92DA9BE2039E818bB78223A6BA7C85CC2b17D8D5",
-      migrationContract: "0x63fd2B12034e108BCe73e8832b7dabC8bd67f738",
+      migrationContract: "0x81F15Ed1D87A6C840E410D7740D581e36c661640",
       name: "ERC-20",
+      tokenContract: "0x92DA9BE2039E818bB78223A6BA7C85CC2b17D8D5",
     },
   },
 };
