@@ -6,20 +6,18 @@
 
 mod query;
 
-use node_data::events::contract::ContractEvent;
-use tracing::info;
-
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
-use execution_core::{
-    signatures::bls::PublicKey as BlsPublicKey, stake::StakeData,
-    transfer::Transaction as ProtocolTransaction,
-};
+use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::StakeData;
+use execution_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
+use node_data::events::contract::ContractEvent;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
+use tracing::info;
 
 use super::Rusk;
 

@@ -4,15 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::node::Rusk;
-use crate::Result;
-
 use std::sync::mpsc;
 
 use bytecheck::CheckBytes;
 use execution_core::{ContractId, StandardBufSerializer};
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
+
+use crate::node::Rusk;
+use crate::Result;
 
 impl Rusk {
     pub fn query_raw<S, V>(

@@ -4,11 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use rusk_recovery_tools::state::tar;
 use std::env;
 use std::fs::File;
 use std::io::{Read, Result};
 use std::path::PathBuf;
+
+use rusk_recovery_tools::state::tar;
 use tempfile::TempDir;
 use tracing::error;
 
