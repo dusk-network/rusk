@@ -46,6 +46,7 @@ impl Block {
 }
 
 pub struct Header<'a>(&'a node_data::ledger::Header);
+#[derive(Serialize)]
 pub struct SpentTransaction(pub node_data::ledger::SpentTransaction);
 pub struct Transaction<'a>(TransactionData<'a>);
 
@@ -188,6 +189,10 @@ impl Header<'_> {
 
 #[Object]
 impl SpentTransaction {
+    pub async fn json(&self) -> serde_json::Value {
+        serde_json::to_value(&self.0).unwrap_or_default()
+    }
+
     pub async fn tx(&self) -> Transaction {
         let inner = &self.0.inner;
         inner.into()

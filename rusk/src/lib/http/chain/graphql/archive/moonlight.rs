@@ -20,6 +20,7 @@ use async_graphql::{Context, FieldError};
 
 use super::data::deserialized_archive_data::*;
 use super::data::{MoonlightTransfers, NewAccountPublicKey};
+use crate::http::chain::graphql::tx::txs_by_hashes;
 use crate::http::chain::graphql::{DBContext, OptResult};
 
 pub async fn full_moonlight_history(
@@ -95,7 +96,20 @@ pub async fn fetch_moonlight_history(
     if let Some(moonlight_events) = archive.fetch_moonlight_history(
         sender, receiver, from_block, to_block, max_count, page_count,
     )? {
-        Ok(Some(MoonlightTransfers(moonlight_events)))
+        let moonlight_payloads = {
+            let moonlight_origins_by_ref: Vec<&[u8; 32]> = moonlight_events
+                .iter()
+                .map(|event| event.origin())
+                .collect::<Vec<_>>();
+
+            // multi get payloads
+            txs_by_hashes(ctx, moonlight_origins_by_ref).await?
+        };
+
+        Ok(Some(MoonlightTransfers {
+            moonlight_group: moonlight_events,
+            payload: moonlight_payloads,
+        }))
     } else {
         Ok(None)
     }
@@ -110,7 +124,10 @@ pub async fn moonlight_tx_by_memo(
     let moonlight_events = archive.moonlight_txs_by_memo(memo)?;
 
     if let Some(moonlight_events) = moonlight_events {
-        Ok(Some(MoonlightTransfers(moonlight_events)))
+        Ok(Some(MoonlightTransfers {
+            moonlight_group: moonlight_events,
+            payload: vec![], // TODO: add payload
+        }))
     } else {
         Ok(None)
     }

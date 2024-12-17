@@ -9,7 +9,12 @@ use dusk_bytes::Serializable;
 use execution_core::signatures::bls::PublicKey as AccountPublicKey;
 use node::archive::MoonlightGroup;
 
-pub struct MoonlightTransfers(pub Vec<MoonlightGroup>);
+use crate::http::chain::graphql::data::SpentTransaction;
+
+pub struct MoonlightTransfers {
+    pub moonlight_group: Vec<MoonlightGroup>,
+    pub payload: Vec<SpentTransaction>,
+}
 
 pub struct ContractEvents(pub(super) serde_json::Value);
 
@@ -34,7 +39,22 @@ impl TryInto<NewAccountPublicKey> for String {
 #[Object]
 impl MoonlightTransfers {
     pub async fn json(&self) -> serde_json::Value {
-        serde_json::to_value(&self.0).unwrap_or_default()
+        // zip
+        let intermediary = &self
+            .moonlight_group
+            .iter()
+            .zip(&self.payload)
+            .map(|(moonlight_group, payload)| {
+                {
+                    serde_json::json!({
+                        "moonlight_group": serde_json::to_value(moonlight_group).unwrap_or_default(),
+                        "payload": serde_json::to_value(payload).unwrap_or_default(),
+                    })
+                }
+            })
+            .collect::<Vec<serde_json::Value>>();
+
+        serde_json::json!(intermediary)
     }
 }
 
