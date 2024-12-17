@@ -34,7 +34,7 @@
     Textbox,
   } from "$lib/dusk/components";
   import { logo } from "$lib/dusk/icons";
-  import { settingsStore } from "$lib/stores";
+  import { settingsStore, walletStore } from "$lib/stores";
   import {
     account,
     modal,
@@ -91,6 +91,9 @@
 
   /** @type {boolean} */
   let isInputDisabled = false;
+
+  $: ({ currentProfile } = $walletStore);
+  $: moonlightAccount = currentProfile?.account.toString();
 
   $: walletState = {
     address: $account?.address,
@@ -163,7 +166,7 @@
       }
       return await getBalanceOfCoin(
         walletAccount.address,
-        tokens[network][selectedChain].contract
+        tokens[network][selectedChain].tokenContract
       );
     } catch (err) {
       return 0n;
@@ -338,14 +341,14 @@
             isInputDisabled = false;
           }}
           amount={parseUnits(amount.replace(",", "."), ercDecimals)}
-          chainContract={tokens[network][selectedChain].contract}
+          chainContract={tokens[network][selectedChain].tokenContract}
           migrationContract={tokens[network][selectedChain].migrationContract}
         />
       {:else if migrationStep === 1}
         <ExecuteMigration
           on:incrementStep={() => migrationStep++}
           amount={parseUnits(amount.replace(",", "."), ercDecimals)}
-          currentAddress={walletState.address ?? ""}
+          currentAddress={moonlightAccount ?? ""}
           migrationContract={tokens[network][selectedChain].migrationContract}
         />
       {:else}

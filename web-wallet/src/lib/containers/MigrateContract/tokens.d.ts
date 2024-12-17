@@ -2,7 +2,7 @@ type HexString = `0x${string}`;
 
 type TokenInfo = {
   chainId: number;
-  contract: HexString;
+  tokenContract: HexString;
   migrationContract: HexString;
   name: TokenNames;
 };
