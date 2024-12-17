@@ -11,18 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add notice for stake maturity [#2981]
 - Add capability to maintain cache consistency in case of rejected blocks [#3156]
+- Add button to reset gas settings to their defaults [#3178]
 
 ### Changed
 
 - Update Transactions list design [#1922]
 - Reword "Staking" header to "Stake" [#3113]
 - Upgrade Migration Feature to Use Reown AppKit [#3129]
+- Update default gas settings values [#3178]
 
 ### Removed
 
 - Remove "Network" section from Settings [#3160]
 
 ### Fixed
+
+- Fix dark mode button not being in sync with the stored value [#3178]
+- Fix `BigIntInput` properties not being reactive [#3178]
 
 ## [0.9.0] - 2024-12-03
 
@@ -434,6 +439,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3129]: https://github.com/dusk-network/rusk/issues/3129
 [#3156]: https://github.com/dusk-network/rusk/issues/3156
 [#3160]: https://github.com/dusk-network/rusk/issues/3160
+[#3178]: https://github.com/dusk-network/rusk/issues/3178
 
 <!-- VERSIONS -->
 

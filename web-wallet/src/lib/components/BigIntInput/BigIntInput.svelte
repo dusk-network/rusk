@@ -20,12 +20,13 @@
   /** @type {bigint} */
   export let value = 0n;
 
-  let isInvalidInput = false;
   let internalValue = value.toString();
 
+  /** @type {(v: bigint, min: bigint, max: bigint) => boolean} */
+  const isInvalidInput = (v, min, max) => !!(min > v || v > max);
+
   const checkValidity = () => {
-    isInvalidInput = !!(minValue > value || value > maxValue);
-    if (isInvalidInput) {
+    if (isInvalidInput(value, minValue, maxValue)) {
       dispatch("error", "Value exceeds limits");
     }
   };
@@ -40,14 +41,17 @@
     }
   }
 
-  $: inputClass = makeClassName({
-    "invalid-input": isInvalidInput,
-    [`${className}`]: true,
-  });
-
   onMount(() => {
     checkValidity();
   });
+
+  $: inputClass = makeClassName({
+    "invalid-input": isInvalidInput(value, minValue, maxValue),
+    [`${className}`]: true,
+  });
+  $: {
+    internalValue = value.toString();
+  }
 </script>
 
 <Textbox

@@ -93,7 +93,7 @@ export default defineConfig(({ mode }) => {
         VITE_FEATURE_STAKE: "true",
         VITE_FEATURE_TRANSACTION_HISTORY: "true",
         VITE_FEATURE_TRANSFER: "true",
-        VITE_GAS_LIMIT_DEFAULT: "20000000",
+        VITE_GAS_LIMIT_DEFAULT: "100000000",
         VITE_GAS_LIMIT_LOWER: "10000000",
         VITE_GAS_LIMIT_UPPER: "1000000000",
         VITE_GAS_PRICE_DEFAULT: "1",

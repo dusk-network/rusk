@@ -29,7 +29,7 @@ exports[`GasSettings > renders the GasSettings component closed 1`] = `
           <span
             class="svelte-1c6b481"
           >
-            0.020000000
+            0.100000000
           </span>
         </div>
          
@@ -93,7 +93,7 @@ exports[`GasSettings > renders the GasSettings component opened 1`] = `
           <span
             class="svelte-1c6b481"
           >
-            0.020000000
+            0.100000000
           </span>
         </div>
          

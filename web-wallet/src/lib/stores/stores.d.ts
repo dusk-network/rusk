@@ -21,7 +21,10 @@ type SettingsStoreContent = {
   userId: string;
 };
 
-type SettingsStore = Writable<SettingsStoreContent> & { reset: () => void };
+type SettingsStore = Writable<SettingsStoreContent> & {
+  reset: () => void;
+  resetGasSettings: () => void;
+};
 
 type TransactionInfo =
   | {

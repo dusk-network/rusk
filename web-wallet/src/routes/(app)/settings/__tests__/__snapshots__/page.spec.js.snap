@@ -79,6 +79,17 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
           />
           
         </label>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default"
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Reset to defaults
+          </span>
+        </button>
       </div>
     </article>
      
@@ -631,6 +642,17 @@ exports[`Settings > should render the settings page displaying the status of the
           />
           
         </label>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default"
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Reset to defaults
+          </span>
+        </button>
       </div>
     </article>
      
@@ -1165,6 +1187,17 @@ exports[`Settings > should render the settings page displaying the status of the
           />
           
         </label>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default"
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Reset to defaults
+          </span>
+        </button>
       </div>
     </article>
      
