@@ -1,18 +1,9 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { createEventDispatcher, onMount } from "svelte";
-  import {
-    calculateAdaptiveCharCount,
-    makeClassName,
-    middleEllipsis,
-  } from "$lib/dusk/string";
-  import {
-    mdiContentCopy,
-    mdiPlusBoxOutline,
-    mdiSwapHorizontal,
-    mdiTimerSand,
-  } from "@mdi/js";
+  import { createEventDispatcher } from "svelte";
+  import { makeClassName } from "$lib/dusk/string";
+  import { mdiContentCopy, mdiPlusBoxOutline, mdiTimerSand } from "@mdi/js";
   import { Button, Icon, ProgressBar } from "$lib/dusk/components";
   import { toast } from "$lib/dusk/components/Toast/store";
   import { handlePageClick } from "$lib/dusk/ui-helpers/handlePageClick";
@@ -42,9 +33,6 @@
   /** @type {HTMLMenuElement} */
   let addressOptionsMenu;
 
-  /** @type {number} */
-  let screenWidth = window.innerWidth;
-
   function closeDropDown() {
     expanded = false;
   }
@@ -64,18 +52,6 @@
     navigator.clipboard.writeText(currentAddress);
     toast("success", "Address copied", mdiContentCopy);
   }
-
-  onMount(() => {
-    const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
-
-      screenWidth = entry.contentRect.width;
-    });
-
-    resizeObserver.observe(document.body);
-
-    return () => resizeObserver.disconnect();
-  });
 
   // Scrolls the address options menu to top on addresses change
   $: if (profiles && addressOptionsMenu) {
@@ -101,18 +77,7 @@
     aria-expanded={expanded}
     on:keydown={handleDropDownKeyDown}
   >
-    <Button disabled variant="secondary" icon={{ path: mdiSwapHorizontal }} />
-
-    <p class="address-picker__current-address">
-      {middleEllipsis(currentAddress, calculateAdaptiveCharCount(screenWidth))}
-    </p>
-    <Button
-      aria-label="Copy Address"
-      className="address-picker__copy-address-button"
-      icon={{ path: mdiContentCopy }}
-      on:click={copyCurrentAddress}
-      variant="secondary"
-    />
+    <span>Default Profile</span>
   </div>
 
   {#if expanded}

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reword "Staking" header to "Stake" [#3113]
 - Upgrade Migration Feature to Use Reown AppKit [#3129]
 - Update default gas settings values [#3178]
+- Update AddressPicker to show Default Profile label [#3179]
 
 ### Removed
 
@@ -440,6 +441,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3156]: https://github.com/dusk-network/rusk/issues/3156
 [#3160]: https://github.com/dusk-network/rusk/issues/3160
 [#3178]: https://github.com/dusk-network/rusk/issues/3178
+[#3179]: https://github.com/dusk-network/rusk/issues/3179
 
 <!-- VERSIONS -->
 
