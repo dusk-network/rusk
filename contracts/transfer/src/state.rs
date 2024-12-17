@@ -124,10 +124,10 @@ impl TransferState {
                     ),
                 };
 
-                let hash = rusk_abi::hash(msg);
+                let hash = dusk_abi::hash(msg);
                 let pk = address.note_pk();
 
-                if !rusk_abi::verify_schnorr(hash, *pk, *signature) {
+                if !dusk_abi::verify_schnorr(hash, *pk, *signature) {
                     panic!("Invalid signature");
                 }
 
@@ -144,7 +144,7 @@ impl TransferState {
                     ),
                 };
 
-                if !rusk_abi::verify_bls(msg, *account, *signature) {
+                if !dusk_abi::verify_bls(msg, *account, *signature) {
                     panic!("Invalid signature");
                 }
 
@@ -169,7 +169,7 @@ impl TransferState {
     /// according to consensus rules.
     pub fn mint(&mut self, mint: Withdraw) {
         const PANIC_MSG: &str = "Can only be called by the stake contract";
-        if rusk_abi::caller().expect(PANIC_MSG) != STAKE_CONTRACT {
+        if dusk_abi::caller().expect(PANIC_MSG) != STAKE_CONTRACT {
             panic!("{PANIC_MSG}")
         }
 
@@ -179,7 +179,7 @@ impl TransferState {
 
         self.mint_withdrawal("mint", &mint);
 
-        rusk_abi::emit(MINT_TOPIC, WithdrawEvent::from(mint));
+        dusk_abi::emit(MINT_TOPIC, WithdrawEvent::from(mint));
     }
 
     /// Mint more Dusk to be owned by a contract.
@@ -194,7 +194,7 @@ impl TransferState {
     /// according to consensus rules.
     pub fn mint_to_contract(&mut self, mint: ContractToContract) {
         const PANIC_MSG: &str = "Can only be called by the stake contract";
-        let caller = rusk_abi::caller().expect(PANIC_MSG);
+        let caller = dusk_abi::caller().expect(PANIC_MSG);
         assert_eq!(caller, STAKE_CONTRACT, "{PANIC_MSG}");
 
         let receiver_balance =
@@ -208,7 +208,7 @@ impl TransferState {
             data: mint.data,
         };
 
-        rusk_abi::call::<_, ()>(mint.contract, &mint.fn_name, &receive)
+        dusk_abi::call::<_, ()>(mint.contract, &mint.fn_name, &receive)
             .expect("Calling receiver should succeed");
 
         let mint_event = ContractToContractEvent {
@@ -216,7 +216,7 @@ impl TransferState {
             receiver: mint.contract,
             value: mint.value,
         };
-        rusk_abi::emit(MINT_CONTRACT_TOPIC, mint_event);
+        dusk_abi::emit(MINT_CONTRACT_TOPIC, mint_event);
     }
 
     /// Withdraw from a contract's balance to a Phoenix note or a Moonlight
@@ -233,7 +233,7 @@ impl TransferState {
     pub fn withdraw(&mut self, withdraw: Withdraw) {
         let contract = withdraw.contract();
 
-        let caller = rusk_abi::caller()
+        let caller = dusk_abi::caller()
             .expect("A withdrawal must happen in the context of a transaction");
         if *contract != caller {
             panic!("The \"withdraw\" function can only be called by the specified contract.");
@@ -250,7 +250,7 @@ impl TransferState {
 
         self.mint_withdrawal("withdraw", &withdraw);
 
-        rusk_abi::emit(WITHDRAW_TOPIC, WithdrawEvent::from(withdraw));
+        dusk_abi::emit(WITHDRAW_TOPIC, WithdrawEvent::from(withdraw));
     }
 
     /// Takes the deposit addressed to this contract, and immediately withdraws
@@ -267,7 +267,7 @@ impl TransferState {
     pub fn convert(&mut self, convert: Withdraw) {
         // since each transaction only has, at maximum, a single contract call,
         // this check impliest that this is the first contract call.
-        let caller = rusk_abi::caller()
+        let caller = dusk_abi::caller()
             .expect("A conversion must happen in the context of a transaction");
         if caller != TRANSFER_CONTRACT {
             panic!("Only the first contract call can be a conversion");
@@ -307,7 +307,7 @@ impl TransferState {
                 self.mint_withdrawal("convert", &convert);
                 deposit.set_taken();
 
-                rusk_abi::emit(
+                dusk_abi::emit(
                     CONVERT_TOPIC,
                     ConvertEvent::from_withdraw_and_sender(sender, &convert),
                 );
@@ -329,7 +329,7 @@ impl TransferState {
     /// This function will panic if there is no deposit on the state or the
     /// caller-id doesn't match the contract-id stored for the deposit.
     pub fn deposit(&mut self, value: u64) {
-        let caller = rusk_abi::caller()
+        let caller = dusk_abi::caller()
             .expect("A deposit must happen in the context of a transaction");
 
         let deposit = transitory::deposit_info_mut();
@@ -359,7 +359,7 @@ impl TransferState {
                 self.add_contract_balance(deposit_contract, deposit_value);
                 deposit.set_taken();
 
-                rusk_abi::emit(
+                dusk_abi::emit(
                     DEPOSIT_TOPIC,
                     DepositEvent {
                         sender,
@@ -392,7 +392,7 @@ impl TransferState {
     /// receiving contract fails, or if the sending contract doesn't have enough
     /// funds.
     pub fn contract_to_contract(&mut self, transfer: ContractToContract) {
-        let sender_contract = rusk_abi::caller()
+        let sender_contract = dusk_abi::caller()
             .expect("A transfer to a contract must happen in the context of a transaction");
 
         if sender_contract == TRANSFER_CONTRACT {
@@ -421,10 +421,10 @@ impl TransferState {
             data: transfer.data,
         };
 
-        rusk_abi::call::<_, ()>(transfer.contract, &transfer.fn_name, &receive)
+        dusk_abi::call::<_, ()>(transfer.contract, &transfer.fn_name, &receive)
             .expect("Calling receiver should succeed");
 
-        rusk_abi::emit(
+        dusk_abi::emit(
             CONTRACT_TO_CONTRACT_TOPIC,
             ContractToContractEvent {
                 sender: sender_contract,
@@ -444,7 +444,7 @@ impl TransferState {
     /// is called by the transfer contract itself, or if the calling contract
     /// doesn't have enough funds.
     pub fn contract_to_account(&mut self, transfer: ContractToAccount) {
-        let sender_contract = rusk_abi::caller()
+        let sender_contract = dusk_abi::caller()
             .expect("A transfer to an account must happen in the context of a transaction");
 
         if sender_contract == TRANSFER_CONTRACT {
@@ -468,7 +468,7 @@ impl TransferState {
         *sender_balance -= transfer.value;
         account.balance += transfer.value;
 
-        rusk_abi::emit(
+        dusk_abi::emit(
             CONTRACT_TO_ACCOUNT_TOPIC,
             ContractToAccountEvent {
                 sender: sender_contract,
@@ -515,7 +515,7 @@ impl TransferState {
 
         match tx.call() {
             Some(call) => {
-                rusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
+                dusk_abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
             }
             None => Ok(Vec::new()),
         }
@@ -554,7 +554,7 @@ impl TransferState {
         }
 
         // append the output notes to the phoenix-notes tree
-        let block_height = rusk_abi::block_height();
+        let block_height = dusk_abi::block_height();
         for note in self
             .tree
             .extend_notes(block_height, phoenix_tx.outputs().clone())
@@ -579,7 +579,7 @@ impl TransferState {
         }
 
         // check the signature is valid and made by `sender`
-        if !rusk_abi::verify_bls(
+        if !dusk_abi::verify_bls(
             moonlight_tx.signature_message(),
             *moonlight_tx.sender(),
             *moonlight_tx.signature(),
@@ -685,7 +685,7 @@ impl TransferState {
                 // tree and the refund-note will be None
                 let refund_note = self.push_note_current_height(remainder_note);
 
-                rusk_abi::emit(
+                dusk_abi::emit(
                     PHOENIX_TOPIC,
                     PhoenixTransactionEvent {
                         nullifiers: tx.nullifiers().to_vec(),
@@ -715,7 +715,7 @@ impl TransferState {
                         None
                     };
 
-                rusk_abi::emit(
+                dusk_abi::emit(
                     MOONLIGHT_TOPIC,
                     MoonlightTransactionEvent {
                         sender: *tx.sender(),
@@ -734,7 +734,7 @@ impl TransferState {
     /// height.
     pub fn leaves_from_height(&self, height: u64) {
         for leaf in self.tree.leaves(height) {
-            rusk_abi::feed(leaf.clone());
+            dusk_abi::feed(leaf.clone());
         }
     }
 
@@ -753,11 +753,11 @@ impl TransferState {
 
         if count_limit == 0 {
             for leaf in iter {
-                rusk_abi::feed(leaf.clone());
+                dusk_abi::feed(leaf.clone());
             }
         } else {
             for leaf in iter.take(count_limit as usize) {
-                rusk_abi::feed(leaf.clone());
+                dusk_abi::feed(leaf.clone());
             }
         }
     }
@@ -766,11 +766,11 @@ impl TransferState {
         let iter = self.nullifiers.iter().skip(from as usize);
         if count_limit == 0 {
             for n in iter {
-                rusk_abi::feed(*n);
+                dusk_abi::feed(*n);
             }
         } else {
             for n in iter.take(count_limit as usize) {
-                rusk_abi::feed(*n);
+                dusk_abi::feed(*n);
             }
         }
     }
@@ -780,11 +780,11 @@ impl TransferState {
 
         if count_limit == 0 {
             for (contract, balance) in iter {
-                rusk_abi::feed((*contract, *balance));
+                dusk_abi::feed((*contract, *balance));
             }
         } else {
             for (contract, balance) in iter.take(count_limit as usize) {
-                rusk_abi::feed((*contract, *balance));
+                dusk_abi::feed((*contract, *balance));
             }
         }
     }
@@ -794,11 +794,11 @@ impl TransferState {
 
         if count_limit == 0 {
             for (key, account) in iter {
-                rusk_abi::feed((account.clone(), *key));
+                dusk_abi::feed((account.clone(), *key));
             }
         } else {
             for (key, account) in iter.take(count_limit as usize) {
-                rusk_abi::feed((account.clone(), *key));
+                dusk_abi::feed((account.clone(), *key));
             }
         }
     }
@@ -909,12 +909,12 @@ impl TransferState {
     }
 
     fn push_note_current_height(&mut self, note: Note) -> Option<Note> {
-        let block_height = rusk_abi::block_height();
+        let block_height = dusk_abi::block_height();
         self.push_note(block_height, note)
     }
 
     pub fn chain_id(&self) -> u8 {
-        rusk_abi::chain_id()
+        dusk_abi::chain_id()
     }
 }
 
@@ -926,7 +926,7 @@ fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
         .to_vec();
 
     // verify the proof
-    rusk_abi::verify_plonk(vd, tx.proof().to_vec(), tx.public_inputs())
+    dusk_abi::verify_plonk(vd, tx.proof().to_vec(), tx.public_inputs())
 }
 
 #[cfg(test)]

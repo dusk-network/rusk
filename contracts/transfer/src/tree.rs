@@ -52,7 +52,7 @@ impl Tree {
         leaf.note.set_pos(pos);
 
         // compute the item that goes in the leaf of the tree
-        let hash = rusk_abi::poseidon_hash(leaf.note.hash_inputs().to_vec());
+        let hash = dusk_abi::poseidon_hash(leaf.note.hash_inputs().to_vec());
         let item = NoteTreeItem { hash, data: () };
 
         self.tree.insert(pos, item);
