@@ -63,12 +63,12 @@ impl Bob {
             .expect("Message should serialize correctly")
             .to_vec();
 
-        let owner_bytes = rusk_abi::self_owner_raw();
+        let owner_bytes = dusk_abi::self_owner_raw();
         if let Ok(owner) = BlsPublicKey::from_bytes(&owner_bytes) {
             if self.nonce == msg.nonce
                 && msg.fname == "owner_reset"
-                && msg.contract_id == rusk_abi::self_id()
-                && rusk_abi::verify_bls(message_bytes, owner, sig)
+                && msg.contract_id == dusk_abi::self_id()
+                && dusk_abi::verify_bls(message_bytes, owner, sig)
             {
                 self.owner_only_function(msg.args);
                 self.nonce += 1;
