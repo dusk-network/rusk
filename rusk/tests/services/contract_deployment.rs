@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
+use dusk_abi::{gen_contract_id, ContractData, PiecrustError};
 use dusk_core::{
     transfer::data::{ContractBytecode, ContractDeploy, TransactionData},
     ContractId,
@@ -15,7 +16,6 @@ use dusk_core::{
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use rusk_abi::{gen_contract_id, ContractData, PiecrustError};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
 use test_wallet::{self as wallet, Wallet};
@@ -227,9 +227,9 @@ impl Fixture {
 
     pub fn assert_bob_contract_is_not_deployed(&self) {
         let commit = self.rusk.state_root();
-        let vm = rusk_abi::new_vm(self.path.as_path())
+        let vm = dusk_abi::new_vm(self.path.as_path())
             .expect("VM creation should succeed");
-        let mut session = rusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
+        let mut session = dusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,
@@ -245,9 +245,9 @@ impl Fixture {
 
     pub fn assert_bob_contract_is_deployed(&self) {
         let commit = self.rusk.state_root();
-        let vm = rusk_abi::new_vm(self.path.as_path())
+        let vm = dusk_abi::new_vm(self.path.as_path())
             .expect("VM creation should succeed");
-        let mut session = rusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
+        let mut session = dusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,

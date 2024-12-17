@@ -59,7 +59,7 @@ async-trait = { workspace = true }
 
 dusk-core = { workspace = true, features = ["zk"] }
 rusk-profile = { workspace = true }
-rusk-abi = { workspace = true, features = ["host"] }
+dusk-abi = { workspace = true, features = ["host"] }
 rusk-prover = { workspace = true, features = ["std"], optional = true }
 
 ## node dependencies

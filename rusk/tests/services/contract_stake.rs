@@ -9,6 +9,7 @@ use std::sync::{Arc, RwLock};
 
 use dusk_core::stake::{self, Stake, EPOCH, MINIMUM_STAKE};
 
+use dusk_abi::gen_contract_id;
 use dusk_bytes::Serializable;
 use dusk_core::transfer::data::ContractCall;
 use dusk_core::transfer::{self, Transaction};
@@ -17,7 +18,6 @@ use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use rusk_abi::gen_contract_id;
 use std::collections::HashMap;
 use tempfile::tempdir;
 use test_wallet::{self as wallet};

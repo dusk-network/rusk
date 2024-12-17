@@ -48,7 +48,7 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 
     // Maybe we want to handle internal serialization error too,
     // currently they map to `false`.
-    Ok(rusk_abi::verify_plonk(
+    Ok(dusk_abi::verify_plonk(
         vd.to_vec(),
         tx.proof().to_vec(),
         tx.public_inputs(),
@@ -57,7 +57,7 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 
 /// Verifies the signature of the incoming transaction.
 pub fn verify_signature(tx: &MoonlightTransaction) -> Result<bool> {
-    Ok(rusk_abi::verify_bls(
+    Ok(dusk_abi::verify_bls(
         tx.signature_message(),
         *tx.sender(),
         *tx.signature(),

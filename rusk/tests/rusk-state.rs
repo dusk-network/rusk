@@ -12,6 +12,7 @@ use crate::common::*;
 use std::path::Path;
 use std::sync::{mpsc, Arc};
 
+use dusk_abi::VM;
 use dusk_core::{
     transfer::{
         phoenix::{
@@ -28,7 +29,6 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::{Rusk, RuskTip};
 use rusk::Result;
-use rusk_abi::VM;
 use tempfile::tempdir;
 use tracing::info;
 
@@ -84,7 +84,7 @@ where
     rusk.with_tip(|mut tip, vm| {
         let current_commit = tip.current;
         let mut session =
-            rusk_abi::new_session(vm, current_commit, CHAIN_ID, BLOCK_HEIGHT)
+            dusk_abi::new_session(vm, current_commit, CHAIN_ID, BLOCK_HEIGHT)
                 .expect("current commit should exist");
 
         session

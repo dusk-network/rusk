@@ -14,6 +14,7 @@ use dusk_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use tracing::info;
 
+use dusk_abi::{execute, CallReceipt, PiecrustError, Session};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
@@ -29,7 +30,6 @@ use dusk_core::{
 };
 use node_data::events::contract::{ContractEvent, ContractTxEvent};
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
-use rusk_abi::{execute, CallReceipt, PiecrustError, Session};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 #[cfg(feature = "archive")]
@@ -80,7 +80,7 @@ impl Rusk {
         let mut base_commit = [0u8; 32];
         base_commit.copy_from_slice(&base_commit_bytes);
 
-        let vm = Arc::new(rusk_abi::new_vm(dir)?);
+        let vm = Arc::new(dusk_abi::new_vm(dir)?);
 
         let tip = Arc::new(RwLock::new(RuskTip {
             current: base_commit,
@@ -519,7 +519,7 @@ impl Rusk {
             tip.current
         });
 
-        let session = rusk_abi::new_session(
+        let session = dusk_abi::new_session(
             &self.vm,
             commit,
             self.chain_id,

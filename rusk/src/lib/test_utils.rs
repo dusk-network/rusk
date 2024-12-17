@@ -16,6 +16,7 @@ use futures::Stream;
 use tokio::spawn;
 use tracing::{error, info};
 
+use dusk_abi::VM;
 use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeData, STAKE_CONTRACT},
@@ -26,7 +27,6 @@ use dusk_core::{
     BlsScalar, ContractId,
 };
 use parking_lot::RwLockWriteGuard;
-use rusk_abi::VM;
 
 pub type StoredNote = (Note, u64);
 

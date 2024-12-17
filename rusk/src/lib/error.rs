@@ -6,12 +6,12 @@
 
 use std::{fmt, io};
 
+use dusk_abi::PiecrustError;
 use dusk_bytes::Serializable;
 use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::phoenix::CoreError,
     BlsScalar, Error as ExecErr,
 };
-use rusk_abi::PiecrustError;
 
 #[derive(Debug)]
 pub enum Error {
