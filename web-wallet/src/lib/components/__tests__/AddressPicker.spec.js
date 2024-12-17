@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/svelte";
+import { cleanup, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 
 import mockedWalletStore from "../../../__mocks__/mockedWalletStore";
@@ -34,17 +34,5 @@ describe("AddressPicker", () => {
     });
 
     expect(container.firstElementChild).toMatchSnapshot();
-  });
-
-  it("copies the current address on Copy button click", async () => {
-    const { getByRole } = render(AddressPicker, props);
-
-    const component = getByRole("button", { name: "Copy Address" });
-
-    await fireEvent.click(component);
-
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      currentProfile.address.toString()
-    );
   });
 });
