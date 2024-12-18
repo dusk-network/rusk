@@ -45,6 +45,7 @@
     // eslint-disable-next-line no-alert
     if (confirm(confirmResetGasMessage)) {
       settingsStore.resetGasSettings();
+      isGasValid = true;
     }
   }
 
@@ -88,13 +89,11 @@
 
             isGasValid = areValidGasSettings(price, limit);
 
-            if (isGasValid) {
-              settingsStore.update((store) => ({
-                ...store,
-                gasLimit: limit,
-                gasPrice: price,
-              }));
-            }
+            settingsStore.update((store) => ({
+              ...store,
+              gasLimit: limit,
+              gasPrice: price,
+            }));
           }}
           limit={gasLimit}
           limitLower={gasLimitLower}

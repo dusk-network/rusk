@@ -20,7 +20,8 @@
   /** @type {bigint} */
   export let value = 0n;
 
-  let internalValue = value.toString();
+  /** @type {string} */
+  let internalValue;
 
   /** @type {(v: bigint, min: bigint, max: bigint) => boolean} */
   const isInvalidInput = (v, min, max) => !!(min > v || v > max);

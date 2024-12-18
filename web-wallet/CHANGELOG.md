@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix gas settings reset and validation in preferences [#3212]
+
 ## [0.10.0] - 2024-12-17
 
 ### Added
@@ -455,6 +457,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3178]: https://github.com/dusk-network/rusk/issues/3178
 [#3179]: https://github.com/dusk-network/rusk/issues/3179
 [#3203]: https://github.com/dusk-network/rusk/issues/3203
+[#3212]: https://github.com/dusk-network/rusk/issues/3212
 
 <!-- VERSIONS -->
 
