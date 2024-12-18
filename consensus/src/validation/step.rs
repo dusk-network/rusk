@@ -6,7 +6,6 @@
 
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::payload::{Validation, Vote};
@@ -19,6 +18,7 @@ use tracing::{debug, error, info, Instrument};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
+use crate::errors::VstError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::StepOutcome;
 use crate::operations::{Operations, Voter};
@@ -113,7 +113,11 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
                     {
                         Ok(_) => Vote::Valid(header.hash),
                         Err(err) => {
-                            error!(event = "failed_vst_call", ?err);
+                            let voting = err.must_vote();
+                            error!(event = "invalid_vst", ?err, voting);
+                            if !voting {
+                                return;
+                            }
                             Vote::Invalid(header.hash)
                         }
                     }
@@ -165,36 +169,28 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         candidate: &Block,
         voters: &[Voter],
         executor: &Arc<T>,
-    ) -> anyhow::Result<()> {
-        match executor
+    ) -> Result<(), VstError> {
+        let output = executor
             .verify_state_transition(prev_commit, candidate, voters)
-            .await
-        {
-            Ok(output) => {
-                // Ensure the `event_bloom` and `state_root` returned
-                // from the VST call are the
-                // ones we expect to have with the
-                // current candidate block.
-                if output.event_bloom != candidate.header().event_bloom {
-                    return Err(anyhow!(
-                        "mismatch, event_bloom: {}, candidate_event_bloom: {}",
-                        hex::encode(output.event_bloom),
-                        hex::encode(candidate.header().event_bloom)
-                    ));
-                }
+            .await?;
 
-                if output.state_root != candidate.header().state_hash {
-                    return Err(anyhow!(
-                        "mismatch, state_hash: {}, candidate_state_hash: {}",
-                        hex::encode(output.state_root),
-                        hex::encode(candidate.header().state_hash)
-                    ));
-                }
-            }
-            Err(err) => {
-                return Err(anyhow!("vm_err: {:?}", err));
-            }
-        };
+        // Ensure the `event_bloom` and `state_root` returned
+        // from the VST call are the
+        // ones we expect to have with the
+        // current candidate block.
+        if output.event_bloom != candidate.header().event_bloom {
+            return Err(VstError::MismatchEventBloom(
+                Box::new(output.event_bloom),
+                Box::new(candidate.header().event_bloom),
+            ));
+        }
+
+        if output.state_root != candidate.header().state_hash {
+            return Err(VstError::MismatchStateHash(
+                output.state_root,
+                candidate.header().state_hash,
+            ));
+        }
 
         Ok(())
     }
