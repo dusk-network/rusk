@@ -510,6 +510,7 @@ where
             rng,
             &phoenix_sender_sk,
             &stake_sk,
+            &stake_sk,
             inputs,
             root,
             gas_limit,
@@ -566,6 +567,7 @@ where
             rng,
             &phoenix_sender_sk,
             &stake_sk,
+            &stake_sk,
             inputs,
             root,
             staked_amount,
@@ -615,6 +617,7 @@ where
         let tx = phoenix_stake_reward(
             rng,
             &phoenix_sender_sk,
+            &stake_sk,
             &stake_sk,
             inputs,
             root,
@@ -818,6 +821,7 @@ where
         let tx = moonlight_stake(
             &sender_sk,
             &staker_sk,
+            &staker_sk,
             stake_value,
             gas_limit,
             gas_price,
@@ -869,6 +873,7 @@ where
             rng,
             &sender_sk,
             &staker_sk,
+            &staker_sk,
             unstake_value,
             gas_limit,
             gas_price,
@@ -913,6 +918,7 @@ where
         let tx = moonlight_stake_reward(
             rng,
             &sender_sk,
+            &staker_sk,
             &staker_sk,
             staker_data.reward,
             gas_limit,

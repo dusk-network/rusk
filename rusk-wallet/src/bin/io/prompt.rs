@@ -354,6 +354,19 @@ pub(crate) fn request_transaction_model() -> anyhow::Result<TransactionModel> {
     )
 }
 
+/// Request transaction model to use
+pub(crate) fn request_address(
+    current_idx: u8,
+    choices: Vec<Address>,
+) -> anyhow::Result<Address> {
+    Ok(Select::new(
+        "Please select the moonlight address to use as stake owner",
+        choices,
+    )
+    .with_starting_cursor(current_idx as usize)
+    .prompt()?)
+}
+
 /// Request contract WASM file location
 pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
     let validator = |path_str: &str| {

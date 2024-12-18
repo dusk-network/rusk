@@ -646,7 +646,7 @@ pub unsafe fn moonlight_stake(
     let sender_sk = derive_bls_sk(&seed, sender_index);
     let stake_sk = sender_sk.clone();
 
-    let stake = Stake::new(&stake_sk, *stake_value, chain_id);
+    let stake = Stake::new(&stake_sk, &stake_sk, *stake_value, chain_id);
 
     let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)
         .or(Err(ErrorCode::ContractCallError))?;
@@ -709,6 +709,7 @@ pub unsafe fn moonlight_unstake(
     let contract_call = crate::transaction::unstake_to_moonlight(
         &mut rng,
         &sender_sk,
+        &stake_sk,
         &stake_sk,
         gas_payment_token,
         *unstake_value,
@@ -773,6 +774,7 @@ pub unsafe fn moonlight_stake_reward(
     let contract_call = crate::transaction::stake_reward_to_moonlight(
         &mut rng,
         &sender_sk,
+        &stake_sk,
         &stake_sk,
         gas_payment_token,
         *reward_amount,

@@ -7,6 +7,7 @@
 use std::fmt::Debug;
 
 use execution_core::signatures::bls::PublicKey as BlsPublicKey;
+use execution_core::stake::StakeFundOwner;
 use execution_core::transfer::data::TransactionData;
 use execution_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
 use execution_core::transfer::Transaction;
@@ -20,7 +21,7 @@ use wallet_core::transaction::{
 use zeroize::Zeroize;
 
 use super::file::SecureWalletFile;
-use super::Wallet;
+use super::{Address, Wallet};
 use crate::clients::Prover;
 use crate::currency::Dusk;
 use crate::gas::Gas;
@@ -236,6 +237,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn phoenix_stake(
         &self,
         profile_idx: u8,
+        owner_idx: Option<u8>,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
@@ -263,6 +265,22 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             }
         }
 
+        let stake_owner_idx = match self.find_stake_owner_idx(stake_pk).await {
+            Ok(state_idx) => {
+                if let Some(owner_idx) = owner_idx {
+                    if state_idx != owner_idx {
+                        return Err(Error::Unauthorized);
+                    }
+                }
+                state_idx
+            }
+            Err(Error::NotStaked) => owner_idx.unwrap_or(profile_idx),
+            Err(e) => {
+                return Err(e);
+            }
+        };
+        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
+
         let tx_cost = amt + gas.limit * gas.price;
         let inputs = state
             .tx_input_notes(profile_idx, tx_cost)
@@ -275,12 +293,22 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let chain_id = state.fetch_chain_id().await?;
 
         let stake = phoenix_stake(
-            &mut rng, &sender_sk, &stake_sk, inputs, root, gas.limit,
-            gas.price, chain_id, amt, &Prover,
+            &mut rng,
+            &sender_sk,
+            &stake_sk,
+            &stake_owner_sk,
+            inputs,
+            root,
+            gas.limit,
+            gas.price,
+            chain_id,
+            amt,
+            &Prover,
         )?;
 
         sender_sk.zeroize();
         stake_sk.zeroize();
+        stake_owner_sk.zeroize();
 
         let stake = state.prove(stake).await?;
         state.propagate(stake).await
@@ -290,6 +318,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn moonlight_stake(
         &self,
         profile_idx: u8,
+        owner_idx: Option<u8>,
         amt: Dusk,
         gas: Gas,
     ) -> Result<Transaction, Error> {
@@ -317,9 +346,26 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             }
         }
 
+        let stake_owner_idx = match self.find_stake_owner_idx(stake_pk).await {
+            Ok(state_idx) => {
+                if let Some(owner_idx) = owner_idx {
+                    if state_idx != owner_idx {
+                        return Err(Error::Unauthorized);
+                    }
+                }
+                state_idx
+            }
+            Err(Error::NotStaked) => owner_idx.unwrap_or(profile_idx),
+            Err(e) => {
+                return Err(e);
+            }
+        };
+        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
+
         let stake = moonlight_stake(
             &stake_sk,
             &stake_sk,
+            &stake_owner_sk,
             amt,
             gas.limit,
             gas.price,
@@ -328,6 +374,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         )?;
 
         stake_sk.zeroize();
+        stake_owner_sk.zeroize();
 
         state.propagate(stake).await
     }
@@ -344,9 +391,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let mut sender_sk = self.derive_phoenix_sk(profile_idx);
         let mut stake_sk = self.derive_bls_sk(profile_idx);
+        let stake_pk = BlsPublicKey::from(&stake_sk);
+
+        let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
+        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
         let unstake_value = state
-            .fetch_stake(&BlsPublicKey::from(&stake_sk))
+            .fetch_stake(&stake_pk)
             .await?
             .and_then(|s| s.amount)
             .map(|s| s.total_funds())
@@ -366,6 +417,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             &mut rng,
             &sender_sk,
             &stake_sk,
+            &stake_owner_sk,
             inputs,
             root,
             unstake_value,
@@ -377,6 +429,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
         stake_sk.zeroize();
+        stake_owner_sk.zeroize();
 
         let unstake = state.prove(unstake).await?;
         state.propagate(unstake).await
@@ -392,13 +445,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
         let mut stake_sk = self.derive_bls_sk(profile_idx);
 
-        let pk = self.public_key(profile_idx)?;
+        let stake_pk = self.public_key(profile_idx)?;
 
         let chain_id = state.fetch_chain_id().await?;
-        let account_nonce = state.fetch_account(pk).await?.nonce + 1;
+        let account_nonce = state.fetch_account(stake_pk).await?.nonce + 1;
 
         let unstake_value = state
-            .fetch_stake(pk)
+            .fetch_stake(stake_pk)
             .await?
             .and_then(|s| s.amount)
             .map(|s| s.total_funds())
@@ -408,10 +461,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::NotStaked);
         }
 
+        let stake_owner_idx = self.find_stake_owner_idx(stake_pk).await?;
+        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
+
         let unstake = moonlight_unstake(
             &mut rng,
             &stake_sk,
             &stake_sk,
+            &stake_owner_sk,
             unstake_value,
             gas.limit,
             gas.price,
@@ -420,6 +477,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         )?;
 
         stake_sk.zeroize();
+        stake_owner_sk.zeroize();
 
         state.propagate(unstake).await
     }
@@ -442,16 +500,22 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
 
+        let stake_pk = BlsPublicKey::from(&stake_sk);
+
         let reward_amount = state
-            .fetch_stake(&BlsPublicKey::from(&stake_sk))
+            .fetch_stake(&stake_pk)
             .await?
             .map(|s| s.reward)
             .unwrap_or(0);
+
+        let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
+        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
         let withdraw = phoenix_stake_reward(
             &mut rng,
             &sender_sk,
             &stake_sk,
+            &stake_owner_sk,
             inputs,
             root,
             reward_amount,
@@ -463,6 +527,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         sender_sk.zeroize();
         stake_sk.zeroize();
+        stake_owner_sk.zeroize();
 
         let withdraw = state.prove(withdraw).await?;
         state.propagate(withdraw).await
@@ -485,13 +550,22 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let reward = Dusk::from(reward);
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);
+        let mut stake_owner_sk = self.derive_bls_sk(sender_idx);
 
         let withdraw = moonlight_stake_reward(
-            &mut rng, &sender_sk, &sender_sk, *reward, gas.limit, gas.price,
-            nonce, chain_id,
+            &mut rng,
+            &sender_sk,
+            &sender_sk,
+            &stake_owner_sk,
+            *reward,
+            gas.limit,
+            gas.price,
+            nonce,
+            chain_id,
         )?;
 
         sender_sk.zeroize();
+        stake_owner_sk.zeroize();
 
         state.propagate(withdraw).await
     }
@@ -643,5 +717,32 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
 
         state.propagate(deploy).await
+    }
+
+    /// Finds the index of the stake owner account.
+    pub async fn find_stake_owner_idx(
+        &self,
+        stake_pk: &BlsPublicKey,
+    ) -> Result<u8, Error> {
+        self.find_index(&self.find_stake_owner_account(stake_pk).await?)
+    }
+
+    /// Finds the address of the stake owner account.
+    pub async fn find_stake_owner_account(
+        &self,
+        stake_pk: &BlsPublicKey,
+    ) -> Result<Address, Error> {
+        let stake_owner = self
+            .state()?
+            .fetch_stake_owner(stake_pk)
+            .await?
+            .ok_or(Error::NotStaked)?;
+
+        match stake_owner {
+            StakeFundOwner::Account(public_key) => {
+                Ok(Address::Public(public_key))
+            }
+            StakeFundOwner::Contract(_) => Err(Error::Unauthorized),
+        }
     }
 }

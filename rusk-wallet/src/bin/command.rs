@@ -159,6 +159,10 @@ pub(crate) enum Command {
         #[arg(long)]
         address: Option<Address>,
 
+        /// Owner of the stake [default: same Public address of the stake]
+        #[arg(long)]
+        owner: Option<Address>,
+
         /// Amount of DUSK to stake
         #[arg(short, long)]
         amt: Dusk,
@@ -393,21 +397,28 @@ impl Command {
             }
             Command::Stake {
                 address,
+                owner,
                 amt,
                 gas_limit,
                 gas_price,
             } => {
                 let address = address.unwrap_or(wallet.default_address());
                 let addr_idx = wallet.find_index(&address)?;
+                let owner_idx =
+                    owner.map(|owner| wallet.find_index(&owner)).transpose()?;
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let tx = match address {
                     Address::Shielded(_) => {
                         wallet.sync().await?;
-                        wallet.phoenix_stake(addr_idx, amt, gas).await
+                        wallet
+                            .phoenix_stake(addr_idx, owner_idx, amt, gas)
+                            .await
                     }
                     Address::Public(_) => {
-                        wallet.moonlight_stake(addr_idx, amt, gas).await
+                        wallet
+                            .moonlight_stake(addr_idx, owner_idx, amt, gas)
+                            .await
                     }
                 }?;
 

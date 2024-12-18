@@ -170,6 +170,7 @@ pub async fn stake_from_contract() -> Result<()> {
 
     let unstake = stake::Withdraw::new(
         &sk,
+        &sk,
         transfer::withdraw::Withdraw::new(
             &mut rng,
             &sk,
@@ -206,7 +207,8 @@ pub async fn stake_from_contract() -> Result<()> {
     let current_reward = wallet.get_stake(0).expect("Stake to exists").reward;
 
     let withdraw = stake::Withdraw::new(
-        &wallet.account_secret_key(0).unwrap(),
+        &sk,
+        &sk,
         transfer::withdraw::Withdraw::new(
             &mut rng,
             &sk,

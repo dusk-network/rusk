@@ -14,7 +14,7 @@ use rusk_wallet::gas::{
     DEFAULT_PRICE, GAS_PER_DEPLOY_BYTE, MIN_PRICE_DEPLOYMENT,
 };
 use rusk_wallet::{
-    Address, Wallet, MAX_CONTRACT_INIT_ARG_SIZE, MAX_FUNCTION_NAME_SIZE,
+    Address, Error, Wallet, MAX_CONTRACT_INIT_ARG_SIZE, MAX_FUNCTION_NAME_SIZE,
 };
 
 use super::ProfileOp;
@@ -162,8 +162,29 @@ pub(crate) async fn online(
 
             let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
 
+            let stake_idx = wallet
+                .find_index(&addr)
+                .expect("index to exists in interactive mode");
+            let stake_pk = wallet
+                .public_key(stake_idx)
+                .expect("public key to exists in interactive mode");
+
+            let owner = match wallet.find_stake_owner_account(stake_pk).await {
+                Ok(account) => account,
+                Err(Error::NotStaked) => {
+                    let choices = wallet
+                        .profiles()
+                        .iter()
+                        .map(|p| Address::Public(p.public_addr))
+                        .collect();
+                    prompt::request_address(stake_idx, choices)?
+                }
+                e => e?,
+            };
+
             ProfileOp::Run(Box::new(Command::Stake {
                 address: Some(addr),
+                owner: Some(owner),
                 amt: prompt::request_stake_token_amt(balance)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
