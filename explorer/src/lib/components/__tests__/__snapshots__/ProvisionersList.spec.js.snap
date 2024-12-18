@@ -32,7 +32,25 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="details-list__term-layout"
     >
        
-      Locked Stake Amount
+      Active Stake
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    500,000
+     DUSK
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Inactive Stake
     </div>
   </dt>
    
@@ -50,15 +68,15 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="details-list__term-layout"
     >
        
-      Reclaimable Stake Amount
+      Maturity At
     </div>
   </dt>
    
   <dd
     class="details-list__definition details-list__definition--table"
   >
-    500,000
-     DUSK
+    #
+    0
   </dd>
    
   <dt

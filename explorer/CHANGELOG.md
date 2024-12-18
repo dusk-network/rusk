@@ -9,11 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add stake maturity information (Provisioners page) [#3218]
+
 ### Changed
+
+- Change Stake details labels [#3218]
 
 ### Removed
 
 ### Fixed
+
+- Fix inactive stake shown as active on mobile [#3218]
 
 ## [0.3.0] - 2024-12-03
 
@@ -111,6 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3034]: https://github.com/dusk-network/rusk/issues/3034
 [#3038]: https://github.com/dusk-network/rusk/issues/3038
 [#3064]: https://github.com/dusk-network/rusk/issues/3064
+[#3218]: https://github.com/dusk-network/rusk/issues/3218
 
 <!-- VERSIONS -->
 
