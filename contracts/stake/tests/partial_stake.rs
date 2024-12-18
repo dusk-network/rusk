@@ -12,7 +12,7 @@ use execution_core::stake::{Reward, RewardReason, EPOCH, STAKE_CONTRACT};
 use execution_core::transfer::TRANSFER_CONTRACT;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_abi::{ContractData, PiecrustError, Session, VM};
+use rusk_abi::{execute, ContractData, PiecrustError, Session, VM};
 use wallet_core::transaction::{
     moonlight_stake, moonlight_stake_reward, moonlight_unstake,
 };
@@ -60,7 +60,7 @@ fn stake() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
 
     // verify 1st stake transaction
     let gas_spent_1 = receipt.gas_spent;
@@ -88,7 +88,7 @@ fn stake() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
 
     // verify 2nd stake transaction
     let gas_spent_2 = receipt.gas_spent;
@@ -122,7 +122,7 @@ fn stake() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
 
     // verify 3rd stake transaction
     let gas_spent_3 = receipt.gas_spent;
@@ -157,7 +157,7 @@ fn stake() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    assert!(execute(&mut session, tx,).is_err());
+    assert!(execute(&mut session, &tx, 0, 0,).is_err());
 
     Ok(())
 }
@@ -191,7 +191,7 @@ fn unstake() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
     let mut moonlight_balance = GENESIS_VALUE - STAKE_VALUE - receipt.gas_spent;
     assert_moonlight(&mut session, &moonlight_pk, moonlight_balance, nonce);
 
@@ -213,7 +213,7 @@ fn unstake() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
 
     // verify 1st unstake transaction
     let gas_spent_1 = receipt.gas_spent;
@@ -243,7 +243,7 @@ fn unstake() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
     total_stake = STAKE_VALUE;
     let mut locked = unstake_1 / 10;
     assert_stake(&mut session, &stake_pk, total_stake, locked, 0);
@@ -269,7 +269,7 @@ fn unstake() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
 
     // verify 2nd unstake transaction
     let gas_spent_2 = receipt.gas_spent;
@@ -307,7 +307,7 @@ fn unstake() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
 
     // verify 3rd unstake transaction
     let gas_spent_3 = receipt.gas_spent;
@@ -350,7 +350,7 @@ fn withdraw_reward() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
     let mut moonlight_balance = GENESIS_VALUE - STAKE_VALUE - receipt.gas_spent;
     assert_moonlight(&mut session, &moonlight_pk, moonlight_balance, nonce);
     // add a reward to the staked key
@@ -375,7 +375,7 @@ fn withdraw_reward() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
 
     // verify 1st reward withdrawal
     let gas_spent_1 = receipt.gas_spent;
@@ -410,7 +410,7 @@ fn withdraw_reward() -> Result<(), PiecrustError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0)?;
 
     // verify 1st reward withdrawal
     let gas_spent_2 = receipt.gas_spent;

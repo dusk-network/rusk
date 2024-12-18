@@ -21,9 +21,8 @@ use execution_core::{
     },
     ContractId,
 };
-use rusk::gen_id::gen_contract_id;
 use rusk::{Error, Result, Rusk};
-use rusk_abi::{CallReceipt, ContractData, Session};
+use rusk_abi::{gen_contract_id, CallReceipt, ContractData, Session};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
 use test_wallet::{self as wallet, Wallet};
