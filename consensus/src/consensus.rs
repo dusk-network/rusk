@@ -6,6 +6,7 @@
 
 use std::cmp;
 use std::sync::Arc;
+use std::time::Duration;
 
 use node_data::message::{AsyncQueue, Message, Payload};
 use tokio::sync::{oneshot, Mutex};
@@ -106,6 +107,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             }
         };
 
+        tokio::time::sleep(Duration::from_secs(1)).await;
         // Tear-down procedure
         abort(&mut handle).await;
 

@@ -7,7 +7,7 @@
 use std::path::Path;
 use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
-use std::{fs, io};
+use std::{fs, io, thread};
 
 use execution_core::stake::StakeKeys;
 use execution_core::transfer::PANIC_NONCE_NOT_READY;
@@ -271,6 +271,7 @@ impl Rusk {
         slashing: Vec<Slash>,
         voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
+        thread::sleep(Duration::from_secs(1));
         let session = self.new_block_session(block_height, prev_commit)?;
 
         accept(
