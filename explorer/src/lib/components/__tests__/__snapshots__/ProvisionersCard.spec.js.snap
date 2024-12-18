@@ -52,6 +52,13 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <th
               class="table__header-cell"
             >
+              Owner
+            </th>
+            
+             
+            <th
+              class="table__header-cell"
+            >
               Stake Amount (DUSK)
             </th>
             
@@ -83,6 +90,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               m6dy2gz3jC...tW82FWtnpf
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="m6dy2gz3jC...tW82FWtnpf"
+              >
+                Account
+              </span>
             </td>
             
              
@@ -154,6 +174,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="m9dVuRgr3C...94r33pFQyz"
+              >
+                Account
+              </span>
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
               <b
                 class="provisioners-table__staked-amount-type-label"
               >
@@ -213,6 +246,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               mHGvQ9Xdjz...iTfxTvgn7f
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+              >
+                Contract
+              </span>
             </td>
             
              
@@ -284,6 +330,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="mLx5HUo5Ph...BrRgEzoka8"
+              >
+                Account
+              </span>
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
               <b
                 class="provisioners-table__staked-amount-type-label"
               >
@@ -343,6 +402,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               mTgXDqkyVa...gAseybAsfU
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+              >
+                Contract
+              </span>
             </td>
             
              
@@ -414,6 +486,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+              >
+                Contract
+              </span>
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
               <b
                 class="provisioners-table__staked-amount-type-label"
               >
@@ -473,6 +558,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               mUUpjnXow2...SfzQcywzaW
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+              >
+                Contract
+              </span>
             </td>
             
              
@@ -544,6 +642,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="mWvq9EWD9b...oU7BY2oEDe"
+              >
+                Account
+              </span>
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
               <b
                 class="provisioners-table__staked-amount-type-label"
               >
@@ -609,6 +720,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
             <td
               class="table__data-cell"
             >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="mXKJ97xTtr...JgkCK2o7x4"
+              >
+                Account
+              </span>
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
               <b
                 class="provisioners-table__staked-amount-type-label"
               >
@@ -668,6 +792,19 @@ exports[`Provisioners Card > should disable the \`Show More\` button if there is
               class="table__data-cell"
             >
               mdXsA3Ee1Y...K8VZPimZ2J
+            </td>
+            
+             
+            <td
+              class="table__data-cell"
+            >
+              <span
+                class="dusk-badge dusk-badge--variant-neutral"
+                data-tooltip-id="provisioners-tooltip"
+                data-tooltip-text="mdXsA3Ee1Y...K8VZPimZ2J"
+              >
+                Account
+              </span>
             </td>
             
              

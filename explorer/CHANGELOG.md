@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add "owner" field to provisioners [#3215]
+
 ### Changed
 
 ### Removed
@@ -111,6 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3034]: https://github.com/dusk-network/rusk/issues/3034
 [#3038]: https://github.com/dusk-network/rusk/issues/3038
 [#3064]: https://github.com/dusk-network/rusk/issues/3064
+[#3215]: https://github.com/dusk-network/rusk/issues/3215
 
 <!-- VERSIONS -->
 
