@@ -1,11 +1,14 @@
 <svelte:options immutable={true} />
 
 <script>
-  import { DetailList, ListItem } from "$lib/components";
-  import { createValueFormatter } from "$lib/dusk/value";
-  import { luxToDusk } from "$lib/dusk/currency";
-  import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
   import { onMount } from "svelte";
+  import { ownPairs } from "lamb";
+
+  import { Badge } from "$lib/dusk/components";
+  import { luxToDusk } from "$lib/dusk/currency";
+  import { createValueFormatter } from "$lib/dusk/value";
+  import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
+  import { DetailList, ListItem } from "$lib/components";
 
   import "./ProvisionersList.css";
 
@@ -19,6 +22,7 @@
   let screenWidth = window.innerWidth;
 
   const formatter = createValueFormatter("en");
+  const [ownerType, ownerValue] = ownPairs(data.owner)[0];
 
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -31,20 +35,35 @@
 
     return () => resizeObserver.disconnect();
   });
+
+  $: provisionerKey = middleEllipsis(
+    data.key,
+    calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
+  );
 </script>
 
-<DetailList>
+<DetailList className="provisioners-list">
   <!-- STAKING ADDRESS -->
   <ListItem tooltipText={displayTooltips ? "The staking address used" : ""}>
-    <svelte:fragment slot="term">staking address</svelte:fragment>
+    <svelte:fragment slot="term">Staking address</svelte:fragment>
     <svelte:fragment slot="definition"
-      ><span class="provisioners-list__staking-address"
-        >{middleEllipsis(
-          data.key,
-          calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
-        )}</span
+      ><span class="provisioners-list__staking-address">{provisionerKey}</span
       ></svelte:fragment
     >
+  </ListItem>
+
+  <!-- OWNER -->
+  <ListItem tooltipText={displayTooltips ? "The provisioner's owner" : ""}>
+    <svelte:fragment slot="term">Owner</svelte:fragment>
+    <svelte:fragment slot="definition">
+      <Badge
+        data-tooltip-id="provisioners-tooltip"
+        data-tooltip-text={ownerType === "Account"
+          ? provisionerKey
+          : ownerValue}
+        text={ownerType}
+      />
+    </svelte:fragment>
   </ListItem>
 
   <!-- ACTIVE STAKED AMOUNT -->

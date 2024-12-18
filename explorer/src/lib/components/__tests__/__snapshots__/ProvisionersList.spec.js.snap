@@ -2,7 +2,7 @@
 
 exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
 <dl
-  class="detail-list"
+  class="detail-list provisioners-list"
 >
   <dt
     class="details-list__term details-list__term--table"
@@ -11,7 +11,7 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="details-list__term-layout"
     >
        
-      staking address
+      Staking address
     </div>
   </dt>
    
@@ -22,6 +22,29 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="provisioners-list__staking-address"
     >
       m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf
+    </span>
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
+      Owner
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    <span
+      class="dusk-badge dusk-badge--variant-neutral"
+      data-tooltip-id="provisioners-tooltip"
+      data-tooltip-text="m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf"
+    >
+      Account
     </span>
   </dd>
    

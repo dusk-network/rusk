@@ -51,6 +51,7 @@ describe("appStore", () => {
         version_build: "",
         /* eslint-enable camelcase */
       },
+      provisionersFetchInterval: Number(env.VITE_PROVISIONERS_REFETCH_INTERVAL),
       statsFetchInterval: Number(env.VITE_STATS_REFETCH_INTERVAL),
       transactionsListEntries: Number(env.VITE_TRANSACTIONS_LIST_ENTRIES),
     });
@@ -81,14 +82,20 @@ describe("appStore", () => {
   it("should use default values for the fetch intervals if the env vars are missing", async () => {
     vi.stubEnv("VITE_REFETCH_INTERVAL", "");
     vi.stubEnv("VITE_MARKET_DATA_REFETCH_INTERVAL", "");
+    vi.stubEnv("VITE_PROVISIONERS_REFETCH_INTERVAL", "");
     vi.stubEnv("VITE_STATS_REFETCH_INTERVAL", "");
 
     const { appStore } = await import("..");
-    const { fetchInterval, marketDataFetchInterval, statsFetchInterval } =
-      get(appStore);
+    const {
+      fetchInterval,
+      marketDataFetchInterval,
+      provisionersFetchInterval,
+      statsFetchInterval,
+    } = get(appStore);
 
     expect(fetchInterval).toBe(1000);
     expect(marketDataFetchInterval).toBe(120000);
+    expect(provisionersFetchInterval).toBe(30000);
     expect(statsFetchInterval).toBe(1000);
 
     vi.unstubAllEnvs();

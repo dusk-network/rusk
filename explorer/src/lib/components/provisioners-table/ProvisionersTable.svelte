@@ -1,6 +1,8 @@
 <svelte:options immutable={true} />
 
 <script>
+  import { ownPairs } from "lamb";
+
   import {
     Table,
     TableBody,
@@ -8,6 +10,7 @@
     TableHead,
     TableRow,
   } from "$lib/components/table";
+  import { Badge } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { makeClassName, middleEllipsis } from "$lib/dusk/string";
   import { createValueFormatter } from "$lib/dusk/value";
@@ -31,6 +34,7 @@
   <TableHead>
     <TableRow>
       <TableCell type="th">Staking Address</TableCell>
+      <TableCell type="th">Owner</TableCell>
       <TableCell type="th">Stake</TableCell>
       <TableCell type="th">Slashes</TableCell>
       <TableCell type="th">Accumulated Reward (DUSK)</TableCell>
@@ -38,9 +42,21 @@
   </TableHead>
   <TableBody>
     {#each data as provisioner (provisioner)}
+      {@const [ownerType, ownerValue] = ownPairs(provisioner.owner)[0]}
+      {@const provisionerKey = middleEllipsis(
+        provisioner.key,
+        HASH_CHARS_LENGTH
+      )}
       <TableRow>
+        <TableCell>{provisionerKey}</TableCell>
         <TableCell>
-          {middleEllipsis(provisioner.key, HASH_CHARS_LENGTH)}
+          <Badge
+            data-tooltip-id="provisioners-tooltip"
+            data-tooltip-text={ownerType === "Account"
+              ? provisionerKey
+              : ownerValue}
+            text={ownerType}
+          />
         </TableCell>
         <TableCell>
           <b class="provisioners-table__stake-data-label">Active:</b>
