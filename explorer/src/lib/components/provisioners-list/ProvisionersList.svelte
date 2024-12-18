@@ -47,19 +47,39 @@
     >
   </ListItem>
 
-  <!-- LOCKED STAKED AMOUNT -->
-  <ListItem tooltipText={displayTooltips ? "The locked stake amount" : ""}>
-    <svelte:fragment slot="term">Locked Stake Amount</svelte:fragment>
+  <!-- ACTIVE STAKED AMOUNT -->
+  <ListItem
+    tooltipText={displayTooltips
+      ? "The staked tokens that are being utilized in the consensus process"
+      : ""}
+  >
+    <svelte:fragment slot="term">Active Stake</svelte:fragment>
+    <svelte:fragment slot="definition"
+      >{formatter(luxToDusk(data.amount))} DUSK</svelte:fragment
+    >
+  </ListItem>
+
+  <!-- INACTIVE STAKED AMOUNT -->
+  <ListItem
+    tooltipText={displayTooltips
+      ? "The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
+      : ""}
+  >
+    <svelte:fragment slot="term">Inactive Stake</svelte:fragment>
     <svelte:fragment slot="definition"
       >{formatter(luxToDusk(data.locked_amt))} DUSK</svelte:fragment
     >
   </ListItem>
 
-  <!-- RECLAIMABLE STAKED AMOUNT -->
-  <ListItem tooltipText={displayTooltips ? "The reclaimable stake amount" : ""}>
-    <svelte:fragment slot="term">Reclaimable Stake Amount</svelte:fragment>
-    <svelte:fragment slot="definition"
-      >{formatter(luxToDusk(data.amount))} DUSK</svelte:fragment
+  <!-- STAKE MATURE INFO -->
+  <ListItem
+    tooltipText={displayTooltips
+      ? "The block at which the stake is expected to start participating in the consensus"
+      : ""}
+  >
+    <svelte:fragment slot="term">Maturity At</svelte:fragment>
+    <svelte:fragment slot="definition">
+      #{formatter(data.eligibility)}</svelte:fragment
     >
   </ListItem>
 
