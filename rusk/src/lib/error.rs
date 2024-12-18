@@ -58,6 +58,8 @@ pub enum Error {
     InvalidCreditsCount(u64, usize),
     /// Memo too large
     MemoTooLarge(usize),
+    /// Chain tip different from the expected one
+    TipChanged,
 }
 
 impl std::error::Error for Error {}
@@ -181,6 +183,9 @@ impl fmt::Display for Error {
             }
             Error::MemoTooLarge(size) => {
                 write!(f, "The memo size {size} is too large")
+            }
+            Error::TipChanged => {
+                write!(f, "Chain tip different from the expected one")
             }
         }
     }

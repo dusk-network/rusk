@@ -479,7 +479,10 @@ impl Rusk {
         block_height: u64,
         commit: [u8; 32],
     ) -> Result<Session> {
-        let mut session = self._session(block_height, Some(commit))?;
+        let mut session = self._session(block_height, None)?;
+        if session.root() != commit {
+            return Err(Error::TipChanged);
+        }
         let _: CallReceipt<()> = session
             .call(STAKE_CONTRACT, "before_state_transition", &(), u64::MAX)
             .expect("before_state_transition to success");
