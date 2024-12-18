@@ -400,6 +400,7 @@ pub(crate) async fn online(
                 "export keys",
                 settings.wallet_dir.clone(),
             )?,
+            export_pwd: None,
         })),
         MenuItem::Back => ProfileOp::Back,
     };
@@ -426,6 +427,7 @@ pub(crate) fn offline(
                 "export keys",
                 settings.wallet_dir.clone(),
             )?,
+            export_pwd: None,
         })),
         _ => unreachable!(),
     };
