@@ -30,6 +30,8 @@ use crate::io::prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
 
+use self::prompt::create_password;
+
 /// Commands that can be run against the Dusk wallet
 #[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Eq, Hash, Clone, Subcommand, Debug)]
@@ -292,6 +294,10 @@ pub(crate) enum Command {
         /// Name of the files exported [default: staking-address]
         #[arg(short, long)]
         name: Option<String>,
+
+        /// Password for the exported keys [default: env(RUSK_WALLET_PWD)]
+        #[arg(short, long, env = "RUSK_WALLET_EXPORT_PWD")]
+        export_pwd: Option<String>,
     },
 
     /// Show current settings
@@ -482,12 +488,18 @@ impl Command {
                 profile_idx,
                 dir,
                 name,
+                export_pwd,
             } => {
-                let pwd = prompt::request_auth(
-                    "Provide a password for your provisioner keys",
-                    &settings.password,
-                    wallet.get_file_version()?,
-                )?;
+                let file_version = wallet.get_file_version()?;
+                let pwd = match export_pwd {
+                    Some(pwd) => create_password(&Some(pwd), file_version),
+                    None => prompt::request_auth(
+                        "Provide a password for your provisioner keys",
+                        &settings.password,
+                        wallet.get_file_version()?,
+                    ),
+                }?;
+
                 let profile_idx = profile_idx.unwrap_or_default();
 
                 let (pub_key, key_pair) = wallet.export_provisioner_keys(
