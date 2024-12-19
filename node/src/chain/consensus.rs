@@ -10,7 +10,9 @@ use std::time::Duration;
 use async_trait::async_trait;
 use dusk_consensus::commons::{RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
-use dusk_consensus::errors::{ConsensusError, HeaderError, OperationError};
+use dusk_consensus::errors::{
+    ConsensusError, HeaderError, OperationError, VstError,
+};
 use dusk_consensus::operations::{
     CallParams, Operations, Output, VerificationOutput, Voter,
 };
@@ -315,15 +317,15 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
     async fn verify_state_transition(
         &self,
+        prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
-    ) -> Result<VerificationOutput, OperationError> {
+    ) -> Result<VerificationOutput, VstError> {
         info!("verifying state");
 
         let vm = self.vm.read().await;
 
-        vm.verify_state_transition(blk, voters)
-            .map_err(OperationError::InvalidVST)
+        vm.verify_state_transition(prev_root, blk, voters)
     }
 
     async fn execute_state_transition(

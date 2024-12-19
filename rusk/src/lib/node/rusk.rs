@@ -121,10 +121,12 @@ impl Rusk {
         let block_gas_limit = self.block_gas_limit;
         let generator = params.generator_pubkey.inner();
         let to_slash = params.to_slash.clone();
+        let prev_state_root = params.prev_state_root;
 
         let voters = &params.voters_pubkey[..];
 
-        let mut session = self.new_block_session(block_height, None)?;
+        let mut session =
+            self.new_block_session(block_height, prev_state_root)?;
 
         let mut block_gas_left = block_gas_limit;
 
@@ -179,7 +181,8 @@ impl Rusk {
                     // transaction, since it is technically valid.
                     if gas_spent > block_gas_left {
                         info!("Skipping {tx_id_hex} due gas_spent {gas_spent} greater than left: {block_gas_left}");
-                        session = self.new_block_session(block_height, None)?;
+                        session = self
+                            .new_block_session(block_height, prev_state_root)?;
 
                         for spent_tx in &spent_txs {
                             // We know these transactions were correctly
@@ -259,6 +262,7 @@ impl Rusk {
     #[allow(clippy::too_many_arguments)]
     pub fn verify_transactions(
         &self,
+        prev_commit: [u8; 32],
         block_height: u64,
         block_hash: Hash,
         block_gas_limit: u64,
@@ -267,7 +271,7 @@ impl Rusk {
         slashing: Vec<Slash>,
         voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
-        let session = self.new_block_session(block_height, None)?;
+        let session = self.new_block_session(block_height, prev_commit)?;
 
         accept(
             session,
@@ -292,6 +296,7 @@ impl Rusk {
     #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
         &self,
+        prev_commit: [u8; 32],
         block_height: u64,
         block_gas_limit: u64,
         block_hash: Hash,
@@ -305,7 +310,7 @@ impl Rusk {
         VerificationOutput,
         Vec<ContractEvent>,
     )> {
-        let session = self.new_block_session(block_height, None)?;
+        let session = self.new_block_session(block_height, prev_commit)?;
 
         let (spent_txs, verification_output, session, events) = accept(
             session,
@@ -472,9 +477,12 @@ impl Rusk {
     pub(crate) fn new_block_session(
         &self,
         block_height: u64,
-        commit: Option<[u8; 32]>,
+        commit: [u8; 32],
     ) -> Result<Session> {
-        let mut session = self._session(block_height, commit)?;
+        let mut session = self._session(block_height, None)?;
+        if session.root() != commit {
+            return Err(Error::TipChanged);
+        }
         let _: CallReceipt<()> = session
             .call(STAKE_CONTRACT, "before_state_transition", &(), u64::MAX)
             .expect("before_state_transition to success");

@@ -6,6 +6,7 @@
 
 mod query;
 
+use dusk_consensus::errors::VstError;
 use node_data::events::contract::ContractEvent;
 use tracing::info;
 
@@ -45,18 +46,21 @@ impl VMExecution for Rusk {
 
     fn verify_state_transition(
         &self,
+        prev_commit: [u8; 32],
         blk: &Block,
         voters: &[Voter],
-    ) -> anyhow::Result<VerificationOutput> {
+    ) -> Result<VerificationOutput, VstError> {
         info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator.0)
-            .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
+            .map_err(VstError::InvalidGenerator)?;
 
-        let slashing = Slash::from_block(blk)?;
+        let slashing =
+            Slash::from_block(blk).map_err(VstError::InvalidSlash)?;
 
         let (_, verification_output) = self
             .verify_transactions(
+                prev_commit,
                 blk.header().height,
                 blk.header().hash,
                 blk.header().gas_limit,
@@ -65,13 +69,20 @@ impl VMExecution for Rusk {
                 slashing,
                 voters,
             )
-            .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
+            .map_err(|inner| {
+                if let crate::Error::TipChanged = inner {
+                    VstError::TipChanged
+                } else {
+                    VstError::Generic(format!("Cannot verify txs: {inner}!!"))
+                }
+            })?;
 
         Ok(verification_output)
     }
 
     fn accept(
         &self,
+        prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
     ) -> anyhow::Result<(
@@ -88,6 +99,7 @@ impl VMExecution for Rusk {
 
         let (txs, verification_output, stake_events) = self
             .accept_transactions(
+                prev_root,
                 blk.header().height,
                 blk.header().gas_limit,
                 blk.header().hash,

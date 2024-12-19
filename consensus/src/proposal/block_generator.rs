@@ -132,6 +132,7 @@ impl<T: Operations> Generator<T> {
             to_slash,
             voters_pubkey: voters.to_owned(),
             max_txs_bytes,
+            prev_state_root: ru.state_root(),
         };
 
         let result =

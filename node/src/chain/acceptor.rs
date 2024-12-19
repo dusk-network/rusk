@@ -628,6 +628,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let mut task = self.task.write().await;
 
         let mut tip = self.tip.write().await;
+        let prev_header = tip.inner().header().clone();
         let mut provisioners_list = self.provisioners_list.write().await;
         let block_time =
             blk.header().timestamp - tip.inner().header().timestamp;
@@ -636,7 +637,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Verify Block Header
         let (pni, prev_block_voters, tip_block_voters) = verify_block_header(
             self.db.clone(),
-            &tip.inner().header().clone(),
+            &prev_header,
             &provisioners_list,
             blk.header(),
         )
@@ -658,8 +659,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let vm = self.vm.write().await;
 
             let (stakes, finality) = self.db.read().await.update(|db| {
-                let (txs, verification_output, stake_events) =
-                    vm.accept(blk, &prev_block_voters[..])?;
+                let (txs, verification_output, stake_events) = vm.accept(
+                    prev_header.state_hash,
+                    blk,
+                    &prev_block_voters[..],
+                )?;
                 for spent_tx in txs.iter() {
                     events.push(TransactionEvent::Executed(spent_tx).into());
                 }

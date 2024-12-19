@@ -70,7 +70,7 @@ impl From<BlsSigError> for ConsensusError {
 #[derive(Debug, Error)]
 pub enum OperationError {
     #[error("failed to call VST {0}")]
-    InvalidVST(anyhow::Error),
+    InvalidVST(VstError),
     #[error("failed to call EST {0}")]
     InvalidEST(anyhow::Error),
     #[error("failed to verify header {0}")]
@@ -114,6 +114,36 @@ pub enum HeaderError {
 
     #[error("Storage error '{0}' in header verification: {1}")]
     Storage(&'static str, anyhow::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum VstError {
+    #[error(
+        "mismatch, event_bloom: {}, candidate_event_bloom: {}",
+        hex::encode(.0.as_ref()),
+        hex::encode(.1.as_ref())
+    )]
+    MismatchEventBloom(Box<[u8; 256]>, Box<[u8; 256]>),
+    #[error(
+        "mismatch, state_hash: {}, candidate_state_hash: {}",
+        hex::encode(.0),
+        hex::encode(.1)
+    )]
+    MismatchStateHash([u8; 32], [u8; 32]),
+    #[error("Chain tip different from the expected one")]
+    TipChanged,
+    #[error("Invalid slash from block: {0}")]
+    InvalidSlash(io::Error),
+    #[error("Invalid generator: {0:?}")]
+    InvalidGenerator(dusk_bytes::Error),
+    #[error("Generic error in vst: {0}")]
+    Generic(String),
+}
+
+impl VstError {
+    pub fn must_vote(&self) -> bool {
+        !matches!(self, Self::TipChanged)
+    }
 }
 
 impl HeaderError {

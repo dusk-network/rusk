@@ -33,6 +33,7 @@ pub struct RoundUpdate {
 
     seed: Seed,
     hash: [u8; 32],
+    state_root: [u8; 32],
     att: Attestation,
     att_voters: Vec<Voter>,
     timestamp: u64,
@@ -59,6 +60,7 @@ impl RoundUpdate {
             timestamp: tip_header.timestamp,
             base_timeouts,
             att_voters,
+            state_root: tip_header.state_hash,
         }
     }
 
@@ -80,6 +82,10 @@ impl RoundUpdate {
 
     pub fn att_voters(&self) -> &Vec<Voter> {
         &self.att_voters
+    }
+
+    pub fn state_root(&self) -> [u8; 32] {
+        self.state_root
     }
 }
 

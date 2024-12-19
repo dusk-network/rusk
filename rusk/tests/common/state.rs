@@ -103,6 +103,7 @@ pub fn generator_procedure(
     missed_generators: Vec<BlsPublicKey>,
     expected: Option<ExecuteResult>,
 ) -> anyhow::Result<Vec<SpentTransaction>> {
+    let prev_root = rusk.state_root();
     let expected = expected.unwrap_or(ExecuteResult {
         executed: txs.len(),
         discarded: 0,
@@ -146,6 +147,7 @@ pub fn generator_procedure(
         to_slash,
         voters_pubkey: voters.clone(),
         max_txs_bytes: usize::MAX,
+        prev_state_root: prev_root,
     };
 
     let (transfer_txs, discarded, execute_output) =
@@ -176,10 +178,12 @@ pub fn generator_procedure(
     )
     .expect("valid block");
 
-    let verify_output = rusk.verify_state_transition(&block, &voters)?;
+    let verify_output =
+        rusk.verify_state_transition(prev_root, &block, &voters)?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let (accept_txs, accept_output, _) = rusk.accept(&block, &voters)?;
+    let (accept_txs, accept_output, _) =
+        rusk.accept(prev_root, &block, &voters)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
@@ -210,6 +214,7 @@ pub fn generator_procedure2(
     expected: Option<ExecuteResult>,
     generator: Option<BlsPublicKey>,
 ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
+    let prev_root = rusk.state_root();
     let expected = expected.unwrap_or(ExecuteResult {
         executed: txs.len(),
         discarded: 0,
@@ -254,6 +259,7 @@ pub fn generator_procedure2(
         to_slash,
         voters_pubkey: voters.clone(),
         max_txs_bytes: usize::MAX,
+        prev_state_root: prev_root,
     };
 
     let (transfer_txs, discarded, execute_output) =
@@ -284,10 +290,12 @@ pub fn generator_procedure2(
     )
     .expect("valid block");
 
-    let verify_output = rusk.verify_state_transition(&block, &voters)?;
+    let verify_output =
+        rusk.verify_state_transition(prev_root, &block, &voters)?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let (accept_txs, accept_output, _) = rusk.accept(&block, &voters)?;
+    let (accept_txs, accept_output, _) =
+        rusk.accept(prev_root, &block, &voters)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
