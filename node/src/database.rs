@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 pub struct LightBlock {
     pub header: Header,
     pub transactions_ids: Vec<[u8; 32]>,
-    pub faults_ids: Vec<[u8; 32]>,
+    pub faults_digests: Vec<[u8; 32]>,
 }
 
 pub trait DB: Send + Sync + 'static {
@@ -96,7 +96,7 @@ pub trait Ledger {
     ) -> Result<()>;
 
     fn faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>>;
-    fn faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>>;
+    fn faults(&self, faults_digests: &[[u8; 32]]) -> Result<Vec<Fault>>;
 }
 
 pub trait ConsensusStorage {
