@@ -61,6 +61,7 @@ impl Rusk {
         gas_per_deploy_byte: u64,
         min_deployment_gas_price: u64,
         min_gas_limit: u64,
+        min_deploy_points: u64,
         block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
@@ -101,6 +102,7 @@ impl Rusk {
             gas_per_deploy_byte,
             min_deployment_gas_price,
             min_gas_limit,
+            min_deploy_points,
             feeder_gas_limit,
             event_sender,
             #[cfg(feature = "archive")]
@@ -171,6 +173,7 @@ impl Rusk {
                 &mut session,
                 &unspent_tx.inner,
                 self.gas_per_deploy_byte,
+                self.min_deploy_points,
                 self.min_deployment_gas_price,
             ) {
                 Ok(receipt) => {
@@ -191,6 +194,7 @@ impl Rusk {
                                 &mut session,
                                 &spent_tx.inner.inner,
                                 self.gas_per_deploy_byte,
+                                self.min_deploy_points,
                                 self.min_deployment_gas_price,
                             );
                         }
@@ -283,6 +287,7 @@ impl Rusk {
             slashing,
             voters,
             self.gas_per_deploy_byte,
+            self.min_deploy_points,
             self.min_deployment_gas_price,
         )
         .map(|(a, b, _, _)| (a, b))
@@ -322,6 +327,7 @@ impl Rusk {
             slashing,
             voters,
             self.gas_per_deploy_byte,
+            self.min_deploy_points,
             self.min_deployment_gas_price,
         )?;
 
@@ -580,6 +586,7 @@ fn accept(
     slashing: Vec<Slash>,
     voters: &[Voter],
     gas_per_deploy_byte: u64,
+    min_deploy_points: u64,
     min_deployment_gas_price: u64,
 ) -> Result<(
     Vec<SpentTransaction>,
@@ -604,6 +611,7 @@ fn accept(
             &mut session,
             tx,
             gas_per_deploy_byte,
+            min_deploy_points,
             min_deployment_gas_price,
         )?;
 
@@ -683,9 +691,14 @@ fn contract_deploy(
     deploy: &ContractDeploy,
     gas_limit: u64,
     gas_per_deploy_byte: u64,
+    min_deploy_points: u64,
     receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
 ) {
-    let deploy_charge = bytecode_charge(&deploy.bytecode, gas_per_deploy_byte);
+    let deploy_charge = bytecode_charge(
+        &deploy.bytecode,
+        gas_per_deploy_byte,
+        min_deploy_points,
+    );
     let min_gas_limit = receipt.gas_spent + deploy_charge;
     let hash = blake3::hash(deploy.bytecode.bytes.as_slice());
     if gas_limit < min_gas_limit {
@@ -755,13 +768,17 @@ fn execute(
     session: &mut Session,
     tx: &ProtocolTransaction,
     gas_per_deploy_byte: u64,
+    min_deploy_points: u64,
     min_deployment_gas_price: u64,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     if let Some(deploy) = tx.deploy() {
-        let deploy_charge =
-            bytecode_charge(&deploy.bytecode, gas_per_deploy_byte);
+        let deploy_charge = bytecode_charge(
+            &deploy.bytecode,
+            gas_per_deploy_byte,
+            min_deploy_points,
+        );
         if tx.gas_price() < min_deployment_gas_price {
             return Err(PiecrustError::Panic(
                 "gas price too low to deploy".into(),
@@ -793,6 +810,7 @@ fn execute(
                 deploy,
                 gas_left,
                 gas_per_deploy_byte,
+                min_deploy_points,
                 &mut receipt,
             );
         }

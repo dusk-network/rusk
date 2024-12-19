@@ -32,6 +32,7 @@ pub(crate) struct ChainConfig {
     // forking the chain.
     gas_per_deploy_byte: Option<u64>,
     min_deployment_gas_price: Option<u64>,
+    min_deploy_points: Option<u64>,
     min_gas_limit: Option<u64>,
     block_gas_limit: Option<u64>,
 
@@ -91,6 +92,10 @@ impl ChainConfig {
 
     pub(crate) fn min_deployment_gas_price(&self) -> Option<u64> {
         self.min_deployment_gas_price
+    }
+
+    pub(crate) fn min_deploy_points(&self) -> Option<u64> {
+        self.min_deploy_points
     }
 
     pub(crate) fn min_gas_limit(&self) -> Option<u64> {

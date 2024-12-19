@@ -44,6 +44,7 @@ pub struct RuskNodeBuilder {
     gas_per_deploy_byte: Option<u64>,
     min_deployment_gas_price: Option<u64>,
     min_gas_limit: Option<u64>,
+    min_deploy_points: Option<u64>,
     block_gas_limit: u64,
     feeder_call_gas: u64,
     state_dir: PathBuf,
@@ -56,6 +57,7 @@ pub struct RuskNodeBuilder {
 const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
 const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
 const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
+const DEFAULT_MIN_DEPLOY_POINTS: u64 = 5_000_000;
 
 impl RuskNodeBuilder {
     pub fn with_consensus_keys(mut self, consensus_keys_path: String) -> Self {
@@ -142,6 +144,14 @@ impl RuskNodeBuilder {
         self
     }
 
+    pub fn with_min_deploy_points(
+        mut self,
+        min_deploy_points: Option<u64>,
+    ) -> Self {
+        self.min_deploy_points = min_deploy_points;
+        self
+    }
+
     pub fn with_block_gas_limit(mut self, block_gas_limit: u64) -> Self {
         self.block_gas_limit = block_gas_limit;
         self
@@ -187,6 +197,8 @@ impl RuskNodeBuilder {
             .min_deployment_gas_price
             .unwrap_or(DEFAULT_MIN_DEPLOYMENT_GAS_PRICE);
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
+        let min_deploy_points =
+            self.min_deploy_points.unwrap_or(DEFAULT_MIN_DEPLOY_POINTS);
 
         let rusk = Rusk::new(
             self.state_dir,
@@ -195,6 +207,7 @@ impl RuskNodeBuilder {
             gas_per_deploy_byte,
             min_deployment_gas_price,
             min_gas_limit,
+            min_deploy_points,
             self.block_gas_limit,
             self.feeder_call_gas,
             rues_sender.clone(),
