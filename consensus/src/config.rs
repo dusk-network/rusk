@@ -8,10 +8,10 @@ use std::env;
 use std::sync::LazyLock;
 use std::time::Duration;
 
-use node_data::message::{MESSAGE_MAX_FAILED_ITERATIONS, MESSAGE_MAX_ITER};
+use node_data::message::MESSAGE_MAX_FAILED_ITERATIONS;
 
 /// Maximum number of iterations Consensus runs per a single round.
-pub const CONSENSUS_MAX_ITER: u8 = MESSAGE_MAX_ITER;
+pub const CONSENSUS_MAX_ITER: u8 = 50;
 
 /// Total credits of steps committees
 pub const PROPOSAL_COMMITTEE_CREDITS: usize = 1;
@@ -26,10 +26,24 @@ pub const MAX_BLOCK_SIZE: usize = 1_024 * 1_024;
 
 /// Emergency mode is enabled after 16 iterations
 pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = 16;
+pub const EMERGENCY_BLOCK_ITERATION: u8 = u8::MAX;
 
 pub const MIN_STEP_TIMEOUT: Duration = Duration::from_secs(7);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(40);
 pub const TIMEOUT_INCREASE: Duration = Duration::from_secs(2);
+
+// MIN_EMERGENCY_BLOCK_TIME is the minimum time that should elapse since the
+// previous block's timestamp for an Emergency Block to be valid. This value
+// should be enough to allow other candidates in the same round to be generated
+// and accepted.
+// The value is obtained by accounting for all possible iterations in a round,
+// plus the iteration of the previous block. This is necessary because the
+// reference timestamp is the one of the Candidate creation, which is at the
+// beginning of the iteration
+const MAX_ITER_TIMEOUT: u64 = MAX_STEP_TIMEOUT.as_secs() * 3;
+const CONSENSUS_MAX_ITER_EXT: u64 = CONSENSUS_MAX_ITER as u64 + 1;
+pub const MIN_EMERGENCY_BLOCK_TIME: Duration =
+    Duration::from_secs(MAX_ITER_TIMEOUT * CONSENSUS_MAX_ITER_EXT);
 
 mod default {
     pub const MINIMUM_BLOCK_TIME: u64 = 10;
@@ -82,6 +96,10 @@ pub fn ratification_extra() -> usize {
 /// Returns whether the current iteration is an emergency iteration
 pub fn is_emergency_iter(iter: u8) -> bool {
     iter >= EMERGENCY_MODE_ITERATION_THRESHOLD
+}
+
+pub fn is_emergency_block(iter: u8) -> bool {
+    iter == EMERGENCY_BLOCK_ITERATION
 }
 
 /// Returns if the next iteration generator needs to be excluded
