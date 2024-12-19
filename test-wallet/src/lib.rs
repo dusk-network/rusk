@@ -16,16 +16,16 @@ mod imp;
 
 use alloc::vec::Vec;
 
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use execution_core::stake::StakeData;
-use execution_core::transfer::moonlight::AccountData;
-use execution_core::transfer::phoenix::{
+use dusk_core::stake::StakeData;
+use dusk_core::transfer::moonlight::AccountData;
+use dusk_core::transfer::phoenix::{
     Note, NoteOpening, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use execution_core::BlsScalar;
+use dusk_core::BlsScalar;
 use zeroize::Zeroize;
 
 pub use wallet_core::keys::{

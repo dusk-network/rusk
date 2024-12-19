@@ -6,7 +6,7 @@
 
 use alloc::vec::Vec;
 
-use execution_core::{
+use dusk_core::{
     transfer::phoenix::{Note, NoteLeaf, NoteOpening, NoteTreeItem, NotesTree},
     BlsScalar,
 };

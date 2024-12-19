@@ -8,8 +8,8 @@
 
 use alloc::vec::Vec;
 
-use execution_core::transfer::phoenix::{NoteLeaf, ViewKey as PhoenixViewKey};
-use execution_core::BlsScalar;
+use dusk_core::transfer::phoenix::{NoteLeaf, ViewKey as PhoenixViewKey};
+use dusk_core::BlsScalar;
 
 use crate::notes::owned::NoteList;
 use crate::notes::MAX_INPUT_NOTES;

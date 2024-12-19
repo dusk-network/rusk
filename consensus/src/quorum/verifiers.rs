@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable as BytesSerializable;
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     MultisigPublicKey as BlsMultisigPublicKey,
     MultisigSignature as BlsMultisigSignature,
 };

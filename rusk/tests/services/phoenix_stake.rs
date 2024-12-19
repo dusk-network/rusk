@@ -7,8 +7,8 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::stake::MINIMUM_STAKE;
-use execution_core::{
+use dusk_core::stake::MINIMUM_STAKE;
+use dusk_core::{
     dusk,
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeAmount, STAKE_CONTRACT},

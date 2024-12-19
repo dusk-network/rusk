@@ -6,26 +6,24 @@
 
 pub mod common;
 
+use dusk_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
+use dusk_core::stake::{
+    Reward, RewardReason, Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT,
+};
+use dusk_core::transfer::data::ContractCall;
+use dusk_core::transfer::phoenix::{
+    PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    ViewKey as PhoenixViewKey,
+};
+use dusk_core::transfer::withdraw::{
+    Withdraw, WithdrawReceiver, WithdrawReplayToken,
+};
+use dusk_core::{dusk, JubJubScalar};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-
-use execution_core::{
-    dusk,
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{
-        Reward, RewardReason, Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT,
-    },
-    transfer::{
-        data::ContractCall,
-        phoenix::{
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            ViewKey as PhoenixViewKey,
-        },
-        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-    },
-    JubJubScalar,
-};
 
 use crate::common::assert::{
     assert_reward_event, assert_stake, assert_stake_event,

@@ -7,8 +7,8 @@
 use std::collections::BTreeMap;
 use std::mem;
 
-use execution_core::dusk;
-use execution_core::stake::MINIMUM_STAKE;
+use dusk_core::dusk;
+use dusk_core::stake::MINIMUM_STAKE;
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::Seed;
 use node_data::StepName;

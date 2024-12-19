@@ -16,7 +16,7 @@ use crossterm::{
 
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
-use execution_core::stake::MINIMUM_STAKE;
+use dusk_core::stake::MINIMUM_STAKE;
 
 use inquire::ui::RenderConfig;
 use inquire::validator::Validation;

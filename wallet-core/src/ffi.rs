@@ -25,17 +25,17 @@ use alloc::vec::Vec;
 use core::{ptr, slice};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
-use execution_core::signatures::bls::PublicKey as BlsPublicKey;
-use execution_core::stake::{Stake, STAKE_CONTRACT};
-use execution_core::transfer::data::{ContractCall, TransactionData};
-use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
-use execution_core::transfer::phoenix::{
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::{Stake, STAKE_CONTRACT};
+use dusk_core::transfer::data::{ContractCall, TransactionData};
+use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use dusk_core::transfer::phoenix::{
     ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
     PublicKey as PhoenixPublicKey,
 };
-use execution_core::transfer::withdraw::WithdrawReplayToken;
-use execution_core::transfer::{phoenix, Transaction};
-use execution_core::BlsScalar;
+use dusk_core::transfer::withdraw::WithdrawReplayToken;
+use dusk_core::transfer::{phoenix, Transaction};
+use dusk_core::BlsScalar;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha12Rng;
 use rkyv::to_bytes;
@@ -56,7 +56,7 @@ static KEY_SIZE: usize = BlsScalar::SIZE;
 static ITEM_SIZE: usize = core::mem::size_of::<ArchivedNoteLeaf>();
 
 #[no_mangle]
-static MINIMUM_STAKE: u64 = execution_core::stake::MINIMUM_STAKE;
+static MINIMUM_STAKE: u64 = dusk_core::stake::MINIMUM_STAKE;
 
 /// The size of the scratch buffer used for parsing the notes.
 const NOTES_BUFFER_SIZE: usize = 96 * 1024;
@@ -304,7 +304,7 @@ struct NoOpProver {
 }
 
 impl Prove for NoOpProver {
-    fn prove(&self, circuits: &[u8]) -> Result<Vec<u8>, execution_core::Error> {
+    fn prove(&self, circuits: &[u8]) -> Result<Vec<u8>, dusk_core::Error> {
         *self.circuits.borrow_mut() = circuits.to_vec();
 
         Ok(circuits.to_vec())

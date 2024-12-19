@@ -7,8 +7,8 @@
 //! Module for GraphQL that is used for moonlight related data in the archive.
 
 use dusk_bytes::Serializable;
-use execution_core::signatures::bls::PublicKey as AccountPublicKey;
-use execution_core::transfer::{
+use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::transfer::{
     ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
     CONVERT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, TRANSFER_CONTRACT,
     WITHDRAW_TOPIC,

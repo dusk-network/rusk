@@ -10,7 +10,7 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 
 [dependencies]
 dusk-bytes = { workspace = true }
-execution-core = { workspace = true, features = ["zk"] }
+dusk-core = { workspace = true, features = ["zk"] }
 
 # abi feature dependency
 piecrust-uplink = { workspace = true, features = ["abi"], optional = true }
@@ -40,7 +40,7 @@ dlmalloc = ["piecrust-uplink/dlmalloc"]
 
 # These are the features available for when one wishes to use `rusk-abi` as a
 # host.
-host = ["piecrust", "lru", "execution-core/parallel", "blake2b_simd", "dusk-poseidon", "rkyv"]
+host = ["piecrust", "lru", "dusk-core/parallel", "blake2b_simd", "dusk-poseidon", "rkyv"]
 host_debug = ["piecrust/debug", "lru"]
 
 [[test]]

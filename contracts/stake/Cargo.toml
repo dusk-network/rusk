@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-execution-core = { workspace = true }
+dusk-core = { workspace = true }
 dusk-bytes = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }
 
@@ -16,7 +16,7 @@ rusk-abi = { workspace = true, features = ["abi", "dlmalloc"] }
 
 [dev-dependencies]
 rusk-abi = { workspace = true, features = ["host"] }
-execution-core = { workspace = true, features = ["zk"] }
+dusk-core = { workspace = true, features = ["zk"] }
 rusk-prover = { workspace = true }
 wallet-core = { workspace = true }
 rand = { workspace = true }

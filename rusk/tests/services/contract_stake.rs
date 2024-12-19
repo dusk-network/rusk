@@ -7,12 +7,12 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use execution_core::stake::{self, Stake, EPOCH, MINIMUM_STAKE};
+use dusk_core::stake::{self, Stake, EPOCH, MINIMUM_STAKE};
 
 use dusk_bytes::Serializable;
-use execution_core::transfer::data::ContractCall;
-use execution_core::transfer::{self, Transaction};
-use execution_core::ContractId;
+use dusk_core::transfer::data::ContractCall;
+use dusk_core::transfer::{self, Transaction};
+use dusk_core::ContractId;
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -266,7 +266,7 @@ fn execute_transaction<'a, E: Into<Option<&'a str>>>(
     rusk: &Rusk,
     block_height: u64,
     expected_error: E,
-    generator: Option<execution_core::signatures::bls::PublicKey>,
+    generator: Option<dusk_core::signatures::bls::PublicKey>,
 ) -> SpentTransaction {
     let (executed_txs, _) = generator_procedure2(
         &rusk,

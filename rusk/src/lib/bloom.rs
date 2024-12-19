@@ -6,7 +6,7 @@
 
 use blake3::{Hasher, OUT_LEN};
 use dusk_bytes::Serializable;
-use execution_core::Event;
+use dusk_core::Event;
 
 const BLOOM_BYTE_LEN: usize = 256;
 

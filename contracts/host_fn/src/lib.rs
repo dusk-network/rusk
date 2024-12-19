@@ -12,7 +12,7 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
-use execution_core::{
+use dusk_core::{
     signatures::{
         bls::{
             MultisigSignature, PublicKey as BlsPublicKey,

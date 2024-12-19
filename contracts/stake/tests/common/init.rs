@@ -4,12 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use execution_core::stake::STAKE_CONTRACT;
-use execution_core::transfer::{
+use dusk_core::stake::STAKE_CONTRACT;
+use dusk_core::transfer::{
     phoenix::{Note, PublicKey as PhoenixPublicKey},
     TRANSFER_CONTRACT,
 };
-use execution_core::JubJubScalar;
+use dusk_core::JubJubScalar;
 use ff::Field;
 use rand::{CryptoRng, RngCore};
 use rusk_abi::{ContractData, Session, VM};

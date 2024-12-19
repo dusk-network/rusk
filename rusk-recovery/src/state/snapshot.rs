@@ -7,9 +7,9 @@
 use std::fmt::Debug;
 
 use dusk_bytes::Serializable;
-use execution_core::signatures::bls::PublicKey as AccountPublicKey;
-use execution_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
-use execution_core::Dusk;
+use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
+use dusk_core::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::state;
@@ -103,7 +103,7 @@ mod tests {
 
     use std::error::Error;
 
-    use execution_core::stake::MINIMUM_STAKE;
+    use dusk_core::stake::MINIMUM_STAKE;
 
     use super::*;
     use crate::state;

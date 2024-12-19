@@ -56,7 +56,7 @@ pub(crate) struct Task {
 
     /// Loaded Consensus keys
     pub keys: (
-        execution_core::signatures::bls::SecretKey,
+        dusk_core::signatures::bls::SecretKey,
         node_data::bls::PublicKey,
     ),
 }

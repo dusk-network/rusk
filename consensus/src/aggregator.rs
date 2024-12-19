@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
 use dusk_bytes::Serializable;
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     Error as BlsSigError, MultisigSignature as BlsMultisigSignature,
 };
 use node_data::bls::{PublicKey, PublicKeyBytes};
@@ -235,7 +235,7 @@ mod tests {
     use std::collections::HashMap;
 
     use dusk_bytes::DeserializableSlice;
-    use execution_core::signatures::bls::{
+    use dusk_core::signatures::bls::{
         PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
     };
     use hex::FromHex;

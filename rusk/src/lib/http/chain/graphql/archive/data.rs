@@ -6,7 +6,7 @@
 
 use async_graphql::Object;
 use dusk_bytes::Serializable;
-use execution_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use node::archive::MoonlightGroup;
 
 pub struct MoonlightTransfers(pub Vec<MoonlightGroup>);
@@ -46,12 +46,12 @@ impl ContractEvents {
 }
 
 /// Interim solution for sending out deserialized event data
-/// TODO: #2773 add serde feature to execution-core
+/// TODO: #2773 add serde feature to dusk-core
 pub mod deserialized_archive_data {
     use super::*;
-    use execution_core::stake::STAKE_CONTRACT;
-    use execution_core::transfer::withdraw::WithdrawReceiver;
-    use execution_core::transfer::{
+    use dusk_core::stake::STAKE_CONTRACT;
+    use dusk_core::transfer::withdraw::WithdrawReceiver;
+    use dusk_core::transfer::{
         ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
         CONVERT_TOPIC, DEPOSIT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC,
         TRANSFER_CONTRACT, WITHDRAW_TOPIC,

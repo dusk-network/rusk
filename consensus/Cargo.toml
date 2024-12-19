@@ -22,7 +22,7 @@ dusk-bytes = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 node-data = { workspace = true }
-execution-core = { workspace = true, features = ["parallel"] }
+dusk-core = { workspace = true, features = ["parallel"] }
 dusk-merkle = { workspace = true, features = ["size_32"] }
 thiserror = { workspace = true }
 

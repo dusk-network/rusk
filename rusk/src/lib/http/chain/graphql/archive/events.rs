@@ -7,7 +7,7 @@
 //! Module for GraphQL that relates to stored events in the archive.
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
-use execution_core::CONTRACT_ID_BYTES;
+use dusk_core::CONTRACT_ID_BYTES;
 use node_data::events::contract::WrappedContractId;
 
 use super::data::ContractEvents;

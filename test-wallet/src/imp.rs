@@ -9,20 +9,20 @@ use alloc::vec::Vec;
 use core::convert::Infallible;
 
 use dusk_bytes::Error as BytesError;
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use execution_core::stake::StakeData;
-use execution_core::transfer::data::TransactionData;
-use execution_core::transfer::moonlight::{
+use dusk_core::stake::StakeData;
+use dusk_core::transfer::data::TransactionData;
+use dusk_core::transfer::moonlight::{
     AccountData, Transaction as MoonlightTransaction,
 };
-use execution_core::transfer::phoenix::{
+use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, NoteOpening, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use execution_core::transfer::Transaction;
-use execution_core::{BlsScalar, Error as ExecutionError};
+use dusk_core::transfer::Transaction;
+use dusk_core::{BlsScalar, Error as ExecutionError};
 use rand::{CryptoRng, Error as RngError, RngCore};
 use rkyv::ser::serializers::{
     AllocScratchError, CompositeSerializerError, SharedSerializeMapError,
@@ -65,7 +65,7 @@ pub enum Error<S: Store, SC: StateClient> {
     Bytes(BytesError),
     /// Bytes were meant to be utf8 but aren't.
     Utf8(FromUtf8Error),
-    /// Originating from the execution-core error.
+    /// Originating from the dusk-core error.
     Execution(ExecutionError),
     /// Note combination for the given value is impossible given the maximum
     /// amount if inputs in a phoenix transaction.

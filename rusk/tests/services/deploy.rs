@@ -59,7 +59,7 @@ pub async fn deploy_fail() -> Result<()> {
         let raw = t.get("tx").unwrap().get("raw").unwrap().as_str().unwrap();
         let raw = hex::decode(raw).unwrap();
         let tx =
-            execution_core::transfer::Transaction::from_slice(&raw).unwrap();
+            dusk_core::transfer::Transaction::from_slice(&raw).unwrap();
         let txs = txs_by_height.entry(block_height).or_insert(vec![]);
         txs.push(tx);
     }
@@ -105,7 +105,7 @@ pub async fn deploy_fail() -> Result<()> {
         let raw = t.get("raw").unwrap().as_str().unwrap();
         let raw = hex::decode(raw).unwrap();
         let tx =
-            execution_core::transfer::Transaction::from_slice(&raw).unwrap();
+            dusk_core::transfer::Transaction::from_slice(&raw).unwrap();
         mempool.push(tx);
     }
 

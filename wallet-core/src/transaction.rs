@@ -9,23 +9,23 @@
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use execution_core::stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT};
-use execution_core::transfer::data::{
+use dusk_core::stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT};
+use dusk_core::transfer::data::{
     ContractBytecode, ContractCall, ContractDeploy, TransactionData,
 };
-use execution_core::transfer::moonlight::Transaction as MoonlightTransaction;
-use execution_core::transfer::phoenix::{
+use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use dusk_core::transfer::phoenix::{
     Note, NoteOpening, Prove, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
 };
-use execution_core::transfer::withdraw::{
+use dusk_core::transfer::withdraw::{
     Withdraw, WithdrawReceiver, WithdrawReplayToken,
 };
-use execution_core::transfer::{Transaction, TRANSFER_CONTRACT};
-use execution_core::{BlsScalar, ContractId, Error, JubJubScalar};
+use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use dusk_core::{BlsScalar, ContractId, Error, JubJubScalar};
 use ff::Field;
 use rand::{CryptoRng, RngCore};
 use zeroize::Zeroize;

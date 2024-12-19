@@ -280,8 +280,8 @@ impl Transaction<'_> {
 
     pub async fn tx_type(&self) -> String {
         match self.0.inner {
-            execution_core::transfer::Transaction::Phoenix(_) => "Phoenix",
-            execution_core::transfer::Transaction::Moonlight(_) => "Moonlight",
+            dusk_core::transfer::Transaction::Phoenix(_) => "Phoenix",
+            dusk_core::transfer::Transaction::Moonlight(_) => "Moonlight",
         }
         .into()
     }

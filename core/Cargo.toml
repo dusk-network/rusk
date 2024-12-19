@@ -1,5 +1,5 @@
 [package]
-name = "execution-core"
+name = "dusk-core"
 version = "0.1.0"
 edition = "2021"
 

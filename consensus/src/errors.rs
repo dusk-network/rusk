@@ -6,7 +6,7 @@
 
 use std::io;
 
-use execution_core::signatures::bls::Error as BlsSigError;
+use dusk_core::signatures::bls::Error as BlsSigError;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Hash, InvalidFault};
 use node_data::message::payload::{RatificationResult, Vote};

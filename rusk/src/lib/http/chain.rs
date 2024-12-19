@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use execution_core::transfer::Transaction as ProtocolTransaction;
+use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::database::rocksdb::{Backend, DBTransaction};
 use node::database::{Mempool, DB};
 use node::mempool::MempoolSrv;
@@ -178,7 +178,7 @@ impl RuskNode {
         &self,
         data: &[u8],
     ) -> anyhow::Result<ResponseData> {
-        let tx = execution_core::transfer::Transaction::from_slice(data)
+        let tx = dusk_core::transfer::Transaction::from_slice(data)
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
         let db = self.inner().database();
         let vm = self.inner().vm_handler();

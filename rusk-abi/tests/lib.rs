@@ -9,26 +9,26 @@
 use std::sync::OnceLock;
 
 use dusk_bytes::{ParseHexStr, Serializable};
-use execution_core::groth16::bn254::{Bn254, Fr as Bn254Fr};
-use execution_core::groth16::relations::lc;
-use execution_core::groth16::relations::r1cs::{
+use dusk_core::groth16::bn254::{Bn254, Fr as Bn254Fr};
+use dusk_core::groth16::relations::lc;
+use dusk_core::groth16::relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystemRef, Field as Groth16Field,
     SynthesisError, Variable,
 };
-use execution_core::groth16::serialize::{CanonicalSerialize, Compress};
-use execution_core::groth16::verifier::prepare_verifying_key;
-use execution_core::groth16::Groth16;
-use execution_core::plonk::{
+use dusk_core::groth16::serialize::{CanonicalSerialize, Compress};
+use dusk_core::groth16::verifier::prepare_verifying_key;
+use dusk_core::groth16::Groth16;
+use dusk_core::plonk::{
     Circuit, Compiler, Composer, Constraint, Error as PlonkError,
     PublicParameters,
 };
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use execution_core::signatures::schnorr::{
+use dusk_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
 };
-use execution_core::{BlsScalar, ContractId};
+use dusk_core::{BlsScalar, ContractId};
 use ff::Field;
 use rand::rngs::OsRng;
 use rusk_abi::{ContractData, Session, VM};

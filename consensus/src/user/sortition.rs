@@ -95,7 +95,7 @@ pub fn generate_sortition_score(
 mod tests {
 
     use dusk_bytes::DeserializableSlice;
-    use execution_core::signatures::bls::{
+    use dusk_core::signatures::bls::{
         PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
     };
     use node_data::ledger::Seed;

@@ -4,12 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! Error-type for execution-core.
+//! Error-type for dusk-core.
 
 use alloc::string::String;
 use core::fmt;
 
-/// The execution-core error type.
+/// The dusk-core error type.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     /// There is not sufficient balance to cover the transaction costs.

@@ -9,10 +9,10 @@
 use alloc::vec::Vec;
 use core::ops::Range;
 
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use execution_core::transfer::phoenix::{
+use dusk_core::transfer::phoenix::{
     PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
     ViewKey as PhoenixViewKey,
 };

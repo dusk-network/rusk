@@ -8,7 +8,7 @@ extern crate alloc;
 use alloc::string::String;
 use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
-use execution_core::{
+use dusk_core::{
     signatures::bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
     transfer::ReceiveFromContract,
     ContractId,

@@ -12,10 +12,8 @@ use core::ops::Index;
 use core::slice::Iter;
 
 use bytecheck::CheckBytes;
-use execution_core::transfer::phoenix::{
-    NoteLeaf, SecretKey as PhoenixSecretKey,
-};
-use execution_core::BlsScalar;
+use dusk_core::transfer::phoenix::{NoteLeaf, SecretKey as PhoenixSecretKey};
+use dusk_core::BlsScalar;
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// A collection of notes stored as key-value pairs.

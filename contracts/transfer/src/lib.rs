@@ -18,7 +18,7 @@ mod transitory;
 mod tree;
 mod verifier_data;
 
-use execution_core::stake::STAKE_CONTRACT;
+use dusk_core::stake::STAKE_CONTRACT;
 use state::TransferState;
 
 static mut STATE: TransferState = TransferState::new();

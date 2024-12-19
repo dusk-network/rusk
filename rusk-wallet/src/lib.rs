@@ -34,12 +34,12 @@ pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
 };
 
-use execution_core::stake::StakeData;
-use execution_core::transfer::phoenix::{
+use dusk_core::stake::StakeData;
+use dusk_core::transfer::phoenix::{
     ArchivedNoteLeaf, Note, NoteOpening, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use execution_core::{dusk, from_dusk, BlsScalar};
+use dusk_core::{dusk, from_dusk, BlsScalar};
 
 use currency::Dusk;
 

@@ -23,7 +23,7 @@ contracts: ## Execute the test for all contracts
 
 test: keys wasm ## Run the tests
 	$(MAKE) -C ./rusk-abi/ $@
-	$(MAKE) -C ./execution-core/ $@
+	$(MAKE) -C ./core/ $@
 	$(MAKE) state
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-recovery $@
@@ -36,7 +36,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./rusk-wallet/ $@
 			
 clippy: ## Run clippy
-	$(MAKE) -C ./execution-core/ $@
+	$(MAKE) -C ./core/ $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-abi $@
 	$(MAKE) -C ./rusk-profile $@
@@ -50,7 +50,7 @@ clippy: ## Run clippy
 	$(MAKE) -C ./rusk-wallet/ $@
 
 doc: ## Run doc gen
-	$(MAKE) -C ./execution-core/ $@
+	$(MAKE) -C ./core/ $@
 	$(MAKE) -C ./consensus $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./node $@

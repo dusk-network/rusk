@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use execution_core::transfer::{
+use dusk_core::transfer::{
     withdraw::Withdraw, ContractToAccount, ContractToContract,
     TRANSFER_CONTRACT,
 };

@@ -7,7 +7,7 @@
 #![no_std]
 
 mod state;
-use execution_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use state::Charlie;
 
 #[no_mangle]

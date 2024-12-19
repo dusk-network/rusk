@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use execution_core::{
+use dusk_core::{
     stake::{StakeData, STAKE_CONTRACT},
     transfer::TRANSFER_CONTRACT,
     BlsPublicKey, BlsSecretKey,

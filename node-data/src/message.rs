@@ -11,7 +11,7 @@ use std::net::SocketAddr;
 
 use async_channel::TrySendError;
 use dusk_bytes::Serializable as DuskSerializable;
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
     MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
     SecretKey as BlsSecretKey,

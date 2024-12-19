@@ -16,7 +16,7 @@ use criterion::measurement::WallTime;
 use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
-use execution_core::transfer::Transaction as ProtocolTransaction;
+use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node_data::bls::PublicKey;
 use node_data::ledger::Transaction;
 use rand::prelude::StdRng;

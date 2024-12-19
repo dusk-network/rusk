@@ -5,11 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable as DuskSerializeble;
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
     MultisigSignature as BlsMultisigSignature,
 };
-use execution_core::stake::EPOCH;
+use dusk_core::stake::EPOCH;
 use thiserror::Error;
 use tracing::error;
 

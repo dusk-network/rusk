@@ -10,7 +10,7 @@ use common::assert::assert_slash_event;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-use execution_core::{
+use dusk_core::{
     dusk,
     signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
     stake::{

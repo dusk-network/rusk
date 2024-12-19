@@ -4,12 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use execution_core::dusk;
-use execution_core::signatures::bls::{
+use dusk_core::dusk;
+use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use execution_core::stake::{Reward, RewardReason, EPOCH, STAKE_CONTRACT};
-use execution_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::stake::{Reward, RewardReason, EPOCH, STAKE_CONTRACT};
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::{ContractData, PiecrustError, Session, VM};

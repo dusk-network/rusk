@@ -8,6 +8,6 @@ description = "A proxy staking contract used to test delegation and intermediary
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-execution-core = { workspace = true }
+dusk-core = { workspace = true }
 rusk-abi = { workspace = true, features = ["abi", "dlmalloc"] }
 rkyv = { workspace = true, features = ["size_32"] }

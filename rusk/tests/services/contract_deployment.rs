@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use execution_core::{
+use dusk_core::{
     transfer::data::{ContractBytecode, ContractDeploy, TransactionData},
     ContractId,
 };

@@ -9,8 +9,8 @@ use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
 use std::{fs, io};
 
-use execution_core::stake::StakeKeys;
-use execution_core::transfer::PANIC_NONCE_NOT_READY;
+use dusk_core::stake::StakeKeys;
+use dusk_core::transfer::PANIC_NONCE_NOT_READY;
 use parking_lot::RwLock;
 use tracing::info;
 
@@ -21,7 +21,7 @@ use dusk_consensus::config::{
     RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
-use execution_core::{
+use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{Reward, RewardReason, StakeData, STAKE_CONTRACT},
     transfer::{
