@@ -7,6 +7,14 @@ on:
         description: "Git branch, ref, or SHA to checkout"
         required: true
         default: "master"
+      runner:
+        description: "Choose runner target to build against (JSON array)"
+        required: true
+        default: "[\"ubuntu-24.04\", \"macos-15\", \"arm-linux\"]"
+      features:
+        description: "Choose features to build (JSON array)"
+        required: true
+        default: "[\"default\", \"archive\"]"
 
 jobs:
   build_and_publish:
@@ -14,9 +22,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-15, arm-linux]
+        features: ${{ fromJson(github.event.inputs.features) }}
         compiler: [cargo]
-        features: [default, archive]
         include:
           - os: ubuntu-24.04
             target: linux-x64
@@ -26,8 +33,17 @@ jobs:
           - os: arm-linux
             target: linux-arm64
             flags: --target=aarch64-unknown-linux-gnu
+      fail-fast: false
 
     steps:
+      - name: Skip Non-matching Configurations
+        if: |
+          !contains(fromJson(github.event.inputs.runner), matrix.runner) ||
+          !contains(fromJson(github.event.inputs.features), matrix.features)
+        run: |
+          echo "Skipping build for ${{ matrix.runner }} - ${{ matrix.features }}"
+          exit 0
+        
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
