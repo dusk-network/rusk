@@ -56,7 +56,7 @@ phoenix-circuits = { version = "=0.4.0", default-features = false }
 phoenix-core = { version = "=0.32.0", default-features = false }
 # we leave piecrust open until a stable release is out
 piecrust = "=0.27.0"
-piecrust-uplink = "0.17.2-rc.0"
+piecrust-uplink = "0.17.3"
 poseidon-merkle = "=0.7.0"
 
 # External dependencies
