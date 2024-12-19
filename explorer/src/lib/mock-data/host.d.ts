@@ -5,5 +5,6 @@ type HostProvisioner = {
   hard_faults: number;
   key: string;
   locked_amt: number;
+  owner: { Account: string } | { Contract: string };
   reward: number;
 };

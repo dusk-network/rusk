@@ -35,7 +35,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
       >
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -43,8 +43,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -64,6 +78,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -82,6 +147,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -100,6 +179,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -117,6 +210,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -134,6 +241,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -148,7 +269,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -156,8 +277,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -177,6 +312,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="m9dVuRgr3CQX5P5Fxh2t68QRh...mZ9qF734nJJhb2f94r33pFQyz"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -195,6 +381,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -213,6 +413,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -230,6 +444,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -247,6 +475,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -261,7 +503,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -269,8 +511,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -290,6 +546,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+            >
+              Contract
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -308,6 +615,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -326,6 +647,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -343,6 +678,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -360,6 +709,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -374,7 +737,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -382,8 +745,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -403,6 +780,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="mLx5HUo5PhsobwgMJhzL9j8TY...eXVk4jmfr3CEHqvBrRgEzoka8"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -421,6 +849,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -439,6 +881,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -456,6 +912,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -473,6 +943,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -487,7 +971,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -495,8 +979,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -516,6 +1014,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+            >
+              Contract
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -534,6 +1083,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -552,6 +1115,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -569,6 +1146,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -586,6 +1177,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -600,7 +1205,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -608,8 +1213,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -629,6 +1248,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+            >
+              Contract
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -647,6 +1317,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -665,6 +1349,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -682,6 +1380,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -699,6 +1411,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -713,7 +1439,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -721,8 +1447,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -742,6 +1482,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+            >
+              Contract
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -760,6 +1551,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -778,6 +1583,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -795,6 +1614,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -812,6 +1645,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -826,7 +1673,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -834,8 +1681,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -855,6 +1716,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="mWvq9EWD9b8gQw5uD4GnYaV8W...fsBMoDjbYzTTUxooU7BY2oEDe"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -873,6 +1785,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -891,6 +1817,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -908,6 +1848,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -925,6 +1879,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -939,7 +1907,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -947,8 +1915,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -968,6 +1950,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="mXKJ97xTtrSPzxWHBKPurUpeh...eUPuXjqaC9dp6H7JgkCK2o7x4"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -986,6 +2019,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -1004,6 +2051,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -1021,6 +2082,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -1038,6 +2113,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -1052,7 +2141,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -1060,8 +2149,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -1081,6 +2184,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="mdXsA3Ee1YDt1aTcvUg7AKpzT...epuR9FPWCcJQfDwK8VZPimZ2J"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -1099,6 +2253,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -1117,6 +2285,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -1134,6 +2316,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -1151,6 +2347,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -1165,7 +2375,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -1173,8 +2383,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -1194,6 +2418,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="mdca2ea2KpRZaW6s6NkYAY29w...BPg8MmRfxyBCUVRji7SxM2zBD"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -1212,6 +2487,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -1230,6 +2519,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -1247,6 +2550,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -1264,6 +2581,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -1278,7 +2609,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -1286,8 +2617,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -1307,6 +2652,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+            >
+              Contract
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -1325,6 +2721,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -1343,6 +2753,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -1360,6 +2784,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -1377,6 +2815,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -1391,7 +2843,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -1399,8 +2851,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -1420,6 +2886,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="mvft6AXjR1mDtg1Qo3GzGBKZA...CeDJ9pKfJLdjayAfrxEyudvx2"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -1438,6 +2955,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -1456,6 +2987,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -1473,6 +3018,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -1490,6 +3049,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -1504,7 +3077,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -1512,8 +3085,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -1533,6 +3120,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="mvsVWvCaiHtugFDx1VmDCX5Ze...eWVgrE1CfbGCaYvcdeSzHCUUb"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -1551,6 +3189,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -1569,6 +3221,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -1586,6 +3252,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -1603,6 +3283,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -1617,7 +3311,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
         </dl>
         
         <dl
-          class="detail-list"
+          class="detail-list provisioners-list"
         >
           <dt
             class="details-list__term details-list__term--table"
@@ -1625,8 +3319,22 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
-              staking address
+              Staking address
             </div>
           </dt>
            
@@ -1646,6 +3354,57 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The provisioner's owner"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="n2DPucZgNznPCfhRfAS8aHQUk...bDNKwS6GhaRRR9f95PUxRwtD1"
+            >
+              Account
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The locked stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Locked Stake Amount
             </div>
@@ -1664,6 +3423,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The reclaimable stake amount"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Reclaimable Stake Amount
             </div>
@@ -1682,6 +3455,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Soft Slashes
             </div>
@@ -1699,6 +3486,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               Hard Slashes
             </div>
@@ -1716,6 +3517,20 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <div
               class="details-list__term-layout"
             >
+              <svg
+                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
                
               accumulated reward
             </div>
@@ -1735,6 +3550,17 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
      
   </div>
   
+   
+   
+  <div
+    aria-hidden="true"
+    class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+    id="provisioners-tooltip"
+    role="tooltip"
+    style="left: 0px; top: 0px;"
+  >
+    
+  </div>
 </section>
 `;
 
@@ -1779,6 +3605,17 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
      
   </div>
   
+   
+   
+  <div
+    aria-hidden="true"
+    class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+    id="provisioners-tooltip"
+    role="tooltip"
+    style="left: 0px; top: 0px;"
+  >
+    
+  </div>
 </section>
 `;
 
@@ -1834,6 +3671,13 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <th
                 class="table__header-cell"
               >
+                Owner
+              </th>
+              
+               
+              <th
+                class="table__header-cell"
+              >
                 Stake Amount (DUSK)
               </th>
               
@@ -1865,6 +3709,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 m6dy2gz3jC...tW82FWtnpf
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="m6dy2gz3jC...tW82FWtnpf"
+                >
+                  Account
+                </span>
               </td>
               
                
@@ -1936,6 +3793,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="m9dVuRgr3C...94r33pFQyz"
+                >
+                  Account
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
                 <b
                   class="provisioners-table__staked-amount-type-label"
                 >
@@ -1995,6 +3865,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 mHGvQ9Xdjz...iTfxTvgn7f
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+                >
+                  Contract
+                </span>
               </td>
               
                
@@ -2066,6 +3949,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="mLx5HUo5Ph...BrRgEzoka8"
+                >
+                  Account
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
                 <b
                   class="provisioners-table__staked-amount-type-label"
                 >
@@ -2125,6 +4021,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 mTgXDqkyVa...gAseybAsfU
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+                >
+                  Contract
+                </span>
               </td>
               
                
@@ -2196,6 +4105,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+                >
+                  Contract
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
                 <b
                   class="provisioners-table__staked-amount-type-label"
                 >
@@ -2255,6 +4177,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 mUUpjnXow2...SfzQcywzaW
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+                >
+                  Contract
+                </span>
               </td>
               
                
@@ -2326,6 +4261,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="mWvq9EWD9b...oU7BY2oEDe"
+                >
+                  Account
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
                 <b
                   class="provisioners-table__staked-amount-type-label"
                 >
@@ -2385,6 +4333,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 mXKJ97xTtr...JgkCK2o7x4
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="mXKJ97xTtr...JgkCK2o7x4"
+                >
+                  Account
+                </span>
               </td>
               
                
@@ -2456,6 +4417,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="mdXsA3Ee1Y...K8VZPimZ2J"
+                >
+                  Account
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
                 <b
                   class="provisioners-table__staked-amount-type-label"
                 >
@@ -2515,6 +4489,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 mdca2ea2Kp...ji7SxM2zBD
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="mdca2ea2Kp...ji7SxM2zBD"
+                >
+                  Account
+                </span>
               </td>
               
                
@@ -2586,6 +4573,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+                >
+                  Contract
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
                 <b
                   class="provisioners-table__staked-amount-type-label"
                 >
@@ -2645,6 +4645,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 mvft6AXjR1...frxEyudvx2
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="mvft6AXjR1...frxEyudvx2"
+                >
+                  Account
+                </span>
               </td>
               
                
@@ -2716,6 +4729,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell"
               >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="mvsVWvCaiH...cdeSzHCUUb"
+                >
+                  Account
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
                 <b
                   class="provisioners-table__staked-amount-type-label"
                 >
@@ -2775,6 +4801,19 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 n2DPucZgNz...95PUxRwtD1
+              </td>
+              
+               
+              <td
+                class="table__data-cell"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="n2DPucZgNz...95PUxRwtD1"
+                >
+                  Account
+                </span>
               </td>
               
                
@@ -2842,5 +4881,16 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
      
   </div>
   
+   
+   
+  <div
+    aria-hidden="true"
+    class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+    id="provisioners-tooltip"
+    role="tooltip"
+    style="left: 0px; top: 0px;"
+  >
+    
+  </div>
 </section>
 `;
