@@ -14,12 +14,13 @@ use dusk_bytes::Serializable;
 use piecrust_uplink::CONTRACT_ID_BYTES;
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::abi::ContractId;
 use crate::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
     Signature as BlsSignature,
 };
 use crate::transfer::withdraw::Withdraw as TransferWithdraw;
-use crate::{dusk, ContractId, Dusk};
+use crate::{dusk, Dusk};
 
 /// ID of the genesis stake contract
 pub const STAKE_CONTRACT: ContractId = crate::reserved(0x2);

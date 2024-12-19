@@ -9,6 +9,7 @@
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
@@ -25,7 +26,7 @@ use dusk_core::transfer::withdraw::{
     Withdraw, WithdrawReceiver, WithdrawReplayToken,
 };
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
-use dusk_core::{BlsScalar, ContractId, Error, JubJubScalar};
+use dusk_core::{BlsScalar, Error, JubJubScalar};
 use ff::Field;
 use rand::{CryptoRng, RngCore};
 use zeroize::Zeroize;

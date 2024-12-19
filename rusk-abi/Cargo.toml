@@ -9,19 +9,13 @@ license = "MPL-2.0"
 exclude = [".github/workflows/ci.yml", ".gitignore"]
 
 [dependencies]
-dusk-bytes = { workspace = true }
 dusk-core = { workspace = true, features = ["zk"] }
-
-# abi feature dependency
-piecrust-uplink = { workspace = true, features = ["abi"], optional = true }
-arbitrary = { workspace = true, optional = true }
-
-# host feature dependencies
-piecrust = { workspace = true, optional = true }
-lru = { workspace = true, optional = true }
-blake2b_simd = { workspace = true, optional = true }
-dusk-poseidon = { workspace = true, optional = true }
-rkyv = { workspace = true, features = ["size_32"], optional = true }
+dusk-bytes = { workspace = true }
+piecrust = { workspace = true }
+lru = { workspace = true }
+blake2b_simd = { workspace = true }
+dusk-poseidon = { workspace = true }
+rkyv = { workspace = true, features = ["size_32"] }
 
 [dev-dependencies]
 rand = { workspace = true, features = ["getrandom"] }
@@ -29,21 +23,4 @@ once_cell = { workspace = true }
 ff = { workspace = true }
 
 [features]
-# By default, we include the contract writing features.
-default = ["abi", "dlmalloc"]
-
-# These are the features available for when one wishes to use `rusk-abi` as a
-# contract.
-abi = ["piecrust-uplink"]
-debug = ["abi", "piecrust-uplink/debug"]
-dlmalloc = ["piecrust-uplink/dlmalloc"]
-
-# These are the features available for when one wishes to use `rusk-abi` as a
-# host.
-host = ["piecrust", "lru", "dusk-core/parallel", "blake2b_simd", "dusk-poseidon", "rkyv"]
-host_debug = ["piecrust/debug", "lru"]
-
-[[test]]
-name = "test-rusk-abi"
-path = "tests/lib.rs"
-required-features = ["host"]
+debug = ["piecrust/debug"]

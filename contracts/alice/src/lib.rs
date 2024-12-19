@@ -9,6 +9,8 @@
 
 extern crate alloc;
 
+use dusk_core::abi;
+
 mod state;
 
 #[cfg(target_family = "wasm")]
@@ -21,26 +23,26 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn ping(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |()| STATE.ping())
+        abi::wrap_call(arg_len, |()| STATE.ping())
     }
 
     #[no_mangle]
     unsafe fn withdraw(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw(arg))
+        abi::wrap_call(arg_len, |arg| STATE.withdraw(arg))
     }
 
     #[no_mangle]
     unsafe fn deposit(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.deposit(arg))
+        abi::wrap_call(arg_len, |arg| STATE.deposit(arg))
     }
 
     #[no_mangle]
     unsafe fn contract_to_contract(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.contract_to_contract(arg))
+        abi::wrap_call(arg_len, |arg| STATE.contract_to_contract(arg))
     }
 
     #[no_mangle]
     unsafe fn contract_to_account(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.contract_to_account(arg))
+        abi::wrap_call(arg_len, |arg| STATE.contract_to_account(arg))
     }
 }

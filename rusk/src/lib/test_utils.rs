@@ -16,6 +16,7 @@ use futures::Stream;
 use tokio::spawn;
 use tracing::{error, info};
 
+use dusk_core::abi::ContractId;
 use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeData, STAKE_CONTRACT},
@@ -23,7 +24,7 @@ use dusk_core::{
         phoenix::{Note, NoteLeaf, NoteOpening, ViewKey},
         TRANSFER_CONTRACT,
     },
-    BlsScalar, ContractId,
+    BlsScalar,
 };
 use parking_lot::RwLockWriteGuard;
 use rusk_abi::VM;
