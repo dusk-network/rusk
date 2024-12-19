@@ -14,9 +14,9 @@ use dusk_bytes::Serializable;
 use execution_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{
-        next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeData,
-        StakeEvent, StakeFundOwner, StakeKeys, Withdraw, WithdrawToContract,
-        EPOCH, MINIMUM_STAKE, STAKE_CONTRACT, STAKE_WARNINGS,
+        next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeConfig,
+        StakeData, StakeEvent, StakeFundOwner, StakeKeys, Withdraw,
+        WithdrawToContract, EPOCH, STAKE_CONTRACT,
     },
     transfer::{ContractToContract, ReceiveFromContract, TRANSFER_CONTRACT},
     ContractId,
@@ -34,10 +34,11 @@ use crate::*;
 /// valid stake.
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
-    stakes: BTreeMap<[u8; BlsPublicKey::SIZE], (StakeData, StakeKeys)>,
     burnt_amount: u64,
+    conf: StakeConfig,
     previous_block_state:
         BTreeMap<[u8; BlsPublicKey::SIZE], (Option<StakeData>, BlsPublicKey)>,
+    stakes: BTreeMap<[u8; BlsPublicKey::SIZE], (StakeData, StakeKeys)>,
 }
 
 const STAKE_CONTRACT_VERSION: u64 = 8;
@@ -45,10 +46,19 @@ const STAKE_CONTRACT_VERSION: u64 = 8;
 impl StakeState {
     pub const fn new() -> Self {
         Self {
-            stakes: BTreeMap::new(),
             burnt_amount: 0u64,
+            conf: StakeConfig::new(),
             previous_block_state: BTreeMap::new(),
+            stakes: BTreeMap::new(),
         }
+    }
+
+    pub fn config(&self) -> &StakeConfig {
+        &self.conf
+    }
+
+    pub fn configure(&mut self, conf: StakeConfig) {
+        self.conf = conf;
     }
 
     pub fn on_new_block(&mut self) {
@@ -80,6 +90,7 @@ impl StakeState {
     }
 
     pub fn stake(&mut self, stake: Stake) {
+        let minimum_stake = self.conf.minimum_stake;
         let value = stake.value();
         let signature = *stake.signature();
 
@@ -91,7 +102,7 @@ impl StakeState {
         let prev_stake = self.get_stake(&stake.keys().account).copied();
         let (loaded_stake, keys) = self.load_or_create_stake_mut(stake.keys());
 
-        if loaded_stake.amount.is_none() && value < MINIMUM_STAKE {
+        if loaded_stake.amount.is_none() && value < minimum_stake {
             panic!("The staked value is lower than the minimum amount!");
         }
 
@@ -143,6 +154,7 @@ impl StakeState {
         let stake: Stake =
             rkyv::from_bytes(&recv.data).expect("Invalid stake received");
         let value = stake.value();
+        let minimum_stake = self.conf.minimum_stake;
 
         if stake.chain_id() != self.chain_id() {
             panic!("The stake must target the correct chain");
@@ -157,7 +169,7 @@ impl StakeState {
         assert!(value == recv.value, "Stake amount mismatch");
 
         if loaded_stake.amount.is_none() {
-            if value < MINIMUM_STAKE {
+            if value < minimum_stake {
                 panic!("The staked value is lower than the minimum amount!");
             }
 
@@ -254,7 +266,7 @@ impl StakeState {
             if loaded_stake.reward == 0 {
                 self.stakes.remove(&unstake.account().to_bytes());
             }
-        } else if stake.total_funds() < MINIMUM_STAKE {
+        } else if stake.total_funds() < self.conf.minimum_stake {
             panic!("Stake left is lower than minimum stake");
         }
 
@@ -513,6 +525,7 @@ impl StakeState {
     /// depleted and the provisioner eligibility is shifted to the
     /// next epoch as well
     pub fn slash(&mut self, account: &BlsPublicKey, to_slash: Option<u64>) {
+        let stake_warnings = self.conf.warnings;
         let (stake, _) = self
             .get_stake_mut(account)
             .expect("The stake to slash should exist");
@@ -525,7 +538,7 @@ impl StakeState {
 
         stake.faults = stake.faults.saturating_add(1);
         let effective_faults =
-            stake.faults.saturating_sub(STAKE_WARNINGS) as u64;
+            stake.faults.saturating_sub(stake_warnings) as u64;
 
         let stake_amount = stake.amount.as_mut().expect("stake_to_exists");
 

@@ -94,6 +94,11 @@ unsafe fn get_version(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.get_version())
 }
 
+#[no_mangle]
+unsafe fn get_config(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.config().clone())
+}
+
 // "Feeder" queries
 
 #[no_mangle]
@@ -113,6 +118,14 @@ unsafe fn before_state_transition(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| {
         assert_external_caller();
         STATE.on_new_block()
+    })
+}
+
+#[no_mangle]
+unsafe fn set_config(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |config| {
+        assert_external_caller();
+        STATE.configure(config)
     })
 }
 
