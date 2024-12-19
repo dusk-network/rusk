@@ -14,12 +14,10 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use dusk_core::{
-    signatures::bls::{
-        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-        Signature as BlsSignature,
-    },
-    ContractId,
+use dusk_core::abi::ContractId;
+use dusk_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    Signature as BlsSignature,
 };
 use rusk::gen_id::gen_contract_id;
 use rusk::{Error, Result, Rusk};

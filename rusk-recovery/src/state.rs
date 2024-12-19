@@ -9,11 +9,12 @@ use std::fs;
 use std::path::Path;
 
 use dusk_bytes::DeserializableSlice;
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::stake::{StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT};
 use dusk_core::transfer::phoenix::{Note, PublicKey, Sender};
 use dusk_core::transfer::TRANSFER_CONTRACT;
-use dusk_core::{ContractId, JubJubScalar};
+use dusk_core::JubJubScalar;
 use ff::Field;
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;

@@ -16,7 +16,8 @@ use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::{ContractId, Error, ARGBUF_LEN};
+use crate::abi::{ContractId, ARGBUF_LEN};
+use crate::Error;
 
 /// The maximum size of a memo.
 pub const MAX_MEMO_SIZE: usize = 512;

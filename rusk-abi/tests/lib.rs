@@ -9,6 +9,7 @@
 use std::sync::OnceLock;
 
 use dusk_bytes::{ParseHexStr, Serializable};
+use dusk_core::abi::ContractId;
 use dusk_core::groth16::bn254::{Bn254, Fr as Bn254Fr};
 use dusk_core::groth16::relations::lc;
 use dusk_core::groth16::relations::r1cs::{
@@ -28,7 +29,7 @@ use dusk_core::signatures::bls::{
 use dusk_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
 };
-use dusk_core::{BlsScalar, ContractId};
+use dusk_core::BlsScalar;
 use ff::Field;
 use rand::rngs::OsRng;
 use rusk_abi::{ContractData, Session, VM};

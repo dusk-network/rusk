@@ -17,6 +17,8 @@
 
 extern crate alloc;
 
+pub mod abi;
+
 pub mod stake;
 pub mod transfer;
 
@@ -51,11 +53,6 @@ pub mod signatures {
     }
 }
 
-pub use piecrust_uplink::{
-    ContractError, ContractId, Event, StandardBufSerializer, ARGBUF_LEN,
-    CONTRACT_ID_BYTES,
-};
-
 /// Types and traits to create plonk circuits and generate and verify plonk
 /// proofs.
 #[cfg(feature = "plonk")]
@@ -80,10 +77,10 @@ pub mod groth16 {
 }
 
 #[inline]
-const fn reserved(b: u8) -> ContractId {
-    let mut bytes = [0u8; CONTRACT_ID_BYTES];
+const fn reserved(b: u8) -> abi::ContractId {
+    let mut bytes = [0u8; abi::CONTRACT_ID_BYTES];
     bytes[0] = b;
-    ContractId::from_bytes(bytes)
+    abi::ContractId::from_bytes(bytes)
 }
 
 use alloc::string::String;

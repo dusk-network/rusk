@@ -5,13 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable;
+use dusk_core::abi::Event;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{
     Reward, SlashEvent, StakeData, StakeEvent, STAKE_CONTRACT,
 };
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::TRANSFER_CONTRACT;
-use dusk_core::Event;
 use rkyv::{check_archived_root, Deserialize, Infallible};
 use rusk_abi::Session;
 

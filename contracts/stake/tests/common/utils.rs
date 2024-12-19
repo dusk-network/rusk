@@ -6,6 +6,7 @@
 
 use std::sync::mpsc;
 
+use dusk_core::abi::ContractError;
 use dusk_core::transfer::data::TransactionData;
 use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, NoteOpening, NoteTreeItem, PublicKey as PhoenixPublicKey,
@@ -13,7 +14,7 @@ use dusk_core::transfer::phoenix::{
     ViewKey as PhoenixViewKey,
 };
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
-use dusk_core::{BlsScalar, ContractError, LUX};
+use dusk_core::{BlsScalar, LUX};
 use rand::rngs::StdRng;
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 use rusk_prover::LocalProver;

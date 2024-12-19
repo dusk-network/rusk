@@ -8,6 +8,7 @@ use super::event::Event;
 use super::*;
 
 use dusk_bytes::Serializable;
+use dusk_core::abi::ContractId;
 use dusk_core::stake::StakeFundOwner;
 use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
@@ -16,8 +17,6 @@ use std::sync::{mpsc, Arc};
 use std::thread;
 use tokio::task;
 use tungstenite::http::request;
-
-use dusk_core::ContractId;
 
 use crate::node::Rusk;
 

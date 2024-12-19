@@ -13,6 +13,7 @@ use dusk_bytes::Serializable;
 use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::abi::ContractId;
 use crate::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
     Signature as AccountSignature,
@@ -21,7 +22,7 @@ use crate::signatures::schnorr::{
     SecretKey as NoteSecretKey, Signature as NoteSignature,
 };
 use crate::transfer::phoenix::StealthAddress;
-use crate::{BlsScalar, ContractId};
+use crate::BlsScalar;
 
 /// Withdrawal information, proving the intent of a user to withdraw from a
 /// contract.

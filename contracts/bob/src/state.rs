@@ -8,11 +8,11 @@ extern crate alloc;
 use alloc::string::String;
 use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
-use dusk_core::{
-    signatures::bls::{PublicKey as BlsPublicKey, Signature as BlsSignature},
-    transfer::ReceiveFromContract,
-    ContractId,
+use dusk_core::abi::{self, ContractId};
+use dusk_core::signatures::bls::{
+    PublicKey as BlsPublicKey, Signature as BlsSignature,
 };
+use dusk_core::transfer::ReceiveFromContract;
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
@@ -63,12 +63,12 @@ impl Bob {
             .expect("Message should serialize correctly")
             .to_vec();
 
-        let owner_bytes = rusk_abi::self_owner_raw();
+        let owner_bytes = abi::self_owner_raw();
         if let Ok(owner) = BlsPublicKey::from_bytes(&owner_bytes) {
             if self.nonce == msg.nonce
                 && msg.fname == "owner_reset"
-                && msg.contract_id == rusk_abi::self_id()
-                && rusk_abi::verify_bls(message_bytes, owner, sig)
+                && msg.contract_id == abi::self_id()
+                && abi::verify_bls(message_bytes, owner, sig)
             {
                 self.owner_only_function(msg.args);
                 self.nonce += 1;

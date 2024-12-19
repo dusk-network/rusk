@@ -8,6 +8,7 @@ use alloc::vec::Vec;
 use std::path::{Path, PathBuf};
 
 use dusk_bytes::DeserializableSlice;
+use dusk_core::abi::{Metadata, Query};
 use dusk_core::groth16::bn254::{Bn254, G1Projective};
 use dusk_core::groth16::serialize::CanonicalDeserialize;
 use dusk_core::groth16::{
@@ -28,8 +29,6 @@ use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 
 mod cache;
-
-use crate::{Metadata, Query};
 
 /// Create a new session based on the given `vm`. The vm *must* have been
 /// created using [`new_vm`] or [`new_ephemeral_vm`].
