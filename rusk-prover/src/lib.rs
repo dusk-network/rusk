@@ -16,11 +16,11 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
-use dusk_plonk::prelude::Prover as PlonkProver;
-use execution_core::transfer::phoenix::{
+use dusk_core::transfer::phoenix::{
     Prove, TxCircuit, TxCircuitVec, NOTES_TREE_DEPTH,
 };
-use execution_core::Error;
+use dusk_core::Error;
+use dusk_plonk::prelude::Prover as PlonkProver;
 use once_cell::sync::Lazy;
 
 static TX_CIRCUIT_1_2_PROVER: Lazy<PlonkProver> =

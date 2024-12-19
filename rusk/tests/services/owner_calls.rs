@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use execution_core::{
+use dusk_core::{
     signatures::bls::{
         PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
         Signature as BlsSignature,

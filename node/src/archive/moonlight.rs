@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use dusk_bytes::Serializable;
-use execution_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use node_data::events::contract::{ContractEvent, OriginHash};
 use rocksdb::{
     BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice,
@@ -753,12 +753,12 @@ mod tests {
     use std::env;
     use std::path::PathBuf;
 
-    use execution_core::signatures::bls::SecretKey;
-    use execution_core::transfer::withdraw::WithdrawReceiver;
-    use execution_core::transfer::{
+    use dusk_core::signatures::bls::SecretKey;
+    use dusk_core::transfer::withdraw::WithdrawReceiver;
+    use dusk_core::transfer::{
         ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
     };
-    use execution_core::{ContractId, CONTRACT_ID_BYTES};
+    use dusk_core::{ContractId, CONTRACT_ID_BYTES};
     use node_data::events::contract::{
         ContractEvent, ContractTxEvent, WrappedContractId, ORIGIN_HASH_BYTES,
     };
@@ -803,7 +803,7 @@ mod tests {
         ContractTxEvent {
             event: ContractEvent {
                 target: WrappedContractId(
-                    execution_core::transfer::TRANSFER_CONTRACT,
+                    dusk_core::transfer::TRANSFER_CONTRACT,
                 ),
                 topic: "phoenix".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&fake_phoenix_tx_event_data)
@@ -824,7 +824,7 @@ mod tests {
         ContractTxEvent {
             event: ContractEvent {
                 target: WrappedContractId(
-                    execution_core::transfer::TRANSFER_CONTRACT,
+                    dusk_core::transfer::TRANSFER_CONTRACT,
                 ),
                 topic: "convert".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&convert_event)
@@ -854,7 +854,7 @@ mod tests {
         ContractTxEvent {
             event: ContractEvent {
                 target: WrappedContractId(
-                    execution_core::transfer::TRANSFER_CONTRACT,
+                    dusk_core::transfer::TRANSFER_CONTRACT,
                 ),
                 topic: "moonlight".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&moonlight_tx_event)
@@ -875,7 +875,7 @@ mod tests {
         ContractTxEvent {
             event: ContractEvent {
                 target: WrappedContractId(
-                    execution_core::transfer::TRANSFER_CONTRACT,
+                    dusk_core::transfer::TRANSFER_CONTRACT,
                 ),
                 topic: "withdraw".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&withdraw_event)
@@ -896,7 +896,7 @@ mod tests {
         ContractTxEvent {
             event: ContractEvent {
                 target: WrappedContractId(
-                    execution_core::transfer::TRANSFER_CONTRACT,
+                    dusk_core::transfer::TRANSFER_CONTRACT,
                 ),
                 topic: "deposit".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&deposit_event)
@@ -917,7 +917,7 @@ mod tests {
         ContractTxEvent {
             event: ContractEvent {
                 target: WrappedContractId(
-                    execution_core::transfer::TRANSFER_CONTRACT,
+                    dusk_core::transfer::TRANSFER_CONTRACT,
                 ),
                 topic: "deposit".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&deposit_event)
@@ -1186,7 +1186,7 @@ mod tests {
             assert_eq!(e.topic, "moonlight");
             assert_eq!(
                 e.target,
-                WrappedContractId(execution_core::transfer::TRANSFER_CONTRACT)
+                WrappedContractId(dusk_core::transfer::TRANSFER_CONTRACT)
             );
 
             let moonlight_event =
@@ -1208,9 +1208,7 @@ mod tests {
                 assert_eq!(e.topic, "moonlight");
                 assert_eq!(
                     e.target,
-                    WrappedContractId(
-                        execution_core::transfer::TRANSFER_CONTRACT
-                    )
+                    WrappedContractId(dusk_core::transfer::TRANSFER_CONTRACT)
                 );
 
                 let moonlight_event =

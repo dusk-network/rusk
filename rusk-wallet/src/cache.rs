@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
-use execution_core::transfer::phoenix::NoteLeaf;
+use dusk_core::transfer::phoenix::NoteLeaf;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 
 use super::*;

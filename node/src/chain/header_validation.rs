@@ -19,10 +19,10 @@ use dusk_consensus::quorum::verifiers;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
 };
-use execution_core::stake::EPOCH;
+use dusk_core::stake::EPOCH;
 use hex;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Fault, InvalidFault, Seed, Signature};

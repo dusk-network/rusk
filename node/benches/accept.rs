@@ -18,7 +18,7 @@ use dusk_consensus::user::cluster::Cluster;
 use dusk_consensus::user::committee::Committee;
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::sortition::Config as SortitionConfig;
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
     SecretKey as BlsSecretKey,
 };

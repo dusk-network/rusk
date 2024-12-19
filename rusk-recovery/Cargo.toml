@@ -14,7 +14,7 @@ path = "src/lib.rs"
 rusk-profile = { workspace = true }
 
 # stake and keys feature dependency
-execution-core = { workspace = true, features = ["zk", "std"], optional = true }
+dusk-core = { workspace = true, features = ["zk", "std"], optional = true }
 once_cell = { workspace = true, optional = true }
 tracing = { workspace = true, features = ["log"], optional = true }
 
@@ -43,7 +43,7 @@ tokio = { workspace = true, features = ["full"], optional = true }
 
 [features]
 state = [
-    "execution-core",
+    "dusk-core",
     "once_cell",
     "tracing",
     "serde_derive",
@@ -62,7 +62,7 @@ state = [
     "zip",
 ]
 keys = [
-    "execution-core",
+    "dusk-core",
     "once_cell",
     "tracing",
     "cargo_toml",

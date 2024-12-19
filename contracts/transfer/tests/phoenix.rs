@@ -19,7 +19,7 @@ use ff::Field;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 
-use execution_core::{
+use dusk_core::{
     dusk,
     signatures::bls::{
         PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,

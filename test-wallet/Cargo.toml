@@ -12,7 +12,7 @@ rkyv = { workspace = true }
 ff = { workspace = true }
 zeroize = { workspace = true, features = ["derive"] }
 
-execution-core = { workspace = true }
+dusk-core = { workspace = true }
 wallet-core = { workspace = true }
 rusk-prover = { workspace = true }
 

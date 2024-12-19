@@ -15,7 +15,7 @@ use dusk_consensus::{
     config::{RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS},
     operations::CallParams,
 };
-use execution_core::{
+use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::Transaction,
 };
 use node_data::{

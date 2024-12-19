@@ -6,15 +6,14 @@
 
 use std::sync::mpsc;
 
-use execution_core::transfer::data::TransactionData;
-use execution_core::transfer::phoenix::{
+use dusk_core::transfer::data::TransactionData;
+use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, NoteOpening, NoteTreeItem, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
     ViewKey as PhoenixViewKey,
 };
-use execution_core::transfer::{Transaction, TRANSFER_CONTRACT};
-use execution_core::LUX;
-use execution_core::{BlsScalar, ContractError};
+use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use dusk_core::{BlsScalar, ContractError, LUX};
 use rand::rngs::StdRng;
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 use rusk_prover::LocalProver;

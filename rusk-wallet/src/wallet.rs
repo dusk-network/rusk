@@ -17,15 +17,15 @@ use std::path::{Path, PathBuf};
 
 use bip39::{Language, Mnemonic, Seed};
 use dusk_bytes::Serializable;
-use execution_core::signatures::bls::{
+use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use execution_core::stake::StakeData;
-use execution_core::transfer::phoenix::{
+use dusk_core::stake::StakeData;
+use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use execution_core::{BlsScalar, CONTRACT_ID_BYTES};
+use dusk_core::{BlsScalar, CONTRACT_ID_BYTES};
 use serde::Serialize;
 use wallet_core::prelude::keys::{
     derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,

@@ -7,7 +7,7 @@
 use std::{fmt, io};
 
 use dusk_bytes::Serializable;
-use execution_core::{
+use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::phoenix::CoreError,
     BlsScalar, Error as ExecErr,
 };
@@ -76,7 +76,7 @@ impl From<PiecrustError> for Error {
     }
 }
 
-impl From<execution_core::Error> for Error {
+impl From<dusk_core::Error> for Error {
     fn from(err: ExecErr) -> Self {
         match err {
             ExecErr::InsufficientBalance => {

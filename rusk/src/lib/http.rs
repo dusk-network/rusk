@@ -20,7 +20,7 @@ pub(crate) use event::{
     RequestData, Target,
 };
 
-use execution_core::Event;
+use dusk_core::Event;
 use tokio::task::JoinError;
 use tracing::{debug, info, warn};
 
@@ -944,7 +944,7 @@ mod tests {
     use super::*;
     use event::Event as EventRequest;
 
-    use execution_core::ContractId;
+    use dusk_core::ContractId;
     use node_data::events::contract::{
         ContractEvent, ContractTxEvent, WrappedContractId,
     };

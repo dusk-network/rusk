@@ -16,7 +16,7 @@ use futures::Stream;
 use tokio::spawn;
 use tracing::{error, info};
 
-use execution_core::{
+use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeData, STAKE_CONTRACT},
     transfer::{

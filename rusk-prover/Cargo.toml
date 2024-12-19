@@ -10,7 +10,7 @@ once_cell = { workspace = true }
 rand = { workspace = true, features = ["getrandom"] }
 dusk-plonk = { workspace = true, features = ["rkyv-impl", "alloc"] }
 rusk-profile = { workspace = true }
-execution-core = { workspace = true, features = ["zk"] }
+dusk-core = { workspace = true, features = ["zk"] }
 
 # debug dependencies
 hex = { workspace = true, optional = true }
