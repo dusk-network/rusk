@@ -81,8 +81,8 @@ impl From<BlsSigError> for InvalidFault {
 }
 
 impl Fault {
-    /// Hash the serialized form
-    pub fn hash(&self) -> [u8; 32] {
+    /// Digest the serialized form
+    pub fn digest(&self) -> [u8; 32] {
         let mut b = vec![];
         self.write(&mut b).expect("Write to a vec shall not fail");
         sha3::Sha3_256::digest(&b[..]).into()
