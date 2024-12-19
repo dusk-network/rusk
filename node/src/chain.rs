@@ -130,7 +130,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 recv = result_chan.recv() => {
                     match recv? {
                         Err(ConsensusError::Canceled(round)) => {
-                            info!(event = "consensus canceled", round);
+                            debug!(event = "consensus canceled", round);
                         }
                         Err(err) => {
                             // Internal consensus execution has terminated with an error

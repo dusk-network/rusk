@@ -130,7 +130,7 @@ impl Task {
 
         let (all_num, eligible_num) = current.get_provisioners_info(ru.round);
 
-        info!(
+        debug!(
             event = "spawn consensus",
             id = self.task_id,
             round = ru.round,
