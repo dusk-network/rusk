@@ -205,7 +205,6 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                     return Err(ConsensusError::InvalidVote(vote));
                 }
             };
-            info!(event = "quorum reached", ?vote);
 
             let vrmsg = self
                 .build_validation_result(sv, vote, quorum_type, &p.header())

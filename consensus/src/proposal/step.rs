@@ -12,7 +12,7 @@ use node_data::get_current_timestamp;
 use node_data::ledger::IterationsInfo;
 use node_data::message::Message;
 use tokio::sync::Mutex;
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 
 use crate::commons::Database;
 use crate::config;
@@ -137,7 +137,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
     /// Waits until the next slot is reached
     async fn wait_until_next_slot(tip_timestamp: u64) {
         if let Some(delay) = Self::next_slot_in(tip_timestamp) {
-            info!(event = "next_slot", ?delay);
+            debug!(event = "Wait next block slot for validation", ?delay);
             tokio::time::sleep(delay).await;
         }
     }

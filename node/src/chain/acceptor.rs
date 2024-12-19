@@ -355,20 +355,36 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             | Payload::Validation(_)
             | Payload::Ratification(_)
             | Payload::ValidationQuorum(_) => {
-                // Process consensus msg only if they are for the current round
-                // or at most 10 rounds in the future
                 let msg_round = msg.header.round;
-                if msg_round > tip_height
-                    && msg_round <= (tip_height + MAX_ROUND_DISTANCE)
-                {
-                    consensus_task.main_inbound.try_send(msg);
-                } else {
-                    warn!(
-                      event = "msg discarded",
-                      topic = ?msg.topic(),
-                      info = ?msg.header,
-                      ray_id = msg.ray_id()
-                    );
+
+                match msg_round {
+                    // Discard messages from the past
+                    r if r <= tip_height => {
+                        debug!(
+                          event = "Consensus msg discarded",
+                          reason = "past round",
+                          topic = ?msg.topic(),
+                          info = ?msg.header,
+                          ray_id = msg.ray_id()
+                        );
+                    }
+
+                    // Discard messages too far from the future
+                    r if r > tip_height + MAX_ROUND_DISTANCE => {
+                        warn!(
+                          event = "Consensus msg discarded",
+                          reason = "too far in the future",
+                          topic = ?msg.topic(),
+                          info = ?msg.header,
+                          ray_id = msg.ray_id()
+                        );
+                    }
+
+                    _ => {
+                        // Process consensus msg only if they are for the
+                        // current round or at most 10 rounds in the future
+                        consensus_task.main_inbound.try_send(msg);
+                    }
                 }
             }
 
