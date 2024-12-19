@@ -4,7 +4,14 @@
   import { mdiArrowLeft, mdiKeyOutline } from "@mdi/js";
   import { validateMnemonic } from "bip39";
 
+  import { getErrorFrom } from "$lib/dusk/error";
   import { Button, Textbox } from "$lib/dusk/components";
+  import {
+    InvalidMnemonicError,
+    InvalidPasswordError,
+    MismatchedWalletError,
+  } from "$lib/errors";
+
   import { AppAnchor, AppAnchorButton, Banner } from "$lib/components";
   import { IconHeadingCard } from "$lib/containers/Cards";
   import { goto } from "$lib/navigation";
@@ -20,9 +27,6 @@
   } from "$lib/wallet";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
 
-  const localDataCheckErrorMsg =
-    "Mismatched wallet address or no existing wallet";
-
   /** @type {(seed: Uint8Array) => Promise<import("$lib/vendor/w3sper.js/src/mod").ProfileGenerator>} */
   async function checkLocalData(seed) {
     const profileGenerator = profileGeneratorFrom(seed);
@@ -30,7 +34,7 @@
     const currentAddress = $settingsStore.userId;
 
     if (!currentAddress || currentAddress !== defaultAddress) {
-      throw new Error(localDataCheckErrorMsg);
+      throw new MismatchedWalletError();
     }
 
     return profileGenerator;
@@ -40,12 +44,12 @@
   const getSeedFromMnemonicAsync = async (mnemonic) =>
     validateMnemonic(mnemonic)
       ? getSeedFromMnemonic(mnemonic)
-      : Promise.reject(new Error("Invalid mnemonic"));
+      : Promise.reject(new InvalidMnemonicError());
 
   /** @type {(loginInfo: MnemonicEncryptInfo) => (pwd: string) => Promise<Uint8Array>} */
   const getSeedFromInfo = (loginInfo) => (pwd) =>
     decryptMnemonic(loginInfo, pwd).then(getSeedFromMnemonic, () =>
-      Promise.reject(new Error("Wrong password"))
+      Promise.reject(new InvalidPasswordError())
     );
 
   const loginInfo = loginInfoStorage.get();
@@ -57,8 +61,8 @@
   /** @type {string} */
   let secretText = "";
 
-  /** @type {null|"invalid-password"|"invalid-mnemonic"} */
-  let error = null;
+  /** @type {Error} */
+  let error;
 
   /** @type {import("svelte/elements").FormEventHandler<HTMLFormElement>} */
   function handleUnlockWalletSubmit() {
@@ -72,16 +76,16 @@
       .then((profileGenerator) => walletStore.init(profileGenerator))
       .then(() => goto("/dashboard"))
       .catch((err) => {
-        if (err.message === localDataCheckErrorMsg) {
+        if (err instanceof MismatchedWalletError) {
           const enteredMnemonicPhrase = secretText.split(" ");
           mnemonicPhraseResetStore.set(enteredMnemonicPhrase);
           goto("/setup/restore");
+
           return;
+        } else {
+          error = err instanceof Error ? err : getErrorFrom(err);
         }
-        error =
-          err.message === "Wrong password"
-            ? "invalid-password"
-            : "invalid-mnemonic";
+
         fldSecret.focus();
         fldSecret.select();
       });
@@ -113,21 +117,27 @@
           type="password"
           autocomplete="current-password"
         />
-        {#if error === "invalid-mnemonic"}
+        {#if error instanceof InvalidMnemonicError}
           <Banner title="Invalid mnemonic phrase" variant="error">
             <p>
               Please ensure you have entered your 12-word mnemonic phrase, with
               a space separating each word.
             </p>
           </Banner>
-        {/if}
-        {#if error === "invalid-password"}
+        {:else if error instanceof InvalidPasswordError}
           <Banner title="Invalid password" variant="error">
             <p>
               Please ensure the password entered matches the one you have set up
               while setting up the wallet. If you have forgotten your password,
               you can <AppAnchor href="/setup/restore">restore</AppAnchor> your wallet.
             </p>
+          </Banner>
+        {:else if error}
+          <Banner
+            title={error.name.replace(/(\w)([A-Z])/g, "$1 $2")}
+            variant="error"
+          >
+            <p>{error.message}</p>
           </Banner>
         {/if}
         <Button text="Unlock Wallet" type="submit" />
