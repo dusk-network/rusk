@@ -13,9 +13,7 @@ use std::time::Duration;
 use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
 use node_data::bls::PublicKey;
 use node_data::ledger::*;
-use node_data::message::{
-    payload, AsyncQueue, ConsensusHeader, Message, Payload,
-};
+use node_data::message::{payload, ConsensusHeader};
 use node_data::StepName;
 
 use crate::operations::Voter;
@@ -99,34 +97,4 @@ pub trait Database: Send + Sync {
     );
     async fn get_last_iter(&self) -> (Hash, u8);
     async fn store_last_iter(&mut self, data: (Hash, u8));
-}
-
-#[derive(Clone)]
-pub(crate) struct QuorumMsgSender {
-    queue: AsyncQueue<Message>,
-}
-
-impl QuorumMsgSender {
-    pub(crate) fn new(queue: AsyncQueue<Message>) -> Self {
-        Self { queue }
-    }
-
-    /// Sends a quorum (internally) to the lower layer.
-    pub(crate) async fn send_quorum(&self, msg: Message) {
-        match &msg.payload {
-            Payload::Quorum(q) if !q.att.ratification.is_empty() => {
-                tracing::debug!(
-                    event = "send quorum_msg",
-                    vote = ?q.vote(),
-                    round = msg.header.round,
-                    iteration = msg.header.iteration,
-                    validation = ?q.att.validation,
-                    ratification = ?q.att.ratification,
-                );
-            }
-            _ => return,
-        }
-
-        self.queue.try_send(msg);
-    }
 }
