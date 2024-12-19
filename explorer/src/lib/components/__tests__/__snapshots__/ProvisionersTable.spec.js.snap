@@ -23,7 +23,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <th
           class="table__header-cell"
         >
-          Stake Amount (DUSK)
+          Stake
         </th>
         
          
@@ -61,9 +61,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           500,000
@@ -71,11 +71,22 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
+          0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
           0
         </td>
         
@@ -84,7 +95,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -94,7 +105,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>
@@ -126,9 +137,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           500,000
@@ -136,11 +147,22 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
+          0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
           0
         </td>
         
@@ -149,7 +171,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -159,7 +181,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>
@@ -191,9 +213,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           4,800
@@ -201,12 +223,23 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
           0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
+          4,320
         </td>
         
          
@@ -214,7 +247,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -224,7 +257,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>
@@ -256,9 +289,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           1,234
@@ -266,12 +299,23 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
           0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
+          4,320
         </td>
         
          
@@ -279,7 +323,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -289,7 +333,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>
@@ -321,9 +365,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           500,000
@@ -331,11 +375,22 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
+          0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
           0
         </td>
         
@@ -344,7 +399,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -354,7 +409,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>
@@ -386,9 +441,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           4,800
@@ -396,12 +451,23 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
           0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
+          23,760
         </td>
         
          
@@ -409,7 +475,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -419,7 +485,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>
@@ -451,9 +517,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           500,000
@@ -461,11 +527,22 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
+          0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
           0
         </td>
         
@@ -474,7 +551,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -484,7 +561,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>
@@ -516,9 +593,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           1,000
@@ -526,12 +603,23 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
           0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
+          8,640
         </td>
         
          
@@ -539,7 +627,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -549,7 +637,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>
@@ -581,9 +669,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           500,000
@@ -591,11 +679,22 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
+          0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
           0
         </td>
         
@@ -604,7 +703,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -614,7 +713,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>
@@ -646,9 +745,9 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Reclaimable:
+            Active:
           </b>
            
           500,000
@@ -656,11 +755,22 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__staked-amount-type-label"
+            class="provisioners-table__stake-data-label"
           >
-            Locked:
+            Inactive:
           </b>
            
+          0
+           
+          <br />
+           
+          <b
+            class="provisioners-table__stake-data-label"
+          >
+            Maturity At:
+          </b>
+          
+          #
           0
         </td>
         
@@ -669,7 +779,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           class="table__data-cell"
         >
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Soft:
           </b>
@@ -679,7 +789,7 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           <br />
            
           <b
-            class="provisioners-table__slash-type-label"
+            class="provisioners-table__slash-data-label"
           >
             Hard:
           </b>

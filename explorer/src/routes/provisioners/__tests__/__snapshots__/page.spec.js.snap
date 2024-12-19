@@ -65,7 +65,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -83,15 +101,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            500,000
-             DUSK
+            #
+            0
           </dd>
            
           <dt
@@ -178,7 +196,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -196,15 +232,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            500,000
-             DUSK
+            #
+            0
           </dd>
            
           <dt
@@ -291,7 +327,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            4,800
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -309,15 +363,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            4,800
-             DUSK
+            #
+            4,320
           </dd>
            
           <dt
@@ -404,7 +458,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1,234
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -422,15 +494,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            1,234
-             DUSK
+            #
+            4,320
           </dd>
            
           <dt
@@ -517,7 +589,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -535,15 +625,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            500,000
-             DUSK
+            #
+            0
           </dd>
            
           <dt
@@ -630,7 +720,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            4,800
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -648,15 +756,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            4,800
-             DUSK
+            #
+            23,760
           </dd>
            
           <dt
@@ -743,7 +851,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -761,15 +887,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            500,000
-             DUSK
+            #
+            0
           </dd>
            
           <dt
@@ -856,7 +982,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -874,15 +1018,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            1,000
-             DUSK
+            #
+            8,640
           </dd>
            
           <dt
@@ -969,7 +1113,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -987,15 +1149,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            500,000
-             DUSK
+            #
+            0
           </dd>
            
           <dt
@@ -1082,7 +1244,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -1100,15 +1280,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            500,000
-             DUSK
+            #
+            0
           </dd>
            
           <dt
@@ -1195,7 +1375,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -1213,15 +1411,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            500,000
-             DUSK
+            #
+            0
           </dd>
            
           <dt
@@ -1308,7 +1506,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -1326,15 +1542,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            500,000
-             DUSK
+            #
+            0
           </dd>
            
           <dt
@@ -1421,7 +1637,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
             </div>
           </dt>
            
@@ -1439,7 +1655,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Inactive Stake
             </div>
           </dt>
            
@@ -1448,6 +1664,24 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
           >
             0
              DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Maturity At
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            0
           </dd>
            
           <dt
@@ -1534,7 +1768,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            4,550
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -1552,15 +1804,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            4,550
-             DUSK
+            #
+            4,320
           </dd>
            
           <dt
@@ -1647,7 +1899,25 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Locked Stake Amount
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+               
+              Inactive Stake
             </div>
           </dt>
            
@@ -1665,15 +1935,15 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
                
-              Reclaimable Stake Amount
+              Maturity At
             </div>
           </dt>
            
           <dd
             class="details-list__definition details-list__definition--table"
           >
-            500,000
-             DUSK
+            #
+            0
           </dd>
            
           <dt
@@ -1834,7 +2104,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <th
                 class="table__header-cell"
               >
-                Stake Amount (DUSK)
+                Stake
               </th>
               
                
@@ -1872,9 +2142,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 500,000
@@ -1882,11 +2152,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -1895,7 +2176,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -1905,7 +2186,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -1937,9 +2218,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 500,000
@@ -1947,11 +2228,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -1960,7 +2252,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -1970,7 +2262,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2002,9 +2294,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 4,800
@@ -2012,12 +2304,23 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
                 0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
+                4,320
               </td>
               
                
@@ -2025,7 +2328,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2035,7 +2338,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2067,9 +2370,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 1,234
@@ -2077,12 +2380,23 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
                 0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
+                4,320
               </td>
               
                
@@ -2090,7 +2404,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2100,7 +2414,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2132,9 +2446,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 500,000
@@ -2142,11 +2456,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -2155,7 +2480,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2165,7 +2490,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2197,9 +2522,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 4,800
@@ -2207,12 +2532,23 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
                 0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
+                23,760
               </td>
               
                
@@ -2220,7 +2556,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2230,7 +2566,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2262,9 +2598,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 500,000
@@ -2272,11 +2608,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -2285,7 +2632,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2295,7 +2642,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2327,9 +2674,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 1,000
@@ -2337,12 +2684,23 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
                 0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
+                8,640
               </td>
               
                
@@ -2350,7 +2708,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2360,7 +2718,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2392,9 +2750,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 500,000
@@ -2402,11 +2760,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -2415,7 +2784,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2425,7 +2794,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2457,9 +2826,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 500,000
@@ -2467,11 +2836,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -2480,7 +2860,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2490,7 +2870,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2522,9 +2902,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 500,000
@@ -2532,11 +2912,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -2545,7 +2936,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2555,7 +2946,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2587,9 +2978,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 500,000
@@ -2597,11 +2988,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -2610,7 +3012,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2620,7 +3022,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2652,9 +3054,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 0
@@ -2662,11 +3064,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -2675,7 +3088,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2685,7 +3098,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2717,9 +3130,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 4,550
@@ -2727,12 +3140,23 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
                 0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
+                4,320
               </td>
               
                
@@ -2740,7 +3164,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2750,7 +3174,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
@@ -2782,9 +3206,9 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Reclaimable:
+                  Active:
                 </b>
                  
                 500,000
@@ -2792,11 +3216,22 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__staked-amount-type-label"
+                  class="provisioners-table__stake-data-label"
                 >
-                  Locked:
+                  Inactive:
                 </b>
                  
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
                 0
               </td>
               
@@ -2805,7 +3240,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 class="table__data-cell"
               >
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Soft:
                 </b>
@@ -2815,7 +3250,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <br />
                  
                 <b
-                  class="provisioners-table__slash-type-label"
+                  class="provisioners-table__slash-data-label"
                 >
                   Hard:
                 </b>
