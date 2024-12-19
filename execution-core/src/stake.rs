@@ -30,6 +30,33 @@ pub const EPOCH: u64 = 2160;
 /// Number of warnings before being penalized
 pub const STAKE_WARNINGS: u8 = 1;
 
+/// Configuration for the stake contract
+#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct StakeConfig {
+    /// Number of warnings before being penalized
+    pub warnings: u8,
+    /// Minimum amount of Dusk that can be staked
+    pub minimum_stake: Dusk,
+}
+
+impl StakeConfig {
+    /// Create a new default stake configuration.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            warnings: STAKE_WARNINGS,
+            minimum_stake: MINIMUM_STAKE,
+        }
+    }
+}
+
+impl Default for StakeConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Calculate the block height at which the next epoch takes effect.
 #[must_use]
 pub const fn next_epoch(block_height: u64) -> u64 {
