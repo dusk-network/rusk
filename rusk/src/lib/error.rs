@@ -11,7 +11,7 @@ use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::phoenix::CoreError,
     BlsScalar, Error as ExecErr,
 };
-use rusk_abi::PiecrustError;
+use dusk_vm::PiecrustError;
 
 #[derive(Debug)]
 pub enum Error {

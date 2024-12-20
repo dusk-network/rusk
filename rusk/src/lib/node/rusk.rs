@@ -27,11 +27,11 @@ use dusk_core::transfer::{
     TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, Dusk};
+use dusk_vm::{CallReceipt, PiecrustError, Session};
 use node::vm::bytecode_charge;
 use node_data::events::contract::{ContractEvent, ContractTxEvent};
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
-use rusk_abi::{CallReceipt, PiecrustError, Session};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 use tracing::info;
@@ -85,7 +85,7 @@ impl Rusk {
         let mut base_commit = [0u8; 32];
         base_commit.copy_from_slice(&base_commit_bytes);
 
-        let vm = Arc::new(rusk_abi::new_vm(dir)?);
+        let vm = Arc::new(dusk_vm::new_vm(dir)?);
 
         let tip = Arc::new(RwLock::new(RuskTip {
             current: base_commit,
@@ -537,7 +537,7 @@ impl Rusk {
             tip.current
         });
 
-        let session = rusk_abi::new_session(
+        let session = dusk_vm::new_session(
             &self.vm,
             commit,
             self.chain_id,

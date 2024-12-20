@@ -19,9 +19,9 @@ use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
     Signature as BlsSignature,
 };
+use dusk_vm::{CallReceipt, ContractData, Session};
 use rusk::gen_id::gen_contract_id;
 use rusk::{Error, Result, Rusk};
-use rusk_abi::{CallReceipt, ContractData, Session};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
 use test_wallet::{self as wallet, Wallet};
@@ -144,9 +144,9 @@ impl Fixture {
     pub fn assert_bob_contract_is_deployed(&self) {
         const BOB_ECHO_VALUE: u64 = 775;
         let commit = self.rusk.state_root();
-        let vm = rusk_abi::new_vm(self.path.as_path())
+        let vm = dusk_vm::new_vm(self.path.as_path())
             .expect("VM creation should succeed");
-        let mut session = rusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
+        let mut session = dusk_vm::new_session(&vm, commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,
@@ -168,10 +168,10 @@ impl Fixture {
 
     pub fn set_session(&mut self) {
         let commit = self.rusk.state_root();
-        let vm = rusk_abi::new_vm(self.path.as_path())
+        let vm = dusk_vm::new_vm(self.path.as_path())
             .expect("VM creation should succeed");
         self.session = Some(
-            rusk_abi::new_session(&vm, commit, CHAIN_ID, 0)
+            dusk_vm::new_session(&vm, commit, CHAIN_ID, 0)
                 .expect("Session creation should succeed"),
         );
     }
