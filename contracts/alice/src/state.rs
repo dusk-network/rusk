@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_core::abi;
 use dusk_core::transfer::{
     withdraw::Withdraw, ContractToAccount, ContractToContract,
     TRANSFER_CONTRACT,
@@ -19,30 +20,23 @@ impl Alice {
     }
 
     pub fn withdraw(&mut self, withdraw: Withdraw) {
-        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw)
+        let _: () = abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw)
             .expect("Transparent withdrawal transaction should succeed");
     }
 
     pub fn deposit(&mut self, value: u64) {
-        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "deposit", &value)
+        let _: () = abi::call(TRANSFER_CONTRACT, "deposit", &value)
             .expect("Transparent deposit transaction should succeed");
     }
 
     pub fn contract_to_contract(&mut self, transfer: ContractToContract) {
-        let _: () = rusk_abi::call(
-            TRANSFER_CONTRACT,
-            "contract_to_contract",
-            &transfer,
-        )
-        .expect("Transferring to contract should succeed");
+        let _: () =
+            abi::call(TRANSFER_CONTRACT, "contract_to_contract", &transfer)
+                .expect("Transferring to contract should succeed");
     }
 
     pub fn contract_to_account(&mut self, transfer: ContractToAccount) {
-        rusk_abi::call::<_, ()>(
-            TRANSFER_CONTRACT,
-            "contract_to_account",
-            &transfer,
-        )
-        .expect("Transferring to account should succeed");
+        abi::call::<_, ()>(TRANSFER_CONTRACT, "contract_to_account", &transfer)
+            .expect("Transferring to account should succeed");
     }
 }
