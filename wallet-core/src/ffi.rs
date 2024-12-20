@@ -56,7 +56,7 @@ static KEY_SIZE: usize = BlsScalar::SIZE;
 static ITEM_SIZE: usize = core::mem::size_of::<ArchivedNoteLeaf>();
 
 #[no_mangle]
-static MINIMUM_STAKE: u64 = dusk_core::stake::MINIMUM_STAKE;
+static MINIMUM_STAKE: u64 = dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 
 /// The size of the scratch buffer used for parsing the notes.
 const NOTES_BUFFER_SIZE: usize = 96 * 1024;
