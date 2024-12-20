@@ -30,6 +30,9 @@ pub const EPOCH: u64 = 2160;
 /// Number of warnings before being penalized
 pub const STAKE_WARNINGS: u8 = 1;
 
+/// The minimum amount of Dusk one can stake.
+pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
+
 /// Configuration for the stake contract
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
@@ -400,9 +403,6 @@ pub struct SlashEvent {
     /// New eligibility for the slashed account
     pub next_eligibility: u64,
 }
-
-/// The minimum amount of Dusk one can stake.
-pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
 /// The representation of a public key's stake.
 ///
