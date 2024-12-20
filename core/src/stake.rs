@@ -31,7 +31,14 @@ pub const EPOCH: u64 = 2160;
 pub const DEFAULT_STAKE_WARNINGS: u8 = 1;
 
 /// The minimum amount of Dusk one can stake.
-pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
+#[deprecated(
+    since = "0.1.0",
+    note = "please use `DEFAULT_MINIMUM_STAKE` instead"
+)]
+pub const MINIMUM_STAKE: Dusk = DEFAULT_MINIMUM_STAKE;
+
+/// The default minimum amount of Dusk one can stake.
+pub const DEFAULT_MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
 /// Configuration for the stake contract
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
@@ -49,7 +56,7 @@ impl StakeConfig {
     pub const fn new() -> Self {
         Self {
             warnings: DEFAULT_STAKE_WARNINGS,
-            minimum_stake: MINIMUM_STAKE,
+            minimum_stake: DEFAULT_MINIMUM_STAKE,
         }
     }
 }
