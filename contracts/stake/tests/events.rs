@@ -23,7 +23,7 @@ use dusk_core::{
         TRANSFER_CONTRACT,
     },
 };
-use rusk_abi::PiecrustError;
+use dusk_vm::PiecrustError;
 
 use crate::common::assert::assert_reward_event;
 use crate::common::init::instantiate;
@@ -34,7 +34,7 @@ const GENESIS_VALUE: u64 = dusk(1_000_000.0);
 fn reward_slash() -> Result<(), PiecrustError> {
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut rusk_abi::new_ephemeral_vm()
+    let vm = &mut dusk_vm::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
     let sk = PhoenixSecretKey::random(rng);
@@ -124,7 +124,7 @@ fn reward_slash() -> Result<(), PiecrustError> {
 fn stake_hard_slash() -> Result<(), PiecrustError> {
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut rusk_abi::new_ephemeral_vm()
+    let vm = &mut dusk_vm::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
     let sk = PhoenixSecretKey::random(rng);

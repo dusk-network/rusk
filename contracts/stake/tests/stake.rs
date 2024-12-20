@@ -41,7 +41,7 @@ fn stake_withdraw_unstake() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut rusk_abi::new_ephemeral_vm()
+    let vm = &mut dusk_vm::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
     let phoenix_sender_sk = PhoenixSecretKey::random(rng);
@@ -178,7 +178,7 @@ fn stake_withdraw_unstake() {
     // set different block height so that the new notes are easily located and
     // filtered
     let base = session.commit().expect("Committing should succeed");
-    let mut session = rusk_abi::new_session(vm, base, CHAIN_ID, 2)
+    let mut session = dusk_vm::new_session(vm, base, CHAIN_ID, 2)
         .expect("Instantiating new session should succeed");
 
     let receipt =
@@ -274,7 +274,7 @@ fn stake_withdraw_unstake() {
     // filtered
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
-    let mut session = rusk_abi::new_session(vm, base, CHAIN_ID, 3)
+    let mut session = dusk_vm::new_session(vm, base, CHAIN_ID, 3)
         .expect("Instantiating new session should succeed");
 
     let receipt =

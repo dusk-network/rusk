@@ -15,8 +15,8 @@ use dusk_core::transfer::phoenix::{
 };
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use dusk_core::{BlsScalar, LUX};
+use dusk_vm::{CallReceipt, PiecrustError, Session};
 use rand::rngs::StdRng;
-use rusk_abi::{CallReceipt, PiecrustError, Session};
 use rusk_prover::LocalProver;
 
 pub const GAS_LIMIT: u64 = 0x100_000_000;

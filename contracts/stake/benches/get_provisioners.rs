@@ -11,9 +11,9 @@ use dusk_core::{
     transfer::TRANSFER_CONTRACT,
     BlsPublicKey, BlsSecretKey,
 };
+use dusk_vm::{ContractData, PiecrustError, Session, VM};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
-use rusk_abi::{ContractData, PiecrustError, Session, VM};
 use std::sync::mpsc;
 
 const SAMPLE_SIZE: usize = 10;
