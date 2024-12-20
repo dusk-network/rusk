@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix wrong error shown in the login screen [#3226] [#3097]
+
 ## [0.10.1] - 2024-12-18
 
 ### Fixed
@@ -452,6 +454,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3073]: https://github.com/dusk-network/rusk/issues/3073
 [#3076]: https://github.com/dusk-network/rusk/issues/3076
 [#3081]: https://github.com/dusk-network/rusk/issues/3081
+[#3097]: https://github.com/dusk-network/rusk/issues/3097
 [#3098]: https://github.com/dusk-network/rusk/issues/3098
 [#3099]: https://github.com/dusk-network/rusk/issues/3099
 [#3113]: https://github.com/dusk-network/rusk/issues/3113
@@ -462,6 +465,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3179]: https://github.com/dusk-network/rusk/issues/3179
 [#3203]: https://github.com/dusk-network/rusk/issues/3203
 [#3212]: https://github.com/dusk-network/rusk/issues/3212
+[#3226]: https://github.com/dusk-network/rusk/issues/3226
 
 <!-- VERSIONS -->
 

@@ -77,7 +77,6 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
           
            
            
-           
           <button
             class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--default"
             type="submit"
@@ -202,7 +201,6 @@ exports[`Login > Password workflow > should show the password field and the link
             type="password"
           />
           
-           
            
            
           <button
