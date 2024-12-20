@@ -6,15 +6,6 @@
 
 pub mod common;
 
-use crate::common::utils::{
-    account, chain_id, contract_balance, execute, existing_nullifiers,
-    filter_notes_owned_by, leaves_from_height, owned_notes_value, update_root,
-};
-
-use ff::Field;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-
 use dusk_core::abi::{ContractError, ContractId};
 use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
@@ -32,7 +23,15 @@ use dusk_core::transfer::{
     ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
 };
 use dusk_core::{dusk, JubJubScalar, LUX};
+use ff::Field;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use rusk_abi::{ContractData, Session};
+
+use crate::common::utils::{
+    account, chain_id, contract_balance, execute, existing_nullifiers,
+    filter_notes_owned_by, leaves_from_height, owned_notes_value, update_root,
+};
 
 const MOONLIGHT_GENESIS_VALUE: u64 = dusk(1_000.0);
 const MOONLIGHT_GENESIS_NONCE: u64 = 0;

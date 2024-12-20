@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use core::fmt;
+
 use dusk_core::Error as ExecutionError;
 
 #[derive(Debug, Clone)]

@@ -20,7 +20,8 @@ mod verifier_data;
 
 use dusk_core::abi;
 use dusk_core::stake::STAKE_CONTRACT;
-use state::TransferState;
+
+use self::state::TransferState;
 
 static mut STATE: TransferState = TransferState::new();
 

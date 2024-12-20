@@ -4,13 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::mpsc;
-
 pub mod common;
+
+use std::sync::mpsc;
 
 use dusk_bytes::Serializable;
 use dusk_core::abi::ContractId;
-use dusk_core::dusk;
 use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
@@ -26,7 +25,7 @@ use dusk_core::transfer::withdraw::{
 use dusk_core::transfer::{
     ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
 };
-use dusk_core::{BlsScalar, JubJubScalar, LUX};
+use dusk_core::{dusk, BlsScalar, JubJubScalar, LUX};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};

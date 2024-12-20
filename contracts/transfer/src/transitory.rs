@@ -11,18 +11,15 @@
 //! [`spend_and_execute`]: crate::spend_and_execute
 //! [`refund`]: crate::refund
 
+use alloc::vec::Vec;
 use core::mem;
 use core::ptr::{self, addr_of_mut};
 
-use alloc::vec::Vec;
-
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
-use dusk_core::transfer::{
-    moonlight::Transaction as MoonlightTransaction,
-    phoenix::{Note, Transaction as PhoenixTransaction},
-    Transaction,
-};
+use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use dusk_core::transfer::phoenix::{Note, Transaction as PhoenixTransaction};
+use dusk_core::transfer::Transaction;
 
 /// The state of a deposit while a transaction is executing.
 pub enum Deposit {

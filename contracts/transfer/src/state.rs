@@ -4,21 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::error::Error;
-use crate::tree::Tree;
-use crate::verifier_data::tx_circuit_verifier;
-
 use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
-use dusk_core::stake::EPOCH;
-use dusk_core::transfer::MINT_CONTRACT_TOPIC;
-use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
-
 use dusk_core::abi::{self, ContractError, ContractId};
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
-use dusk_core::stake::STAKE_CONTRACT;
+use dusk_core::stake::{EPOCH, STAKE_CONTRACT};
 use dusk_core::transfer::moonlight::{
     AccountData, Transaction as MoonlightTransaction,
 };
@@ -33,13 +25,17 @@ use dusk_core::transfer::{
     ContractToContractEvent, ConvertEvent, DepositEvent,
     MoonlightTransactionEvent, PhoenixTransactionEvent, ReceiveFromContract,
     Transaction, WithdrawEvent, CONTRACT_TO_ACCOUNT_TOPIC,
-    CONTRACT_TO_CONTRACT_TOPIC, CONVERT_TOPIC, DEPOSIT_TOPIC, MINT_TOPIC,
-    MOONLIGHT_TOPIC, PANIC_NONCE_NOT_READY, PHOENIX_TOPIC, TRANSFER_CONTRACT,
-    WITHDRAW_TOPIC,
+    CONTRACT_TO_CONTRACT_TOPIC, CONVERT_TOPIC, DEPOSIT_TOPIC,
+    MINT_CONTRACT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, PANIC_NONCE_NOT_READY,
+    PHOENIX_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
 };
 use dusk_core::BlsScalar;
+use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 
+use crate::error::Error;
 use crate::transitory::{self, Deposit};
+use crate::tree::Tree;
+use crate::verifier_data::tx_circuit_verifier;
 
 /// Number of roots stored
 pub const MAX_ROOTS: usize = 2 * EPOCH as usize;
