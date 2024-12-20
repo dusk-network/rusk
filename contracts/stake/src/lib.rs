@@ -12,6 +12,7 @@
 
 extern crate alloc;
 
+use dusk_core::abi;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 
 mod state;
@@ -23,7 +24,7 @@ static mut STATE: StakeState = StakeState::new();
 
 #[no_mangle]
 unsafe fn stake(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| {
+    abi::wrap_call(arg_len, |arg| {
         assert_transfer_caller();
         STATE.stake(arg)
     })
@@ -31,7 +32,7 @@ unsafe fn stake(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn unstake(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| {
+    abi::wrap_call(arg_len, |arg| {
         assert_transfer_caller();
         STATE.unstake(arg)
     })
@@ -39,7 +40,7 @@ unsafe fn unstake(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn withdraw(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| {
+    abi::wrap_call(arg_len, |arg| {
         assert_transfer_caller();
         STATE.withdraw(arg)
     })
@@ -47,13 +48,13 @@ unsafe fn withdraw(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn stake_from_contract(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |receive| {
+    abi::wrap_call(arg_len, |receive| {
         // Assert is called from the transfer contract
         assert_transfer_caller();
         // Assert is not called directly by "spend_and_execute"
         // (it's supposed to be called by
         // TRANSFER_CONTRACT::contract_to_contract ICC)
-        if rusk_abi::callstack().len() < 2 {
+        if abi::callstack().len() < 2 {
             panic!("Cannot be called by a root ICC")
         }
         STATE.stake_from_contract(receive)
@@ -62,60 +63,58 @@ unsafe fn stake_from_contract(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn unstake_from_contract(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |unstake| STATE.unstake_from_contract(unstake))
+    abi::wrap_call(arg_len, |unstake| STATE.unstake_from_contract(unstake))
 }
 
 #[no_mangle]
 unsafe fn withdraw_from_contract(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |rewards| {
-        STATE.withdraw_from_contract(rewards)
-    })
+    abi::wrap_call(arg_len, |rewards| STATE.withdraw_from_contract(rewards))
 }
 
 // Queries
 
 #[no_mangle]
 unsafe fn get_stake(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |pk| STATE.get_stake(&pk).cloned())
+    abi::wrap_call(arg_len, |pk| STATE.get_stake(&pk).cloned())
 }
 
 #[no_mangle]
 unsafe fn get_stake_keys(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |pk| STATE.get_stake_keys(&pk).cloned())
+    abi::wrap_call(arg_len, |pk| STATE.get_stake_keys(&pk).cloned())
 }
 
 #[no_mangle]
 unsafe fn burnt_amount(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.burnt_amount())
+    abi::wrap_call(arg_len, |_: ()| STATE.burnt_amount())
 }
 
 #[no_mangle]
 unsafe fn get_version(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.get_version())
+    abi::wrap_call(arg_len, |_: ()| STATE.get_version())
 }
 
 #[no_mangle]
 unsafe fn get_config(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.config().clone())
+    abi::wrap_call(arg_len, |_: ()| STATE.config().clone())
 }
 
 // "Feeder" queries
 
 #[no_mangle]
 unsafe fn stakes(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.stakes())
+    abi::wrap_call(arg_len, |_: ()| STATE.stakes())
 }
 
 #[no_mangle]
 unsafe fn prev_state_changes(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.prev_state_changes())
+    abi::wrap_call(arg_len, |_: ()| STATE.prev_state_changes())
 }
 
 // "Management" transactions
 
 #[no_mangle]
 unsafe fn before_state_transition(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| {
+    abi::wrap_call(arg_len, |_: ()| {
         assert_external_caller();
         STATE.on_new_block()
     })
@@ -123,7 +122,7 @@ unsafe fn before_state_transition(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn set_config(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |config| {
+    abi::wrap_call(arg_len, |config| {
         assert_external_caller();
         STATE.configure(config)
     })
@@ -131,7 +130,7 @@ unsafe fn set_config(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn insert_stake(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(pk, stake_data)| {
+    abi::wrap_call(arg_len, |(pk, stake_data)| {
         assert_external_caller();
         STATE.insert_stake(pk, stake_data)
     })
@@ -139,7 +138,7 @@ unsafe fn insert_stake(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn reward(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| {
+    abi::wrap_call(arg_len, |arg| {
         assert_external_caller();
         STATE.reward(arg);
     })
@@ -147,7 +146,7 @@ unsafe fn reward(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn slash(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(pk, value)| {
+    abi::wrap_call(arg_len, |(pk, value)| {
         assert_external_caller();
         STATE.slash(&pk, value);
     })
@@ -155,7 +154,7 @@ unsafe fn slash(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn hard_slash(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(pk, value, severity)| {
+    abi::wrap_call(arg_len, |(pk, value, severity)| {
         assert_external_caller();
         STATE.hard_slash(&pk, value, severity);
     })
@@ -163,7 +162,7 @@ unsafe fn hard_slash(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn set_burnt_amount(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |burnt_amount| {
+    abi::wrap_call(arg_len, |burnt_amount| {
         assert_external_caller();
         STATE.set_burnt_amount(burnt_amount)
     })
@@ -175,7 +174,7 @@ unsafe fn set_burnt_amount(arg_len: u32) -> u32 {
 /// When the `caller` is not [`TRANSFER_CONTRACT`].
 fn assert_transfer_caller() {
     const PANIC_MSG: &str = "Can only be called from the transfer contract";
-    if rusk_abi::caller().expect(PANIC_MSG) != TRANSFER_CONTRACT {
+    if abi::caller().expect(PANIC_MSG) != TRANSFER_CONTRACT {
         panic!("{PANIC_MSG}");
     }
 }
@@ -186,7 +185,7 @@ fn assert_transfer_caller() {
 /// # Panics
 /// When the `caller` is not "uninitialized".
 fn assert_external_caller() {
-    if rusk_abi::caller().is_some() {
+    if abi::caller().is_some() {
         panic!("Can only be called from the outside the VM");
     }
 }
