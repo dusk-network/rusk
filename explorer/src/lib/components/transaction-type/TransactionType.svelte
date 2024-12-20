@@ -16,7 +16,9 @@
     className="transaction-type__icon"
     data-tooltip-disabled={!displayTooltips}
     data-tooltip-id="main-tooltip"
-    data-tooltip-text={data.txtype}
+    data-tooltip-text={data.txtype.toLowerCase() === "moonlight"
+      ? "Public"
+      : "Shielded"}
     data-tooltip-place="top"
     data-tooltip-type="info"
     path={data.txtype.toLowerCase() === "moonlight"
