@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change Stake details labels [#3218]
+- Change Transaction Type tooltips [#3249]
 
 ### Removed
 
@@ -118,6 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3038]: https://github.com/dusk-network/rusk/issues/3038
 [#3064]: https://github.com/dusk-network/rusk/issues/3064
 [#3218]: https://github.com/dusk-network/rusk/issues/3218
+[#3249]: https://github.com/dusk-network/rusk/issues/3249
 
 <!-- VERSIONS -->
 
