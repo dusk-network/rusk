@@ -84,8 +84,8 @@
       {fiatPrice}
       locale={language}
       tokenCurrency="DUSK"
-      shieldedAmount={balance.shielded.value}
-      unshieldedAmount={balance.unshielded.value}
+      shieldedBalance={balance.shieldedBalance.value}
+      publicBalance={balance.publicBalance.value}
     />
 
     <slot />

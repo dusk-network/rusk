@@ -16,7 +16,7 @@
 
   const options = [
     { disabled: false, label: "Shielded", value: "shielded" },
-    { disabled: false, label: "Unshielded", value: "unshielded" },
+    { disabled: false, label: "Public", value: "public" },
   ];
 
   /** @type {"address" | "account"} */

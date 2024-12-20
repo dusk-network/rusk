@@ -39,13 +39,13 @@
   export let shieldedAddress;
 
   /** @type {string} */
-  export let unshieldedAddress;
+  export let publicAddress;
 
   /** @type {bigint} */
   export let shieldedBalance;
 
   /** @type {bigint} */
-  export let unshieldedBalance;
+  export let publicBalance;
 
   // @ts-ignore
   function handleBalanceChange(event) {
@@ -109,7 +109,7 @@
   let hasEnoughFunds = true;
 
   // Constant total
-  const totalBalance = shieldedBalance + unshieldedBalance;
+  const totalBalance = shieldedBalance + publicBalance;
 
   // Used to keep the difference between the initial shielded balance and the current one
   const initialShielded = shieldedBalance;
@@ -130,7 +130,7 @@
 
   $: hasEnoughFunds = isUnshielding
     ? shieldedBalance - difference - fee >= 0n
-    : unshieldedBalance + difference - fee >= 0n;
+    : publicBalance + difference - fee >= 0n;
 
   $: isNextButtonDisabled =
     !hasEnoughFunds ||
@@ -197,7 +197,7 @@
           <div class="operation__address-wrapper">
             <Icon path={mdiShieldLockOpenOutline} />
             {middleEllipsis(
-              unshieldedAddress,
+              publicAddress,
               calculateAdaptiveCharCount(screenWidth, 320, 640, 5, 20)
             )}
           </div>
@@ -211,9 +211,9 @@
               max={luxToDusk(totalBalance)}
               min="0"
               step="0.000000001"
-              id="unshielded-amount"
+              id="public-amount"
               on:input={handleBalanceChange}
-              name="unshielded-amount"
+              name="public-amount"
             />
             <Icon
               data-tooltip-id="main-tooltip"
@@ -295,7 +295,7 @@
           </dt>
           <dd class="operation__review-address">
             <span>
-              {isShielding ? unshieldedAddress : shieldedAddress}
+              {isShielding ? publicAddress : shieldedAddress}
             </span>
           </dd>
         </dl>
@@ -308,7 +308,7 @@
           </dt>
           <dd class="operation__review-address">
             <span>
-              {isUnshielding ? unshieldedAddress : shieldedAddress}
+              {isUnshielding ? publicAddress : shieldedAddress}
             </span>
           </dd>
         </dl>

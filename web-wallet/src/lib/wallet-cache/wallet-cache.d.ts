@@ -14,8 +14,8 @@ type NotesSyncInfo = {
 type WalletCacheBalanceInfo = {
   address: string;
   balance: {
-    shielded: AddressBalance;
-    unshielded: AccountBalance;
+    publicBalance: AccountBalance;
+    shieldedBalance: AddressBalance;
   };
 };
 

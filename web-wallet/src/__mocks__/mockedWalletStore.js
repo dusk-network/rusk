@@ -13,12 +13,15 @@ const profiles = [
   await profileGenerator.next(),
 ];
 const currentProfile = profiles[0];
-const shielded = { spendable: 50_000_000_000_000n, value: 2_345_000_000_000n };
-const unshielded = { nonce: 1234n, value: shielded.value / 2n };
+const shieldedBalance = {
+  spendable: 50_000_000_000_000n,
+  value: 2_345_000_000_000n,
+};
+const publicBalance = { nonce: 1234n, value: shieldedBalance.value / 2n };
 
 /** @type {WalletStoreContent} */
 const content = {
-  balance: { shielded, unshielded },
+  balance: { publicBalance, shieldedBalance },
   currentProfile,
   initialized: true,
   minimumStake: 1_000_000_000_000n,

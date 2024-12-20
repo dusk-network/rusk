@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Receive > should change the icon to "unshielded" and show the unshielded address when the user makes such choice 1`] = `
+exports[`Receive > should change the icon to "public" and show the public address when the user makes such choice 1`] = `
 <div
   class="dusk-card dusk-card--gap-medium"
 >
@@ -73,17 +73,17 @@ exports[`Receive > should change the icon to "unshielded" and show the unshielde
       </label>
       <input
         class="dusk-exclusive-choice__radio"
-        id="some-generated-id-unshielded"
+        id="some-generated-id-public"
         name="some-generated-id"
         type="radio"
-        value="unshielded"
+        value="public"
       />
        
       <label
         class="dusk-exclusive-choice__label"
-        for="some-generated-id-unshielded"
+        for="some-generated-id-public"
       >
-        Unshielded
+        Public
       </label>
     </div>
      
@@ -168,7 +168,7 @@ exports[`Receive > should change the icon to "unshielded" and show the unshielde
 </div>
 `;
 
-exports[`Receive > should render the receive page with a double icon and a choice to switch from shielded to unshielded address 1`] = `
+exports[`Receive > should render the receive page with a double icon and a choice to switch from shielded to public address 1`] = `
 <div
   class="dusk-card dusk-card--gap-medium"
 >
@@ -241,17 +241,17 @@ exports[`Receive > should render the receive page with a double icon and a choic
       </label>
       <input
         class="dusk-exclusive-choice__radio"
-        id="some-generated-id-unshielded"
+        id="some-generated-id-public"
         name="some-generated-id"
         type="radio"
-        value="unshielded"
+        value="public"
       />
        
       <label
         class="dusk-exclusive-choice__label"
-        for="some-generated-id-unshielded"
+        for="some-generated-id-public"
       >
-        Unshielded
+        Public
       </label>
     </div>
      
@@ -336,7 +336,7 @@ exports[`Receive > should render the receive page with a double icon and a choic
 </div>
 `;
 
-exports[`Receive > should render the receive page with a single icon and no choice for shielded / unshielded if the feature flag is not true 1`] = `
+exports[`Receive > should render the receive page with a single icon and no choice for shielded / public if the feature flag is not true 1`] = `
 <div
   class="dusk-card dusk-card--gap-medium"
 >

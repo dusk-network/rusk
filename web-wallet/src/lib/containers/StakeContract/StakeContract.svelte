@@ -108,7 +108,7 @@
       minStakeRequirement={minimumStake}
       on:operationChange
       on:suppressStakingNotice
-      availableBalance={balance.unshielded.value}
+      availableBalance={balance.publicBalance.value}
       {hideStakingNotice}
     />
   {:else if currentOperation === "unstake" || currentOperation === "claim-rewards"}

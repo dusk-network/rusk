@@ -91,7 +91,7 @@ exports[`Balance > renders the Balance component 1`] = `
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Unshielded"
+            data-tooltip-text="Public"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -220,7 +220,7 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Unshielded"
+            data-tooltip-text="Public"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -349,7 +349,7 @@ exports[`Balance > should update the Balance component when the props change 1`]
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Unshielded"
+            data-tooltip-text="Public"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -478,7 +478,7 @@ exports[`Balance > should update the Balance component when the props change 2`]
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Unshielded"
+            data-tooltip-text="Public"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >

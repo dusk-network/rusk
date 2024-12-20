@@ -94,8 +94,8 @@ describe("Wallet cache", () => {
       await expect(
         walletCache.getBalanceInfo("fake-address")
       ).resolves.toStrictEqual({
-        shielded: { spendable: 0n, value: 0n },
-        unshielded: { nonce: 0n, value: 0n },
+        publicBalance: { nonce: 0n, value: 0n },
+        shieldedBalance: { spendable: 0n, value: 0n },
       });
     });
 
@@ -596,13 +596,13 @@ describe("Wallet cache", () => {
       const newBalance = {
         address: "fake-address",
         balance: {
-          shielded: {
-            spendable: 123n,
-            value: 456n,
-          },
-          unshielded: {
+          publicBalance: {
             nonce: 7n,
             value: 345n,
+          },
+          shieldedBalance: {
+            spendable: 123n,
+            value: 456n,
           },
         },
       };

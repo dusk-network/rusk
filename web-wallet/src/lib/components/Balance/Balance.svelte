@@ -29,19 +29,19 @@
   export let tokenCurrency;
 
   /** @type {bigint} */
-  export let shieldedAmount;
+  export let shieldedBalance;
 
   /** @type {bigint} */
-  export let unshieldedAmount;
+  export let publicBalance;
 
-  $: totalBalance = luxToDusk(shieldedAmount + unshieldedAmount);
+  $: totalBalance = luxToDusk(shieldedBalance + publicBalance);
 
-  $: shieldedPercentage = totalBalance
-    ? (luxToDusk(shieldedAmount) / totalBalance) * 100
+  $: shieldedBalancePercentage = totalBalance
+    ? (luxToDusk(shieldedBalance) / totalBalance) * 100
     : 0;
 
-  $: unshieldedPercentage = totalBalance
-    ? (luxToDusk(unshieldedAmount) / totalBalance) * 100
+  $: publicBalancePercentage = totalBalance
+    ? (luxToDusk(publicBalance) / totalBalance) * 100
     : 0;
 
   $: classes = makeClassName(["dusk-balance", className]);
@@ -75,10 +75,10 @@
           path={mdiShieldLock}
           data-tooltip-id="main-tooltip"
           data-tooltip-text="Shielded"
-        />{numberFormatter(shieldedPercentage)}%</span
+        />{numberFormatter(shieldedBalancePercentage)}%</span
       >
       <span class="dusk-balance__value"
-        >{duskFormatter(luxToDusk(shieldedAmount))}<Icon
+        >{duskFormatter(luxToDusk(shieldedBalance))}<Icon
           data-tooltip-id="main-tooltip"
           data-tooltip-text="DUSK"
           path={logo}
@@ -90,11 +90,11 @@
         ><Icon
           path={mdiShieldLockOpenOutline}
           data-tooltip-id="main-tooltip"
-          data-tooltip-text="Unshielded"
-        />{numberFormatter(unshieldedPercentage)}%</span
+          data-tooltip-text="Public"
+        />{numberFormatter(publicBalancePercentage)}%</span
       >
       <span class="dusk-balance__value"
-        >{duskFormatter(luxToDusk(unshieldedAmount))}<Icon
+        >{duskFormatter(luxToDusk(publicBalance))}<Icon
           data-tooltip-id="main-tooltip"
           data-tooltip-text="DUSK"
           path={logo}

@@ -17,22 +17,22 @@
 
   $: classes = makeClassName(["usage-indicator", className]);
   $: valueToShow = +value.toFixed(2);
-  $: shieldedText = `You have put ${valueToShow}% of your funds in your shielded account`;
-  $: unshieldedText = `You have put ${+(100 - valueToShow).toFixed(2)}% of your funds in your unshielded account`;
+  $: shieldedAccountUsageTooltip = `You have put ${valueToShow}% of your funds in your shielded account`;
+  $: publicAccountUsageTooltip = `You have put ${+(100 - valueToShow).toFixed(2)}% of your funds in your public account`;
 </script>
 
 <div class={classes}>
   <Icon
     className="usage-indicator__icon"
     data-tooltip-id="main-tooltip"
-    data-tooltip-text={shieldedText}
+    data-tooltip-text={shieldedAccountUsageTooltip}
     path={mdiShieldLock}
   />
   <div
     aria-valuemax="100"
     aria-valuemin="0"
     aria-valuenow={valueToShow}
-    aria-valuetext={shieldedText}
+    aria-valuetext={shieldedAccountUsageTooltip}
     class="usage-indicator__meter"
     role="meter"
   >
@@ -45,7 +45,7 @@
   <Icon
     className="usage-indicator__icon"
     data-tooltip-id="main-tooltip"
-    data-tooltip-text={unshieldedText}
+    data-tooltip-text={publicAccountUsageTooltip}
     path={mdiShieldLockOpenOutline}
   />
 </div>

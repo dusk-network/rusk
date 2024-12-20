@@ -1,11 +1,11 @@
 <script>
   import { Balance } from "$lib/components";
 
-  const shieldedAmount = 1_000_000_000n;
-  const unshieldedAmount = 2_000_000_000n;
+  const shieldedBalance = 1_000_000_000n;
+  const publicBalance = 2_000_000_000n;
 
-  const shieldedAmountEx2 = 1_000_000_000n;
-  const unshieldedAmountEx2 = 1_000_000_000n;
+  const shieldedBalanceEx2 = 1_000_000_000n;
+  const publicBalanceEx2 = 1_000_000_000n;
 </script>
 
 <section>
@@ -14,8 +14,8 @@
     fiatPrice={10}
     locale="en"
     tokenCurrency="DUSK"
-    {shieldedAmount}
-    {unshieldedAmount}
+    {shieldedBalance}
+    {publicBalance}
   />
   <br />
   <Balance
@@ -23,8 +23,8 @@
     fiatPrice={10}
     locale="en"
     tokenCurrency="DUSK"
-    shieldedAmount={shieldedAmountEx2}
-    unshieldedAmount={unshieldedAmountEx2}
+    shieldedBalance={shieldedBalanceEx2}
+    publicBalance={publicBalanceEx2}
   />
   <br />
   <Balance
@@ -32,8 +32,8 @@
     fiatPrice={10}
     locale="en"
     tokenCurrency="DUSK"
-    shieldedAmount={shieldedAmountEx2}
-    unshieldedAmount={0n}
+    shieldedBalance={shieldedBalanceEx2}
+    publicBalance={0n}
   />
   <br />
   <Balance
@@ -41,7 +41,7 @@
     fiatPrice={10}
     locale="en"
     tokenCurrency="DUSK"
-    shieldedAmount={0n}
-    unshieldedAmount={0n}
+    shieldedBalance={0n}
+    publicBalance={0n}
   />
 </section>

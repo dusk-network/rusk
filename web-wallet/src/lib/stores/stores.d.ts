@@ -80,8 +80,8 @@ type NodeInfo = {
 };
 
 type WalletStoreBalance = {
-  shielded: AddressBalance;
-  unshielded: AccountBalance;
+  shieldedBalance: AddressBalance;
+  publicBalance: AccountBalance;
 };
 
 type WalletStoreContent = {

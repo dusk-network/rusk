@@ -61,8 +61,8 @@ class WalletCache {
 
   /** @type {WalletCacheBalanceInfo["balance"]} */
   #emptyBalanceInfo = Object.freeze({
-    shielded: { spendable: 0n, value: 0n },
-    unshielded: { nonce: 0n, value: 0n },
+    publicBalance: { nonce: 0n, value: 0n },
+    shieldedBalance: { spendable: 0n, value: 0n },
   });
 
   /** @type {StakeInfo} */

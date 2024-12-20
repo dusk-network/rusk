@@ -48,7 +48,7 @@ describe("Receive", () => {
     vi.useRealTimers();
   });
 
-  it("should render the receive page with a single icon and no choice for shielded / unshielded if the feature flag is not true", async () => {
+  it("should render the receive page with a single icon and no choice for shielded / public if the feature flag is not true", async () => {
     vi.stubEnv("VITE_FEATURE_ALLOCATE", "false");
 
     const { container, getByRole, getByText } = render(Receive);
@@ -63,7 +63,7 @@ describe("Receive", () => {
     vi.unstubAllEnvs();
   });
 
-  it("should render the receive page with a double icon and a choice to switch from shielded to unshielded address", async () => {
+  it("should render the receive page with a double icon and a choice to switch from shielded to public address", async () => {
     const { container, getByRole, getByText } = render(Receive);
 
     await vi.runAllTimersAsync();
@@ -74,7 +74,7 @@ describe("Receive", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it('should change the icon to "unshielded" and show the unshielded address when the user makes such choice', async () => {
+  it('should change the icon to "public" and show the public address when the user makes such choice', async () => {
     const { container, getByRole, getByText } = render(Receive);
 
     await vi.runAllTimersAsync();

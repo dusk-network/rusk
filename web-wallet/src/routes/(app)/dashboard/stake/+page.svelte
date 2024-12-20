@@ -55,7 +55,7 @@
   $: statuses = [
     {
       label: "Spendable",
-      value: duskFormatter(luxToDusk(balance.unshielded.value)),
+      value: duskFormatter(luxToDusk(balance.publicBalance.value)),
     },
     {
       label: "Active Stake",
