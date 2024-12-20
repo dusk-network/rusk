@@ -14,7 +14,7 @@ ringbuffer = { workspace = true }
 dusk-core = { workspace = true, features = ["abi-dlmalloc"] }
 
 [dev-dependencies]
-rusk-abi = { workspace = true }
+dusk-vm = { workspace = true }
 rusk-profile = { workspace = true }
 rusk-prover = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }

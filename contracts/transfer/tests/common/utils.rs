@@ -12,7 +12,7 @@ use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey as PhoenixViewKey};
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use dusk_core::BlsScalar;
-use rusk_abi::{CallReceipt, PiecrustError, Session};
+use dusk_vm::{CallReceipt, PiecrustError, Session};
 
 const GAS_LIMIT: u64 = 0x10_000_000;
 

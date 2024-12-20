@@ -27,10 +27,10 @@ use dusk_core::transfer::{
     ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, JubJubScalar, LUX};
+use dusk_vm::{ContractData, PiecrustError, Session};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
-use rusk_abi::{ContractData, PiecrustError, Session};
 use rusk_prover::LocalProver;
 
 use crate::common::utils::{
@@ -79,10 +79,10 @@ fn instantiate<const N: u8>(
         "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
     );
 
-    let vm = &mut rusk_abi::new_ephemeral_vm()
+    let vm = &mut dusk_vm::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
-    let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
+    let mut session = dusk_vm::new_genesis_session(vm, CHAIN_ID);
 
     session
         .deploy(
@@ -158,7 +158,7 @@ fn instantiate<const N: u8>(
     // operations to 1
     let base = session.commit().expect("Committing should succeed");
     // start a new session from that base-commit
-    let mut session = rusk_abi::new_session(vm, base, CHAIN_ID, 1)
+    let mut session = dusk_vm::new_session(vm, base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed");
 
     // check that the genesis state is correct:
