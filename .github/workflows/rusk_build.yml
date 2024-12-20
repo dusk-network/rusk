@@ -14,16 +14,37 @@ on:
       features:
         description: "Choose features to build (JSON array)"
         required: true
-        default: "[\"default\", \"archive\"]"
+        default: "[\"default\", \"archive\", \"prover\"]"
 
 jobs:
+  config:
+    runs-on: ubuntu-latest
+    name: Show configuration
+    outputs:
+      archs: ${{steps.final.outputs.archs}}
+    steps:
+      - name: get archs
+        run: |
+          echo "# Parameters"         | tee -a $GITHUB_STEP_SUMMARY
+          echo                        | tee -a $GITHUB_STEP_SUMMARY
+          echo "features = $FEATURES" | tee -a $GITHUB_STEP_SUMMARY
+          echo                        | tee -a $GITHUB_STEP_SUMMARY
+          echo "runner = $RUNNER"     | tee -a $GITHUB_STEP_SUMMARY
+        env:
+          FEATURES: ${{github.event.inputs.features}}
+          RUNNER: ${{github.event.inputs.runner}}
+      
   build_and_publish:
-    name: Build Rusk binaries for ${{ matrix.os }} (${{ matrix.features }})
+    name: Build Rusk binaries for ${{ matrix.os }} (${{ matrix.feature }})
     runs-on: ${{ matrix.os }}
+    needs:
+      - config
+    continue-on-error: ${{ !contains(fromJson(github.event.inputs.runner), matrix.os) }}
     strategy:
       matrix:
-        features: ${{ fromJson(github.event.inputs.features) }}
+        feature: ${{ fromJson(github.event.inputs.features) }}
         compiler: [cargo]
+        os: [ubuntu-24.04, macos-15, arm-linux]
         include:
           - os: ubuntu-24.04
             target: linux-x64
@@ -38,11 +59,11 @@ jobs:
     steps:
       - name: Skip Non-matching Configurations
         if: |
-          !contains(fromJson(github.event.inputs.runner), matrix.runner) ||
-          !contains(fromJson(github.event.inputs.features), matrix.features)
+          !contains(fromJson(github.event.inputs.runner), matrix.os) ||
+          !contains(fromJson(github.event.inputs.features), matrix.feature)
         run: |
-          echo "Skipping build for ${{ matrix.runner }} - ${{ matrix.features }}"
-          exit 0
+          echo "Skipping build for ${{ matrix.os }} - ${{ matrix.feature }}"
+          exit 1
         
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -56,18 +77,31 @@ jobs:
         run: rustup target add aarch64-apple-darwin
         if: ${{ matrix.os == 'macos-15' }}
 
+      - name: Check for Prover Features
+        id: config
+        run: |
+          echo "Checking feature requirements..."
+          if [[ "${{ matrix.feature }}" == *"prover"* ]]; then
+            echo "NO_DEFAULT_FEATURES=--no-default-features" >> $GITHUB_ENV
+            echo "SKIP_WASM=true" >> $GITHUB_ENV
+          else
+            echo "NO_DEFAULT_FEATURES=" >> $GITHUB_ENV
+            echo "SKIP_WASM=false" >> $GITHUB_ENV
+          fi
+
       - name: Compile keys
         shell: bash
         run: make keys
 
       - name: Compile WASM Contracts
+        if: ${{ env.SKIP_WASM != 'true' }}
         shell: bash
         run: make wasm
 
       - name: Build Rusk binary
         shell: bash
         working-directory: ./rusk
-        run: cargo build --release --features "${{ matrix.features }}" ${{ matrix.flags }}
+        run: cargo build --release ${{ env.NO_DEFAULT_FEATURES }} --features "${{ matrix.feature }}" ${{ matrix.flags }}
 
       - name: Extract Version
         run: |
@@ -76,14 +110,14 @@ jobs:
 
       - name: Package Binaries
         run: |
-          mkdir rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
-          mv target/release/rusk rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
-          tar -czvf rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}.tar.gz \
-            rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
+          mkdir rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
+          mv target/release/rusk rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
+          tar -czvf rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}.tar.gz \
+            rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
 
       - name: Upload Binaries as Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}
-          path: ./rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.features }}.tar.gz
+          name: rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
+          path: ./rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}.tar.gz
           retention-days: 5
