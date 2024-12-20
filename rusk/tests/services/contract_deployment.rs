@@ -12,7 +12,7 @@ use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::{
     ContractBytecode, ContractDeploy, TransactionData,
 };
-use dusk_vm::{ContractData, PiecrustError};
+use dusk_vm::{new_session, ContractData, Error as VMError, VM};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::gen_id::gen_contract_id;
@@ -230,9 +230,9 @@ impl Fixture {
 
     pub fn assert_bob_contract_is_not_deployed(&self) {
         let commit = self.rusk.state_root();
-        let vm = dusk_vm::new_vm(self.path.as_path())
-            .expect("VM creation should succeed");
-        let mut session = dusk_vm::new_session(&vm, commit, CHAIN_ID, 0)
+        let vm =
+            VM::new(self.path.as_path()).expect("VM creation should succeed");
+        let mut session = new_session(&vm, commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,
@@ -241,16 +241,16 @@ impl Fixture {
             u64::MAX,
         );
         match result.err() {
-            Some(PiecrustError::ContractDoesNotExist(_)) => (),
+            Some(VMError::ContractDoesNotExist(_)) => (),
             _ => assert!(false),
         }
     }
 
     pub fn assert_bob_contract_is_deployed(&self) {
         let commit = self.rusk.state_root();
-        let vm = dusk_vm::new_vm(self.path.as_path())
-            .expect("VM creation should succeed");
-        let mut session = dusk_vm::new_session(&vm, commit, CHAIN_ID, 0)
+        let vm =
+            VM::new(self.path.as_path()).expect("VM creation should succeed");
+        let mut session = new_session(&vm, commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,

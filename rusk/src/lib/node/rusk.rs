@@ -27,7 +27,7 @@ use dusk_core::transfer::{
     TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, Dusk};
-use dusk_vm::{CallReceipt, PiecrustError, Session};
+use dusk_vm::{new_session, CallReceipt, Error as VMError, Session, VM};
 use node::vm::bytecode_charge;
 use node_data::events::contract::{ContractEvent, ContractTxEvent};
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
@@ -85,7 +85,7 @@ impl Rusk {
         let mut base_commit = [0u8; 32];
         base_commit.copy_from_slice(&base_commit_bytes);
 
-        let vm = Arc::new(dusk_vm::new_vm(dir)?);
+        let vm = Arc::new(VM::new(dir)?);
 
         let tip = Arc::new(RwLock::new(RuskTip {
             current: base_commit,
@@ -219,9 +219,7 @@ impl Rusk {
                         err,
                     });
                 }
-                Err(PiecrustError::Panic(val))
-                    if val == PANIC_NONCE_NOT_READY =>
-                {
+                Err(VMError::Panic(val)) if val == PANIC_NONCE_NOT_READY => {
                     // If the transaction panic due to a not yet valid nonce,
                     // we should not discard the transactions since it can be
                     // included in future.
@@ -537,12 +535,8 @@ impl Rusk {
             tip.current
         });
 
-        let session = dusk_vm::new_session(
-            &self.vm,
-            commit,
-            self.chain_id,
-            block_height,
-        )?;
+        let session =
+            new_session(&self.vm, commit, self.chain_id, block_height)?;
 
         Ok(session)
     }
@@ -769,7 +763,7 @@ fn execute(
     gas_per_deploy_byte: u64,
     min_deploy_points: u64,
     min_deployment_gas_price: u64,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, VMError> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     if let Some(deploy) = tx.deploy() {
@@ -779,14 +773,10 @@ fn execute(
             min_deploy_points,
         );
         if tx.gas_price() < min_deployment_gas_price {
-            return Err(PiecrustError::Panic(
-                "gas price too low to deploy".into(),
-            ));
+            return Err(VMError::Panic("gas price too low to deploy".into()));
         }
         if tx.gas_limit() < deploy_charge {
-            return Err(PiecrustError::Panic(
-                "not enough gas to deploy".into(),
-            ));
+            return Err(VMError::Panic("not enough gas to deploy".into()));
         }
     }
 
