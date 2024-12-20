@@ -14,44 +14,33 @@
 extern crate alloc;
 
 pub use piecrust::{
-    CallReceipt, CallTree, CallTreeElem, ContractData, Error as PiecrustError,
-    PageOpening, Session, VM,
+    CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
+    Session,
 };
 
 use alloc::vec::Vec;
+use std::fmt::{self, Debug, Formatter};
 use std::path::{Path, PathBuf};
+use std::thread;
 
-use dusk_bytes::DeserializableSlice;
 use dusk_core::abi::{Metadata, Query};
-use dusk_core::groth16::bn254::{Bn254, G1Projective};
-use dusk_core::groth16::serialize::CanonicalDeserialize;
-use dusk_core::groth16::{
-    Groth16, PreparedVerifyingKey, Proof as Groth16Proof,
-};
-use dusk_core::plonk::{Proof as PlonkProof, Verifier};
-use dusk_core::signatures::bls::{
-    MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
-    Signature as BlsSignature,
-};
-use dusk_core::signatures::schnorr::{
-    PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
-};
-use dusk_core::BlsScalar;
-use dusk_poseidon::{Domain, Hash as PoseidonHash};
-use piecrust::SessionData;
-use rkyv::ser::serializers::AllocSerializer;
-use rkyv::{Archive, Deserialize, Serialize};
+use piecrust::{SessionData, VM as PiecrustVM};
 
-mod cache;
+use self::host_queries::{
+    host_hash, host_poseidon_hash, host_verify_bls, host_verify_bls_multisig,
+    host_verify_groth16_bn254, host_verify_plonk, host_verify_schnorr,
+};
 
-/// Create a new session based on the given `vm`. The vm *must* have been
-/// created using [`new_vm`] or [`new_ephemeral_vm`].
+pub(crate) mod cache;
+pub mod host_queries;
+
+/// Create a new session based on the given `VM`.
 pub fn new_session(
     vm: &VM,
     base: [u8; 32],
     chain_id: u8,
     block_height: u64,
-) -> Result<Session, PiecrustError> {
+) -> Result<Session, Error> {
     vm.session(
         SessionData::builder()
             .base(base)
@@ -60,8 +49,7 @@ pub fn new_session(
     )
 }
 
-/// Create a new genesis session based on the given `vm`. The vm *must* have
-/// been created using [`new_vm`] or [`new_ephemeral_vm`].
+/// Create a new genesis session based on the given [`VM`].
 pub fn new_genesis_session(vm: &VM, chain_id: u8) -> Session {
     vm.session(
         SessionData::builder()
@@ -73,192 +61,117 @@ pub fn new_genesis_session(vm: &VM, chain_id: u8) -> Session {
     .expect("Creating a genesis session should always succeed")
 }
 
-/// Create a new [`VM`] compliant with Dusk's specification.
-pub fn new_vm<P: AsRef<Path> + Into<PathBuf>>(
-    root_dir: P,
-) -> Result<VM, PiecrustError> {
-    let mut vm = VM::new(root_dir)?;
-    register_host_queries(&mut vm);
-    Ok(vm)
+/// Dusk VM is a [`PiecrustVM`] enriched with the host functions specified in
+/// Dusk's ABI.
+pub struct VM(PiecrustVM);
+
+impl From<PiecrustVM> for VM {
+    fn from(piecrust_vm: PiecrustVM) -> Self {
+        VM(piecrust_vm)
+    }
 }
 
-/// Creates a new [`VM`] with a temporary directory.
-pub fn new_ephemeral_vm() -> Result<VM, PiecrustError> {
-    let mut vm = VM::ephemeral()?;
-    register_host_queries(&mut vm);
-    Ok(vm)
+impl Debug for VM {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
 }
 
-fn register_host_queries(vm: &mut VM) {
-    vm.register_host_query(Query::HASH, host_hash);
-    vm.register_host_query(Query::POSEIDON_HASH, host_poseidon_hash);
-    vm.register_host_query(Query::VERIFY_PLONK, host_verify_plonk);
-    vm.register_host_query(
-        Query::VERIFY_GROTH16_BN254,
-        host_verify_groth16_bn254,
-    );
-    vm.register_host_query(Query::VERIFY_SCHNORR, host_verify_schnorr);
-    vm.register_host_query(Query::VERIFY_BLS, host_verify_bls);
-    vm.register_host_query(
-        Query::VERIFY_BLS_MULTISIG,
-        host_verify_bls_multisig,
-    );
-}
-
-fn wrap_host_query<A, R, F>(arg_buf: &mut [u8], arg_len: u32, closure: F) -> u32
-where
-    F: FnOnce(A) -> R,
-    A: Archive,
-    A::Archived: Deserialize<A, rkyv::Infallible>,
-    R: Serialize<AllocSerializer<1024>>,
-{
-    let root =
-        unsafe { rkyv::archived_root::<A>(&arg_buf[..arg_len as usize]) };
-    let arg: A = root.deserialize(&mut rkyv::Infallible).unwrap();
-
-    let result = closure(arg);
-
-    let bytes = rkyv::to_bytes::<_, 1024>(&result).unwrap();
-
-    arg_buf[..bytes.len()].copy_from_slice(&bytes);
-    bytes.len() as u32
-}
-
-fn host_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, hash)
-}
-
-fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, poseidon_hash)
-}
-
-fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
-    let cached = cache::get_plonk_verification(hash);
-
-    wrap_host_query(arg_buf, arg_len, |(vd, proof, pis)| {
-        let is_valid = cached.unwrap_or_else(|| verify_plonk(vd, proof, pis));
-        cache::put_plonk_verification(hash, is_valid);
-        is_valid
-    })
-}
-
-fn host_verify_groth16_bn254(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
-    let cached = cache::get_groth16_verification(hash);
-
-    wrap_host_query(arg_buf, arg_len, |(pvk, proof, inputs)| {
-        let is_valid =
-            cached.unwrap_or_else(|| verify_groth16_bn254(pvk, proof, inputs));
-        cache::put_groth16_verification(hash, is_valid);
-        is_valid
-    })
-}
-
-fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| {
-        verify_schnorr(msg, pk, sig)
-    })
-}
-
-fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
-    let cached = cache::get_bls_verification(hash);
-
-    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| {
-        let is_valid = cached.unwrap_or_else(|| verify_bls(msg, pk, sig));
-        cache::put_bls_verification(hash, is_valid);
-        is_valid
-    })
-}
-
-fn host_verify_bls_multisig(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg, keys, sig)| {
-        verify_bls_multisig(msg, keys, sig)
-    })
-}
-
-/// Compute the blake2b hash of the given scalars, returning the resulting
-/// scalar. The hash is computed in such a way that it will always return a
-/// valid scalar.
-pub fn hash(bytes: Vec<u8>) -> BlsScalar {
-    BlsScalar::hash_to_scalar(&bytes[..])
-}
-
-/// Compute the poseidon hash of the given scalars
-pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
-    PoseidonHash::digest(Domain::Other, &scalars)[0]
-}
-
-/// Verify a Plonk proof is valid for a given circuit type and public inputs
-///
-/// # Panics
-/// This will panic if `verifier_data` or `proof` are not valid.
-pub fn verify_plonk(
-    verifier_data: Vec<u8>,
-    proof: Vec<u8>,
-    public_inputs: Vec<BlsScalar>,
-) -> bool {
-    let verifier = Verifier::try_from_bytes(verifier_data)
-        .expect("Verifier data coming from the contract should be valid");
-    let proof = PlonkProof::from_slice(&proof).expect("Proof should be valid");
-
-    verifier.verify(&proof, &public_inputs[..]).is_ok()
-}
-
-/// Verify that a Groth16 proof in the BN254 pairing is valid for a given
-/// circuit and inputs.
-///
-/// `proof` and `inputs` should be in compressed form, while `pvk` uncompressed.
-///
-/// # Panics
-/// This will panic if `pvk`, `proof` or `inputs` are not valid.
-pub fn verify_groth16_bn254(
-    pvk: Vec<u8>,
-    proof: Vec<u8>,
-    inputs: Vec<u8>,
-) -> bool {
-    let pvk = PreparedVerifyingKey::deserialize_uncompressed(&pvk[..])
-        .expect("verifying key must be valid");
-    let proof = Groth16Proof::deserialize_compressed(&proof[..])
-        .expect("proof must be valid");
-    let inputs = G1Projective::deserialize_compressed(&inputs[..])
-        .expect("inputs must be valid");
-
-    Groth16::<Bn254>::verify_proof_with_prepared_inputs(&pvk, &proof, &inputs)
-        .expect("verifying proof should succeed")
-}
-
-/// Verify a schnorr signature is valid for the given public key and message
-pub fn verify_schnorr(
-    msg: BlsScalar,
-    pk: SchnorrPublicKey,
-    sig: SchnorrSignature,
-) -> bool {
-    pk.verify(&sig, msg).is_ok()
-}
-
-/// Verify a BLS signature is valid for the given public key and message
-pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
-    pk.verify(&sig, &msg).is_ok()
-}
-
-/// Verify a BLS signature is valid for the given public key and message
-pub fn verify_bls_multisig(
-    msg: Vec<u8>,
-    keys: Vec<BlsPublicKey>,
-    sig: MultisigSignature,
-) -> bool {
-    let len = keys.len();
-    if len < 1 {
-        panic!("must have at least one key");
+impl VM {
+    /// Creates a new `VM`, reading the given directory for existing commits
+    /// and bytecode.
+    ///
+    /// The directory will be used to save any future session commits made by
+    /// this `VM` instance.
+    ///
+    /// # Errors
+    /// If the directory contains unparseable or inconsistent data.
+    pub fn new(
+        root_dir: impl AsRef<Path> + Into<PathBuf>,
+    ) -> Result<Self, Error> {
+        let mut vm: Self = PiecrustVM::new(root_dir)?.into();
+        vm.register_host_queries();
+        Ok(vm)
     }
 
-    let akey = MultisigPublicKey::aggregate(&keys)
-        .expect("aggregation should succeed");
+    /// Creates a new `VM` using a new temporary directory.
+    ///
+    /// Any session commits made by this machine should be considered discarded
+    /// once this `VM` instance drops.
+    ///
+    /// # Errors
+    /// If creating a temporary directory fails.
+    pub fn ephemeral() -> Result<VM, Error> {
+        let mut vm: Self = PiecrustVM::ephemeral()?.into();
+        vm.register_host_queries();
+        Ok(vm)
+    }
 
-    akey.verify(&sig, &msg).is_ok()
+    /// Spawn a [`Session`].
+    ///
+    /// # Errors
+    /// If base commit is provided but does not exist.
+    ///
+    /// [`Session`]: Session
+    pub fn session(
+        &self,
+        data: impl Into<SessionData>,
+    ) -> Result<Session, Error> {
+        self.0.session(data)
+    }
+
+    /// Return all existing commits.
+    pub fn commits(&self) -> Vec<[u8; 32]> {
+        self.0.commits()
+    }
+
+    /// Deletes the given commit from disk.
+    pub fn delete_commit(&self, root: [u8; 32]) -> Result<(), Error> {
+        self.0.delete_commit(root)
+    }
+
+    /// Finalizes the given commit on disk.
+    pub fn finalize_commit(&self, root: [u8; 32]) -> Result<(), Error> {
+        self.0.finalize_commit(root)
+    }
+
+    /// Return the root directory of the virtual machine.
+    ///
+    /// This is either the directory passed in by using [`new`], or the
+    /// temporary directory created using [`ephemeral`].
+    ///
+    /// [`new`]: VM::new
+    /// [`ephemeral`]: VM::ephemeral
+    pub fn root_dir(&self) -> &Path {
+        self.0.root_dir()
+    }
+
+    /// Returns a reference to the synchronization thread.
+    pub fn sync_thread(&self) -> &thread::Thread {
+        self.0.sync_thread()
+    }
+
+    fn register_host_queries(&mut self) {
+        self.0.register_host_query(Query::HASH, host_hash);
+        self.0
+            .register_host_query(Query::POSEIDON_HASH, host_poseidon_hash);
+        self.0
+            .register_host_query(Query::VERIFY_PLONK, host_verify_plonk);
+        self.0.register_host_query(
+            Query::VERIFY_GROTH16_BN254,
+            host_verify_groth16_bn254,
+        );
+        self.0
+            .register_host_query(Query::VERIFY_SCHNORR, host_verify_schnorr);
+        self.0
+            .register_host_query(Query::VERIFY_BLS, host_verify_bls);
+        self.0.register_host_query(
+            Query::VERIFY_BLS_MULTISIG,
+            host_verify_bls_multisig,
+        );
+    }
 }
+
 #[cfg(test)]
 mod tests {
     // the `unused_crate_dependencies` lint complains for dev-dependencies that
