@@ -4,5 +4,6 @@ type Transaction = {
   direction: "In" | "Out";
   fee: number;
   id: string;
+  memo: string | Uint8Array;
   tx_type: string;
 };

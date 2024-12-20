@@ -27,6 +27,7 @@ describe("Send", () => {
     "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
   const shieldedAddress =
     "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM";
+  const memo = "";
   const baseProps = {
     availableBalance: 1_000_000_000_000n,
     execute: vi.fn().mockResolvedValue(lastTxId),
@@ -40,6 +41,7 @@ describe("Send", () => {
       gasLimit: 20000000n,
       gasPrice: 1n,
     },
+    memo,
     publicAddress,
     shieldedAddress,
   };
@@ -279,7 +281,8 @@ describe("Send", () => {
         shieldedAddress,
         duskToLux(amount),
         baseProps.gasSettings.gasPrice,
-        baseProps.gasSettings.gasLimit
+        baseProps.gasSettings.gasLimit,
+        baseProps.memo
       );
 
       const explorerLink = getByRole("link", { name: /explorer/i });
@@ -314,7 +317,8 @@ describe("Send", () => {
         shieldedAddress,
         duskToLux(amount),
         baseProps.gasSettings.gasPrice,
-        baseProps.gasSettings.gasLimit
+        baseProps.gasSettings.gasLimit,
+        baseProps.memo
       );
       expect(getByText("Transaction failed")).toBeInTheDocument();
       expect(getByText(errorMessage)).toBeInTheDocument();
@@ -343,7 +347,8 @@ describe("Send", () => {
         shieldedAddress,
         duskToLux(amount),
         baseProps.gasSettings.gasPrice,
-        baseProps.gasSettings.gasLimit
+        baseProps.gasSettings.gasLimit,
+        baseProps.memo
       );
       expect(getByText("Transaction created")).toBeInTheDocument();
       expect(() => getByRole("link", { name: /explorer/i })).toThrow();

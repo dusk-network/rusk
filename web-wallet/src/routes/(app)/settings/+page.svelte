@@ -196,7 +196,7 @@
           summary="An error occurred while resetting the wallet. Please try again."
         />
         <Button
-          className="settings-group__button--state--danger"
+          className="settings__reset settings-group__button--state--danger"
           disabled={syncStatus.isInProgress}
           data-tooltip-disabled={!syncStatus.isInProgress}
           data-tooltip-id="main-tooltip"
@@ -244,6 +244,10 @@
 
     :global(& button, & select, & a) {
       width: 100%;
+    }
+
+    :global(&__reset) {
+      margin-top: 1rem;
     }
   }
 
