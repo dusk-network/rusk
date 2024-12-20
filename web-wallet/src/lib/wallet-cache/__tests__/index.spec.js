@@ -618,7 +618,7 @@ describe("Wallet cache", () => {
       // overwrite test
       const modifiedBalance = updatePathIn(
         newBalance.balance,
-        "shielded.value",
+        "shieldedBalance.value",
         add(345n)
       );
 
