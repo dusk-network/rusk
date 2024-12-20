@@ -8,36 +8,36 @@ use std::sync::mpsc;
 
 pub mod common;
 
+use dusk_bytes::Serializable;
+use dusk_core::abi::ContractId;
+use dusk_core::dusk;
+use dusk_core::signatures::bls::{
+    PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
+};
+use dusk_core::transfer::data::{ContractCall, TransactionData};
+use dusk_core::transfer::phoenix::{
+    Note, NoteLeaf, NoteOpening, NoteTreeItem, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, Transaction as PhoenixTransaction,
+    ViewKey as PhoenixViewKey,
+};
+use dusk_core::transfer::withdraw::{
+    Withdraw, WithdrawReceiver, WithdrawReplayToken,
+};
+use dusk_core::transfer::{
+    ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
+};
+use dusk_core::{BlsScalar, JubJubScalar, LUX};
+use ff::Field;
+use rand::rngs::StdRng;
+use rand::{CryptoRng, RngCore, SeedableRng};
+use rusk_abi::{ContractData, PiecrustError, Session};
+use rusk_prover::LocalProver;
+
 use crate::common::utils::{
     account, chain_id, contract_balance, execute, existing_nullifiers,
     filter_notes_owned_by, leaves_from_height, new_owned_notes_value,
     owned_notes_value, update_root,
 };
-
-use dusk_bytes::Serializable;
-use ff::Field;
-use rand::rngs::StdRng;
-use rand::{CryptoRng, RngCore, SeedableRng};
-
-use dusk_core::{
-    dusk,
-    signatures::bls::{
-        PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
-    },
-    transfer::{
-        data::{ContractCall, TransactionData},
-        phoenix::{
-            Note, NoteLeaf, NoteOpening, NoteTreeItem,
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-            Transaction as PhoenixTransaction, ViewKey as PhoenixViewKey,
-        },
-        withdraw::{Withdraw, WithdrawReceiver, WithdrawReplayToken},
-        ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
-    },
-    BlsScalar, ContractId, JubJubScalar, LUX,
-};
-use rusk_abi::{ContractData, PiecrustError, Session};
-use rusk_prover::LocalProver;
 
 const PHOENIX_GENESIS_VALUE: u64 = dusk(1_200.0);
 const ALICE_GENESIS_VALUE: u64 = dusk(2_000.0);
