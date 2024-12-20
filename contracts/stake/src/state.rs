@@ -6,23 +6,19 @@
 
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
-
 use core::cmp::min;
 
 use dusk_bytes::Serializable;
-
-use dusk_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    stake::{
-        next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeConfig,
-        StakeData, StakeEvent, StakeFundOwner, StakeKeys, Withdraw,
-        WithdrawToContract, EPOCH, STAKE_CONTRACT,
-    },
-    transfer::{ContractToContract, ReceiveFromContract, TRANSFER_CONTRACT},
-    ContractId,
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::{
+    next_epoch, Reward, SlashEvent, Stake, StakeAmount, StakeConfig, StakeData,
+    StakeEvent, StakeFundOwner, StakeKeys, Withdraw, WithdrawToContract, EPOCH,
+    STAKE_CONTRACT,
 };
-
-use crate::*;
+use dusk_core::transfer::{
+    ContractToContract, ReceiveFromContract, TRANSFER_CONTRACT,
+};
+use dusk_core::ContractId;
 
 /// Contract keeping track of each public key's stake.
 ///
