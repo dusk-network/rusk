@@ -108,15 +108,15 @@ exports[`Send > Address step > should display a warning if the address input is 
       
        
       <div
-        class="banner banner--warning"
+        class="banner banner--info"
       >
         <svg
-          class="dusk-icon dusk-icon--size--large banner__icon banner__icon--warning"
+          class="dusk-icon dusk-icon--size--large banner__icon banner__icon--info"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
           <path
-            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+            d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z"
           />
         </svg>
         
@@ -129,9 +129,12 @@ exports[`Send > Address step > should display a warning if the address input is 
           </strong>
            
           <p>
-            Public transactions are currently unavailable.
+            This transaction will be public and sent from your 
+            <strong>
+              public
+            </strong>
+             account.
           </p>
-          
         </div>
       </div>
        
@@ -195,7 +198,6 @@ exports[`Send > Address step > should display a warning if the address input is 
        
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
-        disabled=""
         type="button"
       >
         <span
@@ -336,15 +338,15 @@ exports[`Send > Address step > should display a warning if the address input is 
       
        
       <div
-        class="banner banner--warning"
+        class="banner banner--info"
       >
         <svg
-          class="dusk-icon dusk-icon--size--large banner__icon banner__icon--warning"
+          class="dusk-icon dusk-icon--size--large banner__icon banner__icon--info"
           role="graphics-symbol"
           viewBox="0 0 24 24"
         >
           <path
-            d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+            d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z"
           />
         </svg>
         
@@ -357,9 +359,12 @@ exports[`Send > Address step > should display a warning if the address input is 
           </strong>
            
           <p>
-            Public transactions are currently unavailable.
+            This transaction will be public and sent from your 
+            <strong>
+              public
+            </strong>
+             account.
           </p>
-          
         </div>
       </div>
        
@@ -452,7 +457,6 @@ exports[`Send > Address step > should display a warning if the address input is 
        
       <button
         class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default dusk-icon-button--labeled"
-        disabled=""
         type="button"
       >
         <span

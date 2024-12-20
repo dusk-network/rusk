@@ -63,8 +63,6 @@
     {gasLimits}
     {gasSettings}
     availableBalance={spendable}
-    enableMoonlightTransactions={import.meta.env
-      .VITE_FEATURE_MOONLIGHT_TRANSACTIONS === "true"}
     on:keyChange={keyChangeHandler}
   />
 </IconHeadingCard>

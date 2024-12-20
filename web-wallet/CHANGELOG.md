@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove Beta ribbon [#3164]
 - Remove "UsageIndicator" component [#3245]
+- Remove "VITE_FEATURE_MOONLIGHT_TRANSACTIONS" flag [#3246]
 
 ### Fixed
 

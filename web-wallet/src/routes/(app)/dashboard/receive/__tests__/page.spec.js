@@ -48,21 +48,6 @@ describe("Receive", () => {
     vi.useRealTimers();
   });
 
-  it("should render the receive page with a single icon and no choice for shielded / unshielded if the feature flag is not true", async () => {
-    vi.stubEnv("VITE_FEATURE_ALLOCATE", "false");
-
-    const { container, getByRole, getByText } = render(Receive);
-
-    await vi.runAllTimersAsync();
-
-    expect(() => getByRole("radiogroup")).toThrow();
-    expect(getByText(expectedAddress)).toBeInTheDocument();
-    expect(() => getByText(expectedAccount)).toThrow();
-    expect(container.firstChild).toMatchSnapshot();
-
-    vi.unstubAllEnvs();
-  });
-
   it("should render the receive page with a double icon and a choice to switch from shielded to unshielded address", async () => {
     const { container, getByRole, getByText } = render(Receive);
 
