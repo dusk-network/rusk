@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Removed Beta ribbon [#3164]
+- Remove Beta ribbon [#3164]
+- Remove "UsageIndicator" component [#3245]
 
 ### Fixed
 
@@ -469,6 +470,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3203]: https://github.com/dusk-network/rusk/issues/3203
 [#3212]: https://github.com/dusk-network/rusk/issues/3212
 [#3226]: https://github.com/dusk-network/rusk/issues/3226
+[#3245]: https://github.com/dusk-network/rusk/issues/3245
 
 <!-- VERSIONS -->
 
