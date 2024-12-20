@@ -12,11 +12,12 @@
 
 extern crate alloc;
 
+mod state;
+
 use dusk_core::abi;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 
-mod state;
-use state::StakeState;
+use self::state::StakeState;
 
 static mut STATE: StakeState = StakeState::new();
 

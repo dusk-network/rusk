@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+pub mod common;
 
 use dusk_core::dusk;
 use dusk_core::signatures::bls::{
@@ -16,8 +17,6 @@ use rusk_abi::{ContractData, PiecrustError, Session, VM};
 use wallet_core::transaction::{
     moonlight_stake, moonlight_stake_reward, moonlight_unstake,
 };
-
-pub mod common;
 
 use crate::common::assert::*;
 use crate::common::init::CHAIN_ID;

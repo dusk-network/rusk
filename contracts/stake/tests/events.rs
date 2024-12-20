@@ -6,26 +6,22 @@
 
 pub mod common;
 
-use common::assert::assert_slash_event;
+use dusk_core::dusk;
+use dusk_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
+use dusk_core::stake::{
+    Reward, RewardReason, StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT,
+};
+use dusk_core::transfer::phoenix::{
+    PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+};
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-
-use dusk_core::{
-    dusk,
-    signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey},
-    stake::{
-        Reward, RewardReason, StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT,
-    },
-    transfer::{
-        phoenix::{
-            PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-        },
-        TRANSFER_CONTRACT,
-    },
-};
 use rusk_abi::PiecrustError;
 
-use crate::common::assert::assert_reward_event;
+use crate::common::assert::{assert_reward_event, assert_slash_event};
 use crate::common::init::instantiate;
 
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);

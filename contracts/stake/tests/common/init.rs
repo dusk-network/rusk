@@ -5,10 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_core::stake::STAKE_CONTRACT;
-use dusk_core::transfer::{
-    phoenix::{Note, PublicKey as PhoenixPublicKey},
-    TRANSFER_CONTRACT,
-};
+use dusk_core::transfer::phoenix::{Note, PublicKey as PhoenixPublicKey};
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::JubJubScalar;
 use ff::Field;
 use rand::{CryptoRng, RngCore};
