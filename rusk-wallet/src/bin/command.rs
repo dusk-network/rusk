@@ -569,8 +569,9 @@ impl Command {
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
-                let call = ContractCall::new(contract_id, fn_name, &fn_args)
-                    .map_err(|_| Error::Rkyv)?;
+                let call =
+                    ContractCall::new(contract_id, fn_name.clone(), &fn_args)
+                        .map_err(|_| Error::Rkyv)?;
 
                 let tx = match address {
                     Address::Shielded(_) => {
@@ -597,7 +598,13 @@ impl Command {
                     }
                 }?;
 
-                Ok(RunResult::Tx(tx.hash()))
+                let contract_id = hex::encode(contract_id);
+
+                let http_call = wallet
+                    .http_contract_call(contract_id, &fn_name, fn_args)
+                    .await?;
+
+                Ok(RunResult::ContractCall(tx.hash(), http_call))
             }
 
             Self::ContractDeploy {
@@ -688,6 +695,7 @@ pub enum RunResult<'a> {
     Profile((u8, &'a Profile)),
     Profiles(&'a Vec<Profile>),
     ContractId([u8; CONTRACT_ID_BYTES]),
+    ContractCall(BlsScalar, Vec<u8>),
     ExportedKeys(PathBuf, PathBuf),
     Create(),
     Restore(),
@@ -764,6 +772,12 @@ impl fmt::Display for RunResult<'_> {
             }
             ContractId(bytes) => {
                 write!(f, "> Contract ID: {}", hex::encode(bytes))
+            }
+            ContractCall(scalar, bytes) => {
+                let hash = hex::encode(scalar.to_bytes());
+                writeln!(f, "> Contract call transaction hash: {hash}",)?;
+
+                writeln!(f, "> Http contract query: {:?}", bytes)
             }
             ExportedKeys(pk, kp) => {
                 let pk = pk.display();
