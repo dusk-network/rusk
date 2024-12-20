@@ -19,6 +19,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use dusk_consensus::config::is_emergency_block;
 use dusk_consensus::errors::ConsensusError;
 pub use header_validation::verify_att;
 use node_data::events::Event;
@@ -171,8 +172,23 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             // Handle a block that originates from a network peer.
                             // By disabling block broadcast, a block may be received
                             // from a peer only after explicit request (on demand).
-                            match fsm.on_block_event(*blk, msg.metadata).await {
-                                Ok(_) => {}
+                            match fsm.on_block_event(*blk, msg.metadata.clone()).await {
+                                Ok(res) => {
+                                    if let Some(accepted_blk) = res {
+                                        // Repropagate Emergency Blocks
+                                        // We already know it's valid because we accepted it
+                                        if is_emergency_block(accepted_blk.header().iteration){
+                                            // We build a new `msg` to avoid cloning `blk` when
+                                            // passing it to `on_block_event`.
+                                            // We copy the metadata to keep the original ray_id.
+                                            let mut eb_msg = Message::from(accepted_blk);
+                                            eb_msg.metadata = msg.metadata;
+                                            if let Err(e) = network.read().await.broadcast(&eb_msg).await {
+                                                warn!("Unable to re-broadcast Emergency Block: {e}");
+                                            }
+                                        }
+                                    }
+                                }
                                 Err(err) => {
                                     error!(event = "fsm::on_event failed", src = "wire", err = ?err);
                                 }

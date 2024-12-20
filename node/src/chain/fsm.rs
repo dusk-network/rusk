@@ -13,6 +13,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use dusk_consensus::config::is_emergency_block;
 use metrics::counter;
 use node_data::ledger::{to_str, Attestation, Block};
 use node_data::message::payload::{Inv, Quorum, RatificationResult, Vote};
@@ -27,6 +28,8 @@ use self::stalled::StalledChainFSM;
 use super::acceptor::{Acceptor, RevertTarget};
 use crate::database::{ConsensusStorage, Ledger};
 use crate::{database, vm, Network};
+
+use anyhow::{anyhow, Result};
 
 const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 
@@ -168,7 +171,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
     /// If the block is accepted, it returns the block itself
     pub async fn on_block_event(
         &mut self,
-        blk: Block,
+        mut blk: Block,
         metadata: Option<Metadata>,
     ) -> anyhow::Result<Option<Block>> {
         let block_hash = &blk.header().hash;
@@ -187,134 +190,136 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             return Ok(None);
         }
 
-        let blk = self.attach_att_if_needed(blk);
-        if let Some(blk) = blk.as_ref() {
-            let fsm_res = match &mut self.curr {
-                State::InSync(ref mut curr) => {
-                    if let Some(presync) =
-                        curr.on_block_event(blk, metadata).await?
-                    {
-                        // Transition from InSync to OutOfSync state
-                        curr.on_exiting().await;
-
-                        // Enter new state
-                        let mut next = OutOfSyncImpl::new(
-                            self.acc.clone(),
-                            self.network.clone(),
-                        )
-                        .await;
-                        next.on_entering(presync).await;
-                        self.curr = State::OutOfSync(next);
-                    }
-                    anyhow::Ok(())
-                }
-                State::OutOfSync(ref mut curr) => {
-                    if curr.on_block_event(blk).await? {
-                        // Transition from OutOfSync to InSync state
-                        curr.on_exiting().await;
-
-                        // Enter new state
-                        let mut next = InSyncImpl::new(
-                            self.acc.clone(),
-                            self.network.clone(),
-                            self.blacklisted_blocks.clone(),
-                        );
-                        next.on_entering(blk).await.map_err(|e| {
-                            error!("Unable to enter in_sync state: {e}");
-                            e
-                        })?;
-                        self.curr = State::InSync(next);
-                    }
-                    anyhow::Ok(())
-                }
-            };
-
-            // Try to detect a stalled chain
-            // Generally speaking, if a node is receiving future blocks from the
-            // network but it cannot accept a new block for long time, then
-            // it might be a sign of a getting stalled on non-main branch.
-
-            let res = self.stalled_sm.on_block_received(blk).await.clone();
-            match res {
-                stalled::State::StalledOnFork(
-                    local_hash_at_fork,
-                    remote_blk,
-                ) => {
-                    info!(
-                        event = "stalled on fork",
-                        local_hash = to_str(&local_hash_at_fork),
-                        remote_hash = to_str(&remote_blk.header().hash),
-                        remote_height = remote_blk.header().height,
-                    );
-                    let mut acc = self.acc.write().await;
-
-                    let prev_local_state_root =
-                        acc.db.read().await.view(|t| {
-                            let local_blk = t
-                                .block_header(&local_hash_at_fork)?
-                                .expect("local hash should exist");
-
-                            let prev_blk = t
-                                .block_header(&local_blk.prev_block_hash)?
-                                .expect("prev block hash should exist");
-
-                            anyhow::Ok(prev_blk.state_hash)
-                        })?;
-
-                    match acc
-                        .try_revert(RevertTarget::Commit(prev_local_state_root))
-                        .await
-                    {
-                        Ok(_) => {
-                            counter!("dusk_revert_count").increment(1);
-                            info!(event = "reverted to last finalized");
-
-                            info!(
-                                event = "recovery block",
-                                height = remote_blk.header().height,
-                                hash = to_str(&remote_blk.header().hash),
-                            );
-
-                            acc.try_accept_block(&remote_blk, true).await?;
-
-                            // Black list the block hash to avoid accepting it
-                            // again due to fallback execution
-                            self.blacklisted_blocks
-                                .write()
-                                .await
-                                .insert(local_hash_at_fork);
-
-                            // Try to reset the stalled chain FSM to `running`
-                            // state
-                            if let Err(err) =
-                                self.stalled_sm.reset(remote_blk.header())
-                            {
-                                info!(
-                                    event = "revert failed",
-                                    err = format!("{:?}", err)
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            error!(
-                                event = "revert failed",
-                                err = format!("{:?}", e)
-                            );
-                            return Ok(None);
-                        }
-                    }
-                }
-                stalled::State::Stalled(_) => {
-                    self.blacklisted_blocks.write().await.clear();
-                }
-                _ => {}
+        // Try attach the Attestation, if necessary
+        // If can't find the Attestation, the block is discarded
+        // unless it's an Emergency Blocks, which have no Attestation
+        if !Self::is_block_attested(&blk)
+            && !is_emergency_block(blk.header().iteration)
+        {
+            if let Err(err) = self.attach_blk_att(&mut blk) {
+                warn!(event = "block discarded", ?err);
+                return Ok(None);
             }
-
-            // Ensure that an error in FSM does not affect the stalled_sm
-            fsm_res?;
         }
 
-        Ok(blk)
+        let fsm_res = match &mut self.curr {
+            State::InSync(ref mut curr) => {
+                if let Some(presync) =
+                    curr.on_block_event(&blk, metadata).await?
+                {
+                    // Transition from InSync to OutOfSync state
+                    curr.on_exiting().await;
+
+                    // Enter new state
+                    let mut next = OutOfSyncImpl::new(
+                        self.acc.clone(),
+                        self.network.clone(),
+                    )
+                    .await;
+                    next.on_entering(presync).await;
+                    self.curr = State::OutOfSync(next);
+                }
+                anyhow::Ok(())
+            }
+            State::OutOfSync(ref mut curr) => {
+                if curr.on_block_event(&blk).await? {
+                    // Transition from OutOfSync to InSync state
+                    curr.on_exiting().await;
+
+                    // Enter new state
+                    let mut next = InSyncImpl::new(
+                        self.acc.clone(),
+                        self.network.clone(),
+                        self.blacklisted_blocks.clone(),
+                    );
+                    next.on_entering(&blk).await.map_err(|e| {
+                        error!("Unable to enter in_sync state: {e}");
+                        e
+                    })?;
+                    self.curr = State::InSync(next);
+                }
+                anyhow::Ok(())
+            }
+        };
+
+        // Try to detect a stalled chain
+        // Generally speaking, if a node is receiving future blocks from the
+        // network but it cannot accept a new block for long time, then
+        // it might be a sign of a getting stalled on non-main branch.
+
+        let res = self.stalled_sm.on_block_received(&blk).await.clone();
+        match res {
+            stalled::State::StalledOnFork(local_hash_at_fork, remote_blk) => {
+                info!(
+                    event = "stalled on fork",
+                    local_hash = to_str(&local_hash_at_fork),
+                    remote_hash = to_str(&remote_blk.header().hash),
+                    remote_height = remote_blk.header().height,
+                );
+                let mut acc = self.acc.write().await;
+
+                let prev_local_state_root = acc.db.read().await.view(|t| {
+                    let local_blk = t
+                        .block_header(&local_hash_at_fork)?
+                        .expect("local hash should exist");
+
+                    let prev_blk = t
+                        .block_header(&local_blk.prev_block_hash)?
+                        .expect("prev block hash should exist");
+
+                    anyhow::Ok(prev_blk.state_hash)
+                })?;
+
+                match acc
+                    .try_revert(RevertTarget::Commit(prev_local_state_root))
+                    .await
+                {
+                    Ok(_) => {
+                        counter!("dusk_revert_count").increment(1);
+                        info!(event = "reverted to last finalized");
+
+                        info!(
+                            event = "recovery block",
+                            height = remote_blk.header().height,
+                            hash = to_str(&remote_blk.header().hash),
+                        );
+
+                        acc.try_accept_block(&remote_blk, true).await?;
+
+                        // Black list the block hash to avoid accepting it
+                        // again due to fallback execution
+                        self.blacklisted_blocks
+                            .write()
+                            .await
+                            .insert(local_hash_at_fork);
+
+                        // Try to reset the stalled chain FSM to `running`
+                        // state
+                        if let Err(err) =
+                            self.stalled_sm.reset(remote_blk.header())
+                        {
+                            info!(
+                                event = "revert failed",
+                                err = format!("{err:?}")
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        error!(event = "revert failed", err = format!("{e:?}"));
+                        return Ok(None);
+                    }
+                }
+            }
+            stalled::State::Stalled(_) => {
+                self.blacklisted_blocks.write().await.clear();
+            }
+            _ => {}
+        }
+
+        // Ensure that an error in FSM does not affect the stalled_sm
+        fsm_res?;
+
+        Ok(Some(blk))
     }
 
     async fn flood_request_block(&mut self, hash: [u8; 32], att: Attestation) {
@@ -465,34 +470,33 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         Ok(())
     }
 
+    // Checks if a block has an Attestation
+    fn is_block_attested(blk: &Block) -> bool {
+        blk.header().att != Attestation::default()
+    }
+
     /// Try to attach the attestation to a block that misses it
     ///
-    /// Return None if it's not able to attach the attestation
-    fn attach_att_if_needed(&mut self, mut blk: Block) -> Option<Block> {
+    /// Return Err if can't find the Attestation in the cache
+    fn attach_blk_att(&mut self, blk: &mut Block) -> Result<()> {
         let block_hash = blk.header().hash;
 
-        let block_with_att = if blk.header().att == Attestation::default() {
-            // The default att means the block was retrieved from Candidate
-            // CF thus missing the attestation. If so, we try to set the valid
-            // attestation from the cache attestations.
-            if let Some((att, _)) =
-                self.attestations_cache.get(&blk.header().hash)
-            {
-                blk.set_attestation(*att);
-                Some(blk)
-            } else {
-                error!("att not found for {}", hex::encode(blk.header().hash));
-                None
-            }
+        // Check if we have the block Attestation in our cache
+        if let Some((att, _)) = self.attestations_cache.get(&block_hash) {
+            blk.set_attestation(*att);
         } else {
-            Some(blk)
-        };
+            // warn!("Attestation not found for {}", hex::encode(block_hash));
+            return Err(anyhow!(
+                "Attestation not found for {}",
+                hex::encode(block_hash)
+            ));
+        }
 
         // Clean up attestation cache
         self.clean_att_cache();
         self.attestations_cache.remove(&block_hash);
 
-        block_with_att
+        Ok(())
     }
 
     fn clean_att_cache(&mut self) {

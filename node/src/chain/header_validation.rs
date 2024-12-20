@@ -4,12 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::cmp;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use dusk_bytes::Serializable;
 use dusk_consensus::config::{
-    is_emergency_iter, MINIMUM_BLOCK_TIME, RELAX_ITERATION_THRESHOLD,
+    is_emergency_block, is_emergency_iter, CONSENSUS_MAX_ITER,
+    MINIMUM_BLOCK_TIME, MIN_EMERGENCY_BLOCK_TIME, RELAX_ITERATION_THRESHOLD,
 };
 use dusk_consensus::errors::{
     AttestationError, FailedIterationError, HeaderError,
@@ -77,7 +79,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         header: &ledger::Header,
         expected_generator: &PublicKeyBytes,
-        disable_att_check: bool,
+        check_attestation: bool,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
         let generator =
             self.verify_block_generator(header, expected_generator)?;
@@ -86,7 +88,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         let prev_block_voters = self.verify_prev_block_cert(header).await?;
 
         let mut block_voters = vec![];
-        if !disable_att_check {
+        if check_attestation {
             (_, _, block_voters) = verify_att(
                 &header.att,
                 header.to_consensus_header(),
@@ -170,6 +172,21 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             return Err(HeaderError::BlockTimeLess);
         }
 
+        // The Emergency Block can only be produced after all iterations in a
+        // round have failed. To ensure Dusk (or anyone in possess of the Dusk
+        // private key) is not able to shortcircuit a round with an arbitrary
+        // block, nodes should only accept an Emergency Block if its timestamp
+        // is higher than the maximum time needed to run all round iterations.
+        // This guarantees the network has enough time to actually produce a
+        // block, if possible.
+        if is_emergency_block(candidate_block.iteration)
+            && candidate_block.timestamp
+                < self.prev_header.timestamp
+                    + MIN_EMERGENCY_BLOCK_TIME.as_secs()
+        {
+            return Err(HeaderError::BlockTimeLess);
+        }
+
         let local_time = get_current_timestamp();
 
         if candidate_block.timestamp > local_time + MARGIN_TIMESTAMP {
@@ -228,7 +245,9 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &'a ledger::Header,
     ) -> Result<Vec<Voter>, HeaderError> {
-        if self.prev_header.height == 0 {
+        if self.prev_header.height == 0
+            || is_emergency_block(self.prev_header.iteration)
+        {
             return Ok(vec![]);
         }
 
@@ -309,7 +328,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             }
         }
 
-        Ok(candidate_block.iteration - failed_atts)
+        // In case of Emergency Block, which iteration number is u8::MAX, we
+        // count failed iterations up to CONSENSUS_MAX_ITER
+        let last_iter = cmp::min(candidate_block.iteration, CONSENSUS_MAX_ITER);
+
+        Ok(last_iter - failed_atts)
     }
 
     /// Extracts voters list of a block.
