@@ -27,8 +27,8 @@ pub const STAKE_CONTRACT: ContractId = crate::reserved(0x2);
 /// Epoch used for stake operations
 pub const EPOCH: u64 = 2160;
 
-/// Number of warnings before being penalized
-pub const STAKE_WARNINGS: u8 = 1;
+/// Default number of warnings before being penalized
+pub const DEFAULT_STAKE_WARNINGS: u8 = 1;
 
 /// The minimum amount of Dusk one can stake.
 pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
@@ -48,7 +48,7 @@ impl StakeConfig {
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            warnings: STAKE_WARNINGS,
+            warnings: DEFAULT_STAKE_WARNINGS,
             minimum_stake: MINIMUM_STAKE,
         }
     }
