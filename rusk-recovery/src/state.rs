@@ -15,11 +15,11 @@ use dusk_core::stake::{StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT};
 use dusk_core::transfer::phoenix::{Note, PublicKey, Sender};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::JubJubScalar;
+use dusk_vm::{ContractData, Session, VM};
 use ff::Field;
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_abi::{ContractData, Session, VM};
 
 use tracing::info;
 use url::Url;
@@ -176,8 +176,8 @@ fn generate_empty_state<P: AsRef<Path>>(
 
     let state_dir = state_dir.as_ref();
 
-    let vm = rusk_abi::new_vm(state_dir)?;
-    let mut session = rusk_abi::new_genesis_session(&vm, GENESIS_CHAIN_ID);
+    let vm = dusk_vm::new_vm(state_dir)?;
+    let mut session = dusk_vm::new_genesis_session(&vm, GENESIS_CHAIN_ID);
 
     let transfer_code = include_bytes!(
         "../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
@@ -260,7 +260,7 @@ where
         None => generate_empty_state(state_dir, snapshot),
     }?;
 
-    let mut session = rusk_abi::new_session(
+    let mut session = dusk_vm::new_session(
         &vm,
         old_commit_id,
         GENESIS_CHAIN_ID,
@@ -312,7 +312,7 @@ pub fn restore_state<P: AsRef<Path>>(
     let mut commit_id = [0u8; 32];
     commit_id.copy_from_slice(&commit_id_bytes);
 
-    let vm = rusk_abi::new_vm(state_dir)?;
+    let vm = dusk_vm::new_vm(state_dir)?;
     Ok((vm, commit_id))
 }
 
