@@ -1,12 +1,19 @@
+<svelte:options immutable={true} />
+
 <script>
-  import { Icon } from "$lib/dusk/components";
   import {
     mdiAlertCircleOutline,
     mdiAlertDecagramOutline,
     mdiAlertOutline,
   } from "@mdi/js";
 
+  import { makeClassName } from "$lib/dusk/string";
+  import { Icon } from "$lib/dusk/components";
+
   import "./Banner.css";
+
+  /** @type {string | undefined} */
+  export let className = undefined;
 
   /** @type {string} */
   export let title;
@@ -24,9 +31,11 @@
         return mdiAlertCircleOutline;
     }
   }
+
+  $: classes = makeClassName(["banner", `banner--${variant}`, className]);
 </script>
 
-<div class="banner banner--{variant}">
+<div {...$$restProps} class={classes}>
   <Icon
     path={getBannerIconPath()}
     size="large"
