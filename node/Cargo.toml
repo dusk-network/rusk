@@ -54,6 +54,7 @@ criterion = { workspace = true, features = ["async_futures"] }
 [features]
 with_telemetry = []
 archive = ["dep:sqlx", "dep:serde_json", "dep:serde_with"]
+network-trace = []
 
 [[bench]]
 name = "accept"
