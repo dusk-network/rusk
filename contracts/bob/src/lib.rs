@@ -9,6 +9,8 @@
 
 extern crate alloc;
 
+use dusk_core::abi;
+
 mod state;
 use state::Bob;
 
@@ -22,41 +24,41 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn init(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |n| STATE.init(n))
+        abi::wrap_call(arg_len, |n| STATE.init(n))
     }
 
     #[no_mangle]
     unsafe fn reset(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |n| STATE.reset(n))
+        abi::wrap_call(arg_len, |n| STATE.reset(n))
     }
 
     #[no_mangle]
     unsafe fn owner_reset(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |(sig, msg)| STATE.owner_reset(sig, msg))
+        abi::wrap_call(arg_len, |(sig, msg)| STATE.owner_reset(sig, msg))
     }
 
     #[no_mangle]
     unsafe fn ping(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |()| STATE.ping())
+        abi::wrap_call(arg_len, |()| STATE.ping())
     }
 
     #[no_mangle]
     unsafe fn echo(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |n| STATE.echo(n))
+        abi::wrap_call(arg_len, |n| STATE.echo(n))
     }
 
     #[no_mangle]
     unsafe fn value(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |()| STATE.value())
+        abi::wrap_call(arg_len, |()| STATE.value())
     }
 
     #[no_mangle]
     unsafe fn nonce(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |()| STATE.nonce())
+        abi::wrap_call(arg_len, |()| STATE.nonce())
     }
 
     #[no_mangle]
     unsafe fn recv_transfer(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |arg| STATE.recv_transfer(arg))
+        abi::wrap_call(arg_len, |arg| STATE.recv_transfer(arg))
     }
 }
