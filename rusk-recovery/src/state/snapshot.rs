@@ -103,7 +103,7 @@ mod tests {
 
     use std::error::Error;
 
-    use dusk_core::stake::MINIMUM_STAKE;
+    use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 
     use super::*;
     use crate::state;
@@ -133,7 +133,8 @@ mod tests {
         }
 
         if !testnet.stakes().any(|s| {
-            s.amount >= MINIMUM_STAKE && s.eligibility.unwrap_or_default() == 0
+            s.amount >= DEFAULT_MINIMUM_STAKE
+                && s.eligibility.unwrap_or_default() == 0
         }) {
             panic!("Testnet must have at least a provisioner configured");
         }
