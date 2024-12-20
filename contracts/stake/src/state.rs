@@ -53,6 +53,14 @@ impl StakeState {
         }
     }
 
+    pub fn config(&self) -> &StakeConfig {
+        &self.config
+    }
+
+    pub fn configure(&mut self, config: StakeConfig) {
+        self.config = config;
+    }
+
     pub fn on_new_block(&mut self) {
         self.previous_block_state.clear()
     }
