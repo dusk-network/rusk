@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::mem;
 
 use dusk_core::dusk;
-use dusk_core::stake::MINIMUM_STAKE;
+use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::Seed;
 use node_data::StepName;
@@ -182,7 +182,7 @@ impl Provisioners {
         round: u64,
     ) -> impl Iterator<Item = (&PublicKey, &Stake)> {
         self.members.iter().filter(move |(_, m)| {
-            m.is_eligible(round) && m.value() >= MINIMUM_STAKE
+            m.is_eligible(round) && m.value() >= DEFAULT_MINIMUM_STAKE
         })
     }
 

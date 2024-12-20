@@ -27,8 +27,45 @@ pub const STAKE_CONTRACT: ContractId = crate::reserved(0x2);
 /// Epoch used for stake operations
 pub const EPOCH: u64 = 2160;
 
-/// Number of warnings before being penalized
-pub const STAKE_WARNINGS: u8 = 1;
+/// Default number of warnings before being penalized
+pub const DEFAULT_STAKE_WARNINGS: u8 = 1;
+
+/// The minimum amount of Dusk one can stake.
+#[deprecated(
+    since = "0.1.0",
+    note = "please use `DEFAULT_MINIMUM_STAKE` instead"
+)]
+pub const MINIMUM_STAKE: Dusk = DEFAULT_MINIMUM_STAKE;
+
+/// The default minimum amount of Dusk one can stake.
+pub const DEFAULT_MINIMUM_STAKE: Dusk = dusk(1_000.0);
+
+/// Configuration for the stake contract
+#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct StakeConfig {
+    /// Number of warnings before being penalized
+    pub warnings: u8,
+    /// Minimum amount of Dusk that can be staked
+    pub minimum_stake: Dusk,
+}
+
+impl StakeConfig {
+    /// Create a new default stake configuration.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            warnings: DEFAULT_STAKE_WARNINGS,
+            minimum_stake: DEFAULT_MINIMUM_STAKE,
+        }
+    }
+}
+
+impl Default for StakeConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// Calculate the block height at which the next epoch takes effect.
 #[must_use]
@@ -373,9 +410,6 @@ pub struct SlashEvent {
     /// New eligibility for the slashed account
     pub next_eligibility: u64,
 }
-
-/// The minimum amount of Dusk one can stake.
-pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
 /// The representation of a public key's stake.
 ///

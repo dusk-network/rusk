@@ -7,7 +7,7 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use dusk_core::stake::MINIMUM_STAKE;
+use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 use dusk_core::{
     dusk,
     signatures::bls::PublicKey as BlsPublicKey,
@@ -164,7 +164,7 @@ pub async fn stake() -> Result<()> {
     info!("Original Root: {:?}", hex::encode(original_root));
 
     // Perform some staking actions.
-    wallet_stake(&rusk, &wallet, MINIMUM_STAKE);
+    wallet_stake(&rusk, &wallet, DEFAULT_MINIMUM_STAKE);
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
