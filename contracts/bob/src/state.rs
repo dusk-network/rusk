@@ -6,6 +6,7 @@
 
 extern crate alloc;
 use alloc::string::String;
+
 use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
 use dusk_core::abi::{self, ContractId};

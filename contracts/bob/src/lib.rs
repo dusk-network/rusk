@@ -9,10 +9,11 @@
 
 extern crate alloc;
 
+mod state;
+
 use dusk_core::abi;
 
-mod state;
-use state::Bob;
+use self::state::Bob;
 
 #[cfg(target_family = "wasm")]
 #[path = ""]
