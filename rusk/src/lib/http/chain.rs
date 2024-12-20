@@ -26,6 +26,7 @@ use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,
 };
 use serde_json::{json, Map, Value};
+use tracing::error;
 
 use super::*;
 use crate::node::RuskNode;
@@ -182,7 +183,15 @@ impl RuskNode {
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
         let db = self.inner().database();
         let vm = self.inner().vm_handler();
-        MempoolSrv::check_tx(&db, &vm, &tx.into(), true, usize::MAX).await?;
+        let tx = tx.into();
+
+        MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX)
+            .await
+            .map_err(|e| {
+                error!("Tx {} not accepted: {e}", hex::encode(tx.id()));
+                e
+            })?;
+
         Ok(ResponseData::new(DataType::None))
     }
 
