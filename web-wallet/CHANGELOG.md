@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Removed Beta ribbon [#3164]
+
 ### Fixed
 
 - Fix wrong error shown in the login screen [#3226] [#3097]
@@ -461,6 +463,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3129]: https://github.com/dusk-network/rusk/issues/3129
 [#3156]: https://github.com/dusk-network/rusk/issues/3156
 [#3160]: https://github.com/dusk-network/rusk/issues/3160
+[#3164]: https://github.com/dusk-network/rusk/issues/3164
 [#3178]: https://github.com/dusk-network/rusk/issues/3178
 [#3179]: https://github.com/dusk-network/rusk/issues/3179
 [#3203]: https://github.com/dusk-network/rusk/issues/3203
