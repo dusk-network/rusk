@@ -47,9 +47,6 @@
   /** @type {GasStoreContent} */
   export let gasLimits;
 
-  /** @type {boolean} */
-  export let enableMoonlightTransactions = false;
-
   /** @type {string} */
   export let shieldedAddress;
 
@@ -110,21 +107,6 @@
 
   let activeStep = 0;
 
-  /**
-   * Validates an address/account depending on moonlight transactions being enabled.
-   *
-   * Note. This function can be removed when the VITE_FEATURE_MOONLIGHT_TRANSACTIONS flag is removed.
-   *
-   * @param {{isValid: boolean, type?: "address" | "account", isSelfReferential? : boolean}} addressInfo
-   */
-  function isValid(addressInfo) {
-    return !addressInfo.isValid
-      ? true
-      : isMoonlightTransaction
-        ? !enableMoonlightTransactions
-        : false;
-  }
-
   $: sendAmountInLux = sendAmount ? duskToLux(sendAmount) : 0n;
 
   // Calculate the maximum gas fee based on the gas limit and gas price.
@@ -166,8 +148,6 @@
     publicAddress
   );
 
-  $: isMoonlightTransaction = addressInfo.type === "account";
-
   $: if (addressInfo.type) {
     dispatch("keyChange", {
       type: addressInfo.type,
@@ -191,7 +171,7 @@
       }}
       nextButton={{
         action: () => activeStep++,
-        disabled: isValid(addressInfo),
+        disabled: !addressInfo.isValid,
       }}
     >
       <div in:fade|global class="operation__send">
@@ -213,19 +193,12 @@
           bind:value={sendToAddress}
         />
         {#if addressInfo.type === "account"}
-          <Banner
-            title="Public account detected"
-            variant={enableMoonlightTransactions ? "info" : "warning"}
-          >
-            {#if enableMoonlightTransactions}
-              <p>
-                This transaction will be public and sent from your <strong
-                  >public</strong
-                > account.
-              </p>
-            {:else}
-              <p>Public transactions are currently unavailable.</p>
-            {/if}
+          <Banner title="Public account detected" variant="info">
+            <p>
+              This transaction will be public and sent from your <strong
+                >public</strong
+              > account.
+            </p>
           </Banner>
         {/if}
         <ScanQR

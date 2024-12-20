@@ -25,19 +25,13 @@
   $: currentAddress = currentProfile
     ? currentProfile[addressProp].toString()
     : "";
-  $: icons =
-    import.meta.env.VITE_FEATURE_ALLOCATE === "true"
-      ? [
-          mdiArrowBottomLeftThin,
-          addressToShow === "shielded" ? mdiShieldLock : mdiShieldLockOpen,
-        ]
-      : [mdiArrowBottomLeftThin];
+  $: icons = [
+    mdiArrowBottomLeftThin,
+    addressToShow === "shielded" ? mdiShieldLock : mdiShieldLockOpen,
+  ];
 </script>
 
 <IconHeadingCard gap="medium" heading="Receive" {icons}>
-  {#if import.meta.env.VITE_FEATURE_ALLOCATE === "true"}
-    <ExclusiveChoice {options} bind:value={addressToShow} />
-  {/if}
-
+  <ExclusiveChoice {options} bind:value={addressToShow} />
   <Receive address={currentAddress} />
 </IconHeadingCard>
