@@ -37,6 +37,8 @@ jobs:
   build_and_publish:
     name: Build Rusk binaries for ${{ matrix.os }} (${{ matrix.features }})
     runs-on: ${{ matrix.os }}
+    needs:
+      - config
     strategy:
       matrix:
         features: ${{ fromJson(github.event.inputs.features) }}
