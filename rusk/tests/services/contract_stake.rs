@@ -7,7 +7,7 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use dusk_core::stake::{self, Stake, EPOCH, MINIMUM_STAKE};
+use dusk_core::stake::{self, Stake, DEFAULT_MINIMUM_STAKE, EPOCH};
 
 use dusk_bytes::Serializable;
 use dusk_core::transfer::data::ContractCall;
@@ -72,7 +72,7 @@ pub async fn stake_from_contract() -> Result<()> {
     let stake = Stake::new_from_contract(
         &sk,
         contract_id,
-        MINIMUM_STAKE,
+        DEFAULT_MINIMUM_STAKE,
         rusk.chain_id().unwrap(),
     );
     let call = ContractCall::new(contract_id, "stake", &stake)
@@ -81,7 +81,7 @@ pub async fn stake_from_contract() -> Result<()> {
         .moonlight_execute(
             0,
             0,
-            MINIMUM_STAKE,
+            DEFAULT_MINIMUM_STAKE,
             GAS_LIMIT,
             GAS_PRICE,
             Some(call.clone()),
@@ -92,7 +92,7 @@ pub async fn stake_from_contract() -> Result<()> {
 
     let stake = wallet.get_stake(0).expect("stake to be found");
     assert_eq!(
-        MINIMUM_STAKE,
+        DEFAULT_MINIMUM_STAKE,
         stake.amount.expect("stake amount to be found").value
     );
 
@@ -100,7 +100,7 @@ pub async fn stake_from_contract() -> Result<()> {
         .moonlight_execute(
             0,
             0,
-            MINIMUM_STAKE,
+            DEFAULT_MINIMUM_STAKE,
             GAS_LIMIT,
             GAS_PRICE,
             Some(call.clone()),
@@ -111,7 +111,7 @@ pub async fn stake_from_contract() -> Result<()> {
 
     let stake = wallet.get_stake(0).expect("stake to be found");
     assert_eq!(
-        MINIMUM_STAKE * 2,
+        DEFAULT_MINIMUM_STAKE * 2,
         stake.amount.expect("stake amount to be found").value
     );
 
@@ -119,7 +119,7 @@ pub async fn stake_from_contract() -> Result<()> {
         .moonlight_execute(
             0,
             0,
-            MINIMUM_STAKE,
+            DEFAULT_MINIMUM_STAKE,
             GAS_LIMIT,
             GAS_PRICE,
             Some(call),
@@ -136,12 +136,12 @@ pub async fn stake_from_contract() -> Result<()> {
 
     let stake = wallet.get_stake(0).expect("stake to be found");
     assert_eq!(
-        MINIMUM_STAKE * 2 + (MINIMUM_STAKE / 10 * 9) as u64,
+        DEFAULT_MINIMUM_STAKE * 2 + (DEFAULT_MINIMUM_STAKE / 10 * 9) as u64,
         stake.amount.expect("stake amount to be found").value
     );
 
     assert_eq!(
-        (MINIMUM_STAKE / 10) as u64,
+        (DEFAULT_MINIMUM_STAKE / 10) as u64,
         stake.amount.expect("stake amount to be found").locked
     );
 
@@ -175,7 +175,7 @@ pub async fn stake_from_contract() -> Result<()> {
             &mut rng,
             &sk,
             contract_id,
-            3 * MINIMUM_STAKE,
+            3 * DEFAULT_MINIMUM_STAKE,
             transfer::withdraw::WithdrawReceiver::Moonlight(pk),
             transfer::withdraw::WithdrawReplayToken::Moonlight(7),
         ),
@@ -189,7 +189,7 @@ pub async fn stake_from_contract() -> Result<()> {
             .amount
             .unwrap()
             .total_funds(),
-        3 * MINIMUM_STAKE
+        3 * DEFAULT_MINIMUM_STAKE
     );
     let call = ContractCall::new(contract_id, "unstake", &unstake)
         .expect("call to be successful");
@@ -202,7 +202,10 @@ pub async fn stake_from_contract() -> Result<()> {
     assert_eq!(wallet.get_stake(0).expect("stake to exists").amount, None);
     let new_balance = wallet.get_account(0).unwrap().balance;
     let fee_paid = tx.gas_spent * GAS_PRICE;
-    assert_eq!(new_balance, prev_balance + 3 * MINIMUM_STAKE - fee_paid);
+    assert_eq!(
+        new_balance,
+        prev_balance + 3 * DEFAULT_MINIMUM_STAKE - fee_paid
+    );
 
     let current_reward = wallet.get_stake(0).expect("Stake to exists").reward;
 
