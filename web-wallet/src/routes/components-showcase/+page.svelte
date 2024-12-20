@@ -23,7 +23,6 @@
   import Throbbers from "./Throbbers.svelte";
   import Toasts from "./Toasts.svelte";
   import Tooltips from "./Tooltips.svelte";
-  import UsageIndicators from "./UsageIndicators.svelte";
   import Wizards from "./Wizards.svelte";
 
   /** @type {Record<string, import("svelte").ComponentType>} */
@@ -48,7 +47,6 @@
     Throbbers: Throbbers,
     Toasts: Toasts,
     Tooltips: Tooltips,
-    "Usage Indicators": UsageIndicators,
     Wizards: Wizards,
   };
 
