@@ -138,12 +138,11 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         let step_timeout = self.iter_ctx.get_timeout(step);
         let timeout = step_timeout + additional_timeout.unwrap_or_default();
 
-        info!(
-            event = "Start Step",
+        debug!(
+            event = "Start step loop",
             ?step,
             round,
             iter,
-            ?timeout,
             ?step_timeout,
             ?additional_timeout
         );
@@ -167,13 +166,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                 .process_inbound_msg(phase.clone(), msg.clone())
                                 .await
                             {
-                                info!(
-                                    event = "Step completed",
-                                    round,
-                                    ?step,
-                                    info = ?msg.header
-                                );
-
                                 // In the normal case, we just return the result
                                 // to Consensus
                                 if !open_consensus_mode {
@@ -352,9 +344,11 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 // Timeout event. Phase could not reach its final goal.
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
-                    info!(event = "Step timeout expired", round, iter, ?step);
+                    info!(event = "Step timeout expired", ?step, round, iter);
 
                     if self.is_last_step() {
+                        info!(event = "Step ended", ?step, round, iter);
+
                         // If the last step expires, we enter Open Consensus
                         // mode. In this mode, the last step (Ratification)
                         // keeps running indefinitely, until a block is

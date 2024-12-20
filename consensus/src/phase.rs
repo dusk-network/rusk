@@ -6,7 +6,7 @@
 
 use node_data::message::Message;
 use node_data::StepName;
-use tracing::{debug, trace};
+use tracing::{info, trace};
 
 use crate::commons::Database;
 use crate::execution_ctx::ExecutionCtx;
@@ -54,10 +54,16 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
     pub async fn run(&mut self, mut ctx: ExecutionCtx<'_, T, D>) -> Message {
         ctx.set_start_time();
 
-        let timeout = ctx.iter_ctx.get_timeout(ctx.step_name());
-        debug!(event = "execute_step", ?timeout);
+        let step = ctx.step_name();
+        let round = ctx.round_update.round;
+        let iter = ctx.iteration;
+        let timeout = ctx.iter_ctx.get_timeout(step);
 
         // Execute step
-        await_phase!(self, run(ctx))
+        info!(event = "Step started", ?step, round, iter, ?timeout);
+        let msg = await_phase!(self, run(ctx));
+        info!(event = "Step ended", ?step, round, iter);
+
+        msg
     }
 }
