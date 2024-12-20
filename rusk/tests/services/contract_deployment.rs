@@ -8,9 +8,9 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use dusk_core::{
-    transfer::data::{ContractBytecode, ContractDeploy, TransactionData},
-    ContractId,
+use dusk_core::abi::ContractId;
+use dusk_core::transfer::data::{
+    ContractBytecode, ContractDeploy, TransactionData,
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;

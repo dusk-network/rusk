@@ -10,7 +10,7 @@ use crate::Result;
 use std::sync::mpsc;
 
 use bytecheck::CheckBytes;
-use dusk_core::{ContractId, StandardBufSerializer};
+use dusk_core::abi::{ContractId, StandardBufSerializer};
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 
