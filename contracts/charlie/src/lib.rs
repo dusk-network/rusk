@@ -7,9 +7,11 @@
 #![no_std]
 
 mod state;
+
 use dusk_core::abi;
 use dusk_core::transfer::TRANSFER_CONTRACT;
-use state::Charlie;
+
+use self::state::Charlie;
 
 #[no_mangle]
 static mut STATE: Charlie = Charlie;

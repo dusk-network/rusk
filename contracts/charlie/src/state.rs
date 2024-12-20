@@ -8,9 +8,9 @@ extern crate alloc;
 
 use dusk_core::abi;
 use dusk_core::stake::{Stake, Withdraw, WithdrawToContract, STAKE_CONTRACT};
+use dusk_core::transfer::withdraw::Withdraw as TransferWithdraw;
 use dusk_core::transfer::{
-    withdraw::Withdraw as TransferWithdraw, ContractToContract,
-    ReceiveFromContract, TRANSFER_CONTRACT,
+    ContractToContract, ReceiveFromContract, TRANSFER_CONTRACT,
 };
 
 const SCRATCH_BUF_BYTES: usize = 256;
