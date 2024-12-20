@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_core::abi;
+use dusk_core::transfer::withdraw::Withdraw;
 use dusk_core::transfer::{
-    withdraw::Withdraw, ContractToAccount, ContractToContract,
-    TRANSFER_CONTRACT,
+    ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
 };
 
 /// Alice contract.
