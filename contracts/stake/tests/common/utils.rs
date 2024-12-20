@@ -15,7 +15,7 @@ use dusk_core::transfer::phoenix::{
 };
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use dusk_core::{BlsScalar, LUX};
-use dusk_vm::{CallReceipt, PiecrustError, Session};
+use dusk_vm::{CallReceipt, Error as VMError, Session};
 use rand::rngs::StdRng;
 use rusk_prover::LocalProver;
 
@@ -25,7 +25,7 @@ pub const GAS_PRICE: u64 = LUX;
 pub fn leaves_from_height(
     session: &mut Session,
     height: u64,
-) -> Result<Vec<NoteLeaf>, PiecrustError> {
+) -> Result<Vec<NoteLeaf>, VMError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -45,7 +45,7 @@ pub fn leaves_from_height(
 pub fn leaves_from_pos(
     session: &mut Session,
     pos: u64,
-) -> Result<Vec<NoteLeaf>, PiecrustError> {
+) -> Result<Vec<NoteLeaf>, VMError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -62,13 +62,13 @@ pub fn leaves_from_pos(
         .collect())
 }
 
-pub fn update_root(session: &mut Session) -> Result<(), PiecrustError> {
+pub fn update_root(session: &mut Session) -> Result<(), VMError> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), GAS_LIMIT)
         .map(|r| r.data)
 }
 
-pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
+pub fn root(session: &mut Session) -> Result<BlsScalar, VMError> {
     session
         .call(TRANSFER_CONTRACT, "root", &(), GAS_LIMIT)
         .map(|r| r.data)
@@ -77,13 +77,13 @@ pub fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
 pub fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<NoteOpening>, PiecrustError> {
+) -> Result<Option<NoteOpening>, VMError> {
     session
         .call(TRANSFER_CONTRACT, "opening", &pos, GAS_LIMIT)
         .map(|r| r.data)
 }
 
-pub fn chain_id(session: &mut Session) -> Result<u8, PiecrustError> {
+pub fn chain_id(session: &mut Session) -> Result<u8, VMError> {
     session
         .call(TRANSFER_CONTRACT, "chain_id", &(), GAS_LIMIT)
         .map(|r| r.data)
@@ -102,7 +102,7 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 pub fn execute(
     session: &mut Session,
     tx: impl Into<Transaction>,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, VMError> {
     let tx = tx.into();
 
     // Spend the inputs and execute the call. If this errors the transaction is

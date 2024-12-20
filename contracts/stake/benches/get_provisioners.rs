@@ -11,7 +11,7 @@ use dusk_core::{
     transfer::TRANSFER_CONTRACT,
     BlsPublicKey, BlsSecretKey,
 };
-use dusk_vm::{ContractData, PiecrustError, Session, VM};
+use dusk_vm::{ContractData, Error as VMError, Session, VM, VM};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use std::sync::mpsc;
@@ -27,7 +27,7 @@ fn config() -> Criterion {
     Criterion::default().sample_size(SAMPLE_SIZE)
 }
 
-fn update_root(session: &mut Session) -> Result<(), PiecrustError> {
+fn update_root(session: &mut Session) -> Result<(), VMError> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
         .map(|r| r.data)
@@ -69,7 +69,7 @@ fn instantiate(vm: &VM) -> Session {
 
 fn do_get_provisioners(
     session: &mut Session,
-) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>, PiecrustError> {
+) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>, VMError> {
     let (sender, receiver) = mpsc::channel();
     session.feeder_call::<_, ()>(
         STAKE_CONTRACT,
@@ -87,7 +87,7 @@ fn do_get_provisioners(
 fn do_insert_stake<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     session: &mut Session,
-) -> Result<(), PiecrustError> {
+) -> Result<(), VMError> {
     let stake_data = StakeData {
         amount: Some((TEST_STAKE, 0)),
         nonce: 1,
@@ -107,8 +107,7 @@ fn do_insert_stake<Rng: RngCore + CryptoRng>(
 fn get_provisioners(c: &mut Criterion) {
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut abi::new_ephemeral_vm()
-        .expect("Creating ephemeral VM should work");
+    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
 
     let mut session = instantiate(vm);
 

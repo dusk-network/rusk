@@ -21,6 +21,7 @@ use dusk_core::transfer::withdraw::{
     Withdraw, WithdrawReceiver, WithdrawReplayToken,
 };
 use dusk_core::{dusk, JubJubScalar};
+use dusk_vm::{new_session, VM};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -41,8 +42,7 @@ fn stake_withdraw_unstake() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut dusk_vm::new_ephemeral_vm()
-        .expect("Creating ephemeral VM should work");
+    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
 
     let phoenix_sender_sk = PhoenixSecretKey::random(rng);
     let phoenix_sender_vk = PhoenixViewKey::from(&phoenix_sender_sk);
@@ -178,7 +178,7 @@ fn stake_withdraw_unstake() {
     // set different block height so that the new notes are easily located and
     // filtered
     let base = session.commit().expect("Committing should succeed");
-    let mut session = dusk_vm::new_session(vm, base, CHAIN_ID, 2)
+    let mut session = new_session(vm, base, CHAIN_ID, 2)
         .expect("Instantiating new session should succeed");
 
     let receipt =
@@ -274,7 +274,7 @@ fn stake_withdraw_unstake() {
     // filtered
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
-    let mut session = dusk_vm::new_session(vm, base, CHAIN_ID, 3)
+    let mut session = new_session(vm, base, CHAIN_ID, 3)
         .expect("Instantiating new session should succeed");
 
     let receipt =

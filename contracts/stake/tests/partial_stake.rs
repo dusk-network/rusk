@@ -10,7 +10,10 @@ use dusk_core::signatures::bls::{
 };
 use dusk_core::stake::{Reward, RewardReason, EPOCH, STAKE_CONTRACT};
 use dusk_core::transfer::TRANSFER_CONTRACT;
-use dusk_vm::{ContractData, PiecrustError, Session, VM};
+use dusk_vm::{
+    new_genesis_session, new_session, ContractData, Error as VMError, Session,
+    VM,
+};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use wallet_core::transaction::{
@@ -28,7 +31,7 @@ const STAKE_VALUE: u64 = GENESIS_VALUE / 2;
 const GENESIS_NONCE: u64 = 0;
 
 #[test]
-fn stake() -> Result<(), PiecrustError> {
+fn stake() -> Result<(), VMError> {
     // ------
     // instantiate the test
 
@@ -40,7 +43,7 @@ fn stake() -> Result<(), PiecrustError> {
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
 
-    let mut vm = &mut dusk_vm::new_ephemeral_vm()?;
+    let mut vm = &mut VM::ephemeral()?;
     let mut session = instantiate(&mut vm, &moonlight_pk);
 
     // ------
@@ -106,7 +109,7 @@ fn stake() -> Result<(), PiecrustError> {
     // in order to test the locking some of the stake during a top-up, we need
     // to start a new session at a block-height on which the stake is eligible
     let base = session.commit()?;
-    let mut session = dusk_vm::new_session(&vm, base, CHAIN_ID, 2 * EPOCH)?;
+    let mut session = new_session(&vm, base, CHAIN_ID, 2 * EPOCH)?;
 
     // execute 3rd stake transaction
     let stake_3 = STAKE_VALUE - stake_1 - stake_2;
@@ -163,7 +166,7 @@ fn stake() -> Result<(), PiecrustError> {
 }
 
 #[test]
-fn unstake() -> Result<(), PiecrustError> {
+fn unstake() -> Result<(), VMError> {
     // ------
     // instantiate the test
 
@@ -175,7 +178,7 @@ fn unstake() -> Result<(), PiecrustError> {
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
 
-    let mut vm = &mut dusk_vm::new_ephemeral_vm()?;
+    let mut vm = &mut VM::ephemeral()?;
     let mut session = instantiate(&mut vm, &moonlight_pk);
 
     // initial stake
@@ -230,7 +233,7 @@ fn unstake() -> Result<(), PiecrustError> {
 
     // re-stake the unstaked value after the stake has become eligible
     let base = session.commit()?;
-    let mut session = dusk_vm::new_session(&vm, base, CHAIN_ID, 2 * EPOCH)?;
+    let mut session = new_session(&vm, base, CHAIN_ID, 2 * EPOCH)?;
     nonce += 1;
     let tx = moonlight_stake(
         &moonlight_sk,
@@ -322,7 +325,7 @@ fn unstake() -> Result<(), PiecrustError> {
 }
 
 #[test]
-fn withdraw_reward() -> Result<(), PiecrustError> {
+fn withdraw_reward() -> Result<(), VMError> {
     // ------
     // instantiate the test
 
@@ -334,7 +337,7 @@ fn withdraw_reward() -> Result<(), PiecrustError> {
     let stake_sk = BlsSecretKey::random(rng);
     let stake_pk = BlsPublicKey::from(&stake_sk);
 
-    let mut vm = &mut dusk_vm::new_ephemeral_vm()?;
+    let mut vm = &mut VM::ephemeral()?;
     let mut session = instantiate(&mut vm, &moonlight_pk);
 
     // initial stake
@@ -435,7 +438,7 @@ fn add_reward(
     session: &mut Session,
     stake_pk: &BlsPublicKey,
     reward: u64,
-) -> Result<(), PiecrustError> {
+) -> Result<(), VMError> {
     let rewards = vec![Reward {
         account: *stake_pk,
         value: reward,
@@ -455,7 +458,7 @@ fn add_reward(
 /// genesis-value.
 fn instantiate(vm: &mut VM, moonlight_pk: &BlsPublicKey) -> Session {
     // create a new session using an ephemeral vm
-    let mut session = dusk_vm::new_genesis_session(vm, CHAIN_ID);
+    let mut session = new_genesis_session(vm, CHAIN_ID);
 
     // deploy transfer-contract
     const OWNER: [u8; 32] = [0; 32];
@@ -499,7 +502,7 @@ fn instantiate(vm: &mut VM, moonlight_pk: &BlsPublicKey) -> Session {
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
 
-    let mut session = dusk_vm::new_session(vm, base, CHAIN_ID, 1)
+    let mut session = new_session(vm, base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed");
 
     // check that the moonlight account is initialized as expected
