@@ -17,6 +17,7 @@ use std::path::{Path, PathBuf};
 
 use bip39::{Language, Mnemonic, Seed};
 use dusk_bytes::Serializable;
+use dusk_core::abi::CONTRACT_ID_BYTES;
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
@@ -25,7 +26,7 @@ use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use dusk_core::{BlsScalar, CONTRACT_ID_BYTES};
+use dusk_core::BlsScalar;
 use serde::Serialize;
 use wallet_core::prelude::keys::{
     derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,

@@ -12,9 +12,10 @@ use std::fmt;
 use std::path::PathBuf;
 
 use clap::Subcommand;
+use dusk_core::abi::CONTRACT_ID_BYTES;
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::data::ContractCall;
-use dusk_core::{BlsScalar, CONTRACT_ID_BYTES};
+use dusk_core::BlsScalar;
 use rusk_wallet::currency::{Dusk, Lux};
 use rusk_wallet::gas::{
     Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
