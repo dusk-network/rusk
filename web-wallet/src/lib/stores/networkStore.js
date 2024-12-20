@@ -7,6 +7,7 @@ import {
   AddressSyncer,
   Network,
 } from "$lib/vendor/w3sper.js/src/mod";
+import { rejectAfter } from "$lib/dusk/promise";
 import { makeNodeUrl } from "$lib/url";
 
 function getNetworkUrl() {
@@ -50,7 +51,16 @@ const checkBlock = (height, hash) =>
     .then(getKey("checkBlock"));
 
 /** @type {NetworkStoreServices["connect"]} */
-const connect = async () => (network.connected ? network : network.connect());
+const connect = async () =>
+  network.connected
+    ? network
+    : Promise.race([
+        network.connect(),
+        rejectAfter(
+          10000,
+          new Error("Timed out while connecting to the network")
+        ),
+      ]);
 
 /** @type {NetworkStoreServices["disconnect"]} */
 const disconnect = () => network.disconnect();

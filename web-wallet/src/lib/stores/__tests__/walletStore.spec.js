@@ -229,9 +229,15 @@ describe("Wallet store", async () => {
       );
 
       expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
-      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+
+      /**
+       * The first call is caused by the timeout in the network
+       * connect, so we check the last call, that is the one
+       * made in the wallet store.
+       */
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
       expect(clearTimeoutSpy.mock.invocationCallOrder[0]).toBeLessThan(
-        setTimeoutSpy.mock.invocationCallOrder[0]
+        setTimeoutSpy.mock.invocationCallOrder[1]
       );
 
       await vi.advanceTimersByTimeAsync(1);
