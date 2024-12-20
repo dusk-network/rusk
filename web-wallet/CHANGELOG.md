@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix wrong error shown in the login screen [#3226] [#3097]
+- Refactor "Unshielded" occurrences to "Public" [#3242]
 
 ## [0.10.1] - 2024-12-18
 
@@ -469,6 +470,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3203]: https://github.com/dusk-network/rusk/issues/3203
 [#3212]: https://github.com/dusk-network/rusk/issues/3212
 [#3226]: https://github.com/dusk-network/rusk/issues/3226
+[#3242]: https://github.com/dusk-network/rusk/issues/3242
 
 <!-- VERSIONS -->
 

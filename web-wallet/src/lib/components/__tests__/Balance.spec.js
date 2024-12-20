@@ -8,9 +8,9 @@ describe("Balance", () => {
     fiatCurrency: "USD",
     fiatPrice: 10,
     locale: "en",
-    shieldedAmount: 1_000_000n,
+    publicBalance: 2_000_000n,
+    shieldedBalance: 1_000_000n,
     tokenCurrency: "DUSK",
-    unshieldedAmount: 2_000_000n,
   };
 
   const baseOptions = {
@@ -38,9 +38,9 @@ describe("Balance", () => {
       fiatCurrency: "EUR",
       fiatPrice: 20,
       locale: "it",
-      shieldedAmount: 500_000n,
+      publicBalance: 2_500_000n,
+      shieldedBalance: 500_000n,
       tokenCurrency: "DUSK",
-      unshieldedAmount: 2_500_000n,
     });
 
     expect(container.firstChild).toMatchSnapshot();
@@ -56,7 +56,7 @@ describe("Balance", () => {
       )?.textContent
     ).toContain("33.33%");
 
-    // Check if unshielded percentage displays as 66.67%
+    // Check if public percentage displays as 66.67%
     expect(
       container.querySelector(
         ".dusk-balance__account:last-child .dusk-balance__percentage"
@@ -67,7 +67,7 @@ describe("Balance", () => {
   it("should display the right percentage values when balance is zero", async () => {
     const options = {
       ...baseOptions,
-      props: { ...baseProps, shieldedAmount: 0n, unshieldedAmount: 0n },
+      props: { ...baseProps, publicBalance: 0n, shieldedBalance: 0n },
     };
 
     const { container } = render(Balance, options);

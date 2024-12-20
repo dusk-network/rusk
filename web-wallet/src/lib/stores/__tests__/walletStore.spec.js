@@ -29,13 +29,13 @@ describe("Wallet store", async () => {
 
   const AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
   const cachedBalance = {
-    shielded: {
-      spendable: 10n,
-      value: 5n,
-    },
-    unshielded: {
+    publicBalance: {
       nonce: 3n,
       value: 4n,
+    },
+    shieldedBalance: {
+      spendable: 10n,
+      value: 5n,
     },
   };
   const cachedStakeInfo = {
@@ -52,14 +52,17 @@ describe("Wallet store", async () => {
     nonce: 5n,
     reward: 56789n,
   };
-  const shielded = {
+
+  const shieldedBalance = {
     spendable: 400000000000000n,
     value: 1026179647718621n,
   };
-  const unshielded = {
+
+  const publicBalance = {
     nonce: 1234n,
-    value: shielded.value / 2n,
+    value: shieldedBalance.value / 2n,
   };
+
   const minimumStake = 1_000_000_000_000n;
 
   vi.spyOn(Bookkeeper.prototype, "minimumStake", "get").mockResolvedValue(
@@ -74,8 +77,8 @@ describe("Wallet store", async () => {
     .spyOn(Bookkeeper.prototype, "balance")
     .mockImplementation(async (identifier) => {
       return ProfileGenerator.typeOf(identifier.toString()) === "address"
-        ? shielded
-        : unshielded;
+        ? shieldedBalance
+        : publicBalance;
     });
 
   const stakeInfoSpy = vi
@@ -109,12 +112,12 @@ describe("Wallet store", async () => {
 
   const initialState = {
     balance: {
-      shielded: {
-        spendable: 0n,
+      publicBalance: {
+        nonce: 0n,
         value: 0n,
       },
-      unshielded: {
-        nonce: 0n,
+      shieldedBalance: {
+        spendable: 0n,
         value: 0n,
       },
     },
@@ -139,7 +142,7 @@ describe("Wallet store", async () => {
 
   const initializedStore = {
     ...initialState,
-    balance: { shielded, unshielded },
+    balance: { publicBalance, shieldedBalance },
     currentProfile: defaultProfile,
     initialized: true,
     minimumStake,
@@ -212,8 +215,8 @@ describe("Wallet store", async () => {
       expect(setCachedBalanceSpy).toHaveBeenCalledWith(
         defaultProfile.address.toString(),
         {
-          shielded: await balanceSpy.mock.results[0].value,
-          unshielded: await balanceSpy.mock.results[1].value,
+          publicBalance: await balanceSpy.mock.results[1].value,
+          shieldedBalance: await balanceSpy.mock.results[0].value,
         }
       );
       expect(setCachedStakeInfoSpy).toHaveBeenCalledTimes(1);
@@ -344,7 +347,7 @@ describe("Wallet store", async () => {
       const currentlyCachedBalance = await walletCache.getBalanceInfo(
         defaultProfile.address.toString()
       );
-      const newNonce = currentlyCachedBalance.unshielded.nonce + 1n;
+      const newNonce = currentlyCachedBalance.publicBalance.nonce + 1n;
 
       let expectedTx;
 
@@ -407,8 +410,8 @@ describe("Wallet store", async () => {
           defaultProfile.address.toString(),
           {
             ...currentlyCachedBalance,
-            unshielded: {
-              ...currentlyCachedBalance.unshielded,
+            publicBalance: {
+              ...currentlyCachedBalance.publicBalance,
               nonce: newNonce,
             },
           }
@@ -461,8 +464,8 @@ describe("Wallet store", async () => {
       expect(setCachedBalanceSpy).toHaveBeenCalledWith(
         defaultProfile.address.toString(),
         {
-          shielded: await balanceSpy.mock.results[0].value,
-          unshielded: await balanceSpy.mock.results[1].value,
+          publicBalance: await balanceSpy.mock.results[1].value,
+          shieldedBalance: await balanceSpy.mock.results[0].value,
         }
       );
       expect(setCachedStakeInfoSpy).toHaveBeenCalledTimes(1);
@@ -518,7 +521,7 @@ describe("Wallet store", async () => {
       await walletStoreTransferCheck("claimRewards", [amount, gas]);
     });
 
-    it("should expose a method to shield a given amount from the unshielded account", async () => {
+    it("should expose a method to shield a given amount from the public account", async () => {
       await walletStoreTransferCheck("shield", [amount, gas]);
     });
 
@@ -648,8 +651,8 @@ describe("Wallet store", async () => {
       expect(setCachedBalanceSpy).toHaveBeenCalledWith(
         fakeExtraProfile.address.toString(),
         {
-          shielded: await balanceSpy.mock.results[0].value,
-          unshielded: await balanceSpy.mock.results[1].value,
+          publicBalance: await balanceSpy.mock.results[1].value,
+          shieldedBalance: await balanceSpy.mock.results[0].value,
         }
       );
       expect(setCachedStakeInfoSpy).toHaveBeenCalledTimes(1);

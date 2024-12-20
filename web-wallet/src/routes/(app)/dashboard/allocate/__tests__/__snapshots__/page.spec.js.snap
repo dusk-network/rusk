@@ -145,10 +145,10 @@ exports[`Allocate > should render the allocation page 1`] = `
             >
               <input
                 class="dusk-textbox dusk-textbox-number operation__input-field"
-                id="unshielded-amount"
+                id="public-amount"
                 max="0"
                 min="0"
-                name="unshielded-amount"
+                name="public-amount"
                 required=""
                 step="0.000000001"
                 type="number"

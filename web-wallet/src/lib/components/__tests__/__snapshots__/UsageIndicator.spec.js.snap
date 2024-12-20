@@ -35,7 +35,7 @@ exports[`UsageIndicator > should render the \`UsageIndicator\` component and rea
   <svg
     class="dusk-icon dusk-icon--size--default usage-indicator__icon"
     data-tooltip-id="main-tooltip"
-    data-tooltip-text="You have put 55% of your funds in your unshielded account"
+    data-tooltip-text="You have put 55% of your funds in your public account"
     role="graphics-symbol"
     viewBox="0 0 24 24"
   >
@@ -82,7 +82,7 @@ exports[`UsageIndicator > should render the \`UsageIndicator\` component and rea
   <svg
     class="dusk-icon dusk-icon--size--default usage-indicator__icon"
     data-tooltip-id="main-tooltip"
-    data-tooltip-text="You have put 20% of your funds in your unshielded account"
+    data-tooltip-text="You have put 20% of your funds in your public account"
     role="graphics-symbol"
     viewBox="0 0 24 24"
   >

@@ -28,8 +28,10 @@ vi.mock("$lib/stores", async (importOriginal) => {
 
 const formatter = createCurrencyFormatter("en", "DUSK", 9);
 const { balance, currentProfile } = mockedWalletStore.getMockedStoreValue();
-const formattedShielded = formatter(luxToDusk(balance.shielded.spendable));
-const formattedUnshielded = formatter(luxToDusk(balance.unshielded.value));
+const formattedShielded = formatter(
+  luxToDusk(balance.shieldedBalance.spendable)
+);
+const formattedPublic = formatter(luxToDusk(balance.publicBalance.value));
 
 describe("Send page", () => {
   afterEach(cleanup);
@@ -59,7 +61,7 @@ describe("Send page", () => {
 
     expect(
       container.querySelector(".contract-statuses__value")
-    ).toHaveTextContent(formattedUnshielded);
+    ).toHaveTextContent(formattedPublic);
 
     await fireEvent.input(addressTextbox, {
       target: { value: currentProfile.address.toString() },

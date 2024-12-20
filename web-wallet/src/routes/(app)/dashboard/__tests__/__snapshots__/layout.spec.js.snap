@@ -122,7 +122,7 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
                 <svg
                   class="dusk-icon dusk-icon--size--default"
                   data-tooltip-id="main-tooltip"
-                  data-tooltip-text="Unshielded"
+                  data-tooltip-text="Public"
                   role="graphics-symbol"
                   viewBox="0 0 24 24"
                 >
@@ -348,7 +348,7 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
               <svg
                 class="dusk-icon dusk-icon--size--default"
                 data-tooltip-id="main-tooltip"
-                data-tooltip-text="Unshielded"
+                data-tooltip-text="Public"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -574,7 +574,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
                 <svg
                   class="dusk-icon dusk-icon--size--default"
                   data-tooltip-id="main-tooltip"
-                  data-tooltip-text="Unshielded"
+                  data-tooltip-text="Public"
                   role="graphics-symbol"
                   viewBox="0 0 24 24"
                 >
@@ -821,7 +821,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
               <svg
                 class="dusk-icon dusk-icon--size--default"
                 data-tooltip-id="main-tooltip"
-                data-tooltip-text="Unshielded"
+                data-tooltip-text="Public"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1055,7 +1055,7 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
                 <svg
                   class="dusk-icon dusk-icon--size--default"
                   data-tooltip-id="main-tooltip"
-                  data-tooltip-text="Unshielded"
+                  data-tooltip-text="Public"
                   role="graphics-symbol"
                   viewBox="0 0 24 24"
                 >

@@ -9,12 +9,12 @@
   import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
   import { gasStore, settingsStore, walletStore } from "$lib/stores";
 
-  /** @type {(source: "shielded" | "unshielded", balanceInfo: WalletStoreBalance) => [bigint, ContractStatus[]]}*/
+  /** @type {(source: "shielded" | "public", balanceInfo: WalletStoreBalance) => [bigint, ContractStatus[]]}*/
   function getContractInfo(source, balanceInfo) {
     const spendable =
       source === "shielded"
-        ? balanceInfo.shielded.spendable
-        : balanceInfo.unshielded.value;
+        ? balanceInfo.shieldedBalance.spendable
+        : balanceInfo.publicBalance.value;
     const statuses = [
       {
         label: "Spendable",
@@ -31,7 +31,7 @@
   ]);
   const gasLimits = $gasStore;
 
-  /** @type {"shielded" | "unshielded"} */
+  /** @type {"shielded" | "public"} */
   let spendableSource = "shielded";
 
   /**
@@ -39,7 +39,7 @@
    */
   function keyChangeHandler(event) {
     if (event.detail.type === "account") {
-      spendableSource = "unshielded";
+      spendableSource = "public";
     } else {
       spendableSource = "shielded";
     }

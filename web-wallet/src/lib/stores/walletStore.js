@@ -27,12 +27,12 @@ let syncPromise = null;
 /** @type {WalletStoreContent} */
 const initialState = {
   balance: {
-    shielded: {
-      spendable: 0n,
+    publicBalance: {
+      nonce: 0n,
       value: 0n,
     },
-    unshielded: {
-      nonce: 0n,
+    shieldedBalance: {
+      spendable: 0n,
       value: 0n,
     },
   },
@@ -104,7 +104,7 @@ const updateCacheAfterTransaction = async (txInfo) => {
      */
     await walletCache.setBalanceInfo(
       address,
-      setPathIn(currentBalance, "unshielded.nonce", txInfo.nonce)
+      setPathIn(currentBalance, "public.nonce", txInfo.nonce)
     );
   }
 
@@ -119,9 +119,9 @@ const updateBalance = async () => {
     return;
   }
 
-  const shielded = await bookkeeper.balance(currentProfile.address);
-  const unshielded = await bookkeeper.balance(currentProfile.account);
-  const balance = { shielded, unshielded };
+  const shieldedBalance = await bookkeeper.balance(currentProfile.address);
+  const publicBalance = await bookkeeper.balance(currentProfile.account);
+  const balance = { publicBalance, shieldedBalance };
 
   /**
    * We ignore the error as the cached balance is only
