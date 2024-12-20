@@ -12,10 +12,10 @@ dusk-bytes = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-rusk-abi = { workspace = true, features = ["abi", "dlmalloc"] }
+dusk-core = { workspace = true, features = ["abi-dlmalloc"] }
 
 [dev-dependencies]
-rusk-abi = { workspace = true, features = ["host"] }
+rusk-abi = { workspace = true }
 dusk-core = { workspace = true, features = ["zk"] }
 rusk-prover = { workspace = true }
 wallet-core = { workspace = true }

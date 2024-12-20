@@ -10,9 +10,9 @@ use std::sync::{Arc, RwLock};
 use dusk_core::stake::{self, Stake, DEFAULT_MINIMUM_STAKE, EPOCH};
 
 use dusk_bytes::Serializable;
+use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::ContractCall;
 use dusk_core::transfer::{self, Transaction};
-use dusk_core::ContractId;
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;

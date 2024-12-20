@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use blake2b_simd::Params;
-use dusk_core::{ContractId, CONTRACT_ID_BYTES};
+use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
 
 /// Generate a [`ContractId`] address from:
 /// - slice of bytes,

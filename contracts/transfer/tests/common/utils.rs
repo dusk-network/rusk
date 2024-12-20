@@ -6,11 +6,12 @@
 
 use std::sync::mpsc;
 
+use dusk_core::abi::{ContractError, ContractId};
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey as PhoenixViewKey};
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
-use dusk_core::{BlsScalar, ContractError, ContractId};
+use dusk_core::BlsScalar;
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 
 const GAS_LIMIT: u64 = 0x10_000_000;

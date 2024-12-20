@@ -15,6 +15,7 @@ use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
+use dusk_core::abi::{ContractError, ContractId};
 use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
@@ -30,7 +31,7 @@ use dusk_core::transfer::withdraw::{
 use dusk_core::transfer::{
     ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
 };
-use dusk_core::{dusk, ContractError, ContractId, JubJubScalar, LUX};
+use dusk_core::{dusk, JubJubScalar, LUX};
 use rusk_abi::{ContractData, Session};
 
 const MOONLIGHT_GENESIS_VALUE: u64 = dusk(1_000.0);

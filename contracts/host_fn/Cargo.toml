@@ -7,6 +7,5 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-core = { workspace = true }
+dusk-core = { workspace = true, features = ["abi-dlmalloc"] }
 dusk-bytes = { workspace = true }
-rusk-abi = { workspace = true, features = ["abi", "dlmalloc"]}

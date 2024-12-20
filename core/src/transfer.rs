@@ -17,19 +17,20 @@ use poseidon_merkle::Opening;
 use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::abi::ContractId;
 use crate::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
-use crate::{BlsScalar, ContractId, Error};
+use crate::{BlsScalar, Error};
 
-use data::{ContractCall, ContractDeploy, TransactionData};
-use moonlight::Transaction as MoonlightTransaction;
-use phoenix::{
+use self::data::{ContractCall, ContractDeploy, TransactionData};
+use self::moonlight::Transaction as MoonlightTransaction;
+use self::phoenix::{
     Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
     Sender, StealthAddress, Transaction as PhoenixTransaction,
     NOTES_TREE_DEPTH,
 };
-use withdraw::{Withdraw, WithdrawReceiver};
+use self::withdraw::{Withdraw, WithdrawReceiver};
 
 pub mod data;
 pub mod moonlight;

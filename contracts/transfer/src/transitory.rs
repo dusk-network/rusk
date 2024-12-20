@@ -16,14 +16,12 @@ use core::ptr::{self, addr_of_mut};
 
 use alloc::vec::Vec;
 
-use dusk_core::{
-    signatures::bls::PublicKey as AccountPublicKey,
-    transfer::{
-        moonlight::Transaction as MoonlightTransaction,
-        phoenix::{Note, Transaction as PhoenixTransaction},
-        Transaction,
-    },
-    ContractId,
+use dusk_core::abi::ContractId;
+use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::transfer::{
+    moonlight::Transaction as MoonlightTransaction,
+    phoenix::{Note, Transaction as PhoenixTransaction},
+    Transaction,
 };
 
 /// The state of a deposit while a transaction is executing.

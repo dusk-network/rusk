@@ -6,6 +6,7 @@
 
 extern crate alloc;
 
+use dusk_core::abi;
 use dusk_core::stake::{Stake, Withdraw, WithdrawToContract, STAKE_CONTRACT};
 use dusk_core::transfer::{
     withdraw::Withdraw as TransferWithdraw, ContractToContract,
@@ -26,7 +27,7 @@ impl Charlie {
 
         // make call to transfer contract to transfer balance from the user to
         // this contract
-        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "deposit", &value)
+        let _: () = abi::call(TRANSFER_CONTRACT, "deposit", &value)
             .expect("Depositing funds into contract should succeed");
 
         let contract_to_contract = ContractToContract {
@@ -36,7 +37,7 @@ impl Charlie {
             fn_name: "stake_from_contract".into(),
         };
 
-        let _: () = rusk_abi::call(
+        let _: () = abi::call(
             TRANSFER_CONTRACT,
             "contract_to_contract",
             &contract_to_contract,
@@ -58,7 +59,7 @@ impl Charlie {
         )
         .with_data(data);
 
-        let _: () = rusk_abi::call(
+        let _: () = abi::call(
             STAKE_CONTRACT,
             "unstake_from_contract",
             &withdraw_to_contract,
@@ -71,7 +72,7 @@ impl Charlie {
             .expect("withdraw to be rkyv deserialized");
         // make call to the transfer contract to withdraw funds from this
         // contract into the receiver specified by the withdrawal.
-        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw)
+        let _: () = abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw)
             .expect("Withdrawing stake should succeed");
     }
 
@@ -89,7 +90,7 @@ impl Charlie {
         )
         .with_data(data);
 
-        let _: () = rusk_abi::call(
+        let _: () = abi::call(
             STAKE_CONTRACT,
             "withdraw_from_contract",
             &withdraw_to_contract,
@@ -102,7 +103,7 @@ impl Charlie {
             .expect("withdraw to be rkyv deserialized");
         // make call to the transfer contract to withdraw funds from this
         // contract into the receiver specified by the withdrawal.
-        let _: () = rusk_abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw)
+        let _: () = abi::call(TRANSFER_CONTRACT, "withdraw", &withdraw)
             .expect("Withdrawing stake should succeed");
     }
 }

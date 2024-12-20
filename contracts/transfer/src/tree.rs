@@ -6,10 +6,10 @@
 
 use alloc::vec::Vec;
 
-use dusk_core::{
-    transfer::phoenix::{Note, NoteLeaf, NoteOpening, NoteTreeItem, NotesTree},
-    BlsScalar,
+use dusk_core::transfer::phoenix::{
+    Note, NoteLeaf, NoteOpening, NoteTreeItem, NotesTree,
 };
+use dusk_core::{abi, BlsScalar};
 
 /// The merkle tree that holds all phoenix-notes.
 ///
@@ -52,7 +52,7 @@ impl Tree {
         leaf.note.set_pos(pos);
 
         // compute the item that goes in the leaf of the tree
-        let hash = rusk_abi::poseidon_hash(leaf.note.hash_inputs().to_vec());
+        let hash = abi::poseidon_hash(leaf.note.hash_inputs().to_vec());
         let item = NoteTreeItem { hash, data: () };
 
         self.tree.insert(pos, item);

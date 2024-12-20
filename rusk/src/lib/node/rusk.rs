@@ -9,11 +9,6 @@ use std::sync::{mpsc, Arc, LazyLock};
 use std::time::{Duration, Instant};
 use std::{fs, io};
 
-use dusk_core::stake::StakeKeys;
-use dusk_core::transfer::PANIC_NONCE_NOT_READY;
-use parking_lot::RwLock;
-use tracing::info;
-
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
@@ -21,21 +16,25 @@ use dusk_consensus::config::{
     RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
 };
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
-use dusk_core::{
-    signatures::bls::PublicKey as BlsPublicKey,
-    stake::{Reward, RewardReason, StakeData, STAKE_CONTRACT},
-    transfer::{
-        data::ContractDeploy, moonlight::AccountData,
-        Transaction as ProtocolTransaction, TRANSFER_CONTRACT,
-    },
-    BlsScalar, ContractError, Dusk, Event,
+use dusk_core::abi::{ContractError, Event};
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::{
+    Reward, RewardReason, StakeData, StakeKeys, STAKE_CONTRACT,
 };
+use dusk_core::transfer::{
+    data::ContractDeploy, moonlight::AccountData,
+    Transaction as ProtocolTransaction, PANIC_NONCE_NOT_READY,
+    TRANSFER_CONTRACT,
+};
+use dusk_core::{BlsScalar, Dusk};
 use node::vm::bytecode_charge;
 use node_data::events::contract::{ContractEvent, ContractTxEvent};
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
+use parking_lot::RwLock;
 use rusk_abi::{CallReceipt, PiecrustError, Session};
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
+use tracing::info;
 #[cfg(feature = "archive")]
 use {node_data::archive::ArchivalData, tokio::sync::mpsc::Sender};
 

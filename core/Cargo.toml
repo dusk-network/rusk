@@ -37,6 +37,12 @@ parallel = [
     "bls12_381-bls/parallel", 
 ]
 
+# These are the features available for when one wishes to build contracts and
+# interact with the ABI
+abi = ["piecrust-uplink/abi"]
+abi-debug = ["abi", "piecrust-uplink/debug"]
+abi-dlmalloc = ["abi", "piecrust-uplink/dlmalloc"]
+
 # Enables all zero-knowledge proof system libraries supported
 zk = [
     "plonk",

@@ -7,7 +7,7 @@
 //! This module defines the contract event type and related types.
 
 use anyhow::Result;
-use dusk_core::{ContractId, Event, CONTRACT_ID_BYTES};
+use dusk_core::abi::{ContractId, Event, CONTRACT_ID_BYTES};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub const ORIGIN_HASH_BYTES: usize = 32;
@@ -94,8 +94,8 @@ pub struct ContractEvent {
     pub data: Vec<u8>,
 }
 
-impl From<dusk_core::Event> for ContractEvent {
-    fn from(event: dusk_core::Event) -> Self {
+impl From<Event> for ContractEvent {
+    fn from(event: Event) -> Self {
         Self {
             target: WrappedContractId(event.source),
             topic: event.topic,
@@ -116,8 +116,6 @@ impl From<ContractEvent> for Event {
 
 #[cfg(test)]
 mod tests {
-    use dusk_core::ContractId;
-
     use super::*;
 
     fn exec_core_event() -> Event {
