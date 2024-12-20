@@ -11,6 +11,7 @@ type AppStoreContent = {
   isSmallScreen: boolean;
   hasTouchSupport: boolean;
   marketDataFetchInterval: number;
+  provisionersFetchInterval: number;
   nodeInfo: NodeInfo;
   statsFetchInterval: number;
   transactionsListEntries: number;

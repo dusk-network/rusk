@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add stake maturity information (Provisioners page) [#3218]
+- Add "owner" field to provisioners [#3215]
 
 ### Changed
 
@@ -118,6 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3034]: https://github.com/dusk-network/rusk/issues/3034
 [#3038]: https://github.com/dusk-network/rusk/issues/3038
 [#3064]: https://github.com/dusk-network/rusk/issues/3064
+[#3215]: https://github.com/dusk-network/rusk/issues/3215
 [#3218]: https://github.com/dusk-network/rusk/issues/3218
 [#3249]: https://github.com/dusk-network/rusk/issues/3249
 

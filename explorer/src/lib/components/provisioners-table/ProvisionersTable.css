@@ -1,3 +1,7 @@
+.provisioners-table *[data-tooltip-id] {
+  cursor: help;
+}
+
 .provisioners-table__stake-data-label,
 .provisioners-table__slash-data-label {
   font-weight: 500;

@@ -11,6 +11,7 @@ const browserDefaults = browser
     };
 const DEFAULT_FETCH_INTERVAL = 1000;
 const DEFAULT_MARKET_FETCH_INTERVAL = 120000;
+const DEFAULT_PROVISIONERS_FETCH_INTERVAL = 30000;
 const DEFAULT_STATS_FETCH_INTERVAL = DEFAULT_FETCH_INTERVAL;
 
 /** @type {AppStoreContent} */
@@ -34,6 +35,10 @@ const initialState = {
     version_build: "",
     /* eslint-enable camelcase */
   },
+  provisionersFetchInterval: Number(
+    import.meta.env.PROVISIONERS_REFETCH_INTERVAL ||
+      DEFAULT_PROVISIONERS_FETCH_INTERVAL
+  ),
   statsFetchInterval:
     Number(import.meta.env.VITE_STATS_REFETCH_INTERVAL) ||
     DEFAULT_STATS_FETCH_INTERVAL,

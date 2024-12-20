@@ -11,12 +11,15 @@ import Provisioners from "../+page.svelte";
 
 describe("Provisioners page", () => {
   vi.useFakeTimers();
-  const { fetchInterval } = get(appStore);
+
+  const { provisionersFetchInterval } = get(appStore);
   const getProvisionersSpy = vi
     .spyOn(duskAPI, "getProvisioners")
     .mockResolvedValue(hostProvisioners);
 
-  afterEach(() => {
+  afterEach(async () => {
+    await vi.runOnlyPendingTimersAsync();
+
     cleanup();
     getProvisionersSpy.mockClear();
   });
@@ -38,17 +41,17 @@ describe("Provisioners page", () => {
     // snapshot with received data from GraphQL
     expect(container.firstChild).toMatchSnapshot();
 
-    await vi.advanceTimersByTimeAsync(fetchInterval - 1);
+    await vi.advanceTimersByTimeAsync(provisionersFetchInterval - 1);
 
     expect(getProvisionersSpy).toHaveBeenCalledTimes(2);
 
-    await vi.advanceTimersByTimeAsync(fetchInterval);
+    await vi.advanceTimersByTimeAsync(provisionersFetchInterval);
 
     expect(getProvisionersSpy).toHaveBeenCalledTimes(3);
 
     unmount();
 
-    await vi.advanceTimersByTimeAsync(fetchInterval * 10);
+    await vi.advanceTimersByTimeAsync(provisionersFetchInterval * 10);
 
     expect(getProvisionersSpy).toHaveBeenCalledTimes(3);
   });

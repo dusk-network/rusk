@@ -57,7 +57,7 @@
   {#if isSmallScreen}
     <div class="provisioners-card__list">
       {#each displayedProvisioner as provisioner (provisioner)}
-        <ProvisionersList data={provisioner} />
+        <ProvisionersList data={provisioner} displayTooltips={true} />
       {/each}
     </div>
   {:else}
