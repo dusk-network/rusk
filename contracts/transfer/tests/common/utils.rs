@@ -12,20 +12,20 @@ use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey as PhoenixViewKey};
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use dusk_core::BlsScalar;
-use dusk_vm::{CallReceipt, PiecrustError, Session};
+use dusk_vm::{CallReceipt, Error as VMError, Session};
 
 const GAS_LIMIT: u64 = 0x10_000_000;
 
 pub fn contract_balance(
     session: &mut Session,
     contract: ContractId,
-) -> Result<u64, PiecrustError> {
+) -> Result<u64, VMError> {
     session
         .call(TRANSFER_CONTRACT, "contract_balance", &contract, GAS_LIMIT)
         .map(|r| r.data)
 }
 
-pub fn chain_id(session: &mut Session) -> Result<u8, PiecrustError> {
+pub fn chain_id(session: &mut Session) -> Result<u8, VMError> {
     session
         .call(TRANSFER_CONTRACT, "chain_id", &(), GAS_LIMIT)
         .map(|r| r.data)
@@ -36,7 +36,7 @@ pub fn chain_id(session: &mut Session) -> Result<u8, PiecrustError> {
 pub fn execute(
     session: &mut Session,
     tx: impl Into<Transaction>,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, VMError> {
     let tx = tx.into();
 
     let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
@@ -70,7 +70,7 @@ pub fn execute(
 pub fn account(
     session: &mut Session,
     pk: &AccountPublicKey,
-) -> Result<AccountData, PiecrustError> {
+) -> Result<AccountData, VMError> {
     session
         .call(TRANSFER_CONTRACT, "account", pk, GAS_LIMIT)
         .map(|r| r.data)
@@ -106,7 +106,7 @@ pub fn owned_notes_value<'a, I: IntoIterator<Item = &'a Note>>(
 pub fn leaves_from_height(
     session: &mut Session,
     height: u64,
-) -> Result<Vec<NoteLeaf>, PiecrustError> {
+) -> Result<Vec<NoteLeaf>, VMError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -123,7 +123,7 @@ pub fn leaves_from_height(
         .collect())
 }
 
-pub fn update_root(session: &mut Session) -> Result<(), PiecrustError> {
+pub fn update_root(session: &mut Session) -> Result<(), VMError> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), GAS_LIMIT)
         .map(|r| r.data)
@@ -142,7 +142,7 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 pub fn existing_nullifiers(
     session: &mut Session,
     nullifiers: &Vec<BlsScalar>,
-) -> Result<Vec<BlsScalar>, PiecrustError> {
+) -> Result<Vec<BlsScalar>, VMError> {
     session
         .call(
             TRANSFER_CONTRACT,

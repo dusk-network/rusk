@@ -27,7 +27,10 @@ use dusk_core::transfer::{
     ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, JubJubScalar, LUX};
-use dusk_vm::{ContractData, PiecrustError, Session};
+use dusk_vm::{
+    new_genesis_session, new_session, ContractData, Error as VMError, Session,
+    VM,
+};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
@@ -79,10 +82,9 @@ fn instantiate<const N: u8>(
         "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
     );
 
-    let vm = &mut dusk_vm::new_ephemeral_vm()
-        .expect("Creating ephemeral VM should work");
+    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
 
-    let mut session = dusk_vm::new_genesis_session(vm, CHAIN_ID);
+    let mut session = new_genesis_session(vm, CHAIN_ID);
 
     session
         .deploy(
@@ -158,7 +160,7 @@ fn instantiate<const N: u8>(
     // operations to 1
     let base = session.commit().expect("Committing should succeed");
     // start a new session from that base-commit
-    let mut session = dusk_vm::new_session(vm, base, CHAIN_ID, 1)
+    let mut session = new_session(vm, base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed");
 
     // check that the genesis state is correct:
@@ -1513,7 +1515,7 @@ fn contract_to_account() {
 fn leaves_from_pos(
     session: &mut Session,
     pos: u64,
-) -> Result<Vec<NoteLeaf>, PiecrustError> {
+) -> Result<Vec<NoteLeaf>, VMError> {
     let (feeder, receiver) = mpsc::channel();
 
     session.feeder_call::<_, ()>(
@@ -1530,13 +1532,13 @@ fn leaves_from_pos(
         .collect())
 }
 
-fn num_notes(session: &mut Session) -> Result<u64, PiecrustError> {
+fn num_notes(session: &mut Session) -> Result<u64, VMError> {
     session
         .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
         .map(|r| r.data)
 }
 
-fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
+fn root(session: &mut Session) -> Result<BlsScalar, VMError> {
     session
         .call(TRANSFER_CONTRACT, "root", &(), GAS_LIMIT)
         .map(|r| r.data)
@@ -1545,7 +1547,7 @@ fn root(session: &mut Session) -> Result<BlsScalar, PiecrustError> {
 fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<NoteOpening>, PiecrustError> {
+) -> Result<Option<NoteOpening>, VMError> {
     session
         .call(TRANSFER_CONTRACT, "opening", &pos, GAS_LIMIT)
         .map(|r| r.data)

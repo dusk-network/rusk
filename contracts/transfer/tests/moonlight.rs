@@ -32,7 +32,7 @@ use dusk_core::transfer::{
     ContractToAccount, ContractToContract, TRANSFER_CONTRACT,
 };
 use dusk_core::{dusk, JubJubScalar, LUX};
-use dusk_vm::{ContractData, Session};
+use dusk_vm::{new_genesis_session, new_session, ContractData, Session, VM};
 
 const MOONLIGHT_GENESIS_VALUE: u64 = dusk(1_000.0);
 const MOONLIGHT_GENESIS_NONCE: u64 = 0;
@@ -68,10 +68,9 @@ fn instantiate(moonlight_pk: &AccountPublicKey) -> Session {
         "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
     );
 
-    let vm = &mut dusk_vm::new_ephemeral_vm()
-        .expect("Creating ephemeral VM should work");
+    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
 
-    let mut session = dusk_vm::new_genesis_session(vm, CHAIN_ID);
+    let mut session = new_genesis_session(vm, CHAIN_ID);
 
     session
         .deploy(
@@ -126,7 +125,7 @@ fn instantiate(moonlight_pk: &AccountPublicKey) -> Session {
     // operations to 1
     let base = session.commit().expect("Committing should succeed");
     // start a new session from that base-commit
-    let mut session = dusk_vm::new_session(vm, base, CHAIN_ID, 1)
+    let mut session = new_session(vm, base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed");
 
     // check genesis state
