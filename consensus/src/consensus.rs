@@ -12,7 +12,7 @@ use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
 use tracing::{debug, error, warn, Instrument};
 
-use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
+use crate::commons::{Database, RoundUpdate};
 use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
 use crate::errors::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
@@ -86,10 +86,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     ) -> Result<(), ConsensusError> {
         let round = ru.round;
         debug!(event = "consensus started", round);
-        let sender = QuorumMsgSender::new(self.outbound.clone());
 
         // proposal-validation-ratification loop
-        let mut handle = self.spawn_consensus(ru, provisioners, sender);
+        let mut handle = self.spawn_consensus(ru, provisioners);
 
         // Usually this select will be terminated due to cancel signal however
         // it may also be terminated due to unrecoverable error in the main loop
@@ -122,7 +121,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         &self,
         ru: RoundUpdate,
         provisioners: Arc<Provisioners>,
-        sender: QuorumMsgSender,
     ) -> JoinHandle<()> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
@@ -237,7 +235,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         step_name,
                         executor.clone(),
                         sv_registry.clone(),
-                        sender.clone(),
                     );
 
                     // Execute a phase
@@ -265,7 +262,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         );
 
                         // Broadcast/Rebroadcast
-                        sender.send_quorum(msg.clone()).await;
+                        outbound.try_send(msg.clone());
 
                         // INFO: we keep running consensus even with Success
                         // Quorum in case we fail to accept the block.

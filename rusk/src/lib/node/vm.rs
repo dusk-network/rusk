@@ -8,7 +8,7 @@ mod query;
 
 use dusk_consensus::errors::VstError;
 use node_data::events::contract::ContractEvent;
-use tracing::info;
+use tracing::{debug, info};
 
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
@@ -90,7 +90,7 @@ impl VMExecution for Rusk {
         VerificationOutput,
         Vec<ContractEvent>,
     )> {
-        info!("Received accept request");
+        debug!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator.0)
             .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
@@ -129,7 +129,7 @@ impl VMExecution for Rusk {
         commit: [u8; 32],
         to_merge: Vec<[u8; 32]>,
     ) -> anyhow::Result<()> {
-        info!("Received finalize request");
+        debug!("Received finalize request");
         self.finalize_state(commit, to_merge)
             .map_err(|e| anyhow::anyhow!("Cannot finalize state: {e}"))
     }

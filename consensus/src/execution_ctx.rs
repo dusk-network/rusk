@@ -19,7 +19,7 @@ use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace, warn};
 
-use crate::commons::{Database, QuorumMsgSender, RoundUpdate};
+use crate::commons::{Database, RoundUpdate};
 use crate::config::{
     is_emergency_iter, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
 };
@@ -56,7 +56,6 @@ pub struct ExecutionCtx<'a, T, DB: Database> {
     pub client: Arc<T>,
 
     pub sv_registry: SafeAttestationInfoRegistry,
-    quorum_sender: QuorumMsgSender,
 }
 
 impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
@@ -73,7 +72,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         step: StepName,
         client: Arc<T>,
         sv_registry: SafeAttestationInfoRegistry,
-        quorum_sender: QuorumMsgSender,
     ) -> Self {
         Self {
             iter_ctx,
@@ -86,7 +84,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             step,
             client,
             sv_registry,
-            quorum_sender,
             step_start_time: None,
         }
     }
@@ -113,7 +110,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     }
 
     /// Returns true if the last step of last iteration is currently running
-    fn last_step_running(&self) -> bool {
+    fn is_last_step(&self) -> bool {
         self.iteration == CONSENSUS_MAX_ITER - 1
             && self.step_name() == StepName::Ratification
     }
@@ -132,22 +129,25 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         phase: Arc<Mutex<C>>,
         additional_timeout: Option<Duration>,
     ) -> Message {
-        let open_consensus_mode = self.last_step_running();
+        let round = self.round_update.round;
+        let iter = self.iteration;
+        let step = self.step_name();
 
-        // When consensus is in open_consensus_mode then it keeps Ratification
-        // step running indefinitely until either a valid block or
-        // emergency block is accepted
-        let timeout = if open_consensus_mode {
-            let dur = Duration::new(u32::MAX as u64, 0);
-            info!(event = "run event_loop", ?dur, mode = "open_consensus",);
-            dur
-        } else {
-            let dur = self.iter_ctx.get_timeout(self.step_name());
-            debug!(event = "run event_loop", ?dur, ?additional_timeout);
-            dur + additional_timeout.unwrap_or_default()
-        };
+        let mut open_consensus_mode = false;
 
-        let deadline = Instant::now().checked_add(timeout).unwrap();
+        let step_timeout = self.iter_ctx.get_timeout(step);
+        let timeout = step_timeout + additional_timeout.unwrap_or_default();
+
+        debug!(
+            event = "Start step loop",
+            ?step,
+            round,
+            iter,
+            ?step_timeout,
+            ?additional_timeout
+        );
+
+        let mut deadline = Instant::now().checked_add(timeout).unwrap();
         let inbound = self.inbound.clone();
 
         // Handle both timeout event and messages from inbound queue.
@@ -166,12 +166,6 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                 .process_inbound_msg(phase.clone(), msg.clone())
                                 .await
                             {
-                                info!(
-                                    event = "Step completed",
-                                    step = ?self.step_name(),
-                                    info = ?msg.header
-                                );
-
                                 // In the normal case, we just return the result
                                 // to Consensus
                                 if !open_consensus_mode {
@@ -197,9 +191,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                                 is_local = true
                                             );
 
-                                            self.quorum_sender
-                                                .send_quorum(msg)
-                                                .await;
+                                            // Broadcast Quorum
+                                            self.outbound.try_send(msg);
                                         }
                                         RatificationResult::Fail(vote) => {
                                             debug!(
@@ -259,10 +252,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                             is_local = false
                                         );
 
-                                        // Repropagate Success Quorum
-                                        self.quorum_sender
-                                            .send_quorum(msg.clone())
-                                            .await;
+                                        // Broadcast Success Quorum
+                                        self.outbound.try_send(msg.clone());
                                     }
                                     RatificationResult::Fail(vote) => {
                                         debug!(
@@ -345,15 +336,29 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         }
                     }
                 }
+
                 Ok(Err(e)) => {
                     warn!("Error while receiving msg: {e}");
                 }
+
                 // Timeout event. Phase could not reach its final goal.
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
-                    info!(event = "timeout-ed");
-                    if open_consensus_mode {
-                        error!("Timeout detected during last step running. This should never happen")
+                    info!(event = "Step timeout expired", ?step, round, iter);
+
+                    if self.is_last_step() {
+                        info!(event = "Step ended", ?step, round, iter);
+
+                        // If the last step expires, we enter Open Consensus
+                        // mode. In this mode, the last step (Ratification)
+                        // keeps running indefinitely, until a block is
+                        // accepted.
+                        info!(event = "Entering Open Consensus mode", round);
+
+                        let timeout = Duration::new(u32::MAX as u64, 0);
+                        deadline = Instant::now().checked_add(timeout).unwrap();
+
+                        open_consensus_mode = true;
                     } else {
                         self.process_timeout_event(phase).await;
                         return Message::empty();
@@ -490,12 +495,13 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         info!(
                             event = "New Quorum",
                             mode = "emergency",
-                            inf = ?m.header,
+                            round = q.header.round,
+                            iter = q.header.iteration,
                             vote = ?q.vote(),
                         );
 
                         // Broadcast Quorum
-                        self.quorum_sender.send_quorum(m).await;
+                        self.outbound.try_send(m);
                     }
                 }
 

@@ -67,6 +67,14 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
             .store_candidate_block(p.candidate.clone())
             .await;
 
+        info!(
+            event = "New Candidate",
+            hash = &to_str(&p.candidate.header().hash),
+            round = p.candidate.header().height,
+            iter = p.candidate.header().iteration,
+            prev_block = &to_str(&p.candidate.header().prev_block_hash)
+        );
+
         Ok(StepOutcome::Ready(msg))
     }
 
@@ -83,6 +91,14 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
             .await
             .store_candidate_block(p.candidate.clone())
             .await;
+
+        info!(
+            event = "New Candidate",
+            hash = &to_str(&p.candidate.header().hash),
+            round = p.candidate.header().height,
+            iter = p.candidate.header().iteration,
+            prev_block = &to_str(&p.candidate.header().prev_block_hash)
+        );
 
         Ok(StepOutcome::Ready(msg))
     }

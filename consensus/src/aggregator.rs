@@ -176,10 +176,11 @@ impl<V: StepVote> Aggregator<V> {
         let quorum_reached = total >= quorum_target;
         if quorum_reached {
             tracing::info!(
-                event = "quorum reached",
-                ?vote,
-                iter = v.header().iteration,
+                event = "Quorum reached",
                 step = ?V::STEP_NAME,
+                round = v.header().round,
+                iter = v.header().iteration,
+                ?vote,
                 total,
                 target = quorum_target,
                 bitset,
