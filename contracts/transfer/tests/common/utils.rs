@@ -6,13 +6,13 @@
 
 use std::sync::mpsc;
 
-use dusk_core::abi::{ContractError, ContractId};
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey as PhoenixViewKey};
-use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::BlsScalar;
-use dusk_vm::{CallReceipt, Error as VMError, Session};
+use dusk_vm::{Error as VMError, Session};
 
 const GAS_LIMIT: u64 = 0x10_000_000;
 
@@ -29,40 +29,6 @@ pub fn chain_id(session: &mut Session) -> Result<u8, VMError> {
     session
         .call(TRANSFER_CONTRACT, "chain_id", &(), GAS_LIMIT)
         .map(|r| r.data)
-}
-
-/// Executes a transaction.
-/// Returns result containing gas spent.
-pub fn execute(
-    session: &mut Session,
-    tx: impl Into<Transaction>,
-) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, VMError> {
-    let tx = tx.into();
-
-    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "spend_and_execute",
-        &tx,
-        tx.gas_limit(),
-    )?;
-
-    // Ensure all gas is consumed if there's an error in the contract call
-    if receipt.data.is_err() {
-        receipt.gas_spent = receipt.gas_limit;
-    }
-
-    let refund_receipt = session
-        .call::<_, ()>(
-            TRANSFER_CONTRACT,
-            "refund",
-            &receipt.gas_spent,
-            u64::MAX,
-        )
-        .expect("Refunding must succeed");
-
-    receipt.events.extend(refund_receipt.events);
-
-    Ok(receipt)
 }
 
 // moonlight helper functions
