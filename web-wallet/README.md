@@ -44,6 +44,7 @@ VITE_GAS_LIMIT_UPPER=1000000000
 VITE_GAS_PRICE_DEFAULT=1
 VITE_GAS_PRICE_LOWER=1
 VITE_MODE_MAINTENANCE=false
+VITE_REOWN_PROJECT_ID="" # the ID of the Bridge project (as on Reown Cloud)
 VITE_NODE_URL="" # connect to a specific node
 ```
 

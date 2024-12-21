@@ -57,7 +57,9 @@ export default [
     ],
   },
   {
-    enabled: import.meta.env.VITE_FEATURE_MIGRATE === "true",
+    enabled:
+      import.meta.env.VITE_FEATURE_MIGRATE === "true" &&
+      import.meta.env.VITE_REOWN_PROJECT_ID !== "",
     id: "migrate",
     label: "Migrate",
     operations: [

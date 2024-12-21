@@ -5,14 +5,25 @@ import { bsc, mainnet, sepolia } from "@reown/appkit/networks";
 import { disconnect, getAccount, getBalance, watchAccount } from "@wagmi/core";
 import { readable } from "svelte/store";
 
-// Required project metadata
-const projectId = "b5303e1c8374b100fbb7f181884fef28";
-const metadata = {
-  description: "Dusk Web-Wallet",
-  icons: [],
-  name: "Dusk Migration",
-  url: "https://127.0.0.1:5173/dashboard/",
-};
+/**
+ * @constant {string} projectId - The ID of the project, sourced from an environment variable.
+ *
+ * @description
+ * This constant retrieves the project ID from the environment variable `VITE_REOWN_PROJECT_ID`.
+ * If the environment variable is not set, it defaults to an empty string. This behavior is not ideal
+ * because an empty `projectId` will cause the modal initialization to fail.
+ *
+ * While this issue typically arises due to a developer error (e.g., forgetting to set the environment variable),
+ * resolving it properly requires a broader refactor of the codebase to better handle missing or invalid `projectId` values.
+ *
+ * Additionally, when the `projectId` is missing, the "migrate" functionality will not be accessible in the UI,
+ * effectively hiding the "broken" flow. Therefore, while the error can occur, users are unlikely to encounter it.
+ *
+ * **To improve:**
+ * Consider implementing a mechanism to ensure `VITE_REOWN_PROJECT_ID` is always defined during the build or
+ * runtime processes, potentially throwing a clear error during startup if it is missing.
+ */
+const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || "";
 
 /** @typedef {import("@reown/appkit/networks").AppKitNetwork} AppKitNetwork */
 /** @type {[AppKitNetwork, ...AppKitNetwork[]]} */
@@ -33,7 +44,6 @@ export const modal = createAppKit({
     onramp: false,
     swaps: false,
   },
-  metadata,
   networks,
   projectId,
   themeMode: "dark",
