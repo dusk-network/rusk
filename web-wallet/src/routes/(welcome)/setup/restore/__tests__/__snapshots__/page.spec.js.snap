@@ -109,26 +109,31 @@ exports[`Restore > should render the Mnemonic Authenticate step after accepting 
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       2
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       5
+       
     </span>
     
   </div>

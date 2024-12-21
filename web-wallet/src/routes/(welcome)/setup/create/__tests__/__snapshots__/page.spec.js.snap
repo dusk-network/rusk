@@ -27,37 +27,44 @@ exports[`Create > correctly renders the Mnemonic Preview page 1`] = `
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>
@@ -267,37 +274,44 @@ exports[`Create > correctly renders the Mnemonic Verification page 1`] = `
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>
@@ -679,37 +693,44 @@ exports[`Create > doesn't let the user proceed if they have entered mismatching 
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>
@@ -1128,37 +1149,44 @@ exports[`Create > ensures that the Undo button on the Mnemonic Validate step wor
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>
@@ -1558,37 +1586,44 @@ exports[`Create > ensures the All Done step renders as expected 1`] = `
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       6
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       7
+       
     </span>
     
   </div>
@@ -1698,37 +1733,44 @@ exports[`Create > ensures the Network Syncing step renders as expected 1`] = `
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       5
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>
@@ -1915,37 +1957,44 @@ exports[`Create > ensures the Password step renders as expected 1`] = `
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       3
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>
@@ -2116,37 +2165,44 @@ exports[`Create > ensures the Password step renders as expected 2`] = `
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       3
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>
@@ -2355,37 +2411,44 @@ exports[`Create > ensures the Swap To Native Dusk step renders as expected 1`] =
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       4
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>
@@ -2507,37 +2570,44 @@ exports[`Create > lets the user proceed if they have entered a matching Mnemonic
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       2
+       
     </span>
     <span
       aria-current="step"
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>
@@ -2926,36 +2996,43 @@ exports[`Create > should render the \`Securely store your mnemonic phrase!\` agr
       class="dusk-stepper__step dusk-stepper__step--processed"
     >
       1
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       2
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       3
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       4
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       5
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       6
+       
     </span>
     <span
       class="dusk-stepper__step"
     >
       7
+       
     </span>
     
   </div>

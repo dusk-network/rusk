@@ -42,7 +42,7 @@ exports[`Stepper > should add the proper class name for the desired variant 1`] 
   </span>
    
   <span
-    class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+    class="dusk-stepper__step-label"
     id="step-some-generated-id"
   >
     baz
@@ -131,7 +131,7 @@ exports[`Stepper > should allow to hide the step numbers 1`] = `
   </span>
    
   <span
-    class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+    class="dusk-stepper__step-label"
     id="step-some-generated-id"
   >
     baz
@@ -221,7 +221,7 @@ exports[`Stepper > should pass additional class names and attributes to the rend
   </span>
    
   <span
-    class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+    class="dusk-stepper__step-label"
     id="step-some-generated-id"
   >
     baz
@@ -277,27 +277,32 @@ exports[`Stepper > should render the \`Stepper\` component accepting a number as
     class="dusk-stepper__step dusk-stepper__step--processed"
   >
     1
+     
   </span>
   <span
     class="dusk-stepper__step dusk-stepper__step--processed"
   >
     2
+     
   </span>
   <span
     aria-current="step"
     class="dusk-stepper__step dusk-stepper__step--processed"
   >
     3
+     
   </span>
   <span
     class="dusk-stepper__step"
   >
     4
+     
   </span>
   <span
     class="dusk-stepper__step"
   >
     5
+     
   </span>
   
 </div>
@@ -359,7 +364,7 @@ exports[`Stepper > should render the \`Stepper\` component accepting a number as
   </span>
    
   <span
-    class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+    class="dusk-stepper__step-label"
     id="step-some-generated-id"
   >
     qux
@@ -434,7 +439,7 @@ exports[`Stepper > should render the \`Stepper\` component accepting an array of
   </span>
    
   <span
-    class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+    class="dusk-stepper__step-label"
     id="step-some-generated-id"
   >
     baz
@@ -537,7 +542,7 @@ exports[`Stepper > should render the \`Stepper\` component accepting an array of
   </span>
    
   <span
-    class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
+    class="dusk-stepper__step-label"
     id="step-some-generated-id"
   >
     qux
@@ -564,6 +569,46 @@ exports[`Stepper > should render the \`Stepper\` component accepting an array of
     id="step-some-generated-id"
   >
     quux
+     
+  </span>
+  
+</div>
+`;
+
+exports[`Stepper > should render the \`Stepper\` with all step labels being displayed, if the right flag is provided  1`] = `
+<div
+  class="dusk-stepper dusk-stepper--variant--primary"
+  style="--columns: 5; --progress-width: 40%;"
+>
+  <span
+    class="dusk-stepper__step dusk-stepper__step--processed"
+  >
+    1
+     
+  </span>
+  <span
+    class="dusk-stepper__step dusk-stepper__step--processed"
+  >
+    2
+     
+  </span>
+  <span
+    aria-current="step"
+    class="dusk-stepper__step dusk-stepper__step--processed"
+  >
+    3
+     
+  </span>
+  <span
+    class="dusk-stepper__step"
+  >
+    4
+     
+  </span>
+  <span
+    class="dusk-stepper__step"
+  >
+    5
      
   </span>
   

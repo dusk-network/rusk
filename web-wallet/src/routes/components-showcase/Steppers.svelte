@@ -93,7 +93,7 @@
   </div>
 
   <div class="steppers__container">
-    <Stepper activeStep={stepB} steps={stepsB} />
+    <Stepper activeStep={stepB} steps={stepsB} showStepLabelWhenInactive />
 
     <div class="steppers__buttons">
       <Button on:click={handleStepChange} text="Previous" size="small" />
@@ -143,7 +143,7 @@
     }
 
     .steppers__container {
-      width: 80%;
+      width: 100%;
       padding: 2rem;
       background-color: var(--surface-color);
       border-radius: var(--control-border-radius-size);
