@@ -28,7 +28,7 @@ use crate::gas::Gas;
 use crate::Error;
 
 impl<F: SecureWalletFile + Debug> Wallet<F> {
-    /// Transfers funds between shielded addresses.
+    /// Transfers funds between shielded accounts.
     pub async fn phoenix_transfer(
         &self,
         sender_idx: u8,
@@ -131,7 +131,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.propagate(tx).await
     }
 
-    /// Executes a generic contract call, paying gas with a shielded address.
+    /// Executes a generic contract call, paying gas with a shielded account.
     pub async fn phoenix_execute(
         &self,
         sender_idx: u8,
@@ -468,7 +468,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.propagate(unstake).await
     }
 
-    /// Withdraws accumulated staking to a shielded address.
+    /// Withdraws accumulated staking to a shielded account.
     pub async fn phoenix_stake_withdraw(
         &self,
         sender_idx: u8,
@@ -556,7 +556,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.propagate(withdraw).await
     }
 
-    /// Converts Dusk from a shielded address to a public account.
+    /// Converts Dusk from a shielded account to a public account.
     pub async fn phoenix_to_moonlight(
         &self,
         profile_idx: u8,
@@ -594,7 +594,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         state.propagate(convert).await
     }
 
-    /// Converts Dusk from a public account to a shielded address.
+    /// Converts Dusk from a public account to a shielded account.
     pub async fn moonlight_to_phoenix(
         &self,
         profile_idx: u8,

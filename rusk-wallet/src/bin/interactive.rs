@@ -32,7 +32,7 @@ pub(crate) async fn run_loop(
             prompt::hide_cursor()?;
 
             let op = if !wallet.is_online().await {
-                println!("\r{}", profile.shielded_address_string());
+                println!("\r{}", profile.shielded_account_string());
                 println!("{}", profile.public_account_string());
                 println!();
 
@@ -49,7 +49,7 @@ pub(crate) async fn run_loop(
 
                 // display profile information
                 // display shielded balance and keys information
-                println!("{}", profile.shielded_address_string());
+                println!("{}", profile.shielded_account_string());
                 if is_synced {
                     println!(
                         "{0: <16} - Spendable: {phoenix_spendable}",
@@ -483,7 +483,7 @@ impl<'a> Display for ProfileSelect<'a> {
                 f,
                 "{}\n  {}\n  {}",
                 Profile::index_string(*index),
-                profile.shielded_address_preview(),
+                profile.shielded_account_preview(),
                 profile.public_account_preview(),
             ),
             ProfileSelect::New => write!(f, "Create a new profile"),

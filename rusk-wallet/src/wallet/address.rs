@@ -17,7 +17,7 @@ use crate::Error;
 #[derive(Clone, Eq)]
 #[allow(missing_docs)]
 pub enum Address {
-    /// Shielded address for shielded transactions.
+    /// Shielded account address for shielded transactions.
     Shielded(PhoenixPublicKey),
     /// Public account address for public transactions and staking
     /// operations.
@@ -156,18 +156,18 @@ impl fmt::Debug for Address {
 /// transactions as well as for staking operations.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Profile {
-    /// Shielded address for shielded transactions
+    /// Shielded account address for shielded transactions
     pub shielded_addr: PhoenixPublicKey,
     /// Public account address for public transactions and staking operations.
     pub public_addr: BlsPublicKey,
 }
 
 impl Profile {
-    /// Format the shielded address into a string.
-    pub fn shielded_address_string(&self) -> String {
+    /// Format the shielded account into a string.
+    pub fn shielded_account_string(&self) -> String {
         format!(
             "{} - {}",
-            shielded_address_prefix(),
+            shielded_account_prefix(),
             Address::Shielded(self.shielded_addr)
         )
     }
@@ -190,11 +190,11 @@ impl Profile {
         )
     }
 
-    /// Format the shortened shielded address into a string.
-    pub fn shielded_address_preview(&self) -> String {
+    /// Format the shortened shielded account into a string.
+    pub fn shielded_account_preview(&self) -> String {
         format!(
             "{} - {}",
-            shielded_address_prefix(),
+            shielded_account_prefix(),
             Address::Shielded(self.shielded_addr).preview(),
         )
     }
@@ -228,8 +228,8 @@ impl Profile {
     }
 }
 
-fn shielded_address_prefix() -> String {
-    format!("{:<16}", "Shielded address")
+fn shielded_account_prefix() -> String {
+    format!("{:<16}", "Shielded account")
 }
 
 fn public_account_prefix() -> String {

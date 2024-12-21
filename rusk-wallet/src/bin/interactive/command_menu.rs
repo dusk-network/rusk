@@ -102,7 +102,7 @@ pub(crate) async fn online(
 
             let (sender, balance) = match &rcvr {
                 Address::Shielded(_) => {
-                    (wallet.shielded_address(profile_idx)?, phoenix_spendable)
+                    (wallet.shielded_account(profile_idx)?, phoenix_spendable)
                 }
                 Address::Public(_) => {
                     (wallet.public_address(profile_idx)?, moonlight_balance)
@@ -445,7 +445,7 @@ fn pick_transaction_model(
 ) -> anyhow::Result<(Address, Dusk)> {
     match prompt::request_transaction_model()? {
         prompt::TransactionModel::Shielded => {
-            let addr = wallet.shielded_address(profile_idx)?;
+            let addr = wallet.shielded_account(profile_idx)?;
             Ok((addr, phoenix_spendable))
         }
         prompt::TransactionModel::Public => {

@@ -715,7 +715,7 @@ impl fmt::Display for RunResult<'_> {
                     f,
                     "> {}\n>   {}\n>   {}",
                     crate::Profile::index_string(*profile_idx),
-                    profile.shielded_address_string(),
+                    profile.shielded_account_string(),
                     profile.public_account_string(),
                 )
             }
@@ -727,7 +727,7 @@ impl fmt::Display for RunResult<'_> {
                         format!(
                             "> {}\n>   {}\n>   {}\n",
                             crate::Profile::index_string(profile_idx as u8),
-                            profile.shielded_address_string(),
+                            profile.shielded_account_string(),
                             profile.public_account_string(),
                         )
                     })

@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change Rusk wallet name and version information [#2647]
 - Update Clap from v3 to workspace v4 [#2489]
 - Rename all instances of recovery phrase to mnemonic phrase [#2839]
+- Rename Shielded account to be aligned with the Web wallet [#3263]
 
 ### Fix
 
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix stake info for inactive stakes with rewards [#2766]
 - Fix Moonlight stake reward withdrawal [#2523]
 
+[#3263]: https://github.com/dusk-network/rusk/issues/3263
 [#2839]: https://github.com/dusk-network/rusk/issues/2839
 [#2768]: https://github.com/dusk-network/rusk/issues/2768
 [#2766]: https://github.com/dusk-network/rusk/issues/2766
