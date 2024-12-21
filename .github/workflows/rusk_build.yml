@@ -39,9 +39,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs:
       - config
-    continue-on-error: |
+    continue-on-error: ${{
           ! ( !contains(fromJson(github.event.inputs.runner), matrix.runner) ||
-          !contains(fromJson(github.event.inputs.features), matrix.features) )
+          !contains(fromJson(github.event.inputs.features), matrix.features) ) }}
     strategy:
       matrix:
         features: ${{ fromJson(github.event.inputs.features) }}
