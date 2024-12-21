@@ -26,7 +26,7 @@
    * Whether to show the step label when the step is inactive.
    * @type {boolean}
    */
-  export let showStepLabelWhenInactive = true;
+  export let showStepLabelWhenInactive = false;
 
   /**
    * The number of steps, greater or equal to two,
@@ -91,7 +91,7 @@
 
         <span
           class="dusk-stepper__step-label"
-          class:dusk-stepper__step-label--invisible={showStepLabelWhenInactive ||
+          class:dusk-stepper__step-label--invisible={!showStepLabelWhenInactive &&
             idx !== activeStep}
           {id}
         >
@@ -104,8 +104,9 @@
           class="dusk-stepper__step"
           class:dusk-stepper__step--processed={idx <= activeStep}
           aria-current={idx === activeStep ? "step" : undefined}
-          >{showStepNumbers ? idx + 1 : ""}</span
         >
+          {showStepNumbers ? idx + 1 : ""}
+        </span>
       {/each}
     {/if}
   </div>

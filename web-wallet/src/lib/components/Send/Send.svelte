@@ -158,7 +158,7 @@
 <div class="operation">
   <Wizard steps={steps.length} let:key>
     <div slot="stepper">
-      <Stepper {activeStep} {steps} showStepLabelWhenInactive={false} />
+      <Stepper {activeStep} {steps} />
     </div>
     <!-- Address Step -->
     <WizardStep

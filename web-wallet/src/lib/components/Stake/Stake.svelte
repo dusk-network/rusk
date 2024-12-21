@@ -158,7 +158,7 @@
 <div class="operation">
   <Wizard steps={hideStakingNotice ? 3 : 4} let:key>
     <div slot="stepper">
-      <Stepper {activeStep} {steps} showStepLabelWhenInactive={false} />
+      <Stepper {activeStep} {steps} />
     </div>
 
     {#if !hideStakingNotice}
