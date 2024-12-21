@@ -18,7 +18,6 @@
     middleEllipsis,
   } from "$lib/dusk/string";
   import {
-    AppAnchor,
     AppAnchorButton,
     AppImage,
     ApproveMigration,
@@ -27,7 +26,6 @@
   } from "$lib/components";
   import {
     Button,
-    Card,
     ExclusiveChoice,
     Icon,
     Stepper,
@@ -74,9 +72,6 @@
   /** @type {TokenNames} */
   let selectedChain = erc20.name;
 
-  /** @type {boolean} */
-  const migrationInProgress = false;
-
   /** @type {undefined | bigint} */
   let connectedWalletBalance;
 
@@ -94,6 +89,8 @@
 
   /** @type {boolean} */
   let isInputDisabled = false;
+
+  const steps = [{ label: "Approve" }, { label: "Migrate" }, { label: "Done" }];
 
   $: ({ currentProfile } = $walletStore);
   $: moonlightAccount = currentProfile?.account.toString();
@@ -244,16 +241,6 @@
     </div>
   </header>
 
-  {#if migrationInProgress}
-    <div class="migrate__progress-notice">
-      <span
-        >Another migration is in progress. You can check the status <AppAnchor
-          href="#">here</AppAnchor
-        >.</span
-      >
-    </div>
-  {/if}
-
   <div class="migrate__token">
     <p class="migrate__token-header">From:</p>
     <ExclusiveChoice
@@ -332,8 +319,8 @@
   {/if}
 
   {#if walletState.isConnected && isAmountValid && isMigrationInitialized}
-    <Card gap="small">
-      <Stepper steps={3} activeStep={migrationStep} />
+    <div class="migrate__wizard">
+      <Stepper {steps} activeStep={migrationStep} />
       {#if migrationStep === 0}
         <ApproveMigration
           on:incrementStep={() => migrationStep++}
@@ -356,11 +343,20 @@
         />
       {:else}
         <div class="migrate__execute">
-          <Icon path={mdiCheckDecagramOutline} />
-          <p>Migration completed successfully!</p>
+          <div class="migrate__execute-approval">
+            <Icon path={mdiCheckDecagramOutline} size="large" />
+            <p>Migration request accepted!</p>
+          </div>
+          <Banner title="Migration Request Accepted" variant="info">
+            <p>
+              The migration request has now been accepted on chain. We will
+              process the request in the background. Receiving your DUSK might
+              take some time. Check your wallet balance again later.
+            </p>
+          </Banner>
         </div>
       {/if}
-    </Card>
+    </div>
   {/if}
 
   {#if !walletState.isConnected}
@@ -410,12 +406,25 @@
     gap: var(--default-gap);
     padding: 1.25em;
 
+    &__wizard {
+      margin-top: var(--default-gap);
+      gap: 1.25em;
+      display: flex;
+      flex-direction: column;
+    }
+
     &__execute {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: var(--default-gap);
-      padding: 2.25em 0;
+
+      &-approval {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--default-gap);
+      }
     }
 
     &__header {
@@ -443,12 +452,6 @@
       display: flex;
       gap: var(--small-gap);
       align-items: center;
-    }
-
-    &__progress-notice {
-      padding: 1em 1.375em;
-      border-radius: 1.5em;
-      border: 1px solid var(--primary-color);
     }
 
     &__token-header {

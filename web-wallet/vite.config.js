@@ -50,6 +50,7 @@ export default defineConfig(({ mode }) => {
         VITE_GAS_PRICE_LOWER: env.VITE_GAS_PRICE_LOWER,
         VITE_GAS_PRICE_UPPER: env.VITE_GAS_PRICE_UPPER,
         VITE_NODE_URL: env.VITE_NODE_URL,
+        VITE_REOWN_PROJECT_ID: env.VITE_REOWN_PROJECT_ID,
       },
     },
     plugins:
