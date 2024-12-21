@@ -10,13 +10,12 @@ use std::sync::{Arc, RwLock};
 use dusk_core::stake::{self, Stake, DEFAULT_MINIMUM_STAKE, EPOCH};
 
 use dusk_bytes::Serializable;
-use dusk_core::abi::ContractId;
+use dusk_core::abi::{gen_contract_id, ContractId};
 use dusk_core::transfer::data::ContractCall;
 use dusk_core::transfer::{self, Transaction};
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::gen_id::gen_contract_id;
 use rusk::{Result, Rusk};
 use std::collections::HashMap;
 use tempfile::tempdir;

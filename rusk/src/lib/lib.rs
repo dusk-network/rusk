@@ -8,7 +8,6 @@
 
 mod bloom;
 mod error;
-pub mod gen_id;
 pub mod http;
 #[cfg(feature = "chain")]
 pub mod node;
