@@ -213,6 +213,14 @@ impl ContractBytecode {
         self.hash.to_vec()
     }
 
+    /// Verifies that the stored bytes-hash is correct.
+    #[must_use]
+    pub fn verify_hash(&self) -> bool {
+        let computed: [u8; 32] = blake3::hash(self.bytes.as_slice()).into();
+
+        self.hash == computed
+    }
+
     /// Serializes this object into a variable length buffer
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {

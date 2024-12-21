@@ -9,6 +9,7 @@
 
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::cmp::max;
 use core::fmt::Debug;
 
 use bytecheck::CheckBytes;
@@ -337,6 +338,24 @@ impl Transaction {
         match self {
             Self::Phoenix(tx) => tx.hash(),
             Self::Moonlight(tx) => tx.hash(),
+        }
+    }
+
+    /// Returns the charge for a contract deployment. The deployment of a
+    /// contract will cost at least `min_deploy_points`.
+    /// If the transaction is not a deploy-transaction, the deploy-charge will
+    /// be 0.
+    #[must_use]
+    pub fn deploy_charge(
+        &self,
+        gas_per_deploy_byte: u64,
+        min_deploy_points: u64,
+    ) -> u64 {
+        if let Some(deploy) = self.deploy() {
+            let bytecode_len = deploy.bytecode.bytes.len() as u64;
+            max(bytecode_len * gas_per_deploy_byte, min_deploy_points)
+        } else {
+            0
         }
     }
 }
