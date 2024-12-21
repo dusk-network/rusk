@@ -14,7 +14,7 @@ on:
       features:
         description: "Choose features to build (JSON array)"
         required: true
-        default: "[\"default\", \"archive\"]"
+        default: "[\"default\", \"archive\", \"prover\"]"
 
 jobs:
   config:
@@ -77,18 +77,31 @@ jobs:
         run: rustup target add aarch64-apple-darwin
         if: ${{ matrix.os == 'macos-15' }}
 
+      - name: Check for Prover Features
+        id: config
+        run: |
+          echo "Checking feature requirements..."
+          if [[ "${{ matrix.feature }}" == *"prover"* ]]; then
+            echo "NO_DEFAULT_FEATURES=--no-default-features" >> $GITHUB_ENV
+            echo "SKIP_WASM=true" >> $GITHUB_ENV
+          else
+            echo "NO_DEFAULT_FEATURES=" >> $GITHUB_ENV
+            echo "SKIP_WASM=false" >> $GITHUB_ENV
+          fi
+
       - name: Compile keys
         shell: bash
         run: make keys
 
       - name: Compile WASM Contracts
+        if: ${{ env.SKIP_WASM != 'true' }}
         shell: bash
         run: make wasm
 
       - name: Build Rusk binary
         shell: bash
         working-directory: ./rusk
-        run: cargo build --release --features "${{ matrix.feature }}" ${{ matrix.flags }}
+        run: cargo build --release ${{ env.NO_DEFAULT_FEATURES }} --features "${{ matrix.feature }}" ${{ matrix.flags }}
 
       - name: Extract Version
         run: |
