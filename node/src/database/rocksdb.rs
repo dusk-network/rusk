@@ -318,7 +318,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             LightBlock {
                 header: header.clone(),
                 transactions_ids: txs.iter().map(|t| t.inner.id()).collect(),
-                faults_ids: faults.iter().map(|f| f.hash()).collect(),
+                faults_ids: faults.iter().map(|f| f.id()).collect(),
             }
             .write(&mut buf)?;
 
@@ -349,7 +349,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             for f in faults {
                 let mut d = vec![];
                 f.write(&mut d)?;
-                self.put_cf(cf, f.hash(), d)?;
+                self.put_cf(cf, f.id(), d)?;
             }
         }
         self.store_block_label(header.height, &header.hash, label)?;
@@ -410,7 +410,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             self.inner.delete_cf(self.ledger_txs_cf, tx.id())?;
         }
         for f in b.faults() {
-            self.inner.delete_cf(self.ledger_faults_cf, f.hash())?;
+            self.inner.delete_cf(self.ledger_faults_cf, f.id())?;
         }
 
         self.inner.delete_cf(self.ledger_cf, b.header().hash)?;
@@ -1215,7 +1215,7 @@ impl node_data::Serializable for LightBlock {
         let len = self.faults_ids.len() as u32;
         w.write_all(&len.to_le_bytes())?;
 
-        // Write faults hashes
+        // Write faults id
         for f_id in &self.faults_ids {
             w.write_all(f_id)?;
         }
@@ -1245,7 +1245,7 @@ impl node_data::Serializable for LightBlock {
         // Read faults count
         let len = Self::read_u32_le(r)?;
 
-        // Read faults hashes
+        // Read faults ids
         let mut faults_ids = vec![];
         for _ in 0..len {
             let mut f_id = [0u8; 32];
@@ -1308,10 +1308,7 @@ mod tests {
                 // Assert all faults are fully fetched from ledger as
                 // well.
                 for pos in 0..b.faults().len() {
-                    assert_eq!(
-                        db_blk.faults()[pos].hash(),
-                        b.faults()[pos].hash()
-                    );
+                    assert_eq!(db_blk.faults()[pos].id(), b.faults()[pos].id());
                 }
             });
 
