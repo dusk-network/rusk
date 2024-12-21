@@ -18,6 +18,8 @@ rkyv = { workspace = true,  features = ["size_32"] }
 bytecheck = { workspace = true }
 rand = { workspace = true }
 ff = { workspace = true }
+blake3 = { workspace = true }
+blake2b_simd = { workspace = true } 
 
 # plonk dependencies
 dusk-plonk = { workspace = true, features = ["rkyv-impl", "alloc"], optional = true }
