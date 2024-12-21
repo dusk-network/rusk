@@ -369,9 +369,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         self.default_public_address()
     }
 
-    /// Returns the default shielded address for this wallet
-    pub fn default_shielded_address(&self) -> Address {
-        self.shielded_address(0)
+    /// Returns the default shielded account address for this wallet
+    pub fn default_shielded_account(&self) -> Address {
+        self.shielded_account(0)
             .expect("there to be an address at index 0")
     }
 
@@ -451,8 +451,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         Ok(addr.into())
     }
 
-    /// Returns the shielded address for a given index.
-    pub fn shielded_address(&self, index: u8) -> Result<Address, Error> {
+    /// Returns the shielded account address for a given index.
+    pub fn shielded_account(&self, index: u8) -> Result<Address, Error> {
         let addr = *self.shielded_key(index)?;
         Ok(addr.into())
     }
@@ -688,7 +688,7 @@ mod tests {
         let mut wallet: Wallet<WalletFile> = Wallet::new("uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic")?;
 
         // check address generation
-        let default_addr = wallet.default_shielded_address();
+        let default_addr = wallet.default_shielded_account();
         let other_addr_idx = wallet.add_profile();
         let other_addr =
             Address::Shielded(*wallet.shielded_key(other_addr_idx)?);
@@ -701,7 +701,7 @@ mod tests {
         let wallet: Wallet<WalletFile> = Wallet::new("demise monitor elegant cradle squeeze cheap parrot venture stereo humor scout denial action receive flat")?;
 
         // check addresses are different
-        let addr = wallet.default_shielded_address();
+        let addr = wallet.default_shielded_account();
         assert!(format!("{}", addr).ne(TEST_ADDR));
 
         // attempt to create a wallet from an invalid mnemonic
@@ -730,8 +730,8 @@ mod tests {
         // load from file and check
         let loaded_wallet = Wallet::from_file(file)?;
 
-        let original_addr = wallet.default_shielded_address();
-        let loaded_addr = loaded_wallet.default_shielded_address();
+        let original_addr = wallet.default_shielded_account();
+        let loaded_addr = loaded_wallet.default_shielded_account();
         assert!(original_addr.eq(&loaded_addr));
 
         Ok(())

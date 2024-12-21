@@ -338,7 +338,7 @@ async fn exec() -> anyhow::Result<()> {
                     println!(
                         "> {}\n>   {}\n>   {}\n",
                         Profile::index_string(profile_idx),
-                        profile.shielded_address_string(),
+                        profile.shielded_account_string(),
                         profile.public_account_string(),
                     );
                 }
@@ -347,7 +347,7 @@ async fn exec() -> anyhow::Result<()> {
                         println!(
                             "> {}\n>   {}\n>   {}\n\n",
                             Profile::index_string(profile_idx as u8),
-                            profile.shielded_address_string(),
+                            profile.shielded_account_string(),
                             profile.public_account_string(),
                         );
                     }
