@@ -18,6 +18,18 @@ pub async fn tx_by_hash(
     Ok(tx.map(SpentTransaction))
 }
 
+pub async fn txs_by_hashes(
+    ctx: &Context<'_>,
+    hashes: Vec<&[u8; 32]>,
+) -> FieldResult<Vec<SpentTransaction>> {
+    let (db, _) = ctx.data::<DBContext>()?;
+    db.read().await.view(|t| {
+        let txs = t.ledger_txs(hashes)?;
+
+        Ok(txs.into_iter().map(SpentTransaction).collect::<Vec<_>>())
+    })
+}
+
 pub async fn last_transactions(
     ctx: &Context<'_>,
     count: usize,

@@ -80,6 +80,10 @@ pub trait Ledger {
     fn block_exists(&self, hash: &[u8]) -> Result<bool>;
 
     fn ledger_tx(&self, tx_id: &[u8]) -> Result<Option<SpentTransaction>>;
+    fn ledger_txs(
+        &self,
+        tx_ids: Vec<&[u8; 32]>,
+    ) -> Result<Vec<SpentTransaction>>;
 
     fn ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool>;
 
