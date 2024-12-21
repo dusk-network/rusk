@@ -9,11 +9,9 @@ use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::transfer::data::ContractBytecode;
 use dusk_core::transfer::moonlight::AccountData;
 use node_data::events::contract::ContractEvent;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
-use std::cmp::max;
 
 #[derive(Default)]
 pub struct Config {}
@@ -101,16 +99,4 @@ pub enum PreverificationResult {
         state: AccountData,
         nonce_used: u64,
     },
-}
-
-// Returns gas charge for bytecode deployment.
-pub fn bytecode_charge(
-    bytecode: &ContractBytecode,
-    gas_per_deploy_byte: u64,
-    min_deploy_points: u64,
-) -> u64 {
-    max(
-        bytecode.bytes.len() as u64 * gas_per_deploy_byte,
-        min_deploy_points,
-    )
 }
