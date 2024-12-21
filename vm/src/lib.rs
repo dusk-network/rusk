@@ -23,7 +23,7 @@ use std::fmt::{self, Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::thread;
 
-use dusk_core::abi::{Metadata, Query};
+use dusk_core::abi::Query;
 use piecrust::{SessionData, VM as PiecrustVM};
 
 use self::host_queries::{
@@ -33,33 +33,10 @@ use self::host_queries::{
 
 pub(crate) mod cache;
 pub mod host_queries;
-
-/// Create a new session based on the given `VM`.
-pub fn new_session(
-    vm: &VM,
-    base: [u8; 32],
-    chain_id: u8,
-    block_height: u64,
-) -> Result<Session, Error> {
-    vm.session(
-        SessionData::builder()
-            .base(base)
-            .insert(Metadata::CHAIN_ID, chain_id)?
-            .insert(Metadata::BLOCK_HEIGHT, block_height)?,
-    )
-}
-
-/// Create a new genesis session based on the given [`VM`].
-pub fn new_genesis_session(vm: &VM, chain_id: u8) -> Session {
-    vm.session(
-        SessionData::builder()
-            .insert(Metadata::CHAIN_ID, chain_id)
-            .expect("Inserting chain ID in metadata should succeed")
-            .insert(Metadata::BLOCK_HEIGHT, 0)
-            .expect("Inserting block height in metadata should succeed"),
-    )
-    .expect("Creating a genesis session should always succeed")
-}
+pub(crate) mod session;
+pub use session::{
+    execute, genesis as new_genesis_session, new as new_session,
+};
 
 /// Dusk VM is a [`PiecrustVM`] enriched with the host functions specified in
 /// Dusk's ABI.
