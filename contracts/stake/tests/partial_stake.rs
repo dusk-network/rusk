@@ -11,8 +11,8 @@ use dusk_core::signatures::bls::{
 use dusk_core::stake::{Reward, RewardReason, EPOCH, STAKE_CONTRACT};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_vm::{
-    new_genesis_session, new_session, ContractData, Error as VMError, Session,
-    VM,
+    execute, new_genesis_session, new_session, ContractData, Error as VMError,
+    Session, VM,
 };
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -21,7 +21,6 @@ use wallet_core::transaction::{
 };
 
 pub mod common;
-
 use crate::common::assert::*;
 use crate::common::init::CHAIN_ID;
 use crate::common::utils::*;
@@ -63,7 +62,7 @@ fn stake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 1st stake transaction
     let gas_spent_1 = receipt.gas_spent;
@@ -91,7 +90,7 @@ fn stake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 2nd stake transaction
     let gas_spent_2 = receipt.gas_spent;
@@ -125,7 +124,7 @@ fn stake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 3rd stake transaction
     let gas_spent_3 = receipt.gas_spent;
@@ -160,7 +159,7 @@ fn stake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    assert!(execute(&mut session, tx,).is_err());
+    assert!(execute(&mut session, &tx, 0, 0, 0).is_err());
 
     Ok(())
 }
@@ -194,7 +193,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
     let mut moonlight_balance = GENESIS_VALUE - STAKE_VALUE - receipt.gas_spent;
     assert_moonlight(&mut session, &moonlight_pk, moonlight_balance, nonce);
 
@@ -216,7 +215,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 1st unstake transaction
     let gas_spent_1 = receipt.gas_spent;
@@ -246,7 +245,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
     total_stake = STAKE_VALUE;
     let mut locked = unstake_1 / 10;
     assert_stake(&mut session, &stake_pk, total_stake, locked, 0);
@@ -272,7 +271,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 2nd unstake transaction
     let gas_spent_2 = receipt.gas_spent;
@@ -310,7 +309,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 3rd unstake transaction
     let gas_spent_3 = receipt.gas_spent;
@@ -353,7 +352,7 @@ fn withdraw_reward() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
     let mut moonlight_balance = GENESIS_VALUE - STAKE_VALUE - receipt.gas_spent;
     assert_moonlight(&mut session, &moonlight_pk, moonlight_balance, nonce);
     // add a reward to the staked key
@@ -378,7 +377,7 @@ fn withdraw_reward() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 1st reward withdrawal
     let gas_spent_1 = receipt.gas_spent;
@@ -413,7 +412,7 @@ fn withdraw_reward() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 1st reward withdrawal
     let gas_spent_2 = receipt.gas_spent;
