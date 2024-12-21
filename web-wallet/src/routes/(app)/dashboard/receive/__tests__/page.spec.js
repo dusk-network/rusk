@@ -48,30 +48,30 @@ describe("Receive", () => {
     vi.useRealTimers();
   });
 
-  it("should render the receive page with a double icon and a choice to switch from shielded to unshielded address", async () => {
+  it("should render the receive page with a choice to switch from public to shielded address", async () => {
     const { container, getByRole, getByText } = render(Receive);
 
     await vi.runAllTimersAsync();
 
     expect(getByRole("radiogroup")).toBeInTheDocument();
-    expect(getByText(expectedAddress)).toBeInTheDocument();
-    expect(() => getByText(expectedAccount)).toThrow();
+    expect(getByText(expectedAccount)).toBeInTheDocument();
+    expect(() => getByText(expectedAddress)).toThrow();
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it('should change the icon to "unshielded" and show the unshielded address when the user makes such choice', async () => {
+  it("should show the shielded address when the user makes such choice", async () => {
     const { container, getByRole, getByText } = render(Receive);
 
     await vi.runAllTimersAsync();
 
-    expect(getByText(expectedAddress)).toBeInTheDocument();
-    expect(() => getByText(expectedAccount)).toThrow();
+    expect(getByText(expectedAccount)).toBeInTheDocument();
+    expect(() => getByText(expectedAddress)).toThrow();
 
     await fireEvent.click(getByRole("radio", { checked: false }));
     await vi.runAllTimersAsync();
 
-    expect(() => getByText(expectedAddress)).toThrow();
-    expect(getByText(expectedAccount)).toBeInTheDocument();
+    expect(() => getByText(expectedAccount)).toThrow();
+    expect(getByText(expectedAddress)).toBeInTheDocument();
     expect(container.firstChild).toMatchSnapshot();
   });
 });

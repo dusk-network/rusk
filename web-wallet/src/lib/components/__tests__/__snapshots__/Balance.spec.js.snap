@@ -50,23 +50,23 @@ exports[`Balance > renders the Balance component 1`] = `
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Shielded"
+            data-tooltip-text="Public"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
             <path
-              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
             />
           </svg>
           
-          33.33
+          66.67
           %
         </span>
          
         <span
           class="dusk-balance__value"
         >
-          0.001000000
+          0.002000000
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
@@ -91,23 +91,23 @@ exports[`Balance > renders the Balance component 1`] = `
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Unshielded"
+            data-tooltip-text="Shielded"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
             <path
-              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
             />
           </svg>
           
-          66.67
+          33.33
           %
         </span>
          
         <span
           class="dusk-balance__value"
         >
-          0.002000000
+          0.001000000
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
@@ -179,23 +179,23 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Shielded"
+            data-tooltip-text="Public"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
             <path
-              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
             />
           </svg>
           
-          33.33
+          66.67
           %
         </span>
          
         <span
           class="dusk-balance__value"
         >
-          0.001000000
+          0.002000000
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
@@ -220,23 +220,23 @@ exports[`Balance > should not display the fiat value if the fiat price is \`unde
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Unshielded"
+            data-tooltip-text="Shielded"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
             <path
-              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
             />
           </svg>
           
-          66.67
+          33.33
           %
         </span>
          
         <span
           class="dusk-balance__value"
         >
-          0.002000000
+          0.001000000
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
@@ -308,23 +308,23 @@ exports[`Balance > should update the Balance component when the props change 1`]
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Shielded"
+            data-tooltip-text="Public"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
             <path
-              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
             />
           </svg>
           
-          33.33
+          66.67
           %
         </span>
          
         <span
           class="dusk-balance__value"
         >
-          0.001000000
+          0.002000000
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
@@ -349,23 +349,23 @@ exports[`Balance > should update the Balance component when the props change 1`]
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Unshielded"
+            data-tooltip-text="Shielded"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
             <path
-              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
             />
           </svg>
           
-          66.67
+          33.33
           %
         </span>
          
         <span
           class="dusk-balance__value"
         >
-          0.002000000
+          0.001000000
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
@@ -437,23 +437,23 @@ exports[`Balance > should update the Balance component when the props change 2`]
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Shielded"
+            data-tooltip-text="Public"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
             <path
-              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
             />
           </svg>
           
-          16,67
+          83,33
           %
         </span>
          
         <span
           class="dusk-balance__value"
         >
-          0,000500000
+          0,002500000
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
@@ -478,23 +478,23 @@ exports[`Balance > should update the Balance component when the props change 2`]
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"
-            data-tooltip-text="Unshielded"
+            data-tooltip-text="Shielded"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
             <path
-              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11 16,11.6 16,12.3V15.8C16,16.4 15.4,17 14.7,17H9.2C8.6,17 8,16.4 8,15.7V12.2C8,11.6 8.6,11 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,9.5V11H13.5V9.5C13.5,8.7 12.8,8.2 12,8.2Z"
             />
           </svg>
           
-          83,33
+          16,67
           %
         </span>
          
         <span
           class="dusk-balance__value"
         >
-          0,002500000
+          0,000500000
           <svg
             class="dusk-icon dusk-icon--size--default"
             data-tooltip-id="main-tooltip"

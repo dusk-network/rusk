@@ -59,7 +59,7 @@ exports[`Send page > should render the send page 1`] = `
           class="contract-statuses__value svelte-1up3579"
         >
           <span>
-            50,000.000000000
+            1,172.500000000
           </span>
            
           <svg

@@ -157,41 +157,10 @@
       <div in:fade|global class="operation__allocate">
         <p>
           Edit the value to change the allocation of your Dusk between your
-          shielded and public accounts.
+          public and shielded accounts.
         </p>
 
         <fieldset class="operation__fieldset">
-          <p class="operation__label">Shielded</p>
-
-          <div class="operation__address-wrapper">
-            <Icon path={mdiShieldLock} />
-            {middleEllipsis(
-              shieldedAddress,
-              calculateAdaptiveCharCount(screenWidth, 320, 640, 5, 20)
-            )}
-          </div>
-
-          <div class="operation__input-wrapper">
-            <Textbox
-              className="operation__input-field"
-              value={shieldedNumber}
-              required
-              type="number"
-              step="0.000000001"
-              max={luxToDusk(totalBalance)}
-              min="0"
-              on:input={handleBalanceChange}
-              name="shielded-amount"
-            />
-            <Icon
-              data-tooltip-id="main-tooltip"
-              data-tooltip-text="DUSK"
-              path={logo}
-            />
-          </div>
-
-          <hr class="glyph" />
-
           <p class="operation__label">Public</p>
 
           <div class="operation__address-wrapper">
@@ -214,6 +183,37 @@
               id="unshielded-amount"
               on:input={handleBalanceChange}
               name="unshielded-amount"
+            />
+            <Icon
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="DUSK"
+              path={logo}
+            />
+          </div>
+
+          <hr class="glyph" />
+
+          <p class="operation__label">Shielded</p>
+
+          <div class="operation__address-wrapper">
+            <Icon path={mdiShieldLock} />
+            {middleEllipsis(
+              shieldedAddress,
+              calculateAdaptiveCharCount(screenWidth, 320, 640, 5, 20)
+            )}
+          </div>
+
+          <div class="operation__input-wrapper">
+            <Textbox
+              className="operation__input-field"
+              value={shieldedNumber}
+              required
+              type="number"
+              step="0.000000001"
+              max={luxToDusk(totalBalance)}
+              min="0"
+              on:input={handleBalanceChange}
+              name="shielded-amount"
             />
             <Icon
               data-tooltip-id="main-tooltip"

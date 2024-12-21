@@ -4,7 +4,7 @@
   import {
     mdiArrowBottomLeftThin,
     mdiShieldLock,
-    mdiShieldLockOpen,
+    mdiShieldLockOpenOutline,
   } from "@mdi/js";
 
   import { walletStore } from "$lib/stores";
@@ -12,22 +12,22 @@
   import { ExclusiveChoice } from "$lib/dusk/components";
   import { IconHeadingCard } from "$lib/containers/Cards";
 
-  let addressToShow = "shielded";
+  let addressToShow = "public";
 
   const options = [
+    { disabled: false, label: "Public", value: "public" },
     { disabled: false, label: "Shielded", value: "shielded" },
-    { disabled: false, label: "Unshielded", value: "unshielded" },
   ];
 
-  /** @type {"address" | "account"} */
-  $: addressProp = addressToShow === "shielded" ? "address" : "account";
+  /** @type {"account" | "address"} */
+  $: addressProp = addressToShow === "public" ? "account" : "address";
   $: ({ currentProfile } = $walletStore);
   $: currentAddress = currentProfile
     ? currentProfile[addressProp].toString()
     : "";
   $: icons = [
     mdiArrowBottomLeftThin,
-    addressToShow === "shielded" ? mdiShieldLock : mdiShieldLockOpen,
+    addressToShow === "public" ? mdiShieldLockOpenOutline : mdiShieldLock,
   ];
 </script>
 

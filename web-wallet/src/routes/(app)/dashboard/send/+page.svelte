@@ -32,7 +32,7 @@
   const gasLimits = $gasStore;
 
   /** @type {"shielded" | "unshielded"} */
-  let spendableSource = "shielded";
+  let spendableSource = "unshielded";
 
   /**
    * @param {CustomEvent<{ type: "account" | "address" | undefined}>} event
