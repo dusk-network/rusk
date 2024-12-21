@@ -51,14 +51,6 @@ describe("Send page", () => {
 
     expect(
       container.querySelector(".contract-statuses__value")
-    ).toHaveTextContent(formattedShielded);
-
-    await fireEvent.input(addressTextbox, {
-      target: { value: currentProfile.account.toString() },
-    });
-
-    expect(
-      container.querySelector(".contract-statuses__value")
     ).toHaveTextContent(formattedUnshielded);
 
     await fireEvent.input(addressTextbox, {
@@ -68,5 +60,13 @@ describe("Send page", () => {
     expect(
       container.querySelector(".contract-statuses__value")
     ).toHaveTextContent(formattedShielded);
+
+    await fireEvent.input(addressTextbox, {
+      target: { value: currentProfile.account.toString() },
+    });
+
+    expect(
+      container.querySelector(".contract-statuses__value")
+    ).toHaveTextContent(formattedUnshielded);
   });
 });

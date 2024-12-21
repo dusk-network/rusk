@@ -49,19 +49,19 @@ describe("Balance", () => {
   it("should display the right percentage values", async () => {
     const { container } = render(Balance, baseOptions);
 
-    // Check if shielded percentage displays as 33.33%
+    // Check if public percentage displays as 66.67%
     expect(
       container.querySelector(
         ".dusk-balance__account:first-child .dusk-balance__percentage"
       )?.textContent
-    ).toContain("33.33%");
+    ).toContain("66.67%");
 
-    // Check if unshielded percentage displays as 66.67%
+    // Check if shielded percentage displays as 33.33%
     expect(
       container.querySelector(
         ".dusk-balance__account:last-child .dusk-balance__percentage"
       )?.textContent
-    ).toContain("66.67%");
+    ).toContain("33.33%");
   });
 
   it("should display the right percentage values when balance is zero", async () => {

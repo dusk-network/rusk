@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update Transactions list design [#1922]
+- Prioritize Public Account in the interface and transaction flows [#3259]
 
 ### Removed
 
@@ -23,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix wrong error shown in the login screen [#3226] [#3097]
 - Fix wallet not waiting for the Wasm to load at startup [#3238]
+- Fix Public address icon in Receive flow [#3259]
+- Fix Public account icon hover text (Balance component) [#3259]
 
 ## [0.10.1] - 2024-12-18
 
@@ -474,6 +477,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3226]: https://github.com/dusk-network/rusk/issues/3226
 [#3238]: https://github.com/dusk-network/rusk/issues/3238
 [#3245]: https://github.com/dusk-network/rusk/issues/3245
+[#3259]: https://github.com/dusk-network/rusk/issues/3259
 
 <!-- VERSIONS -->
 

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Receive > should change the icon to "unshielded" and show the unshielded address when the user makes such choice 1`] = `
+exports[`Receive > should render the receive page with a choice to switch from public to shielded address 1`] = `
 <div
   class="dusk-card dusk-card--gap-medium"
 >
@@ -41,7 +41,7 @@ exports[`Receive > should change the icon to "unshielded" and show the unshielde
             viewBox="0 0 24 24"
           >
             <path
-              d="M12 1L3 5V11C3 16.5 6.8 21.7 12 23C17.2 21.7 21 16.5 21 11V5L12 1M16 15.8C16 16.4 15.4 17 14.7 17H9.2C8.6 17 8 16.4 8 15.7V12.2C8 11.6 8.6 11 9.2 11V8.5C9.2 7.1 10.6 6 12 6S14.8 7.1 14.8 8.5V9H13.5V8.5C13.5 7.7 12.8 7.2 12 7.2S10.5 7.7 10.5 8.5V11H14.8C15.4 11 16 11.6 16 12.3V15.8Z"
+              d="M21 11C21 16.5 17.2 21.7 12 23C6.8 21.7 3 16.5 3 11V5L12 1L21 5V11M12 21C15.8 20 19 15.5 19 11.2V6.3L12 3.2L5 6.3V11.2C5 15.5 8.2 20 12 21M14.8 11H10.5V8.5C10.5 7.7 11.2 7.2 12 7.2S13.5 7.7 13.5 8.5V9H14.8V8.5C14.8 7.1 13.4 6 12 6S9.2 7.1 9.2 8.5V11C8.6 11 8 11.6 8 12.2V15.7C8 16.4 8.6 17 9.2 17H14.7C15.4 17 16 16.4 16 15.8V12.3C16 11.6 15.4 11 14.8 11Z"
             />
           </svg>
           
@@ -59,6 +59,20 @@ exports[`Receive > should change the icon to "unshielded" and show the unshielde
     >
       <input
         class="dusk-exclusive-choice__radio"
+        id="some-generated-id-public"
+        name="some-generated-id"
+        type="radio"
+        value="public"
+      />
+       
+      <label
+        class="dusk-exclusive-choice__label"
+        for="some-generated-id-public"
+      >
+        Public
+      </label>
+      <input
+        class="dusk-exclusive-choice__radio"
         id="some-generated-id-shielded"
         name="some-generated-id"
         type="radio"
@@ -70,20 +84,6 @@ exports[`Receive > should change the icon to "unshielded" and show the unshielde
         for="some-generated-id-shielded"
       >
         Shielded
-      </label>
-      <input
-        class="dusk-exclusive-choice__radio"
-        id="some-generated-id-unshielded"
-        name="some-generated-id"
-        type="radio"
-        value="unshielded"
-      />
-       
-      <label
-        class="dusk-exclusive-choice__label"
-        for="some-generated-id-unshielded"
-      >
-        Unshielded
       </label>
     </div>
      
@@ -168,7 +168,7 @@ exports[`Receive > should change the icon to "unshielded" and show the unshielde
 </div>
 `;
 
-exports[`Receive > should render the receive page with a double icon and a choice to switch from shielded to unshielded address 1`] = `
+exports[`Receive > should show the shielded address when the user makes such choice 1`] = `
 <div
   class="dusk-card dusk-card--gap-medium"
 >
@@ -227,6 +227,20 @@ exports[`Receive > should render the receive page with a double icon and a choic
     >
       <input
         class="dusk-exclusive-choice__radio"
+        id="some-generated-id-public"
+        name="some-generated-id"
+        type="radio"
+        value="public"
+      />
+       
+      <label
+        class="dusk-exclusive-choice__label"
+        for="some-generated-id-public"
+      >
+        Public
+      </label>
+      <input
+        class="dusk-exclusive-choice__radio"
         id="some-generated-id-shielded"
         name="some-generated-id"
         type="radio"
@@ -238,20 +252,6 @@ exports[`Receive > should render the receive page with a double icon and a choic
         for="some-generated-id-shielded"
       >
         Shielded
-      </label>
-      <input
-        class="dusk-exclusive-choice__radio"
-        id="some-generated-id-unshielded"
-        name="some-generated-id"
-        type="radio"
-        value="unshielded"
-      />
-       
-      <label
-        class="dusk-exclusive-choice__label"
-        for="some-generated-id-unshielded"
-      >
-        Unshielded
       </label>
     </div>
      
