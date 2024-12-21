@@ -9,10 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add "VITE_REOWN_PROJECT_ID" ENV variable [#3267]
+
 ### Changed
 
 - Update Transactions list design [#1922]
 - Prioritize Public Account in the interface and transaction flows [#3259]
+- Enhance Migrate flow layout, aligning it to the rest of the transaction-based flows [#3267]
+- Display the Migration Requirements details using the `Banner` component [#3267]
+- Update the Approval Success copy for clarity (Migrate flow) [#3267]
 
 ### Removed
 
@@ -480,6 +485,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3245]: https://github.com/dusk-network/rusk/issues/3245
 [#3259]: https://github.com/dusk-network/rusk/issues/3259
 [#3265]: https://github.com/dusk-network/rusk/issues/3265
+[#3267]: https://github.com/dusk-network/rusk/issues/3267
 
 <!-- VERSIONS -->
 
