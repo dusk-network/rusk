@@ -30,9 +30,9 @@ use dusk_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
 };
 use dusk_core::BlsScalar;
+use dusk_vm::{ContractData, Session, VM};
 use ff::Field;
 use rand::rngs::OsRng;
-use rusk_abi::{ContractData, Session, VM};
 
 const POINT_LIMIT: u64 = 0x4000000;
 const CHAIN_ID: u8 = 0xFA;
@@ -66,7 +66,7 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
         "../../target/dusk/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let mut session = rusk_abi::new_genesis_session(vm, CHAIN_ID);
+    let mut session = dusk_vm::new_genesis_session(vm, CHAIN_ID);
 
     let contract_id = session
         .deploy(
@@ -78,7 +78,7 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
 
     let base = session.commit().expect("Committing should succeed");
 
-    let session = rusk_abi::new_session(vm, base, CHAIN_ID, height)
+    let session = dusk_vm::new_session(vm, base, CHAIN_ID, height)
         .expect("Instantiating new session should succeed");
 
     (session, contract_id)
@@ -86,8 +86,7 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
 
 #[test]
 fn hash() {
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let test_inputs = [
@@ -119,8 +118,7 @@ fn hash() {
 
 #[test]
 fn poseidon_hash() {
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let test_inputs = [
@@ -147,8 +145,7 @@ fn poseidon_hash() {
 
 #[test]
 fn schnorr_signature() {
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let sk = SchnorrSecretKey::random(&mut OsRng);
@@ -189,8 +186,7 @@ fn schnorr_signature() {
 
 #[test]
 fn bls_signature() {
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let message = b"some-message".to_vec();
@@ -222,8 +218,7 @@ fn bls_signature() {
 
 #[test]
 fn bls_multisig_signature() {
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let message = b"some-message".to_vec();
@@ -325,8 +320,7 @@ impl Circuit for PlonkTestCircuit {
 
 #[test]
 fn plonk_proof() {
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let pp = include_bytes!("./pp_test.bin");
@@ -404,8 +398,7 @@ impl<F: Groth16Field> ConstraintSynthesizer<F> for Groth16TestCircuit<F> {
 
 #[test]
 fn groth16_proof() {
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let test_circuit = Groth16TestCircuit {
@@ -497,8 +490,7 @@ fn groth16_proof() {
 fn chain_id() {
     const HEIGHT: u64 = 123;
 
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, HEIGHT);
 
     let chain_id: u8 = session
@@ -513,8 +505,7 @@ fn chain_id() {
 fn block_height() {
     const HEIGHT: u64 = 123;
 
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, HEIGHT);
 
     let height: u64 = session
@@ -535,8 +526,7 @@ fn get_owner() -> &'static BlsPublicKey {
 
 #[test]
 fn owner_raw() {
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let owner: [u8; 96] = session
@@ -549,8 +539,7 @@ fn owner_raw() {
 
 #[test]
 fn owner() {
-    let vm =
-        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let owner: BlsPublicKey = session

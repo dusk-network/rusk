@@ -58,8 +58,8 @@ rustls-pemfile = { workspace = true }
 async-trait = { workspace = true }
 
 dusk-core = { workspace = true, features = ["zk"] }
+dusk-vm = { workspace = true }
 rusk-profile = { workspace = true }
-rusk-abi = { workspace = true }
 rusk-prover = { workspace = true, features = ["std"], optional = true }
 
 ## node dependencies

@@ -26,8 +26,8 @@ use dusk_core::{
     },
     BlsScalar,
 };
+use dusk_vm::VM;
 use parking_lot::RwLockWriteGuard;
-use rusk_abi::VM;
 
 pub type StoredNote = (Note, u64);
 

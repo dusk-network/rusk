@@ -13,6 +13,7 @@ use dusk_core::transfer::{
     moonlight::Transaction as MoonlightTransaction,
     phoenix::Transaction as PhoenixTransaction,
 };
+use dusk_vm::host_queries;
 use rusk_profile::Circuit as CircuitProfile;
 
 use std::sync::LazyLock;
@@ -48,7 +49,7 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 
     // Maybe we want to handle internal serialization error too,
     // currently they map to `false`.
-    Ok(rusk_abi::verify_plonk(
+    Ok(host_queries::verify_plonk(
         vd.to_vec(),
         tx.proof().to_vec(),
         tx.public_inputs(),
@@ -57,7 +58,7 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 
 /// Verifies the signature of the incoming transaction.
 pub fn verify_signature(tx: &MoonlightTransaction) -> Result<bool> {
-    Ok(rusk_abi::verify_bls(
+    Ok(host_queries::verify_bls(
         tx.signature_message(),
         *tx.sender(),
         *tx.signature(),

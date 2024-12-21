@@ -12,8 +12,8 @@ use dusk_core::stake::{
 };
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_vm::Session;
 use rkyv::{check_archived_root, Deserialize, Infallible};
-use rusk_abi::Session;
 
 use super::utils::GAS_LIMIT;
 

@@ -6,7 +6,7 @@ help: ## Display this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 abi: ## Build the ABI
-	$(MAKE) -C ./rusk-abi all
+	$(MAKE) -C ./vm all
 
 keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk recovery-keys
@@ -22,7 +22,7 @@ contracts: ## Execute the test for all contracts
 	$(MAKE) -j1 -C ./contracts all
 
 test: keys wasm ## Run the tests
-	$(MAKE) -C ./rusk-abi/ $@
+	$(MAKE) -C ./vm/ $@
 	$(MAKE) -C ./core/ $@
 	$(MAKE) state
 	$(MAKE) -j1 -C ./contracts $@
@@ -38,7 +38,7 @@ test: keys wasm ## Run the tests
 clippy: ## Run clippy
 	$(MAKE) -C ./core/ $@
 	$(MAKE) -j1 -C ./contracts $@
-	$(MAKE) -C ./rusk-abi $@
+	$(MAKE) -C ./vm $@
 	$(MAKE) -C ./rusk-profile $@
 	$(MAKE) -C ./rusk-recovery $@
 	$(MAKE) -C ./rusk-prover/ $@
@@ -56,7 +56,7 @@ doc: ## Run doc gen
 	$(MAKE) -C ./node $@
 	$(MAKE) -C ./node-data $@
 	$(MAKE) -C ./rusk/ $@
-	$(MAKE) -C ./rusk-abi $@
+	$(MAKE) -C ./vm $@
 	$(MAKE) -C ./rusk-profile $@
 	$(MAKE) -C ./rusk-prover/ $@
 	$(MAKE) -C ./rusk-recovery $@

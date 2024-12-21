@@ -11,7 +11,7 @@ use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::phoenix::CoreError,
     BlsScalar, Error as ExecErr,
 };
-use rusk_abi::PiecrustError;
+use dusk_vm::Error as VMError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -44,7 +44,7 @@ pub enum Error {
     /// Originating from Phoenix.
     Phoenix(CoreError),
     /// Piecrust VM internal Errors
-    Vm(PiecrustError),
+    Vm(VMError),
     /// IO Errors
     Io(io::Error),
     /// Failed to produce proper state
@@ -70,8 +70,8 @@ impl From<Box<dyn std::error::Error>> for Error {
     }
 }
 
-impl From<PiecrustError> for Error {
-    fn from(err: PiecrustError) -> Self {
+impl From<VMError> for Error {
+    fn from(err: VMError) -> Self {
         Error::Vm(err)
     }
 }

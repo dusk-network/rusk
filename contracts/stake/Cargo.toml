@@ -15,7 +15,7 @@ rkyv = { workspace = true, features = ["size_32"] }
 dusk-core = { workspace = true, features = ["abi-dlmalloc"] }
 
 [dev-dependencies]
-rusk-abi = { workspace = true }
+dusk-vm = { workspace = true }
 dusk-core = { workspace = true, features = ["zk"] }
 rusk-prover = { workspace = true }
 wallet-core = { workspace = true }
