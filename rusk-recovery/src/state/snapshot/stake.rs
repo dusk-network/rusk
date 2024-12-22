@@ -14,7 +14,8 @@ use super::wrapper::Wrapper;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct GenesisStake {
-    pub(crate) address: Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>,
+    address: Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>,
+    owner: Option<Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>>,
     pub amount: Dusk,
     pub eligibility: Option<u64>,
     pub reward: Option<Dusk>,
@@ -26,6 +27,7 @@ impl GenesisStake {
     }
 
     pub fn to_stake_keys(&self) -> StakeKeys {
-        StakeKeys::single_key(*self.address())
+        let owner: &BlsPublicKey = self.owner.as_ref().unwrap_or(&self.address);
+        StakeKeys::new(*self.address(), *owner)
     }
 }
