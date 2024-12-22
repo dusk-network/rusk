@@ -14,8 +14,6 @@ pub use piecrust_uplink::{
 #[cfg(feature = "abi")]
 pub use self::host_queries::*;
 
-use blake2b_simd::Params;
-
 /// Enum storing the metadata identifiers.
 pub enum Metadata {}
 
@@ -44,68 +42,6 @@ impl Query {
     pub const VERIFY_BLS: &'static str = "verify_bls";
     /// Host-function name to verify a bls-multisig.
     pub const VERIFY_BLS_MULTISIG: &'static str = "verify_bls_multisig";
-}
-
-/// Generate a [`ContractId`] address from:
-/// - slice of bytes,
-/// - nonce
-/// - owner
-///
-/// # Panics
-/// Panics if [blake2b-hasher] doesn't produce a [`CONTRACT_ID_BYTES`]
-/// bytes long hash.
-///
-/// [blake2b-hasher]: [`blake2b_simd::Params.finalize`]
-pub fn gen_contract_id(
-    bytes: impl AsRef<[u8]>,
-    nonce: u64,
-    owner: impl AsRef<[u8]>,
-) -> ContractId {
-    let mut hasher = Params::new().hash_length(CONTRACT_ID_BYTES).to_state();
-    hasher.update(bytes.as_ref());
-    hasher.update(&nonce.to_le_bytes()[..]);
-    hasher.update(owner.as_ref());
-    let hash_bytes: [u8; CONTRACT_ID_BYTES] = hasher
-        .finalize()
-        .as_bytes()
-        .try_into()
-        .expect("the hash result is exactly `CONTRACT_ID_BYTES` long");
-    ContractId::from_bytes(hash_bytes)
-}
-
-#[cfg(test)]
-mod tests {
-    use alloc::vec;
-
-    use rand::rngs::StdRng;
-    use rand::{RngCore, SeedableRng};
-
-    use super::*;
-
-    #[test]
-    fn test_gen_contract_id() {
-        let mut rng = StdRng::seed_from_u64(42);
-
-        let mut bytes = vec![0; 1000];
-        rng.fill_bytes(&mut bytes);
-
-        let nonce = rng.next_u64();
-
-        let mut owner = vec![0, 100];
-        rng.fill_bytes(&mut owner);
-
-        let contract_id =
-            gen_contract_id(bytes.as_slice(), nonce, owner.as_slice());
-
-        assert_eq!(
-            contract_id.as_bytes(),
-            [
-                45, 168, 182, 39, 119, 137, 168, 140, 114, 21, 120, 158, 34,
-                126, 244, 221, 151, 72, 109, 178, 82, 229, 84, 128, 92, 123,
-                135, 74, 23, 224, 119, 133
-            ]
-        );
-    }
 }
 
 #[cfg(feature = "abi")]
