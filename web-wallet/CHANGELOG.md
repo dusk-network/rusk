@@ -9,12 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+- Update Transactions list design [#1922]
+
+### Removed
+
+### Fixed
+
+## [1.0.0] - 2024-12-23
+
+### Added
+
 - Add "VITE_REOWN_PROJECT_ID" ENV variable [#3267]
 - Add additional notices to the Migrate flow [#3267]
 
 ### Changed
 
-- Update Transactions list design [#1922]
 - Prioritize Public Account in the interface and transaction flows [#3259]
 - Enhance Migrate flow layout, aligning it to the rest of the transaction-based flows [#3267]
 - Display the Migration Requirements details using the `Banner` component [#3267]
@@ -494,6 +505,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[1.0.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.0.0
 [0.10.1]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.10.1
 [0.10.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.10.0
 [0.9.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.9.0
