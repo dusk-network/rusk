@@ -15,7 +15,7 @@ use dusk_core::stake::{StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT};
 use dusk_core::transfer::phoenix::{Note, PublicKey, Sender};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::JubJubScalar;
-use dusk_vm::{new_genesis_session, new_session, ContractData, Session, VM};
+use dusk_vm::{ContractData, Session, VM};
 use ff::Field;
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
@@ -177,7 +177,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     let state_dir = state_dir.as_ref();
 
     let vm = VM::new(state_dir)?;
-    let mut session = new_genesis_session(&vm, GENESIS_CHAIN_ID);
+    let mut session = vm.genesis_session(GENESIS_CHAIN_ID);
 
     let transfer_code = include_bytes!(
         "../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
@@ -260,12 +260,8 @@ where
         None => generate_empty_state(state_dir, snapshot),
     }?;
 
-    let mut session = new_session(
-        &vm,
-        old_commit_id,
-        GENESIS_CHAIN_ID,
-        GENESIS_BLOCK_HEIGHT,
-    )?;
+    let mut session =
+        vm.session(old_commit_id, GENESIS_CHAIN_ID, GENESIS_BLOCK_HEIGHT)?;
 
     generate_transfer_state(&mut session, snapshot)?;
     generate_stake_state(&mut session, snapshot)?;
