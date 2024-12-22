@@ -21,9 +21,7 @@ use dusk_core::transfer::{
     ContractToAccount, ContractToContract, Transaction, TRANSFER_CONTRACT,
 };
 use dusk_core::{dusk, JubJubScalar, LUX};
-use dusk_vm::{
-    execute, new_genesis_session, new_session, ContractData, Session, VM,
-};
+use dusk_vm::{execute, ContractData, Session, VM};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -70,7 +68,7 @@ fn instantiate(moonlight_pk: &AccountPublicKey) -> Session {
 
     let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
 
-    let mut session = new_genesis_session(vm, CHAIN_ID);
+    let mut session = vm.genesis_session(CHAIN_ID);
 
     session
         .deploy(
@@ -125,7 +123,8 @@ fn instantiate(moonlight_pk: &AccountPublicKey) -> Session {
     // operations to 1
     let base = session.commit().expect("Committing should succeed");
     // start a new session from that base-commit
-    let mut session = new_session(vm, base, CHAIN_ID, 1)
+    let mut session = vm
+        .session(base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed");
 
     // check genesis state

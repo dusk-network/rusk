@@ -27,10 +27,7 @@ use dusk_core::transfer::{
     ContractToAccount, ContractToContract, Transaction, TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, JubJubScalar, LUX};
-use dusk_vm::{
-    execute, new_genesis_session, new_session, ContractData, Error as VMError,
-    Session, VM,
-};
+use dusk_vm::{execute, ContractData, Error as VMError, Session, VM};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
@@ -84,7 +81,7 @@ fn instantiate<const N: u8>(
 
     let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
 
-    let mut session = new_genesis_session(vm, CHAIN_ID);
+    let mut session = vm.genesis_session(CHAIN_ID);
 
     session
         .deploy(
@@ -160,7 +157,8 @@ fn instantiate<const N: u8>(
     // operations to 1
     let base = session.commit().expect("Committing should succeed");
     // start a new session from that base-commit
-    let mut session = new_session(vm, base, CHAIN_ID, 1)
+    let mut session = vm
+        .session(base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed");
 
     // check that the genesis state is correct:
