@@ -27,7 +27,7 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
     pk: &PhoenixPublicKey,
     genesis_value: u64,
 ) -> Session {
-    let mut session = dusk_vm::new_genesis_session(vm, CHAIN_ID);
+    let mut session = vm.genesis_session(CHAIN_ID);
 
     // deploy transfer-contract
     let transfer_bytecode = include_bytes!(
@@ -81,6 +81,6 @@ pub fn instantiate<Rng: RngCore + CryptoRng>(
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
 
-    dusk_vm::new_session(vm, base, CHAIN_ID, 1)
+    vm.session(base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed")
 }
