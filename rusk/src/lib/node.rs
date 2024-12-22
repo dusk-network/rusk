@@ -14,11 +14,11 @@ use std::time::Duration;
 
 use dusk_core::{dusk, Dusk};
 
+use dusk_vm::VM;
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
 use node::LongLivedService;
 use parking_lot::RwLock;
-use rusk_abi::VM;
 use tokio::sync::broadcast;
 
 use crate::http::RuesEvent;
