@@ -94,7 +94,7 @@ pub(crate) async fn run_loop(
                         println!("\r{}", res);
                         match res {
                             RunResult::Tx(hash)
-                            | RunResult::ContractCall(hash, _) => {
+                            | RunResult::ContractCallTx(hash) => {
                                 let tx_id = hex::encode(hash.to_bytes());
 
                                 // Wait for transaction confirmation

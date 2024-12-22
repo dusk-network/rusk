@@ -371,7 +371,8 @@ pub(crate) fn request_address(
 pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
     let validator = |path_str: &str| {
         let path = PathBuf::from(path_str);
-        if path.extension().map_or(false, |ext| ext == "wasm") {
+        if path.extension().map_or(false, |ext| ext == "wasm") && path.exists()
+        {
             Ok(Validation::Valid)
         } else {
             Ok(Validation::Invalid("Not a valid directory".into()))
