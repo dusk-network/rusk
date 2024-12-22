@@ -49,7 +49,7 @@
       <Button
         className="welcome-layout__retry-button"
         text="Retry"
-        {handleRetry}
+        on:click={handleRetry}
       />
     </div>
   {/await}
