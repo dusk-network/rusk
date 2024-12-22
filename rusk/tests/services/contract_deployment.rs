@@ -8,11 +8,11 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use dusk_core::abi::{gen_contract_id, ContractId};
+use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::{
     ContractBytecode, ContractDeploy, TransactionData,
 };
-use dusk_vm::{ContractData, Error as VMError, VM};
+use dusk_vm::{gen_contract_id, ContractData, Error as VMError, VM};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
