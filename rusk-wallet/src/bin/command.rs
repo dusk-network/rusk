@@ -227,6 +227,12 @@ pub(crate) enum Command {
         #[arg(short = 'f', long)]
         fn_args: Vec<u8>,
 
+        /// If query is true then HTTP contract call is done to obtain return
+        /// value of function if query is false then a transaction is
+        /// sent for mutation of the state of the contract
+        #[arg(short, long)]
+        query: bool,
+
         /// Max amount of gas for this transaction
         #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
         gas_limit: u64,
@@ -567,6 +573,7 @@ impl Command {
                 fn_args,
                 gas_limit,
                 gas_price,
+                query,
             } => {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
@@ -577,42 +584,52 @@ impl Command {
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
-                let call =
-                    ContractCall::new(contract_id, fn_name.clone(), &fn_args)
+                match query {
+                    true => {
+                        let contract_id = hex::encode(contract_id);
+
+                        let http_call = wallet
+                            .http_contract_call(contract_id, &fn_name, fn_args)
+                            .await?;
+
+                        Ok(RunResult::ContractCallQuery(http_call))
+                    }
+                    false => {
+                        let call = ContractCall::new(
+                            contract_id,
+                            fn_name.clone(),
+                            &fn_args,
+                        )
                         .map_err(|_| Error::Rkyv)?;
 
-                let tx = match address {
-                    Address::Shielded(_) => {
-                        wallet.sync().await?;
-                        wallet
-                            .phoenix_execute(
-                                addr_idx,
-                                Dusk::from(0),
-                                gas,
-                                call.into(),
-                            )
-                            .await
+                        let tx = match address {
+                            Address::Shielded(_) => {
+                                wallet.sync().await?;
+                                wallet
+                                    .phoenix_execute(
+                                        addr_idx,
+                                        Dusk::from(0),
+                                        gas,
+                                        call.into(),
+                                    )
+                                    .await
+                            }
+                            Address::Public(_) => {
+                                wallet
+                                    .moonlight_execute(
+                                        addr_idx,
+                                        Dusk::from(0),
+                                        Dusk::from(0),
+                                        gas,
+                                        call.into(),
+                                    )
+                                    .await
+                            }
+                        }?;
+
+                        Ok(RunResult::ContractCallTx(tx.hash()))
                     }
-                    Address::Public(_) => {
-                        wallet
-                            .moonlight_execute(
-                                addr_idx,
-                                Dusk::from(0),
-                                Dusk::from(0),
-                                gas,
-                                call.into(),
-                            )
-                            .await
-                    }
-                }?;
-
-                let contract_id = hex::encode(contract_id);
-
-                let http_call = wallet
-                    .http_contract_call(contract_id, &fn_name, fn_args)
-                    .await?;
-
-                Ok(RunResult::ContractCall(tx.hash(), http_call))
+                }
             }
 
             Self::ContractDeploy {
@@ -703,7 +720,8 @@ pub enum RunResult<'a> {
     Profile((u8, &'a Profile)),
     Profiles(&'a Vec<Profile>),
     ContractId([u8; CONTRACT_ID_BYTES]),
-    ContractCall(BlsScalar, Vec<u8>),
+    ContractCallTx(BlsScalar),
+    ContractCallQuery(Vec<u8>),
     ExportedKeys(PathBuf, PathBuf),
     Create(),
     Restore(),
@@ -781,11 +799,13 @@ impl fmt::Display for RunResult<'_> {
             ContractId(bytes) => {
                 write!(f, "> Contract ID: {}", hex::encode(bytes))
             }
-            ContractCall(scalar, bytes) => {
+            ContractCallTx(scalar) => {
                 let hash = hex::encode(scalar.to_bytes());
-                writeln!(f, "> Contract call transaction hash: {hash}",)?;
 
-                writeln!(f, "> Http contract query: {:?}", bytes)
+                writeln!(f, "> Contract call transaction hash: {hash}",)
+            }
+            ContractCallQuery(bytes) => {
+                writeln!(f, "> Http contract query: {:?}", hex::encode(bytes))
             }
             ExportedKeys(pk, kp) => {
                 let pk = pk.display();

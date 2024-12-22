@@ -401,7 +401,7 @@ async fn exec() -> anyhow::Result<()> {
                 RunResult::ContractId(id) => {
                     println!("Contract ID: {:?}", id);
                 }
-                RunResult::ContractCall(scalar, result) => {
+                RunResult::ContractCallTx(scalar) => {
                     let tx_id = hex::encode(scalar.to_bytes());
 
                     // Wait for transaction confirmation from network
@@ -409,8 +409,9 @@ async fn exec() -> anyhow::Result<()> {
                     gql.wait_for(&tx_id).await?;
 
                     println!("{tx_id}");
-
-                    println!("HTTP call result: {:?}", result);
+                }
+                RunResult::ContractCallQuery(bytes) => {
+                    println!("HTTP call result: {:?}", bytes);
                 }
                 RunResult::Settings() => {}
                 RunResult::Create() | RunResult::Restore() => {}
