@@ -17,6 +17,7 @@ use rusk_wallet::{
     Address, Error, Wallet, MAX_CONTRACT_INIT_ARG_SIZE, MAX_FUNCTION_NAME_SIZE,
 };
 
+use super::prompt::request_contract_call_method;
 use super::ProfileOp;
 use crate::settings::Settings;
 use crate::{prompt, Command, WalletFile};
@@ -296,27 +297,37 @@ pub(crate) async fn online(
             }))
         }
         MenuItem::ContractCall => {
-            let (addr, balance) = pick_transaction_model(
-                wallet,
-                profile_idx,
-                phoenix_spendable,
-                moonlight_balance,
-            )?;
-
-            if check_min_gas_balance(
-                balance,
-                DEFAULT_LIMIT_CALL,
-                "a contract call",
-            )
-            .is_err()
-            {
-                return Ok(ProfileOp::Stay);
-            }
-
             let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+            let mut address = None;
+
+            let query = match request_contract_call_method()? {
+                prompt::ContractCall::Query => true,
+                prompt::ContractCall::Transaction => {
+                    let (addr, balance) = pick_transaction_model(
+                        wallet,
+                        profile_idx,
+                        phoenix_spendable,
+                        moonlight_balance,
+                    )?;
+
+                    address = Some(addr);
+
+                    if check_min_gas_balance(
+                        balance,
+                        DEFAULT_LIMIT_CALL,
+                        "a contract call",
+                    )
+                    .is_err()
+                    {
+                        return Ok(ProfileOp::Stay);
+                    }
+
+                    false
+                }
+            };
 
             ProfileOp::Run(Box::new(Command::ContractCall {
-                address: Some(addr),
+                address,
                 contract_id: prompt::request_bytes("contract id")?,
                 fn_name: prompt::request_str(
                     "function name to call",
@@ -330,6 +341,7 @@ pub(crate) async fn online(
                     DEFAULT_PRICE,
                     mempool_gas_prices,
                 )?,
+                query,
             }))
         }
         MenuItem::History => {

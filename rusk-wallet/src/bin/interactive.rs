@@ -94,7 +94,7 @@ pub(crate) async fn run_loop(
                         println!("\r{}", res);
                         match res {
                             RunResult::Tx(hash)
-                            | RunResult::ContractCall(hash, _) => {
+                            | RunResult::ContractCallTx(hash) => {
                                 let tx_id = hex::encode(hash.to_bytes());
 
                                 // Wait for transaction confirmation
@@ -466,6 +466,32 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
+            prompt::ask_confirm()
+        }
+        Command::ContractCall {
+            address,
+            contract_id,
+            fn_name,
+            fn_args,
+            query,
+            gas_limit,
+            gas_price,
+        } => {
+            println!("   > Function name {}", fn_name);
+            println!("   > Function arguments {}", hex::encode(fn_args));
+            println!("   > Contract ID {}", hex::encode(contract_id));
+            println!("   > Is HTTP query? {}", query);
+
+            if !query {
+                let max_fee = gas_limit * gas_price;
+
+                println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
+
+                if let Some(Address::Public(_)) = address {
+                    println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
+                }
+            }
+
             prompt::ask_confirm()
         }
         _ => Ok(true),
