@@ -8,6 +8,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
+use dusk_core::signatures::bls::PublicKey;
 use dusk_core::transfer::Transaction;
 use dusk_core::{dusk, from_dusk};
 use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
@@ -150,6 +151,42 @@ pub(crate) async fn transaction_from_notes(
     }
     ret.sort_by(|a, b| a.height.cmp(&b.height));
     Ok(ret)
+}
+
+pub(crate) async fn moonlight_history(
+    settings: &Settings,
+    address: rusk_wallet::Address,
+) -> anyhow::Result<Vec<TransactionHistory>> {
+    let gql =
+        GraphQL::new(settings.state.to_string(), io::status::interactive)?;
+
+    let history = gql.moonlight_history(address).await?.full_moonlight_history;
+
+    let mut collected_history = Vec::new();
+
+    for history_item in history.json {
+        let id = history_item.origin;
+        let events = history_item.events;
+        let height = history_item.block_height;
+        let tx = gql.moonlight_tx(&id).await?;
+
+        for event in events {
+            let data = event.data;
+            let fee = data.gas_spent;
+            let amount = data.value;
+
+            collected_history.push(TransactionHistory {
+                direction: TransactionDirection::In,
+                height,
+                amount,
+                fee,
+                tx: tx.clone(),
+                id: id.clone(),
+            })
+        }
+    }
+
+    Ok(collected_history)
 }
 
 #[derive(PartialEq)]

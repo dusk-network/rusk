@@ -10,9 +10,10 @@
 
 use dusk_core::transfer::Transaction;
 use serde::Deserialize;
+use serde_json::Value;
 use tokio::time::{sleep, Duration};
 
-use crate::{Error, RuesHttpClient};
+use crate::{Address, Error, RuesHttpClient};
 
 /// GraphQL is a helper struct that aggregates all queries done
 /// to the Dusk GraphQL database.
@@ -55,9 +56,45 @@ struct BlockResponse {
     pub block: Option<Block>,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct BlockData {
+    pub gas_spent: u64,
+    pub receiver: String,
+    pub sender: String,
+    pub value: f64,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct BlockEvents {
+    pub data: BlockData,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct MoonlightHistory {
+    pub block_height: u64,
+    pub origin: String,
+    pub events: Vec<BlockEvents>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct MoonlightHistoryJson {
+    pub json: Vec<MoonlightHistory>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct FullMoonlightHistory {
+    #[serde(rename(deserialize = "fullMoonlightHistory"))]
+    pub full_moonlight_history: MoonlightHistoryJson,
+}
+
 #[derive(Deserialize)]
 struct SpentTxResponse {
     pub tx: Option<SpentTx>,
+}
+
+#[derive(Deserialize)]
+struct RawTx {
+    tx: SpentTxResponse,
 }
 
 /// Transaction status
@@ -145,6 +182,53 @@ impl GraphQL {
     /// Sends an empty body to url to check if its available
     pub async fn check_connection(&self) -> Result<(), Error> {
         self.query("").await.map(|_| ())
+    }
+
+    /// Query the archival node for moonlight transactions given the
+    /// BlsPublicKey
+    pub async fn moonlight_history(
+        &self,
+        address: Address,
+    ) -> Result<FullMoonlightHistory, Error> {
+        let query = format!(
+            r#"query {{ fullMoonlightHistory(address: "{address}") {{ json }} }}"#
+        );
+
+        let response = self
+            .query(&query)
+            .await
+            .map_err(|err| Error::ArchivalJsonError(err.to_string()))?;
+
+        let response =
+            serde_json::from_slice::<FullMoonlightHistory>(&response)
+                .map_err(|err| Error::ArchivalJsonError(err.to_string()))?;
+
+        Ok(response)
+    }
+
+    /// Fetch the spent transaction given moonlight tx hash
+    pub async fn moonlight_tx(
+        &self,
+        origin: &str,
+    ) -> Result<Transaction, Error> {
+        let query =
+            format!(r#"query {{ tx(hash: "{origin}") {{ tx {{ raw }} }} }}"#);
+
+        let response = self.query(&query).await?;
+        let json: Value = serde_json::from_slice(&response)?;
+
+        let tx = json
+            .get("tx")
+            .and_then(|val| val.get("tx").and_then(|val| val.get("raw")))
+            .and_then(|val| val.as_str());
+
+        if let Some(tx) = tx {
+            let hex = hex::decode(tx).map_err(|_| GraphQLError::TxStatus)?;
+            let tx: Transaction = Transaction::from_slice(&hex)?;
+            Ok(tx)
+        } else {
+            Err(Error::GraphQLError(GraphQLError::TxStatus))
+        }
     }
 }
 
