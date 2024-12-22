@@ -14,6 +14,7 @@ dusk-bytes = { workspace = true }
 piecrust = { workspace = true }
 lru = { workspace = true }
 blake2b_simd = { workspace = true }
+blake3 = { workspace = true }
 dusk-poseidon = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }
 

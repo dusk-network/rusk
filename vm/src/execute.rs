@@ -6,7 +6,9 @@
 
 use blake2b_simd::Params;
 use dusk_core::abi::{ContractError, ContractId, CONTRACT_ID_BYTES};
-use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use dusk_core::transfer::{
+    data::ContractBytecode, Transaction, TRANSFER_CONTRACT,
+};
 use piecrust::{CallReceipt, Error, Session};
 
 /// Executes a transaction, returning the receipt of the call and the gas spent.
@@ -138,7 +140,7 @@ fn contract_deploy(
             let min_gas_limit = receipt.gas_spent + deploy_charge;
             if gas_left < min_gas_limit {
                 receipt.data = Err(ContractError::OutOfGas);
-            } else if !deploy.bytecode.verify_hash() {
+            } else if !verify_bytecode_hash(&deploy.bytecode) {
                 receipt.data = Err(ContractError::Panic(
                     "failed bytecode hash check".into(),
                 ))
@@ -165,6 +167,13 @@ fn contract_deploy(
             }
         }
     }
+}
+
+// Verifies that the stored contract bytecode hash is correct.
+fn verify_bytecode_hash(bytecode: &ContractBytecode) -> bool {
+    let computed: [u8; 32] = blake3::hash(bytecode.bytes.as_slice()).into();
+
+    bytecode.hash == computed
 }
 
 /// Generate a [`ContractId`] address from:
