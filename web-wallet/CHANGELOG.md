@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update Transactions list design [#1922]
 - Prioritize Public Account in the interface and transaction flows [#3259]
+- Disable source wallet option on migration initialization (Migrate flow) [#3270]
 
 ### Removed
 
@@ -480,6 +481,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3245]: https://github.com/dusk-network/rusk/issues/3245
 [#3259]: https://github.com/dusk-network/rusk/issues/3259
 [#3265]: https://github.com/dusk-network/rusk/issues/3265
+[#3270]: https://github.com/dusk-network/rusk/issues/3270
 
 <!-- VERSIONS -->
 

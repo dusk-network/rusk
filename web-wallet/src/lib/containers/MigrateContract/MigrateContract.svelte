@@ -59,7 +59,10 @@
 
   const { ["ERC-20"]: erc20, ["BEP-20"]: bep20 } = tokens[network];
 
-  const options = ["ERC-20", "BEP-20"];
+  $: options = [
+    { disabled: isInputDisabled, label: "ERC-20", value: "ERC-20" },
+    { disabled: isInputDisabled, label: "BEP-20", value: "BEP-20" },
+  ];
 
   // The minimum allowed amount to be migrated expressed as a string
   const minAmount = "0.000000001";
