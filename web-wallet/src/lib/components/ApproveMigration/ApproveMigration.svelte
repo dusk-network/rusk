@@ -6,6 +6,7 @@
   import { isHex } from "viem";
   import { createEventDispatcher } from "svelte";
   import { Button, Icon } from "$lib/dusk/components";
+  import { Banner } from "$lib/components";
   import { account, wagmiConfig } from "$lib/migration/walletConnection";
   import { allowance, approve } from "$lib/migration/migration";
   import { createDataStore } from "$lib/dusk/svelte-stores";
@@ -85,27 +86,37 @@
 
 <div class="migrate__approve">
   {#if !isLoading && !error && !data}
-    <div class="migrate__approve-notice">
-      <p>DUSK token migration requires two transactions:</p>
-      <ol class="migrate__approve-notice-list">
-        <li>
-          Approve: Authorize the migration contract to spend your DUSK tokens.
-        </li>
-        <li>Migrate: Transfer your DUSK tokens to the migration contract.</li>
-      </ol>
-      <p>
-        Both steps must be completed for a successful migration.<br /><br
-        />Warning: Make sure your wallet has enough funds to pay for the gas.
-      </p>
+    <div class="migrate__approve-notice-container">
+      <Banner title="Migration Requirements" variant="info">
+        <div class="migrate__requirements-info">
+          <p>DUSK token migration requires two transactions:</p>
+          <ol class="migrate__requirements-info-list">
+            <li>
+              <b>Approve:</b> Authorize the migration contract to spend your DUSK
+              tokens.
+            </li>
+            <li>
+              <b>Migrate:</b> Transfer your DUSK tokens to the migration contract.
+            </li>
+          </ol>
+          <p>Both steps must be completed for a successful migration.</p>
+        </div>
+      </Banner>
+      <Banner title="Gas Fee Reminder" variant="warning">
+        <p>
+          Please ensure your wallet has sufficient funds to cover the gas fees
+          for the migration.
+        </p>
+      </Banner>
     </div>
   {:else if isLoading}
     <div class="migrate__approve-approval">
-      <Icon path={mdiTimerSand} />
+      <Icon path={mdiTimerSand} size="large" />
       <span>Approval in progress...</span>
     </div>
   {:else if error}
     <div class="migrate__approve-approval">
-      <Icon path={mdiAlertOutline} />
+      <Icon path={mdiAlertOutline} size="large" />
       <span>An error occurred during approval</span>
     </div>
   {/if}
@@ -118,23 +129,27 @@
 </div>
 
 <style lang="postcss">
+  .migrate {
+    &__requirements-info {
+      display: flex;
+      flex-direction: column;
+      gap: var(--small-gap);
+    }
+    &__requirements-info-list {
+      list-style-position: inside;
+    }
+  }
+
   .migrate__approve {
     display: flex;
     justify-content: center;
     flex-direction: column;
+    gap: 1.875em;
 
-    &-notice {
-      font-size: 0.875em;
-      line-height: 1.3125em;
-      padding: 1em 1.375em;
-      border-radius: 0.675em;
-      border: 1px solid var(--primary-color);
-      margin-top: 0.625em;
-      margin-bottom: 1em;
-
-      &-list {
-        padding-left: 1.375em;
-      }
+    &-notice-container {
+      display: flex;
+      flex-direction: column;
+      gap: var(--default-gap);
     }
 
     &-approval {
@@ -142,7 +157,6 @@
       flex-direction: column;
       align-items: center;
       gap: var(--default-gap);
-      padding: 2.25em 0;
     }
   }
 </style>
