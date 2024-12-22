@@ -76,7 +76,7 @@ define_cache!(
     with_plonk_cache,
     bool,
     512,
-    "RUSK_ABI_PLONK_CACHE_SIZE"
+    "DUSK_VM_PLONK_CACHE_SIZE"
 );
 define_cache!(
     get_groth16_verification,
@@ -84,7 +84,7 @@ define_cache!(
     with_groth16_cache,
     bool,
     512,
-    "RUSK_ABI_GROTH16_CACHE_SIZE"
+    "DUSK_VM_GROTH16_CACHE_SIZE"
 );
 define_cache!(
     get_bls_verification,
@@ -92,5 +92,5 @@ define_cache!(
     with_bls_cache,
     bool,
     512,
-    "RUSK_ABI_BLS_CACHE_SIZE"
+    "DUSK_VM_BLS_CACHE_SIZE"
 );
