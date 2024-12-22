@@ -25,9 +25,7 @@ use dusk_core::transfer::{
     moonlight::AccountData, PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, Dusk};
-use dusk_vm::{
-    execute, new_session, CallReceipt, Error as VMError, Session, VM,
-};
+use dusk_vm::{execute, CallReceipt, Error as VMError, Session, VM};
 use node::DUSK_CONSENSUS_KEY;
 use node_data::events::contract::{ContractEvent, ContractTxEvent};
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
@@ -528,8 +526,7 @@ impl Rusk {
             tip.current
         });
 
-        let session =
-            new_session(&self.vm, commit, self.chain_id, block_height)?;
+        let session = self.vm.session(commit, self.chain_id, block_height)?;
 
         Ok(session)
     }
@@ -548,7 +545,7 @@ impl Rusk {
         for d in to_merge {
             if d == base {
                 // Don't finalize the new tip, otherwise it will not be
-                // aceessible anymore
+                // accessible anymore
                 continue;
             };
             self.vm.finalize_commit(d)?;
