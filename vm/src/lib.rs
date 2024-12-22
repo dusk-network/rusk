@@ -13,6 +13,7 @@
 
 extern crate alloc;
 
+pub use self::execute::{execute, gen_contract_id};
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
     Session,
@@ -32,34 +33,8 @@ use self::host_queries::{
 };
 
 pub(crate) mod cache;
+mod execute;
 pub mod host_queries;
-
-/// Create a new session based on the given `VM`.
-pub fn new_session(
-    vm: &VM,
-    base: [u8; 32],
-    chain_id: u8,
-    block_height: u64,
-) -> Result<Session, Error> {
-    vm.session(
-        SessionData::builder()
-            .base(base)
-            .insert(Metadata::CHAIN_ID, chain_id)?
-            .insert(Metadata::BLOCK_HEIGHT, block_height)?,
-    )
-}
-
-/// Create a new genesis session based on the given [`VM`].
-pub fn new_genesis_session(vm: &VM, chain_id: u8) -> Session {
-    vm.session(
-        SessionData::builder()
-            .insert(Metadata::CHAIN_ID, chain_id)
-            .expect("Inserting chain ID in metadata should succeed")
-            .insert(Metadata::BLOCK_HEIGHT, 0)
-            .expect("Inserting block height in metadata should succeed"),
-    )
-    .expect("Creating a genesis session should always succeed")
-}
 
 /// Dusk VM is a [`PiecrustVM`] enriched with the host functions specified in
 /// Dusk's ABI.
@@ -107,7 +82,8 @@ impl VM {
         Ok(vm)
     }
 
-    /// Spawn a [`Session`].
+    /// Spawn a [`Session`] on top of the given `commit`, given the `chain_id`
+    /// and `block_height`.
     ///
     /// # Errors
     /// If base commit is provided but does not exist.
@@ -115,9 +91,32 @@ impl VM {
     /// [`Session`]: Session
     pub fn session(
         &self,
-        data: impl Into<SessionData>,
+        base: [u8; 32],
+        chain_id: u8,
+        block_height: u64,
     ) -> Result<Session, Error> {
-        self.0.session(data)
+        self.0.session(
+            SessionData::builder()
+                .base(base)
+                .insert(Metadata::CHAIN_ID, chain_id)?
+                .insert(Metadata::BLOCK_HEIGHT, block_height)?,
+        )
+    }
+
+    /// Spawn a new genesis-[`Session`] given the `chain_id` with a
+    /// `block_height` of 0.
+    pub fn genesis_session(&self, chain_id: u8) -> Session {
+        self.0
+            .session(
+                SessionData::builder()
+                    .insert(Metadata::CHAIN_ID, chain_id)
+                    .expect("Inserting chain ID in metadata should succeed")
+                    .insert(Metadata::BLOCK_HEIGHT, 0)
+                    .expect(
+                        "Inserting block height in metadata should succeed",
+                    ),
+            )
+            .expect("Creating a genesis session should always succeed")
     }
 
     /// Return all existing commits.
@@ -170,13 +169,4 @@ impl VM {
             host_verify_bls_multisig,
         );
     }
-}
-
-#[cfg(test)]
-mod tests {
-    // the `unused_crate_dependencies` lint complains for dev-dependencies that
-    // are only used in integration tests, so adding this work-around here
-    use ff as _;
-    use once_cell as _;
-    use rand as _;
 }

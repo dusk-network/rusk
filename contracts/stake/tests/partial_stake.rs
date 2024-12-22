@@ -10,10 +10,7 @@ use dusk_core::signatures::bls::{
 };
 use dusk_core::stake::{Reward, RewardReason, EPOCH, STAKE_CONTRACT};
 use dusk_core::transfer::TRANSFER_CONTRACT;
-use dusk_vm::{
-    new_genesis_session, new_session, ContractData, Error as VMError, Session,
-    VM,
-};
+use dusk_vm::{execute, ContractData, Error as VMError, Session, VM};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use wallet_core::transaction::{
@@ -21,7 +18,6 @@ use wallet_core::transaction::{
 };
 
 pub mod common;
-
 use crate::common::assert::*;
 use crate::common::init::CHAIN_ID;
 use crate::common::utils::*;
@@ -63,7 +59,7 @@ fn stake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 1st stake transaction
     let gas_spent_1 = receipt.gas_spent;
@@ -91,7 +87,7 @@ fn stake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 2nd stake transaction
     let gas_spent_2 = receipt.gas_spent;
@@ -109,7 +105,7 @@ fn stake() -> Result<(), VMError> {
     // in order to test the locking some of the stake during a top-up, we need
     // to start a new session at a block-height on which the stake is eligible
     let base = session.commit()?;
-    let mut session = new_session(&vm, base, CHAIN_ID, 2 * EPOCH)?;
+    let mut session = vm.session(base, CHAIN_ID, 2 * EPOCH)?;
 
     // execute 3rd stake transaction
     let stake_3 = STAKE_VALUE - stake_1 - stake_2;
@@ -125,7 +121,7 @@ fn stake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 3rd stake transaction
     let gas_spent_3 = receipt.gas_spent;
@@ -160,7 +156,7 @@ fn stake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    assert!(execute(&mut session, tx,).is_err());
+    assert!(execute(&mut session, &tx, 0, 0, 0).is_err());
 
     Ok(())
 }
@@ -194,7 +190,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
     let mut moonlight_balance = GENESIS_VALUE - STAKE_VALUE - receipt.gas_spent;
     assert_moonlight(&mut session, &moonlight_pk, moonlight_balance, nonce);
 
@@ -216,7 +212,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 1st unstake transaction
     let gas_spent_1 = receipt.gas_spent;
@@ -233,7 +229,7 @@ fn unstake() -> Result<(), VMError> {
 
     // re-stake the unstaked value after the stake has become eligible
     let base = session.commit()?;
-    let mut session = new_session(&vm, base, CHAIN_ID, 2 * EPOCH)?;
+    let mut session = vm.session(base, CHAIN_ID, 2 * EPOCH)?;
     nonce += 1;
     let tx = moonlight_stake(
         &moonlight_sk,
@@ -246,7 +242,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
     total_stake = STAKE_VALUE;
     let mut locked = unstake_1 / 10;
     assert_stake(&mut session, &stake_pk, total_stake, locked, 0);
@@ -272,7 +268,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 2nd unstake transaction
     let gas_spent_2 = receipt.gas_spent;
@@ -310,7 +306,7 @@ fn unstake() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 3rd unstake transaction
     let gas_spent_3 = receipt.gas_spent;
@@ -353,7 +349,7 @@ fn withdraw_reward() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
     let mut moonlight_balance = GENESIS_VALUE - STAKE_VALUE - receipt.gas_spent;
     assert_moonlight(&mut session, &moonlight_pk, moonlight_balance, nonce);
     // add a reward to the staked key
@@ -378,7 +374,7 @@ fn withdraw_reward() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 1st reward withdrawal
     let gas_spent_1 = receipt.gas_spent;
@@ -413,7 +409,7 @@ fn withdraw_reward() -> Result<(), VMError> {
         CHAIN_ID,
     )
     .expect("tx creation should pass");
-    let receipt = execute(&mut session, tx)?;
+    let receipt = execute(&mut session, &tx, 0, 0, 0)?;
 
     // verify 1st reward withdrawal
     let gas_spent_2 = receipt.gas_spent;
@@ -458,7 +454,7 @@ fn add_reward(
 /// genesis-value.
 fn instantiate(vm: &mut VM, moonlight_pk: &BlsPublicKey) -> Session {
     // create a new session using an ephemeral vm
-    let mut session = new_genesis_session(vm, CHAIN_ID);
+    let mut session = vm.genesis_session(CHAIN_ID);
 
     // deploy transfer-contract
     const OWNER: [u8; 32] = [0; 32];
@@ -502,7 +498,8 @@ fn instantiate(vm: &mut VM, moonlight_pk: &BlsPublicKey) -> Session {
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
 
-    let mut session = new_session(vm, base, CHAIN_ID, 1)
+    let mut session = vm
+        .session(base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed");
 
     // check that the moonlight account is initialized as expected

@@ -19,8 +19,7 @@ use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
     Signature as BlsSignature,
 };
-use dusk_vm::{new_session, CallReceipt, ContractData, Session, VM};
-use rusk::gen_id::gen_contract_id;
+use dusk_vm::{gen_contract_id, CallReceipt, ContractData, Session, VM};
 use rusk::{Error, Result, Rusk};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
@@ -146,7 +145,8 @@ impl Fixture {
         let commit = self.rusk.state_root();
         let vm =
             VM::new(self.path.as_path()).expect("VM creation should succeed");
-        let mut session = new_session(&vm, commit, CHAIN_ID, 0)
+        let mut session = vm
+            .session(commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,
@@ -171,7 +171,7 @@ impl Fixture {
         let vm =
             VM::new(self.path.as_path()).expect("VM creation should succeed");
         self.session = Some(
-            new_session(&vm, commit, CHAIN_ID, 0)
+            vm.session(commit, CHAIN_ID, 0)
                 .expect("Session creation should succeed"),
         );
     }

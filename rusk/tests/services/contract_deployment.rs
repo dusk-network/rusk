@@ -12,10 +12,9 @@ use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::{
     ContractBytecode, ContractDeploy, TransactionData,
 };
-use dusk_vm::{new_session, ContractData, Error as VMError, VM};
+use dusk_vm::{gen_contract_id, ContractData, Error as VMError, VM};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::gen_id::gen_contract_id;
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
@@ -232,7 +231,8 @@ impl Fixture {
         let commit = self.rusk.state_root();
         let vm =
             VM::new(self.path.as_path()).expect("VM creation should succeed");
-        let mut session = new_session(&vm, commit, CHAIN_ID, 0)
+        let mut session = vm
+            .session(commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,
@@ -250,7 +250,8 @@ impl Fixture {
         let commit = self.rusk.state_root();
         let vm =
             VM::new(self.path.as_path()).expect("VM creation should succeed");
-        let mut session = new_session(&vm, commit, CHAIN_ID, 0)
+        let mut session = vm
+            .session(commit, CHAIN_ID, 0)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,

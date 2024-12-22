@@ -46,8 +46,6 @@ impl Query {
 
 #[cfg(feature = "abi")]
 pub(crate) mod host_queries {
-    use alloc::vec::Vec;
-
     #[cfg(feature = "abi-debug")]
     pub use piecrust_uplink::debug as piecrust_debug;
     pub use piecrust_uplink::{
@@ -56,6 +54,8 @@ pub(crate) mod host_queries {
         wrap_call_unchecked, /* maybe use for our Transaction in
                               * spend_and_execute */
     };
+
+    use alloc::vec::Vec;
 
     use dusk_bytes::Serializable;
     use piecrust_uplink::{host_query, meta_data};

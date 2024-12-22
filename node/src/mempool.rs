@@ -212,7 +212,7 @@ impl MempoolSrv {
             return Err(TxAcceptanceError::GasPriceTooLow(1));
         }
 
-        if let Some(deploy) = tx.inner.deploy() {
+        if tx.inner.deploy().is_some() {
             let vm = vm.read().await;
             let min_deployment_gas_price = vm.min_deployment_gas_price();
             if tx.gas_price() < min_deployment_gas_price {
@@ -222,13 +222,11 @@ impl MempoolSrv {
             }
 
             let gas_per_deploy_byte = vm.gas_per_deploy_byte();
-            let min_gas_limit = vm::bytecode_charge(
-                &deploy.bytecode,
-                gas_per_deploy_byte,
-                vm.min_deploy_points(),
-            );
-            if tx.inner.gas_limit() < min_gas_limit {
-                return Err(TxAcceptanceError::GasLimitTooLow(min_gas_limit));
+            let deploy_charge = tx
+                .inner
+                .deploy_charge(gas_per_deploy_byte, vm.min_deploy_points());
+            if tx.inner.gas_limit() < deploy_charge {
+                return Err(TxAcceptanceError::GasLimitTooLow(deploy_charge));
             }
         } else {
             let vm = vm.read().await;

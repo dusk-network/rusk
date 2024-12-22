@@ -22,6 +22,7 @@ const NUM_STAKES: usize = 1000;
 const OWNER: [u8; 32] = [0; 32];
 const POINT_LIMIT: u64 = 0x100000000;
 const TEST_STAKE: u64 = 500_000_000_000_000;
+const CHAIN_ID: u8 = 42;
 
 fn config() -> Criterion {
     Criterion::default().sample_size(SAMPLE_SIZE)
@@ -41,7 +42,7 @@ fn instantiate(vm: &VM) -> Session {
         "../../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
-    let mut session = abi::new_genesis_session(vm);
+    let mut session = vm.genesis_session(CHAIN_ID);
 
     session
         .deploy(
@@ -63,7 +64,7 @@ fn instantiate(vm: &VM) -> Session {
 
     let base = session.commit().expect("Committing should succeed");
 
-    abi::new_session(vm, base, 1)
+    vm.session(base, CHAIN_ID, 1)
         .expect("Instantiating new session should succeed")
 }
 

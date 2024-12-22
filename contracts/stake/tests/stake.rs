@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod common;
-
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
@@ -21,11 +19,12 @@ use dusk_core::transfer::withdraw::{
     Withdraw, WithdrawReceiver, WithdrawReplayToken,
 };
 use dusk_core::{dusk, JubJubScalar};
-use dusk_vm::{new_session, VM};
+use dusk_vm::{execute, VM};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
+pub mod common;
 use crate::common::assert::{
     assert_reward_event, assert_stake, assert_stake_event,
 };
@@ -86,8 +85,8 @@ fn stake_withdraw_unstake() {
         contract_call,
     );
 
-    let receipt =
-        execute(&mut session, tx).expect("Executing TX should succeed");
+    let receipt = execute(&mut session, &tx, 0, 0, 0)
+        .expect("Executing TX should succeed");
 
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
@@ -178,11 +177,12 @@ fn stake_withdraw_unstake() {
     // set different block height so that the new notes are easily located and
     // filtered
     let base = session.commit().expect("Committing should succeed");
-    let mut session = new_session(vm, base, CHAIN_ID, 2)
+    let mut session = vm
+        .session(base, CHAIN_ID, 2)
         .expect("Instantiating new session should succeed");
 
-    let receipt =
-        execute(&mut session, tx).expect("Executing TX should succeed");
+    let receipt = execute(&mut session, &tx, 0, 0, 0)
+        .expect("Executing TX should succeed");
 
     let gas_spent = receipt.gas_spent;
     receipt.data.expect("Executed TX should not error");
@@ -274,11 +274,12 @@ fn stake_withdraw_unstake() {
     // filtered
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
-    let mut session = new_session(vm, base, CHAIN_ID, 3)
+    let mut session = vm
+        .session(base, CHAIN_ID, 3)
         .expect("Instantiating new session should succeed");
 
-    let receipt =
-        execute(&mut session, tx).expect("Executing TX should succeed");
+    let receipt = execute(&mut session, &tx, 0, 0, 0)
+        .expect("Executing TX should succeed");
     update_root(&mut session).expect("Updating the root should succeed");
 
     let gas_spent = receipt.gas_spent;
