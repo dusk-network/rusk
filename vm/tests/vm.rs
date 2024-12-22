@@ -66,7 +66,7 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
         "../../target/dusk/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let mut session = dusk_vm::new_genesis_session(vm, CHAIN_ID);
+    let mut session = vm.genesis_session(CHAIN_ID);
 
     let contract_id = session
         .deploy(
@@ -78,7 +78,8 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
 
     let base = session.commit().expect("Committing should succeed");
 
-    let session = dusk_vm::new_session(vm, base, CHAIN_ID, height)
+    let session = vm
+        .session(base, CHAIN_ID, height)
         .expect("Instantiating new session should succeed");
 
     (session, contract_id)

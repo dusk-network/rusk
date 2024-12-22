@@ -4,38 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_core::abi::{gen_contract_id, ContractError, Metadata};
+use dusk_core::abi::{gen_contract_id, ContractError};
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
-use piecrust::{CallReceipt, Error, Session, SessionData};
-
-use crate::VM;
-
-/// Create a new session based on the given `VM`.
-pub fn new(
-    vm: &VM,
-    base: [u8; 32],
-    chain_id: u8,
-    block_height: u64,
-) -> Result<Session, Error> {
-    vm.session(
-        SessionData::builder()
-            .base(base)
-            .insert(Metadata::CHAIN_ID, chain_id)?
-            .insert(Metadata::BLOCK_HEIGHT, block_height)?,
-    )
-}
-
-/// Create a new genesis session based on the given [`VM`].
-pub fn genesis(vm: &VM, chain_id: u8) -> Session {
-    vm.session(
-        SessionData::builder()
-            .insert(Metadata::CHAIN_ID, chain_id)
-            .expect("Inserting chain ID in metadata should succeed")
-            .insert(Metadata::BLOCK_HEIGHT, 0)
-            .expect("Inserting block height in metadata should succeed"),
-    )
-    .expect("Creating a genesis session should always succeed")
-}
+use piecrust::{CallReceipt, Error, Session};
 
 /// Executes a transaction, returning the receipt of the call and the gas spent.
 /// The following steps are performed:

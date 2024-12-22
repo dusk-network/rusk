@@ -13,6 +13,7 @@
 
 extern crate alloc;
 
+pub use self::execute::execute;
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
     Session,
@@ -23,7 +24,7 @@ use std::fmt::{self, Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::thread;
 
-use dusk_core::abi::Query;
+use dusk_core::abi::{Metadata, Query};
 use piecrust::{SessionData, VM as PiecrustVM};
 
 use self::host_queries::{
@@ -32,11 +33,8 @@ use self::host_queries::{
 };
 
 pub(crate) mod cache;
+mod execute;
 pub mod host_queries;
-pub(crate) mod session;
-pub use session::{
-    execute, genesis as new_genesis_session, new as new_session,
-};
 
 /// Dusk VM is a [`PiecrustVM`] enriched with the host functions specified in
 /// Dusk's ABI.
@@ -84,7 +82,8 @@ impl VM {
         Ok(vm)
     }
 
-    /// Spawn a [`Session`].
+    /// Spawn a [`Session`] on top of the given `commit`, given the `chain_id`
+    /// and `block_height`.
     ///
     /// # Errors
     /// If base commit is provided but does not exist.
@@ -92,9 +91,32 @@ impl VM {
     /// [`Session`]: Session
     pub fn session(
         &self,
-        data: impl Into<SessionData>,
+        base: [u8; 32],
+        chain_id: u8,
+        block_height: u64,
     ) -> Result<Session, Error> {
-        self.0.session(data)
+        self.0.session(
+            SessionData::builder()
+                .base(base)
+                .insert(Metadata::CHAIN_ID, chain_id)?
+                .insert(Metadata::BLOCK_HEIGHT, block_height)?,
+        )
+    }
+
+    /// Spawn a new genesis-[`Session`] given the `chain_id` with a
+    /// `block_height` of 0.
+    pub fn genesis_session(&self, chain_id: u8) -> Session {
+        self.0
+            .session(
+                SessionData::builder()
+                    .insert(Metadata::CHAIN_ID, chain_id)
+                    .expect("Inserting chain ID in metadata should succeed")
+                    .insert(Metadata::BLOCK_HEIGHT, 0)
+                    .expect(
+                        "Inserting block height in metadata should succeed",
+                    ),
+            )
+            .expect("Creating a genesis session should always succeed")
     }
 
     /// Return all existing commits.
