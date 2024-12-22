@@ -13,7 +13,7 @@
 
 extern crate alloc;
 
-pub use self::execute::execute;
+pub use self::execute::{execute, gen_contract_id};
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
     Session,
@@ -169,13 +169,4 @@ impl VM {
             host_verify_bls_multisig,
         );
     }
-}
-
-#[cfg(test)]
-mod tests {
-    // the `unused_crate_dependencies` lint complains for dev-dependencies that
-    // are only used in integration tests, so adding this work-around here
-    use ff as _;
-    use once_cell as _;
-    use rand as _;
 }
