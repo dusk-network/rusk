@@ -124,7 +124,10 @@ impl Message {
             Payload::Validation(v) => v.sign_info().signer,
             Payload::Ratification(r) => r.sign_info().signer,
             msg => {
-                warn!("Calling get_signer for {msg:?}");
+                warn!(
+                    "Calling get_signer for payload: {:?}",
+                    msg.variant_name()
+                );
                 return None;
             }
         };
@@ -428,6 +431,24 @@ impl Payload {
             Payload::GetMempool(p) => p.set_nonce(nonce),
             Payload::GetBlocks(p) => p.set_nonce(nonce),
             _ => {}
+        }
+    }
+
+    fn variant_name(&self) -> &'static str {
+        match self {
+            Payload::Block(_) => "Block",
+            Payload::Candidate(_) => "Candidate",
+            Payload::Empty => "Empty",
+            Payload::GetBlocks(_) => "GetBlocks",
+            Payload::GetMempool(_) => "GetMempool",
+            Payload::GetResource(_) => "GetResource",
+            Payload::Inv(_) => "Inv",
+            Payload::Quorum(_) => "Quorum",
+            Payload::Ratification(_) => "Ratification",
+            Payload::Transaction(_) => "Transaction",
+            Payload::Validation(_) => "Validation",
+            Payload::ValidationQuorum(_) => "ValidationQuorum",
+            Payload::ValidationResult(_) => "ValidationResult",
         }
     }
 }
