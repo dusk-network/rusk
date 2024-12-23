@@ -67,7 +67,7 @@ export class Rues extends EventTarget {
   #socket;
   #scopes;
   #session;
-  #version = "0.8.0";
+  #version = "1.0.0-rc.0";
 
   constructor(url, options = {}) {
     super();
