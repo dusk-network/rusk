@@ -26,7 +26,7 @@ use crate::{bls, ledger, Serializable, StepName};
 
 /// Topic field position in the message binary representation
 pub const TOPIC_FIELD_POS: usize = 1 + 2 + 2;
-pub const PROTOCOL_VERSION: Version = Version(1, 0, 2);
+pub const PROTOCOL_VERSION: Version = Version(1, 0, 0);
 
 /// Block version
 pub const BLOCK_HEADER_VERSION: u8 = 1;
