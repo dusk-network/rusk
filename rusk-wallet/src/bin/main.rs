@@ -392,8 +392,7 @@ async fn exec() -> anyhow::Result<()> {
                 RunResult::ExportedKeys(pub_key, key_pair) => {
                     println!("{},{}", pub_key.display(), key_pair.display())
                 }
-                RunResult::PhoenixHistory(txns)
-                | RunResult::MoonlightHistory(txns) => {
+                RunResult::History(txns) => {
                     println!("{}", TransactionHistory::header());
                     for th in txns {
                         println!("{th}");

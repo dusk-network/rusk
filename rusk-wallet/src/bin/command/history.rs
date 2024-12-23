@@ -8,7 +8,6 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use dusk_core::signatures::bls::PublicKey;
 use dusk_core::transfer::Transaction;
 use dusk_core::{dusk, from_dusk};
 use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
@@ -28,8 +27,8 @@ pub struct TransactionHistory {
 impl TransactionHistory {
     pub fn header() -> String {
         format!(
-            "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12}",
-            "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE"
+            "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12} | {: ^8}",
+            "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE", "TRANSACTION_TYPE"
         )
     }
 }
@@ -43,20 +42,25 @@ impl Display for TransactionHistory {
         };
 
         let fee = match self.direction {
-            TransactionDirection::In => "".into(),
+            TransactionDirection::In => format!("{: >12.9}", ""),
             TransactionDirection::Out => {
-                let fee = self.fee;
+                let fee: u64 = self.fee;
                 let fee = from_dusk(fee);
                 format!("{: >12.9}", fee)
             }
         };
 
         let tx_id = &self.id;
-        let heigth = self.height;
+        let height = self.height;
+
+        let tx_type = match self.tx {
+            Transaction::Moonlight(_) => dusk_core::transfer::MOONLIGHT_TOPIC,
+            Transaction::Phoenix(_) => dusk_core::transfer::PHOENIX_TOPIC,
+        };
 
         write!(
             f,
-            "{heigth: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee}",
+            "{height: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee} | {tx_type}",
         )
     }
 }
@@ -160,7 +164,10 @@ pub(crate) async fn moonlight_history(
     let gql =
         GraphQL::new(settings.state.to_string(), io::status::interactive)?;
 
-    let history = gql.moonlight_history(address).await?.full_moonlight_history;
+    let history = gql
+        .moonlight_history(address.clone())
+        .await?
+        .full_moonlight_history;
 
     let mut collected_history = Vec::new();
 
@@ -172,14 +179,25 @@ pub(crate) async fn moonlight_history(
 
         for event in events {
             let data = event.data;
-            let fee = data.gas_spent;
-            let amount = data.value;
+            let gas_spent = data.gas_spent;
+            let mut amount = data.value;
+            let sender = data.sender;
+
+            let direction: TransactionDirection =
+                match sender == address.to_string() {
+                    true => {
+                        amount = -amount;
+
+                        TransactionDirection::Out
+                    }
+                    false => TransactionDirection::In,
+                };
 
             collected_history.push(TransactionHistory {
-                direction: TransactionDirection::In,
+                direction,
                 height,
                 amount,
-                fee,
+                fee: gas_spent * tx.gas_price(),
                 tx: tx.clone(),
                 id: id.clone(),
             })
@@ -189,7 +207,20 @@ pub(crate) async fn moonlight_history(
     Ok(collected_history)
 }
 
-#[derive(PartialEq)]
+pub async fn moonlight_and_phoenix_history(
+    settings: &Settings,
+    notes: Vec<DecodedNote>,
+    address: rusk_wallet::Address,
+) -> anyhow::Result<Vec<TransactionHistory>> {
+    let mut phoenix = transaction_from_notes(settings, notes).await?;
+    let mut moonlight = moonlight_history(settings, address).await?;
+
+    phoenix.append(&mut moonlight);
+
+    Ok(phoenix)
+}
+
+#[derive(PartialEq, Debug)]
 enum TransactionDirection {
     In,
     Out,

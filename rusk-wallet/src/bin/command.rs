@@ -27,11 +27,9 @@ use rusk_wallet::{
 };
 use wallet_core::BalanceInfo;
 
-use crate::io::prompt::{self, create_password, request_transaction_model};
+use crate::io::prompt::{self, create_password};
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
-
-use self::prompt::TransactionModel;
 
 /// Commands that can be run against the Dusk wallet
 #[allow(clippy::large_enum_variant)]
@@ -515,26 +513,16 @@ impl Command {
             Command::History { profile_idx } => {
                 let profile_idx = profile_idx.unwrap_or_default();
 
-                match prompt::request_transaction_model()? {
-                    TransactionModel::Shielded => {
-                        wallet.sync().await?;
-                        let notes = wallet.get_all_notes(profile_idx).await?;
+                wallet.sync().await?;
+                let notes = wallet.get_all_notes(profile_idx).await?;
+                let public_key = wallet.public_address(profile_idx)?;
 
-                        let transactions =
-                            history::transaction_from_notes(settings, notes)
-                                .await?;
-                        Ok(RunResult::PhoenixHistory(transactions))
-                    }
-                    TransactionModel::Public => {
-                        let public_key = wallet.public_address(profile_idx)?;
+                let history = history::moonlight_and_phoenix_history(
+                    settings, notes, public_key,
+                )
+                .await?;
 
-                        let moonlight_history =
-                            history::moonlight_history(settings, public_key)
-                                .await?;
-
-                        Ok(RunResult::MoonlightHistory(moonlight_history))
-                    }
-                }
+                Ok(RunResult::History(history))
             }
             Command::Unshield {
                 profile_idx,
@@ -706,8 +694,7 @@ pub enum RunResult<'a> {
     Create(),
     Restore(),
     Settings(),
-    PhoenixHistory(Vec<TransactionHistory>),
-    MoonlightHistory(Vec<TransactionHistory>),
+    History(Vec<TransactionHistory>),
 }
 
 impl fmt::Display for RunResult<'_> {
@@ -789,7 +776,7 @@ impl fmt::Display for RunResult<'_> {
                      > Key pair exported to: {kp}",
                 )
             }
-            PhoenixHistory(txns) | MoonlightHistory(txns) => {
+            History(txns) => {
                 writeln!(f, "{}", TransactionHistory::header())?;
                 for th in txns {
                     writeln!(f, "{th}")?;
