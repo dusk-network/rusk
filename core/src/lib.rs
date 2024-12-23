@@ -28,6 +28,9 @@ pub use error::Error;
 mod dusk;
 pub use dusk::{dusk, from_dusk, Dusk, LUX};
 
+#[cfg(feature = "serde")]
+mod serde_support;
+
 // elliptic curve types
 pub use dusk_bls12_381::BlsScalar;
 pub use dusk_jubjub::{
@@ -134,4 +137,11 @@ fn read_arr<const N: usize>(buf: &mut &[u8]) -> Result<[u8; N], BytesError> {
     a.copy_from_slice(&buf[..N]);
     *buf = &buf[N..];
     Ok(a)
+}
+
+#[cfg(test)]
+mod tests {
+    // the `unused_crate_dependencies` lint complains for dev-dependencies that
+    // are only used in integration tests, so adding this work-around here
+    use serde_json as _;
 }
