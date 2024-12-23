@@ -46,7 +46,7 @@ wallet-core = { version = "0.1.0", path = "./wallet-core/" }
 bls12_381-bls = { version = "=0.4.0", default-features = false }
 dusk-bls12_381 = { version = "=0.13.0", default-features = false }
 dusk-bytes = "=0.1.7"
-dusk-jubjub = { version = "=0.14.1", default-features = false }
+dusk-jubjub = { version = "=0.14.2", default-features = false }
 dusk-merkle = "=0.5.3"
 dusk-plonk = { version = "=0.20.2", default-features = false }
 dusk-poseidon = "=0.40.0"
