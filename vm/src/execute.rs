@@ -11,8 +11,12 @@ use dusk_core::transfer::{
 };
 use piecrust::{CallReceipt, Error, Session};
 
-/// Executes a transaction, returning the receipt of the call and the gas spent.
-/// The following steps are performed:
+/// Executes a transaction in the provided session.
+///
+/// This function processes the transaction, invoking smart contracts or
+/// updating state.
+///
+/// During the execution the following steps are performed:
 ///
 /// 1. Check if the transaction contains contract deployment data, and if so,
 ///    verifies if gas limit is enough for deployment and if the gas price is
@@ -45,6 +49,19 @@ use piecrust::{CallReceipt, Error, Session};
 /// related to deployment, as it is either discarded or it charges the
 /// full gas limit. It might be re-executed only if some other transaction
 /// failed to fit the block.
+///
+/// # Arguments
+/// * `session` - A mutable reference to the session executing the transaction.
+/// * `tx` - The transaction to execute.
+/// * `gas_per_deploy_byte` - The amount of gas points charged for each byte in
+///   a contract-deployment bytecode.
+/// * `min_deploy_points` - The minimum gas points charged for a contract
+///   deployment.
+/// * `min_deploy_gas_price` - The minimum gas price set for a contract
+///   deployment
+///
+/// # Returns
+/// A result indicating success or failure.
 pub fn execute(
     session: &mut Session,
     tx: &Transaction,
@@ -176,10 +193,15 @@ fn verify_bytecode_hash(bytecode: &ContractBytecode) -> bool {
     bytecode.hash == computed
 }
 
-/// Generate a [`ContractId`] address from:
-/// - slice of bytes,
-/// - nonce
-/// - owner
+/// Generates a unique identifier for a smart contract.
+///
+/// # Arguments
+/// * 'bytes` - The contract bytecode.
+/// * `nonce` - A unique nonce.
+/// * `owner` - The contract-owner.
+///
+/// # Returns
+/// A unique [`ContractId`].
 ///
 /// # Panics
 /// Panics if [blake2b-hasher] doesn't produce a [`CONTRACT_ID_BYTES`]
