@@ -43,7 +43,7 @@ rusk-recovery = { version = "0.6.0", path = "./rusk-recovery/" }
 wallet-core = { version = "0.1.0", path = "./wallet-core/" }
 
 # Dusk dependencies outside the workspace
-bls12_381-bls = { version = "=0.4.0", default-features = false }
+bls12_381-bls = { version = "=0.4.1", default-features = false }
 dusk-bls12_381 = { version = "=0.13.0", default-features = false }
 dusk-bytes = "=0.1.7"
 dusk-jubjub = { version = "=0.14.2", default-features = false }
