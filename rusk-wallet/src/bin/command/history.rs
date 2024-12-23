@@ -8,7 +8,6 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use dusk_core::signatures::bls::PublicKey;
 use dusk_core::transfer::Transaction;
 use dusk_core::{dusk, from_dusk};
 use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
@@ -45,7 +44,7 @@ impl Display for TransactionHistory {
         let fee = match self.direction {
             TransactionDirection::In => "".into(),
             TransactionDirection::Out => {
-                let fee = self.fee;
+                let fee: u64 = self.fee;
                 let fee = from_dusk(fee);
                 format!("{: >12.9}", fee)
             }
@@ -160,7 +159,10 @@ pub(crate) async fn moonlight_history(
     let gql =
         GraphQL::new(settings.state.to_string(), io::status::interactive)?;
 
-    let history = gql.moonlight_history(address).await?.full_moonlight_history;
+    let history = gql
+        .moonlight_history(address.clone())
+        .await?
+        .full_moonlight_history;
 
     let mut collected_history = Vec::new();
 
@@ -172,14 +174,25 @@ pub(crate) async fn moonlight_history(
 
         for event in events {
             let data = event.data;
-            let fee = data.gas_spent;
-            let amount = data.value;
+            let gas_spent = data.gas_spent;
+            let mut amount = data.value;
+            let sender = data.sender;
+
+            let direction: TransactionDirection =
+                match sender == address.to_string() {
+                    true => {
+                        amount = -amount;
+
+                        TransactionDirection::Out
+                    }
+                    false => TransactionDirection::In,
+                };
 
             collected_history.push(TransactionHistory {
-                direction: TransactionDirection::In,
+                direction,
                 height,
                 amount,
-                fee,
+                fee: gas_spent * tx.gas_price(),
                 tx: tx.clone(),
                 id: id.clone(),
             })
@@ -189,7 +202,7 @@ pub(crate) async fn moonlight_history(
     Ok(collected_history)
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum TransactionDirection {
     In,
     Out,

@@ -59,7 +59,6 @@ struct BlockResponse {
 #[derive(Deserialize, Debug)]
 pub struct BlockData {
     pub gas_spent: u64,
-    pub receiver: String,
     pub sender: String,
     pub value: f64,
 }
@@ -90,11 +89,6 @@ pub struct FullMoonlightHistory {
 #[derive(Deserialize)]
 struct SpentTxResponse {
     pub tx: Option<SpentTx>,
-}
-
-#[derive(Deserialize)]
-struct RawTx {
-    tx: SpentTxResponse,
 }
 
 /// Transaction status

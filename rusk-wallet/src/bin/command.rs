@@ -27,11 +27,9 @@ use rusk_wallet::{
 };
 use wallet_core::BalanceInfo;
 
-use crate::io::prompt::{self, create_password, request_transaction_model};
+use crate::io::prompt::{self, create_password, TransactionModel};
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
-
-use self::prompt::TransactionModel;
 
 /// Commands that can be run against the Dusk wallet
 #[allow(clippy::large_enum_variant)]
