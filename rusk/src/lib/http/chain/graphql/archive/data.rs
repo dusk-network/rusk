@@ -8,8 +8,65 @@ use async_graphql::Object;
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use node::archive::MoonlightGroup;
+use serde::Serialize;
+use tracing::error;
 
-pub struct MoonlightTransfers(pub Vec<MoonlightGroup>);
+use crate::http::chain::graphql::data::SpentTransaction;
+
+/// Struct containing all information about a Moonlight transfer.
+///
+/// # Private Fields
+///
+/// - `moonlight_group`: A `MoonlightGroup` of events that belong to the same
+///   Moonlight transaction.
+/// - `spent_transaction`: The `SpentTransaction` of the Moonlight transaction.
+pub struct MoonlightTransfers {
+    moonlight_group: Vec<MoonlightGroup>,
+    spent_transaction: Vec<SpentTransaction>,
+}
+
+impl MoonlightTransfers {
+    /// Create a new `MoonlightTransfers` instance.
+    ///
+    /// # Arguments
+    ///
+    /// - `moonlight_group`: A group of events that belong to the same Moonlight
+    ///   transaction.
+    /// - `spent_transaction`: The payload of the Moonlight transaction.
+    ///
+    /// # Note
+    ///
+    /// Both fields are expected to correspond to each other i.e., the first
+    /// element of `moonlight_group` corresponds to the first element of
+    /// `spent_transaction`.
+    ///
+    /// That means that the n-th element of `moonlight_group` belongs to the
+    /// same transaction as the n-th element of `spent_transaction`.
+    pub(crate) fn new(
+        moonlight_group: Vec<MoonlightGroup>,
+        spent_transaction: Vec<SpentTransaction>,
+    ) -> Self {
+        Self {
+            moonlight_group,
+            spent_transaction,
+        }
+    }
+}
+
+impl Serialize for MoonlightTransfers {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let zipped = &self
+            .moonlight_group
+            .iter()
+            .zip(&self.spent_transaction)
+            .collect::<Vec<(&MoonlightGroup, &SpentTransaction)>>();
+
+        zipped.serialize(serializer)
+    }
+}
 
 pub struct ContractEvents(pub(super) serde_json::Value);
 
@@ -34,7 +91,7 @@ impl TryInto<NewAccountPublicKey> for String {
 #[Object]
 impl MoonlightTransfers {
     pub async fn json(&self) -> serde_json::Value {
-        serde_json::to_value(&self.0).unwrap_or_default()
+        serde_json::to_value(self).unwrap_or_default()
     }
 }
 
