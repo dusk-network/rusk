@@ -358,7 +358,7 @@ impl Withdraw {
 }
 
 /// Event emitted after a stake contract operation is performed.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[derive(Debug, Clone, Archive, Deserialize, Serialize, PartialEq)]
 #[archive_attr(derive(CheckBytes))]
 pub struct StakeEvent {
     /// Keys associated to the event.
@@ -401,7 +401,7 @@ impl StakeEvent {
 }
 
 /// Event emitted after a slash operation is performed.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[derive(Debug, Clone, Archive, Deserialize, Serialize, PartialEq)]
 #[archive_attr(derive(CheckBytes))]
 pub struct SlashEvent {
     /// Account slashed.
