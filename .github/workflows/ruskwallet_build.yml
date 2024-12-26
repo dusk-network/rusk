@@ -18,16 +18,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, macos-latest, macos-15, windows-latest, arm-linux]
+        os: [ubuntu-24.04, macos-latest, macos-15, windows-latest, arm-linux]
         compiler: [cargo]
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-24.04
             compiler: cargo
             target: linux-x64
 
-          - os: ubuntu-22.04
+          - os: arm-linux
             compiler: cargo
-            target: linux-x64-libssl3
+            target: linux-arm64
+            flags: --target=aarch64-unknown-linux-gnu
+            platform: aarch64-unknown-linux-gnu
 
           - os: macos-latest
             compiler: cargo
@@ -42,12 +44,6 @@ jobs:
           - os: windows-latest
             compiler: cargo
             target: windows-x64
-
-          - os: arm-linux
-            compiler: cargo
-            target: linux-arm64
-            flags: --target=aarch64-unknown-linux-gnu
-            platform: aarch64-unknown-linux-gnu
 
     steps:
       - name: Checkout Repository
@@ -75,18 +71,16 @@ jobs:
 
       - name: "Pack binaries"
         run: |
-          mkdir rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          echo "Fetching changelog and readme files..."
-          mv target/${{matrix.platform}}/release/rusk-wallet rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          cp ./rusk-wallet/CHANGELOG.md rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          cp ./rusk-wallet/README.md rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          tar -czvf ruskwallet${{env.SEMVER}}-${{matrix.target}}.tar.gz rusk-wallet${{env.SEMVER}}-${{matrix.target}}
+          mkdir rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
+          mv target/${{matrix.platform}}/release/rusk-wallet rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
+          cp ./rusk-wallet/CHANGELOG.md rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
+          cp ./rusk-wallet/README.md rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
+          tar -czvf rusk-wallet-${{env.SEMVER}}-${{matrix.target}}.tar.gz rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
           ls -la *.gz
 
-      - name: "Upload Wallet Artifacts"
-        uses: actions/upload-artifact@v3
+      - name: Upload Wallet Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: wallet-binaries-${{env.SEMVER}}
-          path: |
-            ./*.gz
+          name: rusk-wallet-${{ env.SEMVER }}-${{ matrix.target }}
+          path: ./rusk-wallet-${{ env.SEMVER }}-${{ matrix.target }}.tar.gz
           retention-days: 5
