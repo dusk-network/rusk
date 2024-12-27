@@ -11,601 +11,601 @@ notes = [699_000_000_000_000]
 [[stake]]
 address = '25Hsv1Lboh6Fgwv7Byx8dVP8TNjWYYgCPKU7pupJC3tDAJrkwdBq3zZx5HwVfn7zvS6Hd485wPP6zgRRfvLjjeuy2LsxzmZbEmn9juRKWSauaDpBJu9qDr3jucyEjyZ2akJy'
 owner = 'qAieuaDxkkp7cJhFgEqREbEyhD1ziTZxy1rD97c3CssGmM5UnY18jb6VAEHQrkyzY7QstqRW4UPVPsMCmuwEmovGNnaFQRijR29hZiSHjmpU772wyjLfYiBBULyP7QdYqvx'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #1
 [[stake]]
 address = '26PwjZGkfLx41vf4HV6idBpyv2Z7N4Zcr7PMMt5wzpDdpuKkEBH4i14VG9sJnG6n2ZfjoqNhJXm6KH4bwVvbGsYJ1dKPGWDaTJBehJBCtfKuahfL7BDQ9hDwhmBHFeUortxs'
 owner = 'u26dNeTLCgL6Qr8dqxxbcEij8bpPLx7LxLP4LyFWL3iXqTxkYjk7wF4L7GG7yU3nn4yBqkeDbnTS4o9stAepN58R7LQvEuzS1EZfXgkNonzhVhcxyd3EyLSiSgwyMwiqkFG'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #2
 [[stake]]
 address = '26tWDWDeUJQdkFjX4a7Aw6iKtR2DFjUrQur9n6tKYjo5oouvtDnLoHXetquZTahemUUScc6YRktzmjPe7hRbftbG7HTSEbM9L9wmAep9ABd9QbUgKVX71ccsnmgVecDtZD22'
 owner = 'qHPfRW1ETpjN6CERhVeG6iim7sz71ZxJ7VRjSDqnkY2bvXbga5MZBfHXe6fhuv4NrTgr41VwQMJZdaKHo7oCeVNfocYuv6HDnBQPymre6vsuzjtaEMmk24zbHgtVU1XJmQr'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #3
 [[stake]]
 address = 'oyy3p1QpuudGx5XqdP8ZgwChqfYdJS7ki5tDpDtLxbHPBaqhbdLX2SNpDwtyhd2UFuyKJkQnYVtcBX2XPYP8hcr95FAJkFaCazmXNTjfyQXxJ6fPyL48eMqB9DeCaYpFzod'
 owner = 'rAMvRRaRwD7wTTvaGsp4okPp5Uc5XDMqt52AVXvD5cMvsz488KniMrJot5cuzw8AZLcEsev7Rqckx5cUKpUCyt9eZrpLLawWKj6YM3ouhC8BN1w3KsNcrm69Jb2PHdpU5qP'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #4
 [[stake]]
 address = 'sun6wrvL8qJeq7xFtbE359tCMkxSde9mGHmg3PVFvECj2anGAyBZGDXdTGd5tZyZ7P9JYMnaNVmxwQC5UX36rpedYZ5SRhUWneXxgJm4sTxehfSxhqf9HkPwHVVGRyQpgxy'
 owner = '26DBTHaE4FLiFrDi67gTfaB8FrNJjuhASgBUaR1uNPX5f9FEuwTBhPSXaPBiYAC17vp6opMWK5i3phxv4A6EbB8h4hvDBh8SP4B6redRtJz8AM2LdNeQn1m3V4B5GGMQadgQ'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #5
 [[stake]]
 address = 'rAuty599SWQmNJCEcGfks3CErz89EzULtoDb1MtHopy7jou1gRTiKAhBmrNazcvSeDPJQXgFGiPWhzem5fGZdsshk2jxEzLp4Ujhr5TSgmgS5SeqCBFv1VTiovr2b76vSsZ'
 owner = '25na5FMBjSUYezkyJhEe1YzVg3tHQUaC9SPJjHwZhScsiSLpyYkEcK647JUCMEfhSKd6hAkivKWpF7fWtD1K7FL255QmuEcLuezZDL8sb6fabaB9WEmwJvrMQDURZUBRvNMQ'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #6
 [[stake]]
 address = 't93UKpcJQH3SpTKeC2ZCWWKSxwgCN1Ea5EQF1X4f1a9cNBDPHRjeYGj72VcwrFEcv7s6bcdnNHeKohn1qWyTzs7tZkgyDWrWErAZXP7NkbJqSpRso6L2NoRDeH1SkwtFtE4'
 owner = 'yYhDsLuZkL9Zou2Ypw8y7w2h1H9KC6ZGfhu6jhieWtjffuJkyvW4XmkAcarKAcyZ67HzF7eSvhgerhu54ziFoav79LyoRTX9cGrBKowDbUSAdcA5tZ4Ubksn9NiYy9Dbf7t'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #7
 [[stake]]
 address = '26iaSoUgF4dausnWigMQbYaEwMhDU8e3M2hcKJQ94Vp7wRdqX6h7Q7EZxDoim1QQKFk6SzTYrS8HZQ9hmNKXAHC8nLse6ZhTqJstQ2NkMvMts1TXRBYdSwMFjBHNNJg5y4wQ'
 owner = 'qtf92YZ2RrGSDNsPMe6TREBTQGSjDc5kViLA6t7DscGJWpA6CCBR44QYquszSiSjgxrNvsNk4LQiXjEyy8Z23FPwptFjVu5HXSeSAvvVSrtCuKqzyF6yirgaiyajSqeXYme'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #8
 [[stake]]
 address = '23sAVwneemxQqwJwoj8qv6d6dbVDVoz4JWDaLp5BQUdo7xA7fuKLfX6EeLPP3T9Z8ehYZJEB5QGUpJ3UzBsvq4NAQyK7qjTJWSHXAw3od9x7Rjwst9UtvhC4H5uKKs6ciJjA'
 owner = 'pc6HyDTnrEWeyAQT4v13TNJAfWFftLChAgdz76PKWogjJkEyYi4crkyzHgGkTwWM7z9HTXGZu7kkyTNHy7nL2MyUcsbfLMdD5YCoGFnv5fRpgTNHoMTnGSwVEUeGTsxvdH4'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #9
 [[stake]]
 address = 'rwkWyNSbGfnGPTWzWAK8znHfuaMCmLMRVqVjywGGDmXyUjf1mPqzo9tiXYabG1zeUM2m3LDHNoW1sgsNcqggpeeQTyQ2wei5gMq5Fc7XSxDx342FRcqq4PmHQPvisA1nj5H'
 owner = 'txRoznznfXogimCNnVb6jT4ceVMNn65MBxCA38vPkGB75z2PhgGSws1fekWAu3xWjH7TKnNVUFS7hmQ7qD3ZmdGgza3PCBKXiFK9AyeLPgwCkwq9B4jcU4s2zagUhgtUBLS'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #10
 [[stake]]
 address = 'tqQopfSeUv5tJdP4JnEZ9uNQXYSvcAwT7EDbR174y2122rE2z8DS8kiQiCNWSAnLMaJuB2jStp5regxMR4cKb74vrYNvC5qYfqGDzCBLCrqEDzNUCGzBr8ebk8KQBNSEad4'
 owner = 'tNbQtxoFYooDP9Y3nvd9RgXYutCTgpdSPpNBnHv1UfqsRxKFENbE7BYApr885JRwMnvD2SP3o6aWrZxpw5Fz4Abts1hJAoZRwGUmYXYKWFtwi7RxbQA6BmDGdpT3Bpyrqmn'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #11
 [[stake]]
 address = '23wCBYz5eGGiBsFB3A9HxmCfmyraTB8VpZLZ1VEGKuvVmSARARAJAo8wgP1f7TvqXX2YFTFDDsLmrkqXHe9c4SDY8cMuTyzbGApgjH34nVg6Gt1zyUowAHKFzQn4fA3GK8iB'
 owner = 'mQSztSjpew49VMyKafGV3FGB7ZcHnAHLzf63CGnZzCtwCG1RUB4FB7MJvoWKNAn9cY7xpkDSrH5YGpkguQZezvmNRQnVGqd9CGFoo2CpEwmopaXmEa8qV51vcKQ1V9TAhUE'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #12
 [[stake]]
 address = '23vbJpMTxcaqVHrh3hoPUJSXuqbFJrRpY9wKiX3MQpGKiyJ1d6Vz5rTxCqrQALewLVQ1kPNVyyPVVHexKsjmb2oM1jQebUN237p8Si1jYwoADbiegUVG1dadW84bxpEv1EC6'
 owner = 'q4AujZTKjoXXnugfvMcwFE9PQHyeQ8gi1z3y17RSRtP7f2PDfNJCFQG8MCymhDNzrPrjX4js6rnKyLk2QPzffRhRegRCGYHJVQhiYUHQxZSeESaYWKp5M7D7hSrNuLu86XP'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #13
 [[stake]]
 address = 'pDyTmdeFPnaisskF5JnfFGUfgeYWg4fuWEW6CwEWn95JHQKaqgoHCTPnqp32WhcTBLsKzMRRiGFvFvdMhRJyS5ozH9qAkuexY96reZjdX3ybU63rFASe13odBc9YgBtcMog'
 owner = '25gxLAuXiCqpAMUy3r1gzQe3gzHkcajYNf4gNMshqxqpiL1rxZQbYg9fAmtva3uhwNu8BBbSH32hJ86LSXqW6B9j8JZjfdhUjA21Zw16Eme9tWcXvqcQYyQB2HFvG5sC217X'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #14
 [[stake]]
 address = '26yNeudxTUZk8UyeUYw23w1QELKVJchmBSrHL6SXR4uVkCM9KVMt1zmrWvi4uidY38ZywFRV2qeezYgSGaHGd8vNF2cdNiDYNrGsJo1v84EKFUVwmvsUer73PAoiL8gKHwkm'
 owner = '21W5tZPb7eQbgNFantrMWJ7dFZANSyHSuKZre8peNje9oMj6ZhBPBnhbYW8JtdLwhzKWoCD8RPM7LnLSeJ9WkYF18nEZw7TTmKTfiCzKwRkn7ECR8qdZ851yS1NRKbJYP1nd'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #15
 [[stake]]
 address = 'tib6dYSqUNq31Lx6AZcmBNE7WmGjYcuBPqoW4SvyPfkfvvdyUFhfU8Xf3DAQb3hZ5XGroKzuR6DEExmMyLu8y9BGWsMJw6zAQ1QTFhjuQMuyj59Ka5MgQTk9CyBfuTeVZdJ'
 owner = 'p7cj1kYVM9awQaNUJi11xGzTAePy4z9xidUqPGvMvn6ghtYTtFfB48Zijetf2i1AKF5GFbxtmocjsohnCEmaATAJS1YKbq2WknZo6mC7Lh2VVfv4JCxUSw3RrbA8HB2nELd'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #16
 [[stake]]
 address = 'yiFkmVfpyEj9e1Xwg1UvQZUUUxPrNw3yMU7EnKTGVMn9GTCBhMLAQp6NuUcU7F4GyA7XcoJLM9tHMLArYeWtgt39QN5qE5ieqVZLUTvMELMHUEPYYZbsX9SEAY97mndCUdV'
 owner = '25qqcZ12fvDKkLrjvDKpyZtWQZEFWKfKNkj7D4FDPZWoBnaFkqzBuBVbAKeFwNbQg9nsynRPAiNr21ccjREigyKyQQpWS7Qi4neAyFz8KKzNdWw7YLZ34WuHNc1wZocQ9Ev7'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #17
 [[stake]]
 address = '234x4AWGCfvNUYEbEU7YpXLYKJMHALBjXS8w2VzFLxiePLivEsFT8UwvxjQVUK5LhSSQ65J5sd7YnjqXfE5aPJfFAtogSyXRmTgMJz4jUE2Kmd8YDwt34QV2YQEWKKpReT5J'
 owner = '218Hk5AefQqhp3sQ2xcQ32ZJJLYisi38VowWurK6nBUtDFUccHY3n5ZAZaBAh98T71ErFTUKK4WcSd8uNGU9gw2BxRAqkYRJcESuKEaBa5s7qEy2fJUPycsmq2quWm15qfdC'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #18
 [[stake]]
 address = '22oLgnwgqNkEXXJTks2GAo4qMMj7xt9ZoSkmNqMLiV6dSDNLnZ7HWGQZJ7sd6Pq5hd7mPBnmTek1TZpm8KXnhgvKxCgBz94rUVWDGTq8uPMbG7mNJ7kChwA77eth1886LBzu'
 owner = 'xm3C8LV122fgKtBAa9mfVr52xVL9bZRi2iq3Npj5iGD56x8KvkKpnkXVsszbiu1kaQDxberzEFJ8yNjdU5Jty1CoLvTnXeCtgPnvhALwpTfcQp16QSbC585kWpY7vFFj9yG'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #19
 [[stake]]
 address = 'q7q1dcmD7gbUVFo1Wv88N7XjGmR5yy6uFq23tnxCptNBx3aynB7EXPwaCE34SM8icRLCP1jvd85aLJ5aL6EcWcRqNz3aQwirg2q4TXSU3W9EM1o1fwKY7Ra9GYJsN7LiVUq'
 owner = 'psGdCPto4ytFkxQx6E9KwSXvyFTR5a72MrdFfnJ4peWyx2NwgR98zWVszcESbx6Fzw92wJ9EjcECtKhpvtkisRPUzsniyJiZ1vykvKUQaun4CTuQvWiW4hSctNof6K6VRBX'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #20
 [[stake]]
 address = 'q4ddi3m1ypwJAXBy3tj8Vk7kBokkf8H9aRRn8Xb8C7svdE4MQL4vKv8S6UexuJg7TPfyo8fDBxvMewMfERUu1awsy3qpm91SwxScj923zu5shVcvDZ835PjrmRta6qHJVcY'
 owner = '23WfsodufEf6CEW8pqmnfsqE3mXeHEw9oTmQf574QwZYTjpgr7rpN2uSm3oEjUx439H3My7DxUNWNGiqH5qzT7XxTbWDDFzYYkMkaDrydrxNxDDF3jcQnk7PJN7YSSp65AAk'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #21
 [[stake]]
 address = 'mTPxE6PGMgSnaE4uppGC9CgJ3phQzqYKxeHr9J24tc6DWXxZg2xKZZpHgkYhwKiscWDGnpmiqroH2bo5WhKGHg4sRhXBGuhGYWmsdcaCnzfAjVAjcD8eiifdk3cmjAGkMC7'
 owner = 'qJsrmqrzc6guqsgD8dQ5Vq7qJ5HcSMnZWZmZP1DimL28yT2oTZE8DXedvd6XFrYzDoenWUQrVE7bUHQJ8ugoK3pBctYWQhExehXK67r5bqTq8tmYdwvyDwsiHsfP6x4ZdFi'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #22
 [[stake]]
 address = '25yEcNiCTjds3zvk4wXF39wcbvoVQqq4cAiDBLpTmpsHGHar2Vq7VZTGv3LmZk8x52Nuo72PyUV3jxmSwGxthSLSsvriEerxZv5WtsSTgXfKmyyygaLNQGKhqfHUHGcGEvmq'
 owner = 'oBuRKpKTs9LRah8HKtXDHwCJmn7KjnHPn4qXxGc5HDjiQoMy6kjzZnWZProT2bTJLAbhTXiRyQAScaatUtuvGsYEdxkpBiBAmahKsd7paVxCJVJgHRizpPiS541ADbcPqCA'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #23
 [[stake]]
 address = 'mgt7NPMk3yrjzfG2U7aQKqsTkLotv4Yt7NQsYt6ck6nWYjEWhxcbvSQbEA17Xh8QzSiPDVhpXpMHzRWXarX62jMZpQ7qw9R6q3S7tcRP37YXGbDedzcWBM11V9dHTWcwfgL'
 owner = 'o5DkWLafstJK7uhT6X8JnHcPJmvitzkDKeC5FgDPNQEo52n5wR7XtefY8yxnwGYR4RPYdhxbSR2xNb1KRoFbSrGy8bUXmqc6EfdWmd2bsNbMzbCEGHFNM3pUwDec47wRQSR'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #24
 [[stake]]
 address = 'ptPss4DSwhqT95tpTEn4noGWbG57imuyHbnfVojn5hmi6GHHne4Prgj49MKXMrLaYVo1hWxWUiovopmMzogEcaaJ1kmDwr6wR8qnYVJHNrSji7YRLrQXYEgzD98mLAghtnc'
 owner = 'z8XnJHEkSiMYLgAMFhyVcNMdKw4PaNTtvHHJkG8BhzDv9FrEgcrxYjK5m3SciBy4uWXUPpRZehx6SzJWy7Wn4Cz1PoPF5Nu3M9ecyd1wpaVMt3PxqUJ6qJeyeNuH4bUfKAo'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #25
 [[stake]]
 address = 'xPGbwNtjg55dXkN7UnRvZrtj5jCKXQCsN4mXroH6vXXK16CTncYRGnsEqSDHJyVb7yut2Pp8Xij9by2o444HqPUKEfHkUq7i5URy4V8GUgDPdRyHQoor5SLa6ZBUaDywrHG'
 owner = 'tXfEtJhvX9KfsuioEqqQspP96UU3BcyXhEAm6dGvj6P6BbwHJ6jm3HxqkAquydCevEQEqe1HecBAM7sHfkJS4ZQSEWU6mGzX3kK6ZmveS4gRGHPpu1vu7YJjoNBNUSfNhwm'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #26
 [[stake]]
 address = '25XskSqBMdUqC7yVGzKKruq6dDadynhxu1VYW8dzPWjHbHZF6g4jdgiA4MvFaxmog1YN2bKJSst1nudxwYs4bu9AKkd96NdkZ4PXSYTNbvrL7SEFDhQQezffT4ygBw8sCWn9'
 owner = 'njkBZRh7xNmRy8UcjCRNPfn5Qi68G89sbkXWei6V8zHc84zjuoobM7UiEWSGR7iHbQ151c87KGViAt4DkW2qUAMSaxfSFfT3BksjWvkBDPT47rJbMG8WqCGszP6ZjyPKcNg'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #27
 [[stake]]
 address = 't2MvJBfensysPRUXmxJiXkRHmZ5VpMsEtFNVfYsarR5BrZjHzD4csTe9M5q2YYsk1bvMrzRRViGHe2FJxFAuiYuCySAFzXciR7bDoU3WknZqSisTzQ7zu9NPGxCaH3X1qkH'
 owner = '229XNwaQ8cR1GVv7UmP5co7yQLbnFNGhLvk1tzVCt5XK7uhbaD1xJXqq4JRHrVEaCD7ckJCoxVmpvXCbb4rHBXwYszA2VnWGUbwGSMt5kehywqSA6qR4FUMdWmgxpLE9p4CT'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #28
 [[stake]]
 address = 'usADChPT3UFS7gpncEJfypZotL5qzCUbbBxeg9ztj1QF6ZCcxnVVz67DHZdpGgGLFMmyMYzkaVYqbeGZK6oa6TCJdwfjk5nqJ7mfL6S1Q6RWfFDUkj9T2bmnerSgP13S3pV'
 owner = '24WJioX1kgzYcDt5sb3YrWL5QjJbvCd7vDvUEZnB3XFZTWzfbN8GDFWeZnk1Yx4YShEMUVNkCWURN3d7jdQ5qTjCHkFHC4QAFWHZGmzK1S6pnuRGUqzjwZAvLr1QXKEp83nP'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #29
 [[stake]]
 address = '22B4TU3CThMRc3V5bZ7QcLsU9FFXqz7qcKFpzdvzmN83CyuFWnmtCtFRF4XJ8XBtE3XvbQU2et7LoGbmF2KToDqerok1We2MrFH5F93qtoKPwWnMCsMVFHTdy5ndEQjNS1t8'
 owner = '26u53cXD4wHAGFXubdxWh463jBDdiGUu7E8JxyXntRytoH5jupJWX222bfr6mCTRCGoQn58Lug5kPHXaT8JdJMsE1aBNW2wqeaVw6Rfmoc1RxovC294G49XT8T54vWKHmUCH'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #30
 [[stake]]
 address = 'swtCqy8mx8LdME3ZceDEs4MK1hWJyD9HyYNRBqyCEfw4mTZ7GphVRpkZBeyHZuG9ExTMmvsHdWixfb4VHdKGkp1jH9sTAJoUgCzKKJ5fTH43DEnYHv6Myv3Z8nkrxqQFWGk'
 owner = 'xbRYqjroAaDRtCzosy8rTRSjjuu5t8tqgwS2oD1dXBAoPCdFKibQbqAG9C5Au7LrkRZP6o3RNWWxR6nJc7ChDMKmumGUQbrhKmgk7wZZxW8nP7K9LoJmojf2Pdz2BJnsv1t'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #31
 [[stake]]
 address = 'uwGjBnQabBSacRCnTPxWDjbDX1qXQYzHkMsCwgFo54x3ophUrQuPU5omWB16HVoAcpPDnSwr16KnMRFiatjL2xESeS1Y6hREea6ftpQ92d5W4dsXEMtBNHBXSod3ymdBo2B'
 owner = 'sm7Uu5VsGVvaD1MZnd328aiuoBK33R1LRNireYKhCxTE3ydjCGKJbuN6BcFP1g6FyQ2WbTHfJzT2FY9Z8CmeamTvvbaPw1VsdBEKX1X16L7LdCU1Heq9Zx3w2o2C8xawG4x'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #32
 [[stake]]
 address = 'sTgEHFZQzpZn6PtoKD8o5BUu29nCp9DR1v1u5nY9YKFqzQWzJYGnxFBF6wrwqdxPy3FkY1qrefft7qvVHErKPWBdhwyzc2FrDPXuA4hUmALAqg4imeZx56ZpMLHHvQBpupA'
 owner = 'qWhUdChdsJGUDzaYuHHJHiz6Qk4xXPm2VKRRfBfyjPt1yN2dmyjMxaw8DRKBQUGeDAHS4QuAdXN4J1TuxGWPLuCDX9JNtFg5gLZryidLNCMELCwZRCwdJzHtQM943Vpaf6W'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #33
 [[stake]]
 address = 'pp3cdm9RaLdgJxktkkEM1GFyCJaRDkFVnABnLvXcKYtQBvrMfzYeroCDEK6PcWzwvVjVYgLjvFKB71JDZZ38acLvvRy7gionVFpkL34fbQPsmGvoZMbU9pVc5QwuvYr2fHv'
 owner = 'mUqKM9cWeXDFiKEhfQhTPgUvqx8jcAvfqxJG32mE3U1eNxuZvhe3mh2Tu67TMbrAHQVP1odWNrCGsYXtJoUVgBGhooUbsmS6MkQykqg3PKngFqXka51qELYvXsv4e6SiHgX'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #34
 [[stake]]
 address = '21CEfQkhE6HskYcnVRvP7NDY7DjQNNbH6sYGZCerEQ2DLQL52QzdRjj112qAogUBth7tdrKdj4wDmbEpMZcM8thSuiFyDcYCCn4ZeQda4NEUumuHCE23DycmocfnRnz7mqSM'
 owner = 'mqigR3fZvzAVPoqshbhhuti4mNT8Ek1Gt4nkhuuYZPSxLHTKwaiFcRFHoVUJrC12BBJ7vHUJhjXGBvyPEmHCmFtxqkgGs8FSVuBgjGX172s8ud1MM2iZdHQrf2gm41Kw6To'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #35
 [[stake]]
 address = '22wqGfMw5VQWmcSc1GpqRW1psd1exWmCjPCwcZtDUkNPAFZjvqXGfGsJRzFKXBS6gYNaZJxsbthwKhvPtcd2JTf7wzfHXMrknmr43bn9Qw3YL8EgRFovfUzZvHDsigHkryAc'
 owner = '258hLuTA884Tj2AmmzHAAoV18DtgZQUovERqRcLXP5BfKzzsxu7RyZESbUDnCrk6L2Lb1sUs5rVgTcgxhydaYAY7btZvL9ohdqGC65tcKThfSNJd6UgW53nyzRZWjhYgytJk'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #36
 [[stake]]
 address = 'zVmK1VAF5XQLsbQkn24PpnjTpF4D9Ptss4dwvtLhoiSD3NY8tWDhb4BZASzMPHpJKNw2wrApkDRx8dmYkqbHj3iNWYBEpujYnme82imvr7jEKq6Z6HjnGDV8LeKqSnJVC6p'
 owner = '23ZjF9vasGsmBCZfrAjmitxRYN8mJXzFkkn3hKprs9i2pGzBPyz1YmodqaBPS8qctXUUZd3AZaZgPV5qv92zStaForgLBUMSg13QMaGk5Ehh58mBrBGCZJdYf9aSmjkpqyed'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #37
 [[stake]]
 address = '24F3Kq9WBXFCH9TMDLi3QhDNLAoiVazRwkQGTEUEHQPoWBYjgvsth65LpVH3aNopMdyVb6yC4zZ36qZt4ec5Vaa7vNtFZrrBysjz5ov2gAdfxMMPN85UUSVqBikPZzAgWovq'
 owner = 'zboEPkqivDY4LoZffrbvqXcq41GRdtJNRMCsH8rhKH6EJxHiLtz2ZFgcoq3JAZcaonVu6rfu5diLxbK19kqThYNveuVxp2LQmsx4AyCdrs2wcKCPtsnkKiUH3crSCXKDSoL'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #38
 [[stake]]
 address = 'toav7V1xCPiVXr9bDErYkm2VPmcUPcMLidcoHFMJpcEDsW7SPvQJqTM1EvafpMYtKnRnWwbgap5PkfYhRzPtfDGCX4n41hZpoLfx5Qo8pRKiwJc8BgEVMcMyV4X9ntcU9HQ'
 owner = '23p6DLhCiLx8rY7oGS5NVguBUGwy4tNfZdrB4AbEVK7iQnh7wEaz6U7a6ZLiuoq38jhr2uS94uePEGDdUZxNpK3uP7kYGa1bmYZ4GQF7a38UqKoa9YAXZv6VzGnLWfXVrtux'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #39
 [[stake]]
 address = 'ptW7PXKj2XY9v4HgNSkFbyCrG95eDmuSXTDGgkP7C69bziWYU414XYK3fVSu1Num7D1GU8bhrc12Wva4FGTSLmvJHnvU3HqTKEhaf7RJCAAFGKmzcRXR184dYCFr4usoecH'
 owner = 'p1TxUypeg7hA2TjaEG7sTLekeg3gYp1dVjZZCxkktvcrgsqjaSnrnFLnKcagdyyR5nZWhHzbAWe7JcEyXVKR7LvRAosz36GM73nXKbguVQhvivcPGijEfFb9rttUeSaz3cq'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #40
 [[stake]]
 address = 'pxy5eJY11SM6Z2MswUa7FYjPTGGNSpBvh3oz9PL1b4WZABSju5L9kMkD6byVystqxRYJAaLh8Ta9mkwep9hqmib7hNdrT4oDvDU1a46es2mcg8syyffepDMfBtVBPkmDMER'
 owner = 'mPRWCyX9URC2J2u1bin3QRT1c16japxW1DBE3qsbT4DdcTE6kcmJDeA2Xfvhw6x3YMQrTqB7K2cy2rY4eE46WqoTFDH8G1BVRZ5JPQnWthkV6gkxRozD39Qbi5o98eX7oq1'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #41
 [[stake]]
 address = '24qW1R2r8BLigHScT3RY46mtvPyrJRshHng91tMD25EQh4bwaKDc7JXyG2pWmyqLCLfdS62gWTNgAntcAkSAZUZftSEUU79Rh2rv8aaEMXaMXeahckyJFwJ5NnSJE7ZFdNFk'
 owner = 'nSv95txpizSyGQGCa7Wjc8To4rAtWrZAgMcYwCmvYLTAQEVU6a52aKywak885Z24C6avoBRQ4pJ91eXAE1VjHzJbYkCxnZUqkVpxTLNJBgd7QpfdaXgjSiGzTSHNWLca6cK'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #42
 [[stake]]
 address = 'qmEyhDbAbXJtbQuwDp4K9jarZrZGycpYuKbB3C35JXZCpw1KdDZ17GajXMh9PkdpwS9GwPEXDBs8798dJS3GrosiMv8u63kYtT5SiWqoxJurrGGQEemxrepJvJJA5kpRnHe'
 owner = 'uFhqdwP6wN1chMzbFFCV9aMyXPi7xhmxf6K4A5zuYcbDdMAV6VWjEPzXuixK62JeJ5oxGisKbHVJytQyC747yPq3ir95aS8KsZzbyHs5TyWg8kW733Nj85YUM8YZDddr6kS'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #43
 [[stake]]
 address = 'rHhgTkNyQrXgpoEdeXDEvi7k6ZjvogD834cP8z3cgvJQqqRULoWkMsnv8tSQgKJewUPeorEeBHBsi8r64PoqHi3Z7YcFsr88KAehacPiVCu9wUr945WhPuwU8kSpjYCfGmn'
 owner = '26s6DkiBf3wmtEaZ7LsC9K2L32ej4T9FUqGWfZqYAKDQKzXWrB5UZFspsK7bNXtPB4qPNSFk2P2bmSjZDCpVAfqGvstFdLYUZ6PzTqdEmnJP6pZNan4GU7ZFk1K7dUB6w7ha'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #44
 [[stake]]
 address = 'osjkLc2gRj3pcYCE618gDCCFTng2fHLJJLCgzeyuGpNUmt7c1xg8eZJwe3HweBMAVzgr1ZaJzGLQEbymg7WkA7DQRyvH6rKfgMJ7Nn4ESWNeoKeonciqHVsZ1whfgHYG1D2'
 owner = 'tGJ868b8ksU15MeJriCbCutpNauEwPd8UnzqwQwn4yfUZkX7VKbf8btbdaR5b7QVyt3qpPrBYxD8jkxx14u7LnB6kwr68TG5EhVb32HYt4hFHXLkJfGpDkVM3h5HY2tkDzb'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #45
 [[stake]]
 address = '246UKe1JR37x9PhBqwhoKC8JqUuucnbtMp8yZKPAFXqgykP5NfUYd3rcKvZVxrcxwnD1wkm6N2wEQzVATtd6yYGTCqZSYAb5X8ZFywPY8qhN53UrdopZb2SkzTu41kwxw4io'
 owner = 'tD9HQ6oWtfR3FxoqHVkiJkev1SqyaAFWzpoBvrGhTqyTSTAhty1BonkoCtYSrWjScnjBSg9NsbAQq1ycUDmFy7G8w6ZH4Dz1e51tgPVFM3V2fDkDvKQoWDXvAJ4DHjHrtDX'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #46
 [[stake]]
 address = 'xaYrS5TRMr8Qn5z5iGEo2a8p3jRCD1XWNe3teWw1pCeuqckKyJzeaFDpkNKWkAWtJx7vH2ZJD9YPZcC76VxR4JVPTHKxSiBbvigTapy94jXep5NV5ix3LXzLFDVLLuN1twJ'
 owner = 'uLK7YeGkjqfjVmAtnCEm8ZSNVCtB8wgn2c4zDbQw2pqagGK4zXvF3uQHPEyNGTsQ9Z49JqcFcDFETuL6TcN5EYtk1hpxk2kjGicFhYSxetP2v8jcTSLEBZ6geNVbe5kus5J'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #47
 [[stake]]
 address = 'xWw3ozP5boPuwdPx2QPnZ8UTt8mgCfGnQVWuRvi2iwxPi2UoVy5oisyVZHnP7jAkBde6RU4QiqPk2nGLi2Ky4tK7sRmiQymErRyUcHCgoAp7ipfmSr4oCQHgD2HRVcy2aNS'
 owner = 'rShGDXgRN2E4N5bkUR1TcEaQ6n5f69kby8iHijQ1uKRhuw8deyfd65MmaTN5SLzQTegKdLpSkfkSk92igLKgLk1JZffTzm4NNQVme9FdTSiS6DDiDyememQaHkDefpJFPJa'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #48
 [[stake]]
 address = 'ndUZ8scwPbPo6KTQB4SCC6WswDCfwKnHE7XpVjUpSH4bxf4ffKroEvWrMH1xZsgSzsaPbYCr8Uw18eLQM4uriFduFNvG35VYz6DJZ3qajgmaKeuez4L3ReJ8XyLmEqTgi6s'
 owner = 'uhBK6JgnaCiaJv4Sskp4hueRCvi7FkeLEDjGCFm9frsr3wRYcHWEpMzMZSBDoHies7y2qx7ncbecJZWSXVCtCncyUsMBUJLGw7CdgxmGmrhRZrvvGFcTCzDSawmnjM1Qz5m'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #49
 [[stake]]
 address = 'rnzGgecxb1KUtpKg7XPnnVtNKPXkbe8VLrjiEXpwtSBmK4Fn5tQ8YdQzefDZJdjUhWPRkhdCJCm4v5VBfdpKy4RBHTCL4nMP6HpKtkhuFre1eFhy6C4AAz8S3HfcZYgThMK'
 owner = 'zf99ETEdodv1gYaovsvPY9S6HG7PYMkyB75dBo8eDEMumuFPZt8D8KQpZufWaURv9RuM6HBNafdHL2rQwYvRnbRuwsB7Y8rwLfukiojWrvQSfMa7Zr3FP6nKkpDbjSdaMaF'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #50
 [[stake]]
 address = 'ygzc2FPtpzgBimXYJ6oQ6zi4wQMTXttj6vNczE4DrPN5KDKSXUhzveM113V6G9scYqY7c1CKT34XJVNoonyL85gRmExwtoigJZpNiJNQcKjMCyoyds4jhjEwe3Jsu52XEQv'
 owner = 'sk4SQZwnLeUbbMSg4WXR5m9ytFDTgSLWaKfU6UifvAdCteUnzPfrheZBMRWqwgC5dKva3LJ9uUQNXz4NPC8AZ8cr6hUTL5biRPscpmLSHYUA5hJvv48TtrPYZaM6eKuy5aw'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #51
 [[stake]]
 address = '21KEA7od35MiZ3qLfVQDTn5JpauP43xraf8UqDFC3AMZ2kQ3gdEPX7ZaUK5BmCz4G4h3eUDK3r7ejFcd8edZyJNjG8D4tjbVszEqNc4ugV9G4HwYUP35VP3sHLeEHtGBnrA3'
 owner = 'q9iQrAEYantdPvXf2V4vKucHWQFfwGfizQTb6tq3cbwCmxC3tFrStFpKmfnNkJEkkzHHTZpse9WmwFDcDNFinGY9cwE3WYR3NPJnj1f2UAqXvjkKY3GQxmhKPWgSRpTyhhw'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #52
 [[stake]]
 address = 'oFJsK3ifwr5siS8ibGid94UmbWkdyW8WbMjRXjrujEPjJYP2QfdMoi3izAy3AhFCPttNQ2NSEgKs4oyRCTaPguZVaL4bQjdYhjbzLjK3nVPpufjPTwmwHju8y11UjJfzaPq'
 owner = 'nruQxZiLu7KL4mHvFp9XjSofmPr4ZK33ydkecMemHmrGSMZ9xS1qimZEza8hSN8fyXUCfpEANtSzfVRKikRL3DsRw4vLgppaR8b4WHeTQEfjwYpAnUmPhYGyPBwvddWzzQt'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #53
 [[stake]]
 address = '22gPdqBf1yj6LeTECFfb1H3C2J3ZqavyQyyfx8Gmws39Z498J2KtkdgD9YiLyqanpg3jw72KY86Jrk6Ta7sKyMjQ4BtRRyKHMT6MueHjdSZhw1yzDMh5hMberRfd59XiELLa'
 owner = 'q3EWZg5J4igj9UTQLDafkcQ1yQuH4n3joDLwYQSMjRWYR9dAzKaXeVBwHjJaoRYPAsFZ8nJxYzCEpvpBQXefNxnzVKqbJYrPaGRwnnFa4D2CBzrFm9n8aLKhWL77R2f2vNk'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #54
 [[stake]]
 address = 'yGReCTAcijfeYa2XekCYiW8XU8E9bLcAKUYcGXvjaPK8k2bmLbMzKjexY4SS5BCHLCED2kiVNEYb7RBQUmM9gvRRZK5sYvEjpvsnZjXnRJi3ZyyHDjVv25tbi9n3h7KZRaj'
 owner = '2235HZ84GX99baZLYiXLB2SJVGZfNt9fSm7pnkB93ouAsnnigimwCktUbYzT5bRggAPmLRB8qvF6vk3APHJHMPnXEiq6YtPnpSjQzTrVyXHW3PP4Nz7QrbzDzaQ1wrZuYo6T'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #55
 [[stake]]
 address = 'yN5wXZLY7y4Z9c9VGyPJkiwK5NU1qZc3vxuurmqCAXcQVGNH3ax15HNJe1AAryCAoaTfSWVHawGDmDoHccQcGhk8kQxgoLRaJHZkmYPxwF2vTin2iRzjyA9YfiVkm4EA9DM'
 owner = '23hdcdsUdfBHuFZ7xAc13a9ZyYfKBQ9pm28WAn5CQWwc17jmmEaGbU7gH1PMpVengBxCYDqDXDjMwWrpVDWqnZtSrkfzFWToazLYkuhUPMKGqeShK8dnSw2GrMKZ9hxtF5HL'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #56
 [[stake]]
 address = 'rK738LD5JFShHpVCwcXpwnpdGz82sfMbFqiG3s1FTr4g61mgtoVGnMnPfoCzHTKjXcsVciGu4R5bNKuTLvnqsHSUrtoQKNBaDGNsANhBaW7HTsdsg6fYzPXSQ7Yvpy9HVrk'
 owner = 'v31NiEUwjv1vn6AUkKgnvBQkTpZyu2rmvUSdCQQizsFeRPxewYCtgBfQhn4YaWQHGBTVxM6nXBWnc7mRQ7cFcNZ2Ehr8Q6yCyaoqN4KxUjjdagfPZYQDJ3EfqFmJGkdw3Nx'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #57
 [[stake]]
 address = '24FYVPLyotcKVpx5LDYqWQqbfGfJGv4jpYgC12aCSsRbBD9xEZ2ym8FJvxuq7b1hvsgAmSDyMVpN9EdkQgwRj1dJfWPhrDGrtBapqSTVFutVhRGT8csEsEPwTG54XACyCF3j'
 owner = 'ohXa7jB6RA3R3weRiHVRES7izfPeX68KfGTzyw8LZWTuuzY11Dzu6BVGSLZq4SE5QndSjVYQKZCgRyURXjzz3Xscmtqc7XEAR5DvV5UB8kv48tUNLfiRXgtqA93FzY29Gkb'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #58
 [[stake]]
 address = 's4ErDHT25gZPyKtbPFHXtPWsU5MERq4s9CSPhRHdbXGcQhGiRAn3GM7Asq5He2CqbRAK4s4fJgarzt9dVqAozH9RR2H9NGkZAAQdfZALgHFoRgviBW3fABmhUyPv893noPb'
 owner = 'tdwXkNWr3UaRKTurYZvHqV4vxjMZJcRS8G8PxDqtDLtiTXEiaAdZq7wBkcBoK9mwJMHv46uhDfuNNX7UT8xZ6fmF6EcvWi55eHbpUYvmGfLCDFNoSingiDgakMDv7wY6YGW'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #59
 [[stake]]
 address = 'p5uzoZAaGTeY71dtdv2fV7yCHNgjmUZAMs559Nbi3KnjrvoKCFSgAJn2rVr5AHJXe7ubF8jmGgsoYngpdpLnrmqoMftjgYiPd5ZFSwJipce7GaYGWRSSvuk7u3bRCgARfSt'
 owner = 'pUaEoHqqBR5AQzkSDUmBSKZJ5fxUtAFhzSDcxPcB6dqRDabDHKGCaKgW6UrBY3YKEru31go5v68kPudRF6rKL2QziHbaqJce13QQX1atdPkKVZif5vyW5QVy4dp64AEZpo8'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #60
 [[stake]]
 address = 'qxLEEHyUCfQEgaUxKFUjmbcQwS9YXEjVNgjBErBJaGWb2cMtNPPoUeNK4a25EBawvjbjXokmeyM4LG1oCZsUE3fW58JcsfgiAJScyD8zqx1bHLjEnccLnoVB2eK4PSnvp9V'
 owner = '23N1pe1LkA5oGVa4vKrqaaRVfS16Jy84Z6Tqc6yzCKoVfFw9nmXsH4br5vtSA7DQyLmXsvVgvEXBRUcuCqUGymi8RPvBwW6Kk919BCvAD3rPD2hf7LxRRDy1wiNDops2fREy'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #61
 [[stake]]
 address = 'nQBJcQAafF8U6vZyNhKfMHGeEuBQJ8Fx7KYwv5qKQoYTYMsg1US667d6fZSTiiMT4sCoYbQFrZaCzrnxznVTEJdhB4naTYa28gFTmmmL5VATq9qoZ5JMsJHMqnaNmDdFHjZ'
 owner = '21hZtUbHyjqpbpng7F2JYEacxHrqeRsk4F4Zz167o6LaGMoGdf8M6DPtyWjLTcinx8UDWGy9VNFh53d5WxqS6MGWjaGdL5TPXCG6PBYfvYFoxCJooDN26kfDMLoni5zVv5Gc'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #62
 [[stake]]
 address = 'nGnkENXeKcatKfuHzQ5Xr2DK2j1zJQxHBF7DuWyRktfbbRyXQag8esVSuwkmnvioFhKrG7PLBW9dzbB1FRAnmmWtdhcquk5sLTXS3399e5pHc17p1bEEjnnrhr9Bt3Vb5xm'
 owner = 'n7Wo8K9yLWXLsr5xooN2SMP6yXPdjKPGLWb2YGKAvkN8kpyxAFqmd6kxQpVXCP3KzJe1gmQqoE6UNPDo5MBxzYc9R4Z8sKMs55s2y5PA63Xr53q4oNWwrgtU482ihuNryi9'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #63
 [[stake]]
 address = 'q9emAzDxBSqvbXKhUTD8GM51eHFBq8FcmD7QwvECEonxbUKQPBVsKb4C1eo9GBChZmFbSo49K79WeuMLeGM5Zei7h5RuN2QUR2MbYNvo3HtCGdvQQAi9sA7wCZ2ADyLJkGU'
 owner = 'qHiNqTtyMPM2W9PZZZeiUFmubQZQFR9pSpZ1EM8kekQ1SZNCibhVpAbSWkgi9qU3eWRjLxMfiqcFLLQPi12shGGfUgspNENvAoaWoa8m7UbegyLu9mshuAEWgLqLdFWqihg'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #64
 [[stake]]
 address = 'tJ1XNmqaKZgHkYkseZpV8y7iwBBDeFtrH9gWkWqHmt5hAd2KbH6pF4eQqiGahBoGCLjirdEqmcR64Gy44BAtou6BjjdYBQv2tp18vTFUbPmdua1o8rAv3mqvUgcrziaqhe8'
 owner = 'qqJjZ72TyUu8U2W9cMziiLaP71RePvgj24WJVZsKf24mxiqBNKAi9WXZve9PDYCGiMVXKN9uK8qxHnYJAoyBGACdFzQaMawKh59WqBfJdwq5qZhwC95yrFrKg6NuAt1NiCL'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #65
 [[stake]]
 address = '21mQQ4wsahccZpHEiXiQKMx3NDbszLSo7YP6856wsSHDTPkydLKmku752H94bcyksNkCFzxSUEgnjjdntaF8eciTPEtkn4DR3DPfMeSBDci1drwGVofck5sdGZ53yy9LdFLW'
 owner = 'yHxsewCUu2woVnjoxeP2M9t1mpBAmfrNuHLXCeUpG7NNrVZAaj8k741PBv6jUgKrRdZfACHsKiKaRNw6npiJMnVrzMzxqxePoCXTUk2nwPDw9mNoU31PYLAnBKkRtAAYvsS'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #66
 [[stake]]
 address = 'su6HX8CrJP4aaYvnz6tpkzZpqMjWe3C4HB5Qi5QxvXDAHHeXYPZtuEth4AkbMhHt8cyXyE1gByyqg1cvNshiAd5JS2kVjQFWLosiAfK7AdYKNqLz84yNqe1DYqXvKFnygpj'
 owner = '21Yqm42HmA5bVx38EzwPc2yLBhYpkWnFJpJ2mqdUqenmXmFFYLo9mMezhhWCXuHdDe77iHgbw9Vyjxhx5J6XckDKxmrwQSnAEpp3scaXBrrpRKg1aocozLdu26XwYe5EWfUg'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #67
 [[stake]]
 address = 'tH3sVoNdBqpEiJfo6uqqMiFBrqgSkwz5qzazuCvpczDQd4m548JHLy961ePLa5sevNcQJoFNZpifj1wBHMtCjRiSHqty84eeqw5NoFSGVRiQ7eLMQMSK8Cc8mu4fJtjZxhp'
 owner = '23BTKUBorcwaf4agUB34oqNMdGvfB9HYtbMpQa2S1JjCbGP8AeYDMHtPcJHP1rSqyL8kWEuApNiK7auSFTsfbGPM7bLFDNrDoitRv3iEVXBTcd7jBeeVwWTnQVD82TkskCMm'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #68
 [[stake]]
 address = 'u7sgj7Kjf2NEkqDz69k8bTS6zsdsUwmcSCpn69M6Zbs1YkLUA6hBpjwiSDh4JGeJZrqszRLaqHG6MNwxqh8qzPELiH1P69hSbaHi4v1x2o73PWkXKHTi4nT46bTtesT4YaJ'
 owner = 'z7LKqZX5LKNhEqCcoHG31xBRS4dAHWsuHXkG5xuiU5jb5RKiwEgzDa1Sp6TANPiTXFJrDLcw2SaE2jz3uxH74hQGot6agKXXAAPX7uNYeBUmRvasucc1s6R1A5bvMm7NJEA'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #69
 [[stake]]
 address = 'minBMimogYxds4cogCSsd2RVuUgJneBXRrr52out99FJF7ovK4Qy9BDJavcwBcFRSfRB8Rdfcvak67FnoXnFZtySoE18Ap6Q4UgM1K68MbMLcc9BVuRuVnm81sfSTPA1ZUs'
 owner = '26jyGLaGkcZ4ssFxfNgRzefuD6dWscRgJpw5ABrMHnUuSCLCPEVKHbMvDaQXGFJ3ZWGDhC67s2tg6em2eDuo3yZkMJ7JGPP7Tj7oNkqqzQ4t4quGtT2AQTTFDcPx7xW3ebpw'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #70
 [[stake]]
 address = 'pdWYe9XvMcfbyGxjme1L1f9pDVooCSug4yUQQ5H8iexj9RVTyUmMZWnrjxYUC2Unk5KkPA3B3R77huscDMRGBLDQ3WzgNWAz98VM7wsuyJJgiy3EDmWV1U3qG9KDRWt6Ffj'
 owner = '22Fu8mVCQGj4fpR7SFZQPbEMH9iPDEK1rNBUMrcgjqkKNX3VDJpToquxvskhkP8pUzkLT3VjCRMtTyPayG2dxcuVmdQ9tjDQ6FqiGGcnTiSoThSYDFbzN95A16xBH8szVujG'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #71
 [[stake]]
 address = 'xa9V6GboNJzmsK9zMj7K2Mm4H7b4Gamb1A8S38tJYAZ1BFtCJSYkefyFWooCeRyKBCRTQz3Xq6bYmciDe9eMoGfPQMMJvU3ZGwmSPyeiZWRB2rstKWznUyoHBUUFrQE8K6G'
 owner = 'mhdkBM7qJN8AayPL3QeoZW5hKFm6t2b3HzuzjeSjJsXmTSNNQuhusD74Gt3jckyc5c49LfNtUNpVcRucBysN2yupdQjUTbfQk8hPf8DvL2Y4zZBnGmEAD5QTRdiF8zKbMDN'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #72
 [[stake]]
 address = 'xyMqBEJM216F6wN3h5WQMom57Wi2e59mArfZNuNQj8ZWmitejdsmxt9SgyRzuAi3tdekGG9k3xqHdpvvRtAnoLJ3WoMnkwvfXoVNRpMq5f4W79Bnc87rFFRuB5vxC5DNC54'
 owner = '26TA3d1NUqUWmuHKMJfzaPCsnNAoLobR8Ag6w4n6foCo7aS5J9ZeP73okYPPokEsu4tyk1AS3VpQNoYkeN5bvnnLmyGSpzcpb79CSLATGQh4DbUTzVkbuYDHYq3xkNfxTbM4'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #73
 [[stake]]
 address = '21S2qPByJKkDX8fTV5Yt5QaEDqaR9akGAe5eP2Zk4BoF8FyZRjgXtsKvAqAbNFxFK9UVe6ERdcVMvzmue18Boe7BiQubx5KtDJ51PYoGhp7RZgUzjP32M561aWWM1bohFZbh'
 owner = 'xrZCY8QGTNPCv88KFQk6PXuPfJ7oZavDzBfEUHCmeT3Hs95dgiDuE8XnzJiERzoAWMj1j9eEJLSyYaiURhuuW6PU1R9LZQjJus7b2tKw9ehrQaLvCStfufhcGchStLmDH7Z'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #74
 [[stake]]
 address = '24BqVmRYkcpcm5QhiYMhe3rb3ib2tgNGzYsNKy38EYSjLFN8wn75EjUabSbemycWygtcsEhPaw9mF5p3j4AU7cxwbGYu6nFwzrvKKK4uERfmSjEKSaAke9XPKMxnM2bwLCDs'
 owner = 'uGUGfvgcn1w8LEbNhD8YmviJm8qfK5a8ZCQCSEf4bvErMkX6Cia7oMDqZpKBCS4L5PoEU9XvVWnBrAYwBNDYivQFfewDMzX1KDhA5kA8RvV6RRvCKozWDcm3kGaKYvQ8C3r'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #75
 [[stake]]
 address = 'nj1zk9afQWBK9RsAdRRiPQztVMuvjqwyCKDBj1dCE25sgHSKR2y7VMtjxWgqJ5HWQ893cbwdAQvmJR6pXEFCoXBAW7QAjZdQWnTwHUe2kvzi66P8Dk3mh2vn8Sp6p4TYSGN'
 owner = 'zsGt3zh4HV9P1cCXGXs7HU89vK3TpTH6ujR4qrvLXwYj61aL7FpbfTHxQP1rD8EaXQLjQdUdoLwHs3jaiCBKNEfwLPthcVBsrTr9HcDCsfDEh8uL3LaHwKat32xpY4iUFbQ'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #76
 [[stake]]
 address = 'nWmo4KXgng6w1FfFWGPRETCcKamuPgHYKmCQEzxTXw7hVASP68RUSFhyXSxqHtfcsvEkSu1xSK6Z1E7vhXjV9eaARLktqZW85PFhsxensxts55GTWS9Lhh9WkeADZTuFYSa'
 owner = 'zc327nizdmgfQwRW9bfLWM4RmKigR6QjeFYV6F4ktkbUEkPaXMLiKdWfTfL1uaCUKcJLB75Wy6c5Qxoxngj71c4W3MrngZjSV5iDzMLoSeJfteRerBDuUuRDe8dJXaceN5C'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #77
 [[stake]]
 address = '21ypuhjnoxPS9PuTQLUJLaQuEhPXYmt2nQqcDsj8DVrrCSLivr8JVsKL1rsPhtwaVEXA5GwmjRdfNVmibqt1r14oCM9QVii3xweqjBaBaruLo1WjWiEmAM9eTGKjHFpeakDm'
 owner = 'uoC1X2BxxF1E2DhkqnWsZs8sJLDugNGs3DyRhjWyG5tX61gYygv4RwzTaJvTncQDVYy54dMz4asYh1wj7B1aKkU2CYZGXQDiYVXujQB58GZDt2kU8vrQViSTb7tdWtXgzUN'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #78
 [[stake]]
 address = '263QBbjHoH6Jcx6KZDZ9UHna3AXhF5CwF5GRMaNdFnZjxLMe11aBLA56iP1wQis5jqLuqTefsGFD58A5x9LqkrrdXTnZireinKBmN1xezNzpK1YKZPyYEKGzpHGbkJGVHqc8'
 owner = 'tfRo7CC4uHkgpcJHdt5JpYukfuLQmhZaYkGnj7Ju2xtsuBSybCqqRsskCe8aW4164XRUmsrkHFh7S1LWWAx6rsMTkdSvhpQqJ3oyjAB4csxU83hmPFZTSkgPrbPh8adg3Lb'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #79
 [[stake]]
 address = 'pPpfxXna6BeUKjhTPWb3fLqHncx1q3ocKfZ166HG3Cm63tnbkRRVhBmDH7QFqA2TS73p71iF4ZqG2ZbL8yw3vDhMz6YtJXfwqJFcpi9QLs87aqfq8ZcNucVzSEiFKhATZxN'
 owner = 'oSGac7KZhScpeLnrkJJdURodCTDJofUFVwCB4ZMZ5ARDGqnhYqfXVPBC5wJjUkkCFTM7cjUnszVnx9hWKYxFUogV8fUUYiRzrXe8VFwHNqLFE65apb5UCCpvm8u3gF67Kzr'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #80
 [[stake]]
 address = 'o4VHeRaPzC5Tnqv4n1TSVRBEWbHpJU55vZxoZAqEpEERfkWPWm5QvGthtXu6jdjughcD6GpZ5mBSg8362U6qXf2ws4qPcNb8GmwXUx2CpBM1PYEF5VsanUjedyNkinGqEPa'
 owner = 'uDk9DwrJyPXbAHyUxAC9TsYpLWBv6cVk7hXdPja84ftniku9MLBwCa3y5F5M8mQDUTk3riG8KK7oecf2LheVhuzaX2bMMjofvXjjvmtxV37MgJt3h8ESoFJ2tDxTCGSeisH'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #81
 [[stake]]
 address = 'xpeBYwtnwyJCCpTP33PPeB614iM3CpBHUB8YuyN8VggspHA6S5oDcBGbamvyKBo4tE6DgyfEPLxp6B43zZh75iUbz4mbuaXLX5Dqw9RH9ux2Sj1Goz6BhMdvWBTtXU11URa'
 owner = '23L1MbGrU1QRNtpMtiDdQQnEFqZFNWriiXK4YyYNTepmJZiUEQJmnFBzr43MV6fnzsK4iZu89Xw3rZS424CjymbThjJdoKKRp284TPGvoqGKkjNr8sS1XQaVjXLxaWjwzRZM'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #82
 [[stake]]
 address = 'qo3jqK3TFLy7FJ2Gu2DJuYo6XSuuNPMCFcWXbBhikjBimwP7gJqedHafm3LjZfssLvE386esJrHyfcVcVE7juDhmvZpHQex291Fa4ZfHc7w7akwvq7n5TePqA4Kq3eVucFE'
 owner = 'ou2gY265uY7MxcD5pYXr9JVcFq3ZTBAwx5XGsgcAookYNtee5oaim38FkZ2uba66YCDL5tUtgsKwXenhwatWNLLKWUsim8Za5BS7hrDSaZHqGsP8THVmQmSHGnWMKGsY2Kj'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #83
 [[stake]]
 address = '244Atw6JAB4Hckc9hFWhvMeCeA1TGxhE831ygxWPXjxiRFsA3wrn1N4sUpoRQvjiELhuwj12CJAPFLYMbbdQpDMw1rct5MR2EXU6B43E72Rza9PZjwzrb3Jeo63vCW9HzHBd'
 owner = 'xPFMuja2VPun4wk6DtELJiRuUtoT6tFCrxfWTn7qcDMt4ay6DFD9BNbhgDNxEPYXCMjpbMjbgYZ8H4Maab6NaFfBALcBHrEuJhje47vF3JTWVxy2SJAPQrYcx8LFpLkytdK'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #84
 [[stake]]
 address = 'ruvGkcPAtV1T54tPm9EMoP7zQgYQmRG7iZyx5JY8mB6uA2vtprT16KVaa6v74udE4ApnX6vjcxUA9rTcHKrVfAQ1MXAFqKixadoxaq8TEpkdGZ2U553tyB1vLU3XVcEZ5oz'
 owner = '24r9FCzZv5BJXYFXr6RcJ924pVvYEHmgxN2ZLK6mQqPJv9jP7WwNgfkVcKuZTrxZ1EZksG7m3KJhhdxcbKXHnqKa1d3xDFx5UoPHJQ7cBNueSfuZ5NxVfBiPuvnvp6aXzK1K'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #85
 [[stake]]
 address = 'ziprbzKQAeGBzjw3qhpTzaaGCX1ef1So5JC4FSqSJxpuiiqomuhhX1PJ77fKaC2bVTBqS1Ba665WHYq2GrvkBYS9QhY31mwN2vY7n7T9Rzy7wbtGhXiZaH8ft6kzYZQueUh'
 owner = 'qcwYDT8TBXWP71hY7scirS1rkEx7tqFUJpRcfvBrvFcoD9FsV7SorYC5GwcXb6T22mFCw6qGFRFWzQDSLfkadiCFscboejrahvczQN5sDTLES5fKHEQ3zNXhuGU6CTHbWkn'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #86
 [[stake]]
 address = 'pdXBKQmNc356Q985pRNrqSKmmStpfXRubKcnE9mkuKNh6aufsN3MHFLup5zD65eTi6Ja7rfJruTjoKbefy6eBUNf3bp33bjieuYhLFEJmmHyr1o1Cw58NCAhNh3vxi8VY41'
 owner = 'uPp3Nk8vMWfkq19yecKXDBV7PXZpF8HUhC6vUKbLCUeEHZhLsi52mwZhWLFEx1C3tER72tztM3a3zNNLHy4k5gMtCciUrYPEE6k56GfzfsHjcTXv95Vt6Cpa4LXVLbBjfM5'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #87
 [[stake]]
 address = 'zhhCDacnbbFXBByn6ZAKLHuUPFf45cfvqFN32tYD642e7DikDpoEtLUUDPWa9UYPHiwyFgSUX3vMKdYptLFtv9XoQN2MM3i4rqdaXfuJ6os5TAPfexZjqPCHB945brR52uS'
 owner = 'n5ku5guTHoyGTve4P5tHiQPxX3LVQ2mcAhLLKpoR4RhysNvSxvRK4fYYZGSyfkMFkNavtsz5dx8kiP977SnXyS9SgWdQxK1vCSaYMBB688zu4SbZzGc5mnQxnV1ftEBjthU'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #88
 [[stake]]
 address = 'uQEtaChmepg7woFARcQ4DBb5wfCfhYUeczAe2i1rsaT4Rz9qNZA3e5dUDqGxRHMYUpySxusJq1hCPBYs2nSzE5gNjNCsyRh4QS3U7oxuAgdkJDLDtZY7HsNEtovWazsdzUZ'
 owner = 'xv6jL98KJ1HyHfH8Uvxjxc611MqP6MBZBzAxS9SreNXfT6Z9YadGZb7HoaS3zC6GN6AcGv5EbEBz7DjC4545igAmiwGEFaYF6wbZLHXz9nGrkPzcqj2ZdJPzVrZhWJPzKZ1'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #89
 [[stake]]
 address = 'yhWi3KrYeNNtxGSb11nhP3TwkxKuQqkt69jqzF5wUVe7hNzdYQDvghasCCyxPV9UgyWSGUFgJkDp7WkTvjAqcwRNuRCeJq8APqjrMuzCMwALCmUrVjt3xxyBdYJSnoTRnrq'
 owner = 'zPvmHhDtbRhb8k9GwDcyDDRMzphNedW4dnNcDXFFJkgo7wQuSERXgnRnWgSBcJqKDELCDFFhiuxobeXJPRRUhb3fkYdY6CFFVuWBc9vrVwmK7KX7y4BM6Do9xWv8jKxHJa4'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #90
 [[stake]]
 address = 'rwJypKTPBEm5FTDGGLRBFK16ix7AoxMLvMGcbenWGW7StbDRRXGnRqnTXkEv7i6MeW8CkgN9Q4uJvKCnE4zRcQ1UJYJSeDwMXbA7PSxUiwMPmqNsTLLsWsnaWUMrgsiMqB8'
 owner = 'o51UsUsAptCeoyjc8jBbMrkbLJtzEXbAd2Ar7VZtEXEBCA6pwZNS3W8vfGMnA3mzycjsSAK9U6AQ8TXq7aL77Y8iJ3St8EQnkP1UnW1Zg9EajypEUAJTXQ3bsxoLGsF8frX'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #91
 [[stake]]
 address = '21CA9N16hEy6f46ZVYFMshZfE74PerBp6cpoE9ApaApx7kVBbkb4vKFYr9ADdTEJyMaesozS3ngJPmQJCKQXjbeNSMJwUt62vhWnmUGNp7Dq9zx3sq4friRQS6akZKqir8gg'
 owner = 'uAvDbKfywHEm6HqZSaKsSEaaHYC84qqSdAPQU2fHXNymmxRWsQKAm5iiAv8qqfbr6rqSuzVgZMgjBRCAc2y7hdaUQDaXj72F44juZEmchBaGaVxwEYJvuqMQYvtumBKfTGW'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #92
 [[stake]]
 address = 'yCczaewe1gkEyDxC47GHYAvSwmAvroAGiqfBv3UApFcERuVTPmEH6SZE7xbKHzYpj5JuGZvqTLcuzSjkfWZY7aQN5okzdX5jLM8o7PJzFbaqM4yCA3Px59nHE5cWMjvRUxg'
 owner = '264Q1urRXGNRTZoWH1EP6xzy4NZKmyHvHEEd4STrx6ut2pFgkZfiCLLguLZa91Gt4kFzcdYhtPeV1vjDwyhvKM9PqqUQohCDQ45jtGanmUqeN7xuDmkRDGTwED6ioreZ3Nkr'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #93
 [[stake]]
 address = 'ptkVfMZH48SmZxQGRg3xkfYxsSi283HLnGHFZgzHheZWC1FXwxLsQ8mneGs4Tk8F9ff8MCtHHbPZA7DWXjSzeAdknuFtARhzbhZ5Cgf9YX5KNBrn4nufAJTubNtGqcDvQEh'
 owner = 'rH8DxPAPEgqrCbeLXkdZtBKewArhMTTp9VvJS1vmVG7jngAC4UyKabipqiJ4pfwB7SG4vzYsFDYLfJqwq4CmtpmAep1MDnchdoAHsn132pRCpTrSg8p63YsYDj37nZy2vgw'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #94
 [[stake]]
 address = 'p44Z7WcAn61SqP1fqoA8dbyTpS469JmgGkFAVT3nq3aizq3NQVJ2woyQQrcv15R41Peaf9LxioxM6DrsqbVmSQaH7apvZEtV5wJD2mvjPHBWBLSmepKAScxnMUDaV1bXatJ'
 owner = 'qTY3Frpv7AJb9KphgjZXq2dqniFkA3SCDrWNnB1d8MLGJZUQcNmFPfEunz81ZGPWuqdGajbXHFdsb2jDRWBz5X1tPb6FsEgwfDc8Li1UVFTk48zDZ8suqcbCEa3Dr3Z42c5'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #95
 [[stake]]
 address = 'zRbprT2pSDNi4ka8uLDdKAN2b641J15VKTwK8WQfbwRDrdZnWKiBy7pN8863zJDp8qAwBBtMnD4dQ4zajjnzjKxnGEvnsZbJPjKCaz6cBnRi47SonbgVmk2BbNYx6VAzsFB'
 owner = 'xyRbRsx6rvFYw9umesfyeJMfAuxM92353KQASRLugRSePX6Gq5eL2DocHdwo22nZWe6mL2kzFSVPXJKyrNvoSHXdcHFquh6AZ5xoEJoFJHjoLhnobsq3T5R8dNephBG9mXT'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #96
 [[stake]]
 address = 'yh4RbGTE4eQ4M1GVwGNnBmnuxoCq6kXjPZjhkPCbFrV8BgtkJEtZkAXjJrJRmbwkNrZobxmeCgoDP8sJdAsEh3DUtcTYkmcjDRU7CJH9goLU7TzkamJPvg36QEcrM9DHppo'
 owner = '21mMznXacrpBjgtQHbZrjMVB1KcGCCCxDjE3ZbfTLR8btpS256Kk7tumJuDuTs2u2nykRDa8s7uXrT4gGm75cHVHyMtkukiXDawcXZ6YsVab3U6TNvtzeyLbhTv33oiziDRD'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #97
 [[stake]]
 address = 'pSjHLCY95c4JT4fDkYaWSKvdHYC9BMTQJvfjWFyhpptnuJXdwX1SUz57HabnckiXTkVBRXyh31C7fW8X3Kc23VoKkwb9Jt7k4GB2GqupmHXLhxZVx4qbzDpNgpcAYb1m9Yy'
 owner = 'oWnmuw3aorQqaK1FTsZvpRAdJTq82nj6YVuv5jDhS2S3sktm7YfLTNLPSZeomXYnUfUEcnRR2B2AKWhpULMMTnwx3NbSYFkSPC3GZRQ5diFNjHqTTqoyj9CnTSTYswy4bgP'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #98
 [[stake]]
 address = 'mabLA3ELdGgg9JF7xsxpPY5qJLySRiC2i2vfva82B7ZqaFr86ihE1ch7iNE7iz8HuHqvNB21NWbC9X13VFTcFDLoW6xLQPe7ZcUsM9KgPuKDFxjD6obh5bUHwDrqE7UpS7C'
 owner = '22PbNiKgAWt9WAFr6A2ZgE293CCGtvaSphDHF4dTdawkidvExzUZznV9DzjneUQpDnLQG8aFNfPXNog3GEciY9VbdHdSUTjaamBj4qouQmBXMUbzxEqed7WGaGtUf8xW3zpw'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk stake node #99
 [[stake]]
 address = '22PAmDMf2k5jCmwV4BpuJVBGSMaypLAMx4ajEAWFHBh51KA4wprFKDe6tCrXQxXFv7PcYiNpNvD24awkpjhu5FhCAFCjn84k9aLd8jkUHStpKHii4Q7jJMUc9aBZshEx2jgK'
 owner = '24FpRww27ycfb5AoQsxVMRGHFYJFWxMwZDtv7d5wdAZEXVYmFGTyK6WyoJpp9XRqV7jrdYZhinXiZVpk2DbKyNNqUgV9pbEQCFB67V43rusUfGgwhDDPfkBxsBCM6rZAPpxi'
-amount = 500_000_000_000_000
+amount = 600_000_000_000_000
 
 # Dusk phoenix node #0
 [[phoenix_balance]]
