@@ -1,0 +1,1212 @@
+# Dusk account
+
+[[phoenix_balance]]
+address = '68UiBbsJ4PumJyVpS91VbffhKgq9p6QaLC8QCqzgLiKBX71mvCswmeViTHDsBJ3RMwsVcxBSkZ3HbjHAL9qCNxh'
+seed = 0xdead_beef
+notes = [699_000_000_000_000]
+
+# 100 Dusk network provisioners
+
+# Dusk stake node #0
+[[stake]]
+address = '25Hsv1Lboh6Fgwv7Byx8dVP8TNjWYYgCPKU7pupJC3tDAJrkwdBq3zZx5HwVfn7zvS6Hd485wPP6zgRRfvLjjeuy2LsxzmZbEmn9juRKWSauaDpBJu9qDr3jucyEjyZ2akJy'
+owner = 'qAieuaDxkkp7cJhFgEqREbEyhD1ziTZxy1rD97c3CssGmM5UnY18jb6VAEHQrkyzY7QstqRW4UPVPsMCmuwEmovGNnaFQRijR29hZiSHjmpU772wyjLfYiBBULyP7QdYqvx'
+amount = 500_000_000_000_000
+
+# Dusk stake node #1
+[[stake]]
+address = '26PwjZGkfLx41vf4HV6idBpyv2Z7N4Zcr7PMMt5wzpDdpuKkEBH4i14VG9sJnG6n2ZfjoqNhJXm6KH4bwVvbGsYJ1dKPGWDaTJBehJBCtfKuahfL7BDQ9hDwhmBHFeUortxs'
+owner = 'u26dNeTLCgL6Qr8dqxxbcEij8bpPLx7LxLP4LyFWL3iXqTxkYjk7wF4L7GG7yU3nn4yBqkeDbnTS4o9stAepN58R7LQvEuzS1EZfXgkNonzhVhcxyd3EyLSiSgwyMwiqkFG'
+amount = 500_000_000_000_000
+
+# Dusk stake node #2
+[[stake]]
+address = '26tWDWDeUJQdkFjX4a7Aw6iKtR2DFjUrQur9n6tKYjo5oouvtDnLoHXetquZTahemUUScc6YRktzmjPe7hRbftbG7HTSEbM9L9wmAep9ABd9QbUgKVX71ccsnmgVecDtZD22'
+owner = 'qHPfRW1ETpjN6CERhVeG6iim7sz71ZxJ7VRjSDqnkY2bvXbga5MZBfHXe6fhuv4NrTgr41VwQMJZdaKHo7oCeVNfocYuv6HDnBQPymre6vsuzjtaEMmk24zbHgtVU1XJmQr'
+amount = 500_000_000_000_000
+
+# Dusk stake node #3
+[[stake]]
+address = 'oyy3p1QpuudGx5XqdP8ZgwChqfYdJS7ki5tDpDtLxbHPBaqhbdLX2SNpDwtyhd2UFuyKJkQnYVtcBX2XPYP8hcr95FAJkFaCazmXNTjfyQXxJ6fPyL48eMqB9DeCaYpFzod'
+owner = 'rAMvRRaRwD7wTTvaGsp4okPp5Uc5XDMqt52AVXvD5cMvsz488KniMrJot5cuzw8AZLcEsev7Rqckx5cUKpUCyt9eZrpLLawWKj6YM3ouhC8BN1w3KsNcrm69Jb2PHdpU5qP'
+amount = 500_000_000_000_000
+
+# Dusk stake node #4
+[[stake]]
+address = 'sun6wrvL8qJeq7xFtbE359tCMkxSde9mGHmg3PVFvECj2anGAyBZGDXdTGd5tZyZ7P9JYMnaNVmxwQC5UX36rpedYZ5SRhUWneXxgJm4sTxehfSxhqf9HkPwHVVGRyQpgxy'
+owner = '26DBTHaE4FLiFrDi67gTfaB8FrNJjuhASgBUaR1uNPX5f9FEuwTBhPSXaPBiYAC17vp6opMWK5i3phxv4A6EbB8h4hvDBh8SP4B6redRtJz8AM2LdNeQn1m3V4B5GGMQadgQ'
+amount = 500_000_000_000_000
+
+# Dusk stake node #5
+[[stake]]
+address = 'rAuty599SWQmNJCEcGfks3CErz89EzULtoDb1MtHopy7jou1gRTiKAhBmrNazcvSeDPJQXgFGiPWhzem5fGZdsshk2jxEzLp4Ujhr5TSgmgS5SeqCBFv1VTiovr2b76vSsZ'
+owner = '25na5FMBjSUYezkyJhEe1YzVg3tHQUaC9SPJjHwZhScsiSLpyYkEcK647JUCMEfhSKd6hAkivKWpF7fWtD1K7FL255QmuEcLuezZDL8sb6fabaB9WEmwJvrMQDURZUBRvNMQ'
+amount = 500_000_000_000_000
+
+# Dusk stake node #6
+[[stake]]
+address = 't93UKpcJQH3SpTKeC2ZCWWKSxwgCN1Ea5EQF1X4f1a9cNBDPHRjeYGj72VcwrFEcv7s6bcdnNHeKohn1qWyTzs7tZkgyDWrWErAZXP7NkbJqSpRso6L2NoRDeH1SkwtFtE4'
+owner = 'yYhDsLuZkL9Zou2Ypw8y7w2h1H9KC6ZGfhu6jhieWtjffuJkyvW4XmkAcarKAcyZ67HzF7eSvhgerhu54ziFoav79LyoRTX9cGrBKowDbUSAdcA5tZ4Ubksn9NiYy9Dbf7t'
+amount = 500_000_000_000_000
+
+# Dusk stake node #7
+[[stake]]
+address = '26iaSoUgF4dausnWigMQbYaEwMhDU8e3M2hcKJQ94Vp7wRdqX6h7Q7EZxDoim1QQKFk6SzTYrS8HZQ9hmNKXAHC8nLse6ZhTqJstQ2NkMvMts1TXRBYdSwMFjBHNNJg5y4wQ'
+owner = 'qtf92YZ2RrGSDNsPMe6TREBTQGSjDc5kViLA6t7DscGJWpA6CCBR44QYquszSiSjgxrNvsNk4LQiXjEyy8Z23FPwptFjVu5HXSeSAvvVSrtCuKqzyF6yirgaiyajSqeXYme'
+amount = 500_000_000_000_000
+
+# Dusk stake node #8
+[[stake]]
+address = '23sAVwneemxQqwJwoj8qv6d6dbVDVoz4JWDaLp5BQUdo7xA7fuKLfX6EeLPP3T9Z8ehYZJEB5QGUpJ3UzBsvq4NAQyK7qjTJWSHXAw3od9x7Rjwst9UtvhC4H5uKKs6ciJjA'
+owner = 'pc6HyDTnrEWeyAQT4v13TNJAfWFftLChAgdz76PKWogjJkEyYi4crkyzHgGkTwWM7z9HTXGZu7kkyTNHy7nL2MyUcsbfLMdD5YCoGFnv5fRpgTNHoMTnGSwVEUeGTsxvdH4'
+amount = 500_000_000_000_000
+
+# Dusk stake node #9
+[[stake]]
+address = 'rwkWyNSbGfnGPTWzWAK8znHfuaMCmLMRVqVjywGGDmXyUjf1mPqzo9tiXYabG1zeUM2m3LDHNoW1sgsNcqggpeeQTyQ2wei5gMq5Fc7XSxDx342FRcqq4PmHQPvisA1nj5H'
+owner = 'txRoznznfXogimCNnVb6jT4ceVMNn65MBxCA38vPkGB75z2PhgGSws1fekWAu3xWjH7TKnNVUFS7hmQ7qD3ZmdGgza3PCBKXiFK9AyeLPgwCkwq9B4jcU4s2zagUhgtUBLS'
+amount = 500_000_000_000_000
+
+# Dusk stake node #10
+[[stake]]
+address = 'tqQopfSeUv5tJdP4JnEZ9uNQXYSvcAwT7EDbR174y2122rE2z8DS8kiQiCNWSAnLMaJuB2jStp5regxMR4cKb74vrYNvC5qYfqGDzCBLCrqEDzNUCGzBr8ebk8KQBNSEad4'
+owner = 'tNbQtxoFYooDP9Y3nvd9RgXYutCTgpdSPpNBnHv1UfqsRxKFENbE7BYApr885JRwMnvD2SP3o6aWrZxpw5Fz4Abts1hJAoZRwGUmYXYKWFtwi7RxbQA6BmDGdpT3Bpyrqmn'
+amount = 500_000_000_000_000
+
+# Dusk stake node #11
+[[stake]]
+address = '23wCBYz5eGGiBsFB3A9HxmCfmyraTB8VpZLZ1VEGKuvVmSARARAJAo8wgP1f7TvqXX2YFTFDDsLmrkqXHe9c4SDY8cMuTyzbGApgjH34nVg6Gt1zyUowAHKFzQn4fA3GK8iB'
+owner = 'mQSztSjpew49VMyKafGV3FGB7ZcHnAHLzf63CGnZzCtwCG1RUB4FB7MJvoWKNAn9cY7xpkDSrH5YGpkguQZezvmNRQnVGqd9CGFoo2CpEwmopaXmEa8qV51vcKQ1V9TAhUE'
+amount = 500_000_000_000_000
+
+# Dusk stake node #12
+[[stake]]
+address = '23vbJpMTxcaqVHrh3hoPUJSXuqbFJrRpY9wKiX3MQpGKiyJ1d6Vz5rTxCqrQALewLVQ1kPNVyyPVVHexKsjmb2oM1jQebUN237p8Si1jYwoADbiegUVG1dadW84bxpEv1EC6'
+owner = 'q4AujZTKjoXXnugfvMcwFE9PQHyeQ8gi1z3y17RSRtP7f2PDfNJCFQG8MCymhDNzrPrjX4js6rnKyLk2QPzffRhRegRCGYHJVQhiYUHQxZSeESaYWKp5M7D7hSrNuLu86XP'
+amount = 500_000_000_000_000
+
+# Dusk stake node #13
+[[stake]]
+address = 'pDyTmdeFPnaisskF5JnfFGUfgeYWg4fuWEW6CwEWn95JHQKaqgoHCTPnqp32WhcTBLsKzMRRiGFvFvdMhRJyS5ozH9qAkuexY96reZjdX3ybU63rFASe13odBc9YgBtcMog'
+owner = '25gxLAuXiCqpAMUy3r1gzQe3gzHkcajYNf4gNMshqxqpiL1rxZQbYg9fAmtva3uhwNu8BBbSH32hJ86LSXqW6B9j8JZjfdhUjA21Zw16Eme9tWcXvqcQYyQB2HFvG5sC217X'
+amount = 500_000_000_000_000
+
+# Dusk stake node #14
+[[stake]]
+address = '26yNeudxTUZk8UyeUYw23w1QELKVJchmBSrHL6SXR4uVkCM9KVMt1zmrWvi4uidY38ZywFRV2qeezYgSGaHGd8vNF2cdNiDYNrGsJo1v84EKFUVwmvsUer73PAoiL8gKHwkm'
+owner = '21W5tZPb7eQbgNFantrMWJ7dFZANSyHSuKZre8peNje9oMj6ZhBPBnhbYW8JtdLwhzKWoCD8RPM7LnLSeJ9WkYF18nEZw7TTmKTfiCzKwRkn7ECR8qdZ851yS1NRKbJYP1nd'
+amount = 500_000_000_000_000
+
+# Dusk stake node #15
+[[stake]]
+address = 'tib6dYSqUNq31Lx6AZcmBNE7WmGjYcuBPqoW4SvyPfkfvvdyUFhfU8Xf3DAQb3hZ5XGroKzuR6DEExmMyLu8y9BGWsMJw6zAQ1QTFhjuQMuyj59Ka5MgQTk9CyBfuTeVZdJ'
+owner = 'p7cj1kYVM9awQaNUJi11xGzTAePy4z9xidUqPGvMvn6ghtYTtFfB48Zijetf2i1AKF5GFbxtmocjsohnCEmaATAJS1YKbq2WknZo6mC7Lh2VVfv4JCxUSw3RrbA8HB2nELd'
+amount = 500_000_000_000_000
+
+# Dusk stake node #16
+[[stake]]
+address = 'yiFkmVfpyEj9e1Xwg1UvQZUUUxPrNw3yMU7EnKTGVMn9GTCBhMLAQp6NuUcU7F4GyA7XcoJLM9tHMLArYeWtgt39QN5qE5ieqVZLUTvMELMHUEPYYZbsX9SEAY97mndCUdV'
+owner = '25qqcZ12fvDKkLrjvDKpyZtWQZEFWKfKNkj7D4FDPZWoBnaFkqzBuBVbAKeFwNbQg9nsynRPAiNr21ccjREigyKyQQpWS7Qi4neAyFz8KKzNdWw7YLZ34WuHNc1wZocQ9Ev7'
+amount = 500_000_000_000_000
+
+# Dusk stake node #17
+[[stake]]
+address = '234x4AWGCfvNUYEbEU7YpXLYKJMHALBjXS8w2VzFLxiePLivEsFT8UwvxjQVUK5LhSSQ65J5sd7YnjqXfE5aPJfFAtogSyXRmTgMJz4jUE2Kmd8YDwt34QV2YQEWKKpReT5J'
+owner = '218Hk5AefQqhp3sQ2xcQ32ZJJLYisi38VowWurK6nBUtDFUccHY3n5ZAZaBAh98T71ErFTUKK4WcSd8uNGU9gw2BxRAqkYRJcESuKEaBa5s7qEy2fJUPycsmq2quWm15qfdC'
+amount = 500_000_000_000_000
+
+# Dusk stake node #18
+[[stake]]
+address = '22oLgnwgqNkEXXJTks2GAo4qMMj7xt9ZoSkmNqMLiV6dSDNLnZ7HWGQZJ7sd6Pq5hd7mPBnmTek1TZpm8KXnhgvKxCgBz94rUVWDGTq8uPMbG7mNJ7kChwA77eth1886LBzu'
+owner = 'xm3C8LV122fgKtBAa9mfVr52xVL9bZRi2iq3Npj5iGD56x8KvkKpnkXVsszbiu1kaQDxberzEFJ8yNjdU5Jty1CoLvTnXeCtgPnvhALwpTfcQp16QSbC585kWpY7vFFj9yG'
+amount = 500_000_000_000_000
+
+# Dusk stake node #19
+[[stake]]
+address = 'q7q1dcmD7gbUVFo1Wv88N7XjGmR5yy6uFq23tnxCptNBx3aynB7EXPwaCE34SM8icRLCP1jvd85aLJ5aL6EcWcRqNz3aQwirg2q4TXSU3W9EM1o1fwKY7Ra9GYJsN7LiVUq'
+owner = 'psGdCPto4ytFkxQx6E9KwSXvyFTR5a72MrdFfnJ4peWyx2NwgR98zWVszcESbx6Fzw92wJ9EjcECtKhpvtkisRPUzsniyJiZ1vykvKUQaun4CTuQvWiW4hSctNof6K6VRBX'
+amount = 500_000_000_000_000
+
+# Dusk stake node #20
+[[stake]]
+address = 'q4ddi3m1ypwJAXBy3tj8Vk7kBokkf8H9aRRn8Xb8C7svdE4MQL4vKv8S6UexuJg7TPfyo8fDBxvMewMfERUu1awsy3qpm91SwxScj923zu5shVcvDZ835PjrmRta6qHJVcY'
+owner = '23WfsodufEf6CEW8pqmnfsqE3mXeHEw9oTmQf574QwZYTjpgr7rpN2uSm3oEjUx439H3My7DxUNWNGiqH5qzT7XxTbWDDFzYYkMkaDrydrxNxDDF3jcQnk7PJN7YSSp65AAk'
+amount = 500_000_000_000_000
+
+# Dusk stake node #21
+[[stake]]
+address = 'mTPxE6PGMgSnaE4uppGC9CgJ3phQzqYKxeHr9J24tc6DWXxZg2xKZZpHgkYhwKiscWDGnpmiqroH2bo5WhKGHg4sRhXBGuhGYWmsdcaCnzfAjVAjcD8eiifdk3cmjAGkMC7'
+owner = 'qJsrmqrzc6guqsgD8dQ5Vq7qJ5HcSMnZWZmZP1DimL28yT2oTZE8DXedvd6XFrYzDoenWUQrVE7bUHQJ8ugoK3pBctYWQhExehXK67r5bqTq8tmYdwvyDwsiHsfP6x4ZdFi'
+amount = 500_000_000_000_000
+
+# Dusk stake node #22
+[[stake]]
+address = '25yEcNiCTjds3zvk4wXF39wcbvoVQqq4cAiDBLpTmpsHGHar2Vq7VZTGv3LmZk8x52Nuo72PyUV3jxmSwGxthSLSsvriEerxZv5WtsSTgXfKmyyygaLNQGKhqfHUHGcGEvmq'
+owner = 'oBuRKpKTs9LRah8HKtXDHwCJmn7KjnHPn4qXxGc5HDjiQoMy6kjzZnWZProT2bTJLAbhTXiRyQAScaatUtuvGsYEdxkpBiBAmahKsd7paVxCJVJgHRizpPiS541ADbcPqCA'
+amount = 500_000_000_000_000
+
+# Dusk stake node #23
+[[stake]]
+address = 'mgt7NPMk3yrjzfG2U7aQKqsTkLotv4Yt7NQsYt6ck6nWYjEWhxcbvSQbEA17Xh8QzSiPDVhpXpMHzRWXarX62jMZpQ7qw9R6q3S7tcRP37YXGbDedzcWBM11V9dHTWcwfgL'
+owner = 'o5DkWLafstJK7uhT6X8JnHcPJmvitzkDKeC5FgDPNQEo52n5wR7XtefY8yxnwGYR4RPYdhxbSR2xNb1KRoFbSrGy8bUXmqc6EfdWmd2bsNbMzbCEGHFNM3pUwDec47wRQSR'
+amount = 500_000_000_000_000
+
+# Dusk stake node #24
+[[stake]]
+address = 'ptPss4DSwhqT95tpTEn4noGWbG57imuyHbnfVojn5hmi6GHHne4Prgj49MKXMrLaYVo1hWxWUiovopmMzogEcaaJ1kmDwr6wR8qnYVJHNrSji7YRLrQXYEgzD98mLAghtnc'
+owner = 'z8XnJHEkSiMYLgAMFhyVcNMdKw4PaNTtvHHJkG8BhzDv9FrEgcrxYjK5m3SciBy4uWXUPpRZehx6SzJWy7Wn4Cz1PoPF5Nu3M9ecyd1wpaVMt3PxqUJ6qJeyeNuH4bUfKAo'
+amount = 500_000_000_000_000
+
+# Dusk stake node #25
+[[stake]]
+address = 'xPGbwNtjg55dXkN7UnRvZrtj5jCKXQCsN4mXroH6vXXK16CTncYRGnsEqSDHJyVb7yut2Pp8Xij9by2o444HqPUKEfHkUq7i5URy4V8GUgDPdRyHQoor5SLa6ZBUaDywrHG'
+owner = 'tXfEtJhvX9KfsuioEqqQspP96UU3BcyXhEAm6dGvj6P6BbwHJ6jm3HxqkAquydCevEQEqe1HecBAM7sHfkJS4ZQSEWU6mGzX3kK6ZmveS4gRGHPpu1vu7YJjoNBNUSfNhwm'
+amount = 500_000_000_000_000
+
+# Dusk stake node #26
+[[stake]]
+address = '25XskSqBMdUqC7yVGzKKruq6dDadynhxu1VYW8dzPWjHbHZF6g4jdgiA4MvFaxmog1YN2bKJSst1nudxwYs4bu9AKkd96NdkZ4PXSYTNbvrL7SEFDhQQezffT4ygBw8sCWn9'
+owner = 'njkBZRh7xNmRy8UcjCRNPfn5Qi68G89sbkXWei6V8zHc84zjuoobM7UiEWSGR7iHbQ151c87KGViAt4DkW2qUAMSaxfSFfT3BksjWvkBDPT47rJbMG8WqCGszP6ZjyPKcNg'
+amount = 500_000_000_000_000
+
+# Dusk stake node #27
+[[stake]]
+address = 't2MvJBfensysPRUXmxJiXkRHmZ5VpMsEtFNVfYsarR5BrZjHzD4csTe9M5q2YYsk1bvMrzRRViGHe2FJxFAuiYuCySAFzXciR7bDoU3WknZqSisTzQ7zu9NPGxCaH3X1qkH'
+owner = '229XNwaQ8cR1GVv7UmP5co7yQLbnFNGhLvk1tzVCt5XK7uhbaD1xJXqq4JRHrVEaCD7ckJCoxVmpvXCbb4rHBXwYszA2VnWGUbwGSMt5kehywqSA6qR4FUMdWmgxpLE9p4CT'
+amount = 500_000_000_000_000
+
+# Dusk stake node #28
+[[stake]]
+address = 'usADChPT3UFS7gpncEJfypZotL5qzCUbbBxeg9ztj1QF6ZCcxnVVz67DHZdpGgGLFMmyMYzkaVYqbeGZK6oa6TCJdwfjk5nqJ7mfL6S1Q6RWfFDUkj9T2bmnerSgP13S3pV'
+owner = '24WJioX1kgzYcDt5sb3YrWL5QjJbvCd7vDvUEZnB3XFZTWzfbN8GDFWeZnk1Yx4YShEMUVNkCWURN3d7jdQ5qTjCHkFHC4QAFWHZGmzK1S6pnuRGUqzjwZAvLr1QXKEp83nP'
+amount = 500_000_000_000_000
+
+# Dusk stake node #29
+[[stake]]
+address = '22B4TU3CThMRc3V5bZ7QcLsU9FFXqz7qcKFpzdvzmN83CyuFWnmtCtFRF4XJ8XBtE3XvbQU2et7LoGbmF2KToDqerok1We2MrFH5F93qtoKPwWnMCsMVFHTdy5ndEQjNS1t8'
+owner = '26u53cXD4wHAGFXubdxWh463jBDdiGUu7E8JxyXntRytoH5jupJWX222bfr6mCTRCGoQn58Lug5kPHXaT8JdJMsE1aBNW2wqeaVw6Rfmoc1RxovC294G49XT8T54vWKHmUCH'
+amount = 500_000_000_000_000
+
+# Dusk stake node #30
+[[stake]]
+address = 'swtCqy8mx8LdME3ZceDEs4MK1hWJyD9HyYNRBqyCEfw4mTZ7GphVRpkZBeyHZuG9ExTMmvsHdWixfb4VHdKGkp1jH9sTAJoUgCzKKJ5fTH43DEnYHv6Myv3Z8nkrxqQFWGk'
+owner = 'xbRYqjroAaDRtCzosy8rTRSjjuu5t8tqgwS2oD1dXBAoPCdFKibQbqAG9C5Au7LrkRZP6o3RNWWxR6nJc7ChDMKmumGUQbrhKmgk7wZZxW8nP7K9LoJmojf2Pdz2BJnsv1t'
+amount = 500_000_000_000_000
+
+# Dusk stake node #31
+[[stake]]
+address = 'uwGjBnQabBSacRCnTPxWDjbDX1qXQYzHkMsCwgFo54x3ophUrQuPU5omWB16HVoAcpPDnSwr16KnMRFiatjL2xESeS1Y6hREea6ftpQ92d5W4dsXEMtBNHBXSod3ymdBo2B'
+owner = 'sm7Uu5VsGVvaD1MZnd328aiuoBK33R1LRNireYKhCxTE3ydjCGKJbuN6BcFP1g6FyQ2WbTHfJzT2FY9Z8CmeamTvvbaPw1VsdBEKX1X16L7LdCU1Heq9Zx3w2o2C8xawG4x'
+amount = 500_000_000_000_000
+
+# Dusk stake node #32
+[[stake]]
+address = 'sTgEHFZQzpZn6PtoKD8o5BUu29nCp9DR1v1u5nY9YKFqzQWzJYGnxFBF6wrwqdxPy3FkY1qrefft7qvVHErKPWBdhwyzc2FrDPXuA4hUmALAqg4imeZx56ZpMLHHvQBpupA'
+owner = 'qWhUdChdsJGUDzaYuHHJHiz6Qk4xXPm2VKRRfBfyjPt1yN2dmyjMxaw8DRKBQUGeDAHS4QuAdXN4J1TuxGWPLuCDX9JNtFg5gLZryidLNCMELCwZRCwdJzHtQM943Vpaf6W'
+amount = 500_000_000_000_000
+
+# Dusk stake node #33
+[[stake]]
+address = 'pp3cdm9RaLdgJxktkkEM1GFyCJaRDkFVnABnLvXcKYtQBvrMfzYeroCDEK6PcWzwvVjVYgLjvFKB71JDZZ38acLvvRy7gionVFpkL34fbQPsmGvoZMbU9pVc5QwuvYr2fHv'
+owner = 'mUqKM9cWeXDFiKEhfQhTPgUvqx8jcAvfqxJG32mE3U1eNxuZvhe3mh2Tu67TMbrAHQVP1odWNrCGsYXtJoUVgBGhooUbsmS6MkQykqg3PKngFqXka51qELYvXsv4e6SiHgX'
+amount = 500_000_000_000_000
+
+# Dusk stake node #34
+[[stake]]
+address = '21CEfQkhE6HskYcnVRvP7NDY7DjQNNbH6sYGZCerEQ2DLQL52QzdRjj112qAogUBth7tdrKdj4wDmbEpMZcM8thSuiFyDcYCCn4ZeQda4NEUumuHCE23DycmocfnRnz7mqSM'
+owner = 'mqigR3fZvzAVPoqshbhhuti4mNT8Ek1Gt4nkhuuYZPSxLHTKwaiFcRFHoVUJrC12BBJ7vHUJhjXGBvyPEmHCmFtxqkgGs8FSVuBgjGX172s8ud1MM2iZdHQrf2gm41Kw6To'
+amount = 500_000_000_000_000
+
+# Dusk stake node #35
+[[stake]]
+address = '22wqGfMw5VQWmcSc1GpqRW1psd1exWmCjPCwcZtDUkNPAFZjvqXGfGsJRzFKXBS6gYNaZJxsbthwKhvPtcd2JTf7wzfHXMrknmr43bn9Qw3YL8EgRFovfUzZvHDsigHkryAc'
+owner = '258hLuTA884Tj2AmmzHAAoV18DtgZQUovERqRcLXP5BfKzzsxu7RyZESbUDnCrk6L2Lb1sUs5rVgTcgxhydaYAY7btZvL9ohdqGC65tcKThfSNJd6UgW53nyzRZWjhYgytJk'
+amount = 500_000_000_000_000
+
+# Dusk stake node #36
+[[stake]]
+address = 'zVmK1VAF5XQLsbQkn24PpnjTpF4D9Ptss4dwvtLhoiSD3NY8tWDhb4BZASzMPHpJKNw2wrApkDRx8dmYkqbHj3iNWYBEpujYnme82imvr7jEKq6Z6HjnGDV8LeKqSnJVC6p'
+owner = '23ZjF9vasGsmBCZfrAjmitxRYN8mJXzFkkn3hKprs9i2pGzBPyz1YmodqaBPS8qctXUUZd3AZaZgPV5qv92zStaForgLBUMSg13QMaGk5Ehh58mBrBGCZJdYf9aSmjkpqyed'
+amount = 500_000_000_000_000
+
+# Dusk stake node #37
+[[stake]]
+address = '24F3Kq9WBXFCH9TMDLi3QhDNLAoiVazRwkQGTEUEHQPoWBYjgvsth65LpVH3aNopMdyVb6yC4zZ36qZt4ec5Vaa7vNtFZrrBysjz5ov2gAdfxMMPN85UUSVqBikPZzAgWovq'
+owner = 'zboEPkqivDY4LoZffrbvqXcq41GRdtJNRMCsH8rhKH6EJxHiLtz2ZFgcoq3JAZcaonVu6rfu5diLxbK19kqThYNveuVxp2LQmsx4AyCdrs2wcKCPtsnkKiUH3crSCXKDSoL'
+amount = 500_000_000_000_000
+
+# Dusk stake node #38
+[[stake]]
+address = 'toav7V1xCPiVXr9bDErYkm2VPmcUPcMLidcoHFMJpcEDsW7SPvQJqTM1EvafpMYtKnRnWwbgap5PkfYhRzPtfDGCX4n41hZpoLfx5Qo8pRKiwJc8BgEVMcMyV4X9ntcU9HQ'
+owner = '23p6DLhCiLx8rY7oGS5NVguBUGwy4tNfZdrB4AbEVK7iQnh7wEaz6U7a6ZLiuoq38jhr2uS94uePEGDdUZxNpK3uP7kYGa1bmYZ4GQF7a38UqKoa9YAXZv6VzGnLWfXVrtux'
+amount = 500_000_000_000_000
+
+# Dusk stake node #39
+[[stake]]
+address = 'ptW7PXKj2XY9v4HgNSkFbyCrG95eDmuSXTDGgkP7C69bziWYU414XYK3fVSu1Num7D1GU8bhrc12Wva4FGTSLmvJHnvU3HqTKEhaf7RJCAAFGKmzcRXR184dYCFr4usoecH'
+owner = 'p1TxUypeg7hA2TjaEG7sTLekeg3gYp1dVjZZCxkktvcrgsqjaSnrnFLnKcagdyyR5nZWhHzbAWe7JcEyXVKR7LvRAosz36GM73nXKbguVQhvivcPGijEfFb9rttUeSaz3cq'
+amount = 500_000_000_000_000
+
+# Dusk stake node #40
+[[stake]]
+address = 'pxy5eJY11SM6Z2MswUa7FYjPTGGNSpBvh3oz9PL1b4WZABSju5L9kMkD6byVystqxRYJAaLh8Ta9mkwep9hqmib7hNdrT4oDvDU1a46es2mcg8syyffepDMfBtVBPkmDMER'
+owner = 'mPRWCyX9URC2J2u1bin3QRT1c16japxW1DBE3qsbT4DdcTE6kcmJDeA2Xfvhw6x3YMQrTqB7K2cy2rY4eE46WqoTFDH8G1BVRZ5JPQnWthkV6gkxRozD39Qbi5o98eX7oq1'
+amount = 500_000_000_000_000
+
+# Dusk stake node #41
+[[stake]]
+address = '24qW1R2r8BLigHScT3RY46mtvPyrJRshHng91tMD25EQh4bwaKDc7JXyG2pWmyqLCLfdS62gWTNgAntcAkSAZUZftSEUU79Rh2rv8aaEMXaMXeahckyJFwJ5NnSJE7ZFdNFk'
+owner = 'nSv95txpizSyGQGCa7Wjc8To4rAtWrZAgMcYwCmvYLTAQEVU6a52aKywak885Z24C6avoBRQ4pJ91eXAE1VjHzJbYkCxnZUqkVpxTLNJBgd7QpfdaXgjSiGzTSHNWLca6cK'
+amount = 500_000_000_000_000
+
+# Dusk stake node #42
+[[stake]]
+address = 'qmEyhDbAbXJtbQuwDp4K9jarZrZGycpYuKbB3C35JXZCpw1KdDZ17GajXMh9PkdpwS9GwPEXDBs8798dJS3GrosiMv8u63kYtT5SiWqoxJurrGGQEemxrepJvJJA5kpRnHe'
+owner = 'uFhqdwP6wN1chMzbFFCV9aMyXPi7xhmxf6K4A5zuYcbDdMAV6VWjEPzXuixK62JeJ5oxGisKbHVJytQyC747yPq3ir95aS8KsZzbyHs5TyWg8kW733Nj85YUM8YZDddr6kS'
+amount = 500_000_000_000_000
+
+# Dusk stake node #43
+[[stake]]
+address = 'rHhgTkNyQrXgpoEdeXDEvi7k6ZjvogD834cP8z3cgvJQqqRULoWkMsnv8tSQgKJewUPeorEeBHBsi8r64PoqHi3Z7YcFsr88KAehacPiVCu9wUr945WhPuwU8kSpjYCfGmn'
+owner = '26s6DkiBf3wmtEaZ7LsC9K2L32ej4T9FUqGWfZqYAKDQKzXWrB5UZFspsK7bNXtPB4qPNSFk2P2bmSjZDCpVAfqGvstFdLYUZ6PzTqdEmnJP6pZNan4GU7ZFk1K7dUB6w7ha'
+amount = 500_000_000_000_000
+
+# Dusk stake node #44
+[[stake]]
+address = 'osjkLc2gRj3pcYCE618gDCCFTng2fHLJJLCgzeyuGpNUmt7c1xg8eZJwe3HweBMAVzgr1ZaJzGLQEbymg7WkA7DQRyvH6rKfgMJ7Nn4ESWNeoKeonciqHVsZ1whfgHYG1D2'
+owner = 'tGJ868b8ksU15MeJriCbCutpNauEwPd8UnzqwQwn4yfUZkX7VKbf8btbdaR5b7QVyt3qpPrBYxD8jkxx14u7LnB6kwr68TG5EhVb32HYt4hFHXLkJfGpDkVM3h5HY2tkDzb'
+amount = 500_000_000_000_000
+
+# Dusk stake node #45
+[[stake]]
+address = '246UKe1JR37x9PhBqwhoKC8JqUuucnbtMp8yZKPAFXqgykP5NfUYd3rcKvZVxrcxwnD1wkm6N2wEQzVATtd6yYGTCqZSYAb5X8ZFywPY8qhN53UrdopZb2SkzTu41kwxw4io'
+owner = 'tD9HQ6oWtfR3FxoqHVkiJkev1SqyaAFWzpoBvrGhTqyTSTAhty1BonkoCtYSrWjScnjBSg9NsbAQq1ycUDmFy7G8w6ZH4Dz1e51tgPVFM3V2fDkDvKQoWDXvAJ4DHjHrtDX'
+amount = 500_000_000_000_000
+
+# Dusk stake node #46
+[[stake]]
+address = 'xaYrS5TRMr8Qn5z5iGEo2a8p3jRCD1XWNe3teWw1pCeuqckKyJzeaFDpkNKWkAWtJx7vH2ZJD9YPZcC76VxR4JVPTHKxSiBbvigTapy94jXep5NV5ix3LXzLFDVLLuN1twJ'
+owner = 'uLK7YeGkjqfjVmAtnCEm8ZSNVCtB8wgn2c4zDbQw2pqagGK4zXvF3uQHPEyNGTsQ9Z49JqcFcDFETuL6TcN5EYtk1hpxk2kjGicFhYSxetP2v8jcTSLEBZ6geNVbe5kus5J'
+amount = 500_000_000_000_000
+
+# Dusk stake node #47
+[[stake]]
+address = 'xWw3ozP5boPuwdPx2QPnZ8UTt8mgCfGnQVWuRvi2iwxPi2UoVy5oisyVZHnP7jAkBde6RU4QiqPk2nGLi2Ky4tK7sRmiQymErRyUcHCgoAp7ipfmSr4oCQHgD2HRVcy2aNS'
+owner = 'rShGDXgRN2E4N5bkUR1TcEaQ6n5f69kby8iHijQ1uKRhuw8deyfd65MmaTN5SLzQTegKdLpSkfkSk92igLKgLk1JZffTzm4NNQVme9FdTSiS6DDiDyememQaHkDefpJFPJa'
+amount = 500_000_000_000_000
+
+# Dusk stake node #48
+[[stake]]
+address = 'ndUZ8scwPbPo6KTQB4SCC6WswDCfwKnHE7XpVjUpSH4bxf4ffKroEvWrMH1xZsgSzsaPbYCr8Uw18eLQM4uriFduFNvG35VYz6DJZ3qajgmaKeuez4L3ReJ8XyLmEqTgi6s'
+owner = 'uhBK6JgnaCiaJv4Sskp4hueRCvi7FkeLEDjGCFm9frsr3wRYcHWEpMzMZSBDoHies7y2qx7ncbecJZWSXVCtCncyUsMBUJLGw7CdgxmGmrhRZrvvGFcTCzDSawmnjM1Qz5m'
+amount = 500_000_000_000_000
+
+# Dusk stake node #49
+[[stake]]
+address = 'rnzGgecxb1KUtpKg7XPnnVtNKPXkbe8VLrjiEXpwtSBmK4Fn5tQ8YdQzefDZJdjUhWPRkhdCJCm4v5VBfdpKy4RBHTCL4nMP6HpKtkhuFre1eFhy6C4AAz8S3HfcZYgThMK'
+owner = 'zf99ETEdodv1gYaovsvPY9S6HG7PYMkyB75dBo8eDEMumuFPZt8D8KQpZufWaURv9RuM6HBNafdHL2rQwYvRnbRuwsB7Y8rwLfukiojWrvQSfMa7Zr3FP6nKkpDbjSdaMaF'
+amount = 500_000_000_000_000
+
+# Dusk stake node #50
+[[stake]]
+address = 'ygzc2FPtpzgBimXYJ6oQ6zi4wQMTXttj6vNczE4DrPN5KDKSXUhzveM113V6G9scYqY7c1CKT34XJVNoonyL85gRmExwtoigJZpNiJNQcKjMCyoyds4jhjEwe3Jsu52XEQv'
+owner = 'sk4SQZwnLeUbbMSg4WXR5m9ytFDTgSLWaKfU6UifvAdCteUnzPfrheZBMRWqwgC5dKva3LJ9uUQNXz4NPC8AZ8cr6hUTL5biRPscpmLSHYUA5hJvv48TtrPYZaM6eKuy5aw'
+amount = 500_000_000_000_000
+
+# Dusk stake node #51
+[[stake]]
+address = '21KEA7od35MiZ3qLfVQDTn5JpauP43xraf8UqDFC3AMZ2kQ3gdEPX7ZaUK5BmCz4G4h3eUDK3r7ejFcd8edZyJNjG8D4tjbVszEqNc4ugV9G4HwYUP35VP3sHLeEHtGBnrA3'
+owner = 'q9iQrAEYantdPvXf2V4vKucHWQFfwGfizQTb6tq3cbwCmxC3tFrStFpKmfnNkJEkkzHHTZpse9WmwFDcDNFinGY9cwE3WYR3NPJnj1f2UAqXvjkKY3GQxmhKPWgSRpTyhhw'
+amount = 500_000_000_000_000
+
+# Dusk stake node #52
+[[stake]]
+address = 'oFJsK3ifwr5siS8ibGid94UmbWkdyW8WbMjRXjrujEPjJYP2QfdMoi3izAy3AhFCPttNQ2NSEgKs4oyRCTaPguZVaL4bQjdYhjbzLjK3nVPpufjPTwmwHju8y11UjJfzaPq'
+owner = 'nruQxZiLu7KL4mHvFp9XjSofmPr4ZK33ydkecMemHmrGSMZ9xS1qimZEza8hSN8fyXUCfpEANtSzfVRKikRL3DsRw4vLgppaR8b4WHeTQEfjwYpAnUmPhYGyPBwvddWzzQt'
+amount = 500_000_000_000_000
+
+# Dusk stake node #53
+[[stake]]
+address = '22gPdqBf1yj6LeTECFfb1H3C2J3ZqavyQyyfx8Gmws39Z498J2KtkdgD9YiLyqanpg3jw72KY86Jrk6Ta7sKyMjQ4BtRRyKHMT6MueHjdSZhw1yzDMh5hMberRfd59XiELLa'
+owner = 'q3EWZg5J4igj9UTQLDafkcQ1yQuH4n3joDLwYQSMjRWYR9dAzKaXeVBwHjJaoRYPAsFZ8nJxYzCEpvpBQXefNxnzVKqbJYrPaGRwnnFa4D2CBzrFm9n8aLKhWL77R2f2vNk'
+amount = 500_000_000_000_000
+
+# Dusk stake node #54
+[[stake]]
+address = 'yGReCTAcijfeYa2XekCYiW8XU8E9bLcAKUYcGXvjaPK8k2bmLbMzKjexY4SS5BCHLCED2kiVNEYb7RBQUmM9gvRRZK5sYvEjpvsnZjXnRJi3ZyyHDjVv25tbi9n3h7KZRaj'
+owner = '2235HZ84GX99baZLYiXLB2SJVGZfNt9fSm7pnkB93ouAsnnigimwCktUbYzT5bRggAPmLRB8qvF6vk3APHJHMPnXEiq6YtPnpSjQzTrVyXHW3PP4Nz7QrbzDzaQ1wrZuYo6T'
+amount = 500_000_000_000_000
+
+# Dusk stake node #55
+[[stake]]
+address = 'yN5wXZLY7y4Z9c9VGyPJkiwK5NU1qZc3vxuurmqCAXcQVGNH3ax15HNJe1AAryCAoaTfSWVHawGDmDoHccQcGhk8kQxgoLRaJHZkmYPxwF2vTin2iRzjyA9YfiVkm4EA9DM'
+owner = '23hdcdsUdfBHuFZ7xAc13a9ZyYfKBQ9pm28WAn5CQWwc17jmmEaGbU7gH1PMpVengBxCYDqDXDjMwWrpVDWqnZtSrkfzFWToazLYkuhUPMKGqeShK8dnSw2GrMKZ9hxtF5HL'
+amount = 500_000_000_000_000
+
+# Dusk stake node #56
+[[stake]]
+address = 'rK738LD5JFShHpVCwcXpwnpdGz82sfMbFqiG3s1FTr4g61mgtoVGnMnPfoCzHTKjXcsVciGu4R5bNKuTLvnqsHSUrtoQKNBaDGNsANhBaW7HTsdsg6fYzPXSQ7Yvpy9HVrk'
+owner = 'v31NiEUwjv1vn6AUkKgnvBQkTpZyu2rmvUSdCQQizsFeRPxewYCtgBfQhn4YaWQHGBTVxM6nXBWnc7mRQ7cFcNZ2Ehr8Q6yCyaoqN4KxUjjdagfPZYQDJ3EfqFmJGkdw3Nx'
+amount = 500_000_000_000_000
+
+# Dusk stake node #57
+[[stake]]
+address = '24FYVPLyotcKVpx5LDYqWQqbfGfJGv4jpYgC12aCSsRbBD9xEZ2ym8FJvxuq7b1hvsgAmSDyMVpN9EdkQgwRj1dJfWPhrDGrtBapqSTVFutVhRGT8csEsEPwTG54XACyCF3j'
+owner = 'ohXa7jB6RA3R3weRiHVRES7izfPeX68KfGTzyw8LZWTuuzY11Dzu6BVGSLZq4SE5QndSjVYQKZCgRyURXjzz3Xscmtqc7XEAR5DvV5UB8kv48tUNLfiRXgtqA93FzY29Gkb'
+amount = 500_000_000_000_000
+
+# Dusk stake node #58
+[[stake]]
+address = 's4ErDHT25gZPyKtbPFHXtPWsU5MERq4s9CSPhRHdbXGcQhGiRAn3GM7Asq5He2CqbRAK4s4fJgarzt9dVqAozH9RR2H9NGkZAAQdfZALgHFoRgviBW3fABmhUyPv893noPb'
+owner = 'tdwXkNWr3UaRKTurYZvHqV4vxjMZJcRS8G8PxDqtDLtiTXEiaAdZq7wBkcBoK9mwJMHv46uhDfuNNX7UT8xZ6fmF6EcvWi55eHbpUYvmGfLCDFNoSingiDgakMDv7wY6YGW'
+amount = 500_000_000_000_000
+
+# Dusk stake node #59
+[[stake]]
+address = 'p5uzoZAaGTeY71dtdv2fV7yCHNgjmUZAMs559Nbi3KnjrvoKCFSgAJn2rVr5AHJXe7ubF8jmGgsoYngpdpLnrmqoMftjgYiPd5ZFSwJipce7GaYGWRSSvuk7u3bRCgARfSt'
+owner = 'pUaEoHqqBR5AQzkSDUmBSKZJ5fxUtAFhzSDcxPcB6dqRDabDHKGCaKgW6UrBY3YKEru31go5v68kPudRF6rKL2QziHbaqJce13QQX1atdPkKVZif5vyW5QVy4dp64AEZpo8'
+amount = 500_000_000_000_000
+
+# Dusk stake node #60
+[[stake]]
+address = 'qxLEEHyUCfQEgaUxKFUjmbcQwS9YXEjVNgjBErBJaGWb2cMtNPPoUeNK4a25EBawvjbjXokmeyM4LG1oCZsUE3fW58JcsfgiAJScyD8zqx1bHLjEnccLnoVB2eK4PSnvp9V'
+owner = '23N1pe1LkA5oGVa4vKrqaaRVfS16Jy84Z6Tqc6yzCKoVfFw9nmXsH4br5vtSA7DQyLmXsvVgvEXBRUcuCqUGymi8RPvBwW6Kk919BCvAD3rPD2hf7LxRRDy1wiNDops2fREy'
+amount = 500_000_000_000_000
+
+# Dusk stake node #61
+[[stake]]
+address = 'nQBJcQAafF8U6vZyNhKfMHGeEuBQJ8Fx7KYwv5qKQoYTYMsg1US667d6fZSTiiMT4sCoYbQFrZaCzrnxznVTEJdhB4naTYa28gFTmmmL5VATq9qoZ5JMsJHMqnaNmDdFHjZ'
+owner = '21hZtUbHyjqpbpng7F2JYEacxHrqeRsk4F4Zz167o6LaGMoGdf8M6DPtyWjLTcinx8UDWGy9VNFh53d5WxqS6MGWjaGdL5TPXCG6PBYfvYFoxCJooDN26kfDMLoni5zVv5Gc'
+amount = 500_000_000_000_000
+
+# Dusk stake node #62
+[[stake]]
+address = 'nGnkENXeKcatKfuHzQ5Xr2DK2j1zJQxHBF7DuWyRktfbbRyXQag8esVSuwkmnvioFhKrG7PLBW9dzbB1FRAnmmWtdhcquk5sLTXS3399e5pHc17p1bEEjnnrhr9Bt3Vb5xm'
+owner = 'n7Wo8K9yLWXLsr5xooN2SMP6yXPdjKPGLWb2YGKAvkN8kpyxAFqmd6kxQpVXCP3KzJe1gmQqoE6UNPDo5MBxzYc9R4Z8sKMs55s2y5PA63Xr53q4oNWwrgtU482ihuNryi9'
+amount = 500_000_000_000_000
+
+# Dusk stake node #63
+[[stake]]
+address = 'q9emAzDxBSqvbXKhUTD8GM51eHFBq8FcmD7QwvECEonxbUKQPBVsKb4C1eo9GBChZmFbSo49K79WeuMLeGM5Zei7h5RuN2QUR2MbYNvo3HtCGdvQQAi9sA7wCZ2ADyLJkGU'
+owner = 'qHiNqTtyMPM2W9PZZZeiUFmubQZQFR9pSpZ1EM8kekQ1SZNCibhVpAbSWkgi9qU3eWRjLxMfiqcFLLQPi12shGGfUgspNENvAoaWoa8m7UbegyLu9mshuAEWgLqLdFWqihg'
+amount = 500_000_000_000_000
+
+# Dusk stake node #64
+[[stake]]
+address = 'tJ1XNmqaKZgHkYkseZpV8y7iwBBDeFtrH9gWkWqHmt5hAd2KbH6pF4eQqiGahBoGCLjirdEqmcR64Gy44BAtou6BjjdYBQv2tp18vTFUbPmdua1o8rAv3mqvUgcrziaqhe8'
+owner = 'qqJjZ72TyUu8U2W9cMziiLaP71RePvgj24WJVZsKf24mxiqBNKAi9WXZve9PDYCGiMVXKN9uK8qxHnYJAoyBGACdFzQaMawKh59WqBfJdwq5qZhwC95yrFrKg6NuAt1NiCL'
+amount = 500_000_000_000_000
+
+# Dusk stake node #65
+[[stake]]
+address = '21mQQ4wsahccZpHEiXiQKMx3NDbszLSo7YP6856wsSHDTPkydLKmku752H94bcyksNkCFzxSUEgnjjdntaF8eciTPEtkn4DR3DPfMeSBDci1drwGVofck5sdGZ53yy9LdFLW'
+owner = 'yHxsewCUu2woVnjoxeP2M9t1mpBAmfrNuHLXCeUpG7NNrVZAaj8k741PBv6jUgKrRdZfACHsKiKaRNw6npiJMnVrzMzxqxePoCXTUk2nwPDw9mNoU31PYLAnBKkRtAAYvsS'
+amount = 500_000_000_000_000
+
+# Dusk stake node #66
+[[stake]]
+address = 'su6HX8CrJP4aaYvnz6tpkzZpqMjWe3C4HB5Qi5QxvXDAHHeXYPZtuEth4AkbMhHt8cyXyE1gByyqg1cvNshiAd5JS2kVjQFWLosiAfK7AdYKNqLz84yNqe1DYqXvKFnygpj'
+owner = '21Yqm42HmA5bVx38EzwPc2yLBhYpkWnFJpJ2mqdUqenmXmFFYLo9mMezhhWCXuHdDe77iHgbw9Vyjxhx5J6XckDKxmrwQSnAEpp3scaXBrrpRKg1aocozLdu26XwYe5EWfUg'
+amount = 500_000_000_000_000
+
+# Dusk stake node #67
+[[stake]]
+address = 'tH3sVoNdBqpEiJfo6uqqMiFBrqgSkwz5qzazuCvpczDQd4m548JHLy961ePLa5sevNcQJoFNZpifj1wBHMtCjRiSHqty84eeqw5NoFSGVRiQ7eLMQMSK8Cc8mu4fJtjZxhp'
+owner = '23BTKUBorcwaf4agUB34oqNMdGvfB9HYtbMpQa2S1JjCbGP8AeYDMHtPcJHP1rSqyL8kWEuApNiK7auSFTsfbGPM7bLFDNrDoitRv3iEVXBTcd7jBeeVwWTnQVD82TkskCMm'
+amount = 500_000_000_000_000
+
+# Dusk stake node #68
+[[stake]]
+address = 'u7sgj7Kjf2NEkqDz69k8bTS6zsdsUwmcSCpn69M6Zbs1YkLUA6hBpjwiSDh4JGeJZrqszRLaqHG6MNwxqh8qzPELiH1P69hSbaHi4v1x2o73PWkXKHTi4nT46bTtesT4YaJ'
+owner = 'z7LKqZX5LKNhEqCcoHG31xBRS4dAHWsuHXkG5xuiU5jb5RKiwEgzDa1Sp6TANPiTXFJrDLcw2SaE2jz3uxH74hQGot6agKXXAAPX7uNYeBUmRvasucc1s6R1A5bvMm7NJEA'
+amount = 500_000_000_000_000
+
+# Dusk stake node #69
+[[stake]]
+address = 'minBMimogYxds4cogCSsd2RVuUgJneBXRrr52out99FJF7ovK4Qy9BDJavcwBcFRSfRB8Rdfcvak67FnoXnFZtySoE18Ap6Q4UgM1K68MbMLcc9BVuRuVnm81sfSTPA1ZUs'
+owner = '26jyGLaGkcZ4ssFxfNgRzefuD6dWscRgJpw5ABrMHnUuSCLCPEVKHbMvDaQXGFJ3ZWGDhC67s2tg6em2eDuo3yZkMJ7JGPP7Tj7oNkqqzQ4t4quGtT2AQTTFDcPx7xW3ebpw'
+amount = 500_000_000_000_000
+
+# Dusk stake node #70
+[[stake]]
+address = 'pdWYe9XvMcfbyGxjme1L1f9pDVooCSug4yUQQ5H8iexj9RVTyUmMZWnrjxYUC2Unk5KkPA3B3R77huscDMRGBLDQ3WzgNWAz98VM7wsuyJJgiy3EDmWV1U3qG9KDRWt6Ffj'
+owner = '22Fu8mVCQGj4fpR7SFZQPbEMH9iPDEK1rNBUMrcgjqkKNX3VDJpToquxvskhkP8pUzkLT3VjCRMtTyPayG2dxcuVmdQ9tjDQ6FqiGGcnTiSoThSYDFbzN95A16xBH8szVujG'
+amount = 500_000_000_000_000
+
+# Dusk stake node #71
+[[stake]]
+address = 'xa9V6GboNJzmsK9zMj7K2Mm4H7b4Gamb1A8S38tJYAZ1BFtCJSYkefyFWooCeRyKBCRTQz3Xq6bYmciDe9eMoGfPQMMJvU3ZGwmSPyeiZWRB2rstKWznUyoHBUUFrQE8K6G'
+owner = 'mhdkBM7qJN8AayPL3QeoZW5hKFm6t2b3HzuzjeSjJsXmTSNNQuhusD74Gt3jckyc5c49LfNtUNpVcRucBysN2yupdQjUTbfQk8hPf8DvL2Y4zZBnGmEAD5QTRdiF8zKbMDN'
+amount = 500_000_000_000_000
+
+# Dusk stake node #72
+[[stake]]
+address = 'xyMqBEJM216F6wN3h5WQMom57Wi2e59mArfZNuNQj8ZWmitejdsmxt9SgyRzuAi3tdekGG9k3xqHdpvvRtAnoLJ3WoMnkwvfXoVNRpMq5f4W79Bnc87rFFRuB5vxC5DNC54'
+owner = '26TA3d1NUqUWmuHKMJfzaPCsnNAoLobR8Ag6w4n6foCo7aS5J9ZeP73okYPPokEsu4tyk1AS3VpQNoYkeN5bvnnLmyGSpzcpb79CSLATGQh4DbUTzVkbuYDHYq3xkNfxTbM4'
+amount = 500_000_000_000_000
+
+# Dusk stake node #73
+[[stake]]
+address = '21S2qPByJKkDX8fTV5Yt5QaEDqaR9akGAe5eP2Zk4BoF8FyZRjgXtsKvAqAbNFxFK9UVe6ERdcVMvzmue18Boe7BiQubx5KtDJ51PYoGhp7RZgUzjP32M561aWWM1bohFZbh'
+owner = 'xrZCY8QGTNPCv88KFQk6PXuPfJ7oZavDzBfEUHCmeT3Hs95dgiDuE8XnzJiERzoAWMj1j9eEJLSyYaiURhuuW6PU1R9LZQjJus7b2tKw9ehrQaLvCStfufhcGchStLmDH7Z'
+amount = 500_000_000_000_000
+
+# Dusk stake node #74
+[[stake]]
+address = '24BqVmRYkcpcm5QhiYMhe3rb3ib2tgNGzYsNKy38EYSjLFN8wn75EjUabSbemycWygtcsEhPaw9mF5p3j4AU7cxwbGYu6nFwzrvKKK4uERfmSjEKSaAke9XPKMxnM2bwLCDs'
+owner = 'uGUGfvgcn1w8LEbNhD8YmviJm8qfK5a8ZCQCSEf4bvErMkX6Cia7oMDqZpKBCS4L5PoEU9XvVWnBrAYwBNDYivQFfewDMzX1KDhA5kA8RvV6RRvCKozWDcm3kGaKYvQ8C3r'
+amount = 500_000_000_000_000
+
+# Dusk stake node #75
+[[stake]]
+address = 'nj1zk9afQWBK9RsAdRRiPQztVMuvjqwyCKDBj1dCE25sgHSKR2y7VMtjxWgqJ5HWQ893cbwdAQvmJR6pXEFCoXBAW7QAjZdQWnTwHUe2kvzi66P8Dk3mh2vn8Sp6p4TYSGN'
+owner = 'zsGt3zh4HV9P1cCXGXs7HU89vK3TpTH6ujR4qrvLXwYj61aL7FpbfTHxQP1rD8EaXQLjQdUdoLwHs3jaiCBKNEfwLPthcVBsrTr9HcDCsfDEh8uL3LaHwKat32xpY4iUFbQ'
+amount = 500_000_000_000_000
+
+# Dusk stake node #76
+[[stake]]
+address = 'nWmo4KXgng6w1FfFWGPRETCcKamuPgHYKmCQEzxTXw7hVASP68RUSFhyXSxqHtfcsvEkSu1xSK6Z1E7vhXjV9eaARLktqZW85PFhsxensxts55GTWS9Lhh9WkeADZTuFYSa'
+owner = 'zc327nizdmgfQwRW9bfLWM4RmKigR6QjeFYV6F4ktkbUEkPaXMLiKdWfTfL1uaCUKcJLB75Wy6c5Qxoxngj71c4W3MrngZjSV5iDzMLoSeJfteRerBDuUuRDe8dJXaceN5C'
+amount = 500_000_000_000_000
+
+# Dusk stake node #77
+[[stake]]
+address = '21ypuhjnoxPS9PuTQLUJLaQuEhPXYmt2nQqcDsj8DVrrCSLivr8JVsKL1rsPhtwaVEXA5GwmjRdfNVmibqt1r14oCM9QVii3xweqjBaBaruLo1WjWiEmAM9eTGKjHFpeakDm'
+owner = 'uoC1X2BxxF1E2DhkqnWsZs8sJLDugNGs3DyRhjWyG5tX61gYygv4RwzTaJvTncQDVYy54dMz4asYh1wj7B1aKkU2CYZGXQDiYVXujQB58GZDt2kU8vrQViSTb7tdWtXgzUN'
+amount = 500_000_000_000_000
+
+# Dusk stake node #78
+[[stake]]
+address = '263QBbjHoH6Jcx6KZDZ9UHna3AXhF5CwF5GRMaNdFnZjxLMe11aBLA56iP1wQis5jqLuqTefsGFD58A5x9LqkrrdXTnZireinKBmN1xezNzpK1YKZPyYEKGzpHGbkJGVHqc8'
+owner = 'tfRo7CC4uHkgpcJHdt5JpYukfuLQmhZaYkGnj7Ju2xtsuBSybCqqRsskCe8aW4164XRUmsrkHFh7S1LWWAx6rsMTkdSvhpQqJ3oyjAB4csxU83hmPFZTSkgPrbPh8adg3Lb'
+amount = 500_000_000_000_000
+
+# Dusk stake node #79
+[[stake]]
+address = 'pPpfxXna6BeUKjhTPWb3fLqHncx1q3ocKfZ166HG3Cm63tnbkRRVhBmDH7QFqA2TS73p71iF4ZqG2ZbL8yw3vDhMz6YtJXfwqJFcpi9QLs87aqfq8ZcNucVzSEiFKhATZxN'
+owner = 'oSGac7KZhScpeLnrkJJdURodCTDJofUFVwCB4ZMZ5ARDGqnhYqfXVPBC5wJjUkkCFTM7cjUnszVnx9hWKYxFUogV8fUUYiRzrXe8VFwHNqLFE65apb5UCCpvm8u3gF67Kzr'
+amount = 500_000_000_000_000
+
+# Dusk stake node #80
+[[stake]]
+address = 'o4VHeRaPzC5Tnqv4n1TSVRBEWbHpJU55vZxoZAqEpEERfkWPWm5QvGthtXu6jdjughcD6GpZ5mBSg8362U6qXf2ws4qPcNb8GmwXUx2CpBM1PYEF5VsanUjedyNkinGqEPa'
+owner = 'uDk9DwrJyPXbAHyUxAC9TsYpLWBv6cVk7hXdPja84ftniku9MLBwCa3y5F5M8mQDUTk3riG8KK7oecf2LheVhuzaX2bMMjofvXjjvmtxV37MgJt3h8ESoFJ2tDxTCGSeisH'
+amount = 500_000_000_000_000
+
+# Dusk stake node #81
+[[stake]]
+address = 'xpeBYwtnwyJCCpTP33PPeB614iM3CpBHUB8YuyN8VggspHA6S5oDcBGbamvyKBo4tE6DgyfEPLxp6B43zZh75iUbz4mbuaXLX5Dqw9RH9ux2Sj1Goz6BhMdvWBTtXU11URa'
+owner = '23L1MbGrU1QRNtpMtiDdQQnEFqZFNWriiXK4YyYNTepmJZiUEQJmnFBzr43MV6fnzsK4iZu89Xw3rZS424CjymbThjJdoKKRp284TPGvoqGKkjNr8sS1XQaVjXLxaWjwzRZM'
+amount = 500_000_000_000_000
+
+# Dusk stake node #82
+[[stake]]
+address = 'qo3jqK3TFLy7FJ2Gu2DJuYo6XSuuNPMCFcWXbBhikjBimwP7gJqedHafm3LjZfssLvE386esJrHyfcVcVE7juDhmvZpHQex291Fa4ZfHc7w7akwvq7n5TePqA4Kq3eVucFE'
+owner = 'ou2gY265uY7MxcD5pYXr9JVcFq3ZTBAwx5XGsgcAookYNtee5oaim38FkZ2uba66YCDL5tUtgsKwXenhwatWNLLKWUsim8Za5BS7hrDSaZHqGsP8THVmQmSHGnWMKGsY2Kj'
+amount = 500_000_000_000_000
+
+# Dusk stake node #83
+[[stake]]
+address = '244Atw6JAB4Hckc9hFWhvMeCeA1TGxhE831ygxWPXjxiRFsA3wrn1N4sUpoRQvjiELhuwj12CJAPFLYMbbdQpDMw1rct5MR2EXU6B43E72Rza9PZjwzrb3Jeo63vCW9HzHBd'
+owner = 'xPFMuja2VPun4wk6DtELJiRuUtoT6tFCrxfWTn7qcDMt4ay6DFD9BNbhgDNxEPYXCMjpbMjbgYZ8H4Maab6NaFfBALcBHrEuJhje47vF3JTWVxy2SJAPQrYcx8LFpLkytdK'
+amount = 500_000_000_000_000
+
+# Dusk stake node #84
+[[stake]]
+address = 'ruvGkcPAtV1T54tPm9EMoP7zQgYQmRG7iZyx5JY8mB6uA2vtprT16KVaa6v74udE4ApnX6vjcxUA9rTcHKrVfAQ1MXAFqKixadoxaq8TEpkdGZ2U553tyB1vLU3XVcEZ5oz'
+owner = '24r9FCzZv5BJXYFXr6RcJ924pVvYEHmgxN2ZLK6mQqPJv9jP7WwNgfkVcKuZTrxZ1EZksG7m3KJhhdxcbKXHnqKa1d3xDFx5UoPHJQ7cBNueSfuZ5NxVfBiPuvnvp6aXzK1K'
+amount = 500_000_000_000_000
+
+# Dusk stake node #85
+[[stake]]
+address = 'ziprbzKQAeGBzjw3qhpTzaaGCX1ef1So5JC4FSqSJxpuiiqomuhhX1PJ77fKaC2bVTBqS1Ba665WHYq2GrvkBYS9QhY31mwN2vY7n7T9Rzy7wbtGhXiZaH8ft6kzYZQueUh'
+owner = 'qcwYDT8TBXWP71hY7scirS1rkEx7tqFUJpRcfvBrvFcoD9FsV7SorYC5GwcXb6T22mFCw6qGFRFWzQDSLfkadiCFscboejrahvczQN5sDTLES5fKHEQ3zNXhuGU6CTHbWkn'
+amount = 500_000_000_000_000
+
+# Dusk stake node #86
+[[stake]]
+address = 'pdXBKQmNc356Q985pRNrqSKmmStpfXRubKcnE9mkuKNh6aufsN3MHFLup5zD65eTi6Ja7rfJruTjoKbefy6eBUNf3bp33bjieuYhLFEJmmHyr1o1Cw58NCAhNh3vxi8VY41'
+owner = 'uPp3Nk8vMWfkq19yecKXDBV7PXZpF8HUhC6vUKbLCUeEHZhLsi52mwZhWLFEx1C3tER72tztM3a3zNNLHy4k5gMtCciUrYPEE6k56GfzfsHjcTXv95Vt6Cpa4LXVLbBjfM5'
+amount = 500_000_000_000_000
+
+# Dusk stake node #87
+[[stake]]
+address = 'zhhCDacnbbFXBByn6ZAKLHuUPFf45cfvqFN32tYD642e7DikDpoEtLUUDPWa9UYPHiwyFgSUX3vMKdYptLFtv9XoQN2MM3i4rqdaXfuJ6os5TAPfexZjqPCHB945brR52uS'
+owner = 'n5ku5guTHoyGTve4P5tHiQPxX3LVQ2mcAhLLKpoR4RhysNvSxvRK4fYYZGSyfkMFkNavtsz5dx8kiP977SnXyS9SgWdQxK1vCSaYMBB688zu4SbZzGc5mnQxnV1ftEBjthU'
+amount = 500_000_000_000_000
+
+# Dusk stake node #88
+[[stake]]
+address = 'uQEtaChmepg7woFARcQ4DBb5wfCfhYUeczAe2i1rsaT4Rz9qNZA3e5dUDqGxRHMYUpySxusJq1hCPBYs2nSzE5gNjNCsyRh4QS3U7oxuAgdkJDLDtZY7HsNEtovWazsdzUZ'
+owner = 'xv6jL98KJ1HyHfH8Uvxjxc611MqP6MBZBzAxS9SreNXfT6Z9YadGZb7HoaS3zC6GN6AcGv5EbEBz7DjC4545igAmiwGEFaYF6wbZLHXz9nGrkPzcqj2ZdJPzVrZhWJPzKZ1'
+amount = 500_000_000_000_000
+
+# Dusk stake node #89
+[[stake]]
+address = 'yhWi3KrYeNNtxGSb11nhP3TwkxKuQqkt69jqzF5wUVe7hNzdYQDvghasCCyxPV9UgyWSGUFgJkDp7WkTvjAqcwRNuRCeJq8APqjrMuzCMwALCmUrVjt3xxyBdYJSnoTRnrq'
+owner = 'zPvmHhDtbRhb8k9GwDcyDDRMzphNedW4dnNcDXFFJkgo7wQuSERXgnRnWgSBcJqKDELCDFFhiuxobeXJPRRUhb3fkYdY6CFFVuWBc9vrVwmK7KX7y4BM6Do9xWv8jKxHJa4'
+amount = 500_000_000_000_000
+
+# Dusk stake node #90
+[[stake]]
+address = 'rwJypKTPBEm5FTDGGLRBFK16ix7AoxMLvMGcbenWGW7StbDRRXGnRqnTXkEv7i6MeW8CkgN9Q4uJvKCnE4zRcQ1UJYJSeDwMXbA7PSxUiwMPmqNsTLLsWsnaWUMrgsiMqB8'
+owner = 'o51UsUsAptCeoyjc8jBbMrkbLJtzEXbAd2Ar7VZtEXEBCA6pwZNS3W8vfGMnA3mzycjsSAK9U6AQ8TXq7aL77Y8iJ3St8EQnkP1UnW1Zg9EajypEUAJTXQ3bsxoLGsF8frX'
+amount = 500_000_000_000_000
+
+# Dusk stake node #91
+[[stake]]
+address = '21CA9N16hEy6f46ZVYFMshZfE74PerBp6cpoE9ApaApx7kVBbkb4vKFYr9ADdTEJyMaesozS3ngJPmQJCKQXjbeNSMJwUt62vhWnmUGNp7Dq9zx3sq4friRQS6akZKqir8gg'
+owner = 'uAvDbKfywHEm6HqZSaKsSEaaHYC84qqSdAPQU2fHXNymmxRWsQKAm5iiAv8qqfbr6rqSuzVgZMgjBRCAc2y7hdaUQDaXj72F44juZEmchBaGaVxwEYJvuqMQYvtumBKfTGW'
+amount = 500_000_000_000_000
+
+# Dusk stake node #92
+[[stake]]
+address = 'yCczaewe1gkEyDxC47GHYAvSwmAvroAGiqfBv3UApFcERuVTPmEH6SZE7xbKHzYpj5JuGZvqTLcuzSjkfWZY7aQN5okzdX5jLM8o7PJzFbaqM4yCA3Px59nHE5cWMjvRUxg'
+owner = '264Q1urRXGNRTZoWH1EP6xzy4NZKmyHvHEEd4STrx6ut2pFgkZfiCLLguLZa91Gt4kFzcdYhtPeV1vjDwyhvKM9PqqUQohCDQ45jtGanmUqeN7xuDmkRDGTwED6ioreZ3Nkr'
+amount = 500_000_000_000_000
+
+# Dusk stake node #93
+[[stake]]
+address = 'ptkVfMZH48SmZxQGRg3xkfYxsSi283HLnGHFZgzHheZWC1FXwxLsQ8mneGs4Tk8F9ff8MCtHHbPZA7DWXjSzeAdknuFtARhzbhZ5Cgf9YX5KNBrn4nufAJTubNtGqcDvQEh'
+owner = 'rH8DxPAPEgqrCbeLXkdZtBKewArhMTTp9VvJS1vmVG7jngAC4UyKabipqiJ4pfwB7SG4vzYsFDYLfJqwq4CmtpmAep1MDnchdoAHsn132pRCpTrSg8p63YsYDj37nZy2vgw'
+amount = 500_000_000_000_000
+
+# Dusk stake node #94
+[[stake]]
+address = 'p44Z7WcAn61SqP1fqoA8dbyTpS469JmgGkFAVT3nq3aizq3NQVJ2woyQQrcv15R41Peaf9LxioxM6DrsqbVmSQaH7apvZEtV5wJD2mvjPHBWBLSmepKAScxnMUDaV1bXatJ'
+owner = 'qTY3Frpv7AJb9KphgjZXq2dqniFkA3SCDrWNnB1d8MLGJZUQcNmFPfEunz81ZGPWuqdGajbXHFdsb2jDRWBz5X1tPb6FsEgwfDc8Li1UVFTk48zDZ8suqcbCEa3Dr3Z42c5'
+amount = 500_000_000_000_000
+
+# Dusk stake node #95
+[[stake]]
+address = 'zRbprT2pSDNi4ka8uLDdKAN2b641J15VKTwK8WQfbwRDrdZnWKiBy7pN8863zJDp8qAwBBtMnD4dQ4zajjnzjKxnGEvnsZbJPjKCaz6cBnRi47SonbgVmk2BbNYx6VAzsFB'
+owner = 'xyRbRsx6rvFYw9umesfyeJMfAuxM92353KQASRLugRSePX6Gq5eL2DocHdwo22nZWe6mL2kzFSVPXJKyrNvoSHXdcHFquh6AZ5xoEJoFJHjoLhnobsq3T5R8dNephBG9mXT'
+amount = 500_000_000_000_000
+
+# Dusk stake node #96
+[[stake]]
+address = 'yh4RbGTE4eQ4M1GVwGNnBmnuxoCq6kXjPZjhkPCbFrV8BgtkJEtZkAXjJrJRmbwkNrZobxmeCgoDP8sJdAsEh3DUtcTYkmcjDRU7CJH9goLU7TzkamJPvg36QEcrM9DHppo'
+owner = '21mMznXacrpBjgtQHbZrjMVB1KcGCCCxDjE3ZbfTLR8btpS256Kk7tumJuDuTs2u2nykRDa8s7uXrT4gGm75cHVHyMtkukiXDawcXZ6YsVab3U6TNvtzeyLbhTv33oiziDRD'
+amount = 500_000_000_000_000
+
+# Dusk stake node #97
+[[stake]]
+address = 'pSjHLCY95c4JT4fDkYaWSKvdHYC9BMTQJvfjWFyhpptnuJXdwX1SUz57HabnckiXTkVBRXyh31C7fW8X3Kc23VoKkwb9Jt7k4GB2GqupmHXLhxZVx4qbzDpNgpcAYb1m9Yy'
+owner = 'oWnmuw3aorQqaK1FTsZvpRAdJTq82nj6YVuv5jDhS2S3sktm7YfLTNLPSZeomXYnUfUEcnRR2B2AKWhpULMMTnwx3NbSYFkSPC3GZRQ5diFNjHqTTqoyj9CnTSTYswy4bgP'
+amount = 500_000_000_000_000
+
+# Dusk stake node #98
+[[stake]]
+address = 'mabLA3ELdGgg9JF7xsxpPY5qJLySRiC2i2vfva82B7ZqaFr86ihE1ch7iNE7iz8HuHqvNB21NWbC9X13VFTcFDLoW6xLQPe7ZcUsM9KgPuKDFxjD6obh5bUHwDrqE7UpS7C'
+owner = '22PbNiKgAWt9WAFr6A2ZgE293CCGtvaSphDHF4dTdawkidvExzUZznV9DzjneUQpDnLQG8aFNfPXNog3GEciY9VbdHdSUTjaamBj4qouQmBXMUbzxEqed7WGaGtUf8xW3zpw'
+amount = 500_000_000_000_000
+
+# Dusk stake node #99
+[[stake]]
+address = '22PAmDMf2k5jCmwV4BpuJVBGSMaypLAMx4ajEAWFHBh51KA4wprFKDe6tCrXQxXFv7PcYiNpNvD24awkpjhu5FhCAFCjn84k9aLd8jkUHStpKHii4Q7jJMUc9aBZshEx2jgK'
+owner = '24FpRww27ycfb5AoQsxVMRGHFYJFWxMwZDtv7d5wdAZEXVYmFGTyK6WyoJpp9XRqV7jrdYZhinXiZVpk2DbKyNNqUgV9pbEQCFB67V43rusUfGgwhDDPfkBxsBCM6rZAPpxi'
+amount = 500_000_000_000_000
+
+# Dusk phoenix node #0
+[[phoenix_balance]]
+address = '4LU72wSDZ68w681ZiLQ6XNgeCAV3vzpd2Ky9jjv9Cofb66t3nu4DVbqDSoWZ5Pvfi1a1Rcp3BhSuj9sg32wCXA9x'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #1
+[[phoenix_balance]]
+address = '42V2K5YYzG5TrexU6D7rmZsrFjALuRN56py8PypaZ3CLjAyaiMQ4pjswUxTpAwToS4Z6eoMEg1b7YvpEo7vUMELC'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #2
+[[phoenix_balance]]
+address = '5qfwyVHS5r5zHXcn38PGKUMSKDt87EL2AcYJGVfLYLTrehpmSa1BbLuNbcvF4jAJzBYKxuq9hm4f8dUjzMNZNc56'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #3
+[[phoenix_balance]]
+address = '4UXTVHNo17oEsrgnBLs7ZqGgwmw43iCzZrZhTdF8SJ1jMULaqhNiZuszgEQVzJHSyyNpoHtUCVdB8LysQDzpVgyn'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #4
+[[phoenix_balance]]
+address = '5M63Q2RY8ttNEegZpVPgVisEBizKCk646NWKGbq1ZUyE3F6mRSWuyF5ntD5Tcy4pyTmZtvC6mrwPQm79b3PQm88U'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #5
+[[phoenix_balance]]
+address = '3qo6cXT4KaLrUCr6aoMvJYSKpwygqKtP2i4partQt7JhNvDpPSrxHYdcrBVZnrxczgP4Xb7KtoLSqXnW3EygE6kw'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #6
+[[phoenix_balance]]
+address = '46H5hoYH7YndXSANMMjwpEPLwCpYX7tz1VAzCqEg3m7Z32cSyUbsuyKkP86pmoFtWBXm4HyFKp3oQmWKjZp8wAhT'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #7
+[[phoenix_balance]]
+address = 'FtZRS79zxBfANjE1Pc4ebRiJ9Hd5unVhxdQebBUQaKGyqqDYihsqbpEx5JWTiysJ5zNMRNN2oBUD8HVNL8apiiF'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #8
+[[phoenix_balance]]
+address = '5j26nahc3AnJ1F5rZ4q3ykcct5yLznx2gkiC9W6pFAYe9rKHVjEMAM5RT5RydLM25cGJasaScVFggY3sHtFSY3W4'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #9
+[[phoenix_balance]]
+address = 'S7V5eJ2RALM72nLPtR44yQ9qnqwMmBkL8rLn71FgXRtLfCB2ADvP82jSdf9ZeQA2mLm6AEY3kTh2MGKAWeZDo1q'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #10
+[[phoenix_balance]]
+address = '4ezyapotRtM5syiTabhFMmGMzkyh1zxtRfwGesvLauw7c2Vxim5CBYDX8v5Fwmri6ck3f3YUP83YN5qBa2um5dn4'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #11
+[[phoenix_balance]]
+address = '2ckjmuQruD5FGhseXEWuRqwSMdJ4Z2oPM5FmDcYawcTfJLiqon6MeeA8jTBjAuSLs1Xv4etMn7autziWoKBUUZdK'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #12
+[[phoenix_balance]]
+address = '67LHgMgxpS8ZR171bTpe7cKJaC8scUeotvAk3aYvVsy5aFiH7iRiMaWGLfXnWn69Mjaajy5zcR1n8jMnhjmZB7UF'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #13
+[[phoenix_balance]]
+address = '4VyxFQQTFahNTRkh4pquvTi8j3VXzg9M4QMyoyBRyMdsUkcDfNjwJ7v3pnZautM75fYu2FcUyz3zMXHBSoCSPBN8'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #14
+[[phoenix_balance]]
+address = '5HdeKic9vWKALrP849SMe6CRQ71DXSKVjseKtM2SNmC7T9xEvpVfyYW6F3t4v3vKxX92jcMrbSkAUMqM9NfYn9pN'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #15
+[[phoenix_balance]]
+address = '56ocVggYJePrfWdWx5Zogr6oybVR37LgaJiV79mviRse6qfEnjniGqVq9K8uEfSkAuTvggTNtsrFFy1mqHDL4GGM'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #16
+[[phoenix_balance]]
+address = '5Q3qPEN628h8HGWCTZpA1YUWEkRHkH8JeC6pxoHXcWH5ttavrwX5r7QjAWFZViwvdBefQHLZJyKFdnt3Er4BrFLG'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #17
+[[phoenix_balance]]
+address = '3kSNyTQ2pueVwEpWSzrvBZpp9ge5MvKB9dPArLY56MFTbU52SwKYrFYpFGcijLZvBcvpEzhG1JSdQJBNUwbqec8F'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #18
+[[phoenix_balance]]
+address = '5hfwFmzw4xujCvQJj5BRxM2XJyczeuY8t1r7iFVTTY8VfEgrLkEBeeorW3SwqQDRd8oP2YAAvA1tM3WERAif5HeD'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #19
+[[phoenix_balance]]
+address = '63zqgPKJutMuzMY14ocDVDvSewusJZtRj95eRbdbzZrFXFU8RhwMSWb3TaLbUPeGUv8Fg8imbNPT8oeCPSqKUVoH'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #20
+[[phoenix_balance]]
+address = '365TBjZofJv2UGcmo9bwpxZDomUwQX191JzWV9WsBjBWqvgMEWasvuR8JVXY3md8hdANFrxUoWt7HzuPo6GEMh7R'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #21
+[[phoenix_balance]]
+address = '2Cxsidfpe51nYsaaAHTXa2xxWLU34oc8CQzv7bSs7W4DySF8rZ4y56rWDjP2SN6jHJ4uURcvCo2BWjbZxGQvKytr'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #22
+[[phoenix_balance]]
+address = '125BXXaM2XByp3ZpAnGTHHbVCT2NTPcEjLon2M27PD6C9MrpmkxdqTwrAaCAN6jSHh8jhfYPjGAV3yjo6DeAk46a'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #23
+[[phoenix_balance]]
+address = 'hF86kviarPNeA279UhS9xMozEjXoPGc2upDiJZ2tr4wKxLzi1uAGjmcFRDTmpycroqbRdbMZQkgJzxHd2EutbU8'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #24
+[[phoenix_balance]]
+address = '39n83tiZWMNZnui25sjqzR6H4jmNeGXHnXhhkG3RupAKneThhNWiJZHABYBHyrbRhbPmifgLas8BnR22XoHc6WJW'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #25
+[[phoenix_balance]]
+address = '4m68J8wKWjX5XRJZQEeVW1DnutTfsL62Gz1F5LvqFx4Wxi73bTWasa5zKwZKVrDsRdJaWM5PdeEnVhWD2Gf9gwsM'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #26
+[[phoenix_balance]]
+address = '3L57oiJpJKmiryLxzo1XkSKawgXa8qZFqgQ8KQTBc1X79H3djPa8naSAcG3ajFMp1G3i2vZ2DjyVM4JSU3YCXSj3'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #27
+[[phoenix_balance]]
+address = '5NHnPEEVk4cDDyTqC6rgqjc3UCnDk3GfPjfJYUx5UBz7chXDSMF6NDe3ADiPVJWPH737rsA1HhYBvUx8cawKdZY8'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #28
+[[phoenix_balance]]
+address = 'MScnhA9yfrwVV1AsakjtVcspBCeLHFJ9xkdKcxj9XLb8CDyhphNpaav41q2vP1gfrg4fbEqy8JEGBQXsoy27Ncx'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #29
+[[phoenix_balance]]
+address = '25BV5acoBTCuThYtmiiJNf9uCEX2WrnVhFwxg9o8DuBAqqvGfGMSPqQFKrBBVusCbqJZmJztnFuFSq9ucvBbimRd'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #30
+[[phoenix_balance]]
+address = '39Gt86ND5PsPKkofvBauqtCiB7hcRipNiwu13XMDYZyn1wGx1d4SdZAchgb82vJg8Z73yJsnLPqg36QARagFRAh2'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #31
+[[phoenix_balance]]
+address = '3KURXty1Lj1scxATodw45GF6Um2BpSzE3YnqXvmPhmKwVQrxNCFKxH5zLfekDKJd5Qz4mxvn5KhGJTooL5oqDmFV'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #32
+[[phoenix_balance]]
+address = '5xRvwjCLZPqvA2XnHqHUAgzDt52gRfWXf87oDtNCsk1Z7ku33nxA4YZVmpCPbriGEP55t5z42N3AaKdQzYDrYARw'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #33
+[[phoenix_balance]]
+address = '2K45vLEpRPfRxUebw8Bfjm6PRqwFuReQJEswHAbvL8CB9meuU1szuQszVToje1C8gJh1heJDQGZaQ5cK7oGzYip4'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #34
+[[phoenix_balance]]
+address = '2Yfw5m4TFfScsJcBMzEgEZ4FJS17mwmqNBemT3MSZS7BGgRm1kqhhLtWU4PG3RvRdf1SQUmjEtdVHTe5isdUy2HG'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #35
+[[phoenix_balance]]
+address = '5hyrQ8AqTL5tzV6mmeU8A3uJqFASYGRPYMFYkfA4JTdnc3LaBmmegboW95oYVKGkbzRfSCKTrJNAk891Qepy11vn'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #36
+[[phoenix_balance]]
+address = '1qTS5p3axKZ2HqdZuoMUi454TZAdTpMbnTD91fyyFwLRNbnfArPjfkXpMvGeLrTjhm4Txqx9YYCBe1gyQSzrojf'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #37
+[[phoenix_balance]]
+address = '3E5vZVvcTYUxyxwa7ALDeYUMuQmrvkmRZRuWsjnFSLpD8f8D3YVF5A5E1RTu1YjiMvtLDk6nDv8sRw1UHzVPX3vk'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #38
+[[phoenix_balance]]
+address = '9u892UiJs56jwM178i9BZ1sqw4PYB7Xe2gDY3uz5X27rnKdHD48iyTwcariFsChvguUfjADqDvtnBujxeEsjogs'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #39
+[[phoenix_balance]]
+address = '2GP4SJKat4nVSNUGSkZHU568esuZMSSdjDSy5aDdTTpELLdf6GuhwiXFeDprqQN8RUCVkvdgRcPVSupZbUnpLgRo'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #40
+[[phoenix_balance]]
+address = '3xSKMXFcERn7Ydd5vGAvfbcbZHEh9ZTkFvsGypMim2ShAJjhk2U3T3zpPee8apfQgyXBGoqP8EWqsVqaV7vVEdAi'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #41
+[[phoenix_balance]]
+address = '3TYbsSxEy8ek7e5WA2sScfkHt6Ha6U8KbqpSro8PzD5u14RLgm5tTZFdVepB57ZjeczJbgMYvpFupb4rN6ikT3TV'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #42
+[[phoenix_balance]]
+address = '37VMzSDFqrBdvYK9h2DoBCK41S8u3kHXi7d2ATenqqHCvyEgNvdNqfX1RchVudVteEt96ao9Kk3fV4xAhHQ5wEvk'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #43
+[[phoenix_balance]]
+address = '8YMYA6JdySFNZzwLzaK2dZjCeeR3GGceWAk7CzYeuEgXpjZ6XeRX4L6Z7nhro1jyPxdNB6sKHx53m9eVp4cojX4'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #44
+[[phoenix_balance]]
+address = '5tKtSAac3m1ghkEZJUNtwty2taoLRjAXhV9uozzfPhFGzoWkxGjNCmaXw5PPSkefis56YjwYxJJko5wcw1aqMqFJ'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #45
+[[phoenix_balance]]
+address = '5abytAXYAXP3GDf33KvCvFoCA3EXph6G6neRheLoTVkstVMChTUaJAsrtN8RH6tBeXtpSffrdJtNbpAke4QgFbDF'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #46
+[[phoenix_balance]]
+address = '5EmUc8EiUVBQnmzeDKX8hHRWfzGW72hxoLYpVtFN2yDJ5guAkQtEf7GHykz9SJGEJNQJRWtwJjG2d2hkVTeT1nft'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #47
+[[phoenix_balance]]
+address = '66SywbNjGcMMdVmTP7m7NrmgmE3e4Er4g8ELZeUf3G8ycwT6YA6s5t6nf5kRcKWap84bwV83mKNUbXXBDqTpL6ZJ'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #48
+[[phoenix_balance]]
+address = 'cjzh2cRNmawmknvsjts9Pcncm5Nknc1cYAeN1ju5JDKY3XRs64EAHWnBc78cGQbN4VhGtw3redfi4b53Mn2fNKh'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #49
+[[phoenix_balance]]
+address = '5H7zAnSKg68nMjgoqnZczHVw2CurtXj6YGdVnY75798UFDzwRPMwRMVknSW368G4eugTXZ6Q9oYRErCtnMLbGdbJ'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #50
+[[phoenix_balance]]
+address = '5wZKjeFPA31tMa3WwMednaWrjgP93Cbnem1qStD7zV4HxXLsBVnMMUcCiA1S2sdW3rbGoMJYQsp4DLHeAqz7tjUg'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #51
+[[phoenix_balance]]
+address = '4b9duxjhd5Bom6dgKwJthiRT44gDf4Gv3D7T9kmrbkqZSxzyPmmt3QqufjWs7mLT7EuHXy453XmUCwUxosaL5DKP'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #52
+[[phoenix_balance]]
+address = '8hpLvzsbsYBGfsAVhqvPZjjzrube8ZTsQEoseVRKkS959J15QtJNS51cUba7ZQ3WaV8LYLQQAqtPR7RfyXLxVS1'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #53
+[[phoenix_balance]]
+address = '4CBW7JA1VgtKfPSCAwNRg1cKUTGtkAmhCjBc8dSZWbyv5YQYuxnHJPiNFE626kR7ayeZE2WGjQCib3mJBTdtEYTq'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #54
+[[phoenix_balance]]
+address = '5UZDxgtdBYfpUm41AYsAQw53JMaHBXytQhzDEizhjHgVekbS6whNcCZEXvjfVfwLAU4ssgeNMKEDTssgo1wFeNP9'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #55
+[[phoenix_balance]]
+address = '3CQJVQSKMtkpXMuuQwMzwNpG9TKHtHCDtNoCQUMpHhXHJun2yUs7mNpN3dqiaWELNei8beoctKrzq4hxuphT2czy'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #56
+[[phoenix_balance]]
+address = '3PZbm6MVvtUU2ecZiiVuidRTC1pY7LVxq4HrfhnmjQdNJEtXPucJ8WsUJ84veJy2aiKEuiqEJKAiqg5KcmvLUNFm'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #57
+[[phoenix_balance]]
+address = '2x5PCbV9eC9gU1Mv66QcukapRwrRgQbvrDScdcrB8eZK4SwZSm6Kw2kvZJvHfrwGt6MHpeB2aWqEZH2bgMe6Eop'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #58
+[[phoenix_balance]]
+address = '5oHDzwSJVS8Z88BptsQ6MtKvpiFxkwXxL1oh8zgTk6jPbbHDGJtaJ8G3xwsxR5NBc4t1XrKpnV5A9AeCNU7oBKAs'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #59
+[[phoenix_balance]]
+address = '5UkESmpsBZ6VycuvxzxHoFP5JrkZe3z9kV9DV3xNQXQx3JxdMk9MyoMV1w77jZURQmGVWrELWodyhmiAGFMrPyBX'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #60
+[[phoenix_balance]]
+address = '2RK5P6k2GrMPLdUhTqLimk3KR6T8FfHGDoJZkEHQLhcto9r3CUehReM3Gtk3shoEWun2xTSsHN69CUb9vPwmU83B'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #61
+[[phoenix_balance]]
+address = '4V7JGaF7bENH6mab4u2gNSqb6sntzQsQUWw4dSHa4FgpCGmFLk4rsV5gfm69okJQLg9328HqgSXVT8e9u1v2AC6h'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #62
+[[phoenix_balance]]
+address = '3Dd7toZLVi2Xe9UVWMUP1mDXoGiSHKQYeqTixvLq3b7WNXFYenEfb9kCiXonEXoH4f5aNy7tFXSh55QcGk73RpwR'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #63
+[[phoenix_balance]]
+address = '3BqTkzDRJi1j53juKgFQaUxLT7pgLeXKs8yy9Uqv1cB2vX2HYPzXtGKE4T1Nhzmz692DTaJVqVDJYeuT9gMVRt1M'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #64
+[[phoenix_balance]]
+address = '3s4JkEqaWwatMd9VZbcS4putjwDpoFw4viPseFkJaJhsd2hNBeu9qcpK3HQtS7Cis9y1DjGW8wxkrAZjJRmPm8Rx'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #65
+[[phoenix_balance]]
+address = 'j3pRbzxNXM5X5WmAQePBo6VzkYyRxs7nWpvf8kbv6N8utixKcGnAUbymfbKd5zzYqz2UrbHxB7iZDJTschG8yQr'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #66
+[[phoenix_balance]]
+address = '3HfXNC3ydYhbeutbwoRyUknxxsKY3crTxkxis9GbNyfQWvMJ4mqJD9VAnuPzuF1SoJgBzZtP77mWQCAA3KSoAGUA'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #67
+[[phoenix_balance]]
+address = '4wPmY6gHafYtd3kzucxryY8dnaBP7xwTWvGGNToQzi5pBmNGsabSj4isH93qUYbmtNRoQyAzVkSDrjsbpNDGdWP8'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #68
+[[phoenix_balance]]
+address = '5ZBnjbVPatHtzKvZEqKcytMhNMb14D71fpnZVi26teqoMn9rM9cf3zANBGeqsMWg9DtTVWkQuNrNRchT8HJrvXcP'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #69
+[[phoenix_balance]]
+address = '5jZgkySVVA4HR6sSPtohsC5NwuFLP1LXfE9cqMX9PBx8fq9dQs5HAFzrfNSvPHbY8TnT7Bh4DLyrt4XphfCi8p1c'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #70
+[[phoenix_balance]]
+address = '56uJypPZHYa1WNXjd92CxmF13pvBnA2dpdAf9kdbHEfrWRRQvZdhtyHpWnoHZPFLbRv3KYpemJ3BDt4VPwL64P6g'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #71
+[[phoenix_balance]]
+address = '3f1epJmvWaExkANKYFGBdMV6mGEsrXFbkN5TeaMLWw4uJLtmPVt8GaT3nsSQrSVMhNdvAYTYZ9pEab1QGSUeLWoU'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #72
+[[phoenix_balance]]
+address = '2VkHgSJcHv7YrCGHk6vKUQmxh9SvKj3xrbaDDjTS6iqgNTxvosfh5ZuTrfFmkMoD98U4Jspbv4bFsDXKeHHhMkgC'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #73
+[[phoenix_balance]]
+address = '5MHrsDftPrgXookUnY5bKVQHFGuH6JcDZbx3Fk946HWvM4twYTiULtF89Wz1ixwk9HE3R3hfMqsN25iPJ4e22g5t'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #74
+[[phoenix_balance]]
+address = 'dCWfDDrmB3kL5kh4PqUD24TnpsvfhuTrZqabCNtfqUS7ShJnhcdFUyaY75nkBYErz44cTMnsfuhLSxFKM8Lt3Aq'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #75
+[[phoenix_balance]]
+address = '2eNWBUSyqcYzEMA1tjmGfmex4NYfgEDdFoP9GnpFMuE35RGnidL5dB8XXmrCi2Q29Upt44L7JRFL7xS6uuXryguy'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #76
+[[phoenix_balance]]
+address = '412xPiPqPCMWVQcFMmK7ScA5uWrhJxNg86NxYgdRKoitX8o4T4ZEog2d2MNHNZRa372oQfXA5K8HYP7ZqswMafnD'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #77
+[[phoenix_balance]]
+address = 'jg1SpAuaQbuEoyFdDHe59y4o42jS7hhorHppicmDvAJNaRUsRSuXjLFo3cf1KoDnpHJF7221Po2CH1dzxm2uoeQ'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #78
+[[phoenix_balance]]
+address = '5mtP8hcTLr6t6PDjMGVKxmrbYSnePepnVyU76ArS3ChQKG6Q8jvHY8mJKiYTbV3JVqkdT6H9xciBPP6Yz96Z6RSp'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #79
+[[phoenix_balance]]
+address = '5TKrH9GNNrf48ERR2Ju8BWa7na8LkNF5ewXjHp5Q3zbqJ79JY6sh19ymEtFv2FNmMczn2L55cgiRpYAdKgjw3BSj'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #80
+[[phoenix_balance]]
+address = '2fJyfGuqaY16JzA2heQcXQM3pdyLSVonRUWDsew6HDMNg7w8Ecv5r5q6RnyhjjS9ogZ9XHU2SLim8iCavkcTderz'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #81
+[[phoenix_balance]]
+address = '4P4XKHpk3cpQb7naVMwGUvcueBCTWZRWVx2Gai7gp2D1Wty5t46sEFFV9tP9wbQ3YbaW3uBcJ2gpNisA1DQfLzMc'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #82
+[[phoenix_balance]]
+address = '3ppnsdGn6wkfqDL4fnhcbf5XLDmBz7yntCC5xKUdJL9R4gpXMYmiHsqgpHtevR7fjJUi8D3QHT6YUmCiiBBD4Rvw'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #83
+[[phoenix_balance]]
+address = '3Cft7EYiQRispZxxZ14BWrCXqXMxpC2LrdDUBuWXN38wF3TJ1dPowgaYJF2G3CaUrDidURumb3AVSY1XdT9d7k2t'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #84
+[[phoenix_balance]]
+address = '4VbnsuSJQruEPM6HpLzoCjCeuVDbt3ZqtUzrmisLsq3gVAze7sHzk9mkuwVNCFzacUNVDymijtnsH5RDXUkaY1DD'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #85
+[[phoenix_balance]]
+address = '2iwtQW8Wcp5NVJR3fs1eN8Gvam9ygDXXJBHzmz876AKBU4jch9rBNzSKPCJsTP4NoRixcvVDyoy3uMLWb8HrG1e9'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #86
+[[phoenix_balance]]
+address = '3s2fSbS6gBi9kv2ds3BYR1Q5aZKzZEoBwQsesUUJJRxQXkNQupSRKo1syTitezrsUUHMu3H1GGThisvBr9RrZ1pW'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #87
+[[phoenix_balance]]
+address = '4J2zJot5mqvUkA286VUJbPEV64i1rh2B7xQDmZCtw2cRFiYUw1ifUBhWNiYrTdxywQP4235E9UQ82Xo6doSCp2Rw'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #88
+[[phoenix_balance]]
+address = '3tNHzWs8FuJc4mBtjPvGt9xDWbhbsAapnqw6xQ5j5L9gnMCMuxosUkTEqLwtFuFR6DJ3oWV2a4ejdGuVzLop6f8s'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #89
+[[phoenix_balance]]
+address = '2JTmkr1NuWMCKGRJ3ze9dge3YWnUDokrmzk15sQGFhHz97tNkjeBT4MVW97H1J5ZP8bqjqEf7GWKGmzHNbLSfLb5'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #90
+[[phoenix_balance]]
+address = 'TZVvQ15sZbV5VjpWgv1azXY31YqbzvkfNcCXsrsGp1P7yMgvLDZkkySkT9W2PF1LxrSy7BKDHBCBNGmkrWRWynq'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #91
+[[phoenix_balance]]
+address = '4twPu9ZUsoNRrF2K5ory5sfhCgKLthRmCfjeNnhqPNbsAudobV2iQWLixbKrAL4hv6y4UtKYDtehHArqheVBL4jN'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #92
+[[phoenix_balance]]
+address = '5vFvsPnN64XhoZUPuAMq4UrxiauqaXB6pVx9LFSQci17tKgZwwLKXuokP38u7BPPPQhGpy1uScUXDVDw6m96ptZJ'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #93
+[[phoenix_balance]]
+address = 'GztSa2LxRoK2Ustibpa8S8askg8JTPqWdUehgWxqmyaLmVHWL6Ci9syfzymYtAeyUtjpymhU49yUKh2MmKk8mNz'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #94
+[[phoenix_balance]]
+address = '3ErDsTjF2NsYBXYGCzZrLUckbQYs7aKgnSsreXU7oWDf1Pkc2xyZ2MXwMsEEjZj4hEeUKx2dmDr2VwE5TGU3ncJ6'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #95
+[[phoenix_balance]]
+address = '4W5YrPN1x2vbuCLh9L1JJEp3HYMdSn6A8Hg44tT33nsgK3We5jiJxNitr4Y9b6d8KbqLpATx4JuAB473JNhsZ662'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #96
+[[phoenix_balance]]
+address = '584T3GWMDEiQtbdvYUzMR1ypzrXk3Ydzks91mrf2VAFLwPFLggfQfCL6Fd4cB2gLoaFtNfA6NH6j7UfWYRDUswpA'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #97
+[[phoenix_balance]]
+address = '61kx5YNt5UAdq9MZggGM7832wfpmtah8JLXV2pRsWmUh91PdvMLjDUGw7DDnoZDqak2FYkeMRbcLeRu1N6MDUurh'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #98
+[[phoenix_balance]]
+address = '5vsK1tfSKZQUPEgDzymWELTVXJ5UFMMX8Wyvrz7SzUMqRCmok4eTcW7gF4Tgn5vG4ofmrR1NwU2AoCmCuCHaRzLd'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# Dusk phoenix node #99
+[[phoenix_balance]]
+address = '5TnGwVyCxq68tuNJStpvyfPkWqwVdi97YKyPnpYt55S5VPKCjgQXmih1m9kNgpXkUvFu2grqrrRGQ6X5U92bx8GS'
+seed = 0xdead_beef
+notes = [100_000_000_000]
+
+# On ramp Stakes
+
+
