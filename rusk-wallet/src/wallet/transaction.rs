@@ -536,7 +536,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let reward = Dusk::from(reward);
 
         let mut sender_sk = self.derive_bls_sk(sender_idx);
-        let mut stake_owner_sk = self.derive_bls_sk(sender_idx);
+
+        let stake_pk = self.public_key(sender_idx)?;
+        let stake_owner_idx = self.find_stake_owner_idx(stake_pk).await?;
+        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
         let withdraw = moonlight_stake_reward(
             &mut rng,
