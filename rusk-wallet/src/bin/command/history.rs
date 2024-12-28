@@ -27,7 +27,7 @@ pub struct TransactionHistory {
 impl TransactionHistory {
     pub fn header() -> String {
         format!(
-            "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12} | {: ^8}",
+            "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12} | {: ^8}\n",
             "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE", "TRANSACTION_TYPE"
         )
     }
@@ -60,7 +60,7 @@ impl Display for TransactionHistory {
 
         write!(
             f,
-            "{height: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee} | {tx_type}",
+            "{height: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee} | {tx_type}\n",
         )
     }
 }
@@ -149,7 +149,7 @@ pub(crate) async fn transaction_from_notes(
 
                 // No outgoing txs found, this note should belong to a
                 // preconfigured genesis state
-                None => println!("??? val {}", note_amount),
+                None => (),
             }
         }
     }
