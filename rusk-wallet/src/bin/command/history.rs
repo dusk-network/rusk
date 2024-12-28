@@ -207,19 +207,6 @@ pub(crate) async fn moonlight_history(
     Ok(collected_history)
 }
 
-pub async fn moonlight_and_phoenix_history(
-    settings: &Settings,
-    notes: Vec<DecodedNote>,
-    address: rusk_wallet::Address,
-) -> anyhow::Result<Vec<TransactionHistory>> {
-    let mut phoenix = transaction_from_notes(settings, notes).await?;
-    let mut moonlight = moonlight_history(settings, address).await?;
-
-    phoenix.append(&mut moonlight);
-
-    Ok(phoenix)
-}
-
 #[derive(PartialEq, Debug)]
 enum TransactionDirection {
     In,

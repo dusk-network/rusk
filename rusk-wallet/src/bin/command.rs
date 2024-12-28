@@ -515,14 +515,20 @@ impl Command {
 
                 wallet.sync().await?;
                 let notes = wallet.get_all_notes(profile_idx).await?;
-                let public_key = wallet.public_address(profile_idx)?;
+                let address = wallet.public_address(profile_idx)?;
 
-                let history = history::moonlight_and_phoenix_history(
-                    settings, notes, public_key,
-                )
-                .await?;
+                let mut phoenix_history =
+                    history::transaction_from_notes(settings, notes).await?;
 
-                Ok(RunResult::History(history))
+                if let Ok(mut moonlight_history) =
+                    history::moonlight_history(settings, address).await
+                {
+                    phoenix_history.append(&mut moonlight_history);
+                } else {
+                    tracing::error!("Cannot fetch archive history");
+                }
+
+                Ok(RunResult::History(phoenix_history))
             }
             Command::Unshield {
                 profile_idx,

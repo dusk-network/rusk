@@ -163,8 +163,8 @@ pub enum Error {
     #[error("Inquire error: {0}")]
     InquireError(String),
     /// Error while querying archival node
-    #[error("Archival node query error: {0}")]
-    ArchivalJsonError(String),
+    #[error("Archive node query error: {0}")]
+    ArchiveJsonError(String),
 }
 
 impl From<dusk_bytes::Error> for Error {

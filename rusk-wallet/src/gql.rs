@@ -191,11 +191,11 @@ impl GraphQL {
         let response = self
             .query(&query)
             .await
-            .map_err(|err| Error::ArchivalJsonError(err.to_string()))?;
+            .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
 
         let response =
             serde_json::from_slice::<FullMoonlightHistory>(&response)
-                .map_err(|err| Error::ArchivalJsonError(err.to_string()))?;
+                .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
 
         Ok(response)
     }
