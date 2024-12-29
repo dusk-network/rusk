@@ -273,12 +273,12 @@ describe("Create", async () => {
 
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
-    // Password disabled
+    // Password enabled
     expect(container.firstChild).toMatchSnapshot();
 
     await fireEvent.click(getByRole("switch"));
 
-    // Password enabled
+    // Password disabled
     expect(container.firstChild).toMatchSnapshot();
   });
 
@@ -405,7 +405,10 @@ describe("Create", async () => {
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
     // Set Password step
+    await fireEvent.click(getByRole("switch"));
+
     await fireEvent.click(getByRole("button", { name: "Next" }));
+
     expect(loginInfoStorage.get()).toBeNull();
 
     // Swap ERC20 to Native Dusk step
@@ -471,8 +474,6 @@ describe("Create", async () => {
 
     // Set Password step
     expect(loginInfoStorage.get()).toBeNull();
-
-    await fireEvent.click(getByRole("switch"));
 
     await fireInput(asInput(getByPlaceholderText("Set Password")), pwd);
     await fireInput(asInput(getByPlaceholderText("Confirm Password")), pwd);

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update Transactions list design [#1922]
+- Change password setting as enabled by default [#3287]
 
 ### Removed
 
@@ -501,6 +502,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3265]: https://github.com/dusk-network/rusk/issues/3265
 [#3267]: https://github.com/dusk-network/rusk/issues/3267
 [#3270]: https://github.com/dusk-network/rusk/issues/3270
+[#3287]: https://github.com/dusk-network/rusk/issues/3287
 
 <!-- VERSIONS -->
 
