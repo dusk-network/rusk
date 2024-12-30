@@ -409,8 +409,6 @@ async fn exec() -> anyhow::Result<()> {
                     gql.wait_for(&tx_id).await?;
 
                     println!("{tx_id}");
-
-                    
                 }
                 RunResult::ContractCallQuery(bytes) => {
                     println!("HTTP call result: {:?}", bytes);
