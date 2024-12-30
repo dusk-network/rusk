@@ -13,7 +13,12 @@ name = "rusk"
 path = "src/bin/main.rs"
 
 [dependencies]
-tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
+tokio = { workspace = true, features = [
+  "rt-multi-thread",
+  "fs",
+  "macros",
+  "net",
+] }
 futures-util = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = [
@@ -21,6 +26,8 @@ tracing-subscriber = { workspace = true, features = [
     "env-filter",
     "json",
 ] }
+chrono = { workspace = true, features = ["serde"] }
+thiserror = { workspace = true }
 clap = { workspace = true, features = ["env", "string", "derive"] }
 semver = { workspace = true }
 anyhow = { workspace = true }
@@ -78,8 +85,21 @@ reqwest = { workspace = true }
 tempfile = { workspace = true, optional = true }
 rusk-recovery = { workspace = true, optional = true }
 
-## testwallet dependencies
+## testwallet and http-server dependencies
 futures = { workspace = true, optional = true }
+
+## http-server dependencies
+axum = { workspace = true, features = ["ws", "http2", "macros"], optional = true }
+axum-macros = { workspace = true, optional = true }
+bytes = { workspace = true, optional = true }
+either = { workspace = true, optional = true }
+mockall = { workspace = true, optional = true }
+metrics = { workspace = true, optional = true }
+once_cell = { workspace = true, optional = true }
+rustls = { workspace = true, optional = true }
+tokio-tungstenite = { workspace = true, optional = true }
+tower = { workspace = true, optional = true }
+tower-http = { workspace = true, features = ["trace", "cors"], optional = true }
 
 [dev-dependencies]
 test-wallet = { version = "0.1.0", path = "../test-wallet" }
@@ -87,18 +107,20 @@ rusk-recovery = { workspace = true, features = ["state"] }
 ff = { workspace = true }
 rusk-prover = { workspace = true, features = ["no_random", "debug"] }
 criterion = { workspace = true }
+test-case = { workspace = true }
 
 [build-dependencies]
 rustc_tools_util = { workspace = true }
 
 [features]
 default = [
-    "ephemeral",
-    "recovery-state",
-    "recovery-keys",
-    "prover",
-    "chain",
-    "http-wasm",
+  "ephemeral",
+  "recovery-state",
+  "recovery-keys",
+  "prover",
+  "chain",
+  "http-wasm",
+  "http-server",
 ]
 ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state", "chain"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]
@@ -109,6 +131,20 @@ chain = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
 archive = ["chain", "node/archive"]
 network-trace = ["node/network-trace"]
 http-wasm = []
+http-server = [
+    "dep:axum",
+    "dep:axum-macros",
+    "dep:bytes",
+    "dep:either",
+    "dep:futures",
+    "dep:metrics",
+    "dep:mockall",
+    "dep:rustls",
+    "dep:tokio-tungstenite",
+    "dep:tower",
+    "dep:tower-http",
+    "dep:once_cell",
+]
 
 [[bench]]
 name = "block_ingestion"

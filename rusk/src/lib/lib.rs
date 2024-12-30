@@ -8,6 +8,7 @@
 
 mod bloom;
 mod error;
+#[cfg(feature = "http-server")]
 pub mod http;
 #[cfg(feature = "chain")]
 pub mod node;
