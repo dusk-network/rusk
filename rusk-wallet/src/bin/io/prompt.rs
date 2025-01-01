@@ -443,17 +443,31 @@ pub(crate) fn request_transaction_model() -> anyhow::Result<TransactionModel> {
     )
 }
 
-/// Request transaction model to use
-pub(crate) fn request_address(
+/// Request public key to use as stake owner
+pub(crate) fn request_owner_key(
     current_idx: u8,
     choices: Vec<Address>,
 ) -> anyhow::Result<Address> {
-    Ok(Select::new(
+    let display_choices = choices
+        .iter()
+        .enumerate()
+        .map(|(idx, val)| (format!("Profile {}: {}", idx + 1, val), val))
+        .collect::<Vec<(String, &Address)>>();
+
+    let answer = Select::new(
         "Please select the moonlight address to use as stake owner",
-        choices,
+        display_choices.iter().map(|(s, _)| s.clone()).collect(),
     )
     .with_starting_cursor(current_idx as usize)
-    .prompt()?)
+    .prompt()?;
+
+    let selected_address = display_choices
+        .into_iter()
+        .find(|(s, _)| s == &answer)
+        .map(|(_, addr)| addr.clone())
+        .expect("Address should be present");
+
+    Ok(selected_address)
 }
 
 pub(crate) fn tx_history_list(
