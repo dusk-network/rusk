@@ -6,55 +6,19 @@
 
 #[cfg(test)]
 mod tests {
+    use super::super::helpers::gen_note;
     use dusk_core::transfer::phoenix::{
-        Note, NoteLeaf, PublicKey as PhoenixPublicKey,
-        SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
+        NoteLeaf, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+        ViewKey as PhoenixViewKey,
     };
-    use dusk_core::JubJubScalar;
-    use ff::Field;
     use proptest::collection::vec;
     use proptest::prelude::*;
-    use rand::{CryptoRng, RngCore, SeedableRng};
+    use rand::SeedableRng;
     use rand_chacha::ChaCha12Rng;
 
     use crate::notes::owned::NoteList;
     use crate::notes::MAX_INPUT_NOTES;
     use crate::{phoenix_balance, pick_notes};
-
-    // Helper function to generate arbitrary valid notes for testing
-    fn gen_note<R>(
-        rng: &mut R,
-        owner_pk: &PhoenixPublicKey,
-        value: u64,
-        is_obfuscated: bool,
-    ) -> Note
-    where
-        R: RngCore + CryptoRng,
-    {
-        let value_blinder = JubJubScalar::random(&mut *rng);
-        let blinder1 = JubJubScalar::random(&mut *rng);
-        let blinder2 = JubJubScalar::random(&mut *rng);
-        let sender_blinder = [blinder1, blinder2];
-
-        if is_obfuscated {
-            Note::obfuscated(
-                &mut *rng,
-                owner_pk,
-                owner_pk,
-                value,
-                value_blinder,
-                sender_blinder,
-            )
-        } else {
-            Note::transparent(
-                &mut *rng,
-                owner_pk,
-                owner_pk,
-                value,
-                sender_blinder,
-            )
-        }
-    }
 
     proptest! {
         /// Tests the balance calculation functionality ensuring that:
