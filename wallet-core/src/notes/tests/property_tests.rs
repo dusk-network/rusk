@@ -79,8 +79,7 @@ mod tests {
             prop_assert_eq!(balance_info.spendable, expected_spendable);
         }
 
-        /// Tests note picking based on actual implementation behavior (not the behaviour
-        /// described in the documentation):
+        /// Tests note picking behavior with random inputs:
         /// 1. Returns empty list if MAX_INPUT_NOTES highest value notes can't cover target
         /// 2. If sum is sufficient AND count <= MAX_INPUT_NOTES, returns all notes
         /// 3. Otherwise uses pick_lexicographic to find valid combination
