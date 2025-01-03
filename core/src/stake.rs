@@ -358,7 +358,7 @@ impl Withdraw {
 }
 
 /// Event emitted after a stake contract operation is performed.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[derive(Debug, Clone, Archive, Deserialize, Serialize, PartialEq)]
 #[archive_attr(derive(CheckBytes))]
 pub struct StakeEvent {
     /// Keys associated to the event.
@@ -401,7 +401,7 @@ impl StakeEvent {
 }
 
 /// Event emitted after a slash operation is performed.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[derive(Debug, Clone, Archive, Deserialize, Serialize, PartialEq)]
 #[archive_attr(derive(CheckBytes))]
 pub struct SlashEvent {
     /// Account slashed.
@@ -442,6 +442,7 @@ pub struct StakeData {
 #[derive(
     Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
 )]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[archive_attr(derive(CheckBytes))]
 pub struct StakeKeys {
     /// Key used for consensus operations, such as voting or producing blocks.
@@ -488,6 +489,7 @@ impl StakeKeys {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
 )]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[archive_attr(derive(CheckBytes))]
 pub enum StakeFundOwner {
     /// Represents an account-based owner identified by a BLS public key.
@@ -673,6 +675,7 @@ pub struct Reward {
 
 /// The reason that a reward is issued.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[archive_attr(derive(CheckBytes))]
 pub enum RewardReason {
     /// The fixed amount awarded to a generator.
