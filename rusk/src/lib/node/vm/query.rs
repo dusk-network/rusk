@@ -34,7 +34,7 @@ impl Rusk {
             .map_err(Into::into)
     }
 
-    pub(crate) fn query<A, R>(
+    pub fn query<A, R>(
         &self,
         contract_id: ContractId,
         call_name: &str,
