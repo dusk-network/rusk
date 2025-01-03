@@ -1,9 +1,8 @@
 # Dusk account
 
-[[phoenix_balance]]
-address = '68UiBbsJ4PumJyVpS91VbffhKgq9p6QaLC8QCqzgLiKBX71mvCswmeViTHDsBJ3RMwsVcxBSkZ3HbjHAL9qCNxh'
-seed = 0xdead_beef
-notes = [699_000_000_000_000]
+[[moonlight_account]]
+address = 'o1YvWG34EBTwdskfZ7PCvWKRUWKzskVnhJNjZHdau6VaUNpgDxpoSsisK8KGF6FayUi8Lzn4taAvZcHGprQuPsqFGH66SEPDRCbTmKGVwFYX7bEp2rF4wekvoc4dS8ghnKf'
+balance = 100_000_000_000
 
 # 100 Dusk network provisioners
 
