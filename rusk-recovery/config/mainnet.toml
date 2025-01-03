@@ -4,6 +4,18 @@
 address = 'o1YvWG34EBTwdskfZ7PCvWKRUWKzskVnhJNjZHdau6VaUNpgDxpoSsisK8KGF6FayUi8Lzn4taAvZcHGprQuPsqFGH66SEPDRCbTmKGVwFYX7bEp2rF4wekvoc4dS8ghnKf'
 balance = 100_000_000_000
 
+# ETH bridge wallet
+
+[[moonlight_account]]
+address = 'ugiaM55iFtPRSMhRRSkq5EuNZRzREx9TxfGaxZV4W4XFjayTmTMEtQrFc95qTURnFHB7rrbW4XqKQCcPG4HUU5sQ36YFmmms1y8ovjFtjWTuW645Asn8v25adkaDQoh8bzE'
+balance = 293_922_942_787_595_900
+
+# BSC bridge wallet
+
+[[moonlight_account]]
+address = 'mFqH6RVxCoWQfjQ23H9YVr8JhQ697M5DD4ob76kcuoEYqqYA6H9cxHrxjvnZ6z4PQKsBd3PBpRYLN9M3FgkQQVywREzkzgeme4ersJgLaxYaQzZSAzkd1QBJ4ByTe9NrhXp'
+balance = 99_804_723_613_162_055
+
 # 100 Dusk network provisioners
 
 # Dusk stake node #0
