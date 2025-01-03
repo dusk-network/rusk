@@ -131,6 +131,16 @@ impl ProvisionerChange {
         };
         Some(event)
     }
+
+    fn topic(&self) -> &str {
+        match &self {
+            ProvisionerChange::Stake(_) => "stake",
+            ProvisionerChange::Unstake(_) => "unstake",
+            ProvisionerChange::Slash(_) => "slash",
+            ProvisionerChange::HardSlash(_) => "hard_slash",
+        }
+    }
+
     fn key(&self) -> &bls::PublicKey {
         match &self {
             ProvisionerChange::Stake(e) => &e.keys.account,
@@ -522,6 +532,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 info!(
                     event = "provisioner_update",
                     src,
+                    topic = change.topic(),
                     account = account.to_bs58(),
                     value
                 );
