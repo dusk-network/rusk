@@ -1495,6 +1495,10 @@ amount = 1_990_000_000_000
 address = '263iutoFfU2Hc3nRN3K3Jic5hBTL6dgPTzsavWfGRmgVzKp9g2uAmPmBnHPgej2i55Xrg5McFFW2Tp4EAJ51ukLTmUwRri4SE4ESKEkqPiEqV9xt1YUpKdFJ5TbU7a1rbroi'
 amount = 2_950_000_000_000
 
+[[stake]]
+address = 'od2bVPYstYud4N1GFQo9bAP2YmCz3Nxw1iE2hEdooVSRHyLnxufnXRdxZMNZnG2NH3YaCxDCVC46SuRn1ALA6fs8XvyGTxLoWPqhLBM3GyHusbDAVTprjtGdJS8FU8bEqvx'
+amount = 5_600_000_000_000_000
+
 [[moonlight_account]]
 address = '271zWxBm6QnM2qjfypWjE2h2RP7yYmc7nUqsozWCoZewDCUaBs86y7rmqCN6ejwoc6BPzrdu3erPBAev1yNRGdnVtemubxAQPPjzKK6bsHZrwKLPTHCJ8bZKXByaD4F9MFrk'
 balance = 1_000_000_000_000
@@ -1537,7 +1541,7 @@ balance = 500_000_000_000
 
 [[moonlight_account]]
 address = 'od2bVPYstYud4N1GFQo9bAP2YmCz3Nxw1iE2hEdooVSRHyLnxufnXRdxZMNZnG2NH3YaCxDCVC46SuRn1ALA6fs8XvyGTxLoWPqhLBM3GyHusbDAVTprjtGdJS8FU8bEqvx'
-balance = 5_601_000_000_000_000
+balance = 1_000_000_000_000
 
 [[moonlight_account]]
 address = 'rfe7UwwvRKoL8u55FZ1aqzJXVfY9NqAj3YrQsm7jLS3v3TnGciQYPj4cBFg22CjoHG8YjDNeUAcPupGYxDyngX5EWbfFyZUhx7it4TUcBHjKvcNfwMCScBQg1HRNxSpBcL5'
