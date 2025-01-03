@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Core value types for the RUES protocol.
 //!
 //! This module provides the fundamental value types that represent data
@@ -20,7 +26,7 @@
 //!
 //! Creating and using values:
 //! ```rust
-//! use rusk::http::domain::{RuesValue, RuesHeaders};
+//! use rusk::http::domain::types::value::RuesValue;
 //! use serde_json::json;
 //! use bytes::Bytes;
 //!
@@ -37,7 +43,8 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::http::domain::{DomainError, RuesHeaders, SerDeError};
+use crate::http::domain::error::{DomainError, SerDeError};
+use crate::http::domain::types::headers::RuesHeaders;
 
 /// Core value types in the RUES system.
 ///
@@ -55,7 +62,7 @@ use crate::http::domain::{DomainError, RuesHeaders, SerDeError};
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::RuesValue;
+/// use rusk::http::domain::types::value::RuesValue;
 /// use serde_json::json;
 /// use bytes::Bytes;
 ///
@@ -107,7 +114,7 @@ impl RuesValue {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesValue;
+    /// use rusk::http::domain::types::value::RuesValue;
     /// use bytes::Bytes;
     ///
     /// let value = RuesValue::Binary(Bytes::from(vec![1, 2, 3]));
@@ -165,7 +172,7 @@ impl RuesValue {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesValue;
+    /// use rusk::http::domain::types::value::RuesValue;
     ///
     /// // Assume we have some valid RUES binary data
     /// let data = vec![0, 3, 0, 0, 0, 1, 2, 3];
@@ -242,7 +249,8 @@ impl RuesValue {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{RuesValue, RuesHeaders};
+    /// use rusk::http::domain::types::value::RuesValue;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     /// use serde_json::json;
     ///
     /// let value = RuesValue::Json(json!({"test": true}));
@@ -288,7 +296,7 @@ impl RuesValue {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesValue;
+    /// use rusk::http::domain::types::value::RuesValue;
     ///
     /// // Assume we have a valid RUES message
     /// # let message_bytes = vec![/* ... */];
@@ -342,7 +350,7 @@ impl RuesValue {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesValue;
+    /// use rusk::http::domain::types::value::RuesValue;
     /// use serde_json::json;
     ///
     /// let json = RuesValue::Json(json!({"test": true}));

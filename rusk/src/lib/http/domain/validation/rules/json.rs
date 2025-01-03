@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Validation rules for JSON data in RUES protocol.
 //!
 //! This module provides validation rules for JSON data according to the RUES
@@ -46,7 +52,9 @@
 //!
 //! Validating JSON format:
 //! ```rust
-//! use rusk::http::domain::{JsonFormatRule, ValidationRule, ValidationContext};
+//! use rusk::http::domain::validation::rules::json::JsonFormatRule;
+//! use rusk::http::domain::validation::rules::ValidationRule;
+//! use rusk::http::domain::validation::context::ValidationContext;
 //! use serde_json::json;
 //!
 //! let rule = JsonFormatRule::new();
@@ -84,7 +92,9 @@
 //!
 //! Validating RUES headers:
 //! ```rust
-//! use rusk::http::domain::{JsonHeaderRule, ValidationRule, ValidationContext};
+//! use rusk::http::domain::validation::rules::json::JsonHeaderRule;
+//! use rusk::http::domain::validation::rules::ValidationRule;
+//! use rusk::http::domain::validation::context::ValidationContext;
 //! use serde_json::json;
 //!
 //! let rule = JsonHeaderRule::new();
@@ -114,10 +124,10 @@
 //! - `ValidationError::MissingField` for missing required headers
 //! - `ValidationError::InvalidFieldValue` for wrong field types
 
-use crate::http::domain::{
-    DomainError, RuesHeaders, ValidationContext, ValidationError,
-    ValidationRule,
-};
+use crate::http::domain::error::{DomainError, ValidationError};
+use crate::http::domain::types::headers::RuesHeaders;
+use crate::http::domain::validation::context::ValidationContext;
+use crate::http::domain::validation::rules::ValidationRule;
 use serde_json::Value as JsonValue;
 
 /// Validates basic JSON format and structure.
@@ -130,7 +140,9 @@ use serde_json::Value as JsonValue;
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{JsonFormatRule, ValidationRule, ValidationContext};
+/// use rusk::http::domain::validation::rules::json::JsonFormatRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// use serde_json::json;
 ///
 /// let rule = JsonFormatRule::new();
@@ -161,7 +173,8 @@ impl JsonFormatRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{JsonFormatRule, ValidationRule};
+    /// use rusk::http::domain::validation::rules::json::JsonFormatRule;
+    /// use rusk::http::domain::validation::rules::ValidationRule;
     ///
     /// let validator = JsonFormatRule::new();
     /// ```
@@ -178,7 +191,8 @@ impl JsonFormatRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{JsonFormatRule, ValidationRule};
+    /// use rusk::http::domain::validation::rules::json::JsonFormatRule;
+    /// use rusk::http::domain::validation::rules::ValidationRule;
     ///
     /// let validator = JsonFormatRule::with_max_depth(16);
     /// ```
@@ -234,7 +248,9 @@ impl ValidationRule<JsonValue> for JsonFormatRule {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{JsonHeaderRule, ValidationRule, ValidationContext};
+/// use rusk::http::domain::validation::rules::json::JsonHeaderRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// use serde_json::json;
 ///
 /// let rule = JsonHeaderRule::new();
@@ -264,7 +280,8 @@ impl JsonHeaderRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{JsonHeaderRule, ValidationRule};
+    /// use rusk::http::domain::validation::rules::json::JsonHeaderRule;
+    /// use rusk::http::domain::validation::rules::ValidationRule;
     ///
     /// let validator = JsonHeaderRule::new();
     /// ```

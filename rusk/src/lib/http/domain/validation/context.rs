@@ -1,4 +1,12 @@
-use crate::http::domain::{DomainError, ProcessingMetrics};
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
+use crate::http::domain::error::DomainError;
+use crate::http::domain::processing::metrics::ProcessingMetrics;
+
 use std::time::Duration;
 
 /// Context for validation operations

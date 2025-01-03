@@ -1,11 +1,20 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Factory methods for creating domain types.
 //! This module has access to private fields of domain types
 //! and is used by the processing module.
 
-use crate::http::domain::{
-    BlockHash, ContractId, DomainError, IdentifierBytes, RuesValue, Target,
-    TargetIdentifier, Topic, TransactionHash, ValidationError, Version,
+use crate::http::domain::error::{DomainError, ValidationError};
+use crate::http::domain::types::event::Version;
+use crate::http::domain::types::identifier::{
+    BlockHash, ContractId, IdentifierBytes, TargetIdentifier, TransactionHash,
 };
+use crate::http::domain::types::path::{Target, Topic};
+use crate::http::domain::types::value::RuesValue;
 
 /// Creates domain types from raw values.
 /// Only accessible within the crate, primarily used by processors (directly) or

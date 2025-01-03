@@ -1,16 +1,13 @@
-mod context;
-mod rules;
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::http::domain::{DomainError, ProcessingMetrics};
-pub use context::ValidationContext;
-pub use rules::{
-    BlockHashValidator, ContentLocationRule, ContentTypeRule,
-    ContractIdValidator, HeadersFormatRule, JsonFormatRule, JsonHeaderRule,
-    RuleBuilder, RuleSet, SessionHeaderRule, SessionIdValidator, TargetIdRule,
-    TargetTypeRule, TopicFormatRule, TopicValidityRule,
-    TransactionHashValidator, ValidationRule, ValidationRuleExt,
-    VersionHeaderRule,
-};
+pub mod context;
+pub mod rules;
+
+use crate::http::domain::error::DomainError;
 
 /// Core validation trait
 #[async_trait::async_trait]
@@ -18,6 +15,6 @@ pub trait Validator<T>: Send + Sync {
     async fn validate(
         &self,
         value: &T,
-        ctx: &mut ValidationContext,
+        ctx: &mut context::ValidationContext,
     ) -> Result<(), DomainError>;
 }

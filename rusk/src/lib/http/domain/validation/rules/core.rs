@@ -1,7 +1,15 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 use parking_lot::RwLock;
 use std::marker::PhantomData;
 
-use crate::http::domain::{DomainError, ValidationContext, ValidationRule};
+use crate::http::domain::error::DomainError;
+use crate::http::domain::validation::context::ValidationContext;
+use crate::http::domain::validation::rules::ValidationRule;
 
 pub struct RuleSet<T> {
     rules: Vec<Box<dyn ValidationRule<T>>>,

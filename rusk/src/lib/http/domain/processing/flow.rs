@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Flow control mechanisms for processing operations.
 //!
 //! This module provides implementations for controlling processing flow and
@@ -13,7 +19,8 @@
 //! ## No-op Flow
 //! When backpressure isn't needed:
 //! ```rust
-//! use rusk::http::domain::{NoopFlow, FlowControl, ProcessingMetrics};
+//! use rusk::http::domain::processing::flow::{FlowControl, NoopFlow};
+//! use rusk::http::domain::processing::metrics::ProcessingMetrics;
 //!
 //! let mut flow = NoopFlow::default();
 //! let mut metrics = ProcessingMetrics::new();
@@ -31,7 +38,8 @@
 //! ## Token Bucket Flow
 //! For rate-limited processing:
 //! ```rust
-//! use rusk::http::domain::{TokenBucketFlow, FlowControl, ProcessingMetrics};
+//! use rusk::http::domain::processing::flow::{FlowControl, TokenBucketFlow};
+//! use rusk::http::domain::processing::metrics::ProcessingMetrics;
 //! use std::time::Duration;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -61,7 +69,8 @@
 //! processors:
 //!
 //! ```rust
-//! use rusk::http::domain::{TokenBucketFlow, FlowControl, ProcessingMetrics};
+//! use rusk::http::domain::processing::flow::{FlowControl, TokenBucketFlow};
+//! use rusk::http::domain::processing::metrics::ProcessingMetrics;
 //! use std::sync::Arc;
 //! use tokio::sync::Mutex;
 //!
@@ -94,7 +103,8 @@
 //!
 //! Implementing custom flow control:
 //! ```rust
-//! use rusk::http::domain::{FlowControl, ProcessingMetrics};
+//! use rusk::http::domain::processing::flow::FlowControl;
+//! use rusk::http::domain::processing::metrics::ProcessingMetrics;
 //! use std::sync::atomic::{AtomicUsize, Ordering};
 //!
 //! #[derive(Debug)]
@@ -143,10 +153,10 @@ use std::time::{Duration, Instant};
 use tokio::time;
 use tracing::{debug, warn};
 
-use crate::http::domain::ProcessingMetrics;
-use crate::http::domain::{
+use crate::http::domain::error::{
     CommonErrorAttributes, DomainError, ProcessingError, WithContext,
 };
+use crate::http::domain::processing::metrics::ProcessingMetrics;
 
 /// Core trait for flow control mechanisms.
 ///
@@ -166,7 +176,8 @@ use crate::http::domain::{
 ///
 /// Basic implementation:
 /// ```rust
-/// use rusk::http::domain::{FlowControl, ProcessingMetrics};
+/// use rusk::http::domain::processing::flow::FlowControl;
+/// use rusk::http::domain::processing::metrics::ProcessingMetrics;
 /// use std::sync::atomic::{AtomicUsize, Ordering};
 ///
 /// #[derive(Debug)]
@@ -212,10 +223,11 @@ use crate::http::domain::{
 ///
 /// Using with a processor:
 /// ```rust
-/// use rusk::http::domain::{
-///     FlowControl, Processor, ProcessingMetrics,
-///     DefaultContext, DomainError, ProcessingContext,
-/// };
+/// use rusk::http::domain::processing::flow::FlowControl;
+/// use rusk::http::domain::processing::Processor;
+/// use rusk::http::domain::processing::metrics::ProcessingMetrics;
+/// use rusk::http::domain::error::DomainError;
+/// use rusk::http::domain::processing::context::{DefaultContext, ProcessingContext};
 /// use async_trait::async_trait;
 ///
 /// #[derive(Debug, Default)]
@@ -284,7 +296,8 @@ pub trait FlowControl: Send + Sync {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{FlowControl, ProcessingMetrics};
+    /// use rusk::http::domain::processing::flow::FlowControl;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     /// use std::sync::atomic::{AtomicUsize, Ordering};
     ///
     /// #[derive(Debug)]
@@ -326,7 +339,8 @@ pub trait FlowControl: Send + Sync {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{FlowControl, ProcessingMetrics};
+    /// use rusk::http::domain::processing::flow::FlowControl;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     /// use std::sync::atomic::{AtomicUsize, Ordering};
     ///
     /// #[derive(Debug)]
@@ -380,7 +394,8 @@ pub trait FlowControl: Send + Sync {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{FlowControl, ProcessingMetrics};
+    /// use rusk::http::domain::processing::flow::FlowControl;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     /// use std::sync::atomic::{AtomicUsize, Ordering};
     ///
     /// #[derive(Debug)]
@@ -423,7 +438,8 @@ pub trait FlowControl: Send + Sync {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{NoopFlow, FlowControl, ProcessingMetrics};
+/// use rusk::http::domain::processing::flow::{FlowControl, NoopFlow};
+/// use rusk::http::domain::processing::metrics::ProcessingMetrics;
 ///
 /// let mut flow = NoopFlow::default();
 /// let mut metrics = ProcessingMetrics::new();
@@ -464,7 +480,7 @@ impl FlowControl for NoopFlow {
 ///
 /// Basic usage:
 /// ```rust
-/// use rusk::http::domain::{TokenBucketFlow, FlowControl};
+/// use rusk::http::domain::processing::flow::{FlowControl, TokenBucketFlow};
 /// use std::time::Duration;
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -488,11 +504,11 @@ impl FlowControl for NoopFlow {
 ///
 /// With processor:
 /// ```rust
-/// use rusk::http::domain::{
-///     TokenBucketFlow, FlowControl, Processor,
-///     ProcessingMetrics, DefaultContext, DomainError,
-///     ProcessingContext,
-/// };
+/// use rusk::http::domain::processing::flow::{TokenBucketFlow, FlowControl};
+/// use rusk::http::domain::processing::Processor;
+/// use rusk::http::domain::processing::metrics::ProcessingMetrics;
+/// use rusk::http::domain::error::DomainError;
+/// use rusk::http::domain::processing::context::{DefaultContext, ProcessingContext};
 /// use async_trait::async_trait;
 ///
 /// #[derive(Debug)]
@@ -539,7 +555,7 @@ impl TokenBucketFlow {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::TokenBucketFlow;
+    /// use rusk::http::domain::processing::flow::TokenBucketFlow;
     ///
     /// let flow = TokenBucketFlow::builder()
     ///     .capacity(100)
@@ -570,7 +586,7 @@ impl TokenBucketFlow {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::TokenBucketFlow;
+    /// use rusk::http::domain::processing::flow::TokenBucketFlow;
     /// use tokio::time::timeout;
     /// use std::time::Duration;
     ///
@@ -639,7 +655,7 @@ impl TokenBucketFlow {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::TokenBucketFlow;
+    /// use rusk::http::domain::processing::flow::TokenBucketFlow;
     ///
     /// let mut flow = TokenBucketFlow::builder()
     ///     .capacity(5)
@@ -712,7 +728,7 @@ impl TokenBucketFlow {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{TokenBucketFlow, FlowControl};
+    /// use rusk::http::domain::processing::flow::{FlowControl, TokenBucketFlow};
     ///
     /// let mut flow = TokenBucketFlow::builder()
     ///     .capacity(10)
@@ -771,7 +787,7 @@ impl FlowControl for TokenBucketFlow {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::TokenBucketFlow;
+/// use rusk::http::domain::processing::flow::TokenBucketFlow;
 ///
 /// let flow = TokenBucketFlow::builder()
 ///     .capacity(1000)
@@ -794,7 +810,7 @@ impl TokenBucketFlowBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::TokenBucketFlow;
+    /// use rusk::http::domain::processing::flow::TokenBucketFlow;
     ///
     /// let flow = TokenBucketFlow::builder()
     ///     .capacity(1000) // Can hold up to 1000 tokens
@@ -815,7 +831,7 @@ impl TokenBucketFlowBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::TokenBucketFlow;
+    /// use rusk::http::domain::processing::flow::TokenBucketFlow;
     ///
     /// let flow = TokenBucketFlow::builder()
     ///     .capacity(1000)
@@ -836,7 +852,7 @@ impl TokenBucketFlowBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::TokenBucketFlow;
+    /// use rusk::http::domain::processing::flow::TokenBucketFlow;
     ///
     /// // With custom values
     /// let custom_flow = TokenBucketFlow::builder()
@@ -868,7 +884,7 @@ mod tests {
     use tokio::sync::Barrier;
     use tokio::time::timeout;
 
-    use crate::http::domain::{
+    use crate::http::domain::error::{
         CommonErrorAttributes, DomainError, ProcessingError, WithContext,
     };
 

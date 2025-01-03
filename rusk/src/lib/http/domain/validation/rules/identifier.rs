@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Validation rules for RUES identifiers used in routing.
 //!
 //! This module provides validation rules for different identifier types in the
@@ -15,7 +21,10 @@
 //!
 //! Validating a session ID:
 //! ```rust
-//! use rusk::http::domain::{SessionId, SessionIdValidator, ValidationRule, ValidationContext};
+//! use rusk::http::domain::validation::rules::identifier::SessionIdValidator;
+//! use rusk::http::domain::types::identifier::SessionId;
+//! use rusk::http::domain::validation::rules::ValidationRule;
+//! use rusk::http::domain::validation::context::ValidationContext;
 //! # use rusk::http::domain::testing;
 //!
 //! let validator = SessionIdValidator::new();
@@ -28,9 +37,10 @@
 //!
 //! Validating a block hash:
 //! ```rust
-//! use rusk::http::domain::{
-//!     BlockHash, BlockHashValidator, TargetIdentifier, ValidationRule, ValidationContext,
-//! };
+//! use rusk::http::domain::validation::rules::identifier::BlockHashValidator;
+//! use rusk::http::domain::types::identifier::{BlockHash, TargetIdentifier};
+//! use rusk::http::domain::validation::rules::ValidationRule;
+//! use rusk::http::domain::validation::context::ValidationContext;
 //! # use rusk::http::domain::testing;
 //!
 //! let validator = BlockHashValidator::new();
@@ -42,10 +52,14 @@
 //! }
 //! ```
 
-use crate::http::domain::{
-    BlockHash, ContractId, DomainError, RuesValue, SessionId, TransactionHash,
-    ValidationContext, ValidationError, ValidationRule,
+use crate::http::domain::error::{DomainError, ValidationError};
+use crate::http::domain::types::identifier::{
+    BlockHash, ContractId, IdentifierBytes, SessionId, TargetIdentifier,
+    TransactionHash,
 };
+use crate::http::domain::types::value::RuesValue;
+use crate::http::domain::validation::context::ValidationContext;
+use crate::http::domain::validation::rules::ValidationRule;
 
 /// Validates session ID format (16 bytes).
 ///
@@ -59,7 +73,9 @@ use crate::http::domain::{
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{SessionIdValidator, ValidationRule, ValidationContext};
+/// use rusk::http::domain::validation::rules::identifier::SessionIdValidator;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// # use rusk::http::domain::testing;
 ///
 /// let validator = SessionIdValidator::new();
@@ -108,9 +124,10 @@ impl ValidationRule<SessionId> for SessionIdValidator {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     BlockHashValidator, TargetIdentifier, ValidationRule, ValidationContext,
-/// };
+/// use rusk::http::domain::validation::rules::identifier::BlockHashValidator;
+/// use rusk::http::domain::types::identifier::TargetIdentifier;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// # use rusk::http::domain::testing;
 ///
 /// let validator = BlockHashValidator::new();
@@ -161,10 +178,10 @@ impl ValidationRule<BlockHash> for BlockHashValidator {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     TargetIdentifier, TransactionHashValidator, ValidationRule,
-///     ValidationContext,
-/// };
+/// use rusk::http::domain::validation::rules::identifier::TransactionHashValidator;
+/// use rusk::http::domain::types::identifier::TargetIdentifier;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// # use rusk::http::domain::testing;
 ///
 /// let validator = TransactionHashValidator::new();
@@ -216,10 +233,10 @@ impl ValidationRule<TransactionHash> for TransactionHashValidator {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     ContractIdValidator, TargetIdentifier, ValidationRule,
-///     ValidationContext,
-/// };
+/// use rusk::http::domain::validation::rules::identifier::ContractIdValidator;
+/// use rusk::http::domain::types::identifier::TargetIdentifier;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// # use rusk::http::domain::testing;
 ///
 /// let validator = ContractIdValidator::new();
@@ -311,7 +328,8 @@ fn validate_binary_type(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::http::domain::{testing, TargetIdentifier};
+    use crate::http::domain::testing;
+    use crate::http::domain::types::identifier::TargetIdentifier;
     use bytes::Bytes;
     use serde_json::json;
 

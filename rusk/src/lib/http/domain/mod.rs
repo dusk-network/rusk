@@ -1,41 +1,20 @@
-mod error;
-mod event;
-mod factory;
-mod formats;
-mod processing;
-mod types;
-mod validation;
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
 
-// Re-export factory methods
+pub mod constants;
+pub mod error;
+pub(crate) mod factory;
+pub mod formats;
+pub mod processing;
+pub mod types;
+pub mod validation;
+
+// Re-export factory methods for creating domain types which are not
+// intended to be used directly by the user but only in processing pipelines.
 pub(crate) use factory::DomainTypesFactory;
-
-// Re-export core types and traits
-pub use error::{
-    CommonErrorAttributes, ConversionError, DomainError, ErrorContext,
-    ProcessingError, ProtocolError, ResourceError, SerDeError, ValidationError,
-    WithContext,
-};
-// pub use event::{EventSource, RuesEvent, Topic};
-// pub use types::formats::{binary, graphql, json, path, text};
-pub use processing::{
-    describe_metrics, CancellableProcessor, CancellationToken, DefaultContext,
-    DefaultProcessor, FlowControl, NoopFlow, ProcessingContext,
-    ProcessingMetrics, Processor, TokenBucketFlow, TokenBucketFlowBuilder,
-};
-pub use types::{
-    BlockHash, ContractId, Event, EventBuilder, EventOperation,
-    IdentifierBytes, LegacyTarget, RuesHeaders, RuesHeadersBuilder, RuesPath,
-    RuesValue, SessionId, Target, TargetIdentifier, TargetSpecifier, Topic,
-    TransactionHash, Version,
-};
-pub use validation::{
-    BlockHashValidator, ContentLocationRule, ContentTypeRule,
-    ContractIdValidator, HeadersFormatRule, JsonFormatRule, JsonHeaderRule,
-    RuleBuilder, RuleSet, SessionHeaderRule, SessionIdValidator, TargetIdRule,
-    TargetTypeRule, TopicFormatRule, TopicValidityRule,
-    TransactionHashValidator, ValidationContext, ValidationRule,
-    ValidationRuleExt, Validator, VersionHeaderRule,
-};
 
 // Helper functions for documentation examples. Not intended for use in
 // production code and therefore hidden from the public API.
@@ -47,6 +26,15 @@ pub use validation::{
 #[doc(hidden)]
 pub mod testing {
     use super::*;
+    use crate::http::domain::types::event::Version;
+    use crate::http::domain::types::identifier::{
+        BlockHash, ContractId, IdentifierBytes, SessionId, TargetIdentifier,
+        TransactionHash,
+    };
+    use crate::http::domain::types::path::{
+        LegacyTarget, RuesPath, Target, Topic,
+    };
+    use crate::http::domain::types::value::RuesValue;
     use bytes::Bytes;
 
     /// Creates a test block hash identifier.

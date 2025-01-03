@@ -1,32 +1,32 @@
 [workspace]
 members = [
-  # Test contracts
-  "contracts/alice",
-  "contracts/bob",
-  "contracts/charlie",
-  "contracts/host_fn",
+    # Test contracts
+    "contracts/alice",
+    "contracts/bob",
+    "contracts/charlie",
+    "contracts/host_fn",
 
-  # Genesis contracts
-  "contracts/stake",
-  "contracts/transfer",
+    # Genesis contracts
+    "contracts/stake",
+    "contracts/transfer",
 
     "core",
     "vm",
     "wallet-core",
 
-  "rusk-prover",
+    "rusk-prover",
 
     "rusk-recovery",
     "rusk-profile",
     "rusk",
 
-  "node-data",
-  "consensus",
-  "node",
-  "rusk-wallet",
+    "node-data",
+    "consensus",
+    "node",
+    "rusk-wallet",
 
-  # Test utils
-  "test-wallet",
+    # Test utils
+    "test-wallet",
 ]
 resolver = "2"
 

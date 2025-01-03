@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Event types and operations for the RUES protocol.
 //!
 //! This module provides core event types and operations that represent the RUES
@@ -23,7 +29,9 @@
 //!
 //! Creating an event with all components:
 //! ```rust
-//! use rusk::http::domain::{Event, EventOperation, RuesPath, Target, RuesValue};
+//! use rusk::http::domain::types::event::{Event, EventOperation};
+//! use rusk::http::domain::types::path::{RuesPath, Target};
+//! use rusk::http::domain::types::value::RuesValue;
 //! # use rusk::http::domain::testing;
 //! use serde_json::json;
 //!
@@ -91,11 +99,13 @@ use std::{cmp::Ordering, fmt};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::http::domain::{
-    BlockHash, ContractId, DomainError, RuesHeaders, RuesPath, RuesValue,
-    SerDeError, SessionId, Target, TargetIdentifier, TransactionHash,
-    ValidationError,
+use crate::http::domain::error::{DomainError, SerDeError, ValidationError};
+use crate::http::domain::types::headers::RuesHeaders;
+use crate::http::domain::types::identifier::{
+    BlockHash, ContractId, SessionId, TargetIdentifier, TransactionHash,
 };
+use crate::http::domain::types::path::{RuesPath, Target};
+use crate::http::domain::types::value::RuesValue;
 
 /// Core event type for the RUES protocol.
 ///
@@ -121,7 +131,9 @@ use crate::http::domain::{
 /// Events should be created using the builder pattern:
 ///
 /// ```rust
-/// use rusk::http::domain::{Event, EventOperation, RuesPath, Target, RuesValue};
+/// use rusk::http::domain::types::event::{Event, EventOperation};
+/// use rusk::http::domain::types::path::{RuesPath, Target};
+/// use rusk::http::domain::types::value::RuesValue;
 /// use serde_json::json;
 /// # use rusk::http::domain::testing;
 ///
@@ -145,7 +157,8 @@ use crate::http::domain::{
 /// The event system supports both modern and legacy targets:
 ///
 /// ```rust
-/// use rusk::http::domain::{Event, EventOperation, RuesPath, Target, LegacyTarget};
+/// use rusk::http::domain::types::event::{Event, EventOperation};
+/// use rusk::http::domain::types::path::{RuesPath, Target, LegacyTarget};
 /// # use rusk::http::domain::testing;
 ///
 /// // Modern target
@@ -242,7 +255,9 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesPath, Target, RuesValue};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
+    /// use rusk::http::domain::types::path::{RuesPath, Target};
+    /// use rusk::http::domain::types::value::RuesValue;
     /// # use rusk::http::domain::testing;
     /// use serde_json::json;
     ///
@@ -280,7 +295,8 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesPath, Target};
+    /// use rusk::http::domain::types::path::{RuesPath, Target};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let event = Event::builder()
@@ -303,7 +319,7 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let version = testing::create_release_version();
@@ -324,7 +340,7 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// use chrono::{DateTime, Utc};
     /// # use rusk::http::domain::testing;
     ///
@@ -351,7 +367,9 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesPath, Target};
+    /// 
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
+    /// use rusk::http::domain::types::path::{RuesPath, Target};
     /// # use rusk::http::domain::testing;
     ///
     /// let topic = testing::create_test_topic("info");
@@ -378,7 +396,9 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesPath, Target};
+    /// 
+    /// use rusk::http::domain::types::path::{RuesPath, Target};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let topic = testing::create_test_topic("info");
@@ -405,7 +425,9 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesPath, Target};
+    /// 
+    /// use rusk::http::domain::types::path::{RuesPath, Target};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// // Path with target ID
@@ -446,7 +468,9 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesPath, Target};
+    /// use rusk::http::domain::types::path::{RuesPath, Target};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
+
     /// # use rusk::http::domain::testing;
     ///
     /// let topic = testing::create_test_topic("info");
@@ -471,7 +495,8 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesValue};
+    /// use rusk::http::domain::types::value::RuesValue;
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     /// use serde_json::json;
     ///
@@ -495,7 +520,8 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesHeaders};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     /// # use rusk::http::domain::testing;
     ///
     /// let headers = RuesHeaders::builder()
@@ -523,7 +549,8 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesHeaders};
+    /// use rusk::http::domain::types::headers::RuesHeaders;
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let headers = RuesHeaders::builder()
@@ -551,7 +578,8 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesHeaders};
+    /// use rusk::http::domain::types::headers::RuesHeaders;
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let headers = RuesHeaders::builder()
@@ -581,7 +609,7 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let session_id = testing::create_test_session_id();
@@ -608,7 +636,7 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let connect = Event::builder()
@@ -637,7 +665,7 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let subscribe = Event::builder()
@@ -664,7 +692,7 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let event = Event::builder()
@@ -687,9 +715,9 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{
-    ///     Event, EventOperation, RuesPath, Target, TargetIdentifier,
-    /// };
+    /// use rusk::http::domain::types::path::{RuesPath, Target };
+    /// use rusk::http::domain::types::identifier::TargetIdentifier;
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let block_id = testing::create_test_block_hash();
@@ -726,7 +754,9 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesPath, Target, TargetIdentifier};
+    /// use rusk::http::domain::types::identifier::TargetIdentifier;
+    /// use rusk::http::domain::types::path::{RuesPath, Target};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// let contract_id = testing::create_test_contract_id();
@@ -763,7 +793,9 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesPath, Target, TargetIdentifier};
+    /// use rusk::http::domain::types::path::{RuesPath, Target};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
+    /// use rusk::http::domain::types::identifier::TargetIdentifier;
     /// # use rusk::http::domain::testing;
     ///
     /// let contract_id = testing::create_test_contract_id();
@@ -802,7 +834,8 @@ impl Event {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Event, EventOperation, RuesPath, Target, LegacyTarget};
+    /// use rusk::http::domain::types::path::{RuesPath, Target, LegacyTarget};
+    /// use rusk::http::domain::types::event::{Event, EventOperation};
     /// # use rusk::http::domain::testing;
     ///
     /// // Modern path
@@ -849,7 +882,7 @@ impl Event {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::Version;
+/// use rusk::http::domain::types::event::Version;
 /// # use rusk::http::domain::testing;
 ///
 /// let version = testing::create_release_version();
@@ -888,7 +921,7 @@ impl Version {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::Version;
+    /// use rusk::http::domain::types::event::Version;
     /// # use rusk::http::domain::testing;
     ///
     /// let version = testing::create_release_version();
@@ -903,7 +936,7 @@ impl Version {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::Version;
+    /// use rusk::http::domain::types::event::Version;
     /// # use rusk::http::domain::testing;
     ///
     /// let version = testing::create_release_version();
@@ -918,7 +951,7 @@ impl Version {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::Version;
+    /// use rusk::http::domain::types::event::Version;
     /// # use rusk::http::domain::testing;
     ///
     /// let version = testing::create_release_version();
@@ -933,7 +966,7 @@ impl Version {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::Version;
+    /// use rusk::http::domain::types::event::Version;
     /// # use rusk::http::domain::testing;
     ///
     /// let version = testing::create_pre_release_version();
@@ -948,7 +981,7 @@ impl Version {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::Version;
+    /// use rusk::http::domain::types::event::Version;
     /// # use rusk::http::domain::testing;
     ///
     /// let release = testing::create_release_version();
@@ -1132,7 +1165,7 @@ impl<'de> Deserialize<'de> for Version {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::EventOperation;
+/// use rusk::http::domain::types::event::EventOperation;
 ///
 /// // WebSocket operations
 /// assert!(EventOperation::Connect.is_websocket());

@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! RUES path types and structures.
 //!
 //! This module provides the core types for representing RUES paths. Note that
@@ -8,7 +14,7 @@
 //!
 //! Creating and using RUES paths:
 //! ```rust
-//! use rusk::http::domain::{RuesPath, Target, TargetSpecifier, LegacyTarget};
+//! use rusk::http::domain::types::path::{Target, RuesPath, LegacyTarget, TargetSpecifier};
 //! # use rusk::http::domain::testing;
 //!
 //! // Modern path with contract target
@@ -36,7 +42,7 @@
 //! assert_eq!(node_path.to_string(), "/on/node/info");
 //! ```
 
-use crate::http::domain::{
+use crate::http::domain::types::identifier::{
     BlockHash, ContractId, TargetIdentifier, TransactionHash,
 };
 use std::fmt;
@@ -57,7 +63,7 @@ use std::fmt;
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{RuesPath, Target, LegacyTarget};
+/// use rusk::http::domain::types::path::{Target, RuesPath, LegacyTarget};
 /// # use rusk::http::domain::testing;
 ///
 /// // Modern path with block hash
@@ -99,7 +105,7 @@ impl RuesPath {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{RuesPath, Target, TargetIdentifier};
+    /// use rusk::http::domain::types::path::{RuesPath, Target};
     /// # use rusk::http::domain::testing;
     ///
     /// // Path without ID
@@ -142,7 +148,7 @@ impl RuesPath {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{RuesPath, LegacyTarget};
+    /// use rusk::http::domain::types::path::{RuesPath, LegacyTarget};
     /// # use rusk::http::domain::testing;
     ///
     /// // Legacy host path
@@ -174,7 +180,7 @@ impl RuesPath {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{RuesPath, LegacyTarget, Target, TargetSpecifier};
+    /// use rusk::http::domain::types::path::{Target, RuesPath, LegacyTarget, TargetSpecifier};
     /// # use rusk::http::domain::testing;
     ///
     /// // Modern target
@@ -217,7 +223,7 @@ impl RuesPath {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{RuesPath, Target, TargetIdentifier};
+    /// use rusk::http::domain::types::path::{Target, RuesPath};
     /// # use rusk::http::domain::testing;
     ///
     /// // Block acceptance topic
@@ -256,7 +262,7 @@ impl RuesPath {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Target, RuesPath};
+    /// use rusk::http::domain::types::path::{Target, RuesPath};
     /// # use rusk::http::domain::testing;
     ///
     /// let topic = testing::create_test_topic("accepted");
@@ -279,7 +285,7 @@ impl RuesPath {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{Target, RuesPath};
+    /// use rusk::http::domain::types::path::{Target, RuesPath};
     /// # use rusk::http::domain::testing;
     ///
     /// // Create path with block hash
@@ -326,7 +332,7 @@ impl RuesPath {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{RuesPath, Target, LegacyTarget};
+    /// use rusk::http::domain::types::path::{Target, RuesPath, LegacyTarget};
     /// # use rusk::http::domain::testing;
     ///
     /// // Modern path
@@ -358,7 +364,7 @@ impl RuesPath {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{RuesPath, Target, LegacyTarget};
+    /// use rusk::http::domain::types::path::{Target, RuesPath, LegacyTarget};
     /// # use rusk::http::domain::testing;
     ///
     /// // Modern path
@@ -397,7 +403,7 @@ impl fmt::Display for RuesPath {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::Target;
+/// use rusk::http::domain::types::path::Target;
 ///
 /// // Blocks support identifiers
 /// assert!(Target::Blocks.supports_id());
@@ -437,7 +443,7 @@ impl Target {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::Target;
+    /// use rusk::http::domain::types::path::Target;
     ///
     /// // Targets that support IDs
     /// assert!(Target::Blocks.supports_id());
@@ -462,7 +468,7 @@ impl Target {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::Target;
+    /// use rusk::http::domain::types::path::Target;
     ///
     /// assert_eq!(Target::Blocks.description(), "block operations");
     /// assert_eq!(Target::Node.description(), "node operations");
@@ -502,7 +508,7 @@ impl fmt::Display for Target {
 /// # Examples
 ///
 /// ```
-/// use rusk::http::domain::LegacyTarget;
+/// use rusk::http::domain::types::path::LegacyTarget;
 ///
 /// let host = LegacyTarget::Host("system".into());
 /// assert_eq!(host.to_string(), "host:system");
@@ -545,7 +551,7 @@ impl fmt::Display for LegacyTarget {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{Target, TargetSpecifier};
+/// use rusk::http::domain::types::path::{Target, TargetSpecifier};
 /// # use rusk::http::domain::testing;
 ///
 /// let block_id = testing::create_test_block_hash();
@@ -625,7 +631,7 @@ impl fmt::Display for TargetSpecifier {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{Target, TargetIdentifier};
+/// use rusk::http::domain::types::path::Target;
 /// # use rusk::http::domain::testing;
 ///
 /// // Create a path with topic for block acceptance
@@ -687,7 +693,9 @@ impl Topic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::http::domain::{testing, IdentifierBytes, RuesValue};
+    use crate::http::domain::testing;
+    use crate::http::domain::types::identifier::IdentifierBytes;
+    use crate::http::domain::types::value::RuesValue;
     use bytes::Bytes;
 
     // Helper functions for creating test identifiers

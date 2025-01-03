@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Processing framework for RUES values and events.
 //!
 //! This module provides a comprehensive processing framework for handling RUES
@@ -30,10 +36,12 @@
 //!
 //! Basic processing implementation with metrics and error handling:
 //! ```rust
-//! use rusk::http::domain::{
-//!     Processor, DefaultProcessor, DefaultContext, NoopFlow,
-//!     DomainError, ValidationError, WithContext, CommonErrorAttributes,
-//!     ProcessingContext,
+//! use rusk::http::domain::processing::{Processor, DefaultProcessor};
+//! use rusk::http::domain::processing::context::{DefaultContext, ProcessingContext};
+//! use rusk::http::domain::processing::flow::NoopFlow;
+//! use rusk::http::domain::error::{
+//!     DomainError, ProcessingError, WithContext, CommonErrorAttributes,
+//!    ValidationError,
 //! };
 //! use async_trait::async_trait;
 //!
@@ -91,10 +99,11 @@
 //!
 //! Processing with backpressure and cancellation:
 //! ```rust
-//! use rusk::http::domain::{
-//!     Processor, CancellableProcessor, DefaultContext, TokenBucketFlow,
+//! use rusk::http::domain::processing::{Processor, CancellableProcessor};
+//! use rusk::http::domain::processing::context::{DefaultContext, ProcessingContext};
+//! use rusk::http::domain::processing::flow::{FlowControl, TokenBucketFlow};
+//! use rusk::http::domain::error::{
 //!     DomainError, ProcessingError, WithContext, CommonErrorAttributes,
-//!     ProcessingContext, FlowControl,
 //! };
 //! use async_trait::async_trait;
 //!
@@ -148,10 +157,12 @@
 //!
 //! Custom flow control with error handling:
 //! ```rust
-//! use rusk::http::domain::{
-//!     Processor, FlowControl, ProcessingContext, ProcessingMetrics,
-//!     DomainError, DefaultContext, ProcessingError, WithContext,
-//!     CommonErrorAttributes,
+//! use rusk::http::domain::processing::Processor;
+//! use rusk::http::domain::processing::context::{DefaultContext, ProcessingContext};
+//! use rusk::http::domain::processing::flow::FlowControl;
+//! use rusk::http::domain::processing::metrics::ProcessingMetrics;
+//! use rusk::http::domain::error::{
+//!     DomainError, ProcessingError, WithContext, CommonErrorAttributes,
 //! };
 //! use std::sync::atomic::{AtomicUsize, Ordering};
 //! use async_trait::async_trait;
@@ -238,9 +249,11 @@
 //! traits:
 //!
 //! ```rust
-//! use rusk::http::domain::{
-//!     Processor, DefaultContext, DomainError, ProcessingError,
-//!     WithContext, CommonErrorAttributes, ProcessingContext, NoopFlow,
+//! use rusk::http::domain::processing::Processor;
+//! use rusk::http::domain::processing::context::{DefaultContext, ProcessingContext};
+//! use rusk::http::domain::processing::flow::NoopFlow;
+//! use rusk::http::domain::error::{
+//!     DomainError, ProcessingError, WithContext, CommonErrorAttributes,
 //! };
 //! use async_trait::async_trait;
 //!
@@ -287,9 +300,10 @@
 //! `ProcessingMetrics` type:
 //!
 //! ```rust
-//! use rusk::http::domain::{
-//!     ProcessingMetrics, DomainError, ProcessingError,
-//!     WithContext, CommonErrorAttributes,
+//! use rusk::http::domain::processing::metrics::ProcessingMetrics;
+//! use rusk::http::domain::error::{
+//!     ProcessingError, WithContext, CommonErrorAttributes,
+//!     DomainError,
 //! };
 //! use std::time::Duration;
 //!
@@ -336,7 +350,8 @@
 //! Example of concurrent processing:
 //!
 //! ```rust
-//! use rusk::http::domain::{DefaultContext, ProcessingMetrics, ProcessingContext};
+//! use rusk::http::domain::processing::context::{DefaultContext, ProcessingContext};
+//! use rusk::http::domain::processing::metrics::ProcessingMetrics;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -435,32 +450,32 @@
 //! calculations or external calls), we can selectively make those specific
 //! operations async while keeping the simple ones synchronous.
 
-mod context;
-mod flow;
-mod metrics;
-mod pipeline;
-mod stages;
+pub mod context;
+pub mod flow;
+pub mod metrics;
+pub mod pipeline;
+pub mod stages;
 
-pub use context::{DefaultContext, ProcessingContext};
-pub use flow::{
-    FlowControl, NoopFlow, TokenBucketFlow, TokenBucketFlowBuilder,
+use crate::http::domain::error::{
+    CommonErrorAttributes, DomainError, ProcessingError, WithContext,
 };
-pub use metrics::{describe_metrics, ProcessingMetrics};
-use tokio::sync::broadcast;
+use crate::http::domain::processing::context::{
+    DefaultContext, ProcessingContext,
+};
+use crate::http::domain::processing::flow::{FlowControl, NoopFlow};
+use crate::http::domain::processing::metrics::{
+    describe_metrics, ProcessingMetrics,
+};
 
+use async_trait::async_trait;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-
-use async_trait::async_trait;
+use tokio::sync::broadcast;
 use tokio::time;
 use tracing::{debug, error, info, warn};
-
-use crate::http::domain::{
-    CommonErrorAttributes, DomainError, ProcessingError, WithContext,
-};
 
 /// Core trait for implementing processors in the RUES system.
 ///
@@ -484,10 +499,12 @@ use crate::http::domain::{
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     Processor, DefaultContext, TokenBucketFlow, DomainError,
-///     ValidationError, ProcessingError, WithContext, CommonErrorAttributes,
-///     ProcessingContext,
+/// use rusk::http::domain::processing::Processor;
+/// use rusk::http::domain::processing::context::{DefaultContext, ProcessingContext};
+/// use rusk::http::domain::processing::flow::TokenBucketFlow;
+/// use rusk::http::domain::error::{
+///     DomainError, ProcessingError, WithContext, CommonErrorAttributes,
+///     ValidationError,
 /// };
 /// use async_trait::async_trait;
 ///
@@ -628,9 +645,10 @@ pub trait Processor: Send + Sync + Debug {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     Processor, DefaultProcessor, NoopFlow, DefaultContext, DomainError
-/// };
+/// use rusk::http::domain::processing::{Processor, DefaultProcessor};
+/// use rusk::http::domain::processing::context::DefaultContext;
+/// use rusk::http::domain::processing::flow::NoopFlow;
+/// use rusk::http::domain::error::DomainError;
 /// use async_trait::async_trait;
 ///
 /// #[derive(Debug, Default)]
@@ -734,9 +752,10 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     CancellationToken, Processor, ProcessingContext, CancellableProcessor,
+/// use rusk::http::domain::processing::{
+///     CancellationToken, Processor, CancellableProcessor,
 /// };
+/// use rusk::http::domain::processing::context::ProcessingContext;
 /// use tokio::time::timeout;
 /// use std::time::Duration;
 ///
@@ -814,10 +833,10 @@ impl Default for CancellationToken {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     CancellableProcessor, Processor, ProcessingError,
-///     CancellationToken, DefaultContext, NoopFlow
-/// };
+/// use rusk::http::domain::processing::{Processor, CancellableProcessor, CancellationToken};
+/// use rusk::http::domain::processing::context::DefaultContext;
+/// use rusk::http::domain::processing::flow::NoopFlow;
+/// use rusk::http::domain::error::ProcessingError;
 /// use async_trait::async_trait;
 ///
 /// #[derive(Debug)]
@@ -913,7 +932,7 @@ mod tests {
     use std::time::Duration;
     use tokio::sync::Barrier;
 
-    use crate::http::domain::{
+    use crate::http::domain::error::{
         CommonErrorAttributes, DomainError, ProcessingError, ValidationError,
         WithContext,
     };

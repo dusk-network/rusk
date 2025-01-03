@@ -14,10 +14,10 @@ path = "src/bin/main.rs"
 
 [dependencies]
 tokio = { workspace = true, features = [
-  "rt-multi-thread",
-  "fs",
-  "macros",
-  "net",
+    "rt-multi-thread",
+    "fs",
+    "macros",
+    "net",
 ] }
 futures-util = { workspace = true }
 tracing = { workspace = true }
@@ -89,7 +89,11 @@ rusk-recovery = { workspace = true, optional = true }
 futures = { workspace = true, optional = true }
 
 ## http-server dependencies
-axum = { workspace = true, features = ["ws", "http2", "macros"], optional = true }
+axum = { workspace = true, features = [
+    "ws",
+    "http2",
+    "macros",
+], optional = true }
 axum-macros = { workspace = true, optional = true }
 bytes = { workspace = true, optional = true }
 either = { workspace = true, optional = true }
@@ -114,13 +118,13 @@ rustc_tools_util = { workspace = true }
 
 [features]
 default = [
-  "ephemeral",
-  "recovery-state",
-  "recovery-keys",
-  "prover",
-  "chain",
-  "http-wasm",
-  "http-server",
+    "ephemeral",
+    "recovery-state",
+    "recovery-keys",
+    "prover",
+    "chain",
+    "http-wasm",
+    "http-server",
 ]
 ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state", "chain"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]

@@ -1,25 +1,19 @@
-mod binary;
-mod core;
-mod headers;
-mod identifier;
-mod json;
-mod rues_path;
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub use core::{RuleBuilder, RuleSet};
-pub use headers::{
-    ContentLocationRule, ContentTypeRule, HeadersFormatRule, SessionHeaderRule,
-    VersionHeaderRule,
-};
-pub use identifier::{
-    BlockHashValidator, ContractIdValidator, SessionIdValidator,
-    TransactionHashValidator,
-};
-pub use json::{JsonFormatRule, JsonHeaderRule};
-pub use rues_path::{
-    TargetIdRule, TargetTypeRule, TopicFormatRule, TopicValidityRule,
-};
+pub mod binary;
+pub mod core;
+pub mod headers;
+pub mod identifier;
+pub mod json;
+pub mod path;
 
-use crate::http::domain::{DomainError, ValidationContext};
+use crate::http::domain::error::DomainError;
+use crate::http::domain::validation::context::ValidationContext;
+use crate::http::domain::validation::rules::core::{RuleBuilder, RuleSet};
 
 /// Core validation rule trait
 pub trait ValidationRule<T>: Send + Sync {

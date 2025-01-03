@@ -1,10 +1,16 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use metrics::{counter, gauge, histogram, Counter, Gauge, Histogram};
 use tracing::{debug, warn};
 
-use crate::http::domain::DomainError;
+use crate::http::domain::error::DomainError;
 
 /// Collection of metrics for monitoring and observability in RUES processing
 /// operations.
@@ -20,7 +26,8 @@ use crate::http::domain::DomainError;
 /// ## Operation Timing (`rues_operation_duration_seconds`)
 /// Tracks duration of operations using histograms:
 /// ```rust
-/// use rusk::http::domain::{ProcessingMetrics, ProcessingContext};
+/// use rusk::http::domain::processing::metrics::ProcessingMetrics;
+/// use rusk::http::domain::processing::context::ProcessingContext;
 /// use std::time::Duration;
 ///
 /// let metrics = ProcessingMetrics::new();
@@ -39,7 +46,7 @@ use crate::http::domain::DomainError;
 /// ## Operation Counters (`rues_operations_total`)
 /// Track counts of events and operations:
 /// ```rust
-/// # use rusk::http::domain::ProcessingMetrics;
+/// # use rusk::http::domain::processing::metrics::ProcessingMetrics;
 /// let mut metrics = ProcessingMetrics::new();
 ///
 /// // Increment operation counter
@@ -50,9 +57,9 @@ use crate::http::domain::DomainError;
 /// ## Error Tracking (`rues_errors_total`)
 /// Track errors with context:
 /// ```rust
-/// use rusk::http::domain::{
-///     ProcessingMetrics, DomainError, ValidationError,
-///     WithContext, CommonErrorAttributes
+/// use rusk::http::domain::processing::metrics::ProcessingMetrics;
+/// use rusk::http::domain::error::{
+///     DomainError, ValidationError, WithContext, CommonErrorAttributes,
 /// };
 ///
 /// let mut metrics = ProcessingMetrics::new();
@@ -71,7 +78,7 @@ use crate::http::domain::DomainError;
 /// ## Pressure Monitoring (`rues_processing_pressure`)
 /// Monitor backpressure levels:
 /// ```rust
-/// # use rusk::http::domain::ProcessingMetrics;
+/// # use rusk::http::domain::processing::metrics::ProcessingMetrics;
 /// let mut metrics = ProcessingMetrics::new();
 ///
 /// // Update pressure level (0.0 - 1.0)
@@ -97,9 +104,9 @@ use crate::http::domain::DomainError;
 ///
 /// Complete metrics usage in async context:
 /// ```rust
-/// use rusk::http::domain::{
-///     ProcessingMetrics, DomainError, ValidationError,
-///     WithContext, CommonErrorAttributes
+/// use rusk::http::domain::processing::metrics::ProcessingMetrics;
+/// use rusk::http::domain::error::{
+///     DomainError, ValidationError, WithContext, CommonErrorAttributes,
 /// };
 /// use std::time::Duration;
 ///
@@ -152,7 +159,7 @@ use crate::http::domain::DomainError;
 ///
 /// Thread-safe usage:
 /// ```rust
-/// use rusk::http::domain::ProcessingMetrics;
+/// use rusk::http::domain::processing::metrics::ProcessingMetrics;
 /// use std::sync::Arc;
 /// use parking_lot::RwLock;
 ///
@@ -182,7 +189,7 @@ impl ProcessingMetrics {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::ProcessingMetrics;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     ///
     /// let metrics = ProcessingMetrics::new();
     /// ```
@@ -206,7 +213,7 @@ impl ProcessingMetrics {
     ///
     /// Basic usage:
     /// ```rust
-    /// use rusk::http::domain::ProcessingMetrics;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     ///
     /// let metrics = ProcessingMetrics::new();
     /// metrics.start_operation("request_processing");
@@ -218,7 +225,7 @@ impl ProcessingMetrics {
     ///
     /// Nested operations:
     /// ```rust
-    /// # use rusk::http::domain::ProcessingMetrics;
+    /// # use rusk::http::domain::processing::metrics::ProcessingMetrics;
     /// let metrics = ProcessingMetrics::new();
     ///
     /// metrics.start_operation("outer_operation");
@@ -251,7 +258,7 @@ impl ProcessingMetrics {
     ///
     /// Basic timing:
     /// ```rust
-    /// use rusk::http::domain::ProcessingMetrics;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     /// use std::time::Duration;
     ///
     /// let metrics = ProcessingMetrics::new();
@@ -266,9 +273,9 @@ impl ProcessingMetrics {
     ///
     /// Error handling with timing:
     /// ```rust
-    /// use rusk::http::domain::{
-    ///     ProcessingMetrics, DomainError, ValidationError,
-    ///     WithContext, CommonErrorAttributes
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
+    /// use rusk::http::domain::error::{
+    ///     DomainError, ValidationError, WithContext, CommonErrorAttributes,
     /// };
     ///
     /// # fn process_data() -> Result<(), DomainError> {
@@ -316,7 +323,7 @@ impl ProcessingMetrics {
     ///
     /// Basic counter usage:
     /// ```rust
-    /// use rusk::http::domain::ProcessingMetrics;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     ///
     /// let mut metrics = ProcessingMetrics::new();
     ///
@@ -328,7 +335,7 @@ impl ProcessingMetrics {
     ///
     /// Counting different operation types:
     /// ```rust
-    /// # use rusk::http::domain::ProcessingMetrics;
+    /// # use rusk::http::domain::processing::metrics::ProcessingMetrics;
     /// let mut metrics = ProcessingMetrics::new();
     ///
     /// // Count different types of operations
@@ -355,7 +362,7 @@ impl ProcessingMetrics {
     ///
     /// Basic pressure monitoring:
     /// ```rust
-    /// use rusk::http::domain::ProcessingMetrics;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     ///
     /// let mut metrics = ProcessingMetrics::new();
     ///
@@ -369,7 +376,7 @@ impl ProcessingMetrics {
     ///
     /// Pressure monitoring in flow control:
     /// ```rust
-    /// # use rusk::http::domain::ProcessingMetrics;
+    /// # use rusk::http::domain::processing::metrics::ProcessingMetrics;
     /// let mut metrics = ProcessingMetrics::new();
     ///
     /// const MAX_CONNECTIONS: usize = 1000;
@@ -402,7 +409,7 @@ impl ProcessingMetrics {
     ///
     /// Basic error recording:
     /// ```rust
-    /// use rusk::http::domain::ProcessingMetrics;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     ///
     /// let mut metrics = ProcessingMetrics::new();
     ///
@@ -412,7 +419,7 @@ impl ProcessingMetrics {
     ///
     /// Error recording with operation timing:
     /// ```rust
-    /// # use rusk::http::domain::ProcessingMetrics;
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
     /// let mut metrics = ProcessingMetrics::new();
     ///
     /// metrics.start_operation("message_processing");
@@ -474,9 +481,9 @@ impl ProcessingMetrics {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{
-    ///     ProcessingMetrics, DomainError, ValidationError,
-    ///     WithContext, CommonErrorAttributes
+    /// use rusk::http::domain::processing::metrics::ProcessingMetrics;
+    /// use rusk::http::domain::error::{
+    ///     DomainError, ValidationError, WithContext, CommonErrorAttributes,
     /// };
     ///
     /// let mut metrics = ProcessingMetrics::new();
@@ -559,7 +566,7 @@ pub fn describe_metrics() {
 
 #[cfg(test)]
 mod tests {
-    use crate::http::domain::{
+    use crate::http::domain::error::{
         CommonErrorAttributes, ValidationError, WithContext,
     };
 

@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Validation rules for RUES protocol headers.
 //!
 //! RUES headers must conform to specific format requirements:
@@ -5,10 +11,13 @@
 //! - Optional fields: Accept, Rusk-Version, Rusk-Session-Id
 //! - Specific format and content requirements for each field
 
-use crate::http::domain::{
-    DomainError, RuesHeaders, RuesPath, SessionId, ValidationContext,
-    ValidationError, ValidationRule, Version,
-};
+use crate::http::domain::error::{DomainError, ValidationError};
+use crate::http::domain::types::event::Version;
+use crate::http::domain::types::headers::RuesHeaders;
+use crate::http::domain::types::identifier::SessionId;
+use crate::http::domain::types::path::RuesPath;
+use crate::http::domain::validation::context::ValidationContext;
+use crate::http::domain::validation::rules::ValidationRule;
 
 /// Validates basic headers format and required fields.
 ///
@@ -34,7 +43,10 @@ use crate::http::domain::{
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{HeadersFormatRule, ValidationRule, ValidationContext, RuesHeaders};
+/// use rusk::http::domain::validation::rules::headers::HeadersFormatRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
+/// use rusk::http::domain::types::headers::RuesHeaders;
 ///
 /// let rule = HeadersFormatRule::new();
 /// let mut ctx = ValidationContext::new();
@@ -66,7 +78,8 @@ impl HeadersFormatRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{HeadersFormatRule, ValidationRule};
+    /// use rusk::http::domain::validation::rules::headers::HeadersFormatRule;
+    /// use rusk::http::domain::validation::rules::ValidationRule;
     ///
     /// let validator = HeadersFormatRule::new();
     /// ```
@@ -99,7 +112,10 @@ impl ValidationRule<RuesHeaders> for HeadersFormatRule {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{ContentTypeRule, ValidationRule, ValidationContext, RuesHeaders};
+/// use rusk::http::domain::validation::rules::headers::ContentTypeRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
+/// use rusk::http::domain::types::headers::RuesHeaders;
 ///
 /// let rule = ContentTypeRule::new();
 /// let mut ctx = ValidationContext::new();
@@ -153,7 +169,10 @@ impl ValidationRule<RuesHeaders> for ContentTypeRule {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{SessionHeaderRule, ValidationRule, ValidationContext, RuesHeaders};
+/// use rusk::http::domain::validation::rules::headers::SessionHeaderRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
+/// use rusk::http::domain::types::headers::RuesHeaders;
 /// # use rusk::http::domain::testing;
 ///
 /// let rule = SessionHeaderRule::new();
@@ -187,7 +206,8 @@ impl SessionHeaderRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{SessionHeaderRule, ValidationRule};
+    /// use rusk::http::domain::validation::rules::headers::SessionHeaderRule;
+    /// use rusk::http::domain::validation::rules::ValidationRule;
     ///
     /// let validator = SessionHeaderRule::required();
     /// ```
@@ -234,7 +254,10 @@ impl ValidationRule<RuesHeaders> for SessionHeaderRule {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{VersionHeaderRule, ValidationRule, ValidationContext, RuesHeaders};
+/// use rusk::http::domain::validation::rules::headers::VersionHeaderRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
+/// use rusk::http::domain::types::headers::RuesHeaders;
 /// # use rusk::http::domain::testing;
 ///
 /// // Protocol version 1.0.0
@@ -267,7 +290,8 @@ impl VersionHeaderRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{VersionHeaderRule, ValidationRule};
+    /// use rusk::http::domain::validation::rules::headers::VersionHeaderRule;
+    /// use rusk::http::domain::validation::rules::ValidationRule;
     /// # use rusk::http::domain::testing;
     ///
     /// let validator = VersionHeaderRule::new(testing::create_release_version());
@@ -319,7 +343,10 @@ impl ValidationRule<RuesHeaders> for VersionHeaderRule {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{ContentLocationRule, ValidationRule, ValidationContext, RuesHeaders};
+/// use rusk::http::domain::validation::rules::headers::ContentLocationRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
+/// use rusk::http::domain::types::headers::RuesHeaders;
 ///
 /// let rule = ContentLocationRule::new();
 /// let mut ctx = ValidationContext::new();

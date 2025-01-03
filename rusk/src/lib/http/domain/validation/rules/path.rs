@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Validation rules for RUES protocol paths.
 //!
 //! This module provides validation rules for RUES paths according to the
@@ -21,9 +27,10 @@
 //! - Not contain URL-reserved characters or whitespace
 //!
 //! ```rust
-//! use rusk::http::domain::{
-//!     RuesPath, Target, ValidationRule, TopicFormatRule, ValidationContext,
-//! };
+//! use rusk::http::domain::types::path::{RuesPath, Target};
+//! use rusk::http::domain::validation::rules::ValidationRule;
+//! use rusk::http::domain::validation::rules::path::TopicFormatRule;
+//! use rusk::http::domain::validation::context::ValidationContext;
 //! # use rusk::http::domain::testing;
 //!
 //! let rule = TopicFormatRule::new();
@@ -53,9 +60,10 @@
 //! - Legacy targets have non-empty data
 //!
 //! ```rust
-//! # use rusk::http::domain::{
-//!     RuesPath, Target, TargetTypeRule, ValidationRule, ValidationContext,
-//! };
+//! use rusk::http::domain::types::path::{RuesPath, Target};
+//! use rusk::http::domain::validation::rules::path::TargetTypeRule;
+//! use rusk::http::domain::validation::rules::ValidationRule;
+//! use rusk::http::domain::validation::context::ValidationContext;
 //! # use rusk::http::domain::testing;
 //!
 //! let rule = TargetTypeRule::new();
@@ -87,9 +95,10 @@
 //! - ID type matches the target type
 //!
 //! ```rust
-//! use rusk::http::domain::{
-//!     RuesPath, Target, ValidationRule, TargetIdRule, ValidationContext,
-//! };
+//! use rusk::http::domain::types::path::{RuesPath, Target};
+//! use rusk::http::domain::validation::rules::path::TargetIdRule;
+//! use rusk::http::domain::validation::rules::ValidationRule;
+//! use rusk::http::domain::validation::context::ValidationContext;
 //! # use rusk::http::domain::testing;
 //!
 //! let rule = TargetIdRule::new();
@@ -121,9 +130,10 @@
 //! - Other targets: any valid topic
 //!
 //! ```rust
-//! use rusk::http::domain::{
-//!     RuesPath, Target, ValidationRule, TopicValidityRule, ValidationContext,
-//! };
+//! use rusk::http::domain::types::path::{RuesPath, Target};
+//! use rusk::http::domain::validation::rules::path::TopicValidityRule;
+//! use rusk::http::domain::validation::rules::ValidationRule;
+//! use rusk::http::domain::validation::context::ValidationContext;
 //! # use rusk::http::domain::testing;
 //!
 //! let rule = TopicValidityRule::new();
@@ -146,12 +156,16 @@
 //! assert!(rule.check(&invalid_path, &mut ctx).is_err());
 //! ```
 
-use crate::http::domain::{
-    BlockHashValidator, ContractIdValidator, DomainError, LegacyTarget,
-    RuesPath, Target, TargetIdentifier, TargetSpecifier,
-    TransactionHashValidator, ValidationContext, ValidationError,
-    ValidationRule,
+use crate::http::domain::error::{DomainError, ValidationError};
+use crate::http::domain::types::identifier::TargetIdentifier;
+use crate::http::domain::types::path::{
+    LegacyTarget, RuesPath, Target, TargetSpecifier,
 };
+use crate::http::domain::validation::context::ValidationContext;
+use crate::http::domain::validation::rules::identifier::{
+    BlockHashValidator, ContractIdValidator, TransactionHashValidator,
+};
+use crate::http::domain::validation::rules::ValidationRule;
 
 /// Validates topic format and characters in RUES paths.
 ///
@@ -164,9 +178,10 @@ use crate::http::domain::{
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     RuesPath, Target, TopicFormatRule, ValidationRule, ValidationContext
-/// };
+/// use rusk::http::domain::types::path::{RuesPath, Target};
+/// use rusk::http::domain::validation::rules::path::TopicFormatRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// # use rusk::http::domain::testing;
 ///
 /// let rule = TopicFormatRule::new();
@@ -199,7 +214,7 @@ impl TopicFormatRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::TopicFormatRule;
+    /// use rusk::http::domain::validation::rules::path::TopicFormatRule;
     ///
     /// let validator = TopicFormatRule::new();
     /// ```
@@ -243,9 +258,10 @@ impl ValidationRule<RuesPath> for TopicFormatRule {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     RuesPath, Target, TargetTypeRule, ValidationRule, ValidationContext,
-/// };
+/// use rusk::http::domain::types::path::{RuesPath, Target};
+/// use rusk::http::domain::validation::rules::path::TargetTypeRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// # use rusk::http::domain::testing;
 ///
 /// let rule = TargetTypeRule::new();
@@ -278,7 +294,7 @@ impl TargetTypeRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::TargetTypeRule;
+    /// use rusk::http::domain::validation::rules::path::TargetTypeRule;
     ///
     /// let validator = TargetTypeRule::new();
     /// ```
@@ -336,9 +352,10 @@ impl ValidationRule<RuesPath> for TargetTypeRule {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     RuesPath, Target, TargetIdRule, ValidationRule, ValidationContext
-/// };
+/// use rusk::http::domain::types::path::{RuesPath, Target};
+/// use rusk::http::domain::validation::rules::path::TargetIdRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// # use rusk::http::domain::testing;
 ///
 /// let rule = TargetIdRule::new();
@@ -375,7 +392,8 @@ impl TargetIdRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{TargetIdRule, ValidationRule};
+    /// use rusk::http::domain::validation::rules::path::TargetIdRule;
+    /// use rusk::http::domain::validation::rules::ValidationRule;
     ///
     /// let validator = TargetIdRule::new();
     /// ```
@@ -443,9 +461,10 @@ impl ValidationRule<RuesPath> for TargetIdRule {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{
-///     RuesPath, Target, TopicValidityRule, ValidationRule, ValidationContext
-/// };
+/// use rusk::http::domain::types::path::{RuesPath, Target};
+/// use rusk::http::domain::validation::rules::path::TopicValidityRule;
+/// use rusk::http::domain::validation::rules::ValidationRule;
+/// use rusk::http::domain::validation::context::ValidationContext;
 /// # use rusk::http::domain::testing;
 ///
 /// let rule = TopicValidityRule::new();
@@ -478,7 +497,8 @@ impl TopicValidityRule {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{TopicValidityRule, ValidationRule};
+    /// use rusk::http::domain::validation::rules::path::TopicValidityRule;
+    /// use rusk::http::domain::validation::rules::ValidationRule;
     ///
     /// let validator = TopicValidityRule::new();
     /// ```
@@ -541,6 +561,8 @@ impl ValidationRule<RuesPath> for TopicValidityRule {
 mod tests {
     use super::*;
     use crate::http::domain::testing;
+    use crate::http::domain::types::path::Target;
+    use crate::http::domain::validation::context::ValidationContext;
 
     fn setup_context() -> ValidationContext {
         ValidationContext::new()

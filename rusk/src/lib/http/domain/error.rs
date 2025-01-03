@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! Error types and handling for the RUES domain layer.
 //!
 //! This module provides a comprehensive error handling system with:
@@ -27,7 +33,7 @@
 //!
 //! Basic error handling with context:
 //! ```rust
-//! use rusk::http::domain::{
+//! use rusk::http::domain::error::{
 //!     ValidationError, WithContext, CommonErrorAttributes,
 //!     ProcessingError, DomainError,
 //! };
@@ -57,7 +63,7 @@
 //!
 //! Error handling in processors:
 //! ```rust
-//! use rusk::http::domain::{
+//! use rusk::http::domain::error::{
 //!     DomainError, ProcessingError, ValidationError, ResourceError,
 //!     WithContext, CommonErrorAttributes,
 //! };
@@ -112,7 +118,7 @@
 //!
 //! Error handling with resource monitoring:
 //! ```rust
-//! use rusk::http::domain::{ResourceError, WithContext, CommonErrorAttributes, DomainError};
+//! use rusk::http::domain::error::{ResourceError, WithContext, CommonErrorAttributes, DomainError};
 //! use std::time::Duration;
 //!
 //! fn check_memory(required: usize, available: usize) -> Result<(), DomainError> {
@@ -161,7 +167,7 @@ use thiserror::Error;
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{DomainError, ErrorContext, ValidationError};
+/// use rusk::http::domain::error::{DomainError, ErrorContext, ValidationError};
 ///
 /// let error = ValidationError::EmptyInput("No data".into());
 /// let context = ErrorContext::new(
@@ -195,7 +201,7 @@ impl ErrorContext {
     ///
     /// # Examples
     /// ```rust
-    /// use rusk::http::domain::{ErrorContext, ValidationError};
+    /// use rusk::http::domain::error::{ErrorContext, ValidationError};
     ///
     /// let source = ValidationError::EmptyInput("No data".into()).into();
     /// let context = ErrorContext::new(source, "validate_message");
@@ -239,7 +245,7 @@ impl ErrorContext {
     ///
     /// # Examples
     /// ```rust
-    /// # use rusk::http::domain::{ErrorContext, ValidationError};
+    /// # use rusk::http::domain::error::{ErrorContext, ValidationError};
     /// let source = ValidationError::EmptyInput("No data".into()).into();
     /// let context = ErrorContext::new(source, "validate_message");
     ///
@@ -299,7 +305,7 @@ impl ErrorContext {
     ///
     /// # Examples
     /// ```rust
-    /// # use rusk::http::domain::{ErrorContext, ValidationError, ProcessingError};
+    /// # use rusk::http::domain::error::{ErrorContext, ValidationError, ProcessingError};
     /// let validation_err = ValidationError::EmptyInput("No data".into()).into();
     /// let validation_ctx = ErrorContext::new(validation_err, "validate");
     ///
@@ -362,7 +368,7 @@ impl std::error::Error for ErrorContext {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::{DomainError, ValidationError, WithContext};
+/// use rusk::http::domain::error::{DomainError, ValidationError, WithContext};
 ///
 /// // Create error with context
 /// let err = ValidationError::EmptyInput("no data".into())
@@ -636,7 +642,7 @@ impl From<serde_json::Error> for DomainError {
 ///
 /// Basic context:
 /// ```rust
-/// use rusk::http::domain::{ProcessingError, WithContext};
+/// use rusk::http::domain::error::{ProcessingError, WithContext};
 /// use std::time::Duration;
 ///
 /// let err = ProcessingError::Timeout {
@@ -650,7 +656,7 @@ impl From<serde_json::Error> for DomainError {
 ///
 /// Context with attributes:
 /// ```rust
-/// # use rusk::http::domain::{ProcessingError, WithContext};
+/// # use rusk::http::domain::error::{ProcessingError, WithContext};
 /// # use std::time::Duration;
 /// let err = ProcessingError::Timeout {
 ///     operation: "request".into(),
@@ -675,7 +681,7 @@ pub trait WithContext: Into<DomainError> + Sized {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{ValidationError, WithContext, DomainError};
+    /// use rusk::http::domain::error::{ValidationError, WithContext, DomainError};
     ///
     /// let err = ValidationError::EmptyInput("no data".into())
     ///     .with_attributes([("key", "value")])  // Attributes stored as pending
@@ -720,7 +726,7 @@ pub trait WithContext: Into<DomainError> + Sized {
     /// # Examples
     ///
     /// ```rust
-    /// # use rusk::http::domain::{ValidationError, WithContext};
+    /// # use rusk::http::domain::error::{ValidationError, WithContext};
     /// // Attributes before context
     /// let err = ValidationError::EmptyInput("no data".into())
     ///     .with_attributes([
@@ -770,7 +776,7 @@ pub trait WithContext: Into<DomainError> + Sized {
     /// # Examples
     ///
     /// ```rust
-    /// # use rusk::http::domain::{ValidationError, WithContext};
+    /// # use rusk::http::domain::error::{ValidationError, WithContext};
     /// let err = ValidationError::EmptyInput("no data".into())
     ///     .with_context_and_attributes(
     ///         "validate",
@@ -818,7 +824,7 @@ impl<T: Into<DomainError> + Sized> WithContext for T {}
 ///
 /// Size and type attributes:
 /// ```rust
-/// use rusk::http::domain::{ValidationError, WithContext, CommonErrorAttributes};
+/// use rusk::http::domain::error::{ValidationError, WithContext, CommonErrorAttributes};
 ///
 /// let err = ValidationError::EmptyInput("no data".into())
 ///     .with_context("validate")
@@ -830,7 +836,7 @@ impl<T: Into<DomainError> + Sized> WithContext for T {}
 ///
 /// Resource usage:
 /// ```rust
-/// # use rusk::http::domain::{ResourceError, WithContext, CommonErrorAttributes};
+/// # use rusk::http::domain::error::{ResourceError, WithContext, CommonErrorAttributes};
 /// let err = ResourceError::MemoryLimitExceeded {
 ///     requested: 150,
 ///     limit: 100,
@@ -850,7 +856,7 @@ pub trait CommonErrorAttributes {
     /// # Examples
     ///
     /// ```rust
-    /// # use rusk::http::domain::{ValidationError, WithContext, CommonErrorAttributes};
+    /// # use rusk::http::domain::error::{ValidationError, WithContext, CommonErrorAttributes};
     /// let err = ValidationError::EmptyInput("no data".into())
     ///     .with_context("validate")
     ///     .with_input_size(1024);
@@ -868,7 +874,7 @@ pub trait CommonErrorAttributes {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{ConversionError, WithContext, CommonErrorAttributes};
+    /// use rusk::http::domain::error::{ConversionError, WithContext, CommonErrorAttributes};
     ///
     /// let err = ConversionError::DataLoss {
     ///     reason: "truncated".into(),
@@ -889,7 +895,7 @@ pub trait CommonErrorAttributes {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{ProtocolError, WithContext, CommonErrorAttributes};
+    /// use rusk::http::domain::error::{ProtocolError, WithContext, CommonErrorAttributes};
     ///
     /// let err = ProtocolError::InvalidContentType {
     ///     found: "text/plain".into(),
@@ -911,7 +917,7 @@ pub trait CommonErrorAttributes {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{ProcessingError, WithContext, CommonErrorAttributes};
+    /// use rusk::http::domain::error::{ProcessingError, WithContext, CommonErrorAttributes};
     /// use std::time::Duration;
     ///
     /// let err = ProcessingError::Timeout {
@@ -934,7 +940,7 @@ pub trait CommonErrorAttributes {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{ProcessingError, WithContext, CommonErrorAttributes};
+    /// use rusk::http::domain::error::{ProcessingError, WithContext, CommonErrorAttributes};
     ///
     /// let err = ProcessingError::StageFailed {
     ///     stage: "validation".into(),
@@ -956,7 +962,7 @@ pub trait CommonErrorAttributes {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{ProcessingError, WithContext, CommonErrorAttributes};
+    /// use rusk::http::domain::error::{ProcessingError, WithContext, CommonErrorAttributes};
     /// use std::time::Duration;
     ///
     /// let err = ProcessingError::Timeout {
@@ -982,7 +988,7 @@ pub trait CommonErrorAttributes {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{ResourceError, WithContext, CommonErrorAttributes};
+    /// use rusk::http::domain::error::{ResourceError, WithContext, CommonErrorAttributes};
     ///
     /// // Memory usage
     /// let err = ResourceError::MemoryLimitExceeded {
@@ -1023,7 +1029,7 @@ pub trait CommonErrorAttributes {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::{ProtocolError, WithContext, CommonErrorAttributes};
+    /// use rusk::http::domain::error::{ProtocolError, WithContext, CommonErrorAttributes};
     ///
     /// let err = ProtocolError::VersionMismatch {
     ///     client: "1.0.0".into(),
@@ -1058,7 +1064,7 @@ pub trait CommonErrorAttributes {
 ///
 /// Direct usage with `DomainError`:
 /// ```rust
-/// use rusk::http::domain::{DomainError, ValidationError, CommonErrorAttributes};
+/// use rusk::http::domain::error::{DomainError, ValidationError, CommonErrorAttributes};
 ///
 /// let err: DomainError = ValidationError::EmptyInput("no data".into()).into();
 /// let err = err
@@ -1070,7 +1076,7 @@ pub trait CommonErrorAttributes {
 ///
 /// Usage with specific error types:
 /// ```rust
-/// use rusk::http::domain::{
+/// use rusk::http::domain::error::{
 ///     ProcessingError, WithContext, CommonErrorAttributes,
 ///     ResourceError,
 /// };
@@ -1104,7 +1110,7 @@ pub trait CommonErrorAttributes {
 ///
 /// Chaining multiple attributes:
 /// ```rust
-/// use rusk::http::domain::{
+/// use rusk::http::domain::error::{
 ///     ValidationError, WithContext, CommonErrorAttributes
 /// };
 ///

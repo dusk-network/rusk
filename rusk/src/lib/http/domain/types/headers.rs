@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 //! RUES protocol message headers.
 //!
 //! This module provides types for handling RUES message headers according to
@@ -20,7 +26,7 @@
 //!
 //! Basic headers:
 //! ```rust
-//! use rusk::http::domain::RuesHeaders;
+//! use rusk::http::domain::types::headers::RuesHeaders;
 //!
 //! let headers = RuesHeaders::builder()
 //!     .content_location("/on/blocks/accepted")
@@ -32,7 +38,7 @@
 //!
 //! Headers with session ID and version:
 //! ```rust
-//! use rusk::http::domain::{RuesHeaders, Version};
+//! use rusk::http::domain::types::headers::RuesHeaders;
 //! # use rusk::http::domain::testing;
 //!
 //! let headers = RuesHeaders::builder()
@@ -49,7 +55,9 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::http::domain::{DomainError, SerDeError, SessionId, Version};
+use crate::http::domain::error::{DomainError, SerDeError};
+use crate::http::domain::types::event::Version;
+use crate::http::domain::types::identifier::SessionId;
 
 /// Headers for RUES protocol messages.
 ///
@@ -80,7 +88,7 @@ use crate::http::domain::{DomainError, SerDeError, SessionId, Version};
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::RuesHeaders;
+/// use rusk::http::domain::types::headers::RuesHeaders;
 /// # use rusk::http::domain::testing;
 ///
 /// // Basic headers
@@ -127,7 +135,7 @@ impl RuesHeaders {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     ///
     /// let headers = RuesHeaders::builder()
     ///     .content_location("/on/blocks/accepted")
@@ -149,7 +157,7 @@ impl RuesHeaders {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     ///
     /// let headers = RuesHeaders::builder()
     ///     .content_location("/on/blocks/accepted")
@@ -176,7 +184,7 @@ impl RuesHeaders {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     ///
     /// # let header_bytes = vec![/* ... */];
     /// if let Ok(headers) = RuesHeaders::from_bytes(&header_bytes) {
@@ -255,7 +263,7 @@ impl RuesHeaders {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     /// # use rusk::http::domain::testing;
     ///
     /// let headers = RuesHeaders::builder()
@@ -280,7 +288,7 @@ impl RuesHeaders {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     /// # use rusk::http::domain::testing;
     ///
     /// let headers = RuesHeaders::builder()
@@ -305,7 +313,7 @@ impl RuesHeaders {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     ///
     /// let headers = RuesHeaders::builder()
     ///     .content_location("/on/blocks/accepted")
@@ -340,7 +348,7 @@ impl RuesHeaders {
 /// # Examples
 ///
 /// ```rust
-/// use rusk::http::domain::RuesHeaders;
+/// use rusk::http::domain::types::headers::RuesHeaders;
 ///
 /// let headers = RuesHeaders::builder()
 ///     .content_location("/on/blocks/accepted")
@@ -414,7 +422,7 @@ impl RuesHeadersBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     /// # use rusk::http::domain::testing;
     ///
     /// let headers = RuesHeaders::builder()
@@ -445,7 +453,7 @@ impl RuesHeadersBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     /// # use rusk::http::domain::testing;
     ///
     /// let headers = RuesHeaders::builder()
@@ -476,7 +484,7 @@ impl RuesHeadersBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     ///
     /// let headers = RuesHeaders::builder()
     ///     .content_location("/on/blocks/accepted")
@@ -517,7 +525,7 @@ impl RuesHeadersBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use rusk::http::domain::RuesHeaders;
+    /// use rusk::http::domain::types::headers::RuesHeaders;
     ///
     /// let result = RuesHeaders::builder()
     ///     .content_type("application/json")
@@ -546,7 +554,8 @@ impl RuesHeadersBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::http::domain::{testing, RuesValue};
+    use crate::http::domain::testing;
+    use crate::http::domain::types::value::RuesValue;
 
     use super::*;
     use bytes::{BufMut, Bytes, BytesMut};
