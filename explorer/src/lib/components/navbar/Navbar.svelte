@@ -72,10 +72,7 @@
       case 3:
         return "devnet";
 
-      case 64:
-        return "mainnet dry-run #1";
-
-      case 65:
+      case 41:
         return "mainnet dry-run #2";
 
       default:
