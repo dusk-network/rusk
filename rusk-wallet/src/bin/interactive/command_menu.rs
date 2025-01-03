@@ -334,6 +334,7 @@ pub(crate) async fn online(
         }
         MenuItem::History => {
             let profile_idx = Some(profile_idx);
+
             ProfileOp::Run(Box::new(Command::History { profile_idx }))
         }
         MenuItem::StakeInfo => ProfileOp::Run(Box::new(Command::StakeInfo {
