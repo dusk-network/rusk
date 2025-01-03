@@ -40,6 +40,11 @@
     data.key,
     calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
   );
+
+  $: ownerKey = middleEllipsis(
+    ownerValue,
+    calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
+  );
 </script>
 
 <DetailList className="provisioners-list">
@@ -58,9 +63,7 @@
     <svelte:fragment slot="definition">
       <Badge
         data-tooltip-id="provisioners-tooltip"
-        data-tooltip-text={ownerType === "Account"
-          ? provisionerKey
-          : ownerValue}
+        data-tooltip-text={ownerKey}
         text={ownerType}
       />
     </svelte:fragment>
