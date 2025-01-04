@@ -36,10 +36,14 @@
     return () => resizeObserver.disconnect();
   });
 
-  $: provisionerKey = middleEllipsis(
-    data.key,
-    calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
+  $: adaptiveCharCount = calculateAdaptiveCharCount(
+    screenWidth,
+    320,
+    1024,
+    4,
+    25
   );
+  $: provisionerKey = middleEllipsis(data.key, adaptiveCharCount);
 </script>
 
 <DetailList className="provisioners-list">
@@ -59,7 +63,7 @@
       <Badge
         data-tooltip-id="provisioners-tooltip"
         data-tooltip-text={ownerType === "Account"
-          ? provisionerKey
+          ? middleEllipsis(ownerValue, adaptiveCharCount)
           : ownerValue}
         text={ownerType}
       />
