@@ -7,26 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Add support for configurable HTTP headers [#2480]
+- Add serialization to GraphQL error returned to clients [#2423]
+- Add preliminary archive GraphQL endpoints [#2583]
+- Add .editorconfig to repository [#2802]
+- Add network-trace feature [#3243]
+- Add new feature & change Dockerfile [#3030]
+- Add test for finalized roots [#3052]
+- Add Moonlight account to genesis [#2570]
+- Add StakeFundOwner info to API [#3193]
+
 ### Changed
 
-- Ported to Piecrust 0.25.0 [#2536]
-- Allow state transitions to be executed in parallel with queries [#970]
-- Change dependencies declarations enforce bytecheck [#1371]
-- Fixed tests passing incorrect arguments [#1371]
-- Adjusted deployment charging [#2207]
-- Change `max_value` computation to handle overflow error [#3206]
+- Change voters to be `Vec` instead of `Option` [#2457]
+- Change genesis_timestamp to be optional [#2473]
+- Change rusk-provisioners to filter out slashed stakes [#1257]
+- Update README header [#2909]
+- Upgrade protocol version [#2720]
+- Refactor CLI subcommands [#2479]
+- Refactor rusk builder [#2415]
+- Refactor event loop for improved performance [#3157]
+
+### Fixed
+
+- Fix HTTP preverification [#2495]
+- Fix binary request detection in RUES [#2379]
+- Fix edge case where gas_spent result higher than gas_limit [#2591]
+- Fix finalize_state [#2592]
+- Fix genesis_timestamp to be optional [#2473]
+- Fix sender JSON representation [#2610]
+- Fix geoip endpoint [#2671]
+- Fix gql check_block endpoint [#2910]
+- Fix mempool stack overflow [#3209]
+- Fix contract deploy properly serialize init args [#3090]
+- Fix `max_value` computation to handle overflow error [#3206]
+
+### Removed
+
+- Remove conservative generator strategy [#2360]
+- Remove dirty state folders [#2392]
+
+## [0.8.0] - 2024-09-10
 
 ### Added
 
+- Add mempool transaction replacement [#1271]
+- Add chain events [#2049]
+- Add protocol version to Message [#2251]
+- Add implementation for RUES dispatch [#2224]
+- Add HTTP endpoint `/static/drivers/wallet-core.wasm` [#2268]
+- Add moonlight support in rusk-wallet [#2289]
+- Enrich contract events with transaction ID [#2296]
 - Add `min_gas_limit` node configuration argument and enforcement [#2597]
 - Add `gen_contract_id` and 32-byte hash for contract deployment [#1884]
 - Add execution of contract deployment [#1882]
-- Add first version of RUES, allowing websocket clients to subscribe for events
-  emitted by block transitions [#931]
-- Add `ws_sub_channel_cap` and `ws_sub_channel_cap` configuration items, allowing
-  for roughly regulating the throughput websockets connections [#931]
+- Add first version of RUES, allowing websocket clients to subscribe for events emitted by block transitions [#931]
+- Add `ws_sub_channel_cap` and `ws_sub_channel_cap` configuration items, allowing for roughly regulating the throughput websockets connections [#931]
 - Add `base64` dependency [#931]
-- Add type constrains for bytecheck [#1371]
+- Add type constraints for bytecheck [#1371]
 - Add TLS support for HTTP server
 - Add iteration generator to FailedIterations [#1257]
 - Add `node` feature flag [#1144]
@@ -34,21 +74,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Allow rusk to be run as prover only [#1376]
+- Exit on invalid configuration [#1481]
+- Upgrade kadcast version [#2218]
+- Implement new emission schedule [#2274]
+- Adapt emission schedule to emit 500M dusk [#2283]
+- Enrich provisioners info with contract-related events [#2294]
+- Refactor rusk binary [#2047]
+- Ported to Piecrust 0.25.0 [#2536]
+- Allow state transitions to be executed in parallel with queries [#970]
+- Change dependencies declarations to enforce bytecheck [#1371]
+- Fixed tests passing incorrect arguments [#1371]
+- Adjusted deployment charging [#2207]
 - Adapt accept/finalize state transitions to broadcast emitted events through RUES [#931]
 - Change rusk::provisioners to filter out slashed stakes [#1257]
 - Change block processing to slash failed-iteration provisioners [#1257]
 - Change FailedIterations to include only nil quorum certificates [#1257]
 - Extended block generator with support for economic gas handling [#1603]
 
-### Removed
-
-- Remove economic protocol handling
-- Remove allowlist [#1257]
-- Remove STCO and WFCO [#1675]
-
 ### Fixed
 
+- Fix MacOS HTTPS test [#1275]
 - Fix corrupted state after restart [#1640]
+- Fix ephemeral state folder [#1870]
+- Fix AST benchmarks [#1959]
+- Fix compilation with memo updates in rusk-wallet [#2282]
+- Fix prev_stake for Stake operation in stake-contract [#2299]
+- Fix RUES handling of WS `Message::Close` [#2341]
+- Fix corrupted state after restart [#1640]
+
+### Removed
+
+- Remove allowlist [#1257]
+- Remove unused dependencies [#1885]
+- Remove economic protocol handling
+- Remove STCO and WFCO [#1675]
 
 ## [0.7.0] - 2023-12-31
 
@@ -239,7 +299,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
 
-[unreleased]: https://github.com/dusk-network/rusk/compare/v0.7.0...HEAD
+[unreleased]: https://github.com/dusk-network/rusk/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/dusk-network/rusk/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/dusk-network/rusk/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/dusk-network/rusk/compare/v0.5.3...v0.6.0
 [0.5.3]: https://github.com/dusk-network/rusk/compare/v0.4.0...v0.5.3
