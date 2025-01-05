@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.0.0] - 2025-01-05
+
 ### Added
 
 - Add support for configurable HTTP headers [#2480]
@@ -299,7 +301,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
 
-[unreleased]: https://github.com/dusk-network/rusk/compare/v0.8.0...HEAD
+[unreleased]: https://github.com/dusk-network/rusk/compare/rusk-1.0.0...HEAD
+[1.0.0]: https://github.com/dusk-network/rusk/compare/v0.8.0...rusk-1.0.0
 [0.8.0]: https://github.com/dusk-network/rusk/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/dusk-network/rusk/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/dusk-network/rusk/compare/v0.5.3...v0.6.0
