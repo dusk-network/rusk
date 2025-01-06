@@ -731,7 +731,7 @@ where
             Err(e) => {
                 let domain_err: DomainError = e.into();
                 ctx.metrics()
-                    .record_error("default_processor", domain_err.to_string());
+                    .record_error("default_processor", &domain_err.to_string());
                 Err(domain_err
                     .with_context("default_processor")
                     .with_stage("processing")

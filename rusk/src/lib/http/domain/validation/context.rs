@@ -37,7 +37,7 @@ impl ValidationContext {
         result: &Result<(), DomainError>,
     ) {
         match result {
-            Ok(_) => {
+            Ok(()) => {
                 self.metrics.increment_counter("validations_success");
             }
             Err(e) => {

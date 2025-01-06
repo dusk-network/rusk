@@ -95,8 +95,6 @@ impl ValidationRule<RuesHeaders> for HeadersFormatRule {
         ctx: &mut ValidationContext,
     ) -> Result<(), DomainError> {
         ctx.start_validation("headers_format");
-
-        // All format validation is done during construction
         let result = Ok(());
         ctx.complete_validation("headers_format", &result);
         result
@@ -145,15 +143,13 @@ impl ValidationRule<RuesHeaders> for ContentTypeRule {
         ctx: &mut ValidationContext,
     ) -> Result<(), DomainError> {
         ctx.start_validation("content_type");
-
         let result = match headers.content_type() {
-                "application/json" | "application/octet-stream" => Ok(()),
-                _ => Err(ValidationError::InvalidFieldValue {
-                    field: "Content-Type".into(),
-                    reason: "Content-Type must be application/json or application/octet-stream".into(),
-                }.into())
+            "application/json" | "application/octet-stream" => Ok(()),
+            _ => Err(ValidationError::InvalidFieldValue {
+                field: "Content-Type".into(),
+                reason: "Content-Type must be application/json or application/octet-stream".into(),
+            }.into())
         };
-
         ctx.complete_validation("content_type", &result);
         result
     }
@@ -223,17 +219,14 @@ impl ValidationRule<RuesHeaders> for SessionHeaderRule {
         ctx: &mut ValidationContext,
     ) -> Result<(), DomainError> {
         ctx.start_validation("session_header");
-
         let result = match headers.session_id() {
-            Some(_) => Ok(()), /* Session ID format is validated during */
-            // construction
+            Some(_) => Ok(()),
             None if self.required => {
                 Err(ValidationError::MissingField("Rusk-Session-Id".into())
                     .into())
             }
             None => Ok(()),
         };
-
         ctx.complete_validation("session_header", &result);
         result
     }
@@ -385,12 +378,12 @@ impl ValidationRule<RuesHeaders> for ContentLocationRule {
         ctx: &mut ValidationContext,
     ) -> Result<(), DomainError> {
         ctx.start_validation("content_location");
-
         let path = headers.content_location();
         let result = if !path.starts_with("/on/") {
             Err(ValidationError::InvalidFormat(
                 "Path must start with /on/".into(),
-            ))
+            )
+            .into())
         } else {
             let segments: Vec<&str> = path[1..].split('/').collect();
             match segments.as_slice() {
@@ -401,15 +394,12 @@ impl ValidationRule<RuesHeaders> for ContentLocationRule {
                 }
                 _ => Err(ValidationError::InvalidFormat(
                     "Path must have format /on/[target]/[topic]".into(),
-                )),
+                )
+                .into()),
             }
         };
-
-        ctx.complete_validation(
-            "content_location",
-            &result.clone().map_err(Into::into),
-        );
-        result.map_err(Into::into)
+        ctx.complete_validation("content_location", &result);
+        result
     }
 }
 

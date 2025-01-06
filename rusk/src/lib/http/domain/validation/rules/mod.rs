@@ -10,6 +10,7 @@ pub mod headers;
 pub mod identifier;
 pub mod json;
 pub mod path;
+pub mod raw;
 
 use crate::http::domain::error::DomainError;
 use crate::http::domain::validation::context::ValidationContext;

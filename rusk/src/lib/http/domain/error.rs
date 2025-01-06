@@ -493,6 +493,20 @@ pub enum ValidationError {
     /// Invalid operation requested
     #[error("Invalid operation: {operation} ({reason})")]
     InvalidOperation { operation: String, reason: String },
+
+    /// Invalid data length for field
+    #[error(
+        "Invalid length for {field}: expected {expected} bytes, got {actual}"
+    )]
+    DataLength {
+        field: String,
+        expected: usize,
+        actual: usize,
+    },
+
+    /// Invalid binary format
+    #[error("Invalid binary format for {field}: {reason}")]
+    BinaryFormat { field: String, reason: String },
 }
 
 /// Processing-specific errors

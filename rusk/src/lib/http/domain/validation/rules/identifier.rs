@@ -52,7 +52,9 @@
 //! }
 //! ```
 
-use crate::http::domain::error::{DomainError, ValidationError};
+use crate::http::domain::error::{
+    CommonErrorAttributes, DomainError, ValidationError, WithContext,
+};
 use crate::http::domain::types::identifier::{
     BlockHash, ContractId, IdentifierBytes, SessionId, TargetIdentifier,
     TransactionHash,

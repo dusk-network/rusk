@@ -432,25 +432,18 @@ impl ProcessingMetrics {
     ///
     /// metrics.complete_operation("message_processing");
     /// ```
-    pub fn record_error(
-        &mut self,
-        operation: impl Into<String>,
-        error_type: impl Into<String>,
-    ) {
-        let operation = operation.into();
-        let error_type = error_type.into();
-
+    pub fn record_error(&mut self, operation: &str, error_type: &str) {
         let counter = counter!(
             "rues_errors_total",
-            "operation" => operation.clone(),
-            "type" => error_type.clone()
+            "operation" => operation.to_owned(),
+            "type" => error_type.to_owned()
         );
         counter.increment(1);
 
         // First check if operation exists and get start time if it does
         let start_time = {
-            let attrs = self.operation_starts.write();
-            attrs.get(&operation).copied()
+            let attrs = self.operation_starts.read();
+            attrs.get(operation).copied()
         };
 
         // If operation was started, complete it
@@ -458,13 +451,13 @@ impl ProcessingMetrics {
             let duration = start.elapsed();
             let histogram = histogram!(
                 "rues_operation_duration_seconds",
-                "operation" => operation.clone(),
+                "operation" => operation.to_owned(),
                 "status" => "error"
             );
             histogram.record(duration.as_secs_f64());
 
             // Now remove the operation
-            self.operation_starts.write().remove(&operation);
+            self.operation_starts.write().remove(operation);
         }
     }
 
@@ -501,22 +494,20 @@ impl ProcessingMetrics {
     /// ```
     pub fn record_error_with_context(
         &mut self,
-        operation: impl Into<String>,
+        operation: &str,
         error: &DomainError,
     ) {
-        let operation = operation.into();
-
         // Record basic error
-        self.record_error(&operation, error.to_string());
+        self.record_error(operation, &error.to_string());
 
         // Record additional context if available
         if let Some(ctx) = error.context() {
             for (key, value) in ctx.context_attributes() {
                 let counter = counter!(
                     "rues_error_attributes_total",
-                    "operation" => operation.clone(),
-                    "attribute" => key,
-                    "value" => value
+                    "operation" => operation.to_owned(),
+                    "attribute" => key.clone(),
+                    "value" => value.clone()
                 );
                 counter.increment(1);
             }
@@ -714,7 +705,7 @@ mod tests {
                     .with_input_size(0);
 
                 metrics.record_error_with_context(
-                    format!("concurrent_test_{}", i),
+                    &format!("concurrent_test_{}", i),
                     &err,
                 );
             });
