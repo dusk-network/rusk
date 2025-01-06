@@ -179,17 +179,25 @@ pub async fn make_commits() -> Result<(), Error> {
         .call::<u8, ()>(f.contract_id, METHOD, &0, u64::MAX)
         .map_err(Error::Vm)?;
 
-    let commit_id = session1.commit()?;
-    f.rusk.finalize_state(commit_id, Vec::new())?;
+    println!("before session1 commit");
+    let commit_id1 = session1.commit()?;
+    println!("after session1 commit: {}", hex::encode(commit_id1));
 
     let mut session2 = f.create_session(&vm, commit_id.clone());
     session2
         .call::<u8, ()>(f.contract_id, METHOD, &1, u64::MAX)
         .map_err(Error::Vm)?;
 
-    // println!("{}", hex::encode(&commit_id));
+    println!("before session2 commit");
+    let commit_id2 = session2.commit()?;
+    println!("after session2 commit: {}", hex::encode(commit_id2.clone()));
 
-    // f.rusk.finalize_state(commit_id, Vec::new())?;
+    println!("before finalizing commit1");
+    vm.finalize_commit(commit_id1.clone())?;
+    println!("after finalizing commit1: {}", hex::encode(commit_id1));
+    println!("before finalizing commit2");
+    vm.finalize_commit(commit_id2.clone())?;
+    println!("after finalizing commit2: {}", hex::encode(commit_id2));
 
     Ok(())
 }
