@@ -179,25 +179,39 @@ pub async fn make_commits() -> Result<(), Error> {
         .call::<u8, ()>(f.contract_id, METHOD, &0, u64::MAX)
         .map_err(Error::Vm)?;
 
-    println!("before session1 commit");
     let commit_id1 = session1.commit()?;
-    println!("after session1 commit: {}", hex::encode(commit_id1));
+    println!("session1 commit: {}", hex::encode(commit_id1));
 
     let mut session2 = f.create_session(&vm, commit_id.clone());
     session2
         .call::<u8, ()>(f.contract_id, METHOD, &1, u64::MAX)
         .map_err(Error::Vm)?;
 
-    println!("before session2 commit");
     let commit_id2 = session2.commit()?;
-    println!("after session2 commit: {}", hex::encode(commit_id2.clone()));
+    println!("session2 commit: {}", hex::encode(commit_id2.clone()));
 
-    println!("before finalizing commit1");
+    let mut session3 = f.create_session(&vm, commit_id.clone());
+    session3
+        .call::<u8, ()>(f.contract_id, METHOD, &2, u64::MAX)
+        .map_err(Error::Vm)?;
+
+    let commit_id3 = session3.commit()?;
+    println!("session3 commit: {}", hex::encode(commit_id3.clone()));
+
     vm.finalize_commit(commit_id1.clone())?;
-    println!("after finalizing commit1: {}", hex::encode(commit_id1));
-    println!("before finalizing commit2");
+    println!("finalized commit1: {}", hex::encode(commit_id1));
     vm.finalize_commit(commit_id2.clone())?;
-    println!("after finalizing commit2: {}", hex::encode(commit_id2));
+    println!("finalized commit2: {}", hex::encode(commit_id2));
+    vm.finalize_commit(commit_id3.clone())?;
+    println!("finalized commit3: {}", hex::encode(commit_id3));
+
+    let mut session4 = f.create_session(&vm, commit_id.clone());
+    session4
+        .call::<u8, ()>(f.contract_id, METHOD, &3, u64::MAX)
+        .map_err(Error::Vm)?;
+
+    let commit_id4 = session4.commit()?;
+    println!("session4 commit: {}", hex::encode(commit_id4.clone()));
 
     Ok(())
 }
