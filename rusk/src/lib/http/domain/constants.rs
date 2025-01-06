@@ -41,3 +41,24 @@ pub mod binary {
         pub const VERSION: usize = RESERVED + super::size::RESERVED;
     }
 }
+
+/// RUES message format constants
+pub mod message {
+    /// Maximum allowed size for message headers (1MB)
+    pub const MAX_HEADER_SIZE: u32 = 1024 * 1024;
+}
+
+/// RUES payload size limits
+pub mod payload {
+    /// Maximum size for JSON payloads (10MB)
+    pub const MAX_JSON_SIZE: usize = 10 * 1024 * 1024;
+
+    /// Maximum size for binary payloads (50MB)
+    pub const MAX_BINARY_SIZE: usize = 50 * 1024 * 1024;
+
+    /// Maximum size for GraphQL queries (1MB)
+    pub const MAX_GRAPHQL_SIZE: usize = 1024 * 1024;
+
+    /// Maximum size for text payloads (1MB)
+    pub const MAX_TEXT_SIZE: usize = 1024 * 1024;
+}
