@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 use crate::http::domain::constants::payload::{
     MAX_BINARY_SIZE, MAX_GRAPHQL_SIZE, MAX_JSON_SIZE, MAX_TEXT_SIZE,
 };
