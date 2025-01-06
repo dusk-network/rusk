@@ -14,5 +14,6 @@ pub mod moonlight_stake;
 pub mod multi_transfer;
 pub mod owner_calls;
 pub mod phoenix_stake;
+pub mod state_integrity;
 pub mod transfer;
 pub mod unspendable;

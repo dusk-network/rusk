@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bytecheck::CheckBytes;
-use rkyv::{Archive, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
@@ -158,8 +156,7 @@ impl Fixture {
         );
     }
 
-    pub fn create_session(&mut self, vm: &VM) -> Session {
-        let commit = self.rusk.state_root();
+    pub fn create_session(&mut self, vm: &VM, commit: [u8; 32]) -> Session {
         vm.session(commit, CHAIN_ID, 0)
             .expect("Session creation should succeed")
     }
@@ -175,15 +172,24 @@ pub async fn make_commits() -> Result<(), Error> {
     let mut f = Fixture::build(NON_BLS_OWNER);
     f.assert_bob_contract_is_deployed();
     let vm = f.create_vm();
+    let commit_id: [u8; 32] = f.rusk.state_root();
 
-    for value in 0..10u8 {
-        let mut session = f.create_session(&vm);
-        let r = session
-            .call::<u8, ()>(f.contract_id, METHOD, &value, u64::MAX)
-            .map_err(Error::Vm);
-        assert!(r.is_ok());
-        let root = session.commit()?;
-        println!("{}", hex::encode(root));
-    }
+    let mut session1 = f.create_session(&vm, commit_id.clone());
+    session1
+        .call::<u8, ()>(f.contract_id, METHOD, &0, u64::MAX)
+        .map_err(Error::Vm)?;
+
+    let commit_id = session1.commit()?;
+    f.rusk.finalize_state(commit_id, Vec::new())?;
+
+    let mut session2 = f.create_session(&vm, commit_id.clone());
+    session2
+        .call::<u8, ()>(f.contract_id, METHOD, &1, u64::MAX)
+        .map_err(Error::Vm)?;
+
+    // println!("{}", hex::encode(&commit_id));
+
+    // f.rusk.finalize_state(commit_id, Vec::new())?;
+
     Ok(())
 }
