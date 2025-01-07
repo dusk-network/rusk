@@ -21,6 +21,7 @@ describe("duskAPI", () => {
     headers: {
       Accept: "application/json",
       "Accept-Charset": "utf-8",
+      Connection: "Keep-Alive",
     },
     method: "GET",
   };
@@ -75,6 +76,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-id": ""some-id"",
         },
@@ -88,6 +90,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-height": "495869",
         },
@@ -131,6 +134,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-height": "11",
         },
@@ -144,6 +148,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-height": "11",
         },
@@ -165,6 +170,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-id": ""some-id"",
         },
@@ -187,6 +193,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-amount": "100",
         },
@@ -211,6 +218,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-amount": "15",
         },
@@ -298,6 +306,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
         },
         "method": "POST",
       }
@@ -309,6 +318,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
         },
         "method": "POST",
@@ -321,6 +331,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
         },
         "method": "POST",
@@ -342,6 +353,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-id": ""some-id"",
         },
@@ -365,6 +377,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-id": ""some-id"",
         },
@@ -387,6 +400,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-amount": "100",
         },
@@ -438,6 +452,7 @@ describe("duskAPI", () => {
       headers: {
         Accept: "application/json",
         "Accept-Charset": "utf-8",
+        Connection: "Keep-Alive",
       },
       method: "POST",
     });
@@ -445,6 +460,7 @@ describe("duskAPI", () => {
       headers: {
         Accept: "application/json",
         "Accept-Charset": "utf-8",
+        Connection: "Keep-Alive",
       },
       method: "POST",
     });
@@ -486,6 +502,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-id": ""1111111111111111111111111111111111111111111111111111111111111111"",
         },
@@ -499,6 +516,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-height": "1.1111111111111112e+63",
         },
@@ -527,6 +545,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-id": ""fda46b4e06cc78542db9c780adbaee83a27fdf917de653e8ac34294cf924dd63"",
         },
@@ -554,6 +573,7 @@ describe("duskAPI", () => {
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
+          "Connection": "Keep-Alive",
           "Content-Type": "application/json",
           "Rusk-gqlvar-height": "123456",
         },
