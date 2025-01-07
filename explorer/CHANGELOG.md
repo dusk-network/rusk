@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [1.0.1] - 2025-01-07
+
+### Fixed
+
+- Fix Owner key (Provisioners page) [#3315]
+
 ## [1.0.0] - 2024-12-22
 
 ### Added
@@ -130,10 +136,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3215]: https://github.com/dusk-network/rusk/issues/3215
 [#3218]: https://github.com/dusk-network/rusk/issues/3218
 [#3249]: https://github.com/dusk-network/rusk/issues/3249
+[#3315]: https://github.com/dusk-network/rusk/pull/3315
 
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.0.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.0.1
 [1.0.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.0.0
 [0.3.0]: https://github.com/dusk-network/rusk/tree/explorer-0.3.0
 [0.2.0]: https://github.com/dusk-network/rusk/tree/explorer-0.2.0
