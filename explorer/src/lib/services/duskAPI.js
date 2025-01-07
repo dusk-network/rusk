@@ -62,6 +62,7 @@ const gqlGet = (queryInfo) =>
     headers: {
       Accept: "application/json",
       "Accept-Charset": "utf-8",
+      Connection: "Keep-Alive",
       "Content-Type": "application/json",
       ...toHeadersVariables(queryInfo.variables),
     },
@@ -80,6 +81,7 @@ const apiGet = (endpoint, params) =>
     headers: {
       Accept: "application/json",
       "Accept-Charset": "utf-8",
+      Connection: "Keep-Alive",
     },
     method: "GET",
   })
@@ -95,6 +97,7 @@ const nodePost = (endpoint) =>
     headers: {
       Accept: "application/json",
       "Accept-Charset": "utf-8",
+      Connection: "Keep-Alive",
     },
     method: "POST",
   })
