@@ -342,7 +342,7 @@ fn compute_id(circuit: &[u8], plonk_version: &str) -> io::Result<[u8; 32]> {
         None => {
             return Err(io::Error::new(
                 ErrorKind::InvalidInput,
-                format!("coudn't parse plonk version: {plonk_version}"),
+                format!("couldn't parse plonk version: {plonk_version}"),
             ))
         }
     };
