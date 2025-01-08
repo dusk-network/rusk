@@ -15,6 +15,7 @@ pub const EDGE_DIR: &str = "edge";
 pub const ELEMENT_FILE: &str = "element";
 pub const LEAF_DIR: &str = "leaf";
 pub const BASE_FILE: &str = "base";
+pub const MEMORY_DIR: &str = "memory";
 
 pub fn contract_id_from_hex<S: AsRef<str>>(contract_id: S) -> ContractId {
     let bytes: [u8; 32] = hex::decode(contract_id.as_ref())
@@ -138,10 +139,26 @@ pub fn calculate_root_pos_32<'a>(
     r
 }
 
-pub fn find_commit_level(main_dir: impl AsRef<Path>, commit_id: &[u8; 32]) -> io::Result<u64> {
+pub fn find_commit_level(
+    main_dir: impl AsRef<Path>,
+    commit_id: &[u8; 32],
+) -> io::Result<u64> {
     let commit_id_hex = hex::encode(commit_id);
-    let base_info_path =
-        main_dir.as_ref().join(commit_id_hex).join(BASE_FILE);
+    let base_info_path = main_dir.as_ref().join(commit_id_hex).join(BASE_FILE);
     let base_info = base_from_path(base_info_path)?;
     Ok(base_info.level)
+}
+
+pub fn find_current_levels(main_dir: impl AsRef<Path>) -> io::Result<Vec<u64>> {
+    let mut levels = vec![0u64];
+    let memory_edge_dir = main_dir.as_ref().join(MEMORY_DIR).join(EDGE_DIR);
+    for entry in fs::read_dir(&memory_edge_dir)? {
+        let entry = entry?;
+        let level_str = entry.file_name().to_string_lossy().to_string();
+        if let Ok(level) = level_str.parse::<u64>() {
+            levels.push(level);
+        }
+    }
+    levels.sort();
+    Ok(levels)
 }

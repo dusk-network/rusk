@@ -37,7 +37,12 @@ use crate::common::state::{
 use crate::common::wallet::{TestStateClient, TestStore};
 use crate::services::state_integrity::page_tree::PageTree;
 use crate::services::state_integrity::tree_pos::TreePos;
-use crate::services::state_integrity::utils::{calculate_root, calculate_root_pos_32, contract_id_from_hex, find_element, find_file_path_at_level, position_from_contract, EDGE_DIR, ELEMENT_FILE, LEAF_DIR, MAIN_DIR, find_commit_level};
+use crate::services::state_integrity::utils::{
+    calculate_root, calculate_root_pos_32, contract_id_from_hex,
+    find_commit_level, find_current_levels, find_element,
+    find_file_path_at_level, position_from_contract, EDGE_DIR, ELEMENT_FILE,
+    LEAF_DIR, MAIN_DIR,
+};
 
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const POINT_LIMIT: u64 = 0x10000000;
@@ -328,7 +333,10 @@ pub async fn make_commits() -> Result<(), Error> {
     Ok(())
 }
 
-fn verify_state_root_of_commit(state_dir: impl AsRef<Path>, commit_id: &[u8; 32]) -> Result<(), Error> {
+fn verify_state_root_of_commit(
+    state_dir: impl AsRef<Path>,
+    commit_id: &[u8; 32],
+) -> Result<(), Error> {
     println!();
     println!("tree_pos for commit {}", hex::encode(commit_id));
     let tree_pos = load_tree_pos(state_dir.as_ref(), commit_id)?;
@@ -343,7 +351,7 @@ fn verify_state_root_of_commit(state_dir: impl AsRef<Path>, commit_id: &[u8; 32]
 
     let main_dir = state_dir.as_ref().join(MAIN_DIR);
     let level = find_commit_level(&main_dir, commit_id)?;
-    let levels = vec![0u64, 1, 2, 3, 4];
+    let levels = find_current_levels(&main_dir)?;
     let elems = scan_elements(&main_dir, commit_id, level, &levels)?;
     println!();
     println!("elems:");
