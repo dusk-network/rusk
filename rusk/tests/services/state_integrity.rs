@@ -40,8 +40,8 @@ use crate::services::state_integrity::tree_pos::TreePos;
 use crate::services::state_integrity::utils::{
     calculate_root, calculate_root_pos_32, contract_id_from_hex,
     find_commit_level, find_current_levels, find_element,
-    find_file_path_at_level, position_from_contract, EDGE_DIR, ELEMENT_FILE,
-    LEAF_DIR, MAIN_DIR,
+    find_file_path_at_level, position_from_contract, scan_commits, EDGE_DIR,
+    ELEMENT_FILE, LEAF_DIR, MAIN_DIR,
 };
 
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -328,8 +328,16 @@ pub async fn make_commits() -> Result<(), Error> {
     // find_file_path_at_level searches across levels from the highest level
     // down to level zero (this search is not commit-specific)
 
-    verify_state_root_of_commit(STATE_DIR, &commit_id4)?;
+    verify_state_roots()
+}
 
+// #[tokio::test(flavor = "multi_thread")]
+fn verify_state_roots() -> Result<(), Error> {
+    let main_dir = PathBuf::from(STATE_DIR).join(MAIN_DIR);
+    let commits = scan_commits(&main_dir)?;
+    for commit in commits.iter() {
+        verify_state_root_of_commit(STATE_DIR, commit)?;
+    }
     Ok(())
 }
 

@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::services::state_integrity::base_info::BaseInfo;
+use crate::services::state_integrity::hash::Hash;
 use crate::services::state_integrity::page_tree::ContractMemTree;
 use dusk_core::abi::ContractId;
 use std::path::{Path, PathBuf};
@@ -16,6 +17,7 @@ pub const ELEMENT_FILE: &str = "element";
 pub const LEAF_DIR: &str = "leaf";
 pub const BASE_FILE: &str = "base";
 pub const MEMORY_DIR: &str = "memory";
+pub const BYTECODE_DIR: &str = "bytecode";
 
 pub fn contract_id_from_hex<S: AsRef<str>>(contract_id: S) -> ContractId {
     let bytes: [u8; 32] = hex::decode(contract_id.as_ref())
@@ -37,6 +39,14 @@ fn base_from_path<P: AsRef<Path>>(path: P) -> io::Result<BaseInfo> {
     })?;
 
     Ok(base_info)
+}
+
+fn commit_id_to_hash<S: AsRef<str>>(commit_id: S) -> Hash {
+    let hash: [u8; 32] = hex::decode(commit_id.as_ref())
+        .expect("Hex decoding of commit id string should succeed")
+        .try_into()
+        .expect("Commit id string conversion should succeed");
+    Hash::from(hash)
 }
 
 pub fn position_from_contract(contract: &ContractId) -> u64 {
@@ -161,4 +171,24 @@ pub fn find_current_levels(main_dir: impl AsRef<Path>) -> io::Result<Vec<u64>> {
     }
     levels.sort();
     Ok(levels)
+}
+
+pub fn scan_commits(main_dir: impl AsRef<Path>) -> io::Result<Vec<[u8; 32]>> {
+    let mut commits = vec![];
+    for entry in fs::read_dir(&main_dir)? {
+        let entry = entry?;
+        if entry.path().is_dir() {
+            let filename = entry.file_name();
+            if filename == MEMORY_DIR
+                || filename == BYTECODE_DIR
+                || filename == LEAF_DIR
+            {
+                continue;
+            }
+            let commit_id_str = entry.file_name().to_string_lossy().to_string();
+            let commit_id = *commit_id_to_hash(commit_id_str).as_bytes();
+            commits.push(commit_id);
+        }
+    }
+    Ok(commits)
 }
