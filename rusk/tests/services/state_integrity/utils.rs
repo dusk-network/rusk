@@ -137,3 +137,11 @@ pub fn calculate_root_pos_32<'a>(
     let r = (*tree.root()).as_bytes().clone();
     r
 }
+
+pub fn find_commit_level(main_dir: impl AsRef<Path>, commit_id: &[u8; 32]) -> io::Result<u64> {
+    let commit_id_hex = hex::encode(commit_id);
+    let base_info_path =
+        main_dir.as_ref().join(commit_id_hex).join(BASE_FILE);
+    let base_info = base_from_path(base_info_path)?;
+    Ok(base_info.level)
+}

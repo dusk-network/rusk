@@ -37,11 +37,7 @@ use crate::common::state::{
 use crate::common::wallet::{TestStateClient, TestStore};
 use crate::services::state_integrity::page_tree::PageTree;
 use crate::services::state_integrity::tree_pos::TreePos;
-use crate::services::state_integrity::utils::{
-    calculate_root, calculate_root_pos_32, contract_id_from_hex, find_element,
-    find_file_path_at_level, position_from_contract, EDGE_DIR, ELEMENT_FILE,
-    LEAF_DIR, MAIN_DIR,
-};
+use crate::services::state_integrity::utils::{calculate_root, calculate_root_pos_32, contract_id_from_hex, find_element, find_file_path_at_level, position_from_contract, EDGE_DIR, ELEMENT_FILE, LEAF_DIR, MAIN_DIR, find_commit_level};
 
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const POINT_LIMIT: u64 = 0x10000000;
@@ -211,14 +207,13 @@ fn load_tree_pos(
 }
 
 fn scan_elements(
-    path: impl AsRef<Path>,
+    main_dir: impl AsRef<Path>,
     commit_id: &[u8; 32],
     level: u64,
     levels: &[u64],
 ) -> Result<Vec<([u8; 32], ContractId, u64)>> {
     let mut output = Vec::new();
-    let main_dir = path.as_ref().join(MAIN_DIR);
-    let leaf_dir = main_dir.join(LEAF_DIR);
+    let leaf_dir = main_dir.as_ref().join(LEAF_DIR);
     for entry in fs::read_dir(&leaf_dir)? {
         let entry = entry?;
         let filename = entry.file_name().to_string_lossy().to_string();
@@ -328,9 +323,15 @@ pub async fn make_commits() -> Result<(), Error> {
     // find_file_path_at_level searches across levels from the highest level
     // down to level zero (this search is not commit-specific)
 
+    verify_state_root_of_commit(STATE_DIR, &commit_id4)?;
+
+    Ok(())
+}
+
+fn verify_state_root_of_commit(state_dir: impl AsRef<Path>, commit_id: &[u8; 32]) -> Result<(), Error> {
     println!();
-    println!("tree_pos for commit {}", hex::encode(&commit_id4));
-    let tree_pos = load_tree_pos(STATE_DIR, &commit_id4)?;
+    println!("tree_pos for commit {}", hex::encode(commit_id));
+    let tree_pos = load_tree_pos(state_dir.as_ref(), commit_id)?;
     for (k, (h, c)) in tree_pos.iter() {
         println!(
             "{} {} {}",
@@ -340,8 +341,10 @@ pub async fn make_commits() -> Result<(), Error> {
         );
     }
 
+    let main_dir = state_dir.as_ref().join(MAIN_DIR);
+    let level = find_commit_level(&main_dir, commit_id)?;
     let levels = vec![0u64, 1, 2, 3, 4];
-    let elems = scan_elements(STATE_DIR, &commit_id4, 4, &levels)?;
+    let elems = scan_elements(&main_dir, commit_id, level, &levels)?;
     println!();
     println!("elems:");
     for (hash, contract_id, int_pos) in elems.iter() {
