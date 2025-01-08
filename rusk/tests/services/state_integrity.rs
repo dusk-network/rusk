@@ -328,11 +328,12 @@ pub async fn make_commits() -> Result<(), Error> {
     // find_file_path_at_level searches across levels from the highest level
     // down to level zero (this search is not commit-specific)
 
-    verify_state_roots()
+    // verify_state_roots()
+    Ok(())
 }
 
-// #[tokio::test(flavor = "multi_thread")]
-fn verify_state_roots() -> Result<(), Error> {
+#[tokio::test(flavor = "multi_thread")]
+async fn verify_state_roots() -> Result<(), Error> {
     let main_dir = PathBuf::from(STATE_DIR).join(MAIN_DIR);
     let commits = scan_commits(&main_dir)?;
     for commit in commits.iter() {
@@ -388,7 +389,7 @@ fn verify_state_root_of_commit(
         hex::encode(root_from_tree_pos_file)
     );
 
-    assert_eq!(root_from_elements, root_from_tree_pos_file);
+    assert_eq!(hex::encode(root_from_elements), hex::encode(root_from_tree_pos_file));
 
     Ok(())
 }
