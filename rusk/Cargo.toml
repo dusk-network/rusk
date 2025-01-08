@@ -87,6 +87,7 @@ rusk-recovery = { workspace = true, features = ["state"] }
 ff = { workspace = true }
 rusk-prover = { workspace = true, features = ["no_random", "debug"] }
 criterion = { workspace = true }
+dusk-merkle = { version = "0.5", features = ["rkyv-impl"] }
 
 [build-dependencies]
 rustc_tools_util = { workspace = true }

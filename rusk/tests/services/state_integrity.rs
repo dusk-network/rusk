@@ -4,12 +4,23 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
+mod base_info;
+mod hash;
+mod page_tree;
+mod tree_pos;
+mod utils;
+
+use std::collections::{BTreeSet, HashMap};
+use std::fs::OpenOptions;
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
+use std::{fs, io};
 
+use bytecheck::CheckBytes;
 use dusk_core::abi::ContractId;
 use dusk_vm::{gen_contract_id, ContractData, Session, VM};
+use rkyv::{Archive, Deserialize, Serialize};
 use rusk::{Error, Result, Rusk};
 use rusk_recovery_tools::state;
 // use tempfile::tempdir;
@@ -24,6 +35,13 @@ use crate::common::state::{
     DEFAULT_GAS_PER_DEPLOY_BYTE, DEFAULT_MIN_GAS_LIMIT,
 };
 use crate::common::wallet::{TestStateClient, TestStore};
+use crate::services::state_integrity::page_tree::PageTree;
+use crate::services::state_integrity::tree_pos::TreePos;
+use crate::services::state_integrity::utils::{
+    calculate_root, calculate_root_pos_32, contract_id_from_hex, find_element,
+    find_file_path_at_level, position_from_contract, EDGE_DIR, ELEMENT_FILE,
+    LEAF_DIR, MAIN_DIR,
+};
 
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const POINT_LIMIT: u64 = 0x10000000;
@@ -35,6 +53,8 @@ const BOB_INIT_VALUE: u8 = 5;
 const METHOD: &str = "reset";
 
 const CHAIN_ID: u8 = 0xFA;
+
+const STATE_DIR: &str = "/Users/miloszm/.dusk/rusk/state";
 
 fn initial_state<P: AsRef<Path>>(
     dir: P,
@@ -166,6 +186,89 @@ impl Fixture {
     }
 }
 
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct ContractIndexElement {
+    pub tree: PageTree,
+    pub len: usize,
+    pub page_indices: BTreeSet<usize>,
+    pub hash: Option<[u8; 32]>,
+    pub int_pos: Option<u64>,
+}
+
+fn load_tree_pos(
+    path: impl AsRef<Path>,
+    commit_id: &[u8; 32],
+) -> Result<TreePos> {
+    let file_path = path
+        .as_ref()
+        .join("main")
+        .join(hex::encode(commit_id).as_str())
+        .join("tree_pos_opt");
+    let f = OpenOptions::new().read(true).open(file_path)?;
+    let mut buf_f = BufReader::new(f);
+    Ok(TreePos::unmarshall(&mut buf_f)?)
+}
+
+fn scan_elements(
+    path: impl AsRef<Path>,
+    commit_id: &[u8; 32],
+    level: u64,
+    levels: &[u64],
+) -> Result<Vec<([u8; 32], ContractId, u64)>> {
+    let mut output = Vec::new();
+    let main_dir = path.as_ref().join(MAIN_DIR);
+    let leaf_dir = main_dir.join(LEAF_DIR);
+    for entry in fs::read_dir(&leaf_dir)? {
+        let entry = entry?;
+        let filename = entry.file_name().to_string_lossy().to_string();
+        if filename == EDGE_DIR {
+            continue;
+        }
+        if !entry.path().is_dir() {
+            continue;
+        }
+        let contract_id_hex = filename;
+        let contract_id = contract_id_from_hex(&contract_id_hex);
+        let contract_leaf_path = leaf_dir.join(&contract_id_hex);
+        let maybe_element_path =
+            find_element(Some(*commit_id), &contract_leaf_path, &main_dir);
+        let element_path = match maybe_element_path {
+            None => find_file_path_at_level(
+                &leaf_dir,
+                level,
+                &contract_id_hex,
+                ELEMENT_FILE,
+                levels,
+            ),
+            Some(p) => p,
+        };
+        // println!("LOOKING end ==========> {:?}", element_path);
+        if element_path.is_file() {
+            let element_bytes = fs::read(&element_path)?;
+            let element: ContractIndexElement =
+                rkyv::from_bytes(&element_bytes).map_err(|err| {
+                    tracing::trace!(
+                        "deserializing element file failed {}",
+                        err
+                    );
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "Invalid element file \"{element_path:?}\": {err}"
+                        ),
+                    )
+                })?;
+            output.push((
+                element.hash.unwrap_or([0; 32]),
+                contract_id,
+                element.int_pos.unwrap_or(0),
+            ))
+        }
+    }
+    Ok(output)
+}
+
 #[tokio::test(flavor = "multi_thread")]
 pub async fn make_commits() -> Result<(), Error> {
     logger();
@@ -180,7 +283,7 @@ pub async fn make_commits() -> Result<(), Error> {
         .map_err(Error::Vm)?;
 
     let commit_id1 = session1.commit()?;
-    println!("session1 commit: {}", hex::encode(commit_id1));
+    println!("session1 commit: {}", hex::encode(&commit_id1));
 
     let mut session2 = f.create_session(&vm, commit_id.clone());
     session2
@@ -188,7 +291,7 @@ pub async fn make_commits() -> Result<(), Error> {
         .map_err(Error::Vm)?;
 
     let commit_id2 = session2.commit()?;
-    println!("session2 commit: {}", hex::encode(commit_id2.clone()));
+    println!("session2 commit: {}", hex::encode(&commit_id2));
 
     let mut session3 = f.create_session(&vm, commit_id.clone());
     session3
@@ -196,14 +299,14 @@ pub async fn make_commits() -> Result<(), Error> {
         .map_err(Error::Vm)?;
 
     let commit_id3 = session3.commit()?;
-    println!("session3 commit: {}", hex::encode(commit_id3.clone()));
+    println!("session3 commit: {}", hex::encode(&commit_id3));
 
     vm.finalize_commit(commit_id1.clone())?;
-    println!("finalized commit1: {}", hex::encode(commit_id1));
+    println!("finalized commit1: {}", hex::encode(&commit_id1));
     vm.finalize_commit(commit_id2.clone())?;
-    println!("finalized commit2: {}", hex::encode(commit_id2));
+    println!("finalized commit2: {}", hex::encode(&commit_id2));
     vm.finalize_commit(commit_id3.clone())?;
-    println!("finalized commit3: {}", hex::encode(commit_id3));
+    println!("finalized commit3: {}", hex::encode(&commit_id3));
 
     let mut session4 = f.create_session(&vm, commit_id.clone());
     session4
@@ -211,7 +314,62 @@ pub async fn make_commits() -> Result<(), Error> {
         .map_err(Error::Vm)?;
 
     let commit_id4 = session4.commit()?;
-    println!("session4 commit: {}", hex::encode(commit_id4.clone()));
+    println!("session4 commit: {}", hex::encode(&commit_id4));
+
+    // now load elements from tree_pos_opt for commit_id4 and see if they are
+    // the same as the ones found in particular files using the algorithm:
+    //     find_element (function in Piecrust)
+    //     if not found or found at level zero {
+    //         find_file_path_at_level (function in Piecrust)
+    //     }
+    // NOTE:
+    // find_element searches recursively in a given commit and in base commits
+    // for elements which are commit-specific only
+    // find_file_path_at_level searches across levels from the highest level
+    // down to level zero (this search is not commit-specific)
+
+    println!();
+    println!("tree_pos for commit {}", hex::encode(&commit_id4));
+    let tree_pos = load_tree_pos(STATE_DIR, &commit_id4)?;
+    for (k, (h, c)) in tree_pos.iter() {
+        println!(
+            "{} {} {}",
+            *k,
+            hex::encode(h),
+            hex::encode((*c).to_le_bytes())
+        );
+    }
+
+    let levels = vec![0u64, 1, 2, 3, 4];
+    let elems = scan_elements(STATE_DIR, &commit_id4, 4, &levels)?;
+    println!();
+    println!("elems:");
+    for (hash, contract_id, int_pos) in elems.iter() {
+        let contract_pos_hex =
+            hex::encode(position_from_contract(contract_id).to_le_bytes());
+        println!(
+            "{} {} ({}) int_pos={}",
+            hex::encode(hash),
+            hex::encode(contract_id),
+            contract_pos_hex,
+            *int_pos,
+        );
+    }
+
+    let root_from_elements =
+        calculate_root(elems.iter().map(|(hash, _, int_pos)| (hash, int_pos)));
+    println!(
+        "root_from_elements root={}",
+        hex::encode(root_from_elements)
+    );
+    let root_from_tree_pos_file =
+        calculate_root_pos_32(tree_pos.iter().map(|(k, (h, _c))| (h, k)));
+    println!(
+        "root_from_tree_pos_file root={}",
+        hex::encode(root_from_tree_pos_file)
+    );
+
+    assert_eq!(root_from_elements, root_from_tree_pos_file);
 
     Ok(())
 }
