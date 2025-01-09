@@ -155,6 +155,8 @@ describe("Restore", async () => {
     await fireEvent.click(nextButton);
 
     // Set Password step
+    await fireEvent.click(getByRole("switch"));
+
     await fireEvent.click(getByRole("button", { name: "Next" }));
     expect(loginInfoStorage.get()).toBeNull();
 
@@ -201,8 +203,6 @@ describe("Restore", async () => {
 
     // Set Password step
     expect(loginInfoStorage.get()).toBeNull();
-
-    await fireEvent.click(getByRole("switch"));
 
     await fireInput(asInput(getByPlaceholderText("Set Password")), pwd);
     await fireInput(asInput(getByPlaceholderText("Confirm Password")), pwd);

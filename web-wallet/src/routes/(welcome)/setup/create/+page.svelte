@@ -33,7 +33,7 @@
   let isValidPassword = false;
 
   /** @type {boolean} */
-  let showPasswordSetup = false;
+  let showPasswordSetup = true;
 
   /** @type {boolean} */
   let agreementAccepted = false;
