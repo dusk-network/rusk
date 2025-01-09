@@ -282,31 +282,6 @@ describe("Create", async () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  it("ensures the Swap To Native Dusk step renders as expected", async () => {
-    const { container, getByRole, getAllByRole } = render(Create);
-
-    await fireEvent.click(getByRole("button", { name: "Accept" }));
-
-    await fireEvent.click(getAllByRole("checkbox")[0]);
-    await fireEvent.click(getAllByRole("checkbox")[1]);
-
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-
-    const mnemonicSplit = mnemonic.split(" ");
-
-    mnemonicSplit.forEach(async (word) => {
-      await fireEvent.click(getByRole("button", { name: word }));
-    });
-
-    await tick();
-
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-
-    expect(container.firstChild).toMatchSnapshot();
-  });
-
   it("ensures the Network Syncing step renders as expected", async () => {
     const { container, getByRole, getAllByRole } = render(Create);
 
@@ -326,7 +301,6 @@ describe("Create", async () => {
 
     await tick();
 
-    await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
@@ -356,7 +330,6 @@ describe("Create", async () => {
 
     await tick();
 
-    await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
@@ -410,9 +383,6 @@ describe("Create", async () => {
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
     expect(loginInfoStorage.get()).toBeNull();
-
-    // Swap ERC20 to Native Dusk step
-    await fireEvent.click(getByRole("button", { name: "Next" }));
 
     // Network Syncing step
     await fireEvent.click(getByRole("button", { name: "Next" }));
@@ -483,9 +453,6 @@ describe("Create", async () => {
     await vi.waitFor(() => {
       expect(loginInfoStorage.get()).not.toBeNull();
     });
-
-    // Swap ERC20 to Native Dusk step
-    await fireEvent.click(getByRole("button", { name: "Next" }));
 
     // Network Syncing step
     await fireEvent.click(getByRole("button", { name: "Next" }));

@@ -14,7 +14,6 @@
   import MnemonicPhrase from "./MnemonicPhrase.svelte";
   import MnemonicValidate from "./MnemonicValidate.svelte";
   import NetworkSync from "./NetworkSync.svelte";
-  import SwapNDUSK from "./SwapNDUSK.svelte";
   import AllSet from "../AllSet.svelte";
   import MnemonicPreSetup from "./MnemonicPreSetup.svelte";
   import PasswordSetup from "../PasswordSetup.svelte";
@@ -63,7 +62,7 @@
     <TermsOfService bind:tosAccepted />
   </div>
 {:else}
-  <Wizard fullHeight={true} steps={7} let:key>
+  <Wizard fullHeight={true} steps={6} let:key>
     <WizardStep
       step={0}
       {key}
@@ -140,17 +139,6 @@
         action: () => loginInfoStorage.remove(),
         disabled: false,
       }}
-    >
-      <h2 class="h1" slot="heading">
-        Swap ERC20<br />
-        to <mark>Native Dusk</mark>
-      </h2>
-      <SwapNDUSK />
-    </WizardStep>
-    <WizardStep
-      step={5}
-      {key}
-      showStepper={true}
       nextButton={{
         action: async () => {
           await initializeWallet(mnemonicPhrase.join(" "));
@@ -166,7 +154,7 @@
       <NetworkSync />
     </WizardStep>
     <WizardStep
-      step={6}
+      step={5}
       {key}
       showStepper={true}
       hideBackButton={true}

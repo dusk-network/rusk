@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove "Swap to nDUSK" step (Create Wallet flow) [#3333]
+
 ### Fixed
 
 ## [1.0.0] - 2024-12-23
@@ -503,6 +505,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3267]: https://github.com/dusk-network/rusk/issues/3267
 [#3270]: https://github.com/dusk-network/rusk/issues/3270
 [#3287]: https://github.com/dusk-network/rusk/issues/3287
+[#3333]: https://github.com/dusk-network/rusk/issues/3333
 
 <!-- VERSIONS -->
 
