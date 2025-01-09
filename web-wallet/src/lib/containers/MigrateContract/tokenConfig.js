@@ -5,7 +5,7 @@ export const tokens = {
   mainnet: {
     "BEP-20": {
       chainId: bsc.id,
-      migrationContract: "0x32979f040feb67a5223acb0716fe4c7a5956488c#code",
+      migrationContract: "0x32979f040feb67a5223acb0716fe4c7a5956488c",
       name: "BEP-20",
       tokenContract: "0xb2bd0749dbe21f623d9baba856d3b0f0e1bfec9c",
     },
