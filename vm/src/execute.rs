@@ -5,10 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use blake2b_simd::Params;
-use dusk_core::abi::{ContractError, ContractId, CONTRACT_ID_BYTES};
-use dusk_core::transfer::{
-    data::ContractBytecode, Transaction, TRANSFER_CONTRACT,
-};
+use dusk_core::abi::{ContractError, ContractId, Metadata, CONTRACT_ID_BYTES};
+use dusk_core::transfer::data::ContractBytecode;
+use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use piecrust::{CallReceipt, Error, Session};
 
 /// Executes a transaction in the provided session.
@@ -73,14 +72,20 @@ pub fn execute(
     // with gas limit smaller than deploy charge.
     deploy_check(tx, gas_per_deploy_byte, min_deploy_gas_price)?;
 
+    let _ = session
+        .set_meta(Metadata::MOONLIGHT_SENDER, tx.moonlight_sender().copied());
+
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
-    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
+    let receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         tx.strip_off_bytecode().as_ref().unwrap_or(tx),
         tx.gas_limit(),
-    )?;
+    );
+
+    let _ = session.remove_meta(Metadata::MOONLIGHT_SENDER);
+    let mut receipt = receipt?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(

@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `abi::moonlight_sender` host fn [#3341]
+
 ## [0.1.0] - 2025-01-14
 
 ### Added
 
 - Add vm to interact with Dusk network [#3235]
 
+[#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#3235]: https://github.com/dusk-network/rusk/issues/3235
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-vm-0.1.0...HEAD
