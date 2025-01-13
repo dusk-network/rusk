@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 
-import mockedWalletStore from "../../../__mocks__/mockedWalletStore";
+import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
 
 import { AddressPicker } from "..";
 

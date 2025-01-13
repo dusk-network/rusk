@@ -10,7 +10,7 @@ import {
 import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 
-import mockedWalletStore from "../../../../__mocks__/mockedWalletStore";
+import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
 import * as navigation from "$lib/navigation";
 import {
   gasStore,

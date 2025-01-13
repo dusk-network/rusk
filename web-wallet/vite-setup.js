@@ -23,22 +23,22 @@ import { IntersectionObserver } from "./src/lib/dusk/mocks";
 vi.mock("@reown/appkit");
 
 vi.mock("./src/lib/vendor/w3sper.js/src/protocol-driver/mod", async () => ({
-  ...(await import("./src/__mocks__/ProtocolDriver.js")),
+  ...(await import("$lib/__mocks__/ProtocolDriver.js")),
 }));
 
 vi.mock(
   "./src/lib/vendor/w3sper.js/src/network/components/transactions",
   async (importOriginal) => ({
     ...(await importOriginal()),
-    Transactions: (await import("./src/__mocks__/Transactions.js")).default,
+    Transactions: (await import("$lib/__mocks__/Transactions.js")).default,
   })
 );
 
 vi.mock("./src/lib/vendor/w3sper.js/src/mod", async (importOriginal) => ({
   ...(await importOriginal()),
-  AccountSyncer: (await import("./src/__mocks__/AccountSyncer.js")).default,
-  AddressSyncer: (await import("./src/__mocks__/AddressSyncer.js")).default,
-  Network: (await import("./src/__mocks__/Network.js")).default,
+  AccountSyncer: (await import("$lib/__mocks__/AccountSyncer")).default,
+  AddressSyncer: (await import("$lib/__mocks__/AddressSyncer")).default,
+  Network: (await import("$lib/__mocks__/Network")).default,
 }));
 
 // Removing the console logging created by the walletConnect library after each test file

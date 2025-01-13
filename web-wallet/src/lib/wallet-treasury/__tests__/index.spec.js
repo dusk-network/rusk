@@ -10,7 +10,7 @@ import {
 } from "vitest";
 import { mapWith, pluckFrom } from "lamb";
 
-import mockedWalletStore from "../../../__mocks__/mockedWalletStore";
+import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
 
 import { cachePendingNotesInfo } from "$lib/mock-data";
 import {
