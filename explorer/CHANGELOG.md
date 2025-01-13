@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove version number from app title [#3338]
+
 ### Fixed
 
 ## [1.0.1] - 2025-01-07
@@ -137,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3218]: https://github.com/dusk-network/rusk/issues/3218
 [#3249]: https://github.com/dusk-network/rusk/issues/3249
 [#3315]: https://github.com/dusk-network/rusk/pull/3315
+[#3338]: https://github.com/dusk-network/rusk/issues/3338
 
 <!-- VERSIONS -->
 
