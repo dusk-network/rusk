@@ -19,6 +19,12 @@ type WalletCacheBalanceInfo = {
   };
 };
 
+type WalletCacheCriteria =
+  | { field: "address"; values: string[] }
+  | { field: "account"; values: string[] }
+  | { field: "nullifier"; values: Uint8Array[] }
+  | undefined;
+
 type WalletCacheNote = {
   address: string;
   note: Uint8Array;
