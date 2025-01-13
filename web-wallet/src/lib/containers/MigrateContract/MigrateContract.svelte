@@ -7,7 +7,7 @@
     mdiCheckDecagramOutline,
     mdiWalletOutline,
   } from "@mdi/js";
-  import { getAccount, switchChain } from "@wagmi/core";
+  import { switchChain } from "@wagmi/core";
   import { formatUnits, parseUnits } from "viem";
   import { onMount } from "svelte";
   import { tokens } from "./tokenConfig";
@@ -45,6 +45,7 @@
   export let migrationNetwork;
 
   const { darkMode } = $settingsStore;
+  $: ({ isConnected, address } = $account);
 
   /**
    * We force the type here, because the Migrate Contract
@@ -58,8 +59,16 @@
   const { ["ERC-20"]: erc20, ["BEP-20"]: bep20 } = tokens[network];
 
   $: options = [
-    { disabled: isInputDisabled, label: "ERC-20", value: "ERC-20" },
-    { disabled: isInputDisabled, label: "BEP-20", value: "BEP-20" },
+    {
+      disabled: isInputDisabled,
+      label: "ERC-20",
+      value: "ERC-20",
+    },
+    {
+      disabled: isInputDisabled,
+      label: "BEP-20",
+      value: "BEP-20",
+    },
   ];
 
   // The minimum allowed amount to be migrated expressed as a string
@@ -95,12 +104,6 @@
   $: ({ currentProfile } = $walletStore);
   $: moonlightAccount = currentProfile?.account.toString();
 
-  $: walletState = {
-    address: $account?.address,
-    chainId: $account?.chainId,
-    isConnected: $account?.isConnected,
-  };
-
   $: isAmountValid = (() => {
     if (!amount) {
       return false;
@@ -126,21 +129,24 @@
    */
   async function handleSwitchChain(id) {
     try {
-      await switchChain(wagmiConfig, { chainId: id });
-      connectedWalletBalance = await getBalance();
+      if (isConnected) {
+        await switchChain(wagmiConfig, { chainId: id });
+        connectedWalletBalance = await getBalance();
+      }
     } catch (err) {
       selectedChain =
-        walletState.chainId === erc20.chainId ? erc20.name : bep20.name;
+        $account.chainId === erc20.chainId ? erc20.name : bep20.name;
     }
   }
 
   /** Emits the switchChain event to the third-party wallet when the ExclusiveChoice UI is interacted with  */
   // @ts-ignore
   async function onChainSwitch(e) {
-    if (!walletState.isConnected) {
+    if (!isConnected) {
       return;
     }
     amount = "";
+    connectedWalletBalance = undefined;
     const chainIdToSwitchTo =
       e.target?.value === bep20.name ? bep20.chainId : erc20.chainId;
     await handleSwitchChain(chainIdToSwitchTo);
@@ -153,19 +159,16 @@
   async function switchToSelectedChain() {
     const currentChainId =
       selectedChain === erc20.name ? erc20.chainId : bep20.chainId;
-    if (walletState.chainId !== currentChainId) {
-      await handleSwitchChain(currentChainId);
-    }
+    await handleSwitchChain(currentChainId);
   }
 
   async function getBalance() {
     try {
-      const walletAccount = getAccount(wagmiConfig);
-      if (!walletAccount.address) {
+      if (!address) {
         throw new Error("Wallet not connected.");
       }
       return await getBalanceOfCoin(
-        walletAccount.address,
+        address,
         tokens[network][selectedChain].tokenContract
       );
     } catch (err) {
@@ -191,31 +194,37 @@
       screenWidth = entry.contentRect.width;
     });
 
-    const init = async () => {
-      if (walletState?.isConnected) {
-        await walletDisconnect();
-      }
+    resizeObserver.observe(document.body);
 
-      const handleModalEvents = async (
-        /** @type {{ data: { event: string; }; }} */ e
-      ) => {
-        if (e.data.event === "CONNECT_SUCCESS") {
-          connectedWalletBalance = undefined;
-          await switchToSelectedChain();
-          connectedWalletBalance = await getBalance();
-        }
-      };
+    modal.subscribeEvents(handleModalEvents);
 
-      resizeObserver.observe(document.body);
-      modal.subscribeEvents(handleModalEvents);
-    };
+    // Workaround for when the user navigates back to the page
+    // Just in case if beforeunload doesn't get triggered
+    if ($account.isConnecting) {
+      walletDisconnect();
+    }
 
-    init();
+    // Workaround for when the user navigates
+    // back to the page from the dashboard
+    if ($account.isConnected) {
+      switchToSelectedChain();
+    }
 
     return () => {
       resizeObserver.disconnect();
     };
   });
+
+  /**
+   * Handles modal state changes.
+   * @param {import('@reown/appkit').EventsControllerState} newEvent
+   */
+  const handleModalEvents = async (newEvent) => {
+    // Check if the newState contains an event that matches "CONNECT_SUCCESS"
+    if (newEvent.data.event === "CONNECT_SUCCESS") {
+      await switchToSelectedChain();
+    }
+  };
 </script>
 
 <article class="migrate">
@@ -248,13 +257,10 @@
       bind:value={selectedChain}
       on:change={onChainSwitch}
     />
-    {#if walletState.isConnected && walletState.address}
+    {#if isConnected && address}
       <p class="migrate__token-header">Connected Wallet:</p>
       <p class="migrate__token-address">
-        {middleEllipsis(
-          walletState.address,
-          calculateAdaptiveCharCount(screenWidth)
-        )}
+        {middleEllipsis(address, calculateAdaptiveCharCount(screenWidth))}
       </p>
       <span class="migrate__token-balance">
         Balance:
@@ -272,7 +278,7 @@
     {/if}
   </div>
 
-  {#if walletState.isConnected && walletState.address && connectedWalletBalance && connectedWalletBalance > 0n}
+  {#if isConnected && address && connectedWalletBalance && connectedWalletBalance > 0n}
     <div class="migrate__amount">
       <div class="migrate__amount-header">
         <div class="migrate__amount-token">
@@ -318,7 +324,7 @@
     </div>
   {/if}
 
-  {#if walletState.isConnected && isAmountValid && isMigrationInitialized}
+  {#if isConnected && isAmountValid && isMigrationInitialized}
     <div class="migrate__wizard">
       <Stepper {steps} activeStep={migrationStep} />
       {#if migrationStep === 0}
@@ -359,7 +365,7 @@
     </div>
   {/if}
 
-  {#if !walletState.isConnected}
+  {#if !isConnected}
     <Button
       icon={{ path: mdiWalletOutline }}
       text={`CONNECT TO ${selectedChain === tokens[network]["ERC-20"].name ? "ETHEREUM" : "BSC"}`}
@@ -369,7 +375,7 @@
     <Banner variant="warning" title="No DUSK available">
       <p>The connected wallet has no DUSK tokens available.</p>
     </Banner>
-  {:else if !isMigrationInitialized && walletState.address}
+  {:else if !isMigrationInitialized && address}
     <Button
       text="INITIALIZE MIGRATION"
       on:click={() => {
@@ -380,11 +386,11 @@
   {/if}
 </article>
 
-{#if walletState.isConnected}
+{#if isConnected}
   <Button
-    text="Disconnect Wallet"
-    on:click={async () => {
-      await walletDisconnect();
+    text="Manage Wallet"
+    on:click={() => {
+      modal.open();
     }}
     variant="tertiary"
   />

@@ -2,7 +2,13 @@ import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 // eslint-disable-next-line import/no-unresolved
 import { bsc, mainnet, sepolia } from "@reown/appkit/networks";
-import { disconnect, getAccount, getBalance, watchAccount } from "@wagmi/core";
+import {
+  disconnect,
+  getAccount,
+  getBalance,
+  reconnect,
+  watchAccount,
+} from "@wagmi/core";
 import { readable } from "svelte/store";
 
 /**
@@ -36,6 +42,8 @@ const wagmiAdapter = new WagmiAdapter({
 
 export const wagmiConfig = wagmiAdapter.wagmiConfig;
 
+reconnect(wagmiConfig);
+
 // Create the Reown App Kit modal
 export const modal = createAppKit({
   adapters: [wagmiAdapter],
@@ -49,17 +57,9 @@ export const modal = createAppKit({
   themeMode: "dark",
 });
 
-// Svelte store to track the current account, and update if a new account is set
-// Note that this can change at will by the user outside
-// of the app itself
-export const account = readable(getAccount(wagmiConfig), (set) => {
-  set(getAccount(wagmiConfig));
-  return watchAccount(wagmiConfig, {
-    onChange(newAccount) {
-      set(newAccount);
-    },
-  });
-});
+export const account = readable(getAccount(wagmiConfig), (set) =>
+  watchAccount(wagmiConfig, { onChange: set })
+);
 
 /** @param {`0x${string}`} address */
 export const accountBalance = (address) =>
@@ -69,6 +69,8 @@ export const accountBalance = (address) =>
   });
 
 export async function walletDisconnect() {
-  await disconnect(wagmiConfig);
+  disconnect(wagmiConfig);
   await modal?.disconnect();
 }
+
+window.addEventListener("beforeunload", walletDisconnect);

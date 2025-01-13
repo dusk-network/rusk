@@ -12,10 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update Transactions list design [#1922]
+- Ensure connected wallet is disconnected when closing the app [#3269]
 
 ### Removed
 
 ### Fixed
+
+- Fix Migration UI sometimes stuck while loading balance [#3269]
+- Fix Reown modal's disconnect failing to disconnect [#3269]
 
 ## [1.1.0] - 2025-01-09
 
@@ -510,6 +514,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3259]: https://github.com/dusk-network/rusk/issues/3259
 [#3265]: https://github.com/dusk-network/rusk/issues/3265
 [#3267]: https://github.com/dusk-network/rusk/issues/3267
+[#3270]: https://github.com/dusk-network/rusk/issues/3269
 [#3270]: https://github.com/dusk-network/rusk/issues/3270
 [#3287]: https://github.com/dusk-network/rusk/issues/3287
 [#3333]: https://github.com/dusk-network/rusk/issues/3333
