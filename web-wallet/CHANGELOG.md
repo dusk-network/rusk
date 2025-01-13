@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove version number from app title [#3339]
+
 ### Fixed
 
 - Fix Migration UI sometimes stuck while loading balance [#3269]
@@ -518,6 +520,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3270]: https://github.com/dusk-network/rusk/issues/3270
 [#3287]: https://github.com/dusk-network/rusk/issues/3287
 [#3333]: https://github.com/dusk-network/rusk/issues/3333
+[#3339]: https://github.com/dusk-network/rusk/issues/3339
 
 <!-- VERSIONS -->
 
