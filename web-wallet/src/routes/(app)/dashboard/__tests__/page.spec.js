@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup } from "@testing-library/svelte";
 import { renderWithSimpleContent } from "$lib/dusk/test-helpers";
-import mockedWalletStore from "../../../../__mocks__/mockedWalletStore";
+import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
 import { stakeInfo, transactions } from "$lib/mock-data";
 
 import Dashboard from "../+page.svelte";
