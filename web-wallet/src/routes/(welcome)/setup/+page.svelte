@@ -30,8 +30,8 @@
       </div>
       <Animation />
       <AppAnchorButton
-        href="/login"
-        text="Access wallet"
+        href="/unlock"
+        text="Unlock Wallet"
         icon={{ path: mdiKeyOutline }}
       />
     </div>

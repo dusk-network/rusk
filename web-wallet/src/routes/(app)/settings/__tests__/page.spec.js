@@ -123,10 +123,10 @@ describe("Settings", () => {
     expect(backButton).toHaveAttribute("aria-disabled", "false");
   });
 
-  it("should reset wallet store and navigate to login page on clicking the Log Out button", async () => {
+  it("should reset wallet store and navigate to landing page on clicking the Lock Wallet button", async () => {
     const { getByRole } = render(Settings);
 
-    const button = getByRole("button", { name: "Log out" });
+    const button = getByRole("button", { name: "Lock Wallet" });
 
     await fireEvent.click(button);
     await vi.advanceTimersToNextTimerAsync();

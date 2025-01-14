@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update Transactions list design [#1922]
 - Ensure connected wallet is disconnected when closing the app [#3269]
+- Update Wallet Access terminology [#3356]
 
 ### Removed
 
@@ -516,11 +517,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3259]: https://github.com/dusk-network/rusk/issues/3259
 [#3265]: https://github.com/dusk-network/rusk/issues/3265
 [#3267]: https://github.com/dusk-network/rusk/issues/3267
-[#3270]: https://github.com/dusk-network/rusk/issues/3269
+[#3269]: https://github.com/dusk-network/rusk/issues/3269
 [#3270]: https://github.com/dusk-network/rusk/issues/3270
 [#3287]: https://github.com/dusk-network/rusk/issues/3287
 [#3333]: https://github.com/dusk-network/rusk/issues/3333
 [#3339]: https://github.com/dusk-network/rusk/issues/3339
+[#3356]: https://github.com/dusk-network/rusk/issues/3356
 
 <!-- VERSIONS -->
 
