@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2025-01-14
+
 ### Added
 
 - Add vm to interact with Dusk network [#3235]
 
 [#3235]: https://github.com/dusk-network/rusk/issues/3235
 
-<!-- [Unreleased]: https://github.com/dusk-network/dusk-abi/compare/dusk-vm-0.1.0...HEAD -->
-<!-- [0.1.0]: https://github.com/dusk-network/dusk-abi/releases/tag/dusk-vm-0.1.0 -->
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-vm-0.1.0...HEAD
+[0.1.0]: https://github.com/dusk-network/rusk/tree/dusk-vm-0.1.0
