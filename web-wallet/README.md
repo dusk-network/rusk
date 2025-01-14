@@ -33,7 +33,6 @@ N.B. the current `0.1.2` version of the library has no option to pick the networ
 ```
 # can be empty string, must start with a slash otherwise, must not end with a slash
 VITE_BASE_PATH=""
-VITE_FEATURE_ALLOCATE=true
 VITE_FEATURE_MIGRATE=true
 VITE_FEATURE_STAKE=true
 VITE_FEATURE_TRANSFER=true

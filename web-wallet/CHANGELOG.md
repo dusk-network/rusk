@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove version number from app title [#3339]
+- Remove "VITE_FEATURE_ALLOCATE" flag [#3247]
 
 ### Fixed
 
@@ -513,6 +514,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3226]: https://github.com/dusk-network/rusk/issues/3226
 [#3238]: https://github.com/dusk-network/rusk/issues/3238
 [#3245]: https://github.com/dusk-network/rusk/issues/3245
+[#3247]: https://github.com/dusk-network/rusk/issues/3247
 [#3259]: https://github.com/dusk-network/rusk/issues/3259
 [#3265]: https://github.com/dusk-network/rusk/issues/3265
 [#3267]: https://github.com/dusk-network/rusk/issues/3267
