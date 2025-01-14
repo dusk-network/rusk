@@ -40,7 +40,8 @@ describe("Unlock Wallet", async () => {
   const loginInfo = await encryptMnemonic(mnemonic, pwd);
   const seed = getSeedFromMnemonic(mnemonic);
   const userId = await profileGeneratorFrom(seed)
-    .default.then(getKey("address"))
+    .then(getKey("default"))
+    .then(getKey("address"))
     .then(String);
 
   const getErrorElement = () => document.querySelector(".banner--error");

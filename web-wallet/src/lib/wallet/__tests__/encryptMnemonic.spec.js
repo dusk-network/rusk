@@ -15,6 +15,9 @@ describe("encryptMnemonic", () => {
       iv: expect.any(Uint8Array),
       salt: expect.any(Uint8Array),
     });
+    expect(result.data.toString()).not.toBe(
+      new TextEncoder().encode(mnemonic).toString()
+    );
     expect(result.iv.length).toBe(12);
     expect(result.salt.length).toBe(32);
   });

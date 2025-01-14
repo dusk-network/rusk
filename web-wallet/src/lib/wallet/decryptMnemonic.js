@@ -1,20 +1,11 @@
-import getDerivedKey from "./getDerivedKey";
+import decryptBuffer from "./decryptBuffer";
 
 /**
- * @param {MnemonicEncryptInfo} mnemonicEncryptInfo
- * @param {String} pwd
- * @returns {Promise<String>}
+ * @param {WalletEncryptInfo} encryptInfo
+ * @param {string} pwd
+ * @returns {Promise<string>}
  */
-async function decryptMnemonic(mnemonicEncryptInfo, pwd) {
-  const { data, iv, salt } = mnemonicEncryptInfo;
-  const key = await getDerivedKey(pwd, salt);
-  const plaintext = await crypto.subtle.decrypt(
-    { iv, name: "AES-GCM" },
-    key,
-    data
-  );
-
-  return new TextDecoder().decode(plaintext);
-}
+const decryptMnemonic = async (encryptInfo, pwd) =>
+  new TextDecoder().decode(await decryptBuffer(encryptInfo, pwd));
 
 export default decryptMnemonic;

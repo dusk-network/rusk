@@ -29,13 +29,16 @@ describe("profileGeneratorFrom", () => {
     const mnemonic =
       "cart dad sail wreck robot grit combine noble rap farm slide sad";
     const seed = getSeedFromMnemonic(mnemonic);
+    const seedCopy = seed.slice();
 
-    profileGeneratorFrom(seed);
+    await profileGeneratorFrom(seed);
 
-    const seederResult = ProfileGeneratorMock.mock.calls[0][0]();
+    const seederResult = await ProfileGeneratorMock.mock.calls[0][0]();
 
     expect(ProfileGeneratorMock).toHaveBeenCalledTimes(1);
-    expect(seederResult).toBeInstanceOf(Promise);
-    await expect(seederResult).resolves.toBe(seed);
+    expect(seederResult.toString()).toBe(seed.toString());
+
+    // ensures that the function doesn't mutate the seed
+    expect(seed.toString()).toBe(seedCopy.toString());
   });
 });

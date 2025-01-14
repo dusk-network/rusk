@@ -5,12 +5,14 @@ import profileGeneratorFrom from "./profileGeneratorFrom";
 
 /**
  * @param {string} mnemonic
- * @param {bigint | undefined} syncFrom
+ * @param {bigint} [syncFrom]
  */
-async function initializeWallet(mnemonic, syncFrom = undefined) {
+async function initializeWallet(mnemonic, syncFrom) {
   settingsStore.reset();
 
-  const profileGenerator = profileGeneratorFrom(getSeedFromMnemonic(mnemonic));
+  const profileGenerator = await profileGeneratorFrom(
+    getSeedFromMnemonic(mnemonic)
+  );
 
   walletStore.clearLocalDataAndInit(profileGenerator, syncFrom);
 }
