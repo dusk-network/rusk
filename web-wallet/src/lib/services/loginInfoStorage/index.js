@@ -10,7 +10,7 @@ const fromStorageString = unless(
 const toStorageString = compose(JSON.stringify, mapValuesWith(bytesToBase64));
 
 const loginInfoStorage = {
-  /** @returns {MnemonicEncryptInfo | null} */
+  /** @returns {WalletEncryptInfo | null} */
   get() {
     return fromStorageString(localStorage.getItem(storeKey));
   },
@@ -19,7 +19,7 @@ const loginInfoStorage = {
     localStorage.removeItem(storeKey);
   },
 
-  /** @param {MnemonicEncryptInfo} info */
+  /** @param {WalletEncryptInfo} info */
   set(info) {
     localStorage.setItem(storeKey, toStorageString(info));
   },

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add ephemeral encryption to secure the seed while in memory [#3354]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -522,6 +524,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3287]: https://github.com/dusk-network/rusk/issues/3287
 [#3333]: https://github.com/dusk-network/rusk/issues/3333
 [#3339]: https://github.com/dusk-network/rusk/issues/3339
+[#3354]: https://github.com/dusk-network/rusk/issues/3354
 [#3356]: https://github.com/dusk-network/rusk/issues/3356
 
 <!-- VERSIONS -->

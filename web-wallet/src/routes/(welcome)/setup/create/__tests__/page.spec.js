@@ -49,7 +49,8 @@ describe("Create", async () => {
   const seed = walletLib.getSeedFromMnemonic(mnemonic);
   const userId = await walletLib
     .profileGeneratorFrom(seed)
-    .default.then(getKey("address"))
+    .then(getKey("default"))
+    .then(getKey("address"))
     .then(String);
 
   const blockHeightSpy = vi
@@ -68,7 +69,7 @@ describe("Create", async () => {
     .mockResolvedValue(undefined);
   const initWalletSpy = vi.spyOn(walletLib, "initializeWallet");
 
-  afterEach(async () => {
+  afterEach(() => {
     cleanup();
     settingsStore.reset();
     blockHeightSpy.mockClear();
@@ -299,8 +300,6 @@ describe("Create", async () => {
       await fireEvent.click(getByRole("button", { name: word }));
     });
 
-    await tick();
-
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
@@ -310,8 +309,6 @@ describe("Create", async () => {
   });
 
   it("ensures the All Done step renders as expected", async () => {
-    vi.useFakeTimers();
-
     const { container, getByRole, getAllByRole } = render(Create);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
@@ -328,8 +325,6 @@ describe("Create", async () => {
       await fireEvent.click(getByRole("button", { name: word }));
     });
 
-    await tick();
-
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
@@ -337,21 +332,14 @@ describe("Create", async () => {
     expect(container.firstChild).toMatchSnapshot();
 
     /*
-     * We wait for the sync promise to complete, because it
-     * sets the `userId` in the settingsStore.
-     * Without waiting for it, the setting of the `userId`
-     * happens after the `settingsStore.reset()` call in the
-     * `afterEach` hook and leaves the store "dirty" for
-     * subsequent tests.
+     * We wait for the `clearLocalDataAndInit` call inside `initializeWallet`
+     * as the promise is not awaited and can happen after the test ends
+     * invalidating the checks of other tests.
      */
-    await vi.runOnlyPendingTimersAsync();
-
-    vi.useRealTimers();
+    await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
   });
 
   it("should initialize the wallet without setting a password", async () => {
-    vi.useFakeTimers();
-
     const { getByRole, getAllByRole } = render(Create);
 
     // ToS step
@@ -373,8 +361,6 @@ describe("Create", async () => {
       await fireEvent.click(getByRole("button", { name: word }));
     });
 
-    await tick();
-
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
     // Set Password step
@@ -387,33 +373,25 @@ describe("Create", async () => {
     // Network Syncing step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
-    // All Done step
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-
-    await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
-
     expect(settingsResetSpy).toHaveBeenCalledTimes(1);
     expect(initWalletSpy).toHaveBeenCalledTimes(1);
     expect(initWalletSpy).toHaveBeenCalledWith(mnemonic);
+
+    await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
+
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
     expect(clearAndInitSpy).toHaveBeenCalledWith(
       expect.any(ProfileGenerator),
       undefined
     );
+
+    // All Done step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
+
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
-
-    /*
-     * We wait for the sync promise to complete, because it
-     * sets the `userId` in the settingsStore.
-     * Without waiting for it, the setting of the `userId`
-     * happens after the `settingsStore.reset()` call in the
-     * `afterEach` hook and leaves the store "dirty" for
-     * subsequent tests.
-     */
-    await vi.runOnlyPendingTimersAsync();
-
-    vi.useRealTimers();
   });
 
   it("should initialize the wallet encrypted mnemonic saved in localStorage", async () => {
@@ -438,8 +416,6 @@ describe("Create", async () => {
       await fireEvent.click(getByRole("button", { name: word }));
     });
 
-    await tick();
-
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
     // Set Password step
@@ -449,6 +425,7 @@ describe("Create", async () => {
     await fireInput(asInput(getByPlaceholderText("Confirm Password")), pwd);
 
     expect(loginInfoStorage.get()).toBeNull();
+
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await vi.waitFor(() => {
       expect(loginInfoStorage.get()).not.toBeNull();
@@ -457,19 +434,23 @@ describe("Create", async () => {
     // Network Syncing step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
-    // All Done step
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-
-    await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
-
     expect(settingsResetSpy).toHaveBeenCalledTimes(1);
     expect(initWalletSpy).toHaveBeenCalledTimes(1);
     expect(initWalletSpy).toHaveBeenCalledWith(mnemonic);
+
+    await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
+
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
     expect(clearAndInitSpy).toHaveBeenCalledWith(
       expect.any(ProfileGenerator),
       undefined
     );
+
+    // All Done step
+    await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
+
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });
