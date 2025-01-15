@@ -218,7 +218,11 @@
     icon={{ path: mdiArrowLeft }}
     text="Back"
   />
-  <Button on:click={() => logout(false)} variant="tertiary" text="Log out" />
+  <Button
+    on:click={() => logout(false)}
+    variant="tertiary"
+    text="Lock Wallet"
+  />
 </div>
 
 <style lang="postcss">

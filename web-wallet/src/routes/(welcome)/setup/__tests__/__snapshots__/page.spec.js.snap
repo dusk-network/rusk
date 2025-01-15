@@ -118,7 +118,7 @@ exports[`Setup > should render the Setup page 1`] = `
       <a
         aria-disabled="false"
         class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default dusk-icon-button--labeled"
-        href="/some-base-path/login"
+        href="/some-base-path/unlock"
       >
         <svg
           class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
@@ -134,7 +134,7 @@ exports[`Setup > should render the Setup page 1`] = `
         <span
           class="dusk-anchor-button__text"
         >
-          Access wallet
+          Unlock Wallet
         </span>
         
         
