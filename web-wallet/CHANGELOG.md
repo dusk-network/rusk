@@ -9,11 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+- Update Transactions list design [#1922]
+
+### Removed
+
+### Fixed
+
+## [1.2.0] - 2025-01-16
+
+### Added
+
 - Add ephemeral encryption to secure the seed while in memory [#3354]
 
 ### Changed
 
-- Update Transactions list design [#1922]
 - Ensure connected wallet is disconnected when closing the app [#3269]
 - Update Wallet Access terminology [#3356]
 
@@ -530,7 +541,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
-[1.1.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.0.1
+[1.2.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.2.0
+[1.1.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.1.0
 [1.0.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.0.0
 [0.10.1]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.10.1
 [0.10.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.10.0
