@@ -26,7 +26,6 @@ use dusk_core::transfer::{
 };
 use dusk_core::{BlsScalar, Dusk};
 use dusk_vm::{execute, CallReceipt, Error as VMError, Session, VM};
-use node::DUSK_CONSENSUS_KEY;
 use node_data::events::contract::{ContractEvent, ContractTxEvent};
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
@@ -40,7 +39,7 @@ use crate::bloom::Bloom;
 use crate::http::RuesEvent;
 use crate::node::{coinbase_value, Rusk, RuskTip};
 use crate::Error::InvalidCreditsCount;
-use crate::{Error, Result};
+use crate::{Error, Result, DUSK_CONSENSUS_KEY};
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]

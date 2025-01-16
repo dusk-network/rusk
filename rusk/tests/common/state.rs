@@ -8,8 +8,8 @@ use std::{path::Path, usize};
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
-use rusk::{Result, Rusk};
-use rusk_recovery_tools::state::{self, Snapshot, DUSK_CONSENSUS_KEY};
+use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
+use rusk_recovery_tools::state::{self, Snapshot};
 
 use dusk_consensus::{
     config::{RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS},
@@ -53,8 +53,9 @@ pub fn new_state_with_chainid<P: AsRef<Path>>(
 ) -> Result<Rusk> {
     let dir = dir.as_ref();
 
-    let (_, commit_id) = state::deploy(dir, snapshot, |_| {})
-        .expect("Deploying initial state should succeed");
+    let (_, commit_id) =
+        state::deploy(dir, snapshot, *DUSK_CONSENSUS_KEY, |_| {})
+            .expect("Deploying initial state should succeed");
 
     let (sender, _) = broadcast::channel(10);
 
