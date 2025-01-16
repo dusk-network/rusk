@@ -1,6 +1,6 @@
 [package]
 name = "dusk-node-data"
-version = "1.0.0"
+version = "1.0.1-dev"
 edition = "2021"
 
 description = "Types used for interacting with Dusk node."
