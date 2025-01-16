@@ -18,6 +18,7 @@
     Button,
     Icon,
     Stepper,
+    Switch,
     Textbox,
     Wizard,
     WizardStep,
@@ -32,7 +33,7 @@
   } from "$lib/components";
   import { MESSAGES } from "$lib/constants";
 
-  /** @type {(to: string, amount: bigint, gasPrice: bigint, gasLimit: bigint) => Promise<string>} */
+  /** @type {(to: string, amount: bigint, gasPrice: bigint, gasLimit: bigint, memo: any) => Promise<string>} */
   export let execute;
 
   /** @type {(amount: number) => string} */
@@ -59,11 +60,17 @@
   /** @type {string} */
   let sendToAddress = "";
 
+  /** @type {string} */
+  let memo = "";
+
   /** @type {import("qr-scanner").default} */
   let scanner;
 
   /** @type {import("..").ScanQR} */
   let scanQrComponent;
+
+  /** @type {boolean} */
+  let showMemo = false;
 
   /** @type {boolean} */
   let isNextButtonDisabled = false;
@@ -176,7 +183,7 @@
     >
       <div in:fade|global class="operation__send">
         <div class="operation__address-wrapper">
-          <p>Address:</p>
+          <p>Address</p>
           <Button
             disabled={!scanner}
             size="small"
@@ -188,7 +195,7 @@
         </div>
         <Textbox
           required
-          className={`operation__send-address ${!addressInfo.isValid ? "operation__send-address--invalid" : ""}`}
+          className={`operation__send-address ${sendToAddress && !addressInfo.isValid ? "operation__send-address--invalid" : ""}`}
           type="multiline"
           bind:value={sendToAddress}
         />
@@ -221,6 +228,23 @@
             </p>
           </Banner>
         {/if}
+        <div class="operation__address-wrapper">
+          <p>Memo</p>
+          <Switch
+            bind:showMemo
+            on:change={() => {
+              showMemo = !showMemo;
+            }}
+          />
+        </div>
+        {#if showMemo}
+          <Textbox
+            required
+            className="operation__send-address"
+            type="multiline"
+            bind:value={memo}
+          />
+        {/if}
       </div>
     </WizardStep>
     <!-- Amount Step -->
@@ -237,7 +261,7 @@
     >
       <div in:fade|global class="operation__send">
         <div class="operation__amount-wrapper">
-          <p>Amount:</p>
+          <p>Amount</p>
           <Button
             size="small"
             variant="tertiary"
@@ -325,7 +349,7 @@
         <dl class="operation__review-transaction">
           <dt class="review-transaction__label">
             <Icon path={mdiArrowUpBoldBoxOutline} />
-            <span>Amount:</span>
+            <span>Amount</span>
           </dt>
           <dd class="review-transaction__value operation__review-amount">
             <span>{formatter(sendAmount)}</span>
@@ -341,7 +365,7 @@
         <dl class="operation__review-transaction">
           <dt class="review-transaction__label">
             <Icon path={mdiWalletOutline} />
-            <span>To:</span>
+            <span>To</span>
           </dt>
           <dd class="operation__review-address">
             <span>{sendToAddress}</span>
@@ -355,7 +379,13 @@
     <WizardStep step={3} {key} showNavigation={false}>
       <OperationResult
         errorMessage="Transaction failed"
-        operation={execute(sendToAddress, sendAmountInLux, gasPrice, gasLimit)}
+        operation={execute(
+          sendToAddress,
+          sendAmountInLux,
+          gasPrice,
+          gasLimit,
+          memo
+        )}
         pendingMessage="Processing transaction"
         successMessage="Transaction created"
       >
