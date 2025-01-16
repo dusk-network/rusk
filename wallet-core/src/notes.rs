@@ -12,6 +12,9 @@ pub mod balance;
 pub mod owned;
 /// Module for picking notes.
 pub mod pick;
+/// Module for testing notes.
+#[cfg(test)]
+mod tests;
 
 /// The maximum amount of input notes that can be spend in one
 /// phoenix-transaction

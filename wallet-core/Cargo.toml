@@ -23,6 +23,7 @@ dlmalloc = { workspace = true, features = ["global"] }
 
 [dev-dependencies]
 rand = { workspace = true, features = ["std_rng"] }
+proptest = { workspace = true }
 
 [features]
 debug = []
