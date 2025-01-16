@@ -21,6 +21,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use dusk_consensus::config::is_emergency_block;
 use dusk_consensus::errors::ConsensusError;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 pub use header_validation::verify_att;
 use node_data::events::Event;
 use node_data::ledger::{to_str, BlockWithLabel, Label};
@@ -57,6 +58,7 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Sender channel for sending out RUES events
     event_sender: Sender<Event>,
     genesis_timestamp: u64,
+    dusk_key: BlsPublicKey,
 }
 
 #[async_trait]
@@ -89,6 +91,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             vm,
             self.max_consensus_queue_size,
             self.event_sender.clone(),
+            self.dusk_key,
         )
         .await?;
 
@@ -247,6 +250,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         max_inbound_size: usize,
         event_sender: Sender<Event>,
         genesis_timestamp: u64,
+        dusk_key: BlsPublicKey,
     ) -> Self {
         info!(
             "ChainSrv::new with keys_path: {}, max_inbound_size: {}",
@@ -260,6 +264,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             max_consensus_queue_size: max_inbound_size,
             event_sender,
             genesis_timestamp,
+            dusk_key,
         }
     }
 
