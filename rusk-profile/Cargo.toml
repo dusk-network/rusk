@@ -1,8 +1,12 @@
 [package]
 name = "rusk-profile"
-version = "0.6.0"
+version = "1.0.0"
 edition = "2021"
 autobins = false
+
+repository = "https://github.com/dusk-network/rusk"
+description = "Utility crate to handle Rusk profile directories"
+license = "MPL-2.0"
 
 [dependencies]
 dirs = { workspace = true }
