@@ -33,13 +33,16 @@ resolver = "2"
 [workspace.dependencies]
 # Workspace internal dependencies
 dusk-consensus = { version = "0.1.1-rc.3", path = "./consensus/" }
-dusk-core = { version = "0.1.0", path = "./core/" }
-dusk-vm = { version = "0.1.0", path = "./vm/" }
+dusk-core = "0.1.0"
+#dusk-core = { version = "0.1.0", path = "./core/" }
+dusk-vm = "0.1.0"
+# dusk-vm = { version = "0.1.0", path = "./vm/" }
 node = { version = "0.1.0", path = "./node/" }
 node-data = { version = "0.1.0", path = "./node-data/" }
 rusk-profile = "1.0.0"
 #rusk-profile = { version = "1.0.1-dev", path = "./rusk-profile/" }
-rusk-prover = { version = "0.5.0", path = "./rusk-prover/" }
+rusk-prover = "1.0.0"
+# rusk-prover = { version = "1.0.1-dec", path = "./rusk-prover/" }
 rusk-recovery = { version = "0.6.0", path = "./rusk-recovery/" }
 wallet-core = { version = "0.1.0", path = "./wallet-core/" }
 
