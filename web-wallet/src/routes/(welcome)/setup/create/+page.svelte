@@ -19,6 +19,9 @@
   import PasswordSetup from "../PasswordSetup.svelte";
   import { goto } from "$lib/navigation";
 
+  /** @type {import("./$types").PageData} */
+  export let data;
+
   /** @type {boolean} */
   let notice = false;
 
@@ -47,6 +50,7 @@
   let enteredMnemonicPhrase = [];
 
   const { userId } = $settingsStore;
+  const { currentBlockHeight } = data;
 
   $: if (showPasswordSetup) {
     password = showPasswordSetup ? password : "";
@@ -141,7 +145,7 @@
       }}
       nextButton={{
         action: async () => {
-          await initializeWallet(mnemonicPhrase.join(" "));
+          await initializeWallet(mnemonicPhrase.join(" "), currentBlockHeight);
           mnemonicPhrase = [];
         },
         disabled: false,
@@ -151,7 +155,7 @@
         Network<br />
         <mark>Syncing</mark>
       </h2>
-      <NetworkSync />
+      <NetworkSync {currentBlockHeight} />
     </WizardStep>
     <WizardStep
       step={5}
