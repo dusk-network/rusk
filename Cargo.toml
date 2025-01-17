@@ -32,7 +32,8 @@ resolver = "2"
 
 [workspace.dependencies]
 # Workspace internal dependencies
-dusk-consensus = { version = "0.1.1-rc.3", path = "./consensus/" }
+dusk-consensus = "1.0.0"
+# dusk-consensus = { version = "1.0.0", path = "./consensus/" }
 dusk-core = "0.1.0"
 #dusk-core = { version = "0.1.0", path = "./core/" }
 dusk-vm = "0.1.0"
