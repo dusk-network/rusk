@@ -43,17 +43,15 @@
   <TableBody>
     {#each data as provisioner (provisioner)}
       {@const [ownerType, ownerValue] = ownPairs(provisioner.owner)[0]}
-      {@const provisionerKey = middleEllipsis(
-        provisioner.key,
-        HASH_CHARS_LENGTH
-      )}
       <TableRow>
-        <TableCell>{provisionerKey}</TableCell>
+        <TableCell
+          >{middleEllipsis(provisioner.key, HASH_CHARS_LENGTH)}</TableCell
+        >
         <TableCell>
           <Badge
             data-tooltip-id="provisioners-tooltip"
             data-tooltip-text={ownerType === "Account"
-              ? provisionerKey
+              ? middleEllipsis(ownerValue, HASH_CHARS_LENGTH)
               : ownerValue}
             text={ownerType}
           />
