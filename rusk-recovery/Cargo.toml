@@ -1,9 +1,13 @@
 [package]
 name = "rusk-recovery"
-version = "0.6.0"
+version = "1.0.1"
 edition = "2021"
 autobins = false
 description = "Tool to restore Rusk to factory settings"
+repository = "https://github.com/dusk-network/rusk"
+categories = ["cryptography", "cryptography::cryptocurrencies"]
+keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
+license = "MPL-2.0"
 
 [lib]
 name = "rusk_recovery_tools"
