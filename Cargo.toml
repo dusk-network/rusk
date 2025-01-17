@@ -46,7 +46,7 @@ rusk-profile = "1.0.0"
 #rusk-profile = { version = "1.0.1-dev", path = "./rusk-profile/" }
 rusk-prover = "1.0.0"
 # rusk-prover = { version = "1.0.1-dec", path = "./rusk-prover/" }
-rusk-recovery = { version = "0.6.0", path = "./rusk-recovery/" }
+rusk-recovery = { version = "1.0.0", path = "./rusk-recovery/" }
 wallet-core = { version = "0.1.0", path = "./wallet-core/" }
 
 # Dusk dependencies outside the workspace
