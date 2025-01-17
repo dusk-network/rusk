@@ -17,11 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix wrong owner key shown in provisioners table [#3377]
+
 ## [1.0.1] - 2025-01-07
 
 ### Fixed
 
-- Fix Owner key (Provisioners page) [#3315]
+- Fix Owner key (Provisioners page) [#3305]
 
 ## [1.0.0] - 2024-12-22
 
@@ -138,8 +140,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3215]: https://github.com/dusk-network/rusk/issues/3215
 [#3218]: https://github.com/dusk-network/rusk/issues/3218
 [#3249]: https://github.com/dusk-network/rusk/issues/3249
-[#3315]: https://github.com/dusk-network/rusk/pull/3315
+[#3305]: https://github.com/dusk-network/rusk/issues/3305
 [#3338]: https://github.com/dusk-network/rusk/issues/3338
+[#3377]: https://github.com/dusk-network/rusk/issues/3377
 
 <!-- VERSIONS -->
 
