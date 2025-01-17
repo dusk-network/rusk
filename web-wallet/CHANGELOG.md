@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Store the wallet creation block height and show it in settings [#3381]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -540,6 +542,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3354]: https://github.com/dusk-network/rusk/issues/3354
 [#3356]: https://github.com/dusk-network/rusk/issues/3356
 [#3362]: https://github.com/dusk-network/rusk/issues/3362
+[#3381]: https://github.com/dusk-network/rusk/issues/3381
 
 <!-- VERSIONS -->
 

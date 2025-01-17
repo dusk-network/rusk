@@ -6,6 +6,10 @@
   import { mdiAlertOutline, mdiContentCopy } from "@mdi/js";
   import { Button, Textbox } from "$lib/dusk/components";
   import { toast } from "$lib/dusk/components/Toast/store";
+  import { makeClassName } from "$lib/dusk/string";
+
+  /** @type {string | undefined} */
+  export let className = undefined;
 
   /** @type {string} */
   export let name;
@@ -35,9 +39,11 @@
         );
       });
   }
+
+  $: classes = makeClassName(["copy-field", className]);
 </script>
 
-<div class="copy-field">
+<div class={classes} {...$$restProps}>
   <Textbox
     className="copy-field__content"
     value={displayValue}
@@ -47,6 +53,8 @@
   <Button
     aria-label="Copy Address"
     className="copy-field__button"
+    data-tooltip-id="main-tooltip"
+    data-tooltip-text="Copy to clipboard"
     icon={{ path: mdiContentCopy }}
     on:click={copyToClipboard}
     variant="primary"

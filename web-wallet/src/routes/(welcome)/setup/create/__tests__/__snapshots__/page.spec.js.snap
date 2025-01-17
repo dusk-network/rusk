@@ -1787,6 +1787,8 @@ exports[`Create > ensures the Network Syncing step renders as expected 1`] = `
         <button
           aria-label="Copy Address"
           class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button copy-field__button"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Copy to clipboard"
           type="button"
         >
           <svg

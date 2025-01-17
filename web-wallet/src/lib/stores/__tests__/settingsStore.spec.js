@@ -106,6 +106,7 @@ describe("Settings store", () => {
         darkMode: false,
         gasLimit: `${settingsStoreContent.gasLimit}n`,
         gasPrice: `${settingsStoreContent.gasPrice}n`,
+        walletCreationBlockHeight: "0n",
       };
 
       expect(localStorageSettings).toStrictEqual(expectedSettings);
@@ -136,6 +137,7 @@ describe("Settings store", () => {
         hideStakingNotice: !settingsStoreContent.hideStakingNotice,
         language: "FAKE LANGUAGE",
         userId: "FAKE USER ID",
+        walletCreationBlockHeight: 123n,
       };
       const newState = {
         ...newStateWithoutGas,
@@ -163,6 +165,7 @@ describe("Settings store", () => {
         ...expectedState,
         gasLimit: `${expectedState.gasLimit}n`,
         gasPrice: `${expectedState.gasPrice}n`,
+        walletCreationBlockHeight: "123n",
       });
     });
   });

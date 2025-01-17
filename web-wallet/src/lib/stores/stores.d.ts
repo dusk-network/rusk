@@ -19,6 +19,7 @@ type SettingsStoreContent = {
   hideStakingNotice: boolean;
   language: string;
   userId: string;
+  walletCreationBlockHeight: bigint;
 };
 
 type SettingsStore = Writable<SettingsStoreContent> & {
