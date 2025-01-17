@@ -1,7 +1,11 @@
 [package]
-name = "node-data"
-version = "0.1.0"
+name = "dusk-node-data"
+version = "1.0.1-dev"
 edition = "2021"
+
+description = "Types used for interacting with Dusk node."
+license = "MPL-2.0"
+repository = "https://github.com/dusk-network/rusk"
 
 [dependencies]
 dusk-bytes = { workspace = true }
