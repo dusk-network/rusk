@@ -56,7 +56,8 @@ fn initial_state<P: AsRef<Path>>(
         toml::from_str(include_str!("../config/contract_deployment.toml"))
             .expect("Cannot deserialize config");
 
-    let (_vm, _commit_id) = state::deploy(dir, &snapshot, |session| {
+    let dusk_key = *rusk::DUSK_CONSENSUS_KEY;
+    let deploy = state::deploy(dir, &snapshot, dusk_key, |session| {
         let bob_bytecode = include_bytes!(
             "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
         );
@@ -73,6 +74,8 @@ fn initial_state<P: AsRef<Path>>(
             .expect("Deploying the bob contract should succeed");
     })
     .expect("Deploying initial state should succeed");
+
+    let (_vm, _commit_id) = deploy;
 
     let (sender, _) = broadcast::channel(10);
 

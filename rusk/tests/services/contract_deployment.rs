@@ -15,7 +15,7 @@ use dusk_core::transfer::data::{
 use dusk_vm::{gen_contract_id, ContractData, Error as VMError, VM};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::{Result, Rusk};
+use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
 use test_wallet::{self as wallet, Wallet};
@@ -59,7 +59,8 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
         toml::from_str(include_str!("../config/contract_deployment.toml"))
             .expect("Cannot deserialize config");
 
-    let (_vm, _commit_id) = state::deploy(dir, &snapshot, |session| {
+    let dusk_key = *DUSK_CONSENSUS_KEY;
+    let deploy = state::deploy(dir, &snapshot, dusk_key, |session| {
         let alice_bytecode = include_bytes!(
             "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
         );
@@ -96,6 +97,8 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
         }
     })
     .expect("Deploying initial state should succeed");
+
+    let (_vm, _commit_id) = deploy;
 
     let (sender, _) = broadcast::channel(10);
 

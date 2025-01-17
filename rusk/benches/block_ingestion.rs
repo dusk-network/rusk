@@ -23,7 +23,7 @@ use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
 use rusk::Rusk;
-use rusk_recovery_tools::state::DUSK_CONSENSUS_KEY;
+use rusk::DUSK_CONSENSUS_KEY;
 use tempfile::tempdir;
 
 use common::state::new_state;

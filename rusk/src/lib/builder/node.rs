@@ -238,6 +238,7 @@ impl RuskNodeBuilder {
             self.max_chain_queue_size,
             node_sender.clone(),
             self.genesis_timestamp,
+            *crate::DUSK_CONSENSUS_KEY,
         );
         if self.command_revert {
             chain_srv

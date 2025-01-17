@@ -53,12 +53,6 @@ pub static FAUCET_MOONLIGHT_KEY: Lazy<AccountPublicKey> = Lazy::new(|| {
         .expect("faucet should have a valid key")
 });
 
-pub static DUSK_CONSENSUS_KEY: Lazy<AccountPublicKey> = Lazy::new(|| {
-    let dusk_cpk_bytes = include_bytes!("../../rusk/src/assets/dusk.cpk");
-    AccountPublicKey::from_slice(dusk_cpk_bytes)
-        .expect("Dusk consensus public key to be valid")
-});
-
 fn generate_transfer_state(
     session: &mut Session,
     snapshot: &Snapshot,
@@ -170,6 +164,7 @@ fn generate_stake_state(
 fn generate_empty_state<P: AsRef<Path>>(
     state_dir: P,
     snapshot: &Snapshot,
+    dusk_key: AccountPublicKey,
 ) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
     let theme = Theme::default();
     info!("{} new network state", theme.action("Generating"));
@@ -187,11 +182,13 @@ fn generate_empty_state<P: AsRef<Path>>(
         "../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
+    let owner = snapshot.owner_or(dusk_key);
+
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
     session.deploy(
         transfer_code,
         ContractData::builder()
-            .owner(snapshot.owner())
+            .owner(owner)
             .contract_id(TRANSFER_CONTRACT),
         u64::MAX,
     )?;
@@ -200,7 +197,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     session.deploy(
         stake_code,
         ContractData::builder()
-            .owner(snapshot.owner())
+            .owner(owner)
             .contract_id(STAKE_CONTRACT),
         u64::MAX,
     )?;
@@ -209,10 +206,7 @@ fn generate_empty_state<P: AsRef<Path>>(
         .call::<_, ()>(
             STAKE_CONTRACT,
             "insert_stake",
-            &(
-                StakeKeys::single_key(*DUSK_CONSENSUS_KEY),
-                StakeData::default(),
-            ),
+            &(StakeKeys::single_key(dusk_key), StakeData::default()),
             u64::MAX,
         )
         .expect("stake to be inserted into the state");
@@ -245,6 +239,7 @@ fn generate_empty_state<P: AsRef<Path>>(
 pub fn deploy<P: AsRef<Path>, F>(
     state_dir: P,
     snapshot: &Snapshot,
+    dusk_key: AccountPublicKey,
     closure: F,
 ) -> Result<(VM, [u8; 32]), Box<dyn Error>>
 where
@@ -257,7 +252,7 @@ where
 
     let (vm, old_commit_id) = match snapshot.base_state() {
         Some(state) => load_state(state_dir, state),
-        None => generate_empty_state(state_dir, snapshot),
+        None => generate_empty_state(state_dir, snapshot, dusk_key),
     }?;
 
     let mut session =

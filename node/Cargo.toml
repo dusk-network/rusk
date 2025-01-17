@@ -26,7 +26,6 @@ dusk-bytes = { workspace = true }
 node-data = { workspace = true }
 dusk-core = { workspace = true }
 smallvec = { workspace = true }
-rusk-recovery = { workspace = true, features = ["state"] }
 
 serde = { workspace = true }
 humantime-serde = { workspace = true }

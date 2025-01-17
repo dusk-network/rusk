@@ -45,7 +45,7 @@ use crate::database::rocksdb::{
     MD_STATE_ROOT_KEY,
 };
 use crate::database::{self, ConsensusStorage, Ledger, Mempool, Metadata};
-use crate::{vm, Message, Network, DUSK_CONSENSUS_KEY};
+use crate::{vm, Message, Network};
 
 const CANDIDATES_DELETION_OFFSET: u64 = 10;
 
@@ -80,6 +80,8 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     pub(crate) network: Arc<RwLock<N>>,
     /// Sender channel for sending out RUES events
     event_sender: Sender<Event>,
+
+    dusk_key: bls::PublicKey,
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
@@ -181,6 +183,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         vm: Arc<RwLock<VM>>,
         max_queue_size: usize,
         event_sender: Sender<Event>,
+        dusk_key: bls::PublicKey,
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
         let tip_state_hash = tip.inner().header().state_hash;
@@ -204,6 +207,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 max_queue_size,
             )?),
             event_sender,
+            dusk_key,
         };
 
         // NB. After restart, state_root returned by VM is always the last
@@ -673,6 +677,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &prev_header,
             &provisioners_list,
             blk.header(),
+            &self.dusk_key,
         )
         .await?;
 
@@ -1349,6 +1354,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &prev_header,
             &provisioners_list,
             new,
+            &self.dusk_key,
         )
         .await?;
 
@@ -1371,12 +1377,13 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     prev_header: &ledger::Header,
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
+    dusk_key: &dusk_core::signatures::bls::PublicKey,
 ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
     // Set the expected generator to the one extracted by Deterministic
     // Sortition, or, in case of Emergency Block, to the Dusk Consensus Key
     let (expected_generator, check_att) =
         if is_emergency_block(header.iteration) {
-            let dusk_key = PublicKey::new(*DUSK_CONSENSUS_KEY);
+            let dusk_key = PublicKey::new(*dusk_key);
             let dusk_key_bytes = dusk_key.bytes();
 
             // We disable the Attestation check since it's not needed to accept

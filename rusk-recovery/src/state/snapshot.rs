@@ -12,8 +12,6 @@ use dusk_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
 use dusk_core::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::state;
-
 mod stake;
 pub use stake::GenesisStake;
 mod wrapper;
@@ -88,9 +86,12 @@ impl Snapshot {
     }
 
     /// Return the owner of the smart contract.
-    pub fn owner(&self) -> [u8; AccountPublicKey::SIZE] {
-        let dusk = Wrapper::from(*state::DUSK_CONSENSUS_KEY);
-        self.owner.as_ref().unwrap_or(&dusk).to_bytes()
+    pub fn owner_or(
+        &self,
+        default: AccountPublicKey,
+    ) -> [u8; AccountPublicKey::SIZE] {
+        let default = Wrapper::from(default);
+        self.owner.as_ref().unwrap_or(&default).to_bytes()
     }
 
     pub fn base_state(&self) -> Option<&str> {
