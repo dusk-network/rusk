@@ -41,6 +41,9 @@ lazy_static = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["full"], optional = true }
 
+[dev-dependencies]
+tempdir = { workspace = true }
+
 [features]
 state = [
     "dusk-core",

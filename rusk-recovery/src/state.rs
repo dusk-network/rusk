@@ -336,3 +336,38 @@ fn load_state<P: AsRef<Path>>(
 
     Ok((vm, commit))
 }
+
+#[cfg(test)]
+mod tests {
+
+    use std::error::Error;
+
+    use super::*;
+
+    pub(crate) fn mainnet_from_file() -> Result<Snapshot, Box<dyn Error>> {
+        let toml = include_str!("../config/mainnet.toml");
+        let snapshot = toml::from_str(toml)?;
+        Ok(snapshot)
+    }
+
+    fn dusk_mainnet_key() -> AccountPublicKey {
+        let bytes = include_bytes!("../../rusk/src/assets/dusk.cpk");
+        AccountPublicKey::from_slice(&bytes[..])
+            .expect("faucet should have a valid key")
+    }
+
+    #[test]
+    fn mainnet_genesis() -> Result<(), Box<dyn Error>> {
+        let mainnet = mainnet_from_file()?;
+        let tmp = tempdir::TempDir::new("genesis")
+            .expect("Should be able to create temporary directory");
+        let (_, root) =
+            deploy(tmp.path(), &mainnet, dusk_mainnet_key(), |_| {})?;
+        let root = hex::encode(root);
+        let mainnet_root =
+            "d90d03cf808252037ac2fdd8677868e1ac419caab09ec4cf0e87eafa86b8a612";
+        assert_eq!(root, mainnet_root);
+
+        Ok(())
+    }
+}
