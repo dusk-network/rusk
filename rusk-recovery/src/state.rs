@@ -8,16 +8,14 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
-use dusk_bytes::DeserializableSlice;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::stake::{StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT};
-use dusk_core::transfer::phoenix::{Note, PublicKey, Sender};
+use dusk_core::transfer::phoenix::{Note, Sender};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::JubJubScalar;
 use dusk_vm::{ContractData, Session, VM};
 use ff::Field;
-use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
@@ -39,19 +37,6 @@ pub const DEFAULT_SNAPSHOT: &str =
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 const GENESIS_CHAIN_ID: u8 = 0xFA;
-
-pub static FAUCET_PHOENIX_KEY: Lazy<PublicKey> = Lazy::new(|| {
-    let addr = include_str!("../assets/faucet.address");
-    let bytes = bs58::decode(addr).into_vec().expect("valid bs58");
-    PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
-});
-
-pub static FAUCET_MOONLIGHT_KEY: Lazy<AccountPublicKey> = Lazy::new(|| {
-    let addr = include_str!("../assets/faucet.moonlight.address");
-    let bytes = bs58::decode(addr).into_vec().expect("valid bs58");
-    AccountPublicKey::from_slice(&bytes)
-        .expect("faucet should have a valid key")
-});
 
 fn generate_transfer_state(
     session: &mut Session,
@@ -341,6 +326,8 @@ fn load_state<P: AsRef<Path>>(
 mod tests {
 
     use std::error::Error;
+
+    use dusk_bytes::DeserializableSlice;
 
     use super::*;
 
