@@ -174,13 +174,8 @@ fn generate_empty_state<P: AsRef<Path>>(
     let vm = VM::new(state_dir)?;
     let mut session = vm.genesis_session(GENESIS_CHAIN_ID);
 
-    let transfer_code = include_bytes!(
-        "../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
-    );
-
-    let stake_code = include_bytes!(
-        "../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
-    );
+    let transfer_code = include_bytes!("../assets/transfer_contract.wasm");
+    let stake_code = include_bytes!("../assets/stake_contract.wasm");
 
     let owner = snapshot.owner_or(dusk_key);
 
