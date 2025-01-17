@@ -1,6 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { tick } from "svelte";
+import { get } from "svelte/store";
 import * as SvelteKit from "@sveltejs/kit";
 import { getKey, setKey } from "lamb";
 import * as bip39 from "bip39";
@@ -416,6 +417,9 @@ describe("Create", async () => {
 
     await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
 
+    expect(get(settingsStore).walletCreationBlockHeight).toBe(
+      currentBlockHeight
+    );
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
     expect(clearAndInitSpy).toHaveBeenCalledWith(
       expect.any(ProfileGenerator),
@@ -480,6 +484,9 @@ describe("Create", async () => {
 
     await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
 
+    expect(get(settingsStore).walletCreationBlockHeight).toBe(
+      currentBlockHeight
+    );
     expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
     expect(clearAndInitSpy).toHaveBeenCalledWith(
       expect.any(ProfileGenerator),

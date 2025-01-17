@@ -29,6 +29,17 @@ describe("CopyField", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
+  it("should pass additional class names and attributes to the rendered element", () => {
+    const props = {
+      ...baseProps,
+      className: "foo bar",
+      id: "some-id",
+    };
+    const { container } = render(CopyField, { ...baseOptions, props });
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
+
   it("renders the CopyField component with the copy button disabled", () => {
     const { container, getByRole } = render(CopyField, {
       ...baseOptions,
