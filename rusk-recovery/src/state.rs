@@ -8,16 +8,14 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
-use dusk_bytes::DeserializableSlice;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::stake::{StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT};
-use dusk_core::transfer::phoenix::{Note, PublicKey, Sender};
+use dusk_core::transfer::phoenix::{Note, Sender};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::JubJubScalar;
 use dusk_vm::{ContractData, Session, VM};
 use ff::Field;
-use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
@@ -39,19 +37,6 @@ pub const DEFAULT_SNAPSHOT: &str =
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 const GENESIS_CHAIN_ID: u8 = 0xFA;
-
-pub static FAUCET_PHOENIX_KEY: Lazy<PublicKey> = Lazy::new(|| {
-    let addr = include_str!("../assets/faucet.address");
-    let bytes = bs58::decode(addr).into_vec().expect("valid bs58");
-    PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
-});
-
-pub static FAUCET_MOONLIGHT_KEY: Lazy<AccountPublicKey> = Lazy::new(|| {
-    let addr = include_str!("../assets/faucet.moonlight.address");
-    let bytes = bs58::decode(addr).into_vec().expect("valid bs58");
-    AccountPublicKey::from_slice(&bytes)
-        .expect("faucet should have a valid key")
-});
 
 fn generate_transfer_state(
     session: &mut Session,
@@ -174,13 +159,8 @@ fn generate_empty_state<P: AsRef<Path>>(
     let vm = VM::new(state_dir)?;
     let mut session = vm.genesis_session(GENESIS_CHAIN_ID);
 
-    let transfer_code = include_bytes!(
-        "../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
-    );
-
-    let stake_code = include_bytes!(
-        "../../target/dusk/wasm32-unknown-unknown/release/stake_contract.wasm"
-    );
+    let transfer_code = include_bytes!("../assets/transfer_contract.wasm");
+    let stake_code = include_bytes!("../assets/stake_contract.wasm");
 
     let owner = snapshot.owner_or(dusk_key);
 
@@ -340,4 +320,41 @@ fn load_state<P: AsRef<Path>>(
     );
 
     Ok((vm, commit))
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::error::Error;
+
+    use dusk_bytes::DeserializableSlice;
+
+    use super::*;
+
+    pub(crate) fn mainnet_from_file() -> Result<Snapshot, Box<dyn Error>> {
+        let toml = include_str!("../config/mainnet.toml");
+        let snapshot = toml::from_str(toml)?;
+        Ok(snapshot)
+    }
+
+    fn dusk_mainnet_key() -> AccountPublicKey {
+        let bytes = include_bytes!("../../rusk/src/assets/dusk.cpk");
+        AccountPublicKey::from_slice(&bytes[..])
+            .expect("faucet should have a valid key")
+    }
+
+    #[test]
+    fn mainnet_genesis() -> Result<(), Box<dyn Error>> {
+        let mainnet = mainnet_from_file()?;
+        let tmp = tempdir::TempDir::new("genesis")
+            .expect("Should be able to create temporary directory");
+        let (_, root) =
+            deploy(tmp.path(), &mainnet, dusk_mainnet_key(), |_| {})?;
+        let root = hex::encode(root);
+        let mainnet_root =
+            "d90d03cf808252037ac2fdd8677868e1ac419caab09ec4cf0e87eafa86b8a612";
+        assert_eq!(root, mainnet_root);
+
+        Ok(())
+    }
 }

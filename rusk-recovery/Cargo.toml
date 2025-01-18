@@ -15,7 +15,6 @@ rusk-profile = { workspace = true }
 
 # stake and keys feature dependency
 dusk-core = { workspace = true, features = ["zk", "std"], optional = true }
-once_cell = { workspace = true, optional = true }
 tracing = { workspace = true, features = ["log"], optional = true }
 
 # state feature dependencies
@@ -37,14 +36,15 @@ zip = { workspace = true, optional = true }
 # keys feature dependencies
 cargo_toml = { workspace = true, optional = true }
 dusk-plonk = { workspace = true, features = ["rkyv-impl"], optional = true }
-lazy_static = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["full"], optional = true }
+
+[dev-dependencies]
+tempdir = { workspace = true }
 
 [features]
 state = [
     "dusk-core",
-    "once_cell",
     "tracing",
     "serde_derive",
     "serde",
@@ -63,11 +63,9 @@ state = [
 ]
 keys = [
     "dusk-core",
-    "once_cell",
     "tracing",
     "cargo_toml",
     "dusk-plonk",
-    "lazy_static",
     "reqwest",
     "tokio",
 ]

@@ -104,12 +104,27 @@ mod tests {
 
     use std::error::Error;
 
+    use dusk_bytes::DeserializableSlice;
+    use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
     use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
+    use dusk_core::transfer::phoenix::PublicKey;
 
     use super::*;
-    use crate::state;
 
-    pub(crate) fn testnet_from_file() -> Result<Snapshot, Box<dyn Error>> {
+    fn testnet_faucet_phoenix() -> PublicKey {
+        let addr = include_str!("../../assets/faucet.address");
+        let bytes = bs58::decode(addr).into_vec().expect("valid bs58");
+        PublicKey::from_slice(&bytes).expect("faucet should have a valid key")
+    }
+
+    fn testnet_faucet_moonlight() -> AccountPublicKey {
+        let addr = include_str!("../../assets/faucet.moonlight.address");
+        let bytes = bs58::decode(addr).into_vec().expect("valid bs58");
+        AccountPublicKey::from_slice(&bytes)
+            .expect("faucet should have a valid key")
+    }
+
+    fn testnet_from_file() -> Result<Snapshot, Box<dyn Error>> {
         let toml = include_str!("../../config/testnet.toml");
         let snapshot = toml::from_str(toml)?;
         Ok(snapshot)
@@ -122,12 +137,12 @@ mod tests {
         let faucet_phoenix = testnet
             .phoenix_balance
             .iter()
-            .any(|b| b.address().eq(&*state::FAUCET_PHOENIX_KEY));
+            .any(|b| b.address().eq(&testnet_faucet_phoenix()));
 
         let faucet_moonlight = testnet
             .moonlight_account
             .iter()
-            .any(|b| b.address().eq(&*state::FAUCET_MOONLIGHT_KEY));
+            .any(|b| b.address().eq(&testnet_faucet_moonlight()));
 
         if !faucet_phoenix && !faucet_moonlight {
             panic!("Testnet must have faucet configured");
