@@ -78,6 +78,7 @@ use self::event::{MessageRequest, ResponseData, RuesEventUri, SessionId};
 use self::stream::{Listener, Stream};
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
+const RUSK_VERSION_STRICT_HEADER: &str = "Rusk-Version-Strict";
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
