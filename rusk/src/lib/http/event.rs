@@ -4,25 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::RUSK_VERSION_HEADER;
-
 use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
 use bytecheck::CheckBytes;
 use dusk_core::abi::ContractId;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{stream, Stream, StreamExt};
 use http_body_util::{BodyExt, Either, Full, StreamBody};
-use hyper::body::{Buf, Frame};
+use hyper::body::{Body, Buf, Bytes, Frame, Incoming};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
-use hyper::{
-    body::{Body, Bytes, Incoming},
-    Request, Response,
-};
+use hyper::{Request, Response};
 use pin_project::pin_project;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use rkyv::Archive;
-use semver::{Version, VersionReq};
+use semver::{Prerelease, Version, VersionReq};
 use serde::de::{Error, MapAccess, Unexpected, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -34,6 +29,8 @@ use std::str::Split;
 use std::sync::mpsc;
 use std::task::{Context, Poll};
 use tungstenite::http::HeaderValue;
+
+use super::{RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER};
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
@@ -166,20 +163,10 @@ impl MessageRequest {
     }
 
     pub fn check_rusk_version(&self) -> anyhow::Result<()> {
-        if let Some(v) = self.header(RUSK_VERSION_HEADER) {
-            let req = match v.as_str() {
-                Some(v) => VersionReq::from_str(v),
-                None => VersionReq::from_str(&v.to_string()),
-            }?;
-
-            let current = Version::from_str(&crate::VERSION)?;
-            if !req.matches(&current) {
-                return Err(anyhow::anyhow!(
-                    "Mismatched rusk version: requested {req} - current {current}",
-                ));
-            }
-        }
-        Ok(())
+        check_rusk_version(
+            self.header(RUSK_VERSION_HEADER),
+            self.header(RUSK_VERSION_STRICT_HEADER).is_some(),
+        )
     }
 }
 
@@ -813,20 +800,10 @@ impl RuesDispatchEvent {
     }
 
     pub fn check_rusk_version(&self) -> anyhow::Result<()> {
-        if let Some(v) = self.header(RUSK_VERSION_HEADER) {
-            let req = match v.as_str() {
-                Some(v) => VersionReq::from_str(v),
-                None => VersionReq::from_str(&v.to_string()),
-            }?;
-
-            let current = Version::from_str(&crate::VERSION)?;
-            if !req.matches(&current) {
-                return Err(anyhow::anyhow!(
-                    "Mismatched rusk version: requested {req} - current {current}",
-                ));
-            }
-        }
-        Ok(())
+        check_rusk_version(
+            self.header(RUSK_VERSION_HEADER),
+            self.header(RUSK_VERSION_STRICT_HEADER).is_some(),
+        )
     }
 
     pub fn is_binary(&self) -> bool {
@@ -968,6 +945,39 @@ impl From<node_data::events::Event> for RuesEvent {
             headers: Default::default(),
         }
     }
+}
+
+pub fn check_rusk_version(
+    version: Option<&serde_json::Value>,
+    strict: bool,
+) -> anyhow::Result<()> {
+    if let Some(v) = version {
+        let req = match v.as_str() {
+            Some(v) => VersionReq::from_str(v),
+            None => VersionReq::from_str(&v.to_string()),
+        }?;
+
+        let mut current = Version::from_str(&crate::VERSION)?;
+
+        // if client is not requesting a strict check we should ignore the
+        // prerelease version of the current binary
+        //
+        // If instead the client request a strict version we should respect
+        // that and check the version as is
+        //
+        // This solves the issue when connecting to a node that is in`-dev`
+        // mode
+        if !strict {
+            current.pre = Prerelease::EMPTY;
+        }
+
+        if !req.matches(&current) {
+            return Err(anyhow::anyhow!(
+                "Mismatched rusk version: requested {req} - current {current}",
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
