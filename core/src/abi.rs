@@ -22,6 +22,8 @@ impl Metadata {
     pub const CHAIN_ID: &'static str = "chain_id";
     /// The current block-height.
     pub const BLOCK_HEIGHT: &'static str = "block_height";
+    /// The current moonlight sender (if any)
+    pub const MOONLIGHT_SENDER: &'static str = "moonlight_sender";
 }
 
 /// Enum storing the available host-queries.
@@ -154,6 +156,17 @@ pub(crate) mod host_queries {
     #[must_use]
     pub fn block_height() -> u64 {
         meta_data(Metadata::BLOCK_HEIGHT).unwrap()
+    }
+
+    /// Get the moonlight sender of the ongoing tx (if any).
+    ///
+    /// # Panics
+    /// Panics if the chain doesn't store a `Option<BlsPublicKey>`
+    /// `MOONLIGHT_SENDER` in the metadata.
+    #[must_use]
+    pub fn moonlight_sender() -> Option<BlsPublicKey> {
+        meta_data(Metadata::MOONLIGHT_SENDER)
+            .expect("moonlight sender metadata to be set")
     }
 
     /// Query owner of a given contract.
