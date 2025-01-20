@@ -188,7 +188,7 @@ impl RuskNodeBuilder {
         let (node_sender, node_receiver) = mpsc::channel(1000);
 
         #[cfg(feature = "archive")]
-        let (archive_sender, archive_receiver) = mpsc::channel(1000);
+        let (archive_sender, archive_receiver) = mpsc::channel(10000);
 
         let gas_per_deploy_byte = self
             .gas_per_deploy_byte
