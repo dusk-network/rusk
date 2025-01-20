@@ -1,8 +1,15 @@
 [package]
-name = "rusk"
-version = "1.0.1-dev"
+name = "dusk-rusk"
+version = "1.0.2-dev"
 edition = "2021"
 autobins = false
+
+description = "Rusk is the Dusk Network node implementation"
+repository = "https://github.com/dusk-network/rusk"
+categories = ["cryptography", "cryptography::cryptocurrencies"]
+keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
+license = "MPL-2.0"
+
 
 [lib]
 name = "rusk"
