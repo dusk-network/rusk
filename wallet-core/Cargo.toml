@@ -1,6 +1,6 @@
 [package]
 name = "dusk-wallet-core"
-version = "1.0.0"
+version = "1.0.1-dev"
 edition = "2021"
 description = "The core functionality of the Dusk wallet"
 license = "MPL-2.0"
