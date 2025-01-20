@@ -40,22 +40,26 @@ pub(crate) fn decrypt(ciphertext: &[u8], pwd: &[u8]) -> Result<Vec<u8>, Error> {
 
 #[cfg(test)]
 mod tests {
+    use sha2::{Digest, Sha256};
+
     use super::*;
 
     #[test]
     fn encrypt_and_decrypt() {
         let seed =
             b"0001020304050607000102030405060700010203040506070001020304050607";
-        let pwd = blake3::hash("greatpassword".as_bytes());
-        let pwd = pwd.as_bytes();
 
-        let enc_seed = encrypt(seed, pwd).expect("seed to encrypt ok");
-        let enc_seed_t = encrypt(seed, pwd).expect("seed to encrypt ok");
+        let mut hasher = Sha256::new();
+        hasher.update("greatpassword".as_bytes());
+        let pwd = hasher.finalize().to_vec();
+
+        let enc_seed = encrypt(seed, &pwd).expect("seed to encrypt ok");
+        let enc_seed_t = encrypt(seed, &pwd).expect("seed to encrypt ok");
 
         // check that random IV is correctly applied
         assert_ne!(enc_seed, enc_seed_t);
 
-        let dec_seed = decrypt(&enc_seed, pwd).expect("seed to decrypt ok");
+        let dec_seed = decrypt(&enc_seed, &pwd).expect("seed to decrypt ok");
 
         // check that decryption matches original seed
         assert_eq!(dec_seed, seed);

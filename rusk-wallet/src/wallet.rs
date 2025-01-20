@@ -660,6 +660,7 @@ mod base64 {
 #[cfg(test)]
 mod tests {
 
+    use sha2::{Digest, Sha256};
     use tempfile::tempdir;
 
     use super::*;
@@ -720,7 +721,9 @@ mod tests {
         let path = WalletPath::from(path);
 
         // we'll need a password too
-        let pwd = blake3::hash("mypassword".as_bytes()).as_bytes().to_vec();
+        let mut hasher = Sha256::new();
+        hasher.update("mypassword".as_bytes());
+        let pwd = hasher.finalize().to_vec();
 
         // create and save
         let mut wallet: Wallet<WalletFile> = Wallet::new("uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic")?;
