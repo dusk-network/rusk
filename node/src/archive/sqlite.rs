@@ -9,7 +9,7 @@ use std::path::Path;
 use anyhow::Result;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqliteJournalMode};
 use sqlx::{Pool, Sqlite};
 use tracing::{error, info, warn};
 
@@ -35,6 +35,7 @@ impl Archive {
         let db_options = SqliteConnectOptions::new()
             // append the database name to the path
             .filename(path.as_ref().join(SQLITEARCHIVE_DB_NAME))
+            .journal_mode(SqliteJournalMode::Wal)
             .create_if_missing(true);
 
         // Open the database, create it if it doesn't exist
