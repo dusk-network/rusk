@@ -34,13 +34,15 @@ url = { workspace = true, optional = true }
 zip = { workspace = true, optional = true }
 
 # keys feature dependencies
-cargo_toml = { workspace = true, optional = true }
 dusk-plonk = { workspace = true, features = ["rkyv-impl"], optional = true }
 reqwest = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["full"], optional = true }
 
 [dev-dependencies]
 tempdir = { workspace = true }
+
+[build-dependencies]
+cargo_toml = { workspace = true }
 
 [features]
 state = [
@@ -61,11 +63,4 @@ state = [
     "url",
     "zip",
 ]
-keys = [
-    "dusk-core",
-    "tracing",
-    "cargo_toml",
-    "dusk-plonk",
-    "reqwest",
-    "tokio",
-]
+keys = ["dusk-core", "tracing", "dusk-plonk", "reqwest", "tokio"]
