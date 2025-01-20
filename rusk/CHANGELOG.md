@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.0.1] - 2025-01-20
+
 ### Added
 
 - Add `Rusk-Version-Strict` header for version match
+- Add support for `cargo install`
 
 ### Changed
 
@@ -312,7 +315,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
 
-[unreleased]: https://github.com/dusk-network/rusk/compare/rusk-1.0.0...HEAD
+[unreleased]: https://github.com/dusk-network/rusk/compare/rusk-1.0.1...HEAD
+[1.0.1]: https://github.com/dusk-network/rusk/compare/rusk-1.0.0...rusk-1.0.1
 [1.0.0]: https://github.com/dusk-network/rusk/compare/v0.8.0...rusk-1.0.0
 [0.8.0]: https://github.com/dusk-network/rusk/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/dusk-network/rusk/compare/v0.6.0...v0.7.0
