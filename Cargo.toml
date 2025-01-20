@@ -46,7 +46,7 @@ rusk-prover = "1.0.0"
 # rusk-prover = { version = "1.0.1-dec", path = "./rusk-prover/" }
 rusk-recovery = "1.0.1"
 # rusk-recovery = { version = "1.0.0", path = "./rusk-recovery/" }
-wallet-core = { version = "0.1.0", path = "./wallet-core/" }
+wallet-core = { version = "1.0.0", path = "./wallet-core/", package = "dusk-wallet-core" }
 
 # Dusk dependencies outside the workspace
 bls12_381-bls = { version = "=0.4.0", default-features = false }
