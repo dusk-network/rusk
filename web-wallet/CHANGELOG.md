@@ -9,12 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add support for partial unstake/claim rewards [#3009]
+- Add "Unstake" flow validation [#3009]
+
 ### Changed
 
 - Update Transactions list design [#1922]
 - Change Review step label to "Overview" (Send flow) [#3387]
 
 ### Removed
+
+- Remove gas settings from Overview step (Stake/Unstake flows) [#3009]
 
 ### Fixed
 
@@ -502,6 +507,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2999]: https://github.com/dusk-network/rusk/issues/2999
 [#3000]: https://github.com/dusk-network/rusk/issues/3000
 [#3006]: https://github.com/dusk-network/rusk/issues/3006
+[#3009]: https://github.com/dusk-network/rusk/issues/3009
 [#3010]: https://github.com/dusk-network/rusk/issues/3010
 [#3028]: https://github.com/dusk-network/rusk/issues/3028
 [#3032]: https://github.com/dusk-network/rusk/issues/3032

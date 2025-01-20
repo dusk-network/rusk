@@ -301,7 +301,6 @@
       }}
       nextButton={{
         action: () => activeStep++,
-        disabled: stakeAmount === 0,
         icon: {
           path: mdiDatabaseOutline,
           position: "before",

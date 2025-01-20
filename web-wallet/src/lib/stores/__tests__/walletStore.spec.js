@@ -380,7 +380,7 @@ describe("Wallet store", async () => {
               break;
 
             case "unstake":
-              expectedTx = { amount: undefined, gas };
+              expectedTx = { amount, gas };
               break;
 
             default:
@@ -545,7 +545,7 @@ describe("Wallet store", async () => {
     });
 
     it("should expose a method to unstake the staked amount", async () => {
-      await walletStoreTransferCheck("unstake", [gas]);
+      await walletStoreTransferCheck("unstake", [amount, gas]);
     });
   });
 

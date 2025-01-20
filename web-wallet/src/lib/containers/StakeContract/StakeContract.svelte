@@ -39,20 +39,17 @@
 
   /** @type {Record<StakeType, (...args: any[]) => Promise<string>>} */
   const executeOperations = {
-    "claim-rewards": (gasPrice, gasLimit) =>
+    "claim-rewards": (amount, gasPrice, gasLimit) =>
       walletStore
-        .claimRewards(
-          $walletStore.stakeInfo.reward,
-          new Gas({ limit: gasLimit, price: gasPrice })
-        )
+        .claimRewards(amount, new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getKey("hash")),
     stake: (amount, gasPrice, gasLimit) =>
       walletStore
         .stake(amount, new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getKey("hash")),
-    unstake: (gasPrice, gasLimit) =>
+    unstake: (amount, gasPrice, gasLimit) =>
       walletStore
-        .unstake(new Gas({ limit: gasLimit, price: gasPrice }))
+        .unstake(amount, new Gas({ limit: gasLimit, price: gasPrice }))
         .then(getKey("hash")),
   };
 
@@ -72,7 +69,7 @@
       when(hasKeyValue("disabled", false), updateOperationDisabledStatus())
     );
 
-  const getMaxUnstakeAmount = () => {
+  const getMaxWithdrawAmount = () => {
     if (currentOperation === "unstake") {
       return stakeInfo.amount ? stakeInfo.amount.total : 0n;
     }
@@ -118,7 +115,11 @@
       {gasLimits}
       {gasSettings}
       on:operationChange
-      maxAmount={getMaxUnstakeAmount()}
+      maxWithdrawAmount={getMaxWithdrawAmount()}
+      minStakeRequirement={currentOperation === "unstake"
+        ? minimumStake
+        : undefined}
+      availableBalance={balance.unshielded.value}
       operationCtaLabel={currentOperation === "unstake"
         ? "Unstake"
         : "Claim Rewards"}
