@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change `check_rusk_version` to ignore pre-release by default
+- Increase archive channel capacity from 1000 to 10000 [#3359]
 
 ## [1.0.0] - 2025-01-05
 
@@ -286,6 +287,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+[#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3206]: https://github.com/dusk-network/rusk/issues/3206
 [#2597]: https://github.com/dusk-network/rusk/issues/2597
 [#2536]: https://github.com/dusk-network/rusk/issues/2536
