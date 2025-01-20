@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update Transactions list design [#1922]
+- Change Review step label to "Overview" (Send flow) [#3387]
 
 ### Removed
 
@@ -540,6 +541,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3354]: https://github.com/dusk-network/rusk/issues/3354
 [#3356]: https://github.com/dusk-network/rusk/issues/3356
 [#3362]: https://github.com/dusk-network/rusk/issues/3362
+[#3387]: https://github.com/dusk-network/rusk/issues/3387
 
 <!-- VERSIONS -->
 

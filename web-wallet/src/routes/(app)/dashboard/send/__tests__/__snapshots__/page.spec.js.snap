@@ -133,7 +133,7 @@ exports[`Send page > should render the send page 1`] = `
               class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
               id="step-some-generated-id"
             >
-              Review
+              Overview
                
             </span>
             <span

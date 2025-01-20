@@ -78,7 +78,7 @@
   const steps = [
     { label: "Address" },
     { label: "Amount" },
-    { label: "Review" },
+    { label: "Overview" },
     { label: "Done" },
   ];
   const dispatch = createEventDispatcher();
