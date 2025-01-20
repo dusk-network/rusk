@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix creation of a new wallet causing the sync to start from genesis [#3362]
+
 ## [1.2.0] - 2025-01-16
 
 ### Added
@@ -537,6 +539,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3339]: https://github.com/dusk-network/rusk/issues/3339
 [#3354]: https://github.com/dusk-network/rusk/issues/3354
 [#3356]: https://github.com/dusk-network/rusk/issues/3356
+[#3362]: https://github.com/dusk-network/rusk/issues/3362
 
 <!-- VERSIONS -->
 

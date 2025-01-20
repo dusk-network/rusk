@@ -5,16 +5,12 @@
   import { DOCUMENTATION_LINKS } from "$lib/constants";
   import { IconHeadingCard } from "$lib/containers/Cards";
   import { createNumberFormatter } from "$lib/dusk/number";
-  import { networkStore, settingsStore } from "$lib/stores";
+  import { settingsStore } from "$lib/stores";
   import { mdiCubeOutline } from "@mdi/js";
   $: ({ language } = $settingsStore);
 
   /** @type {bigint} */
-  let currentBlock;
-
-  networkStore.getCurrentBlockHeight().then((block) => {
-    currentBlock = block;
-  });
+  export let currentBlockHeight;
 
   const numberFormatter = createNumberFormatter(language);
 </script>
@@ -27,9 +23,8 @@
 
   <CopyField
     name="Block Height"
-    displayValue={currentBlock ? numberFormatter(currentBlock) : "Loading..."}
-    rawValue={String(currentBlock)}
-    disabled={!currentBlock}
+    displayValue={numberFormatter(currentBlockHeight)}
+    rawValue={String(currentBlockHeight)}
   />
 
   <small>
