@@ -9,12 +9,14 @@ use dusk_core::transfer::phoenix::{
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
 use dusk_core::JubJubScalar;
+use dusk_wallet_core::keys::{derive_multiple_phoenix_sk, derive_phoenix_sk};
+use dusk_wallet_core::notes::owned::NoteList;
+use dusk_wallet_core::{
+    map_owned, phoenix_balance, pick_notes, BalanceInfo, Seed,
+};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
-use wallet_core::keys::{derive_multiple_phoenix_sk, derive_phoenix_sk};
-use wallet_core::notes::owned::NoteList;
-use wallet_core::{map_owned, phoenix_balance, pick_notes, BalanceInfo, Seed};
 
 /// Generate a note, useful for testing purposes
 fn gen_note<T: RngCore + CryptoRng>(

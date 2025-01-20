@@ -821,7 +821,7 @@ where
     #[cfg(feature = "http-wasm")]
     if path == "/static/drivers/wallet-core.wasm" {
         let wallet_wasm = include_bytes!(
-            "../../../target/wasm32-unknown-unknown/release/wallet_core.wasm"
+            "../../../target/wasm32-unknown-unknown/release/dusk_wallet_core.wasm"
         );
         let mut response =
             Response::new(Full::from(wallet_wasm.to_vec()).into());
