@@ -63,6 +63,12 @@ pub fn position_from_contract(contract: &ContractId) -> u64 {
     pos as u64
 }
 
+pub fn contract_prefix(contract: &ContractId) -> String {
+    let mut a = [0u8; 8];
+    a.copy_from_slice(&contract.to_bytes()[..8]);
+    hex::encode(a)
+}
+
 /// Returns path to a file at a given level, and, if not present
 /// tries lower levels form the list until found or level zero reached
 /// note: no commit id here, edge is oblivious to commits,

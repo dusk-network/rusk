@@ -39,7 +39,7 @@ use crate::services::state_integrity::page_tree::PageTree;
 use crate::services::state_integrity::tree_pos::TreePos;
 use crate::services::state_integrity::utils::{
     calculate_root, calculate_root_pos_32, contract_id_from_hex,
-    find_commit_level, find_current_levels, find_element,
+    contract_prefix, find_commit_level, find_current_levels, find_element,
     find_file_path_at_level, position_from_contract, scan_commits, EDGE_DIR,
     ELEMENT_FILE, LEAF_DIR, MAIN_DIR,
 };
@@ -216,7 +216,7 @@ fn scan_elements(
     commit_id: &[u8; 32],
     level: u64,
     levels: &[u64],
-) -> Result<Vec<([u8; 32], ContractId, u64)>> {
+) -> Result<Vec<([u8; 32], ContractId, u64, PathBuf)>> {
     let mut output = Vec::new();
     let leaf_dir = main_dir.as_ref().join(LEAF_DIR);
     for entry in fs::read_dir(&leaf_dir)? {
@@ -263,6 +263,7 @@ fn scan_elements(
                 element.hash.unwrap_or([0; 32]),
                 contract_id,
                 element.int_pos.unwrap_or(0),
+                element_path,
             ))
         }
     }
@@ -270,7 +271,7 @@ fn scan_elements(
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn make_commits() -> Result<(), Error> {
+pub async fn verify_commits() -> Result<(), Error> {
     logger();
     let mut f = Fixture::build(NON_BLS_OWNER);
     f.assert_bob_contract_is_deployed();
@@ -285,55 +286,33 @@ pub async fn make_commits() -> Result<(), Error> {
     let commit_id1 = session1.commit()?;
     println!("session1 commit: {}", hex::encode(&commit_id1));
 
+    vm.finalize_commit(commit_id1.clone())?;
+    println!("finalized commit1: {}", hex::encode(&commit_id1));
+
     let mut session2 = f.create_session(&vm, commit_id.clone());
     session2
         .call::<u8, ()>(f.contract_id, METHOD, &1, u64::MAX)
         .map_err(Error::Vm)?;
 
-    let commit_id2 = session2.commit()?;
-    println!("session2 commit: {}", hex::encode(&commit_id2));
-
-    let mut session3 = f.create_session(&vm, commit_id.clone());
-    session3
+    session2
         .call::<u8, ()>(f.contract_id, METHOD, &2, u64::MAX)
         .map_err(Error::Vm)?;
 
-    let commit_id3 = session3.commit()?;
-    println!("session3 commit: {}", hex::encode(&commit_id3));
+    let commit_id2 = session2.commit()?;
+    println!("session4 commit: {}", hex::encode(&commit_id2));
 
-    vm.finalize_commit(commit_id1.clone())?;
-    println!("finalized commit1: {}", hex::encode(&commit_id1));
     vm.finalize_commit(commit_id2.clone())?;
     println!("finalized commit2: {}", hex::encode(&commit_id2));
-    vm.finalize_commit(commit_id3.clone())?;
-    println!("finalized commit3: {}", hex::encode(&commit_id3));
 
-    let mut session4 = f.create_session(&vm, commit_id.clone());
-    session4
-        .call::<u8, ()>(f.contract_id, METHOD, &3, u64::MAX)
-        .map_err(Error::Vm)?;
-
-    let commit_id4 = session4.commit()?;
-    println!("session4 commit: {}", hex::encode(&commit_id4));
-
-    // now load elements from tree_pos_opt for commit_id4 and see if they are
-    // the same as the ones found in particular files using the algorithm:
-    //     find_element (function in Piecrust)
-    //     if not found or found at level zero {
-    //         find_file_path_at_level (function in Piecrust)
-    //     }
-    // NOTE:
-    // find_element searches recursively in a given commit and in base commits
-    // for elements which are commit-specific only
-    // find_file_path_at_level searches across levels from the highest level
-    // down to level zero (this search is not commit-specific)
-
-    // verify_state_roots()
-    Ok(())
+    verify_commits_roots()
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_state_roots() -> Result<(), Error> {
+    verify_commits_roots()
+}
+
+fn verify_commits_roots() -> Result<(), Error> {
     let main_dir = PathBuf::from(STATE_DIR).join(MAIN_DIR);
     let commits = scan_commits(&main_dir)?;
     for commit in commits.iter() {
@@ -349,6 +328,7 @@ fn verify_state_root_of_commit(
     println!();
     println!("tree_pos for commit {}", hex::encode(commit_id));
     let tree_pos = load_tree_pos(state_dir.as_ref(), commit_id)?;
+    let mut tree_pos_map: HashMap<u64, [u8; 32]> = HashMap::new();
     for (k, (h, c)) in tree_pos.iter() {
         println!(
             "{} {} {}",
@@ -356,40 +336,52 @@ fn verify_state_root_of_commit(
             hex::encode(h),
             hex::encode((*c).to_le_bytes())
         );
+        tree_pos_map.insert(*k as u64, h.clone());
     }
 
     let main_dir = state_dir.as_ref().join(MAIN_DIR);
     let level = find_commit_level(&main_dir, commit_id)?;
     let levels = find_current_levels(&main_dir)?;
-    let elems = scan_elements(&main_dir, commit_id, level, &levels)?;
+    println!("level={} levels={:?}", level, levels);
+    let mut elems = scan_elements(&main_dir, commit_id, level, &levels)?;
+    elems.sort_by(|(_, _, pos1, _), (_, _, pos2, _)| pos1.cmp(pos2));
     println!();
     println!("elems:");
-    for (hash, contract_id, int_pos) in elems.iter() {
+    for (hash, contract_id, int_pos, path_buf) in elems.iter() {
         let contract_pos_hex =
             hex::encode(position_from_contract(contract_id).to_le_bytes());
-        println!(
-            "{} {} ({}) int_pos={}",
+        println!();
+        if Some(hash) != tree_pos_map.get(int_pos) {
+            print!("* ");
+        }
+        print!(
+            "{} {} ({}) int_pos={} path_buf={:?}",
             hex::encode(hash),
-            hex::encode(contract_id),
+            contract_prefix(contract_id),
             contract_pos_hex,
             *int_pos,
+            path_buf,
         );
     }
 
-    let root_from_elements =
-        calculate_root(elems.iter().map(|(hash, _, int_pos)| (hash, int_pos)));
-    println!(
-        "root_from_elements root={}",
-        hex::encode(root_from_elements)
+    let root_from_elements = calculate_root(
+        elems.iter().map(|(hash, _, int_pos, _)| (hash, int_pos)),
     );
+    println!();
+    println!("root_from_elements={}", hex::encode(root_from_elements));
     let root_from_tree_pos_file =
         calculate_root_pos_32(tree_pos.iter().map(|(k, (h, _c))| (h, k)));
+    println!();
     println!(
-        "root_from_tree_pos_file root={}",
+        "root_from_tree_pos_file={}",
         hex::encode(root_from_tree_pos_file)
     );
 
-    assert_eq!(hex::encode(root_from_elements), hex::encode(root_from_tree_pos_file));
+    println!();
+    assert_eq!(
+        hex::encode(root_from_elements),
+        hex::encode(root_from_tree_pos_file)
+    );
 
     Ok(())
 }
