@@ -20,11 +20,12 @@ use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
 use std::collections::HashMap;
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{
+    test_wallet as wallet, TestStateClient, TestStore,
+};
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;

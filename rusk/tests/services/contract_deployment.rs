@@ -18,7 +18,6 @@ use rand::rngs::StdRng;
 use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
-use test_wallet::{self as wallet, Wallet};
 use tokio::sync::broadcast;
 use tracing::info;
 
@@ -29,7 +28,9 @@ use crate::common::state::{generator_procedure, ExecuteResult};
 use crate::common::state::{
     DEFAULT_GAS_PER_DEPLOY_BYTE, DEFAULT_MIN_GAS_LIMIT,
 };
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{
+    test_wallet as wallet, TestStateClient, TestStore, Wallet,
+};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;

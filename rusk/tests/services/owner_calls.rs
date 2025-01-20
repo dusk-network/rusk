@@ -23,7 +23,6 @@ use dusk_vm::{gen_contract_id, CallReceipt, ContractData, Session, VM};
 use rusk::{Error, Result, Rusk};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
-use test_wallet::{self as wallet, Wallet};
 use tokio::sync::broadcast;
 use tracing::info;
 
@@ -33,7 +32,9 @@ use crate::common::state::DEFAULT_MIN_DEPLOY_POINTS;
 use crate::common::state::{
     DEFAULT_GAS_PER_DEPLOY_BYTE, DEFAULT_MIN_GAS_LIMIT,
 };
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{
+    test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
+};
 
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const POINT_LIMIT: u64 = 0x10000000;

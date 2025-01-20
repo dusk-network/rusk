@@ -7,3 +7,5 @@
 #![feature(lazy_cell)]
 mod common;
 mod services;
+
+extern crate alloc;

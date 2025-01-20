@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![feature(lazy_cell)]
+extern crate alloc;
 
 #[path = "../tests/common/mod.rs"]
 mod common;
