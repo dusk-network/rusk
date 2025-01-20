@@ -191,7 +191,7 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
 
     let wallet =
-        test_wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
+        crate::wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
 
     const N_ADDRESSES: usize = 100;
 
@@ -253,7 +253,7 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
 
     let wallet =
-        test_wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
+        crate::wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
 
     const N_ADDRESSES: usize = 100;
 

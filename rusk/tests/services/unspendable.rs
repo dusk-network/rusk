@@ -16,12 +16,13 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state, ExecuteResult};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{
+    test_wallet as wallet, TestStateClient, TestStore,
+};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
