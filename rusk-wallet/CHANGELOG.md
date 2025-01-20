@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change withdraw rewards to withdraw partial amount [#2538]
+
 ## [0.2.0] - 2025-05-07
 
 ### Added
@@ -74,22 +78,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Issues -->
 [#3713]: https://github.com/dusk-network/rusk/issues/3713
-[#3702]: https://github.com/dusk-network/rusk/issues/3702
 [#3707]: https://github.com/dusk-network/rusk/issues/3707
-[#3700]: https://github.com/dusk-network/rusk/issues/3700
 [#3704]: https://github.com/dusk-network/rusk/issues/3704
-[#3597]: https://github.com/dusk-network/rusk/issues/3597
-[#3192]: https://github.com/dusk-network/rusk/issues/3192
+[#3702]: https://github.com/dusk-network/rusk/issues/3702
+[#3700]: https://github.com/dusk-network/rusk/issues/3700
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
 [#3623]: https://github.com/dusk-network/rusk/issues/3623
 [#3602]: https://github.com/dusk-network/rusk/issues/3602
 [#3598]: https://github.com/dusk-network/rusk/issues/3598
+[#3597]: https://github.com/dusk-network/rusk/issues/3597
 [#3593]: https://github.com/dusk-network/rusk/issues/3593
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3394]: https://github.com/dusk-network/rusk/issues/3394
 [#3391]: https://github.com/dusk-network/rusk/issues/3391
 [#3292]: https://github.com/dusk-network/rusk/issues/3292
 [#3263]: https://github.com/dusk-network/rusk/issues/3263
+[#3192]: https://github.com/dusk-network/rusk/issues/3192
 [#2839]: https://github.com/dusk-network/rusk/issues/2839
 [#2768]: https://github.com/dusk-network/rusk/issues/2768
 [#2766]: https://github.com/dusk-network/rusk/issues/2766
@@ -99,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2659]: https://github.com/dusk-network/rusk/issues/2659
 [#2647]: https://github.com/dusk-network/rusk/issues/2647
 [#2566]: https://github.com/dusk-network/rusk/issues/2566
+[#2538]: https://github.com/dusk-network/rusk/issues/2538
 [#2523]: https://github.com/dusk-network/rusk/issues/2523
 [#2489]: https://github.com/dusk-network/rusk/issues/2489
 [#2488]: https://github.com/dusk-network/rusk/issues/2488
