@@ -18,7 +18,6 @@ import { generateMnemonic } from "bip39";
 
 import { stakeInfo } from "$lib/mock-data";
 
-import walletCache from "$lib/wallet-cache";
 import WalletTreasury from "$lib/wallet-treasury";
 import { getSeedFromMnemonic } from "$lib/wallet";
 
@@ -83,16 +82,16 @@ describe("Wallet store", async () => {
     .mockImplementation(async () => stakeInfo);
 
   const getCachedBalanceSpy = vi
-    .spyOn(walletCache, "getBalanceInfo")
+    .spyOn(WalletTreasury.prototype, "getCachedBalance")
     .mockResolvedValue(cachedBalance);
   const setCachedBalanceSpy = vi
-    .spyOn(walletCache, "setBalanceInfo")
+    .spyOn(WalletTreasury.prototype, "setCachedBalance")
     .mockResolvedValue(undefined);
   const getCachedStakeInfoSpy = vi
-    .spyOn(walletCache, "getStakeInfo")
+    .spyOn(WalletTreasury.prototype, "getCachedStakeInfo")
     .mockResolvedValue(cachedStakeInfo);
   const setCachedStakeInfoSpy = vi
-    .spyOn(walletCache, "setStakeInfo")
+    .spyOn(WalletTreasury.prototype, "setCachedStakeInfo")
     .mockResolvedValue(undefined);
   const setProfilesSpy = vi.spyOn(WalletTreasury.prototype, "setProfiles");
   const treasuryUpdateSpy = vi.spyOn(WalletTreasury.prototype, "update");
@@ -180,13 +179,9 @@ describe("Wallet store", async () => {
       });
 
       expect(getCachedBalanceSpy).toHaveBeenCalledTimes(1);
-      expect(getCachedBalanceSpy).toHaveBeenCalledWith(
-        defaultProfile.address.toString()
-      );
+      expect(getCachedBalanceSpy).toHaveBeenCalledWith(defaultProfile);
       expect(getCachedStakeInfoSpy).toHaveBeenCalledTimes(1);
-      expect(getCachedStakeInfoSpy).toHaveBeenCalledWith(
-        defaultProfile.account.toString()
-      );
+      expect(getCachedStakeInfoSpy).toHaveBeenCalledWith(defaultProfile);
 
       await vi.advanceTimersByTimeAsync(AUTO_SYNC_INTERVAL - 1);
 
@@ -209,16 +204,13 @@ describe("Wallet store", async () => {
         treasuryUpdateSpy.mock.invocationCallOrder[0]
       );
       expect(setCachedBalanceSpy).toHaveBeenCalledTimes(1);
-      expect(setCachedBalanceSpy).toHaveBeenCalledWith(
-        defaultProfile.address.toString(),
-        {
-          shielded: await balanceSpy.mock.results[0].value,
-          unshielded: await balanceSpy.mock.results[1].value,
-        }
-      );
+      expect(setCachedBalanceSpy).toHaveBeenCalledWith(defaultProfile, {
+        shielded: await balanceSpy.mock.results[0].value,
+        unshielded: await balanceSpy.mock.results[1].value,
+      });
       expect(setCachedStakeInfoSpy).toHaveBeenCalledTimes(1);
       expect(setCachedStakeInfoSpy).toHaveBeenCalledWith(
-        defaultProfile.account.toString(),
+        defaultProfile,
         await stakeInfoSpy.mock.results[0].value
       );
       expect(setCachedBalanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
@@ -326,7 +318,16 @@ describe("Wallet store", async () => {
     const executeSpy = vi
       .spyOn(Network.prototype, "execute")
       .mockResolvedValue(phoenixTxResult);
-    const setPendingNotesSpy = vi.spyOn(walletCache, "setPendingNoteInfo");
+
+    const updateNonceSpy = vi.spyOn(
+      WalletTreasury.prototype,
+      "updateCachedNonce"
+    );
+
+    const updateCachedPendingNotesSpy = vi.spyOn(
+      WalletTreasury.prototype,
+      "updateCachedPendingNotes"
+    );
 
     /**
      * @typedef { "claimRewards" | "shield" | "stake" | "transfer" | "unshield" | "unstake" } TransferMethod
@@ -347,9 +348,10 @@ describe("Wallet store", async () => {
       clearTimeoutSpy.mockRestore();
       vi.useRealTimers();
 
-      const currentlyCachedBalance = await walletCache.getBalanceInfo(
-        defaultProfile.address.toString()
-      );
+      const currentlyCachedBalance =
+        await new WalletTreasury().getCachedBalance(
+          defaultProfile.address.toString()
+        );
       const newNonce = currentlyCachedBalance.unshielded.nonce + 1n;
 
       let expectedTx;
@@ -400,26 +402,17 @@ describe("Wallet store", async () => {
       );
 
       if (isPhoenixTransfer) {
-        expect(setCachedBalanceSpy).not.toHaveBeenCalled();
-        expect(setPendingNotesSpy).toHaveBeenCalledTimes(1);
-        expect(setPendingNotesSpy).toHaveBeenCalledWith(
+        expect(updateNonceSpy).not.toHaveBeenCalled();
+        expect(updateCachedPendingNotesSpy).toHaveBeenCalledTimes(1);
+        expect(updateCachedPendingNotesSpy).toHaveBeenCalledWith(
           phoenixTxResult.nullifiers,
           phoenixTxResult.hash
         );
-        setPendingNotesSpy.mockClear();
+        updateCachedPendingNotesSpy.mockClear();
       } else {
-        expect(setCachedBalanceSpy).toHaveBeenCalledTimes(1);
-        expect(setCachedBalanceSpy).toHaveBeenCalledWith(
-          defaultProfile.address.toString(),
-          {
-            ...currentlyCachedBalance,
-            unshielded: {
-              ...currentlyCachedBalance.unshielded,
-              nonce: newNonce,
-            },
-          }
-        );
-        expect(setPendingNotesSpy).not.toHaveBeenCalled();
+        expect(updateNonceSpy).toHaveBeenCalledTimes(1);
+        expect(updateNonceSpy).toHaveBeenCalledWith(defaultProfile, newNonce);
+        expect(updateCachedPendingNotesSpy).not.toHaveBeenCalled();
         setCachedBalanceSpy.mockClear();
       }
 
@@ -464,16 +457,13 @@ describe("Wallet store", async () => {
         treasuryUpdateSpy.mock.invocationCallOrder[1]
       );
       expect(setCachedBalanceSpy).toHaveBeenCalledTimes(1);
-      expect(setCachedBalanceSpy).toHaveBeenCalledWith(
-        defaultProfile.address.toString(),
-        {
-          shielded: await balanceSpy.mock.results[0].value,
-          unshielded: await balanceSpy.mock.results[1].value,
-        }
-      );
+      expect(setCachedBalanceSpy).toHaveBeenCalledWith(defaultProfile, {
+        shielded: await balanceSpy.mock.results[0].value,
+        unshielded: await balanceSpy.mock.results[1].value,
+      });
       expect(setCachedStakeInfoSpy).toHaveBeenCalledTimes(1);
       expect(setCachedStakeInfoSpy).toHaveBeenCalledWith(
-        defaultProfile.account.toString(),
+        defaultProfile,
         await stakeInfoSpy.mock.results[0].value
       );
       expect(setCachedBalanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(
@@ -512,12 +502,14 @@ describe("Wallet store", async () => {
 
     afterEach(async () => {
       executeSpy.mockClear();
-      setPendingNotesSpy.mockClear();
+      updateNonceSpy.mockClear();
+      updateCachedPendingNotesSpy.mockClear();
     });
 
     afterAll(() => {
       executeSpy.mockRestore();
-      setPendingNotesSpy.mockRestore();
+      updateNonceSpy.mockRestore();
+      updateCachedPendingNotesSpy.mockRestore();
     });
 
     it("should expose a method to claim the rewards", async () => {
@@ -550,7 +542,7 @@ describe("Wallet store", async () => {
   });
 
   describe("Wallet store services", () => {
-    const cacheClearSpy = vi.spyOn(walletCache, "clear");
+    const cacheClearSpy = vi.spyOn(WalletTreasury.prototype, "clearCache");
 
     beforeEach(async () => {
       walletStore.reset();
@@ -651,16 +643,13 @@ describe("Wallet store", async () => {
       expect(stakeInfoSpy).toHaveBeenCalledTimes(1);
       expect(stakeInfoSpy).toHaveBeenCalledWith(fakeExtraProfile.account);
       expect(setCachedBalanceSpy).toHaveBeenCalledTimes(1);
-      expect(setCachedBalanceSpy).toHaveBeenCalledWith(
-        fakeExtraProfile.address.toString(),
-        {
-          shielded: await balanceSpy.mock.results[0].value,
-          unshielded: await balanceSpy.mock.results[1].value,
-        }
-      );
+      expect(setCachedBalanceSpy).toHaveBeenCalledWith(fakeExtraProfile, {
+        shielded: await balanceSpy.mock.results[0].value,
+        unshielded: await balanceSpy.mock.results[1].value,
+      });
       expect(setCachedStakeInfoSpy).toHaveBeenCalledTimes(1);
       expect(setCachedStakeInfoSpy).toHaveBeenCalledWith(
-        fakeExtraProfile.account.toString(),
+        fakeExtraProfile,
         await stakeInfoSpy.mock.results[0].value
       );
       expect(setCachedBalanceSpy.mock.invocationCallOrder[0]).toBeGreaterThan(

@@ -12,11 +12,12 @@ const profiles = [
   await profileGenerator.next(),
   await profileGenerator.next(),
 ];
+
 const currentProfile = profiles[0];
 const shielded = { spendable: 50_000_000_000_000n, value: 2_345_000_000_000n };
 const unshielded = { nonce: 1234n, value: shielded.value / 2n };
 
-/** @type {WalletStoreContent} */
+/** @type {WalletStoreContent & { currentProfile: NonNullable<WalletStoreContent["currentProfile"]> }} */
 const content = {
   balance: { shielded, unshielded },
   currentProfile,

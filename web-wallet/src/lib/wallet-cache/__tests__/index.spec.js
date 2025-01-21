@@ -632,7 +632,7 @@ describe("Wallet cache", () => {
       ).resolves.toStrictEqual(modifiedBalance);
     });
 
-    it("should expose a method to set a note as pending", async () => {
+    it("should expose a method to set a group of notes as pending", async () => {
       const existingPendingNullifiersAsStrings = await walletCache
         .getPendingNotesInfo()
         .then(mapWith(compose(String, getKey("nullifier"))));
@@ -660,7 +660,7 @@ describe("Wallet cache", () => {
         }))
       );
 
-      await walletCache.setPendingNoteInfo(spendableNullifiers, "some-tx-id");
+      await walletCache.setPendingNotesInfo(spendableNullifiers, "some-tx-id");
 
       await expect(
         walletCache
