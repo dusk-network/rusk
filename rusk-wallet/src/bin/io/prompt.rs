@@ -216,8 +216,11 @@ fn request_token(
         match (min..=max).contains(&Dusk::try_from(*value)?) {
             true => Ok(Validation::Valid),
             false => Ok(Validation::Invalid(
-                format!("The amount has to be between {} and {}", min, max)
-                    .into(),
+                format!(
+                    "Bal is {} the amount has to be between min: {} and max: {}",
+                    balance, min, max
+                )
+                .into(),
             )),
         }
     };
