@@ -95,13 +95,11 @@ pub(crate) async fn online(
     }
 
     let select = select?;
-<<<<<<< Updated upstream
-=======
+
     let max_withdraw = wallet
         .get_stake_reward(profile_idx)
         .await
         .unwrap_or(Dusk::from(0));
->>>>>>> Stashed changes
 
     let res = match select {
         MenuItem::Transfer => {

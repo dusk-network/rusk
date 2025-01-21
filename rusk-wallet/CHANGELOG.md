@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fix
 
 - Fix phoenix balance update [#2488]
+- Fix bug where sometimes stake does not exist error causes the wallet to exit [#3401]
 - Fix stake info for inactive stakes with rewards [#2766]
 - Fix Moonlight stake reward withdrawal [#2523]
 
@@ -57,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2396]: https://github.com/dusk-network/rusk/issues/2396
 [#2340]: https://github.com/dusk-network/rusk/issues/2340
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
-
+[#3401]: https://github.com/dusk-network/rusk/issues/3401
 <!-- Releases -->
 [Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...HEAD
 [0.1.0]: https://github.com/dusk-network/rusk/tree/rusk-wallet-0.1.0
