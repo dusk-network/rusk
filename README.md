@@ -160,18 +160,20 @@ make wasm for=transfer
 
 ## 🐳 Docker support
 
+### Local Ephemeral Node
+
 It's also possible to run a local ephemeral node with Docker.
 
 To build the Docker image with archive:
 
 ```bash
-docker build -t rusk .
+docker build -f Dockerfile.ephemeral -t rusk .
 ```
 
 To build the Docker image **without** archive:
 
 ```bash
-docker build -t rusk --build-arg CARGO_FEATURES="" .
+docker build -t -f Dockerfile.ephemeral rusk --build-arg CARGO_FEATURES="" .
 ```
 
 To run Rusk inside a Docker container:
@@ -181,6 +183,67 @@ docker run -p 9000:9000/udp -p 8080:8080/tcp rusk
 ```
 
 Port 9000 is used for Kadcast, port 8080 for the HTTP and GraphQL APIs.
+
+### Persistent Node
+
+To build the docker image for a provisioner
+```bash
+docker build -f Dockerfile.persistent -t rusk --build-arg NODE_TYPE=provisioner .
+```
+
+To build for an archiver or prover instead, build with NODE_TYPE=archive or NODE_TYPE=prover,
+respectively.
+
+To run:
+
+```bash
+docker run -it \
+  -v /path/to/consensus.keys:/opt/dusk/conf/consensus.keys \
+  -v /path/to/rusk/profile:/opt/dusk/rusk \
+  -e NETWORK=<mainnet|testnet|devnet> \
+  -e DUSK_CONSENSUS_KEYS_PASS=<consensus-keys-password> \
+  -p 9000:9000/udp \
+  -p 8080:8080/tcp \
+  rusk
+```
+
+#### Customizing Configuration
+
+The configuration used for rusk is based on the template file at `https://raw.githubusercontent.com/dusk-network/node-installer/9cdf0be1372ca6cb52cb279bd58781a3a27bf8ae/conf/rusk.toml`.
+As part of the node setup process when the container is started, the kadcast ID, bootstrapping nodes, and genesis timestamp
+will be changed based on the selected network and the resulting configuration will be used for running the node.
+The IP addresses used for listening in kadcast and, if configured, http will be detected and automatically configured.
+
+To customize the configuration, the configuration template file can be copied and modified. The custom configuration template
+should be mounted on `/opt/dusk/conf/rusk.template.toml`.
+
+```bash
+docker run -it \
+  -v /path/to/consensus.keys:/opt/dusk/conf/consensus.keys
+  -v /path/to/rusk/profile:/opt/dusk/rusk \
+  -v /path/to/rusk.modified-template.toml:/opt/dusk/conf/rusk.template.toml \
+  -e NETWORK=<mainnet|testnet|devnet> \
+  -e DUSK_CONSENSUS_KEYS_PASS=<consensus-keys-password> \
+  -p 9000:9000/udp \
+  -p 8080:8080/tcp \
+  rusk
+```
+
+##### IP Addresses
+
+When using a custom configuration file, properties that use IP addresses should be set to 'N/A'. For example, if
+you want HTTP to be configured:
+
+```toml
+[http]
+listen_address = 'N/A'
+```
+
+This entry should be present in the template configuration file. When the node is starting, the address to be used
+will be detected and this configuration will be set to listen at port 8080.
+
+Likewise, the `kadcast.public_address` and `kadcast.listen_address` properties in the configuration file should be set
+to 'N/A'. During node startup, they will be detected and set to use port 9000.
 
 ## License
 
