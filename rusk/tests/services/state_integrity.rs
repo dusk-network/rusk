@@ -297,7 +297,7 @@ fn scan_elements(
     Ok(output)
 }
 
-fn perform_ops(f: &mut Fixture, args: [u8; 3]) -> Result<(), Error> {
+fn perform_ops(f: &mut Fixture, args: [u8; 4]) -> Result<(), Error> {
     f.assert_bob_contract_is_deployed();
     let vm = f.create_vm();
     let commit_id: [u8; 32] = f.rusk.state_root();
@@ -306,12 +306,6 @@ fn perform_ops(f: &mut Fixture, args: [u8; 3]) -> Result<(), Error> {
     session1
         .call::<u8, ()>(f.contract_id, METHOD, &args[0], u64::MAX)
         .map_err(Error::Vm)?;
-
-    let commit_id1 = session1.commit()?;
-    println!("session1 commit: {}", hex::encode(&commit_id1));
-
-    vm.finalize_commit(commit_id1.clone())?;
-    println!("finalized commit1: {}", hex::encode(&commit_id1));
 
     let mut session2 = f.create_session(&vm, commit_id.clone());
     session2
@@ -328,6 +322,16 @@ fn perform_ops(f: &mut Fixture, args: [u8; 3]) -> Result<(), Error> {
     vm.finalize_commit(commit_id2.clone())?;
     println!("finalized commit2: {}", hex::encode(&commit_id2));
 
+    session1
+        .call::<u8, ()>(f.contract_id, METHOD, &args[3], u64::MAX)
+        .map_err(Error::Vm)?;
+
+    let commit_id1 = session1.commit()?;
+    println!("session1 commit: {}", hex::encode(&commit_id1));
+
+    vm.finalize_commit(commit_id1.clone())?;
+    println!("finalized commit1: {}", hex::encode(&commit_id1));
+
     Ok(())
 }
 
@@ -336,8 +340,8 @@ pub async fn verify_commits() -> Result<(), Error> {
     logger();
     let mut f = Fixture::build(NON_BLS_OWNER);
 
-    let args1 = [0, 1, 2];
-    let args2 = [3, 4, 5];
+    let args1 = [0, 1, 2, 3];
+    let args2 = [4, 5, 6, 7];
 
     perform_ops(&mut f, args1)?;
 
@@ -426,5 +430,38 @@ fn verify_state_root_of_commit(
         hex::encode(root_from_tree_pos_file)
     );
 
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn show_el() -> Result<(), Error> {
+    let element_path = PathBuf::from(STATE_DIR)
+        .join(MAIN_DIR)
+        .join(LEAF_DIR)
+        .join("edge")
+        .join("15")
+        .join(
+            "61f0b22cdc2877769e815528ef345b44d151a159c854f7d9143c32a080341832",
+        )
+        .join(ELEMENT_FILE);
+    if element_path.is_file() {
+        let element_bytes = fs::read(&element_path)?;
+        let element: ContractIndexElement = rkyv::from_bytes(&element_bytes)
+            .map_err(|err| {
+                tracing::trace!("deserializing element file failed {}", err);
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Invalid element file \"{element_path:?}\": {err}"),
+                )
+            })?;
+        println!(
+            "{:?} - hash of element file: {:?}",
+            element.hash.as_ref().map(|a| hex::encode(a)),
+            element_path
+        );
+        println!("page indices={:?}", element.page_indices);
+    } else {
+        println!("{:?} - not a file", element_path);
+    }
     Ok(())
 }
