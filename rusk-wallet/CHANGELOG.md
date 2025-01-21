@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2025-01-20
+
 ### Add
 
 - Add gas cost calculation to contract deploy [#2768]
@@ -57,5 +59,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
 
 <!-- Releases -->
-[unreleased]: https://github.com/dusk-network/rusk/compare/master
-<!-- [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-wallet-0.1.0 -->
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...HEAD
+[0.1.0]: https://github.com/dusk-network/rusk/tree/rusk-wallet-0.1.0
