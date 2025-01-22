@@ -22,6 +22,8 @@ impl Metadata {
     pub const CHAIN_ID: &'static str = "chain_id";
     /// The current block-height.
     pub const BLOCK_HEIGHT: &'static str = "block_height";
+    /// The sender of the transaction, if the transaction is public.
+    pub const PUBLIC_SENDER: &'static str = "public_sender";
 }
 
 /// Enum storing the available host-queries.
@@ -154,6 +156,18 @@ pub(crate) mod host_queries {
     #[must_use]
     pub fn block_height() -> u64 {
         meta_data(Metadata::BLOCK_HEIGHT).unwrap()
+    }
+
+    /// Get the public sender of the ongoing tx. Returns `None` if the
+    /// transaction is shielded.
+    ///
+    /// # Panics
+    /// Panics if the chain doesn't store a `Option<BlsPublicKey>`
+    /// `PUBLIC_SENDER` in the metadata.
+    #[must_use]
+    pub fn public_sender() -> Option<BlsPublicKey> {
+        meta_data(Metadata::PUBLIC_SENDER)
+            .expect("moonlight sender metadata to be set")
     }
 
     /// Query owner of a given contract.
