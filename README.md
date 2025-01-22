@@ -31,15 +31,19 @@
 </a>
 </p>
 
-> _Unstable_ : No guarantees can be made regarding the API stability, the project is in development.
+> _Unstable_ : No guarantees can be made regarding the API stability, the
+> project is in development.
 
 # 🖧 How to run a node
 
-This README is for people who want to develop, test nodes locally, and contribute to the Rusk codebase.
+This README is for people who want to develop, test nodes locally, and
+contribute to the Rusk codebase.
 
-For more information on **running a node for main- or testnet**, see our [Node operator docs](https://docs.dusk.network/operator/overview/)
+For more information on **running a node for main- or testnet**, see our
+[Node operator docs](https://docs.dusk.network/operator/overview/)
 
 # 📃 Table of Contents
+
 - [Prerequisites](#prerequisites)
   - [Setup script](#setup-script)
   - [Rust Installation](#rust-installation)
@@ -61,7 +65,8 @@ For more information on **running a node for main- or testnet**, see our [Node o
 
 ### Setup script
 
-We provide a setup script in the `scripts` folder that can take care of everything.
+We provide a setup script in the `scripts` folder that can take care of
+everything.
 
 ```bash
 bash scripts/dev-setup.sh
@@ -69,9 +74,11 @@ bash scripts/dev-setup.sh
 
 ### Rust Installation
 
-Rusk makes use of the nightly toolchain, make sure it is installed. Furthermore, to build the WASM contracts, `wasm-pack` is required.
+Rusk makes use of the nightly toolchain, make sure it is installed. Furthermore,
+to build the WASM contracts, `wasm-pack` is required.
 
 To install and set the nightly toolchain, and install `wasm-pack`, run:
+
 ```bash
 rustup toolchain install nightly
 rustup default nightly
@@ -80,7 +87,8 @@ cargo install wasm-pack
 
 ## 🛠️ Build and Tests
 
-To build `rusk` from source, make sure the prerequisites are met. Then you can simply run the following command to compile everything:
+To build `rusk` from source, make sure the prerequisites are met. Then you can
+simply run the following command to compile everything:
 
 ```bash
 make
@@ -92,7 +100,8 @@ To run tests:
 make test
 ```
 
-That will also compile all the genesis contracts and its associated circuits. See also `make help` for all the available commands
+That will also compile all the genesis contracts and its associated circuits.
+See also `make help` for all the available commands
 
 ## 💻 Run a local node for development
 
@@ -108,12 +117,14 @@ Run a single full-node cluster with example state.
 # Copy example consensus.keys
 make prepare-dev
 ```
+
 #### Run a Node
 
 ```bash
 # Launch a local ephemeral node
 make run-dev
 ```
+
 #### Run an Archive node
 
 ```bash
@@ -123,11 +134,14 @@ make run-dev-archive
 #### Run a Prover Node
 
 The node can be build as a prover only as follows:
+
 ```bash
-cargo r --release --no-default-features --features prover -p rusk
+cargo r --release --no-default-features --features prover -p dusk-rusk
 ```
 
-This prover node will be accessible on `https://localhost:8080`. Apps like the [rusk-wallet](https://github.com/dusk-network/rusk/tree/master/rusk-wallet) can be connected to it for quicker and more private local proving.
+This prover node will be accessible on `https://localhost:8080`. Apps like the
+[rusk-wallet](https://github.com/dusk-network/rusk/tree/master/rusk-wallet) can
+be connected to it for quicker and more private local proving.
 
 ## 📜 Contracts compilation
 
@@ -136,6 +150,7 @@ Compile all the genesis contracts without running the server:
 ```bash
 make contracts
 ```
+
 Compile a specific genesis contract:
 
 ```bash
@@ -148,6 +163,7 @@ make wasm for=transfer
 It's also possible to run a local ephemeral node with Docker.
 
 To build the Docker image with archive:
+
 ```bash
 docker build -t rusk .
 ```
@@ -168,4 +184,5 @@ Port 9000 is used for Kadcast, port 8080 for the HTTP and GraphQL APIs.
 
 ## License
 
-The Rusk software is licensed under the [Mozilla Public License Version 2.0](./LICENSE).
+The Rusk software is licensed under the
+[Mozilla Public License Version 2.0](./LICENSE).
