@@ -8,6 +8,7 @@
 
 use alloc::vec;
 use alloc::vec::Vec;
+use core::iter::FromIterator;
 use core::ops::Index;
 use core::slice::Iter;
 
@@ -83,6 +84,18 @@ impl<'a> IntoIterator for &'a NoteList {
     }
 }
 
+// This implementation allows `NoteList` to be created directly from an iterator
+// over `(BlsScalar, NoteLeaf)` pairs, which is what we need for our prop tests.
+impl FromIterator<(BlsScalar, NoteLeaf)> for NoteList {
+    fn from_iter<T: IntoIterator<Item = (BlsScalar, NoteLeaf)>>(
+        iter: T,
+    ) -> Self {
+        let entries = iter.into_iter().collect();
+        NoteList { entries }
+    }
+}
+
+// For backwards compatibility, keep the existing From implementation
 impl From<Vec<(BlsScalar, NoteLeaf)>> for NoteList {
     fn from(entries: Vec<(BlsScalar, NoteLeaf)>) -> Self {
         NoteList { entries }
