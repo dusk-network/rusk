@@ -50,21 +50,20 @@ wallet-core = { version = "1.0.0", package = "dusk-wallet-core" }
 # wallet-core = { version = "1.0.0", path = "./wallet-core/", package = "dusk-wallet-core" }
 
 # Dusk dependencies outside the workspace
-bls12_381-bls = { version = "=0.4.0", default-features = false }
-dusk-bls12_381 = { version = "=0.13.0", default-features = false }
-dusk-bytes = "=0.1.7"
-dusk-jubjub = { version = "=0.14.1", default-features = false }
-dusk-merkle = "=0.5.3"
-dusk-plonk = { version = "=0.20.2", default-features = false }
-dusk-poseidon = "=0.40.0"
-jubjub-schnorr = { version = "=0.5.0", default-features = false }
-kadcast = "=0.7.0"
-phoenix-circuits = { version = "=0.5.0", default-features = false }
-phoenix-core = { version = "=0.33.1", default-features = false }
-# we leave piecrust open until a stable release is out
-piecrust = "=0.27.0"
+bls12_381-bls = { version = "0.4", default-features = false }
+dusk-bls12_381 = { version = "0.13", default-features = false }
+dusk-bytes = "0.1.7"
+dusk-jubjub = { version = "0.14.1", default-features = false }
+dusk-merkle = "0.5.3"
+dusk-plonk = { version = "0.20.2", default-features = false }
+dusk-poseidon = "0.40"
+jubjub-schnorr = { version = "0.5", default-features = false }
+kadcast = "0.7"
+phoenix-circuits = { version = "0.5", default-features = false }
+phoenix-core = { version = "0.33.1", default-features = false }
+piecrust = "0.27"
 piecrust-uplink = "0.17.3"
-poseidon-merkle = "=0.7.0"
+poseidon-merkle = "0.7"
 
 # External dependencies
 aes = "=0.7.5"
