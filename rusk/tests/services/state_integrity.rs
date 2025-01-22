@@ -103,26 +103,6 @@ fn initial_state<P: AsRef<Path>>(
     Ok(rusk)
 }
 
-fn initial_state2<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let dir = dir.as_ref();
-    let (sender, _) = broadcast::channel(10);
-
-    let rusk = Rusk::new(
-        dir,
-        CHAIN_ID,
-        None,
-        DEFAULT_GAS_PER_DEPLOY_BYTE,
-        DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
-        DEFAULT_MIN_GAS_LIMIT,
-        DEFAULT_MIN_DEPLOY_POINTS,
-        BLOCK_GAS_LIMIT,
-        u64::MAX,
-        sender,
-    )
-    .expect("Instantiating rusk should succeed");
-    Ok(rusk)
-}
-
 #[allow(dead_code)]
 struct Fixture {
     pub rusk: Rusk,
@@ -169,13 +149,6 @@ impl Fixture {
             contract_id,
             path,
         }
-    }
-
-    fn rebuild(&mut self) {
-        // let tmp =
-        //     tempdir().expect("Should be able to create temporary directory");
-        let tmp = PathBuf::from("/Users/miloszm/.dusk/rusk/state");
-        self.rusk = initial_state2(&tmp).expect("Initializing should succeed");
     }
 
     pub fn assert_bob_contract_is_deployed(&self) {
@@ -297,40 +270,29 @@ fn scan_elements(
     Ok(output)
 }
 
-fn perform_ops(f: &mut Fixture, args: [u8; 4]) -> Result<(), Error> {
+fn perform_ops(f: &mut Fixture) -> Result<(), Error> {
     f.assert_bob_contract_is_deployed();
     let vm = f.create_vm();
     let commit_id: [u8; 32] = f.rusk.state_root();
 
     let mut session1 = f.create_session(&vm, commit_id.clone());
     session1
-        .call::<u8, ()>(f.contract_id, METHOD, &args[0], u64::MAX)
-        .map_err(Error::Vm)?;
-
-    let mut session2 = f.create_session(&vm, commit_id.clone());
-    session2
-        .call::<u8, ()>(f.contract_id, METHOD, &args[1], u64::MAX)
-        .map_err(Error::Vm)?;
-
-    session2
-        .call::<u8, ()>(f.contract_id, METHOD, &args[2], u64::MAX)
-        .map_err(Error::Vm)?;
-
-    let commit_id2 = session2.commit()?;
-    println!("session2 commit: {}", hex::encode(&commit_id2));
-
-    vm.finalize_commit(commit_id2.clone())?;
-    println!("finalized commit2: {}", hex::encode(&commit_id2));
-
-    session1
-        .call::<u8, ()>(f.contract_id, METHOD, &args[3], u64::MAX)
+        .call::<u8, ()>(f.contract_id, METHOD, &0, u64::MAX)
         .map_err(Error::Vm)?;
 
     let commit_id1 = session1.commit()?;
     println!("session1 commit: {}", hex::encode(&commit_id1));
 
+    let mut session2 = f.create_session(&vm, commit_id1.clone());
+    session2
+        .call::<u8, ()>(f.contract_id, METHOD, &1, u64::MAX)
+        .map_err(Error::Vm)?;
+
+    let commit_id2 = session2.commit()?;
+    println!("session2 commit: {}", hex::encode(&commit_id2));
+
     vm.finalize_commit(commit_id1.clone())?;
-    println!("finalized commit1: {}", hex::encode(&commit_id1));
+    println!("finalized commit1: {}", hex::encode(&commit_id2));
 
     Ok(())
 }
@@ -340,16 +302,7 @@ pub async fn verify_commits() -> Result<(), Error> {
     logger();
     let mut f = Fixture::build(NON_BLS_OWNER);
 
-    let args1 = [0, 1, 2, 3];
-    let args2 = [4, 5, 6, 7];
-
-    perform_ops(&mut f, args1)?;
-
-    verify_commits_roots()?;
-
-    f.rebuild();
-
-    perform_ops(&mut f, args2)?;
+    perform_ops(&mut f)?;
 
     verify_commits_roots()
 }
@@ -439,9 +392,9 @@ pub async fn show_el() -> Result<(), Error> {
         .join(MAIN_DIR)
         .join(LEAF_DIR)
         .join("edge")
-        .join("15")
+        .join("5")
         .join(
-            "61f0b22cdc2877769e815528ef345b44d151a159c854f7d9143c32a080341832",
+            "9b39e27695327ed5b9d95e11ddf817519d7c8dff529e205060d6854ab35d4f38",
         )
         .join(ELEMENT_FILE);
     if element_path.is_file() {
