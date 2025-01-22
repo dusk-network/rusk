@@ -243,7 +243,7 @@ fn scan_elements(
             ),
             Some(p) => p,
         };
-        // println!("LOOKING end ==========> {:?}", element_path);
+        println!("found element: {:?}", element_path);
         if element_path.is_file() {
             let element_bytes = fs::read(&element_path)?;
             let element: ContractIndexElement =
@@ -270,29 +270,35 @@ fn scan_elements(
     Ok(output)
 }
 
-fn perform_ops(f: &mut Fixture) -> Result<(), Error> {
+// commit A touches contract C resulting in C's state hash H1
+// commit A is written (persisted but not finalized)
+// commit B touches contract C resulting in C's state hash H2
+// commit B is written (persisted but not finalized)
+// commit A is finalized
+// we expect effective hash of C to be H1, and not H2
+fn perform_ops_leading_to_root_discrepancy(f: &mut Fixture) -> Result<(), Error> {
     f.assert_bob_contract_is_deployed();
     let vm = f.create_vm();
     let commit_id: [u8; 32] = f.rusk.state_root();
 
-    let mut session1 = f.create_session(&vm, commit_id.clone());
-    session1
+    let mut session_a = f.create_session(&vm, commit_id.clone());
+    session_a
         .call::<u8, ()>(f.contract_id, METHOD, &0, u64::MAX)
         .map_err(Error::Vm)?;
 
-    let commit_id1 = session1.commit()?;
-    println!("session1 commit: {}", hex::encode(&commit_id1));
+    let commit_a = session_a.commit()?;
 
-    let mut session2 = f.create_session(&vm, commit_id1.clone());
-    session2
+    let mut session_b = f.create_session(&vm, commit_a.clone());
+    session_b
         .call::<u8, ()>(f.contract_id, METHOD, &1, u64::MAX)
         .map_err(Error::Vm)?;
 
-    let commit_id2 = session2.commit()?;
-    println!("session2 commit: {}", hex::encode(&commit_id2));
+    let commit_b = session_b.commit()?;
 
-    vm.finalize_commit(commit_id1.clone())?;
-    println!("finalized commit1: {}", hex::encode(&commit_id2));
+    vm.finalize_commit(commit_a.clone())?;
+
+    println!("commit_b={}", hex::encode(commit_b));
+    assert_eq!(hex::encode(get_state_root_of_commit(STATE_DIR, &commit_b)?), hex::encode(commit_b));
 
     Ok(())
 }
@@ -302,9 +308,10 @@ pub async fn verify_commits() -> Result<(), Error> {
     logger();
     let mut f = Fixture::build(NON_BLS_OWNER);
 
-    perform_ops(&mut f)?;
+    perform_ops_leading_to_root_discrepancy(&mut f)?;
 
     verify_commits_roots()
+    // Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -386,35 +393,56 @@ fn verify_state_root_of_commit(
     Ok(())
 }
 
+fn get_state_root_of_commit(
+    state_dir: impl AsRef<Path>,
+    commit_id: &[u8; 32],
+) -> Result<[u8; 32], Error> {
+    let main_dir = state_dir.as_ref().join(MAIN_DIR);
+    let level = find_commit_level(&main_dir, commit_id)?;
+    println!("level={}", level);
+    let levels = find_current_levels(&main_dir)?;
+    println!("levels={:?}", levels);
+    let elems = scan_elements(&main_dir, commit_id, level, &levels)?;
+    let root_from_elements = calculate_root(
+        elems.iter().map(|(hash, _, int_pos, _)| (hash, int_pos)),
+    );
+    Ok(root_from_elements)
+}
+
+// todo: this is really a utility, move it somewhere else or remove
 #[tokio::test(flavor = "multi_thread")]
 pub async fn show_el() -> Result<(), Error> {
-    let element_path = PathBuf::from(STATE_DIR)
-        .join(MAIN_DIR)
-        .join(LEAF_DIR)
-        .join("edge")
-        .join("5")
-        .join(
-            "9b39e27695327ed5b9d95e11ddf817519d7c8dff529e205060d6854ab35d4f38",
-        )
-        .join(ELEMENT_FILE);
-    if element_path.is_file() {
-        let element_bytes = fs::read(&element_path)?;
-        let element: ContractIndexElement = rkyv::from_bytes(&element_bytes)
-            .map_err(|err| {
-                tracing::trace!("deserializing element file failed {}", err);
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!("Invalid element file \"{element_path:?}\": {err}"),
-                )
-            })?;
-        println!(
-            "{:?} - hash of element file: {:?}",
-            element.hash.as_ref().map(|a| hex::encode(a)),
-            element_path
-        );
-        println!("page indices={:?}", element.page_indices);
-    } else {
-        println!("{:?} - not a file", element_path);
+    let levels = vec![2,3,4,5];
+    for l in levels {
+        println!("=== {} ===================", l);
+        let element_path = PathBuf::from(STATE_DIR)
+            .join(MAIN_DIR)
+            .join(LEAF_DIR)
+            .join("edge")
+            .join(format!("{}", l))
+            .join(
+                "9b39e27695327ed5b9d95e11ddf817519d7c8dff529e205060d6854ab35d4f38",
+            )
+            .join(ELEMENT_FILE);
+        if element_path.is_file() {
+            let element_bytes = fs::read(&element_path)?;
+            let element: ContractIndexElement = rkyv::from_bytes(&element_bytes)
+                .map_err(|err| {
+                    tracing::trace!("deserializing element file failed {}", err);
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!("Invalid element file \"{element_path:?}\": {err}"),
+                    )
+                })?;
+            println!(
+                "{:?} - hash of element file: {:?}",
+                element.hash.as_ref().map(|a| hex::encode(a)),
+                element_path
+            );
+            println!("page indices={:?}", element.page_indices);
+        } else {
+            println!("{:?} - not a file", element_path);
+        }
     }
     Ok(())
 }
