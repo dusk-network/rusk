@@ -5,7 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![allow(unused)]
+pub mod domain;
+// mod infrastructure;
+// mod handlers;
+// mod router;
+// mod state;
 
+// pub mod application;
 #[cfg(feature = "chain")]
 mod chain;
 mod event;
@@ -15,6 +21,7 @@ mod prover;
 mod rusk;
 mod stream;
 
+// Re-export key types
 pub(crate) use event::{
     BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
     RequestData, Target,
