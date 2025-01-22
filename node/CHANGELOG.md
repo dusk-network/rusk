@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change dependency declaration to not require strict equal [#3405]
 
 ## [1.0.0] - 2025-01-17
 
 - First `dusk-node` release
+
+<!-- Issues -->
+[#3405]: https://github.com/dusk-network/rusk/issues/3405
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/node-1.0.0...HEAD
 [1.0.0]: https://github.com/dusk-network/rusk/tree/node-1.0.0
