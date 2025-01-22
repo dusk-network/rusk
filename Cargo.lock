@@ -1682,7 +1682,7 @@ dependencies = [
  "serde_with",
  "smallvec",
  "sqlx",
- "tempdir",
+ "tempfile",
  "thiserror",
  "time-util",
  "tokio",
