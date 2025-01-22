@@ -1,6 +1,6 @@
 [package]
 name = "dusk-vm"
-version = "0.1.0"
+version = "0.1.1-dev"
 edition = "2021"
 
 repository = "https://github.com/dusk-network/rusk"
