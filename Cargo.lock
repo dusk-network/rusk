@@ -4409,7 +4409,7 @@ dependencies = [
 
 [[package]]
 name = "rusk-recovery"
-version = "1.0.2-dev"
+version = "1.0.2"
 dependencies = [
  "bs58",
  "cargo_toml",
