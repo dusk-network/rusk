@@ -4474,7 +4474,7 @@ dependencies = [
 
 [[package]]
 name = "rusk-prover"
-version = "1.0.1-dev"
+version = "1.0.1"
 dependencies = [
  "dusk-bytes",
  "dusk-core 1.0.0",
