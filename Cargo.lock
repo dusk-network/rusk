@@ -1582,7 +1582,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-consensus"
-version = "1.0.1-dev"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
