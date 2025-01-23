@@ -1816,7 +1816,7 @@ dependencies = [
  "rkyv",
  "rusk-profile 1.0.1",
  "rusk-prover",
- "rusk-recovery",
+ "rusk-recovery 1.0.2",
  "rustc_tools_util",
  "rustls-pemfile",
  "semver",
@@ -4410,6 +4410,35 @@ dependencies = [
 [[package]]
 name = "rusk-recovery"
 version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "774e04ab0731b731a52858f25d32aa9976d539f120d603723df360aa0c127251"
+dependencies = [
+ "bs58",
+ "cargo_toml",
+ "dusk-bytes",
+ "dusk-core 1.0.0",
+ "dusk-plonk",
+ "dusk-vm 1.0.0",
+ "ff",
+ "flate2",
+ "hex",
+ "http_req",
+ "rand 0.8.5",
+ "reqwest",
+ "rusk-profile 1.0.1",
+ "serde",
+ "serde_derive",
+ "tar",
+ "tokio",
+ "toml",
+ "tracing",
+ "url",
+ "zip",
+]
+
+[[package]]
+name = "rusk-recovery"
+version = "1.0.3-alpha.1"
 dependencies = [
  "bs58",
  "cargo_toml",
