@@ -1894,7 +1894,7 @@ dependencies = [
  "reqwest",
  "rkyv",
  "rusk-profile 1.0.1",
- "rusk-prover",
+ "rusk-prover 1.0.1",
  "rusk-recovery 1.0.2",
  "rustc_tools_util",
  "rustls-pemfile",
@@ -4475,6 +4475,22 @@ dependencies = [
 [[package]]
 name = "rusk-prover"
 version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5b66e742b2c4bac238aedf523e026a07393a8c021b704bb60b4030f32c6ff94"
+dependencies = [
+ "dusk-bytes",
+ "dusk-core 1.0.0",
+ "dusk-plonk",
+ "hex",
+ "once_cell",
+ "rand 0.8.5",
+ "rusk-profile 1.0.1",
+ "tracing",
+]
+
+[[package]]
+name = "rusk-prover"
+version = "1.0.2-alpha.1"
 dependencies = [
  "dusk-bytes",
  "dusk-core 1.0.0",
@@ -5219,7 +5235,7 @@ dependencies = [
  "ff",
  "rand 0.8.5",
  "rkyv",
- "rusk-prover",
+ "rusk-prover 1.0.1",
 ]
 
 [[package]]
@@ -5715,7 +5731,7 @@ dependencies = [
  "ringbuffer",
  "rkyv",
  "rusk-profile 1.0.1",
- "rusk-prover",
+ "rusk-prover 1.0.1",
 ]
 
 [[package]]
