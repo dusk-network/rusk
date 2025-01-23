@@ -1,6 +1,6 @@
 [package]
 name = "dusk-node"
-version = "1.0.1-dev"
+version = "1.0.2-alpha.1"
 edition = "2021"
 autobins = false
 repository = "https://github.com/dusk-network/rusk"
