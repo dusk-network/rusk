@@ -1847,7 +1847,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-vm"
-version = "0.1.1-dev"
+version = "1.0.0"
 dependencies = [
  "blake2b_simd",
  "blake3",
