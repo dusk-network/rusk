@@ -4320,7 +4320,7 @@ dependencies = [
 
 [[package]]
 name = "rusk-profile"
-version = "1.0.1-dev"
+version = "1.0.1"
 dependencies = [
  "blake3",
  "console",
