@@ -40,8 +40,8 @@ dusk-vm = { version = "0.1.1-dev", path = "./vm/" }
 node = { version = "1.0.1-dev", path = "./node/", package = "dusk-node" }
 # node-data = { version = "1.0.0", package = "dusk-node-data" }
 node-data = { version = "1.0.1-dev", path = "./node-data/", package = "dusk-node-data" }
-# rusk-profile = "1.0.0"
-rusk-profile = { version = "1.0.1", path = "./rusk-profile/" }
+rusk-profile = "1.0.1"
+# rusk-profile = { version = "1.0.1", path = "./rusk-profile/" }
 # rusk-prover = "1.0.0"
 rusk-prover = { version = "1.0.1-dev", path = "./rusk-prover/" }
 # rusk-recovery = "1.0.1"
