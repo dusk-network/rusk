@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Change dependency declaration to not require strict equal [#3405]
+
 ## [1.0.1] - 2025-01-20
 
 ### Added
@@ -291,6 +295,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+<!-- Issues -->
+[#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3206]: https://github.com/dusk-network/rusk/issues/3206
 [#2597]: https://github.com/dusk-network/rusk/issues/2597
