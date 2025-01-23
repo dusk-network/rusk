@@ -1,6 +1,6 @@
 [package]
 name = "dusk-core"
-version = "0.1.1-dev"
+version = "1.0.0"
 edition = "2021"
 
 description = "Types used for interacting with Dusk's transfer and stake contracts."
