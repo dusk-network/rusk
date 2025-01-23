@@ -21,4 +21,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.0.0...HEAD
-[0.1.0]: https://github.com/dusk-network/rusk/tree/dusk-node-data-1.0.0
+[1.0.0]: https://github.com/dusk-network/rusk/tree/dusk-node-data-1.0.0
