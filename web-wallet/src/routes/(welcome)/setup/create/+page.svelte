@@ -2,22 +2,27 @@
 
 <script>
   import { fade } from "svelte/transition";
+  import { setKey } from "lamb";
+
+  import { Wizard, WizardStep } from "$lib/dusk/components";
+
+  import { ExistingWalletNotice } from "$lib/components";
+  import { goto } from "$lib/navigation";
+  import loginInfoStorage from "$lib/services/loginInfoStorage";
+  import { settingsStore } from "$lib/stores";
   import {
     initializeWallet,
     refreshLocalStoragePasswordInfo,
   } from "$lib/wallet";
-  import { Wizard, WizardStep } from "$lib/dusk/components";
-  import { ExistingWalletNotice } from "$lib/components";
-  import loginInfoStorage from "$lib/services/loginInfoStorage";
-  import { settingsStore } from "$lib/stores";
+
+  import AllSet from "../AllSet.svelte";
+  import PasswordSetup from "../PasswordSetup.svelte";
   import TermsOfService from "../TermsOfService.svelte";
+
   import MnemonicPhrase from "./MnemonicPhrase.svelte";
+  import MnemonicPreSetup from "./MnemonicPreSetup.svelte";
   import MnemonicValidate from "./MnemonicValidate.svelte";
   import NetworkSync from "./NetworkSync.svelte";
-  import AllSet from "../AllSet.svelte";
-  import MnemonicPreSetup from "./MnemonicPreSetup.svelte";
-  import PasswordSetup from "../PasswordSetup.svelte";
-  import { goto } from "$lib/navigation";
 
   /** @type {import("./$types").PageData} */
   export let data;
@@ -146,6 +151,10 @@
       nextButton={{
         action: async () => {
           await initializeWallet(mnemonicPhrase.join(" "), currentBlockHeight);
+          settingsStore.update(
+            setKey("walletCreationBlockHeight", currentBlockHeight)
+          );
+
           mnemonicPhrase = [];
         },
         disabled: false,

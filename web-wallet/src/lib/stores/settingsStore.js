@@ -36,6 +36,7 @@ const initialState = {
   gasPrice: BigInt(import.meta.env.VITE_GAS_PRICE_DEFAULT ?? 1),
   hideStakingNotice: false,
   userId: "",
+  walletCreationBlockHeight: 0n,
 };
 
 const createPersistedStore = (

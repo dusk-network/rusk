@@ -2,10 +2,10 @@
 
 exports[`Settings > Resetting the wallet > should show an error if clearing local data fails 1`] = `
 <section
-  class="settings svelte-1mpdn76"
+  class="settings"
 >
   <header
-    class="settings__header svelte-1mpdn76"
+    class="settings__header"
   >
     <h2>
       Settings
@@ -13,13 +13,13 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
   </header>
    
   <div
-    class="settings__content svelte-1mpdn76"
+    class="settings__content"
   >
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -33,14 +33,14 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Gas
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1mpdn76"
+        class="settings-group__multi-control-content"
       >
         <label
           class="gas-control svelte-1p4ekyk"
@@ -96,10 +96,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
     <hr />
      
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -113,21 +113,19 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Preferences
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1mpdn76"
+        class="settings-group__multi-control-content"
       >
         <label
-          class="settings-group__control settings-group__control--with-label svelte-1mpdn76"
+          class="settings-group__control settings-group__control--with-label"
         >
-          <span
-            class="svelte-1mpdn76"
-          >
+          <span>
             Currency:
           </span>
            
@@ -409,7 +407,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         </label>
          
         <label
-          class="settings-group__control settings-group__control--switch svelte-1mpdn76"
+          class="settings-group__control settings-group__control--switch"
         >
           <span>
             Dark mode
@@ -428,11 +426,12 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
      
     <hr />
      
+     
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -446,7 +445,7 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Support
         </h3>
@@ -490,10 +489,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
     <hr />
      
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -507,14 +506,14 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Reset wallet
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1mpdn76"
+        class="settings-group__multi-control-content"
       >
         <p>
           Resetting your wallet clears the cache and restores default settings
@@ -565,10 +564,10 @@ exports[`Settings > Resetting the wallet > should show an error if clearing loca
 
 exports[`Settings > should render the settings page displaying the status of the network 1`] = `
 <section
-  class="settings svelte-1mpdn76"
+  class="settings"
 >
   <header
-    class="settings__header svelte-1mpdn76"
+    class="settings__header"
   >
     <h2>
       Settings
@@ -576,13 +575,13 @@ exports[`Settings > should render the settings page displaying the status of the
   </header>
    
   <div
-    class="settings__content svelte-1mpdn76"
+    class="settings__content"
   >
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -596,14 +595,14 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Gas
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1mpdn76"
+        class="settings-group__multi-control-content"
       >
         <label
           class="gas-control svelte-1p4ekyk"
@@ -659,10 +658,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -676,21 +675,19 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Preferences
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1mpdn76"
+        class="settings-group__multi-control-content"
       >
         <label
-          class="settings-group__control settings-group__control--with-label svelte-1mpdn76"
+          class="settings-group__control settings-group__control--with-label"
         >
-          <span
-            class="svelte-1mpdn76"
-          >
+          <span>
             Currency:
           </span>
            
@@ -972,7 +969,7 @@ exports[`Settings > should render the settings page displaying the status of the
         </label>
          
         <label
-          class="settings-group__control settings-group__control--switch svelte-1mpdn76"
+          class="settings-group__control settings-group__control--switch"
         >
           <span>
             Dark mode
@@ -991,11 +988,12 @@ exports[`Settings > should render the settings page displaying the status of the
      
     <hr />
      
+     
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1009,7 +1007,7 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Support
         </h3>
@@ -1053,10 +1051,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1070,14 +1068,14 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Reset wallet
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1mpdn76"
+        class="settings-group__multi-control-content"
       >
         <p>
           Resetting your wallet clears the cache and restores default settings
@@ -1110,10 +1108,10 @@ exports[`Settings > should render the settings page displaying the status of the
 
 exports[`Settings > should render the settings page displaying the status of the network 2`] = `
 <section
-  class="settings svelte-1mpdn76"
+  class="settings"
 >
   <header
-    class="settings__header svelte-1mpdn76"
+    class="settings__header"
   >
     <h2>
       Settings
@@ -1121,13 +1119,13 @@ exports[`Settings > should render the settings page displaying the status of the
   </header>
    
   <div
-    class="settings__content svelte-1mpdn76"
+    class="settings__content"
   >
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1141,14 +1139,14 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Gas
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1mpdn76"
+        class="settings-group__multi-control-content"
       >
         <label
           class="gas-control svelte-1p4ekyk"
@@ -1204,10 +1202,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1221,21 +1219,19 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Preferences
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1mpdn76"
+        class="settings-group__multi-control-content"
       >
         <label
-          class="settings-group__control settings-group__control--with-label svelte-1mpdn76"
+          class="settings-group__control settings-group__control--with-label"
         >
-          <span
-            class="svelte-1mpdn76"
-          >
+          <span>
             Currency:
           </span>
            
@@ -1517,7 +1513,7 @@ exports[`Settings > should render the settings page displaying the status of the
         </label>
          
         <label
-          class="settings-group__control settings-group__control--switch svelte-1mpdn76"
+          class="settings-group__control settings-group__control--switch"
         >
           <span>
             Dark mode
@@ -1536,11 +1532,12 @@ exports[`Settings > should render the settings page displaying the status of the
      
     <hr />
      
+     
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1554,7 +1551,7 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Support
         </h3>
@@ -1598,10 +1595,10 @@ exports[`Settings > should render the settings page displaying the status of the
     <hr />
      
     <article
-      class="settings-group svelte-1mpdn76"
+      class="settings-group"
     >
       <header
-        class="settings-group__header svelte-1mpdn76"
+        class="settings-group__header"
       >
         <svg
           class="dusk-icon dusk-icon--size--default"
@@ -1615,14 +1612,616 @@ exports[`Settings > should render the settings page displaying the status of the
         
          
         <h3
-          class="h4 settings-group__heading svelte-1mpdn76"
+          class="h4 settings-group__heading"
         >
           Reset wallet
         </h3>
       </header>
        
       <div
-        class="settings-group__multi-control-content svelte-1mpdn76"
+        class="settings-group__multi-control-content"
+      >
+        <p>
+          Resetting your wallet clears the cache and restores default settings
+          without affecting your funds or transaction history. You’ll need your
+          mnemonic phrase to restore access, so ensure it’s securely stored
+          before proceeding.
+        </p>
+         
+        
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default settings-group__button--state--danger"
+          data-tooltip-disabled="true"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Not allowed to reset while syncing"
+          data-tooltip-type="warning"
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Reset Wallet
+          </span>
+        </button>
+      </div>
+    </article>
+  </div>
+</section>
+`;
+
+exports[`Settings > should show the wallet creation block height if it's greater than zero 1`] = `
+<section
+  class="settings"
+>
+  <header
+    class="settings__header"
+  >
+    <h2>
+      Settings
+    </h2>
+  </header>
+   
+  <div
+    class="settings__content"
+  >
+    <article
+      class="settings-group"
+    >
+      <header
+        class="settings-group__header"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M19.77,7.23L19.78,7.22L16.06,3.5L15,4.56L17.11,6.67C16.17,7.03 15.5,7.93 15.5,9A2.5,2.5 0 0,0 18,11.5C18.36,11.5 18.69,11.42 19,11.29V18.5A1,1 0 0,1 18,19.5A1,1 0 0,1 17,18.5V14A2,2 0 0,0 15,12H14V5A2,2 0 0,0 12,3H6A2,2 0 0,0 4,5V21H14V13.5H15.5V18.5A2.5,2.5 0 0,0 18,21A2.5,2.5 0 0,0 20.5,18.5V9C20.5,8.31 20.22,7.68 19.77,7.23M12,13.5V19H6V12H12V13.5M12,10H6V5H12V10M18,10A1,1 0 0,1 17,9A1,1 0 0,1 18,8A1,1 0 0,1 19,9A1,1 0 0,1 18,10Z"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4 settings-group__heading"
+        >
+          Gas
+        </h3>
+      </header>
+       
+      <div
+        class="settings-group__multi-control-content"
+      >
+        <label
+          class="gas-control svelte-1p4ekyk"
+        >
+          <span
+            class="gas-control__label svelte-1p4ekyk"
+          >
+            Price (lux):
+          </span>
+           
+          <input
+            class="dusk-textbox dusk-textbox-text gas-control__input"
+            inputmode="numeric"
+            pattern="\\d+"
+            required=""
+            type="text"
+          />
+          
+        </label>
+         
+        <label
+          class="gas-control svelte-1p4ekyk"
+        >
+          <span
+            class="gas-control__label svelte-1p4ekyk"
+          >
+            Gas Limit (unit):
+          </span>
+           
+          <input
+            class="dusk-textbox dusk-textbox-text gas-control__input"
+            inputmode="numeric"
+            pattern="\\d+"
+            required=""
+            type="text"
+          />
+          
+        </label>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default"
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Reset to defaults
+          </span>
+        </button>
+      </div>
+    </article>
+     
+    <hr />
+     
+    <article
+      class="settings-group"
+    >
+      <header
+        class="settings-group__header"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M21.7 18.6V17.6L22.8 16.8C22.9 16.7 23 16.6 22.9 16.5L21.9 14.8C21.9 14.7 21.7 14.7 21.6 14.7L20.4 15.2C20.1 15 19.8 14.8 19.5 14.7L19.3 13.4C19.3 13.3 19.2 13.2 19.1 13.2H17.1C16.9 13.2 16.8 13.3 16.8 13.4L16.6 14.7C16.3 14.9 16.1 15 15.8 15.2L14.6 14.7C14.5 14.7 14.4 14.7 14.3 14.8L13.3 16.5C13.3 16.6 13.3 16.7 13.4 16.8L14.5 17.6V18.6L13.4 19.4C13.3 19.5 13.2 19.6 13.3 19.7L14.3 21.4C14.4 21.5 14.5 21.5 14.6 21.5L15.8 21C16 21.2 16.3 21.4 16.6 21.5L16.8 22.8C16.9 22.9 17 23 17.1 23H19.1C19.2 23 19.3 22.9 19.3 22.8L19.5 21.5C19.8 21.3 20 21.2 20.3 21L21.5 21.4C21.6 21.4 21.7 21.4 21.8 21.3L22.8 19.6C22.9 19.5 22.9 19.4 22.8 19.4L21.7 18.6M18 19.5C17.2 19.5 16.5 18.8 16.5 18S17.2 16.5 18 16.5 19.5 17.2 19.5 18 18.8 19.5 18 19.5M12.3 22H3C1.9 22 1 21.1 1 20V4C1 2.9 1.9 2 3 2H21C22.1 2 23 2.9 23 4V13.1C22.4 12.5 21.7 12 21 11.7V6H3V20H11.3C11.5 20.7 11.8 21.4 12.3 22Z"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4 settings-group__heading"
+        >
+          Preferences
+        </h3>
+      </header>
+       
+      <div
+        class="settings-group__multi-control-content"
+      >
+        <label
+          class="settings-group__control settings-group__control--with-label"
+        >
+          <span>
+            Currency:
+          </span>
+           
+          <select
+            class="dusk-select settings-group__control settings-group__control--with-label"
+          >
+            <option
+              value="AED"
+            >
+              United Arab Emirates Dirham
+               
+            </option>
+            <option
+              value="ARS"
+            >
+              Argentine Peso
+               
+            </option>
+            <option
+              value="AUD"
+            >
+              Australian Dollar
+               
+            </option>
+            <option
+              value="BDT"
+            >
+              Bangladeshi Taka
+               
+            </option>
+            <option
+              value="BHD"
+            >
+              Bahraini Dinar
+               
+            </option>
+            <option
+              value="BMD"
+            >
+              Bermudian Dollar
+               
+            </option>
+            <option
+              value="BRL"
+            >
+              Brazilian Real
+               
+            </option>
+            <option
+              value="CAD"
+            >
+              Canadian Dollar
+               
+            </option>
+            <option
+              value="CFH"
+            >
+              Swiss Franc
+               
+            </option>
+            <option
+              value="CLP"
+            >
+              Chilean Peso
+               
+            </option>
+            <option
+              value="CNY"
+            >
+              Renminbi
+               
+            </option>
+            <option
+              value="CZK"
+            >
+              Czech Koruna
+               
+            </option>
+            <option
+              value="DKK"
+            >
+              Danish Krone
+               
+            </option>
+            <option
+              value="EUR"
+            >
+              Euro
+               
+            </option>
+            <option
+              value="GBP"
+            >
+              Pound Sterling
+               
+            </option>
+            <option
+              value="HKD"
+            >
+              Hong Kong Dollar
+               
+            </option>
+            <option
+              value="HUF"
+            >
+              Hungarian Forint
+               
+            </option>
+            <option
+              value="IDR"
+            >
+              Indonesian Rupiah
+               
+            </option>
+            <option
+              value="ILS"
+            >
+              Israeli New Shekel
+               
+            </option>
+            <option
+              value="INR"
+            >
+              Indian Rupee
+               
+            </option>
+            <option
+              value="JPY"
+            >
+              Japanese Yen
+               
+            </option>
+            <option
+              value="KRW"
+            >
+              South Korean Won
+               
+            </option>
+            <option
+              value="KWD"
+            >
+              Kuwaiti Dinar
+               
+            </option>
+            <option
+              value="LKR"
+            >
+              Sri Lankan Rupee
+               
+            </option>
+            <option
+              value="MMK"
+            >
+              Myanmar Kyat
+               
+            </option>
+            <option
+              value="MXN"
+            >
+              Mexican Peso
+               
+            </option>
+            <option
+              value="MYR"
+            >
+              Malaysian Ringgit
+               
+            </option>
+            <option
+              value="NGN"
+            >
+              Nigerian Naira
+               
+            </option>
+            <option
+              value="NOK"
+            >
+              Norwegian Krone
+               
+            </option>
+            <option
+              value="NZD"
+            >
+              New Zealand Dollar
+               
+            </option>
+            <option
+              value="PHP"
+            >
+              Philippine Peso
+               
+            </option>
+            <option
+              value="PKR"
+            >
+              Pakistani Rupee
+               
+            </option>
+            <option
+              value="PLN"
+            >
+              Polish Złoty
+               
+            </option>
+            <option
+              value="RUB"
+            >
+              Russian Ruble
+               
+            </option>
+            <option
+              value="SAR"
+            >
+              Saudi Riyal
+               
+            </option>
+            <option
+              value="SEK"
+            >
+              Swedish Krona
+               
+            </option>
+            <option
+              value="SGD"
+            >
+              Singapore Dollar
+               
+            </option>
+            <option
+              value="THB"
+            >
+              Thai Baht
+               
+            </option>
+            <option
+              value="TRY"
+            >
+              Turkish Lira
+               
+            </option>
+            <option
+              value="TWD"
+            >
+              New Taiwan Dollar
+               
+            </option>
+            <option
+              value="UAH"
+            >
+              Ukrainian Hryvnia
+               
+            </option>
+            <option
+              value="USD"
+            >
+              United States Dollar
+               
+            </option>
+            <option
+              value="VEF"
+            >
+              Venezuelan Bolívar Fuerte
+               
+            </option>
+            <option
+              value="VND"
+            >
+              Vietnamese Dồng
+               
+            </option>
+            <option
+              value="ZAR"
+            >
+              South African Rand
+               
+            </option>
+            
+          </select>
+        </label>
+         
+        <label
+          class="settings-group__control settings-group__control--switch"
+        >
+          <span>
+            Dark mode
+          </span>
+           
+          <div
+            aria-checked="false"
+            aria-disabled="false"
+            class="dusk-switch"
+            role="switch"
+            tabindex="0"
+          />
+        </label>
+      </div>
+    </article>
+     
+    <hr />
+     
+    <article
+      class="settings-group"
+    >
+      <header
+        class="settings-group__header"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V9.21L13,12.58V19.29L19,15.91Z"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4 settings-group__heading"
+        >
+          Wallet Creation Block Height
+        </h3>
+      </header>
+       
+      <div
+        class="copy-field settings-group__control"
+      >
+        <input
+          class="dusk-textbox dusk-textbox-text copy-field__content"
+          readonly=""
+          type="text"
+        />
+        
+         
+        <button
+          aria-label="Copy Address"
+          class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button copy-field__button"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Copy to clipboard"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+           
+          
+        </button>
+      </div>
+    </article>
+     
+    <hr />
+     
+    <article
+      class="settings-group"
+    >
+      <header
+        class="settings-group__header"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M20.5,14.5V16H19V14.5H20.5M18.5,9.5H17V9A3,3 0 0,1 20,6A3,3 0 0,1 23,9C23,9.97 22.5,10.88 21.71,11.41L21.41,11.6C20.84,12 20.5,12.61 20.5,13.3V13.5H19V13.3C19,12.11 19.6,11 20.59,10.35L20.88,10.16C21.27,9.9 21.5,9.47 21.5,9A1.5,1.5 0 0,0 20,7.5A1.5,1.5 0 0,0 18.5,9V9.5M9,13C11.67,13 17,14.34 17,17V20H1V17C1,14.34 6.33,13 9,13M9,4A4,4 0 0,1 13,8A4,4 0 0,1 9,12A4,4 0 0,1 5,8A4,4 0 0,1 9,4M9,14.9C6.03,14.9 2.9,16.36 2.9,17V18.1H15.1V17C15.1,16.36 11.97,14.9 9,14.9M9,5.9A2.1,2.1 0 0,0 6.9,8A2.1,2.1 0 0,0 9,10.1A2.1,2.1 0 0,0 11.1,8A2.1,2.1 0 0,0 9,5.9Z"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4 settings-group__heading"
+        >
+          Support
+        </h3>
+      </header>
+       
+      <p>
+        Need help or have feedback? Explore the 
+        <a
+          class="dusk-anchor dusk-anchor--on-surface"
+          href="https://docs.dusk.network"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Dusk Docs
+        </a>
+        
+        for detailed documentation, join the
+        
+        <a
+          class="dusk-anchor dusk-anchor--on-surface"
+          href="https://discord.gg/dusk-official"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          community Discord
+        </a>
+         for questions and discussions, and visit the
+        
+        <a
+          class="dusk-anchor dusk-anchor--on-surface"
+          href="https://github.com/dusk-network/rusk"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          GitHub repository
+        </a>
+         to view known issues, report bugs, or share feedback.
+      </p>
+    </article>
+     
+    <hr />
+     
+    <article
+      class="settings-group"
+    >
+      <header
+        class="settings-group__header"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--default"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M13 3C8 3 4 7 4 12H1L4.9 15.9L5 16L9 12H6C6 8.1 9.1 5 13 5S20 8.1 20 12 16.9 19 13 19C11.1 19 9.3 18.2 8.1 16.9L6.7 18.3C8.3 20 10.5 21 13 21C18 21 22 17 22 12S18 3 13 3M12 15H14V17H12V15M12 7H14V13H12V7"
+          />
+        </svg>
+        
+         
+        <h3
+          class="h4 settings-group__heading"
+        >
+          Reset wallet
+        </h3>
+      </header>
+       
+      <div
+        class="settings-group__multi-control-content"
       >
         <p>
           Resetting your wallet clears the cache and restores default settings
