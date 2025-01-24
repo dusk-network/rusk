@@ -1,8 +1,10 @@
-import { map } from "lamb";
+import { map, setPathIn } from "lamb";
 
 import notesArrayToMap from "$lib/wallet/notesArrayToMap";
 import walletCache from "$lib/wallet-cache";
 import networkStore from "$lib/stores/networkStore";
+
+/** @typedef {import("$lib/vendor/w3sper.js/src/mod").Profile} Profile */
 
 class WalletTreasury {
   /** @type {AccountBalance[]} */
@@ -35,13 +37,13 @@ class WalletTreasury {
     };
   }
 
-  /** @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles */
+  /** @param {Profile[]} profiles */
   constructor(profiles = []) {
     this.#profiles = profiles;
   }
 
   /**
-   * @param {import("$lib/vendor/w3sper.js/src/mod").Profile["address"]} identifier
+   * @param {Profile["account"]} identifier
    * @returns {Promise<AccountBalance>}
    */
   async account(identifier) {
@@ -56,7 +58,7 @@ class WalletTreasury {
   }
 
   /**
-   * @param {import("$lib/vendor/w3sper.js/src/mod").Profile["address"]} identifier
+   * @param {Profile["address"]} identifier
    * @returns {Promise<Map<Uint8Array, Uint8Array>>}
    */
   async address(identifier) {
@@ -79,13 +81,59 @@ class WalletTreasury {
       : new Map();
   }
 
-  /** @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles */
+  /** @returns {Promise<void>} */
+  async clearCache() {
+    await walletCache.clear();
+  }
+
+  /**
+   * @param {Profile} profile
+   * @returns {Promise<WalletCacheBalanceInfo["balance"]>}
+   */
+  async getCachedBalance(profile) {
+    return await walletCache.getBalanceInfo(profile.address.toString());
+  }
+
+  /**
+   * @param {Profile} profile
+   * @returns {Promise<StakeInfo>}
+   */
+  async getCachedStakeInfo(profile) {
+    return await walletCache.getStakeInfo(profile.account.toString());
+  }
+
+  /**
+   * @returns {Promise<WalletCacheSyncInfo>}
+   */
+  async getCachedSyncInfo() {
+    return await walletCache.getSyncInfo();
+  }
+
+  /**
+   * @param {Profile} profile
+   * @param {WalletCacheBalanceInfo["balance"]} balance
+   * @returns {Promise<void>}
+   */
+  async setCachedBalance(profile, balance) {
+    await walletCache.setBalanceInfo(profile.address.toString(), balance);
+  }
+
+  /**
+   * @param {Profile} profile
+   * @param {StakeInfo} stakeInfo
+   * @returns {Promise<void>}
+   */
+  async setCachedStakeInfo(profile, stakeInfo) {
+    await walletCache.setStakeInfo(profile.account.toString(), stakeInfo);
+  }
+
+  /** @param {Profile[]} profiles */
   setProfiles(profiles) {
     this.#profiles = profiles;
   }
 
   /**
-   * @param {import("$lib/vendor/w3sper.js/src/mod").Profile["account"]} identifier
+   * @param {Profile["account"]} identifier
    * @returns {Promise<StakeInfo>}
    */
   async stakeInfo(identifier) {
@@ -225,6 +273,30 @@ class WalletTreasury {
 
     // @ts-ignore
     addressSyncer.removeEventListener("synciteration", syncIterationListener);
+  }
+
+  /**
+   * @param {Profile} profile
+   * @param {bigint} nonce
+   * @returns {Promise<void>}
+   */
+  async updateCachedNonce(profile, nonce) {
+    const address = profile.address.toString();
+    const currentBalance = await walletCache.getBalanceInfo(address);
+
+    await walletCache.setBalanceInfo(
+      address,
+      setPathIn(currentBalance, "unshielded.nonce", nonce)
+    );
+  }
+
+  /**
+   * @param {Uint8Array[]} nullifiers
+   * @param {string} hash
+   * @returns {Promise<void>}
+   */
+  async updateCachedPendingNotes(nullifiers, hash) {
+    await walletCache.setPendingNotesInfo(nullifiers, hash);
   }
 }
 

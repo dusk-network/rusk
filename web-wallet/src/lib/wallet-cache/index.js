@@ -297,7 +297,7 @@ class WalletCache {
    * @param {string} txId
    * @returns {Promise<void>}
    */
-  async setPendingNoteInfo(nullifiers, txId) {
+  async setPendingNotesInfo(nullifiers, txId) {
     const data = nullifiers.map((nullifier) => ({ nullifier, txId }));
 
     await this.#db

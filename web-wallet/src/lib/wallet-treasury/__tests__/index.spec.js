@@ -8,7 +8,7 @@ import {
   it,
   vi,
 } from "vitest";
-import { mapWith, pluckFrom } from "lamb";
+import { mapValues, mapWith, multiplyBy, pluckFrom } from "lamb";
 
 import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
 
@@ -21,6 +21,7 @@ import {
 import networkStore from "$lib/stores/networkStore";
 
 import WalletTreasury from "..";
+import walletCache from "$lib/wallet-cache";
 
 describe("WalletTreasury", () => {
   /** @type {WalletTreasury} */
@@ -177,6 +178,120 @@ describe("WalletTreasury", () => {
           },
         })
       ).rejects.toThrow();
+    });
+  });
+
+  describe("Cache access methods", () => {
+    it("should expose a method to clear the local cache", async () => {
+      // Right now we just call the cache method,
+      // so we won't repeat the wallet-cache test here.
+      const clearCacheSpy = vi
+        .spyOn(walletCache, "clear")
+        .mockResolvedValue(undefined);
+
+      await walletTreasury.clearCache();
+
+      expect(clearCacheSpy).toHaveBeenCalledTimes(1);
+
+      clearCacheSpy.mockRestore();
+    });
+
+    it("should expose a method to get the cached balance", async () => {
+      const expected = await walletCache.getBalanceInfo(
+        profiles[0].address.toString()
+      );
+
+      await expect(
+        walletTreasury.getCachedBalance(profiles[0])
+      ).resolves.toStrictEqual(expected);
+    });
+
+    it("should expose a method to get the cached sync info", async () => {
+      const expected = await walletCache.getSyncInfo();
+
+      await expect(walletTreasury.getCachedSyncInfo()).resolves.toStrictEqual(
+        expected
+      );
+    });
+
+    it("should expose a method to get the cached stake info", async () => {
+      const expected = await walletCache.getStakeInfo(
+        profiles[0].address.toString()
+      );
+
+      await expect(
+        walletTreasury.getCachedStakeInfo(profiles[0])
+      ).resolves.toStrictEqual(expected);
+    });
+
+    it("should expose a method to cache the balance of a given profile", async () => {
+      const address = profiles[0].address.toString();
+      const currentBalance = await walletCache.getBalanceInfo(address);
+      const newBalance = {
+        shielded: mapValues(currentBalance.shielded, multiplyBy(2n)),
+        unshielded: mapValues(currentBalance.unshielded, multiplyBy(3n)),
+      };
+
+      await walletTreasury.setCachedBalance(profiles[0], newBalance);
+
+      await expect(walletCache.getBalanceInfo(address)).resolves.toStrictEqual(
+        newBalance
+      );
+    });
+
+    it("should expose a method to cache the stake info", async () => {
+      // Right now we just call the cache method,
+      // so we won't repeat the wallet-cache test here.
+      const setCachedStakeInfoSpy = vi
+        .spyOn(walletCache, "setStakeInfo")
+        .mockResolvedValue(undefined);
+
+      const fakeStakeInfo = {};
+
+      // @ts-ignore we don't care to pass the correct type here
+      await walletTreasury.setCachedStakeInfo(profiles[0], fakeStakeInfo);
+
+      expect(setCachedStakeInfoSpy).toHaveBeenCalledTimes(1);
+      expect(setCachedStakeInfoSpy).toHaveBeenCalledWith(
+        profiles[0].account.toString(),
+        fakeStakeInfo
+      );
+
+      setCachedStakeInfoSpy.mockRestore();
+    });
+
+    it("should expose a method to add notes to the pending notes cache", async () => {
+      // Right now we just call the cache method,
+      // so we won't repeat the wallet-cache test here.
+      const setPendingNotesSpy = vi
+        .spyOn(walletCache, "setPendingNotesInfo")
+        .mockResolvedValue(undefined);
+
+      const nullifiers = [new Uint8Array().fill(0)];
+      const txHash = "some-tx-hash";
+
+      await walletTreasury.updateCachedPendingNotes(nullifiers, txHash);
+
+      expect(setPendingNotesSpy).toHaveBeenCalledTimes(1);
+      expect(setPendingNotesSpy).toHaveBeenCalledWith(nullifiers, txHash);
+
+      setPendingNotesSpy.mockRestore();
+    });
+
+    it("should expose a method to update the unshielded nonce", async () => {
+      const address = profiles[0].address.toString();
+      const currentlyCachedBalance = await walletCache.getBalanceInfo(address);
+      const newNonce = currentlyCachedBalance.unshielded.nonce + 1n;
+
+      await walletTreasury.updateCachedNonce(profiles[0], newNonce);
+
+      await expect(walletCache.getBalanceInfo(address)).resolves.toStrictEqual({
+        ...currentlyCachedBalance,
+        unshielded: {
+          ...currentlyCachedBalance.unshielded,
+          nonce: newNonce,
+        },
+      });
     });
   });
 });
