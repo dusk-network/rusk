@@ -7,12 +7,14 @@
 use super::event::Event;
 use super::*;
 
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::abi::ContractId;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::StakeFundOwner;
 use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
+use serde_json::json;
 use std::sync::{mpsc, Arc};
 use std::thread;
 use tokio::task;
@@ -44,6 +46,7 @@ impl HandleRequest for Rusk {
         match request.uri.inner() {
             ("contracts", Some(_), _) => true,
             ("node", _, "provisioners") => true,
+            ("account", Some(_), "status") => true,
             ("node", _, "crs") => true,
             _ => false,
         }
@@ -59,6 +62,8 @@ impl HandleRequest for Rusk {
                 self.handle_contract_query(contract_id, method, data, feeder)
             }
             ("node", _, "provisioners") => self.get_provisioners(),
+
+            ("account", Some(pk), "status") => self.get_account(pk),
             ("node", _, "crs") => self.get_crs(),
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
@@ -149,6 +154,24 @@ impl Rusk {
             .collect();
 
         Ok(ResponseData::new(serde_json::to_value(prov)?))
+    }
+
+    fn get_account(&self, pk: &str) -> anyhow::Result<ResponseData> {
+        let pk = bs58::decode(pk)
+            .into_vec()
+            .map_err(|_| anyhow::anyhow!("Invalid bs58 account"))?;
+        let pk = BlsPublicKey::from_slice(&pk)
+            .map_err(|_| anyhow::anyhow!("Invalid bls account"))?;
+        let account = self
+            .account(&pk)
+            .map(|account| {
+                json!({
+                    "balance": account.balance,
+                    "nonce": account.nonce,
+                })
+            })
+            .map_err(|e| anyhow::anyhow!("Cannot query the state {e:?}"))?;
+        Ok(ResponseData::new(account))
     }
 
     fn get_crs(&self) -> anyhow::Result<ResponseData> {
