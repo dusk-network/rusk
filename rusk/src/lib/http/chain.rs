@@ -53,14 +53,6 @@ fn variables_from_headers(headers: &Map<String, Value>) -> Variables {
 
 #[async_trait]
 impl HandleRequest for RuskNode {
-    fn can_handle(&self, request: &MessageRequest) -> bool {
-        let route = request.event.to_route();
-        if matches!(route, (Target::Host(_), "rusk", "preverify")) {
-            return true;
-        }
-        matches!(route, (Target::Host(_), "Chain", _))
-    }
-
     fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
         #[allow(clippy::match_like_matches_macro)]
         match request.uri.inner() {
@@ -97,38 +89,6 @@ impl HandleRequest for RuskNode {
             ("node", _, "info") => self.get_info().await,
             ("blocks", _, "gas-price") => {
                 let max_transactions = request
-                    .data
-                    .as_string()
-                    .trim()
-                    .parse::<usize>()
-                    .unwrap_or(usize::MAX);
-                self.get_gas_price(max_transactions).await
-            }
-            _ => anyhow::bail!("Unsupported"),
-        }
-    }
-    async fn handle(
-        &self,
-        request: &MessageRequest,
-    ) -> anyhow::Result<ResponseData> {
-        match &request.event.to_route() {
-            (Target::Host(_), "Chain", "gql") => {
-                self.handle_gql(&request.event.data, &request.headers).await
-            }
-            (Target::Host(_), "rusk", "preverify") => {
-                self.handle_preverify(request.event_data()).await
-            }
-            (Target::Host(_), "Chain", "propagate_tx") => {
-                self.propagate_tx(request.event_data()).await
-            }
-            (Target::Host(_), "Chain", "alive_nodes") => {
-                let amount = request.event.data.as_string().trim().parse()?;
-                self.alive_nodes(amount).await
-            }
-            (Target::Host(_), "Chain", "info") => self.get_info().await,
-            (Target::Host(_), "Chain", "gas") => {
-                let max_transactions = request
-                    .event
                     .data
                     .as_string()
                     .trim()

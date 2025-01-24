@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change dependency declaration to not require strict equal [#3405]
 
+### Removed
+
+- Remove legacy event system 
+
 ## [1.0.1] - 2025-01-20
 
 ### Added
