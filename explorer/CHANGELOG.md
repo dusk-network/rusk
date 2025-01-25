@@ -3,13 +3,16 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
 ### Added
 
 ### Changed
+
+- Replace legacy event system with RUES [#3425]
 
 ### Removed
 
@@ -59,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change `raw` payload to `json` in transaction details [#2364]
 - Change average gas price display value to “lux” [#2416]
-- Update blocks table headers – `FEE` to `GAS`, `AVG` to `AVG PRICE`, and `TOTAL` to `USED` [#2416]
+- Update blocks table headers – `FEE` to `GAS`, `AVG` to `AVG PRICE`, and
+  `TOTAL` to `USED` [#2416]
 - Update block rewards tooltip information [#2166]
 - Hide "Show More" button when error occurs [#2585]
 - Update footer layout [#2640]
@@ -143,6 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3305]: https://github.com/dusk-network/rusk/issues/3305
 [#3338]: https://github.com/dusk-network/rusk/issues/3338
 [#3377]: https://github.com/dusk-network/rusk/issues/3377
+[#3425]: https://github.com/dusk-network/rusk/issues/3425
 
 <!-- VERSIONS -->
 
