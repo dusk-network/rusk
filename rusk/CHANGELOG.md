@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Add `/on/account:<address>/status` endpoint [#3422]
+
 ### Changed
 
 - Change dependency declaration to not require strict equal [#3405]
@@ -296,6 +300,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3422]: https://github.com/dusk-network/rusk/issues/3422
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3206]: https://github.com/dusk-network/rusk/issues/3206
