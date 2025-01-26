@@ -217,6 +217,7 @@ fn scan_elements(
     level: u64,
     levels: &[u64],
 ) -> Result<Vec<([u8; 32], ContractId, u64, PathBuf)>> {
+    println!("scan elements commit {} level={}", hex::encode(commit_id), level);
     let mut output = Vec::new();
     let leaf_dir = main_dir.as_ref().join(LEAF_DIR);
     for entry in fs::read_dir(&leaf_dir)? {
@@ -243,7 +244,7 @@ fn scan_elements(
             ),
             Some(p) => p,
         };
-        println!("found element: {:?}", element_path);
+        println!("found element: {:?} is_file={}", element_path, element_path.is_file());
         if element_path.is_file() {
             let element_bytes = fs::read(&element_path)?;
             let element: ContractIndexElement =
