@@ -19,7 +19,7 @@ use dusk_core::transfer::withdraw::{
     Withdraw, WithdrawReceiver, WithdrawReplayToken,
 };
 use dusk_core::{dusk, JubJubScalar};
-use dusk_vm::{execute, VM};
+use dusk_vm::{execute, ExecutionConfig, VM};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -33,6 +33,8 @@ use crate::common::utils::*;
 
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
 const INITIAL_STAKE: u64 = GENESIS_VALUE / 2;
+
+const NO_CONFIG: ExecutionConfig = ExecutionConfig::DEFAULT;
 
 #[test]
 fn stake_withdraw_unstake() {
@@ -85,7 +87,7 @@ fn stake_withdraw_unstake() {
         contract_call,
     );
 
-    let receipt = execute(&mut session, &tx, 0, 0, 0)
+    let receipt = execute(&mut session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed");
 
     let gas_spent = receipt.gas_spent;
@@ -181,7 +183,7 @@ fn stake_withdraw_unstake() {
         .session(base, CHAIN_ID, 2)
         .expect("Instantiating new session should succeed");
 
-    let receipt = execute(&mut session, &tx, 0, 0, 0)
+    let receipt = execute(&mut session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed");
 
     let gas_spent = receipt.gas_spent;
@@ -278,7 +280,7 @@ fn stake_withdraw_unstake() {
         .session(base, CHAIN_ID, 3)
         .expect("Instantiating new session should succeed");
 
-    let receipt = execute(&mut session, &tx, 0, 0, 0)
+    let receipt = execute(&mut session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed");
     update_root(&mut session).expect("Updating the root should succeed");
 
