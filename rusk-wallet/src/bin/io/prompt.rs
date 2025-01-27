@@ -266,8 +266,15 @@ pub(crate) fn request_optional_token_amt(
 }
 
 /// Request amount of tokens that can't be lower than MINIMUM_STAKE
-pub(crate) fn request_stake_token_amt(balance: Dusk) -> Result<Dusk, Error> {
-    let min: Dusk = DEFAULT_MINIMUM_STAKE.into();
+pub(crate) fn request_stake_token_amt(
+    balance: Dusk,
+    has_stake: bool,
+) -> Result<Dusk, Error> {
+    let min: Dusk = {
+        let min_stake = if has_stake { 0 } else { DEFAULT_MINIMUM_STAKE };
+
+        min_stake.into()
+    };
 
     request_token("stake", min, balance, None).map_err(Error::from)
 }

@@ -169,14 +169,21 @@ pub(crate) async fn online(
                 .public_key(stake_idx)
                 .expect("public key to exists in interactive mode");
 
+            let mut has_stake = false;
+
             let owner = match wallet.find_stake_owner_account(stake_pk).await {
-                Ok(account) => account,
+                Ok(account) => {
+                    has_stake = true;
+
+                    account
+                }
                 Err(Error::NotStaked) => {
                     let choices = wallet
                         .profiles()
                         .iter()
                         .map(|p| Address::Public(p.public_addr))
                         .collect();
+
                     prompt::request_address(stake_idx, choices)?
                 }
                 e => e?,
@@ -185,7 +192,7 @@ pub(crate) async fn online(
             ProfileOp::Run(Box::new(Command::Stake {
                 address: Some(addr),
                 owner: Some(owner),
-                amt: prompt::request_stake_token_amt(balance)?,
+                amt: prompt::request_stake_token_amt(balance, has_stake)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
