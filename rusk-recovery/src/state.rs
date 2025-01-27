@@ -346,7 +346,7 @@ mod tests {
     #[test]
     fn mainnet_genesis() -> Result<(), Box<dyn Error>> {
         let mainnet = mainnet_from_file()?;
-        let tmp = tempdir::TempDir::new("genesis")
+        let tmp = tempfile::TempDir::with_prefix("genesis")
             .expect("Should be able to create temporary directory");
         let (_, root) =
             deploy(tmp.path(), &mainnet, dusk_mainnet_key(), |_| {})?;

@@ -1741,12 +1741,12 @@ mod tests {
             .for_each(drop);
     }
 
-    struct TestWrapper(tempdir::TempDir);
+    struct TestWrapper(tempfile::TempDir);
 
     impl TestWrapper {
         fn new(path: &'static str) -> Self {
             Self(
-                tempdir::TempDir::new(path)
+                tempfile::TempDir::with_prefix(path)
                     .expect("Temp directory to be created"),
             )
         }

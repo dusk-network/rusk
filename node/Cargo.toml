@@ -49,7 +49,7 @@ serde_with = { workspace = true, features = ["hex"], optional = true }
 fake = { workspace = true, features = ['derive'] }
 node-data = { workspace = true, features = ["faker"] }
 rand = { workspace = true }
-tempdir = { workspace = true }
+tempfile = { workspace = true }
 criterion = { workspace = true, features = ["async_futures"] }
 
 [features]
