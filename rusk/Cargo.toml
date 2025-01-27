@@ -1,6 +1,6 @@
 [package]
 name = "dusk-rusk"
-version = "1.0.2"
+version = "1.0.3-alpha.1"
 edition = "2021"
 autobins = false
 
