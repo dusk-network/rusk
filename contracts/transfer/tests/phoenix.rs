@@ -27,7 +27,9 @@ use dusk_core::transfer::{
     ContractToAccount, ContractToContract, Transaction, TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, JubJubScalar, LUX};
-use dusk_vm::{execute, ContractData, Error as VMError, Session, VM};
+use dusk_vm::{
+    execute, ContractData, Error as VMError, ExecutionConfig, Session, VM,
+};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
@@ -58,6 +60,8 @@ const BOB_ID: ContractId = {
 
 const OWNER: [u8; 32] = [0; 32];
 const CHAIN_ID: u8 = 0xFA;
+
+const NO_CONFIG: ExecutionConfig = ExecutionConfig::DEFAULT;
 
 /// Instantiate the virtual machine with the transfer contract deployed, and the
 /// notes tree populated with `N` notes, each carrying `PHOENIX_GENESIS_VALUE /
@@ -252,7 +256,7 @@ fn transfer_1_2() {
         contract_call,
     );
 
-    let gas_spent = execute(session, &tx, 0, 0, 0)
+    let gas_spent = execute(session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed")
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
@@ -359,7 +363,7 @@ fn transfer_2_2() {
         contract_call,
     );
 
-    let gas_spent = execute(session, &tx, 0, 0, 0)
+    let gas_spent = execute(session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed")
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
@@ -467,7 +471,7 @@ fn transfer_3_2() {
         contract_call,
     );
 
-    let gas_spent = execute(session, &tx, 0, 0, 0)
+    let gas_spent = execute(session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed")
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
@@ -575,7 +579,7 @@ fn transfer_4_2() {
         contract_call,
     );
 
-    let gas_spent = execute(session, &tx, 0, 0, 0)
+    let gas_spent = execute(session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed")
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
@@ -679,7 +683,7 @@ fn transfer_gas_fails() {
     let total_num_notes_before_tx =
         num_notes(session).expect("Getting num_notes should succeed");
 
-    let result = execute(session, &tx, 0, 0, 0);
+    let result = execute(session, &tx, &NO_CONFIG);
 
     assert!(
         result.is_err(),
@@ -750,7 +754,7 @@ fn alice_ping() {
         contract_call,
     );
 
-    let gas_spent = execute(session, &tx, 0, 0, 0)
+    let gas_spent = execute(session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed")
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
@@ -820,7 +824,7 @@ fn contract_deposit() {
         contract_call,
     );
 
-    let gas_spent = execute(session, &tx, 0, 0, 0)
+    let gas_spent = execute(session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed")
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
@@ -928,7 +932,7 @@ fn contract_withdraw() {
         contract_call,
     );
 
-    let gas_spent = execute(session, &tx, 0, 0, 0)
+    let gas_spent = execute(session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed")
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
@@ -1055,7 +1059,7 @@ fn convert_to_phoenix_fails() {
     );
 
     let receipt =
-        execute(session, &tx, 0, 0, 0).expect("Executing TX should succeed");
+        execute(session, &tx, &NO_CONFIG).expect("Executing TX should succeed");
 
     // check that the transaction execution panicked with the correct message
     assert!(receipt.data.is_err());
@@ -1175,7 +1179,7 @@ fn convert_to_moonlight() {
         Some(contract_call),
     );
 
-    let gas_spent = execute(session, &tx, 0, 0, 0)
+    let gas_spent = execute(session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed")
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
@@ -1285,7 +1289,7 @@ fn convert_wrong_contract_targeted() {
         Some(contract_call),
     );
 
-    let receipt = execute(&mut session, &tx, 0, 0, 0)
+    let receipt = execute(&mut session, &tx, &NO_CONFIG)
         .expect("Executing transaction should succeed");
     update_root(session).expect("Updating the root should succeed");
 
@@ -1377,7 +1381,7 @@ fn contract_to_contract() {
     );
 
     let receipt =
-        execute(session, &tx, 0, 0, 0).expect("Transaction should succeed");
+        execute(session, &tx, &NO_CONFIG).expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
     println!("CONTRACT TO CONTRACT: {gas_spent} gas");
@@ -1471,7 +1475,7 @@ fn contract_to_account() {
     );
 
     let receipt =
-        execute(session, &tx, 0, 0, 0).expect("Transaction should succeed");
+        execute(session, &tx, &NO_CONFIG).expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
     println!("CONTRACT TO ACCOUNT: {gas_spent} gas");
