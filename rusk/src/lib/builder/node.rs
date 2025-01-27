@@ -25,7 +25,7 @@ use tracing::info;
 use {node::archive::Archive, node::archive::ArchivistSrv};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
-use crate::node::{ChainEventStreamer, RuskNode, Services};
+use crate::node::{ChainEventStreamer, RuskNode, RuskVmConfig, Services};
 use crate::{Rusk, VERSION};
 
 #[derive(Default)]
@@ -39,12 +39,9 @@ pub struct RuskNodeBuilder {
     db_options: DatabaseOptions,
     max_chain_queue_size: usize,
     genesis_timestamp: u64,
-
+    vm_config: RuskVmConfig,
     generation_timeout: Option<Duration>,
-    gas_per_deploy_byte: Option<u64>,
-    min_deployment_gas_price: Option<u64>,
     min_gas_limit: Option<u64>,
-    min_deploy_points: Option<u64>,
     block_gas_limit: u64,
     feeder_call_gas: u64,
     state_dir: PathBuf,
@@ -54,11 +51,7 @@ pub struct RuskNodeBuilder {
     command_revert: bool,
 }
 
-const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
-const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
 const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
-const DEFAULT_MIN_DEPLOY_POINTS: u64 = 5_000_000;
-
 impl RuskNodeBuilder {
     pub fn with_consensus_keys(mut self, consensus_keys_path: String) -> Self {
         self.consensus_keys_path = consensus_keys_path;
@@ -127,7 +120,9 @@ impl RuskNodeBuilder {
         mut self,
         gas_per_deploy_byte: Option<u64>,
     ) -> Self {
-        self.gas_per_deploy_byte = gas_per_deploy_byte;
+        if let Some(gas_per_deploy_byte) = gas_per_deploy_byte {
+            self.vm_config.gas_per_deploy_byte = gas_per_deploy_byte;
+        }
         self
     }
 
@@ -135,7 +130,9 @@ impl RuskNodeBuilder {
         mut self,
         min_deployment_gas_price: Option<u64>,
     ) -> Self {
-        self.min_deployment_gas_price = min_deployment_gas_price;
+        if let Some(min_deploy_gas_price) = min_deployment_gas_price {
+            self.vm_config.min_deploy_gas_price = min_deploy_gas_price;
+        }
         self
     }
 
@@ -148,7 +145,9 @@ impl RuskNodeBuilder {
         mut self,
         min_deploy_points: Option<u64>,
     ) -> Self {
-        self.min_deploy_points = min_deploy_points;
+        if let Some(min_deploy_points) = min_deploy_points {
+            self.vm_config.min_deploy_points = min_deploy_points;
+        }
         self
     }
 
@@ -190,24 +189,14 @@ impl RuskNodeBuilder {
         #[cfg(feature = "archive")]
         let (archive_sender, archive_receiver) = mpsc::channel(10000);
 
-        let gas_per_deploy_byte = self
-            .gas_per_deploy_byte
-            .unwrap_or(DEFAULT_GAS_PER_DEPLOY_BYTE);
-        let min_deployment_gas_price = self
-            .min_deployment_gas_price
-            .unwrap_or(DEFAULT_MIN_DEPLOYMENT_GAS_PRICE);
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
-        let min_deploy_points =
-            self.min_deploy_points.unwrap_or(DEFAULT_MIN_DEPLOY_POINTS);
 
         let rusk = Rusk::new(
             self.state_dir,
             self.kadcast.kadcast_id.unwrap_or_default(),
             self.generation_timeout,
-            gas_per_deploy_byte,
-            min_deployment_gas_price,
+            self.vm_config,
             min_gas_limit,
-            min_deploy_points,
             self.block_gas_limit,
             self.feeder_call_gas,
             rues_sender.clone(),

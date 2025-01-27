@@ -20,6 +20,7 @@ use node::network::Kadcast;
 use node::LongLivedService;
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
+pub use vm::RuskVmConfig;
 
 use crate::http::RuesEvent;
 pub(crate) use events::ChainEventStreamer;
@@ -41,10 +42,8 @@ pub struct Rusk {
     dir: PathBuf,
     pub(crate) chain_id: u8,
     pub(crate) generation_timeout: Option<Duration>,
-    pub(crate) gas_per_deploy_byte: u64,
-    pub(crate) min_deployment_gas_price: u64,
+    pub(crate) vm_config: RuskVmConfig,
     pub(crate) min_gas_limit: u64,
-    pub(crate) min_deploy_points: u64,
     pub(crate) feeder_gas_limit: u64,
     pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,

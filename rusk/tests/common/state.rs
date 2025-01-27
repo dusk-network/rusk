@@ -8,6 +8,7 @@ use std::{path::Path, usize};
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
+use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state::{self, Snapshot};
 
@@ -63,10 +64,8 @@ pub fn new_state_with_chainid<P: AsRef<Path>>(
         dir,
         chain_id,
         None,
-        DEFAULT_GAS_PER_DEPLOY_BYTE,
-        DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        RuskVmConfig::default(),
         DEFAULT_MIN_GAS_LIMIT,
-        DEFAULT_MIN_DEPLOY_POINTS,
         block_gas_limit,
         u64::MAX,
         sender,

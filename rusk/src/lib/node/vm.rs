@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod config;
 mod query;
 
 use dusk_consensus::errors::VstError;
@@ -23,6 +24,7 @@ use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
 
 use super::Rusk;
+pub use config::Config as RuskVmConfig;
 
 impl VMExecution for Rusk {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(
@@ -269,11 +271,11 @@ impl VMExecution for Rusk {
     }
 
     fn gas_per_deploy_byte(&self) -> u64 {
-        self.gas_per_deploy_byte
+        self.vm_config.gas_per_deploy_byte
     }
 
     fn min_deployment_gas_price(&self) -> u64 {
-        self.min_deployment_gas_price
+        self.vm_config.min_deploy_gas_price
     }
 
     fn min_gas_limit(&self) -> u64 {
@@ -281,7 +283,7 @@ impl VMExecution for Rusk {
     }
 
     fn min_deploy_points(&self) -> u64 {
-        self.min_deploy_points
+        self.vm_config.min_deploy_points
     }
 }
 
