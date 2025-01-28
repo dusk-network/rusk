@@ -19,10 +19,10 @@ use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
 
+#[cfg(feature = "archive")]
+use node::archive::Archive;
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
-#[cfg(feature = "archive")]
-use {node::archive::Archive, node::archive::ArchivistSrv};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
 use crate::node::{ChainEventStreamer, RuskNode, RuskVmConfig, Services};
@@ -200,8 +200,6 @@ impl RuskNodeBuilder {
         let (node_sender, node_receiver) = mpsc::channel(1000);
 
         #[cfg(feature = "archive")]
-        let (_, archive_receiver) = mpsc::channel(10000);
-        #[cfg(feature = "archive")]
         let archive = Archive::create_or_open(self.db_path.clone()).await;
 
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
@@ -238,6 +236,8 @@ impl RuskNodeBuilder {
             node_sender.clone(),
             self.genesis_timestamp,
             *crate::DUSK_CONSENSUS_KEY,
+            #[cfg(feature = "archive")]
+            archive.clone(),
         );
         if self.command_revert {
             chain_srv
@@ -245,8 +245,6 @@ impl RuskNodeBuilder {
                     node.inner().network(),
                     node.inner().database(),
                     node.inner().vm_handler(),
-                    #[cfg(feature = "archive")]
-                    archive,
                 )
                 .await?;
             return chain_srv.revert_last_final().await;
@@ -293,19 +291,7 @@ impl RuskNodeBuilder {
             );
         }
 
-        #[cfg(feature = "archive")]
-        service_list.push(Box::new(ArchivistSrv {
-            archive_receiver,
-            archivist: archive.clone(),
-        }));
-
-        node.inner()
-            .initialize(
-                &mut service_list,
-                #[cfg(feature = "archive")]
-                archive,
-            )
-            .await?;
+        node.inner().initialize(&mut service_list).await?;
         node.inner().spawn_all(service_list).await?;
 
         Ok(())

@@ -99,7 +99,7 @@ impl VMExecution for Rusk {
 
         let slashing = Slash::from_block(blk)?;
 
-        let (txs, verification_output, all_txs_events) = self
+        let (txs, verification_output, contract_events) = self
             .accept_transactions(
                 prev_root,
                 blk.header().height,
@@ -116,7 +116,7 @@ impl VMExecution for Rusk {
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
-        Ok((txs, verification_output, all_txs_events))
+        Ok((txs, verification_output, contract_events))
     }
 
     fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {

@@ -707,9 +707,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             // Events used for archive
             #[cfg(feature = "archive")]
             let mut rolling_finality_events = vec![];
-            let (all_txs_events, finality) =
+            let (contract_events, finality) =
                 self.db.read().await.update(|db| {
-                    let (txs, verification_output, all_txs_events) = vm
+                    let (txs, verification_output, contract_events) = vm
                         .accept(
                             prev_header.state_hash,
                             blk,
@@ -746,7 +746,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     block_size_on_disk =
                         db.store_block(header, &txs, blk.faults(), label)?;
 
-                    Ok((all_txs_events, finality))
+                    Ok((contract_events, finality))
                 })?;
 
             // use rolling_finality_events for archive
@@ -782,7 +782,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 .store_unfinalized_events(
                     header.height,
                     header.hash,
-                    all_txs_events.clone(),
+                    contract_events.clone(),
                 )
                 .await
                 .expect(
@@ -792,7 +792,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }.await;
 
             let mut stakes = vec![];
-            for event in all_txs_events {
+            for event in contract_events {
                 if event.event.target.0 == STAKE_CONTRACT {
                     stakes.push(event.event);
                 }
