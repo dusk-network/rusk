@@ -9,13 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+- Update Transactions list design [#1922]
+
+### Removed
+
+### Fixed
+
+## [1.3.0] - 2025-01-28
+
+### Added
+
 - Add support for partial unstake/claim rewards [#3009]
 - Add "Unstake" flow validation [#3009]
 - Store the wallet creation block height and show it in settings [#3381]
 
 ### Changed
 
-- Update Transactions list design [#1922]
 - Change Review step label to "Overview" (Send flow) [#3387]
 
 ### Removed
@@ -554,6 +565,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[1.3.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.2.0
 [1.1.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.1.0
 [1.0.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.0.0
