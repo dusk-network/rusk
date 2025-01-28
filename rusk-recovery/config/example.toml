@@ -6,6 +6,12 @@
 # If no base_state is specified a local one will be generated
 base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/keys/genesis.zip"
 
+# Chain id configuration used to inject dusk consensus key
+#
+# Skipped if base_state is provided
+# If chain_id is 0x01, the mainnet key will be used
+# Otherwise, the testnet key will be used
+chain_id = 0x00
 
 # Balances to be included in the genesis contract
 #

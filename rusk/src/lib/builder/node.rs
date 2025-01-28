@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::env;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -26,7 +27,7 @@ use {node::archive::Archive, node::archive::ArchivistSrv};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
 use crate::node::{ChainEventStreamer, RuskNode, Services};
-use crate::{Rusk, VERSION};
+use crate::{Rusk, DUSK_MAINNET_CHAIN_ID, DUSK_MAINNET_VAR, VERSION};
 
 #[derive(Default)]
 pub struct RuskNodeBuilder {
@@ -200,9 +201,18 @@ impl RuskNodeBuilder {
         let min_deploy_points =
             self.min_deploy_points.unwrap_or(DEFAULT_MIN_DEPLOY_POINTS);
 
+        let chain_id = self.kadcast.kadcast_id.unwrap_or_default();
+        if chain_id == DUSK_MAINNET_CHAIN_ID {
+            // Required to properly set the DUSK_CONSENSUS_KEY
+            env::set_var(DUSK_MAINNET_VAR, "true");
+        } else {
+            // Ensure no variable is set from outside environment
+            env::remove_var(DUSK_MAINNET_VAR);
+        }
+
         let rusk = Rusk::new(
             self.state_dir,
-            self.kadcast.kadcast_id.unwrap_or_default(),
+            chain_id,
             self.generation_timeout,
             gas_per_deploy_byte,
             min_deployment_gas_price,

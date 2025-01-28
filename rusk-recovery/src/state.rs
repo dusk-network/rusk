@@ -338,7 +338,7 @@ mod tests {
     }
 
     fn dusk_mainnet_key() -> AccountPublicKey {
-        let bytes = include_bytes!("../../rusk/src/assets/dusk.cpk");
+        let bytes = include_bytes!("../../rusk/src/assets/dusk_mainnet.cpk");
         AccountPublicKey::from_slice(&bytes[..])
             .expect("faucet should have a valid key")
     }
