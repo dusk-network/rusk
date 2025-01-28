@@ -21,6 +21,7 @@ use dusk_consensus::operations::Voter;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls;
+use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::stake::{SlashEvent, StakeAmount, StakeEvent};
 use metrics::{counter, gauge, histogram};
 use node_data::bls::PublicKey;
@@ -38,6 +39,8 @@ use tokio::sync::{RwLock, RwLockReadGuard};
 use tracing::{debug, error, info, trace, warn};
 
 use super::consensus::Task;
+#[cfg(feature = "archive")]
+use crate::archive::Archive;
 use crate::chain::header_validation::{verify_att, verify_faults, Validator};
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
@@ -78,6 +81,8 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     pub(crate) db: Arc<RwLock<DB>>,
     pub(crate) vm: Arc<RwLock<VM>>,
     pub(crate) network: Arc<RwLock<N>>,
+    #[cfg(feature = "archive")]
+    pub(crate) archive: Archive,
     /// Sender channel for sending out RUES events
     event_sender: Sender<Event>,
 
@@ -181,6 +186,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
+        #[cfg(feature = "archive")] archive: Archive,
         max_queue_size: usize,
         event_sender: Sender<Event>,
         dusk_key: bls::PublicKey,
@@ -202,6 +208,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             db: db.clone(),
             vm: vm.clone(),
             network: network.clone(),
+            #[cfg(feature = "archive")]
+            archive,
             task: RwLock::new(Task::new_with_keys(
                 keys_path.to_string(),
                 max_queue_size,
@@ -696,30 +704,61 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let vm = self.vm.write().await;
 
-            let (stakes, finality) = self.db.read().await.update(|db| {
-                let (txs, verification_output, stake_events) = vm.accept(
-                    prev_header.state_hash,
-                    blk,
-                    &prev_block_voters[..],
-                )?;
-                for spent_tx in txs.iter() {
-                    events.push(TransactionEvent::Executed(spent_tx).into());
+            let (all_txs_events, finality) =
+                self.db.read().await.update(|db| {
+                    let (txs, verification_output, all_txs_events) = vm
+                        .accept(
+                            prev_header.state_hash,
+                            blk,
+                            &prev_block_voters[..],
+                        )?;
+
+                    for spent_tx in txs.iter() {
+                        events
+                            .push(TransactionEvent::Executed(spent_tx).into());
+                    }
+                    est_elapsed_time = start.elapsed();
+
+                    assert_eq!(
+                        header.state_hash,
+                        verification_output.state_root
+                    );
+                    assert_eq!(
+                        header.event_bloom,
+                        verification_output.event_bloom
+                    );
+
+                    let finality =
+                        self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
+
+                    let label = finality.0;
+                    // Store block with updated transactions with Error and
+                    // GasSpent
+                    block_size_on_disk =
+                        db.store_block(header, &txs, blk.faults(), label)?;
+
+                    Ok((all_txs_events, finality))
+                })?;
+
+            // Store all events from this current block in the archive
+            #[cfg(feature = "archive")]
+            self.archive
+                .store_unfinalized_events(
+                    header.height,
+                    header.hash,
+                    all_txs_events.clone(),
+                )
+                .await
+                .expect(
+                    "Storing unfinalized events in archive should never fail",
+                );
+
+            let mut stakes = vec![];
+            for event in &all_txs_events {
+                if event.event.target.0 == STAKE_CONTRACT {
+                    stakes.push(event.event.clone());
                 }
-                est_elapsed_time = start.elapsed();
-
-                assert_eq!(header.state_hash, verification_output.state_root);
-                assert_eq!(header.event_bloom, verification_output.event_bloom);
-
-                let finality =
-                    self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
-
-                let label = finality.0;
-                // Store block with updated transactions with Error and GasSpent
-                block_size_on_disk =
-                    db.store_block(header, &txs, blk.faults(), label)?;
-
-                Ok((stake_events, finality))
-            })?;
+            }
 
             self.log_missing_iterations(
                 provisioners_list.current(),
