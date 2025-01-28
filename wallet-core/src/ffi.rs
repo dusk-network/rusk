@@ -384,8 +384,13 @@ pub unsafe fn phoenix(
         .filter_map(|(note, opening)| opening.map(|op| (note, op)))
         .collect();
 
-    let data: Option<TransactionData> =
-        if data.is_null() { None } else { todo!() };
+    let data: Option<TransactionData> = if data.is_null() {
+        None
+    } else {
+        let buffer = mem::read_buffer(data);
+
+        Some(buffer[1..].to_vec().into())
+    };
 
     let prover = NoOpProver::default();
 
