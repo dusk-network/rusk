@@ -86,6 +86,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 config.chain.min_deployment_gas_price(),
             )
             .with_min_deploy_points(config.chain.min_deploy_points())
+            .with_public_sender_start_height(
+                config.chain.public_sender_start_height(),
+            )
             .with_min_gas_limit(config.chain.min_gas_limit())
             .with_block_gas_limit(config.chain.block_gas_limit());
     };

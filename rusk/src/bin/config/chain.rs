@@ -33,6 +33,7 @@ pub(crate) struct ChainConfig {
     min_deploy_points: Option<u64>,
     min_gas_limit: Option<u64>,
     block_gas_limit: Option<u64>,
+    public_sender_start_height: Option<u64>,
 
     #[serde(with = "humantime_serde")]
     #[serde(default)]
@@ -94,6 +95,10 @@ impl ChainConfig {
 
     pub(crate) fn min_deploy_points(&self) -> Option<u64> {
         self.min_deploy_points
+    }
+
+    pub(crate) fn public_sender_start_height(&self) -> Option<u64> {
+        self.public_sender_start_height
     }
 
     pub(crate) fn min_gas_limit(&self) -> Option<u64> {

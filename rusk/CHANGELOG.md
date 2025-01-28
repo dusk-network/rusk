@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `[chain].public_sender_start_height` config [#3341]
+- Add `abi::public_sender` [#3341]
+
 ### Removed
 
 - Remove legacy event system 
@@ -308,6 +313,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Issues -->
 [#3422]: https://github.com/dusk-network/rusk/issues/3422
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
+[#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3206]: https://github.com/dusk-network/rusk/issues/3206
 [#2597]: https://github.com/dusk-network/rusk/issues/2597

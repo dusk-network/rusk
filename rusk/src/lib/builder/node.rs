@@ -159,6 +159,17 @@ impl RuskNodeBuilder {
         self
     }
 
+    pub fn with_public_sender_start_height(
+        mut self,
+        public_sender_start_height: Option<u64>,
+    ) -> Self {
+        if let Some(public_sender_start_height) = public_sender_start_height {
+            self.vm_config.public_sender_start_height =
+                public_sender_start_height;
+        }
+        self
+    }
+
     pub fn with_feeder_call_gas(mut self, feeder_call_gas: u64) -> Self {
         self.feeder_call_gas = feeder_call_gas;
         self

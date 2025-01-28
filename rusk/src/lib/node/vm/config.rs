@@ -27,6 +27,9 @@ pub struct Config {
     pub block_gas_limit: u64,
     /// The timeout for a candidate block generation.
     pub generation_timeout: Option<Duration>,
+    /// The height at which the public sender starts to be injected in the
+    /// block metadata
+    pub public_sender_start_height: u64,
 }
 
 impl Default for Config {
@@ -43,6 +46,8 @@ impl Config {
             min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
             block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
             generation_timeout: None,
+            // Disabled by default
+            public_sender_start_height: u64::MAX,
         }
     }
 
@@ -90,11 +95,14 @@ impl Config {
     }
 
     /// Create a new `Config` with the given parameters.
-    pub fn to_execution_config(&self) -> ExecutionConfig {
+    pub fn to_execution_config(&self, block_height: u64) -> ExecutionConfig {
+        let with_public_sender =
+            block_height >= self.public_sender_start_height;
         ExecutionConfig {
             gas_per_deploy_byte: self.gas_per_deploy_byte,
             min_deploy_points: self.min_deploy_points,
             min_deploy_gas_price: self.min_deploy_gas_price,
+            with_public_sender,
         }
     }
 }
