@@ -22,6 +22,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "archive")]
+use archive::Archive;
 use async_trait::async_trait;
 use node_data::message::payload::Inv;
 use node_data::message::{AsyncQueue, Message};
@@ -118,6 +120,7 @@ pub trait LongLivedService<N: Network, DB: database::DB, VM: vm::VMExecution>:
         network: Arc<RwLock<N>>,
         database: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
+        #[cfg(feature = "archive")] achive: Archive,
     ) -> anyhow::Result<()> {
         Ok(())
     }
@@ -189,6 +192,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
     pub async fn initialize(
         &self,
         services: &mut [Box<dyn LongLivedService<N, DB, VM>>],
+        #[cfg(feature = "archive")] archive: Archive,
     ) -> anyhow::Result<()> {
         // Run lazy-initialization of all registered services
         for service in services.iter_mut() {
@@ -198,6 +202,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
                     self.network.clone(),
                     self.database.clone(),
                     self.vm_handler.clone(),
+                    #[cfg(feature = "archive")]
+                    archive.clone(),
                 )
                 .await?;
         }

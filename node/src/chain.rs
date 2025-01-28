@@ -34,6 +34,8 @@ use tracing::{debug, error, info, warn};
 
 use self::acceptor::Acceptor;
 use self::fsm::SimpleFSM;
+#[cfg(feature = "archive")]
+use crate::archive::Archive;
 use crate::database::rocksdb::MD_HASH_KEY;
 use crate::database::{Ledger, Metadata};
 use crate::{database, vm, LongLivedService, Message, Network};
@@ -70,6 +72,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         network: Arc<RwLock<N>>,
         db: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
+        #[cfg(feature = "archive")] archive: Archive,
     ) -> anyhow::Result<()> {
         let tip = Self::load_tip(
             db.read().await.deref(),
@@ -89,6 +92,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             db,
             network,
             vm,
+            #[cfg(feature = "archive")]
+            archive,
             self.max_consensus_queue_size,
             self.event_sender.clone(),
             self.dusk_key,
