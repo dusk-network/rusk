@@ -10,7 +10,6 @@ mod vm;
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
 
 use dusk_core::{dusk, Dusk};
 
@@ -41,7 +40,6 @@ pub struct Rusk {
     pub(crate) vm: Arc<VM>,
     dir: PathBuf,
     pub(crate) chain_id: u8,
-    pub(crate) generation_timeout: Option<Duration>,
     pub(crate) vm_config: RuskVmConfig,
     pub(crate) min_gas_limit: u64,
     pub(crate) feeder_gas_limit: u64,

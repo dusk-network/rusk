@@ -6,7 +6,7 @@
 
 use std::path::Path;
 use std::sync::{mpsc, Arc};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use std::{fs, io};
 
 use dusk_bytes::Serializable;
@@ -46,11 +46,9 @@ use crate::Error::InvalidCreditsCount;
 use crate::{Error, Result, DUSK_CONSENSUS_KEY};
 
 impl Rusk {
-    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         dir: P,
         chain_id: u8,
-        generation_timeout: Option<Duration>,
         vm_config: RuskVmConfig,
         min_gas_limit: u64,
         feeder_gas_limit: u64,
@@ -88,7 +86,6 @@ impl Rusk {
             vm,
             dir: dir.into(),
             chain_id,
-            generation_timeout,
             vm_config,
             min_gas_limit,
             feeder_gas_limit,
@@ -132,7 +129,7 @@ impl Rusk {
         let mut size_left = params.max_txs_bytes - u32::SIZE;
 
         for unspent_tx in txs {
-            if let Some(timeout) = self.generation_timeout {
+            if let Some(timeout) = self.vm_config.generation_timeout {
                 if started.elapsed() > timeout {
                     info!("execute_transactions timeout triggered {timeout:?}");
                     break;

@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::time::Duration;
+
 use dusk_vm::ExecutionConfig;
 
 const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
@@ -23,6 +25,8 @@ pub struct Config {
     pub min_deploy_gas_price: u64,
     /// The maximum amount of gas points that can be used in a block.
     pub block_gas_limit: u64,
+    /// The timeout for a candidate block generation.
+    pub generation_timeout: Option<Duration>,
 }
 
 impl Default for Config {
@@ -38,6 +42,7 @@ impl Config {
             min_deploy_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
             min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
             block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+            generation_timeout: None,
         }
     }
 
@@ -72,6 +77,15 @@ impl Config {
         min_deploy_gas_price: u64,
     ) -> Self {
         self.min_deploy_gas_price = min_deploy_gas_price;
+        self
+    }
+
+    /// Set the timeout for a candidate block generation.
+    pub const fn with_generation_timeout(
+        mut self,
+        generation_timeout: Option<Duration>,
+    ) -> Self {
+        self.generation_timeout = generation_timeout;
         self
     }
 

@@ -40,7 +40,6 @@ pub struct RuskNodeBuilder {
     max_chain_queue_size: usize,
     genesis_timestamp: u64,
     vm_config: RuskVmConfig,
-    generation_timeout: Option<Duration>,
     min_gas_limit: Option<u64>,
     feeder_call_gas: u64,
     state_dir: PathBuf,
@@ -111,7 +110,7 @@ impl RuskNodeBuilder {
         mut self,
         generation_timeout: Option<Duration>,
     ) -> Self {
-        self.generation_timeout = generation_timeout;
+        self.vm_config.generation_timeout = generation_timeout;
         self
     }
 
@@ -198,7 +197,6 @@ impl RuskNodeBuilder {
         let rusk = Rusk::new(
             self.state_dir,
             self.kadcast.kadcast_id.unwrap_or_default(),
-            self.generation_timeout,
             self.vm_config,
             min_gas_limit,
             self.feeder_call_gas,
