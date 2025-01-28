@@ -46,6 +46,7 @@ impl MoonlightAccount {
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Snapshot {
     base_state: Option<String>,
+    chain_id: Option<u64>,
     owner: Option<Wrapper<AccountPublicKey, { AccountPublicKey::SIZE }>>,
 
     // This "serde skip" workaround seems needed as per https://github.com/toml-rs/toml-rs/issues/384
@@ -96,6 +97,10 @@ impl Snapshot {
 
     pub fn base_state(&self) -> Option<&str> {
         self.base_state.as_deref()
+    }
+
+    pub fn chain_id(&self) -> Option<u64> {
+        self.chain_id
     }
 }
 
