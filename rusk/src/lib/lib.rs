@@ -30,10 +30,21 @@ use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 #[cfg(feature = "chain")]
 pub use node::Rusk;
 
+pub const DUSK_MAINNET_VAR: &str = "DUSK_MAINNET";
+pub const DUSK_MAINNET_CHAIN_ID: u8 = 0x01;
 pub const DELETING_VM_FNAME: &str = ".delete";
 
 pub static DUSK_CONSENSUS_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
-    let dusk_cpk_bytes = include_bytes!("../assets/dusk.cpk");
+    let dusk_cpk_bytes = if let Ok(Ok(true)) =
+        std::env::var(DUSK_MAINNET_VAR).map(|v| v.parse::<bool>())
+    {
+        println!("USING MAINNET");
+        include_bytes!("../assets/dusk_mainnet.cpk")
+    } else {
+        println!("USING TESTNET");
+        include_bytes!("../assets/dusk.cpk")
+    };
+
     BlsPublicKey::from_slice(dusk_cpk_bytes)
         .expect("Dusk consensus public key to be valid")
 });
