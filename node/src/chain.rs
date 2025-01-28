@@ -61,6 +61,8 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     event_sender: Sender<Event>,
     genesis_timestamp: u64,
     dusk_key: BlsPublicKey,
+    #[cfg(feature = "archive")]
+    archive: Archive,
 }
 
 #[async_trait]
@@ -72,7 +74,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         network: Arc<RwLock<N>>,
         db: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
-        #[cfg(feature = "archive")] archive: Archive,
     ) -> anyhow::Result<()> {
         let tip = Self::load_tip(
             db.read().await.deref(),
@@ -93,7 +94,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             network,
             vm,
             #[cfg(feature = "archive")]
-            archive,
+            self.archive.clone(),
             self.max_consensus_queue_size,
             self.event_sender.clone(),
             self.dusk_key,
@@ -256,6 +257,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         event_sender: Sender<Event>,
         genesis_timestamp: u64,
         dusk_key: BlsPublicKey,
+        #[cfg(feature = "archive")] archive: Archive,
     ) -> Self {
         info!(
             "ChainSrv::new with keys_path: {}, max_inbound_size: {}",
@@ -270,6 +272,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             event_sender,
             genesis_timestamp,
             dusk_key,
+            #[cfg(feature = "archive")]
+            archive,
         }
     }
 
