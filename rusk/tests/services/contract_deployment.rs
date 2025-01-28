@@ -15,6 +15,7 @@ use dusk_core::transfer::data::{
 use dusk_vm::{gen_contract_id, ContractData, Error as VMError, VM};
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
@@ -22,11 +23,9 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_DEPLOYMENT_GAS_PRICE;
-use crate::common::state::DEFAULT_MIN_DEPLOY_POINTS;
-use crate::common::state::{generator_procedure, ExecuteResult};
 use crate::common::state::{
-    DEFAULT_GAS_PER_DEPLOY_BYTE, DEFAULT_MIN_GAS_LIMIT,
+    generator_procedure, ExecuteResult, DEFAULT_MIN_GAS_LIMIT,
+    DEFAULT_VM_CONFIG,
 };
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore, Wallet,
@@ -106,12 +105,8 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
     let rusk = Rusk::new(
         dir,
         CHAIN_ID,
-        None,
-        DEFAULT_GAS_PER_DEPLOY_BYTE,
-        DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        DEFAULT_VM_CONFIG,
         DEFAULT_MIN_GAS_LIMIT,
-        DEFAULT_MIN_DEPLOY_POINTS,
-        BLOCK_GAS_LIMIT,
         u64::MAX,
         sender,
     )

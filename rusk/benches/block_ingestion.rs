@@ -23,13 +23,15 @@ use node_data::ledger::Transaction;
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
-use rusk::Rusk;
-use rusk::DUSK_CONSENSUS_KEY;
+use rusk::node::RuskVmConfig;
+use rusk::{Rusk, DUSK_CONSENSUS_KEY};
 use tempfile::tempdir;
 
 use common::state::new_state;
 
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
+const VM_CONFIG: RuskVmConfig =
+    RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
 fn load_phoenix_txs() -> Vec<Transaction> {
     // The file "phoenix-txs" can be generated using
@@ -158,7 +160,7 @@ pub fn accept_benchmark(c: &mut Criterion) {
     let snapshot = toml::from_str(include_str!("../tests/config/bench.toml"))
         .expect("Cannot deserialize config");
 
-    let rusk = new_state(&tmp, &snapshot, BLOCK_GAS_LIMIT)
+    let rusk = new_state(&tmp, &snapshot, VM_CONFIG)
         .expect("Creating state should work");
 
     let phoenix_txs = load_phoenix_txs();

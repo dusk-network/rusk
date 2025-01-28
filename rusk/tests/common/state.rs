@@ -8,6 +8,7 @@ use std::{path::Path, usize};
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
+use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state::{self, Snapshot};
 
@@ -30,25 +31,23 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 const CHAIN_ID: u8 = 0xFA;
-pub const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
-pub const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
+pub const DEFAULT_VM_CONFIG: RuskVmConfig = RuskVmConfig::new();
 pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
-pub const DEFAULT_MIN_DEPLOY_POINTS: u64 = 5000000;
 
 // Creates a Rusk initial state in the given directory
 pub fn new_state<P: AsRef<Path>>(
     dir: P,
     snapshot: &Snapshot,
-    block_gas_limit: u64,
+    vm_config: RuskVmConfig,
 ) -> Result<Rusk> {
-    new_state_with_chainid(dir, snapshot, block_gas_limit, CHAIN_ID)
+    new_state_with_chainid(dir, snapshot, vm_config, CHAIN_ID)
 }
 
 // Creates a Rusk initial state in the given directory
 pub fn new_state_with_chainid<P: AsRef<Path>>(
     dir: P,
     snapshot: &Snapshot,
-    block_gas_limit: u64,
+    vm_config: RuskVmConfig,
     chain_id: u8,
 ) -> Result<Rusk> {
     let dir = dir.as_ref();
@@ -62,12 +61,8 @@ pub fn new_state_with_chainid<P: AsRef<Path>>(
     let rusk = Rusk::new(
         dir,
         chain_id,
-        None,
-        DEFAULT_GAS_PER_DEPLOY_BYTE,
-        DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        vm_config,
         DEFAULT_MIN_GAS_LIMIT,
-        DEFAULT_MIN_DEPLOY_POINTS,
-        block_gas_limit,
         u64::MAX,
         sender,
     )

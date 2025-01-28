@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change `execution` module to use `execution::Config` [#3437]
+
 [1.0.0] - 2025-01-23
 
 ### Changed
@@ -22,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Issues -->
 [#3235]: https://github.com/dusk-network/rusk/issues/3235
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
+[#3437]: https://github.com/dusk-network/rusk/issues/3437
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.0.0...HEAD
 [1.0.0]: https://github.com/dusk-network/rusk/compare/dusk-vm-0.1.0...dusk-vm-1.0.0

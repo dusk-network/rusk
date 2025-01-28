@@ -4,12 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod config;
+
 use blake2b_simd::Params;
 use dusk_core::abi::{ContractError, ContractId, CONTRACT_ID_BYTES};
 use dusk_core::transfer::{
     data::ContractBytecode, Transaction, TRANSFER_CONTRACT,
 };
 use piecrust::{CallReceipt, Error, Session};
+
+pub use config::Config;
 
 /// Executes a transaction in the provided session.
 ///
@@ -53,25 +57,18 @@ use piecrust::{CallReceipt, Error, Session};
 /// # Arguments
 /// * `session` - A mutable reference to the session executing the transaction.
 /// * `tx` - The transaction to execute.
-/// * `gas_per_deploy_byte` - The amount of gas points charged for each byte in
-///   a contract-deployment bytecode.
-/// * `min_deploy_points` - The minimum gas points charged for a contract
-///   deployment.
-/// * `min_deploy_gas_price` - The minimum gas price set for a contract
-///   deployment
+/// * `config` - The configuration for the execution of the transaction.
 ///
 /// # Returns
 /// A result indicating success or failure.
 pub fn execute(
     session: &mut Session,
     tx: &Transaction,
-    gas_per_deploy_byte: u64,
-    min_deploy_points: u64,
-    min_deploy_gas_price: u64,
+    config: &Config,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
-    deploy_check(tx, gas_per_deploy_byte, min_deploy_gas_price)?;
+    deploy_check(tx, config)?;
 
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
@@ -83,13 +80,7 @@ pub fn execute(
     )?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
-    contract_deploy(
-        session,
-        tx,
-        gas_per_deploy_byte,
-        min_deploy_points,
-        &mut receipt,
-    );
+    contract_deploy(session, tx, config, &mut receipt);
 
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
@@ -113,12 +104,10 @@ pub fn execute(
     Ok(receipt)
 }
 
-fn deploy_check(
-    tx: &Transaction,
-    gas_per_deploy_byte: u64,
-    min_deploy_gas_price: u64,
-) -> Result<(), Error> {
+fn deploy_check(tx: &Transaction, config: &Config) -> Result<(), Error> {
     if tx.deploy().is_some() {
+        let gas_per_deploy_byte = config.gas_per_deploy_byte;
+        let min_deploy_gas_price = config.min_deploy_gas_price;
         let deploy_charge =
             tx.deploy_charge(gas_per_deploy_byte, min_deploy_gas_price);
 
@@ -145,11 +134,13 @@ fn deploy_check(
 fn contract_deploy(
     session: &mut Session,
     tx: &Transaction,
-    gas_per_deploy_byte: u64,
-    min_deploy_points: u64,
+    config: &Config,
     receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
 ) {
     if let Some(deploy) = tx.deploy() {
+        let gas_per_deploy_byte = config.gas_per_deploy_byte;
+        let min_deploy_points = config.min_deploy_points;
+
         let gas_left = tx.gas_limit() - receipt.gas_spent;
         if receipt.data.is_ok() {
             let deploy_charge =

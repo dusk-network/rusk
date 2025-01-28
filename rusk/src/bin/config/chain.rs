@@ -12,8 +12,6 @@ use std::{
 use node::database::DatabaseOptions;
 use serde::{Deserialize, Serialize};
 
-pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
-
 use crate::args::Args;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
@@ -106,8 +104,8 @@ impl ChainConfig {
         self.max_queue_size.unwrap_or(10_000)
     }
 
-    pub(crate) fn block_gas_limit(&self) -> u64 {
-        self.block_gas_limit.unwrap_or(DEFAULT_BLOCK_GAS_LIMIT)
+    pub(crate) fn block_gas_limit(&self) -> Option<u64> {
+        self.block_gas_limit
     }
 
     pub(crate) fn genesis_timestamp(&self) -> u64 {

@@ -11,6 +11,7 @@ use std::sync::{Arc, RwLock};
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
 use tracing::info;
@@ -22,6 +23,8 @@ use crate::common::wallet::{
 };
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
+const VM_CONFIG: RuskVmConfig =
+    RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 const MAX_NOTES: u64 = 10;
 
@@ -30,7 +33,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/transfer.toml"))
         .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
+    new_state(dir, &snapshot, VM_CONFIG)
 }
 
 /// Transacts between two accounts on the in the same wallet and produces a

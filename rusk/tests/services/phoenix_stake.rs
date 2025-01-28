@@ -17,6 +17,7 @@ use dusk_core::{
 
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use std::collections::HashMap;
 use tempfile::tempdir;
@@ -30,6 +31,8 @@ use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
+const VM_CONFIG: RuskVmConfig =
+    RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 const GAS_LIMIT: u64 = 10_000_000_000;
 const GAS_PRICE: u64 = 1;
 const DEPOSIT: u64 = 0;
@@ -39,7 +42,7 @@ fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/stake.toml"))
         .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
+    new_state(dir, &snapshot, VM_CONFIG)
 }
 
 // Creates the Rusk initial state for the tests below
@@ -47,7 +50,7 @@ fn slash_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/slash.toml"))
         .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
+    new_state(dir, &snapshot, VM_CONFIG)
 }
 
 /// Stakes an amount Dusk and produces a block with this single transaction,

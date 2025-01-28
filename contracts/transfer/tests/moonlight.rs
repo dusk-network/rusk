@@ -21,7 +21,7 @@ use dusk_core::transfer::{
     ContractToAccount, ContractToContract, Transaction, TRANSFER_CONTRACT,
 };
 use dusk_core::{dusk, JubJubScalar, LUX};
-use dusk_vm::{execute, ContractData, Session, VM};
+use dusk_vm::{execute, ContractData, ExecutionConfig, Session, VM};
 use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -51,6 +51,8 @@ const BOB_ID: ContractId = {
 
 const OWNER: [u8; 32] = [0; 32];
 const CHAIN_ID: u8 = 0xFA;
+
+const NO_CONFIG: ExecutionConfig = ExecutionConfig::DEFAULT;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// moonlight account owning the `MOONLIGHT_GENESIS_VALUE` and alice and bob
@@ -183,7 +185,7 @@ fn transfer() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let gas_spent = execute(session, &transaction, 0, 0, 0)
+    let gas_spent = execute(session, &transaction, &NO_CONFIG)
         .expect("Transaction should succeed")
         .gas_spent;
 
@@ -248,7 +250,7 @@ fn transfer_with_refund() {
     .into();
 
     let max_gas = GAS_LIMIT * LUX;
-    let gas_spent = execute(session, &transaction, 0, 0, 0)
+    let gas_spent = execute(session, &transaction, &NO_CONFIG)
         .expect("Transaction should succeed")
         .gas_spent;
     let gas_refund = max_gas - gas_spent;
@@ -313,7 +315,7 @@ fn transfer_gas_fails() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let result = execute(session, &transaction, 0, 0, 0);
+    let result = execute(session, &transaction, &NO_CONFIG);
 
     assert!(
         result.is_err(),
@@ -365,7 +367,7 @@ fn alice_ping() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let gas_spent = execute(session, &transaction, 0, 0, 0)
+    let gas_spent = execute(session, &transaction, &NO_CONFIG)
         .expect("Transaction should succeed")
         .gas_spent;
 
@@ -446,7 +448,7 @@ fn convert_to_phoenix() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let gas_spent = execute(&mut session, &tx, 0, 0, 0)
+    let gas_spent = execute(&mut session, &tx, &NO_CONFIG)
         .expect("Executing transaction should succeed")
         .gas_spent;
     update_root(session).expect("Updating the root should succeed");
@@ -566,7 +568,7 @@ fn convert_to_moonlight_fails() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let receipt = execute(&mut session, &tx, 0, 0, 0)
+    let receipt = execute(&mut session, &tx, &NO_CONFIG)
         .expect("Executing TX should succeed");
 
     // check that the transaction execution panicked with the correct message
@@ -672,7 +674,7 @@ fn convert_wrong_contract_targeted() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let receipt = execute(&mut session, &tx, 0, 0, 0)
+    let receipt = execute(&mut session, &tx, &NO_CONFIG)
         .expect("Executing transaction should succeed");
     update_root(session).expect("Updating the root should succeed");
 
@@ -744,7 +746,7 @@ fn contract_to_contract() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let receipt = execute(session, &transaction, 0, 0, 0)
+    let receipt = execute(session, &transaction, &NO_CONFIG)
         .expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
@@ -811,7 +813,7 @@ fn contract_to_account() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let receipt = execute(session, &transaction, 0, 0, 0)
+    let receipt = execute(session, &transaction, &NO_CONFIG)
         .expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
@@ -875,7 +877,7 @@ fn contract_to_account_insufficient_funds() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let receipt = execute(session, &transaction, 0, 0, 0)
+    let receipt = execute(session, &transaction, &NO_CONFIG)
         .expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
@@ -946,7 +948,7 @@ fn contract_to_account_direct_call() {
     )
     .expect("Creating moonlight transaction should succeed");
 
-    let receipt = execute(session, &transaction, 0, 0, 0)
+    let receipt = execute(session, &transaction, &NO_CONFIG)
         .expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 

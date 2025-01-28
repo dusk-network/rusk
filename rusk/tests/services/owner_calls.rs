@@ -27,11 +27,7 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_DEPLOYMENT_GAS_PRICE;
-use crate::common::state::DEFAULT_MIN_DEPLOY_POINTS;
-use crate::common::state::{
-    DEFAULT_GAS_PER_DEPLOY_BYTE, DEFAULT_MIN_GAS_LIMIT,
-};
+use crate::common::state::{DEFAULT_MIN_GAS_LIMIT, DEFAULT_VM_CONFIG};
 use crate::common::wallet::{
     test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
 };
@@ -83,12 +79,8 @@ fn initial_state<P: AsRef<Path>>(
     let rusk = Rusk::new(
         dir,
         CHAIN_ID,
-        None,
-        DEFAULT_GAS_PER_DEPLOY_BYTE,
-        DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        DEFAULT_VM_CONFIG,
         DEFAULT_MIN_GAS_LIMIT,
-        DEFAULT_MIN_DEPLOY_POINTS,
-        BLOCK_GAS_LIMIT,
         u64::MAX,
         sender,
     )

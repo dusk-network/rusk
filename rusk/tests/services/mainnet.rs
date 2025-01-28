@@ -12,6 +12,7 @@ use dusk_core::stake::{StakeData, StakeKeys, STAKE_CONTRACT};
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::NoteLeaf;
 use dusk_core::transfer::TRANSFER_CONTRACT;
+use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
 
@@ -27,7 +28,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     ))
     .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot, u64::MAX)
+    new_state(dir, &snapshot, RuskVmConfig::default())
 }
 
 #[tokio::test(flavor = "multi_thread")]
