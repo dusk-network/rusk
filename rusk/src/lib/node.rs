@@ -24,9 +24,7 @@ pub use vm::RuskVmConfig;
 use crate::http::RuesEvent;
 pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
-use {
-    node::archive::Archive, node_data::archive::ArchivalData, tokio::sync::mpsc,
-};
+use node::archive::Archive;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
@@ -45,7 +43,7 @@ pub struct Rusk {
     pub(crate) feeder_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
     #[cfg(feature = "archive")]
-    pub(crate) archive_sender: mpsc::Sender<ArchivalData>,
+    pub archive: Archive,
 }
 
 pub(crate) type Services =
