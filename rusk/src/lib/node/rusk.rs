@@ -276,7 +276,7 @@ impl Rusk {
     /// # Returns
     ///  - Vec<SpentTransaction> - The transactions that were spent.
     /// - VerificationOutput - The verification output.
-    /// - Vec<ContractEvent> - All contract events that were emitted from the
+    /// - Vec<ContractTxEvent> - All contract events that were emitted from the
     ///   given transactions.
     #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
@@ -323,7 +323,7 @@ impl Rusk {
 
         self.set_current_commit(session.commit()?);
 
-        let all_txs_events = events.clone();
+        let contract_events = events.clone();
         for event in events {
             // Send VM event to RUES
             let event = RuesEvent::from(event);
@@ -331,7 +331,7 @@ impl Rusk {
         } // TODO: move this also in acceptor (async fn try_accept_block) where
           // stake events are filtered, to avoid looping twice?
 
-        Ok((spent_txs, verification_output, all_txs_events))
+        Ok((spent_txs, verification_output, contract_events))
     }
 
     pub fn finalize_state(
