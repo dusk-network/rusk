@@ -53,7 +53,6 @@ impl Rusk {
         generation_timeout: Option<Duration>,
         vm_config: RuskVmConfig,
         min_gas_limit: u64,
-        block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
         #[cfg(feature = "archive")] archive_sender: Sender<ArchivalData>,
@@ -96,7 +95,6 @@ impl Rusk {
             event_sender,
             #[cfg(feature = "archive")]
             archive_sender,
-            block_gas_limit,
         })
     }
 
@@ -109,7 +107,7 @@ impl Rusk {
         let started = Instant::now();
 
         let block_height = params.round;
-        let block_gas_limit = self.block_gas_limit;
+        let block_gas_limit = self.vm_config.block_gas_limit;
         let generator = params.generator_pubkey.inner();
         let to_slash = params.to_slash.clone();
         let prev_state_root = params.prev_state_root;
@@ -543,10 +541,6 @@ impl Rusk {
             self.vm.finalize_commit(d)?;
         }
         Ok(())
-    }
-
-    pub(crate) fn block_gas_limit(&self) -> u64 {
-        self.block_gas_limit
     }
 }
 

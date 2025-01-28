@@ -27,7 +27,7 @@ use ff::Field;
 use parking_lot::RwLockWriteGuard;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::{Rusk, RuskTip};
+use rusk::node::{Rusk, RuskTip, RuskVmConfig};
 use rusk::Result;
 use tempfile::tempdir;
 use tracing::info;
@@ -38,6 +38,9 @@ const BLOCK_HEIGHT: u64 = 1;
 const CHAIN_ID: u8 = 0xFA;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
+
+const VM_CONFIG: RuskVmConfig =
+    RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
 // Creates the Rusk initial state for the tests below
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {

@@ -267,7 +267,7 @@ impl VMExecution for Rusk {
     }
 
     fn get_block_gas_limit(&self) -> u64 {
-        self.block_gas_limit()
+        self.vm_config.block_gas_limit
     }
 
     fn gas_per_deploy_byte(&self) -> u64 {

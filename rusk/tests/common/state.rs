@@ -40,16 +40,16 @@ pub const DEFAULT_MIN_DEPLOY_POINTS: u64 = 5000000;
 pub fn new_state<P: AsRef<Path>>(
     dir: P,
     snapshot: &Snapshot,
-    block_gas_limit: u64,
+    vm_config: RuskVmConfig,
 ) -> Result<Rusk> {
-    new_state_with_chainid(dir, snapshot, block_gas_limit, CHAIN_ID)
+    new_state_with_chainid(dir, snapshot, vm_config, CHAIN_ID)
 }
 
 // Creates a Rusk initial state in the given directory
 pub fn new_state_with_chainid<P: AsRef<Path>>(
     dir: P,
     snapshot: &Snapshot,
-    block_gas_limit: u64,
+    vm_config: RuskVmConfig,
     chain_id: u8,
 ) -> Result<Rusk> {
     let dir = dir.as_ref();
@@ -64,9 +64,8 @@ pub fn new_state_with_chainid<P: AsRef<Path>>(
         dir,
         chain_id,
         None,
-        RuskVmConfig::default(),
+        vm_config,
         DEFAULT_MIN_GAS_LIMIT,
-        block_gas_limit,
         u64::MAX,
         sender,
     )

@@ -42,7 +42,6 @@ pub struct RuskNodeBuilder {
     vm_config: RuskVmConfig,
     generation_timeout: Option<Duration>,
     min_gas_limit: Option<u64>,
-    block_gas_limit: u64,
     feeder_call_gas: u64,
     state_dir: PathBuf,
 
@@ -151,8 +150,13 @@ impl RuskNodeBuilder {
         self
     }
 
-    pub fn with_block_gas_limit(mut self, block_gas_limit: u64) -> Self {
-        self.block_gas_limit = block_gas_limit;
+    pub fn with_block_gas_limit(
+        mut self,
+        block_gas_limit: Option<u64>,
+    ) -> Self {
+        if let Some(block_gas_limit) = block_gas_limit {
+            self.vm_config.block_gas_limit = block_gas_limit;
+        }
         self
     }
 
@@ -197,7 +201,6 @@ impl RuskNodeBuilder {
             self.generation_timeout,
             self.vm_config,
             min_gas_limit,
-            self.block_gas_limit,
             self.feeder_call_gas,
             rues_sender.clone(),
             #[cfg(feature = "archive")]

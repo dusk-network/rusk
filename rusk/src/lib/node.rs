@@ -45,7 +45,6 @@ pub struct Rusk {
     pub(crate) vm_config: RuskVmConfig,
     pub(crate) min_gas_limit: u64,
     pub(crate) feeder_gas_limit: u64,
-    pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
     #[cfg(feature = "archive")]
     pub(crate) archive_sender: mpsc::Sender<ArchivalData>,
