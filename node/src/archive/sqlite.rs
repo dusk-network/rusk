@@ -276,7 +276,7 @@ impl Archive {
     /// This also triggers the loading of the MoonlightTxEvents into the
     /// moonlight db. This also updates the last finalized block height
     /// attribute.
-    pub(super) async fn finalize_archive_data(
+    pub(crate) async fn finalize_archive_data(
         &mut self,
         current_block_height: u64,
         hex_block_hash: &str,
@@ -375,7 +375,7 @@ impl Archive {
 
     /// Remove the unfinalized block together with the unfinalized events of the
     /// given hash from the archive.
-    pub(super) async fn remove_block_and_events(
+    pub(crate) async fn remove_block_and_events(
         &self,
         current_block_height: u64,
         hex_block_hash: &str,

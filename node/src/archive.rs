@@ -12,12 +12,10 @@ use rocksdb::OptimisticTransactionDB;
 use sqlx::sqlite::SqlitePool;
 use tracing::debug;
 
-mod archivist;
 mod moonlight;
 mod sqlite;
 mod transformer;
 
-pub use archivist::ArchivistSrv;
 pub use moonlight::{MoonlightGroup, Order};
 
 // Archive folder containing the sqlite database and the moonlight database

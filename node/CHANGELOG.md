@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Change the way the archive synchronizes with the node Acceptor [#3359]
+
 ### Changed
 
 - Change deprecated `tempdir` with `tempfile` dependency [#3407]
+
+### Removed
+
+- Removed ArchivistSrv & archivist module [#3359]
 
 ## [1.0.1] - 2025-01-23
 
@@ -22,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-node` release
 
 <!-- Issues -->
+[#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3407]: https://github.com/dusk-network/rusk/issues/3407
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 

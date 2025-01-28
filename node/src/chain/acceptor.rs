@@ -740,9 +740,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     Ok((all_txs_events, finality))
                 })?;
 
-            // Store all events from this current block in the archive
+            // use rolling_finality_events for archive
             #[cfg(feature = "archive")]
-            self.archive
+            {
+                if let Some((_, new_finals)) = &finality.1 {
+                    for (height, hash) in new_finals.iter() {
+                        if let Err(e) = self
+                            .archive
+                            .finalize_archive_data(*height, &hex::encode(hash))
+                            .await
+                        {
+                            error!("Failed to finalize block in archive: {e:?}")
+                        }
+                    }
+                }
+
+                // Store all events from this current block in the archive
+                self.archive
                 .store_unfinalized_events(
                     header.height,
                     header.hash,
@@ -752,11 +766,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 .expect(
                     "Storing unfinalized events in archive should never fail",
                 );
+            }
 
             let mut stakes = vec![];
-            for event in &all_txs_events {
+            for event in all_txs_events {
                 if event.event.target.0 == STAKE_CONTRACT {
-                    stakes.push(event.event.clone());
+                    stakes.push(event.event);
                 }
             }
 
@@ -1106,6 +1121,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip after reverting
+        #[cfg(feature = "archive")]
+        let mut archive_revert_info: Vec<(u64, String)> = vec![];
         let (blk, label) = self.db.read().await.update(|db| {
             let mut height = curr_height;
             loop {
@@ -1136,6 +1153,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 ) {
                     warn!("cannot notify event {e}")
                 };
+
+                // Temporary store the reverted block info for archive
+                #[cfg(feature = "archive")]
+                archive_revert_info.push((h.height, hex::encode(h.hash)));
 
                 info!(
                     event = "block reverted",
@@ -1174,6 +1195,19 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             iter = blk.header().iteration,
             state_root = hex::encode(blk.header().state_hash)
         );
+
+        // Remove the block and event entries for this block from the
+        // archive
+        #[cfg(feature = "archive")]
+        for (height, hex_hash) in archive_revert_info {
+            if let Err(e) = self
+                .archive
+                .remove_block_and_events(height, &hex_hash)
+                .await
+            {
+                error!("Failed to delete block & events in archive: {:?}", e);
+            }
+        }
 
         self.update_tip(&blk, label).await
     }
