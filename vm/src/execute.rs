@@ -69,8 +69,10 @@ pub fn execute(
     // with gas limit smaller than deploy charge.
     deploy_check(tx, config)?;
 
-    let _ = session
-        .set_meta(Metadata::PUBLIC_SENDER, tx.moonlight_sender().copied());
+    if config.with_public_sender {
+        let _ = session
+            .set_meta(Metadata::PUBLIC_SENDER, tx.moonlight_sender().copied());
+    }
 
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
@@ -81,7 +83,10 @@ pub fn execute(
         tx.gas_limit(),
     );
 
-    let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
+    if config.with_public_sender {
+        let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
+    }
+
     let mut receipt = receipt?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
