@@ -28,15 +28,14 @@ use dusk_core::{BlsScalar, Dusk};
 use dusk_vm::{
     execute, CallReceipt, Error as VMError, ExecutionConfig, Session, VM,
 };
-use node_data::events::contract::{ContractEvent, ContractTxEvent};
+#[cfg(feature = "archive")]
+use node::archive::Archive;
+use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 use tracing::info;
-
-#[cfg(feature = "archive")]
-use {node_data::archive::ArchivalData, tokio::sync::mpsc::Sender};
 
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
@@ -53,7 +52,7 @@ impl Rusk {
         min_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
-        #[cfg(feature = "archive")] archive_sender: Sender<ArchivalData>,
+        #[cfg(feature = "archive")] archive: Archive,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
@@ -91,7 +90,7 @@ impl Rusk {
             feeder_gas_limit,
             event_sender,
             #[cfg(feature = "archive")]
-            archive_sender,
+            archive,
         })
     }
 
@@ -273,6 +272,12 @@ impl Rusk {
     ///   * `consistency_check` - represents a state_root, the caller expects to
     ///   be returned on successful transactions execution. Passing a None
     ///   value disables the check.
+    ///
+    /// # Returns
+    ///  - Vec<SpentTransaction> - The transactions that were spent.
+    /// - VerificationOutput - The verification output.
+    /// - Vec<ContractEvent> - All contract events that were emitted from the
+    ///   given transactions.
     #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
         &self,
@@ -288,7 +293,7 @@ impl Rusk {
     ) -> Result<(
         Vec<SpentTransaction>,
         VerificationOutput,
-        Vec<ContractEvent>,
+        Vec<ContractTxEvent>,
     )> {
         let session = self.new_block_session(block_height, prev_commit)?;
 
@@ -318,27 +323,15 @@ impl Rusk {
 
         self.set_current_commit(session.commit()?);
 
-        // Sent all events from this block to the archivist
-        #[cfg(feature = "archive")]
-        {
-            let _ = self.archive_sender.try_send(ArchivalData::ArchivedEvents(
-                block_height,
-                block_hash,
-                events.clone(),
-            ));
-        }
-
-        let mut stake_events = vec![];
+        let all_txs_events = events.clone();
         for event in events {
-            if event.event.target.0 == STAKE_CONTRACT {
-                stake_events.push(event.event.clone());
-            }
             // Send VM event to RUES
             let event = RuesEvent::from(event);
             let _ = self.event_sender.send(event);
-        }
+        } // TODO: move this also in acceptor (async fn try_accept_block) where
+          // stake events are filtered, to avoid looping twice?
 
-        Ok((spent_txs, verification_output, stake_events))
+        Ok((spent_txs, verification_output, all_txs_events))
     }
 
     pub fn finalize_state(

@@ -191,6 +191,8 @@ impl RuskNodeBuilder {
 
         #[cfg(feature = "archive")]
         let (archive_sender, archive_receiver) = mpsc::channel(10000);
+        #[cfg(feature = "archive")]
+        let archive = Archive::create_or_open(self.db_path.clone()).await;
 
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
 
@@ -202,13 +204,10 @@ impl RuskNodeBuilder {
             self.feeder_call_gas,
             rues_sender.clone(),
             #[cfg(feature = "archive")]
-            archive_sender.clone(),
+            archive.clone(),
         )
         .map_err(|e| anyhow::anyhow!("Cannot instantiate VM {e}"))?;
         info!("Rusk VM loaded");
-
-        #[cfg(feature = "archive")]
-        let archive = Archive::create_or_open(self.db_path.clone()).await;
 
         let node = {
             let db = rocksdb::Backend::create_or_open(
@@ -236,6 +235,8 @@ impl RuskNodeBuilder {
                     node.inner().network(),
                     node.inner().database(),
                     node.inner().vm_handler(),
+                    #[cfg(feature = "archive")]
+                    archive,
                 )
                 .await?;
             return chain_srv.revert_last_final().await;
@@ -287,10 +288,16 @@ impl RuskNodeBuilder {
         #[cfg(feature = "archive")]
         service_list.push(Box::new(ArchivistSrv {
             archive_receiver,
-            archivist: archive,
+            archivist: archive.clone(),
         }));
 
-        node.inner().initialize(&mut service_list).await?;
+        node.inner()
+            .initialize(
+                &mut service_list,
+                #[cfg(feature = "archive")]
+                archive,
+            )
+            .await?;
         node.inner().spawn_all(service_list).await?;
 
         Ok(())
