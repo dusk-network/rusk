@@ -6,12 +6,14 @@
 
 use std::path::Path;
 
-use rusk::{Result, Rusk};
+use rusk::{node::RuskVmConfig, Result, Rusk};
 use tempfile::tempdir;
 
 use crate::common::state::{generator_procedure2, new_state};
 
 const BLOCK_GAS_LIMIT: u64 = 24_000_000;
+const VM_CONFIG: RuskVmConfig =
+    RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 const BLOCKS_NUM: u64 = 10;
 
 // Creates the Rusk initial state for the tests below
@@ -20,7 +22,7 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
         toml::from_str(include_str!("../config/multi_transfer.toml"))
             .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
+    new_state(dir, &snapshot, VM_CONFIG)
 }
 
 #[tokio::test(flavor = "multi_thread")]
