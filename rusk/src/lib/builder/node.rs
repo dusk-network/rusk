@@ -200,7 +200,7 @@ impl RuskNodeBuilder {
         let (node_sender, node_receiver) = mpsc::channel(1000);
 
         #[cfg(feature = "archive")]
-        let (archive_sender, archive_receiver) = mpsc::channel(10000);
+        let (_, archive_receiver) = mpsc::channel(10000);
         #[cfg(feature = "archive")]
         let archive = Archive::create_or_open(self.db_path.clone()).await;
 
@@ -266,8 +266,6 @@ impl RuskNodeBuilder {
             service_list.push(Box::new(ChainEventStreamer {
                 node_receiver,
                 rues_sender,
-                #[cfg(feature = "archive")]
-                archivist_sender: archive_sender,
             }));
 
             let mut handler = DataSources::default();
