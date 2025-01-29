@@ -1,10 +1,6 @@
 import { get, writable } from "svelte/store";
 import { setKey } from "lamb";
-import {
-  Bookkeeper,
-  Bookmark,
-  ProfileGenerator,
-} from "$lib/vendor/w3sper.js/src/mod";
+import { Bookkeeper, Bookmark, ProfileGenerator } from "@dusk/w3sper";
 
 import WalletTreasury from "$lib/wallet-treasury";
 
@@ -65,6 +61,16 @@ const bookkeeper = new Bookkeeper(treasury);
 
 const getCurrentProfile = () => get(walletStore).currentProfile;
 
+function unsafeGetCurrentProfile() {
+  const profile = getCurrentProfile();
+
+  if (profile === null) {
+    throw new TypeError("Can't retrieve profile: wallet not initialized");
+  } else {
+    return profile;
+  }
+}
+
 /** @type {(txInfo: TransactionInfo) => void} */
 const observeTxRemoval = (txInfo) => {
   networkStore.connect().then((network) =>
@@ -117,8 +123,12 @@ const updateBalance = async () => {
     return;
   }
 
-  const shielded = await bookkeeper.balance(profile.address);
-  const unshielded = await bookkeeper.balance(profile.account);
+  const shielded = /** @type {AddressBalance} */ (
+    await bookkeeper.balance(profile.address)
+  );
+  const unshielded = /** @type {AccountBalance} */ (
+    await bookkeeper.balance(profile.account)
+  );
   const balance = { shielded, unshielded };
 
   /**
@@ -185,7 +195,7 @@ const claimRewards = async (amount, gas) =>
     .then(networkStore.connect)
     .then((network) =>
       network.execute(
-        bookkeeper.as(getCurrentProfile()).withdraw(amount).gas(gas)
+        bookkeeper.as(unsafeGetCurrentProfile()).withdraw(amount).gas(gas)
       )
     )
     .then(updateCacheAfterTransaction)
@@ -247,7 +257,7 @@ const shield = async (amount, gas) =>
     .then(networkStore.connect)
     .then((network) =>
       network.execute(
-        bookkeeper.as(getCurrentProfile()).shield(amount).gas(gas)
+        bookkeeper.as(unsafeGetCurrentProfile()).shield(amount).gas(gas)
       )
     )
     .then(updateCacheAfterTransaction)
@@ -258,7 +268,9 @@ const stake = async (amount, gas) =>
   sync()
     .then(networkStore.connect)
     .then((network) =>
-      network.execute(bookkeeper.as(getCurrentProfile()).stake(amount).gas(gas))
+      network.execute(
+        bookkeeper.as(unsafeGetCurrentProfile()).stake(amount).gas(gas)
+      )
     )
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
@@ -386,18 +398,20 @@ async function sync(fromBlock) {
 const transfer = async (to, amount, memo, gas) =>
   sync()
     .then(networkStore.connect)
-    .then((network) => {
+    .then(async (network) => {
       const tx = bookkeeper
-        .as(getCurrentProfile())
+        .as(unsafeGetCurrentProfile())
         .transfer(amount)
         .to(to)
         .memo(memo)
         .gas(gas);
 
-      return network.execute(
-        // @ts-ignore we don't have access to the AddressTransfer type
-        ProfileGenerator.typeOf(to) === "address" ? tx.obfuscated() : tx
-      );
+      if (ProfileGenerator.typeOf(to) === "address") {
+        // @ts-ignore
+        tx.obfuscated();
+      }
+
+      return await network.execute(tx);
     })
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
@@ -408,7 +422,7 @@ const unshield = async (amount, gas) =>
     .then(networkStore.connect)
     .then((network) =>
       network.execute(
-        bookkeeper.as(getCurrentProfile()).unshield(amount).gas(gas)
+        bookkeeper.as(unsafeGetCurrentProfile()).unshield(amount).gas(gas)
       )
     )
     .then(updateCacheAfterTransaction)
@@ -420,7 +434,7 @@ const unstake = async (amount, gas) =>
     .then(networkStore.connect)
     .then((network) =>
       network.execute(
-        bookkeeper.as(getCurrentProfile()).unstake(amount).gas(gas)
+        bookkeeper.as(unsafeGetCurrentProfile()).unstake(amount).gas(gas)
       )
     )
     .then(updateCacheAfterTransaction)

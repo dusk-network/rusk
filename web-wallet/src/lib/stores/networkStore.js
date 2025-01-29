@@ -1,14 +1,18 @@
 import { writable } from "svelte/store";
 import { browser } from "$app/environment";
 import { always, condition, getKey, getPath, isUndefined, when } from "lamb";
-
 import {
   AccountSyncer,
   AddressSyncer,
   Network,
-} from "$lib/vendor/w3sper.js/src/mod";
+  useAsProtocolDriver,
+} from "@dusk/w3sper";
+
 import { rejectAfter } from "$lib/dusk/promise";
 import { makeNodeUrl } from "$lib/url";
+
+// eslint-disable-next-line import/no-unresolved
+import wasmPath from "$lib/vendor/dusk_wallet_core.wasm?url";
 
 function getNetworkUrl() {
   if (browser) {
@@ -54,7 +58,13 @@ const connect = async () =>
   network.connected
     ? network
     : Promise.race([
-        network.connect(),
+        fetch(wasmPath)
+          .then((response) => response.arrayBuffer())
+          .then((buffer) => {
+            useAsProtocolDriver(new Uint8Array(buffer));
+
+            return network.connect();
+          }),
         rejectAfter(
           10000,
           new Error("Timed out while connecting to the network")
@@ -67,9 +77,8 @@ const disconnect = () => network.disconnect();
 /** @type {() => Promise<AccountSyncer>} */
 const getAccountSyncer = () => connect().then(() => new AccountSyncer(network));
 
-/** @type {(options?: NetworkSyncerOptions) => Promise<AddressSyncer>} */
-const getAddressSyncer = (options) =>
-  connect().then(() => new AddressSyncer(network, options));
+/** @type {() => Promise<AddressSyncer>} */
+const getAddressSyncer = () => connect().then(() => new AddressSyncer(network));
 
 /** @type {NetworkStoreServices["getBlockHashByHeight"]} */
 const getBlockHashByHeight = (height) =>

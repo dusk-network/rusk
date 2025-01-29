@@ -27,7 +27,7 @@
   } from "$lib/wallet";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
 
-  /** @type {(seed: Uint8Array) => Promise<import("$lib/vendor/w3sper.js/src/mod").ProfileGenerator>} */
+  /** @type {(seed: Uint8Array) => Promise<ProfileGenerator>} */
   async function checkLocalData(seed) {
     const profileGenerator = await profileGeneratorFrom(seed);
     const defaultAddress = (await profileGenerator.default).address.toString();

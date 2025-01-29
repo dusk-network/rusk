@@ -22,7 +22,7 @@
   } from "$lib/dusk/components";
   import { GasFee, GasSettings, OperationResult } from "$lib/components";
   import { walletStore } from "$lib/stores";
-  import { Gas } from "$lib/vendor/w3sper.js/src/mod";
+  import { Gas } from "@dusk/w3sper";
   import { MESSAGES } from "$lib/constants";
   import Banner from "../Banner/Banner.svelte";
 

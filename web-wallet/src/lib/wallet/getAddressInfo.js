@@ -1,4 +1,4 @@
-import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
+import { ProfileGenerator } from "@dusk/w3sper";
 
 /**
  * Validates if an input is a shielded or an public address, with feedback on failure or success.

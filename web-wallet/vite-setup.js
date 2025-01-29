@@ -22,19 +22,39 @@ import { IntersectionObserver } from "./src/lib/dusk/mocks";
 // Mocking wallet connection modules
 vi.mock("@reown/appkit");
 
-vi.mock("./src/lib/vendor/w3sper.js/src/protocol-driver/mod", async () => ({
-  ...(await import("$lib/__mocks__/ProtocolDriver.js")),
-}));
+/**
+ * Mocking fetch calls.
+ * For wasm files we build a response with a minimal valid wasm.
+ */
+globalThis.fetch = vi.fn((url) => {
+  return typeof url === "string" && url.endsWith(".wasm")
+    ? Promise.resolve(
+        new Response(
+          new Uint8Array([
+            0x00,
+            0x61,
+            0x73,
+            0x6d, // magic word "\0asm"
+            0x01,
+            0x00,
+            0x00,
+            0x00, // version 1
+            0x01,
+            0x04,
+            0x01,
+            0x60,
+            0x00,
+            0x00, // empty type section
+          ]),
+          {
+            headers: { "Content-Type": "application/wasm" },
+          }
+        )
+      )
+    : Promise.reject(new Error("Fetch calls should be mocked"));
+});
 
-vi.mock(
-  "./src/lib/vendor/w3sper.js/src/network/components/transactions",
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    Transactions: (await import("$lib/__mocks__/Transactions.js")).default,
-  })
-);
-
-vi.mock("./src/lib/vendor/w3sper.js/src/mod", async (importOriginal) => ({
+vi.mock("@dusk/w3sper", async (importOriginal) => ({
   ...(await importOriginal()),
   AccountSyncer: (await import("$lib/__mocks__/AccountSyncer")).default,
   AddressSyncer: (await import("$lib/__mocks__/AddressSyncer")).default,

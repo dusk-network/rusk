@@ -9,11 +9,7 @@ import {
 } from "vitest";
 import { get } from "svelte/store";
 
-import {
-  AccountSyncer,
-  AddressSyncer,
-  Network,
-} from "$lib/vendor/w3sper.js/src/mod";
+import { AccountSyncer, AddressSyncer, Network } from "@dusk/w3sper";
 
 describe("Network store", async () => {
   const blockHeight = 999_888_777n;

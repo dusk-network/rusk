@@ -39,7 +39,7 @@ type WalletCacheDbNote = Omit<WalletCacheNote, "note" | "nullifier"> & {
 type WalletCacheDbStakeInfo = {
   account: string;
   stakeInfo: Omit<StakeInfo, "amount"> & {
-    amount: null | Omit<Exclude<StakeAmount, null>, "total">;
+    amount: null | Omit<Exclude<StakeInfo["amount"], null>, "total">;
   };
 };
 

@@ -35,6 +35,7 @@
   "type": "module",
   "version": "1.4.0",
   "dependencies": {
+    "@dusk/w3sper": "npm:@jsr/dusk__w3sper@^1.1.0",
     "@floating-ui/dom": "1.6.5",
     "@mdi/js": "7.4.47",
     "@reown/appkit": "1.5.3",

@@ -4,8 +4,6 @@ import notesArrayToMap from "$lib/wallet/notesArrayToMap";
 import walletCache from "$lib/wallet-cache";
 import networkStore from "$lib/stores/networkStore";
 
-/** @typedef {import("$lib/vendor/w3sper.js/src/mod").Profile} Profile */
-
 class WalletTreasury {
   /** @type {AccountBalance[]} */
   #accountBalances = [];
@@ -150,7 +148,7 @@ class WalletTreasury {
   }
 
   /**
-   * @param {bigint | import("$lib/vendor/w3sper.js/src/mod").Bookmark} from
+   * @param {bigint | Bookmark} from
    * @param {(evt: CustomEvent) => void} syncIterationListener
    * @param {AbortSignal} signal
    */
@@ -163,7 +161,7 @@ class WalletTreasury {
       lastBlockHeight = detail.blocks.last;
     };
     const accountSyncer = await networkStore.getAccountSyncer();
-    const addressSyncer = await networkStore.getAddressSyncer({ signal });
+    const addressSyncer = await networkStore.getAddressSyncer();
 
     // @ts-ignore
     addressSyncer.addEventListener("synciteration", lastBlockHeightListener);
@@ -236,7 +234,6 @@ class WalletTreasury {
      *
      * Currently `w3sper.js` returns an array of `ArrayBuffer`s
      * instead of one of `Uint8Array`s.
-     * @type {ArrayBuffer[]}
      */
     const reallySpentNullifiers = await addressSyncer.spent(
       currentSpentNullifiers

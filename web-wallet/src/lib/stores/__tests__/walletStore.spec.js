@@ -8,12 +8,7 @@ import {
   vi,
 } from "vitest";
 import { get } from "svelte/store";
-import {
-  Bookkeeper,
-  Gas,
-  Network,
-  ProfileGenerator,
-} from "$lib/vendor/w3sper.js/src/mod";
+import { Bookkeeper, Gas, Network, ProfileGenerator } from "@dusk/w3sper";
 import { generateMnemonic } from "bip39";
 
 import { stakeInfo } from "$lib/mock-data";
@@ -317,6 +312,7 @@ describe("Wallet store", async () => {
     const memo = "";
 
     const phoenixTxResult = {
+      buffer: new Uint8Array(),
       hash: "some-tx-id",
       nullifiers: [],
     };
@@ -355,9 +351,7 @@ describe("Wallet store", async () => {
       vi.useRealTimers();
 
       const currentlyCachedBalance =
-        await new WalletTreasury().getCachedBalance(
-          defaultProfile.address.toString()
-        );
+        await new WalletTreasury().getCachedBalance(defaultProfile);
       const newNonce = currentlyCachedBalance.unshielded.nonce + 1n;
 
       let expectedTx;
@@ -376,6 +370,7 @@ describe("Wallet store", async () => {
         };
       } else {
         executeSpy.mockResolvedValueOnce({
+          buffer: new Uint8Array(),
           hash: phoenixTxResult.hash,
           nonce: newNonce,
         });

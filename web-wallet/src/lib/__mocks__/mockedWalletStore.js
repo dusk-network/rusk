@@ -1,11 +1,11 @@
-import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/profile";
+import { ProfileGenerator } from "@dusk/w3sper";
 
 import { stakeInfo } from "$lib/mock-data";
 
 import { mockReadableStore } from "$lib/dusk/test-helpers";
 
 const seed = new Uint8Array(64);
-const seeder = () => seed;
+const seeder = async () => seed;
 const profileGenerator = new ProfileGenerator(seeder);
 const profiles = [
   await profileGenerator.default,
