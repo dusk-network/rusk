@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for partial unstake/claim rewards [#3009]
 - Add "Unstake" flow validation [#3009]
 - Store the wallet creation block height and show it in settings [#3381]
+- Add memo field to send flow [#3112]
 
 ### Changed
 
@@ -536,6 +537,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3097]: https://github.com/dusk-network/rusk/issues/3097
 [#3098]: https://github.com/dusk-network/rusk/issues/3098
 [#3099]: https://github.com/dusk-network/rusk/issues/3099
+[#3112]: https://github.com/dusk-network/rusk/issues/3112
 [#3113]: https://github.com/dusk-network/rusk/issues/3113
 [#3129]: https://github.com/dusk-network/rusk/issues/3129
 [#3156]: https://github.com/dusk-network/rusk/issues/3156

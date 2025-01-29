@@ -164,7 +164,7 @@ exports[`Send page > should render the send page 1`] = `
             class="operation__address-wrapper svelte-npcavd"
           >
             <p>
-              Address:
+              Address
             </p>
              
             <button
@@ -181,7 +181,7 @@ exports[`Send page > should render the send page 1`] = `
           </div>
            
           <textarea
-            class="dusk-textbox dusk-textbox-multiline operation__send-address operation__send-address--invalid"
+            class="dusk-textbox dusk-textbox-multiline operation__send-address"
             required=""
           />
           
@@ -212,6 +212,23 @@ exports[`Send page > should render the send page 1`] = `
                 CLOSE
               </span>
             </button>
+          </div>
+           
+           
+          <div
+            class="operation__address-wrapper svelte-npcavd"
+          >
+            <p>
+              Memo
+            </p>
+             
+            <div
+              aria-checked="false"
+              aria-disabled="false"
+              class="dusk-switch"
+              role="switch"
+              tabindex="0"
+            />
           </div>
            
         </div>
