@@ -169,14 +169,13 @@ pub(crate) async fn online(
                 .public_key(stake_idx)
                 .expect("public key to exists in interactive mode");
 
-            let mut has_stake = false;
+            let mut has_stake = match wallet.check_stake_exists(stake_pk) {
+                Ok(x) => x,
+                Err(_) => false,
+            };
 
             let owner = match wallet.find_stake_owner_account(stake_pk).await {
-                Ok(account) => {
-                    has_stake = true;
-
-                    account
-                }
+                Ok(account) => account,
                 Err(Error::NotStaked) => {
                     let choices = wallet
                         .profiles()

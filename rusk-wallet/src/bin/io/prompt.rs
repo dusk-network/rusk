@@ -271,7 +271,7 @@ pub(crate) fn request_stake_token_amt(
     has_stake: bool,
 ) -> Result<Dusk, Error> {
     let min: Dusk = {
-        let min_stake = if has_stake { 0 } else { DEFAULT_MINIMUM_STAKE };
+        let min_stake = if has_stake { 1 } else { DEFAULT_MINIMUM_STAKE };
 
         min_stake.into()
     };
