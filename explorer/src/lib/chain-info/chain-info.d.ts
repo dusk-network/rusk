@@ -35,6 +35,8 @@ type SearchResult = {
 };
 
 type Transaction = {
+  from: string | undefined;
+  to: string | undefined;
   blockhash: string;
   blockheight: number;
   date: Date;

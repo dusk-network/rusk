@@ -31,7 +31,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
     class="data-card__content"
   >
     <div
-      class="table-container blocks-table blocks-card__table"
+      class="table-container blocks-table data-card__table"
     >
       <table
         class="table"

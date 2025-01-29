@@ -4,7 +4,7 @@ exports[`home page > should render the home page, start polling for the latest c
 <section
   class="landing"
 >
-  <div
+  <article
     class="chain-info"
   >
     <div
@@ -388,7 +388,7 @@ exports[`home page > should render the home page, start polling for the latest c
         </div>
       </div>
     </div>
-  </div>
+  </article>
    
   <div
     class="tables"
@@ -1428,7 +1428,7 @@ exports[`home page > should render the home page, start polling for the latest c
 <section
   class="landing"
 >
-  <div
+  <article
     class="chain-info"
   >
     <div
@@ -1810,7 +1810,7 @@ exports[`home page > should render the home page, start polling for the latest c
         </div>
       </div>
     </div>
-  </div>
+  </article>
    
   <div
     class="tables"

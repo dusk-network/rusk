@@ -35,9 +35,9 @@
 </script>
 
 <section class="landing">
-  <div class="chain-info">
+  <article class="chain-info">
     <StatisticsPanel />
-  </div>
+  </article>
 
   <div class="tables">
     <LatestBlocksCard
