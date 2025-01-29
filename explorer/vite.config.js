@@ -29,6 +29,7 @@ export default defineConfig(({ mode }) => {
         VITE_CHAIN_INFO_ENTRIES: env.VITE_CHAIN_INFO_ENTRIES,
         VITE_MARKET_DATA_REFETCH_INTERVAL:
           env.VITE_MARKET_DATA_REFETCH_INTERVAL,
+        VITE_FEATURE_TOKENS: env.VITE_FEATURE_TOKENS,
         VITE_NODE_URL: env.VITE_NODE_URL,
         VITE_REFETCH_INTERVAL: env.VITE_REFETCH_INTERVAL,
         VITE_RUSK_PATH: env.VITE_RUSK_PATH,
@@ -66,6 +67,7 @@ export default defineConfig(({ mode }) => {
         VITE_RUSK_PATH: "",
         VITE_STATS_REFETCH_INTERVAL: "1000",
         VITE_TRANSACTIONS_LIST_ENTRIES: "100",
+        VITE_FEATURE_TOKENS: "true",
       },
       environment: "jsdom",
       globalSetup: ["./vite-global-setup.js"],
