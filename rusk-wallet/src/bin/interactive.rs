@@ -110,7 +110,8 @@ pub(crate) async fn run_loop(
                                 }
                             }
                             RunResult::History(ref history) => {
-                                crate::prompt::tx_history_list(&history);
+                                let _ = crate::prompt::tx_history_list(history);
+
                                 println!();
                             }
                             _ => println!("\r{}", res),

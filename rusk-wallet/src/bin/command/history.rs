@@ -58,9 +58,9 @@ impl Display for TransactionHistory {
             Transaction::Phoenix(_) => dusk_core::transfer::PHOENIX_TOPIC,
         };
 
-        write!(
+        writeln!(
             f,
-            "{height: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee} | {tx_type}\n",
+            "{height: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee} | {tx_type}",
         )
     }
 }
@@ -141,15 +141,14 @@ pub(crate) async fn transaction_from_notes(
                     && th.height == decoded_note.block_height
             });
 
-            match outgoing_tx {
-                // Outgoing txs found, this should be the change or any
-                // other output created by the tx result
-                // (like withdraw or unstake)
-                Some(th) => th.amount += note_amount,
+            // If outgoing txs found, this should be the change or any
+            // other output created by the tx result
+            // (like withdraw or unstake)
+            if let Some(th) = outgoing_tx {
+                th.amount += note_amount
 
-                // No outgoing txs found, this note should belong to a
+                // If no outgoing txs found, this note should belong to a
                 // preconfigured genesis state
-                None => (),
             }
         }
     }
