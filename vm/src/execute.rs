@@ -76,18 +76,17 @@ pub fn execute(
 
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
-    let receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "spend_and_execute",
-        tx.strip_off_bytecode().as_ref().unwrap_or(tx),
-        tx.gas_limit(),
-    );
-
-    if config.with_public_sender {
-        let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
-    }
-
-    let mut receipt = receipt?;
+    let mut receipt = session
+        .call::<_, Result<Vec<u8>, ContractError>>(
+            TRANSFER_CONTRACT,
+            "spend_and_execute",
+            tx.strip_off_bytecode().as_ref().unwrap_or(tx),
+            tx.gas_limit(),
+        )
+        .map_err(|e| {
+            clear_session(session, config);
+            e
+        })?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(session, tx, config, &mut receipt);
@@ -111,7 +110,15 @@ pub fn execute(
 
     receipt.events.extend(refund_receipt.events);
 
+    clear_session(session, config);
+
     Ok(receipt)
+}
+
+fn clear_session(session: &mut Session, config: &Config) {
+    if config.with_public_sender {
+        let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
+    }
 }
 
 fn deploy_check(tx: &Transaction, config: &Config) -> Result<(), Error> {
