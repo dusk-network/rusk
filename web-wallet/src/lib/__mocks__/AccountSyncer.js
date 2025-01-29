@@ -1,17 +1,17 @@
-import { AccountSyncer } from "$lib/vendor/w3sper.js/src/network/syncer/account";
+import { AccountSyncer } from "@dusk/w3sper";
 
 import { stakeInfo } from "$lib/mock-data";
 
 class AccountSyncerMock extends AccountSyncer {
   /**
-   * @param {import("$lib/vendor/w3sper.js/src/mod").Network} network
+   * @param {Network} network
    */
   constructor(network) {
     super(network);
   }
 
   /**
-   * @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles
+   * @param {Array<Profile>} profiles
    * @returns {Promise<AccountBalance[]>}
    */
   async balances(profiles) {
@@ -22,7 +22,7 @@ class AccountSyncerMock extends AccountSyncer {
   }
 
   /**
-   * @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles
+   * @param {Array<Profile>} profiles
    * @returns {Promise<StakeInfo[]>}
    */
   async stakes(profiles) {

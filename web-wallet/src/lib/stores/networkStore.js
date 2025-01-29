@@ -2,11 +2,7 @@ import { writable } from "svelte/store";
 import { browser } from "$app/environment";
 import { always, condition, getKey, getPath, isUndefined, when } from "lamb";
 
-import {
-  AccountSyncer,
-  AddressSyncer,
-  Network,
-} from "$lib/vendor/w3sper.js/src/mod";
+import { AccountSyncer, AddressSyncer, Network } from "@dusk/w3sper";
 import { rejectAfter } from "$lib/dusk/promise";
 import { makeNodeUrl } from "$lib/url";
 

@@ -1,4 +1,4 @@
-import { Network } from "$lib/vendor/w3sper.js/src/network/mod";
+import { Network } from "@dusk/w3sper";
 
 class NetworkMock extends Network {
   /** @type {boolean} */

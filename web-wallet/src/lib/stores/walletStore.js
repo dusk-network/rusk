@@ -1,10 +1,6 @@
 import { get, writable } from "svelte/store";
 import { setKey } from "lamb";
-import {
-  Bookkeeper,
-  Bookmark,
-  ProfileGenerator,
-} from "$lib/vendor/w3sper.js/src/mod";
+import { Bookkeeper, Bookmark, ProfileGenerator } from "@dusk/w3sper";
 
 import WalletTreasury from "$lib/wallet-treasury";
 
@@ -12,6 +8,9 @@ import { transactions } from "$lib/mock-data";
 
 import networkStore from "./networkStore";
 import settingsStore from "./settingsStore";
+
+// TODO reinstate local wasm for now
+// TODO resolve todos in w3sper's types
 
 const AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
 

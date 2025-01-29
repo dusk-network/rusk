@@ -1,4 +1,4 @@
-import { AddressSyncer } from "$lib/vendor/w3sper.js/src/network/syncer/address";
+import { AddressSyncer } from "@dusk/w3sper";
 
 import { cacheUnspentNotes } from "$lib/mock-data";
 
@@ -33,7 +33,7 @@ class SyncEvent extends CustomEvent {
 
 class AddressSyncerMock extends AddressSyncer {
   /**
-   * @param {import("$lib/vendor/w3sper.js/src/mod").Network} network
+   * @param {Network} network
    * @param {Record<string, any>} [options={}]
    */
   constructor(network, options = {}) {
@@ -41,7 +41,7 @@ class AddressSyncerMock extends AddressSyncer {
   }
 
   /**
-   * @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles
+   * @param {Array<Profile>} profiles
    * @param {Record<string, any>} [options={}]
    * @returns {Promise<ReadableStream<any>>}
    */
