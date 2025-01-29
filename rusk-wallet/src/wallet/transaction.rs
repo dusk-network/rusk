@@ -734,21 +734,4 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             StakeFundOwner::Contract(_) => Err(Error::Unauthorized),
         }
     }
-
-    /// Return true if the stake amount currently exists
-    /// or if the user has staked some amount
-    pub async fn check_stake_exists(
-        &self,
-        stake_pk: &BlsPublicKey,
-    ) -> Result<bool, Error> {
-        let stake = self.state()?.fetch_stake(pk).await?;
-
-        let exists = if let Some(stake) = stake {
-            stake.amount.is_some()
-        } else {
-            false
-        };
-
-        Ok(exists)
-    }
 }
