@@ -9,8 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `[chain].public_sender_start_height` config [#3341]
 - Add `abi::public_sender` [#3341]
+- Add `[vm]` config section [#3341]
+
+### Changed
+
+- Deprecate `[chain].gas_per_deploy_byte` config [#3341]
+- Deprecate `[chain].min_deployment_gas_price` config [#3341]
+- Deprecate `[chain].generation_timeout` config [#3341]
+- Deprecate `[chain].min_deploy_points` config [#3341]
+- Deprecate `[chain].block_gas_limit` config [#3341]
 
 ### Removed
 

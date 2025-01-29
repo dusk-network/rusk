@@ -26,6 +26,9 @@ use self::{
     mempool::MempoolConfig, telemetry::TelemetryConfig,
 };
 
+#[cfg(feature = "chain")]
+use rusk::node::RuskVmConfig;
+
 use serde::{Deserialize, Serialize};
 
 use crate::args::Args;
@@ -49,6 +52,10 @@ pub(crate) struct Config {
     #[cfg(feature = "chain")]
     #[serde(default = "ChainConfig::default")]
     pub(crate) chain: ChainConfig,
+
+    #[cfg(feature = "chain")]
+    #[serde(default = "RuskVmConfig::default")]
+    pub(crate) vm: RuskVmConfig,
 
     #[serde(default = "HttpConfig::default")]
     pub(crate) http: HttpConfig,

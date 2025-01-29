@@ -275,7 +275,7 @@ impl VMExecution for Rusk {
     }
 
     fn min_deployment_gas_price(&self) -> u64 {
-        self.vm_config.min_deploy_gas_price
+        self.vm_config.min_deployment_gas_price
     }
 
     fn min_gas_limit(&self) -> u64 {
