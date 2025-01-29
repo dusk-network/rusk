@@ -25,8 +25,6 @@ const BLOCK_HEIGHT: u64 = 1;
 // This is purposefully chosen to be low to trigger the discarding of a
 // perfectly good transaction.
 const BLOCK_GAS_LIMIT: u64 = 24_000_000;
-const VM_CONFIG: RuskVmConfig =
-    RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
 const GAS_LIMIT: u64 = 12_000_000; // Lowest value for a transfer
 const INITIAL_BALANCE: u64 = 10_000_000_000;
@@ -41,8 +39,9 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot =
         toml::from_str(include_str!("../config/multi_transfer.toml"))
             .expect("Cannot deserialize config");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, VM_CONFIG)
+    new_state(dir, &snapshot, vm_config)
 }
 
 // Creates the Rusk initial state for the tests below
@@ -50,8 +49,9 @@ fn initial_state_deploy<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot =
         toml::from_str(include_str!("../config/multi_transfer_deploy.toml"))
             .expect("Cannot deserialize config");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, VM_CONFIG)
+    new_state(dir, &snapshot, vm_config)
 }
 
 /// Executes three different transactions in the same block, expecting only two

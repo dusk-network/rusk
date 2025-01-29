@@ -22,8 +22,6 @@ use crate::common::wallet::{
 };
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
-const VM_CONFIG: RuskVmConfig =
-    RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
 const INITIAL_PHOENIX_BALANCE: u64 = 10_000_000_000;
 const INITIAL_MOONLIGHT_BALANCE: u64 = 10_000_000_000;
@@ -32,8 +30,9 @@ const INITIAL_MOONLIGHT_BALANCE: u64 = 10_000_000_000;
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/convert.toml"))
         .expect("Cannot deserialize config");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, VM_CONFIG)
+    new_state(dir, &snapshot, vm_config)
 }
 
 /// Makes a transaction that converts Dusk from Phoenix to Moonlight, and

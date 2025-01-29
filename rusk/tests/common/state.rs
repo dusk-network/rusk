@@ -31,7 +31,6 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 const CHAIN_ID: u8 = 0xFA;
-pub const DEFAULT_VM_CONFIG: RuskVmConfig = RuskVmConfig::new();
 pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
 
 // Creates a Rusk initial state in the given directory

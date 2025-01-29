@@ -39,7 +39,7 @@ impl Default for Config {
 }
 
 impl Config {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
             min_deploy_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
