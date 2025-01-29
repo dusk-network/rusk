@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update Transactions list design [#1922]
+- Auto-focus text field (Unlock page) [#3420]
 
 ### Removed
 
@@ -563,6 +564,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3362]: https://github.com/dusk-network/rusk/issues/3362
 [#3381]: https://github.com/dusk-network/rusk/issues/3381
 [#3387]: https://github.com/dusk-network/rusk/issues/3387
+[#3420]: https://github.com/dusk-network/rusk/issues/3420
 
 <!-- VERSIONS -->
 

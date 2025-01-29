@@ -67,9 +67,11 @@ exports[`Unlock Wallet > Mnemonic phrase workflow > should render the Unlock Wal
           class="login__form svelte-1e8gc2s"
         >
           <input
+            aria-label="Mnemonic phrase"
             autocomplete="current-password"
+            autofocus=""
             class="dusk-textbox dusk-textbox-password"
-            name="mnemonic"
+            name="Mnemonic phrase"
             placeholder="Mnemonic phrase"
             required=""
             type="password"
@@ -193,9 +195,11 @@ exports[`Unlock Wallet > Password workflow > should show the password field and 
           class="login__form svelte-1e8gc2s"
         >
           <input
+            aria-label="Password"
             autocomplete="current-password"
+            autofocus=""
             class="dusk-textbox dusk-textbox-password"
-            name="password"
+            name="Password"
             placeholder="Password"
             required=""
             type="password"

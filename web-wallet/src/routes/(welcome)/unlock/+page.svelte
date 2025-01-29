@@ -111,11 +111,13 @@
         <Textbox
           bind:this={fldSecret}
           bind:value={secretText}
-          name={loginInfo ? "password" : "mnemonic"}
+          name={modeLabel}
+          aria-label={modeLabel}
           placeholder={modeLabel}
           required
           type="password"
           autocomplete="current-password"
+          autofocus
         />
         {#if error instanceof InvalidMnemonicError}
           <Banner title="Invalid mnemonic phrase" variant="error">
