@@ -106,30 +106,33 @@ impl RuskNodeBuilder {
         self
     }
 
-    pub fn with_generation_timeout(
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_generation_timeout<O: Into<Option<Duration>>>(
         mut self,
-        generation_timeout: Option<Duration>,
+        generation_timeout: O,
     ) -> Self {
-        self.vm_config.generation_timeout = generation_timeout;
+        self.vm_config.generation_timeout = generation_timeout.into();
         self
     }
 
-    pub fn with_gas_per_deploy_byte(
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_gas_per_deploy_byte<O: Into<Option<u64>>>(
         mut self,
-        gas_per_deploy_byte: Option<u64>,
+        gas_per_deploy_byte: O,
     ) -> Self {
-        if let Some(gas_per_deploy_byte) = gas_per_deploy_byte {
+        if let Some(gas_per_deploy_byte) = gas_per_deploy_byte.into() {
             self.vm_config.gas_per_deploy_byte = gas_per_deploy_byte;
         }
         self
     }
 
-    pub fn with_min_deployment_gas_price(
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_min_deployment_gas_price<O: Into<Option<u64>>>(
         mut self,
-        min_deployment_gas_price: Option<u64>,
+        min_deployment_gas_price: O,
     ) -> Self {
-        if let Some(min_deploy_gas_price) = min_deployment_gas_price {
-            self.vm_config.min_deploy_gas_price = min_deploy_gas_price;
+        if let Some(min_deploy_gas_price) = min_deployment_gas_price.into() {
+            self.vm_config.min_deployment_gas_price = min_deploy_gas_price;
         }
         self
     }
@@ -139,21 +142,23 @@ impl RuskNodeBuilder {
         self
     }
 
-    pub fn with_min_deploy_points(
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_min_deploy_points<O: Into<Option<u64>>>(
         mut self,
-        min_deploy_points: Option<u64>,
+        min_deploy_points: O,
     ) -> Self {
-        if let Some(min_deploy_points) = min_deploy_points {
+        if let Some(min_deploy_points) = min_deploy_points.into() {
             self.vm_config.min_deploy_points = min_deploy_points;
         }
         self
     }
 
-    pub fn with_block_gas_limit(
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_block_gas_limit<O: Into<Option<u64>>>(
         mut self,
-        block_gas_limit: Option<u64>,
+        block_gas_limit: O,
     ) -> Self {
-        if let Some(block_gas_limit) = block_gas_limit {
+        if let Some(block_gas_limit) = block_gas_limit.into() {
             self.vm_config.block_gas_limit = block_gas_limit;
         }
         self
@@ -176,6 +181,11 @@ impl RuskNodeBuilder {
 
     pub fn with_revert(mut self) -> Self {
         self.command_revert = true;
+        self
+    }
+
+    pub fn with_vm_config(mut self, vm_config: RuskVmConfig) -> Self {
+        self.vm_config = vm_config;
         self
     }
 

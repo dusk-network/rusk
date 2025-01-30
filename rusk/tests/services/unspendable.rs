@@ -27,8 +27,6 @@ use crate::common::wallet::{
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
-const VM_CONFIG: RuskVmConfig =
-    RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 const GAS_LIMIT_0: u64 = 20_000_000; // Enough to spend, but OOG during ICC
@@ -41,8 +39,9 @@ const DEPOSIT: u64 = 0;
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/unspendable.toml"))
         .expect("Cannot deserialize config");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, VM_CONFIG)
+    new_state(dir, &snapshot, vm_config)
 }
 
 const SENDER_INDEX_0: u8 = 0;

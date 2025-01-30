@@ -23,8 +23,6 @@ use crate::common::wallet::{
 };
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
-const VM_CONFIG: RuskVmConfig =
-    RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 const MAX_NOTES: u64 = 10;
 
@@ -32,8 +30,9 @@ const MAX_NOTES: u64 = 10;
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/transfer.toml"))
         .expect("Cannot deserialize config");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, VM_CONFIG)
+    new_state(dir, &snapshot, vm_config)
 }
 
 /// Transacts between two accounts on the in the same wallet and produces a

@@ -14,6 +14,10 @@ pub struct Config {
     pub min_deploy_points: u64,
     /// The minimum gas price set for a contract deployment
     pub min_deploy_gas_price: u64,
+    /// Enable the public sender metadata in the transaction.
+    ///
+    /// This field may be deprecated after the feature rollout.
+    pub with_public_sender: bool,
 }
 
 impl Default for Config {
@@ -28,5 +32,6 @@ impl Config {
         gas_per_deploy_byte: 0,
         min_deploy_points: 0,
         min_deploy_gas_price: 0,
+        with_public_sender: false,
     };
 }

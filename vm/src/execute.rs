@@ -7,10 +7,9 @@
 mod config;
 
 use blake2b_simd::Params;
-use dusk_core::abi::{ContractError, ContractId, CONTRACT_ID_BYTES};
-use dusk_core::transfer::{
-    data::ContractBytecode, Transaction, TRANSFER_CONTRACT,
-};
+use dusk_core::abi::{ContractError, ContractId, Metadata, CONTRACT_ID_BYTES};
+use dusk_core::transfer::data::ContractBytecode;
+use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use piecrust::{CallReceipt, Error, Session};
 
 pub use config::Config;
@@ -70,14 +69,24 @@ pub fn execute(
     // with gas limit smaller than deploy charge.
     deploy_check(tx, config)?;
 
+    if config.with_public_sender {
+        let _ = session
+            .set_meta(Metadata::PUBLIC_SENDER, tx.moonlight_sender().copied());
+    }
+
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
-    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "spend_and_execute",
-        tx.strip_off_bytecode().as_ref().unwrap_or(tx),
-        tx.gas_limit(),
-    )?;
+    let mut receipt = session
+        .call::<_, Result<Vec<u8>, ContractError>>(
+            TRANSFER_CONTRACT,
+            "spend_and_execute",
+            tx.strip_off_bytecode().as_ref().unwrap_or(tx),
+            tx.gas_limit(),
+        )
+        .map_err(|e| {
+            clear_session(session, config);
+            e
+        })?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(session, tx, config, &mut receipt);
@@ -101,7 +110,15 @@ pub fn execute(
 
     receipt.events.extend(refund_receipt.events);
 
+    clear_session(session, config);
+
     Ok(receipt)
+}
+
+fn clear_session(session: &mut Session, config: &Config) {
+    if config.with_public_sender {
+        let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
+    }
 }
 
 fn deploy_check(tx: &Transaction, config: &Config) -> Result<(), Error> {

@@ -123,7 +123,7 @@ impl Rusk {
 
         let mut event_bloom = Bloom::new();
 
-        let execution_config = self.vm_config.to_execution_config();
+        let execution_config = self.vm_config.to_execution_config(block_height);
 
         // We always write the faults len in a u32
         let mut size_left = params.max_txs_bytes - u32::SIZE;
@@ -252,7 +252,7 @@ impl Rusk {
         voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.new_block_session(block_height, prev_commit)?;
-        let execution_config = self.vm_config.to_execution_config();
+        let execution_config = self.vm_config.to_execution_config(block_height);
 
         accept(
             session,
@@ -292,7 +292,7 @@ impl Rusk {
     )> {
         let session = self.new_block_session(block_height, prev_commit)?;
 
-        let execution_config = self.vm_config.to_execution_config();
+        let execution_config = self.vm_config.to_execution_config(block_height);
 
         let (spent_txs, verification_output, session, events) = accept(
             session,

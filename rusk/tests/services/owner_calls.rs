@@ -10,6 +10,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
+use rusk::node::RuskVmConfig;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
@@ -27,7 +28,7 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{DEFAULT_MIN_GAS_LIMIT, DEFAULT_VM_CONFIG};
+use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
 use crate::common::wallet::{
     test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
 };
@@ -79,7 +80,7 @@ fn initial_state<P: AsRef<Path>>(
     let rusk = Rusk::new(
         dir,
         CHAIN_ID,
-        DEFAULT_VM_CONFIG,
+        RuskVmConfig::new(),
         DEFAULT_MIN_GAS_LIMIT,
         u64::MAX,
         sender,

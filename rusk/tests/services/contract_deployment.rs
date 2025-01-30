@@ -25,7 +25,6 @@ use tracing::info;
 use crate::common::logger;
 use crate::common::state::{
     generator_procedure, ExecuteResult, DEFAULT_MIN_GAS_LIMIT,
-    DEFAULT_VM_CONFIG,
 };
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore, Wallet,
@@ -105,7 +104,7 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
     let rusk = Rusk::new(
         dir,
         CHAIN_ID,
-        DEFAULT_VM_CONFIG,
+        RuskVmConfig::new(),
         DEFAULT_MIN_GAS_LIMIT,
         u64::MAX,
         sender,
