@@ -531,6 +531,43 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(tx)
     }
 
+    /// Returns a list of transactions from the ledger
+    ///
+    /// This function expects a list of transaction IDs that are in the ledger.
+    ///
+    /// It will return an error if any of the transaction IDs are not found in
+    /// the ledger.
+    fn ledger_txs(
+        &self,
+        tx_ids: Vec<&[u8; 32]>,
+    ) -> Result<Vec<SpentTransaction>> {
+        let cf = self.ledger_txs_cf;
+
+        let ids = tx_ids.into_iter().map(|id| (cf, id)).collect::<Vec<_>>();
+
+        let multi_get_results = self.inner.multi_get_cf(ids);
+
+        let mut spent_transactions =
+            Vec::with_capacity(multi_get_results.len());
+        for result in multi_get_results.into_iter() {
+            let opt_blob = result.map_err(|e| {
+                std::io::Error::new(std::io::ErrorKind::Other, e)
+            })?;
+
+            let Some(blob) = opt_blob else {
+                return Err(anyhow::anyhow!(
+                    "At least one Transaction ID was not found"
+                ));
+            };
+
+            let stx = SpentTransaction::read(&mut &blob[..])?;
+
+            spent_transactions.push(stx);
+        }
+
+        Ok(spent_transactions)
+    }
+
     /// Returns true if the transaction exists in the
     /// ledger
     ///
