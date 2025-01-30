@@ -37,3 +37,8 @@
 .data-card__progress-bar .dusk-progress-bar__filler {
   background-color: var(--primary-color);
 }
+
+.data-card__table,
+.data-card__list {
+  overflow-y: auto;
+}

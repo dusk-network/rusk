@@ -55,7 +55,7 @@
       }}
 >
   {#if isSmallScreen}
-    <div class="provisioners-card__list">
+    <div class="data-card__list">
       {#each displayedProvisioner as provisioner (provisioner)}
         <ProvisionersList data={provisioner} displayTooltips={true} />
       {/each}
@@ -63,7 +63,7 @@
   {:else}
     <ProvisionersTable
       data={displayedProvisioner}
-      className="provisioners-card__table"
+      className="data-card__table"
     />
   {/if}
 </DataCard>

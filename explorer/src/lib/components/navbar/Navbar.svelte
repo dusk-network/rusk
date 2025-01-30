@@ -22,7 +22,7 @@
   /** @type {*} */
   let notificationData;
 
-  const navigation = [
+  let navigation = [
     {
       link: "/",
       title: "Chain Info",
@@ -40,6 +40,11 @@
       title: "Provisioners",
     },
   ];
+
+  $: if (import.meta.env.VITE_FEATURE_TOKENS === "true") {
+    navigation.push({ link: "/tokens", title: "Tokens" });
+    navigation = navigation;
+  }
 
   const dispatch = createEventDispatcher();
 
