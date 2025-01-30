@@ -33,24 +33,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         loop {
             if let Some(msg) = self.archive_receiver.recv().await {
                 match msg {
-                    ArchivalData::ArchivedEvents(
-                        blk_height,
-                        blk_hash,
-                        events,
-                    ) => {
-                        if let Err(e) = self
-                            .archivist
-                            .store_unfinalized_events(
-                                blk_height, blk_hash, events,
-                            )
-                            .await
-                        {
-                            error!(
-                                "Failed to archive block vm events: {:?}",
-                                e
-                            );
-                        }
-                    }
                     ArchivalData::DeletedBlock(blk_height, hex_blk_hash) => {
                         if let Err(e) = self
                             .archivist

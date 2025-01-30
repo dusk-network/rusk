@@ -226,7 +226,7 @@ impl Archive {
 impl Archive {
     /// Store the list of **all** unfinalized vm events from the block of the
     /// given height.
-    pub(super) async fn store_unfinalized_events(
+    pub(crate) async fn store_unfinalized_events(
         &self,
         block_height: u64,
         block_hash: Hash,
