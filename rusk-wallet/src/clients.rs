@@ -318,8 +318,6 @@ impl State {
 
         status("Stake received!");
 
-        println!("Staking address: {}", Address::Public(*pk));
-
         Ok(stake_data)
     }
 
