@@ -56,7 +56,13 @@ const CANDIDATES_DELETION_OFFSET: u64 = 10;
 /// future message.
 const OFFSET_FUTURE_MSGS: u64 = 5;
 
-pub type RollingFinalityResult = ([u8; 32], BTreeMap<u64, [u8; 32]>);
+type RollingFinalityResult = ([u8; 32], BTreeMap<u64, BlockHashes>);
+
+struct BlockHashes {
+    #[cfg_attr(not(feature = "archive"), allow(dead_code))]
+    hash: [u8; 32],
+    state_root: [u8; 32],
+}
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
@@ -744,7 +750,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             #[cfg(feature = "archive")]
             {
                 if let Some((_, new_finals)) = &finality.1 {
-                    for (height, hash) in new_finals.iter() {
+                    for (height, BlockHashes { hash, .. }) in new_finals.iter()
+                    {
                         if let Err(e) = self
                             .archive
                             .finalize_archive_data(*height, &hex::encode(hash))
@@ -814,8 +821,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             if let Some((prev_final_state, mut new_finals)) = final_results {
                 let (_, new_final_state) =
                     new_finals.pop_last().expect("new_finals to be not empty");
+                let new_final_state = new_final_state.state_root;
                 let old_finals_to_merge = new_finals
                     .into_values()
+                    .map(|hashes| hashes.state_root)
                     .chain([prev_final_state])
                     .collect::<Vec<_>>();
                 vm.finalize_state(new_final_state, old_finals_to_merge)?;
@@ -1052,7 +1061,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     events.push(event.into());
                     db.store_block_label(height, &hash, label)?;
 
-                    let state_hash = db
+                    let state_root = db
                         .block_header(&hash)?
                         .map(|h| h.state_hash)
                         .ok_or(anyhow!(
@@ -1066,9 +1075,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         height,
                         finalized_after,
                         hash = to_str(&hash),
-                        state_root = to_str(&state_hash),
+                        state_root = to_str(&state_root),
                     );
-                    finalized_blocks.insert(height, state_hash);
+                    let finalized = BlockHashes { hash, state_root };
+                    finalized_blocks.insert(height, finalized);
                 }
             }
         }
