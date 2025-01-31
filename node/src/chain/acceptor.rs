@@ -704,9 +704,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let vm = self.vm.write().await;
 
-            // Events used for archive
-            #[cfg(feature = "archive")]
-            let mut rolling_finality_events = vec![];
             let (contract_events, finality) =
                 self.db.read().await.update(|db| {
                     let (txs, verification_output, contract_events) = vm
@@ -731,14 +728,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         verification_output.event_bloom
                     );
 
-                    let finality = self.rolling_finality::<DB>(
-                        pni,
-                        blk,
-                        db,
-                        &mut events,
-                        #[cfg(feature = "archive")]
-                        &mut rolling_finality_events,
-                    )?;
+                    let finality =
+                        self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
 
                     let label = finality.0;
                     // Store block with updated transactions with Error and
@@ -751,29 +742,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             // use rolling_finality_events for archive
             #[cfg(feature = "archive")]
-            async {
-                for block_event in &rolling_finality_events {
-                    match block_event {
-                        BlockEvent::StateChange {
-                            hash,
-                            state,
-                            height,
-                        } if *state == BlockState::Finalized => {
-                            if let Err(e) = self
-                                .archive
-                                .finalize_archive_data(
-                                    *height,
-                                    &hex::encode(hash),
-                                )
-                                .await
-                            {
-                                error!(
-                            "Failed to finalize block in archive: {:?}",
-                            e
-                        );
-                            };
+            {
+                if let Some((_, new_finals)) = &finality.1 {
+                    for (height, hash) in new_finals.iter() {
+                        if let Err(e) = self
+                            .archive
+                            .finalize_archive_data(*height, &hex::encode(hash))
+                            .await
+                        {
+                            error!("Failed to finalize block in archive: {e:?}")
                         }
-                        _ => error!("Rolling finality event should not be anything else than StateChange with Finalized state"),
                     }
                 }
 
@@ -788,8 +766,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 .expect(
                     "Storing unfinalized events in archive should never fail",
                 );
-
-            }.await;
+            }
 
             let mut stakes = vec![];
             for event in contract_events {
@@ -974,7 +951,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         blk: &Block,
         db: &mut D::P<'_>,
         events: &mut Vec<Event>,
-        #[cfg(feature = "archive")] events_for_archive: &mut Vec<BlockEvent>,
     ) -> Result<(Label, Option<RollingFinalityResult>)> {
         let confirmed_after = match pni {
             0 => 1u64,
@@ -1073,8 +1049,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         state: BlockState::Finalized,
                         height: current_height,
                     };
-                    #[cfg(feature = "archive")]
-                    events_for_archive.push(event.clone());
                     events.push(event.into());
                     db.store_block_label(height, &hash, label)?;
 
