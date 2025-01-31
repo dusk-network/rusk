@@ -228,6 +228,8 @@ impl RuskNodeBuilder {
             node_sender.clone(),
             self.genesis_timestamp,
             *crate::DUSK_CONSENSUS_KEY,
+            #[cfg(feature = "archive")]
+            archive.clone(),
         );
         if self.command_revert {
             chain_srv
@@ -235,8 +237,6 @@ impl RuskNodeBuilder {
                     node.inner().network(),
                     node.inner().database(),
                     node.inner().vm_handler(),
-                    #[cfg(feature = "archive")]
-                    archive,
                 )
                 .await?;
             return chain_srv.revert_last_final().await;
@@ -291,13 +291,7 @@ impl RuskNodeBuilder {
             archivist: archive.clone(),
         }));
 
-        node.inner()
-            .initialize(
-                &mut service_list,
-                #[cfg(feature = "archive")]
-                archive,
-            )
-            .await?;
+        node.inner().initialize(&mut service_list).await?;
         node.inner().spawn_all(service_list).await?;
 
         Ok(())
