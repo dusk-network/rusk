@@ -19,10 +19,10 @@ use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
 
+#[cfg(feature = "archive")]
+use node::archive::Archive;
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
-#[cfg(feature = "archive")]
-use {node::archive::Archive, node::archive::ArchivistSrv};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
 use crate::node::{ChainEventStreamer, RuskNode, RuskVmConfig, Services};
@@ -200,7 +200,7 @@ impl RuskNodeBuilder {
         let (node_sender, node_receiver) = mpsc::channel(1000);
 
         #[cfg(feature = "archive")]
-        let (archive_sender, archive_receiver) = mpsc::channel(10000);
+        let archive = Archive::create_or_open(self.db_path.clone()).await;
 
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
 
@@ -212,13 +212,10 @@ impl RuskNodeBuilder {
             self.feeder_call_gas,
             rues_sender.clone(),
             #[cfg(feature = "archive")]
-            archive_sender.clone(),
+            archive.clone(),
         )
         .map_err(|e| anyhow::anyhow!("Cannot instantiate VM {e}"))?;
         info!("Rusk VM loaded");
-
-        #[cfg(feature = "archive")]
-        let archive = Archive::create_or_open(self.db_path.clone()).await;
 
         let node = {
             let db = rocksdb::Backend::create_or_open(
@@ -239,6 +236,8 @@ impl RuskNodeBuilder {
             node_sender.clone(),
             self.genesis_timestamp,
             *crate::DUSK_CONSENSUS_KEY,
+            #[cfg(feature = "archive")]
+            archive.clone(),
         );
         if self.command_revert {
             chain_srv
@@ -265,8 +264,6 @@ impl RuskNodeBuilder {
             service_list.push(Box::new(ChainEventStreamer {
                 node_receiver,
                 rues_sender,
-                #[cfg(feature = "archive")]
-                archivist_sender: archive_sender,
             }));
 
             let mut handler = DataSources::default();
@@ -293,12 +290,6 @@ impl RuskNodeBuilder {
                 .await?,
             );
         }
-
-        #[cfg(feature = "archive")]
-        service_list.push(Box::new(ArchivistSrv {
-            archive_receiver,
-            archivist: archive,
-        }));
 
         node.inner().initialize(&mut service_list).await?;
         node.inner().spawn_all(service_list).await?;

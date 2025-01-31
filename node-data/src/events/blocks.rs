@@ -19,7 +19,7 @@ use crate::ledger::{Block, Hash};
 ///
 /// - `as_str() -> &'static str` - Returns the string representation of the
 ///   block state.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BlockState {
     Confirmed,
     Finalized,

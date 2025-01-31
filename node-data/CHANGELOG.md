@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add PartialEq, Eq to `BlockState` [#3359]
+
+### Removed
+
+- Removed `ArchivalData` together with archive module [#3359]
+
 [1.0.1] - 2025-01-23
 
 ### Changed
@@ -20,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Types used for interacting with Dusk node 
 
 <!-- Issues -->
+[#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.0.1...HEAD
