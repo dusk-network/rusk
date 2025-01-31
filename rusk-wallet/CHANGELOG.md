@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change dependency declaration to not require strict equal [#3405]
 
+### Fix
+
+- Fix wrong lower limit for stake operation when performing topup [#3394]
+
 ## [0.1.0] - 2025-01-20
 
 ### Add
@@ -42,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix stake info for inactive stakes with rewards [#2766]
 - Fix Moonlight stake reward withdrawal [#2523]
 
+
 <!-- Issues -->
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3263]: https://github.com/dusk-network/rusk/issues/3263
@@ -63,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2396]: https://github.com/dusk-network/rusk/issues/2396
 [#2340]: https://github.com/dusk-network/rusk/issues/2340
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
+[#3394]: https://github.com/dusk-network/rusk/issues/3394
 
 <!-- Releases -->
 [Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...HEAD
