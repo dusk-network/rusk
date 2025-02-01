@@ -1,0 +1,59 @@
+# --- Build stage ---
+FROM ubuntu:24.04 AS build-stage
+
+RUN apt-get update && apt-get install -y unzip curl build-essential openssl libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+WORKDIR /opt/rusk
+ENV RUSK_PROFILE_PATH=/opt/dusk/rusk/
+ENV PATH="$PATH:/root/.cargo/bin"
+
+RUN apt-get update && apt-get install -y clang && rm -rf /var/lib/apt/lists/*
+
+# Using this to modify rusk config file before running a node
+RUN cargo install toml-cli --version 0.2.3
+
+COPY . .
+
+ARG TARGETPLATFORM
+# See also https://github.com/docker/buildx/issues/510
+ENV TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
+
+# Generate keys and compile genesis contracts
+RUN make keys
+RUN make wasm
+
+ARG NODE_TYPE="provisioner"
+
+RUN case "$NODE_TYPE" in \
+    "provisioner") cargo build --release -p dusk-rusk ;; \
+    "archive") cargo build --release --features archive -p dusk-rusk ;; \
+    "prover") cargo build --release --no-default-features --features prover -p dusk-rusk ;; \
+    *) echo "Unrecognized node type: $NODE_TYPE. Expected one of 'provisioner', 'archive' and 'prover'"; exit 1 ;; \
+    esac
+
+# --- Run stage ---
+FROM ubuntu:24.04 AS run-stage
+
+RUN apt-get update && apt-get install -y unzip curl net-tools libssl-dev && rm -rf /var/lib/apt/lists/*
+    
+WORKDIR /opt/dusk
+
+ENV RUSK_PROFILE_PATH=/opt/dusk/rusk
+ENV RUSK_RECOVERY_INPUT=/opt/dusk/conf/genesis.toml
+ENV RUST_BACKTRACE=full
+ENV NETWORK=mainnet
+
+EXPOSE 9000/udp
+EXPOSE 8080/tcp
+
+# Copy only the necessary files from the build stage
+COPY --from=build-stage /opt/rusk/target/release/rusk /opt/dusk/bin/rusk
+COPY --from=build-stage /opt/rusk/scripts/persistent-docker-setup/setup.sh /opt/dusk/setup.sh
+COPY --from=build-stage /opt/rusk/scripts/persistent-docker-setup/detect_ips.sh /opt/dusk/detect_ips.sh
+COPY --from=build-stage /root/.cargo/bin/toml /usr/bin/toml-cli
+
+RUN chmod +x /opt/dusk/setup.sh /opt/dusk/detect_ips.sh
+
+CMD [ "./setup.sh" ]
