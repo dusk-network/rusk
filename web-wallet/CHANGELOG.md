@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add memo field to send flow [#3112]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -25,7 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for partial unstake/claim rewards [#3009]
 - Add "Unstake" flow validation [#3009]
 - Store the wallet creation block height and show it in settings [#3381]
-- Add memo field to send flow [#3112]
 
 ### Changed
 
