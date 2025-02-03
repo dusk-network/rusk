@@ -38,7 +38,6 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.APP_VERSION": JSON.stringify(APP_VERSION),
       "process.env": {
         MODE_MAINTENANCE: env.VITE_MODE_MAINTENANCE,
-        VITE_FEATURE_ALLOCATE: env.VITE_FEATURE_ALLOCATE,
         VITE_FEATURE_MIGRATE: env.VITE_FEATURE_MIGRATE,
         VITE_FEATURE_STAKE: env.VITE_FEATURE_STAKE,
         VITE_FEATURE_TRANSACTION_HISTORY: env.VITE_FEATURE_TRANSACTION_HISTORY,
@@ -86,7 +85,6 @@ export default defineConfig(({ mode }) => {
       env: {
         APP_BUILD_INFO: "hash1234 2024-01-12",
         APP_VERSION: "0.1.5",
-        VITE_FEATURE_ALLOCATE: "true",
         VITE_FEATURE_MIGRATE: "true",
         VITE_FEATURE_STAKE: "true",
         VITE_FEATURE_TRANSACTION_HISTORY: "true",
