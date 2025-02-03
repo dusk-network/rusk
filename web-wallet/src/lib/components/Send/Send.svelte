@@ -235,7 +235,7 @@
         {/if}
         <div class="operation__address-wrapper">
           <p>Memo</p>
-          <Switch bind:value={showMemo} />
+          <Switch onSurface bind:value={showMemo} />
         </div>
         {#if showMemo}
           <Textbox
