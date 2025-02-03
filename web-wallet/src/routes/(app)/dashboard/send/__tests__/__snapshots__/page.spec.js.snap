@@ -81,7 +81,7 @@ exports[`Send page > should render the send page 1`] = `
     </div>
      
     <div
-      class="operation svelte-npcavd"
+      class="operation svelte-xvysel"
     >
       <div
         class="dusk-wizard"
@@ -158,10 +158,10 @@ exports[`Send page > should render the send page 1`] = `
          
          
         <div
-          class="operation__send svelte-npcavd"
+          class="operation__send svelte-xvysel"
         >
           <div
-            class="operation__address-wrapper svelte-npcavd"
+            class="operation__address-wrapper svelte-xvysel"
           >
             <p>
               Address
@@ -212,23 +212,6 @@ exports[`Send page > should render the send page 1`] = `
                 CLOSE
               </span>
             </button>
-          </div>
-           
-           
-          <div
-            class="operation__address-wrapper svelte-npcavd"
-          >
-            <p>
-              Memo
-            </p>
-             
-            <div
-              aria-checked="false"
-              aria-disabled="false"
-              class="dusk-switch dusk-switch--on-surface"
-              role="switch"
-              tabindex="0"
-            />
           </div>
            
         </div>
