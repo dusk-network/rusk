@@ -27,7 +27,6 @@ describe("Send", () => {
     "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
   const shieldedAddress =
     "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM";
-  const memo = "";
   const baseProps = {
     availableBalance: 1_000_000_000_000n,
     execute: vi.fn().mockResolvedValue(lastTxId),
@@ -227,10 +226,16 @@ describe("Send", () => {
         target: { value: shieldedAddress },
       });
       await fireEvent.click(getByRole("button", { name: "Next" }));
+      await fireEvent.click(getByRole("switch"));
 
       const amountInput = getByRole("spinbutton");
+      const memoInput = getByRole("textbox");
 
       await fireEvent.input(amountInput, { target: { value: amount } });
+      await fireEvent.input(memoInput, {
+        target: { value: "abc-example-memo" },
+      });
+
       await fireEvent.click(getByRole("button", { name: "Next" }));
 
       const value = getAsHTMLElement(
@@ -241,9 +246,11 @@ describe("Send", () => {
         container,
         ".operation__review-address span"
       );
+      const memo = getAsHTMLElement(container, ".operation__review-memo span");
 
       expect(value.textContent).toBe(baseProps.formatter(amount));
       expect(key.textContent).toBe(shieldedAddress);
+      expect(memo.textContent).toBe("abc-example-memo");
       expect(container.firstChild).toMatchSnapshot();
     });
   });
@@ -279,7 +286,46 @@ describe("Send", () => {
       expect(baseProps.execute).toHaveBeenCalledWith(
         shieldedAddress,
         duskToLux(amount),
-        memo,
+        "",
+        baseProps.gasSettings.gasPrice,
+        baseProps.gasSettings.gasLimit
+      );
+
+      const explorerLink = getByRole("link", { name: /explorer/i });
+
+      expect(getByText("Transaction created")).toBeInTheDocument();
+      expect(explorerLink).toHaveAttribute("target", "_blank");
+      expect(explorerLink).toHaveAttribute("href", expectedExplorerLink);
+    });
+
+    it("should perform a transfer for the desired amount, with a memo, give a success message and supply a link to see the transaction in the explorer", async () => {
+      const { getByRole, getByText } = render(Send, baseProps);
+      const addressInput = getByRole("textbox");
+
+      await fireEvent.input(addressInput, {
+        target: { value: shieldedAddress },
+      });
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+      await fireEvent.click(getByRole("switch"));
+
+      const amountInput = getByRole("spinbutton");
+      const memoInput = getByRole("textbox");
+
+      await fireEvent.input(amountInput, { target: { value: amount } });
+      await fireEvent.input(memoInput, {
+        target: { value: "abc-example-memo" },
+      });
+
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+      await fireEvent.click(getByRole("button", { name: "SEND" }));
+
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(baseProps.execute).toHaveBeenCalledTimes(1);
+      expect(baseProps.execute).toHaveBeenCalledWith(
+        shieldedAddress,
+        duskToLux(amount),
+        "abc-example-memo",
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -315,7 +361,7 @@ describe("Send", () => {
       expect(baseProps.execute).toHaveBeenCalledWith(
         shieldedAddress,
         duskToLux(amount),
-        memo,
+        "",
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -345,7 +391,7 @@ describe("Send", () => {
       expect(baseProps.execute).toHaveBeenCalledWith(
         shieldedAddress,
         duskToLux(amount),
-        memo,
+        "",
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );

@@ -70,7 +70,7 @@
   let scanQrComponent;
 
   /** @type {boolean} */
-  let showMemo = false;
+  let isMemoShown = false;
 
   /** @type {boolean} */
   let isNextButtonDisabled = false;
@@ -146,7 +146,8 @@
     isSendAmountValid &&
     isGasValid &&
     isTotalAmountWithinAvailableBalance &&
-    isBalanceSufficientForGas
+    isBalanceSufficientForGas &&
+    (!isMemoShown || memo)
   );
 
   $: addressInfo = getAddressInfo(
@@ -233,18 +234,6 @@
             </p>
           </Banner>
         {/if}
-        <div class="operation__address-wrapper">
-          <p>Memo</p>
-          <Switch onSurface bind:value={showMemo} />
-        </div>
-        {#if showMemo}
-          <Textbox
-            required
-            className="operation__send-address"
-            type="multiline"
-            bind:value={memo}
-          />
-        {/if}
       </div>
     </WizardStep>
     <!-- Amount Step -->
@@ -286,6 +275,27 @@
             path={logo}
           />
         </div>
+
+        <div class="operation__input-wrapper">
+          <p>Memo</p>
+          <Switch
+            on:change={() => {
+              if (!isMemoShown) {
+                memo = "";
+              }
+            }}
+            onSurface
+            bind:value={isMemoShown}
+          />
+        </div>
+        {#if isMemoShown}
+          <Textbox
+            required
+            className="operation__send-memo"
+            type="multiline"
+            bind:value={memo}
+          />
+        {/if}
 
         <GasSettings
           {formatter}
@@ -372,6 +382,17 @@
           </dd>
         </dl>
 
+        {#if memo}
+          <dl class="operation__review-transaction">
+            <dt class="review-transaction__label">
+              <span>Memo</span>
+            </dt>
+            <dd class="operation__review-memo">
+              <span>{memo}</span>
+            </dd>
+          </dl>
+        {/if}
+
         <GasFee {formatter} fee={maxGasFee} />
       </div>
     </WizardStep>
@@ -412,7 +433,8 @@
       flex-direction: column;
       gap: 1.2em;
     }
-    &__review-address {
+    &__review-address,
+    &__review-memo {
       background-color: transparent;
       border: 1px solid var(--primary-color);
       border-radius: 1.5em;
@@ -466,7 +488,10 @@
     font-weight: bold;
   }
 
-  :global(.dusk-textbox.operation__send-address) {
+  :global(
+      .dusk-textbox.operation__send-address,
+      .dusk-textbox.operation__send-memo
+    ) {
     resize: vertical;
     min-height: 5em;
     max-height: 10em;
