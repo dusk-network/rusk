@@ -176,7 +176,7 @@ exports[`Send > Address step > should display a warning if the address input is 
         <div
           aria-checked="false"
           aria-disabled="false"
-          class="dusk-switch"
+          class="dusk-switch dusk-switch--on-surface"
           role="switch"
           tabindex="0"
         />
@@ -452,7 +452,7 @@ exports[`Send > Address step > should display a warning if the address input is 
         <div
           aria-checked="false"
           aria-disabled="false"
-          class="dusk-switch"
+          class="dusk-switch dusk-switch--on-surface"
           role="switch"
           tabindex="0"
         />
@@ -669,7 +669,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
         <div
           aria-checked="false"
           aria-disabled="false"
-          class="dusk-switch"
+          class="dusk-switch dusk-switch--on-surface"
           role="switch"
           tabindex="0"
         />

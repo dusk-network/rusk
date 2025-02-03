@@ -41,7 +41,6 @@ describe("Send", () => {
       gasLimit: 20000000n,
       gasPrice: 1n,
     },
-    memo,
     publicAddress,
     shieldedAddress,
   };
@@ -280,7 +279,7 @@ describe("Send", () => {
       expect(baseProps.execute).toHaveBeenCalledWith(
         shieldedAddress,
         duskToLux(amount),
-        baseProps.memo,
+        memo,
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -316,7 +315,7 @@ describe("Send", () => {
       expect(baseProps.execute).toHaveBeenCalledWith(
         shieldedAddress,
         duskToLux(amount),
-        baseProps.memo,
+        memo,
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -346,7 +345,7 @@ describe("Send", () => {
       expect(baseProps.execute).toHaveBeenCalledWith(
         shieldedAddress,
         duskToLux(amount),
-        baseProps.memo,
+        memo,
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );

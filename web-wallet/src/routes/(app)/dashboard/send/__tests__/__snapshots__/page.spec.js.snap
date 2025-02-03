@@ -225,7 +225,7 @@ exports[`Send page > should render the send page 1`] = `
             <div
               aria-checked="false"
               aria-disabled="false"
-              class="dusk-switch"
+              class="dusk-switch dusk-switch--on-surface"
               role="switch"
               tabindex="0"
             />
