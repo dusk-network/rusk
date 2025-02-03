@@ -19,10 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deprecate `[chain].generation_timeout` config [#3341]
 - Deprecate `[chain].min_deploy_points` config [#3341]
 - Deprecate `[chain].block_gas_limit` config [#3341]
+- Change how Rusk controls the archive for synchronization [#3359]
 
 ### Removed
 
 - Remove legacy event system 
+- Remove archive mpsc channel & archive event forwarding [#3359]
 
 ## [1.0.2] - 2025-01-27
 
@@ -319,6 +321,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3422]: https://github.com/dusk-network/rusk/issues/3422
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3341]: https://github.com/dusk-network/rusk/issues/3341

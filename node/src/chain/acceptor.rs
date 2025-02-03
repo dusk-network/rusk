@@ -21,6 +21,7 @@ use dusk_consensus::operations::Voter;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls;
+use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::stake::{SlashEvent, StakeAmount, StakeEvent};
 use metrics::{counter, gauge, histogram};
 use node_data::bls::PublicKey;
@@ -38,6 +39,8 @@ use tokio::sync::{RwLock, RwLockReadGuard};
 use tracing::{debug, error, info, trace, warn};
 
 use super::consensus::Task;
+#[cfg(feature = "archive")]
+use crate::archive::Archive;
 use crate::chain::header_validation::{verify_att, verify_faults, Validator};
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
@@ -53,7 +56,19 @@ const CANDIDATES_DELETION_OFFSET: u64 = 10;
 /// future message.
 const OFFSET_FUTURE_MSGS: u64 = 5;
 
-pub type RollingFinalityResult = ([u8; 32], BTreeMap<u64, [u8; 32]>);
+struct Identifiers {
+    /// Block hash of the newly finalized block
+    block_hash: [u8; 32],
+    /// State root of the newly finalized block
+    state_root: [u8; 32],
+}
+
+struct RollingFinalityResult {
+    /// State root of the last finalized block
+    prev_final_state_root: [u8; 32],
+    /// New finalized blocks
+    new_finals: BTreeMap<u64, Identifiers>,
+}
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
@@ -78,6 +93,8 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     pub(crate) db: Arc<RwLock<DB>>,
     pub(crate) vm: Arc<RwLock<VM>>,
     pub(crate) network: Arc<RwLock<N>>,
+    #[cfg(feature = "archive")]
+    pub(crate) archive: Archive,
     /// Sender channel for sending out RUES events
     event_sender: Sender<Event>,
 
@@ -181,6 +198,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
+        #[cfg(feature = "archive")] archive: Archive,
         max_queue_size: usize,
         event_sender: Sender<Event>,
         dusk_key: bls::PublicKey,
@@ -202,6 +220,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             db: db.clone(),
             vm: vm.clone(),
             network: network.clone(),
+            #[cfg(feature = "archive")]
+            archive,
             task: RwLock::new(Task::new_with_keys(
                 keys_path.to_string(),
                 max_queue_size,
@@ -696,30 +716,83 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let vm = self.vm.write().await;
 
-            let (stakes, finality) = self.db.read().await.update(|db| {
-                let (txs, verification_output, stake_events) = vm.accept(
-                    prev_header.state_hash,
-                    blk,
-                    &prev_block_voters[..],
-                )?;
-                for spent_tx in txs.iter() {
-                    events.push(TransactionEvent::Executed(spent_tx).into());
+            let (contract_events, finality) =
+                self.db.read().await.update(|db| {
+                    let (txs, verification_output, contract_events) = vm
+                        .accept(
+                            prev_header.state_hash,
+                            blk,
+                            &prev_block_voters[..],
+                        )?;
+
+                    for spent_tx in txs.iter() {
+                        events
+                            .push(TransactionEvent::Executed(spent_tx).into());
+                    }
+                    est_elapsed_time = start.elapsed();
+
+                    assert_eq!(
+                        header.state_hash,
+                        verification_output.state_root
+                    );
+                    assert_eq!(
+                        header.event_bloom,
+                        verification_output.event_bloom
+                    );
+
+                    let finality =
+                        self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
+
+                    let label = finality.0;
+                    // Store block with updated transactions with Error and
+                    // GasSpent
+                    block_size_on_disk =
+                        db.store_block(header, &txs, blk.faults(), label)?;
+
+                    Ok((contract_events, finality))
+                })?;
+
+            // use rolling_finality_events for archive
+            #[cfg(feature = "archive")]
+            {
+                if let Some(RollingFinalityResult { new_finals, .. }) =
+                    &finality.1
+                {
+                    for (height, Identifiers { block_hash, .. }) in
+                        new_finals.iter()
+                    {
+                        if let Err(e) = self
+                            .archive
+                            .finalize_archive_data(
+                                *height,
+                                &hex::encode(block_hash),
+                            )
+                            .await
+                        {
+                            error!("Failed to finalize block in archive: {e:?}")
+                        }
+                    }
                 }
-                est_elapsed_time = start.elapsed();
 
-                assert_eq!(header.state_hash, verification_output.state_root);
-                assert_eq!(header.event_bloom, verification_output.event_bloom);
+                // Store all events from this current block in the archive
+                self.archive
+                .store_unfinalized_events(
+                    header.height,
+                    header.hash,
+                    contract_events.clone(),
+                )
+                .await
+                .expect(
+                    "Storing unfinalized events in archive should never fail",
+                );
+            }
 
-                let finality =
-                    self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
-
-                let label = finality.0;
-                // Store block with updated transactions with Error and GasSpent
-                block_size_on_disk =
-                    db.store_block(header, &txs, blk.faults(), label)?;
-
-                Ok((stake_events, finality))
-            })?;
+            let mut stakes = vec![];
+            for event in contract_events {
+                if event.event.target.0 == STAKE_CONTRACT {
+                    stakes.push(event.event);
+                }
+            }
 
             self.log_missing_iterations(
                 provisioners_list.current(),
@@ -757,14 +830,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let finalized = final_results.is_some();
 
-            if let Some((prev_final_state, mut new_finals)) = final_results {
+            if let Some(RollingFinalityResult {
+                prev_final_state_root,
+                mut new_finals,
+            }) = final_results
+            {
                 let (_, new_final_state) =
                     new_finals.pop_last().expect("new_finals to be not empty");
-                let old_finals_to_merge = new_finals
+                let new_final_state_root = new_final_state.state_root;
+                // old final state roots to merge too
+                let old_final_state_roots = new_finals
                     .into_values()
-                    .chain([prev_final_state])
+                    .map(|finalized_info| finalized_info.state_root)
+                    .chain([prev_final_state_root])
                     .collect::<Vec<_>>();
-                vm.finalize_state(new_final_state, old_finals_to_merge)?;
+                vm.finalize_state(new_final_state_root, old_final_state_roots)?;
             }
 
             anyhow::Ok((label, finalized))
@@ -890,7 +970,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Returns
     /// - Current accepted block label
     /// - Previous last finalized state root
-    /// - List of the new finalized state root
+    /// - List of the new finalized state root together with the respective
+    ///   block hash
     fn rolling_finality<D: database::DB>(
         &self,
         pni: u8, // Previous Non-Attested Iterations
@@ -926,7 +1007,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
         let lfb_hash =
             lfb_hash.expect("Unable to find last finalized block hash");
-        let lfb_state_root = db
+        let prev_final_state_root = db
             .block_header(&lfb_hash)?
             .ok_or(anyhow!(
                 "Cannot get header for last finalized block hash {}",
@@ -998,23 +1079,28 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     events.push(event.into());
                     db.store_block_label(height, &hash, label)?;
 
-                    let state_hash = db
+                    let state_root = db
                         .block_header(&hash)?
                         .map(|h| h.state_hash)
                         .ok_or(anyhow!(
                             "Cannot get header for hash {}",
                             to_str(&hash)
                         ))?;
+                    let finalized = Identifiers {
+                        block_hash: hash,
+                        state_root,
+                    };
                     info!(
                         event = "block finalized",
                         src = "rolling_finality",
                         current_height,
                         height,
                         finalized_after,
-                        hash = to_str(&hash),
-                        state_root = to_str(&state_hash),
+                        hash = to_str(&finalized.block_hash),
+                        state_root = to_str(&finalized.state_root),
                     );
-                    finalized_blocks.insert(height, state_hash);
+
+                    finalized_blocks.insert(height, finalized);
                 }
             }
         }
@@ -1022,7 +1108,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let finalized_result = if finalized_blocks.is_empty() {
             None
         } else {
-            Some((lfb_state_root, finalized_blocks))
+            Some(RollingFinalityResult {
+                prev_final_state_root,
+                new_finals: finalized_blocks,
+            })
         };
 
         Ok((block_label, finalized_result))
@@ -1067,6 +1156,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip after reverting
+        #[cfg(feature = "archive")]
+        let mut archive_revert_info: Vec<(u64, String)> = vec![];
         let (blk, label) = self.db.read().await.update(|db| {
             let mut height = curr_height;
             loop {
@@ -1097,6 +1188,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 ) {
                     warn!("cannot notify event {e}")
                 };
+
+                // Temporary store the reverted block info for archive
+                #[cfg(feature = "archive")]
+                archive_revert_info.push((h.height, hex::encode(h.hash)));
 
                 info!(
                     event = "block reverted",
@@ -1135,6 +1230,19 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             iter = blk.header().iteration,
             state_root = hex::encode(blk.header().state_hash)
         );
+
+        // Remove the block and event entries for this block from the
+        // archive
+        #[cfg(feature = "archive")]
+        for (height, hex_hash) in archive_revert_info {
+            if let Err(e) = self
+                .archive
+                .remove_block_and_events(height, &hex_hash)
+                .await
+            {
+                error!("Failed to delete block & events in archive: {:?}", e);
+            }
+        }
 
         self.update_tip(&blk, label).await
     }

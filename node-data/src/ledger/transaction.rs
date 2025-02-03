@@ -71,8 +71,8 @@ impl Transaction {
     /// Computes the transaction ID.
     ///
     /// The transaction ID is a unique identifier for the transaction.
-    /// Unlike the [`hash()`](#method.hash) method, which is computed over the
-    /// entire transaction, the transaction ID is derived from specific
+    /// Unlike the [`digest()`](#method.digest) method, which is computed over
+    /// the entire transaction, the transaction ID is derived from specific
     /// fields of the transaction and serves as a unique identifier of the
     /// transaction itself.
     ///
