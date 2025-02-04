@@ -188,7 +188,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Executes a generic contract call, paying gas from a public account.
-    #[allow(clippy::too_many_arguments)]
     pub async fn moonlight_execute(
         &self,
         sender_idx: u8,
