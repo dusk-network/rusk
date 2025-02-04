@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change `dusk_core::transfer::moonlight::Transaction::data` fn visibility to public
+
 ### Added
 
 - Add `METADATA::PUBLIC_SENDER` [#3341]

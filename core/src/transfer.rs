@@ -151,8 +151,16 @@ impl Transaction {
         }
     }
 
-    /// Return the receiver of the transaction for Moonlight transactions, if it
+    /// Get the receiver of the transaction for Moonlight transactions, if it
     /// exists.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(&AccountPublicKey)` if the transaction is a Moonlight
+    ///   transaction and the receiver is different from the sender.
+    /// - `None` if the transaction is a Moonlight transaction and the receiver
+    ///   is the same as the sender.
+    /// - `None` if the transaction is a Phoenix transaction.
     #[must_use]
     pub fn moonlight_receiver(&self) -> Option<&AccountPublicKey> {
         match self {
@@ -246,6 +254,15 @@ impl Transaction {
     }
 
     /// Return the contract call data, if there is any.
+    ///
+    /// Call data is present only when inter-contract calls happen.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(&ContractCall)` if the transaction invokes another call to a
+    ///   contract.
+    /// - `None` if the transaction is an entrypoint call to a protocol contract
+    ///   without a second call attached to it.
     #[must_use]
     pub fn call(&self) -> Option<&ContractCall> {
         match self {
