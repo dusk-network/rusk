@@ -48,11 +48,14 @@ jobs:
         include:
           - os: ubuntu-24.04
             target: linux-x64
+            target_folder: target
           - os: macos-15
             target: macos-arm64
+            target_folder: target/aarch64-apple-darwin
             flags: --target=aarch64-apple-darwin
           - os: arm-linux
             target: linux-arm64
+            target_folder: target/aarch64-unknown-linux-gnu
             flags: --target=aarch64-unknown-linux-gnu
       fail-fast: false
 
@@ -101,8 +104,9 @@ jobs:
 
       - name: Package Binaries
         run: |
+          find . -name "rusk"
           mkdir rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
-          mv target/release/rusk rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
+          mv ${{ matrix.target_folder }}/release/rusk rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
           tar -czvf rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}.tar.gz \
             rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
 
