@@ -35,9 +35,9 @@ RUN make keys
 RUN make wasm
 # Build rusk with default features and include CARGO_FEATURES
 RUN if [ -n "$CARGO_FEATURES" ]; then \
-    cargo build --release --features "$CARGO_FEATURES" -p rusk; \
+    cargo build --release --features "$CARGO_FEATURES" -p dusk-rusk; \
     else \
-    cargo build --release -p rusk; \
+    cargo build --release -p dusk-rusk; \
     fi
 
 # --- Run stage ---
