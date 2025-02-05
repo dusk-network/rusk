@@ -96,7 +96,7 @@ jobs:
 
       - name: Extract Version
         run: |
-          export SEMVER=$(cargo pkgid --manifest-path ./rusk/Cargo.toml | sed -E 's/.*#([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          export SEMVER=$(cargo pkgid --manifest-path ./rusk/Cargo.toml | sed -E 's/.*@([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
           echo "SEMVER=$SEMVER" >> $GITHUB_ENV
 
       - name: Package Binaries
