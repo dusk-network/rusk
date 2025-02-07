@@ -23,10 +23,15 @@ import { getSeedFromMnemonic } from "$lib/wallet";
 
 import { networkStore, walletStore } from "..";
 
+const VITE_SYNC_INTERVAL = import.meta.env.VITE_SYNC_INTERVAL;
+
 describe("Wallet store", async () => {
   vi.useFakeTimers();
 
-  const AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
+  const AUTO_SYNC_INTERVAL = !isNaN(Number(VITE_SYNC_INTERVAL))
+    ? Number(VITE_SYNC_INTERVAL)
+    : 5 * 60 * 1000;
+
   const cachedBalance = {
     shielded: {
       spendable: 10n,
