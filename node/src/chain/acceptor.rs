@@ -853,10 +853,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     new_finals.pop_last().expect("new_finals to be not empty");
                 let new_final_state_root = new_final_state.state_root;
                 // old final state roots to merge too
-                let old_final_state_roots = new_finals
-                    .into_values()
-                    .map(|finalized_info| finalized_info.state_root)
-                    .chain([prev_final_state_root])
+
+                let old_final_state_roots = [prev_final_state_root]
+                    .into_iter()
+                    .chain(
+                        new_finals
+                            .into_values()
+                            .map(|finalized_info| finalized_info.state_root),
+                    )
                     .collect::<Vec<_>>();
                 info!(src = "try_accept", event = "before finalize",);
                 vm.finalize_state(new_final_state_root, old_final_state_roots)?;
