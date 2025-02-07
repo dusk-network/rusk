@@ -96,6 +96,11 @@ pub(crate) async fn online(
 
     let select = select?;
 
+    let max_withdraw = wallet
+        .get_stake_reward(profile_idx)
+        .await
+        .unwrap_or(Dusk::from(0));
+
     let res = match select {
         MenuItem::Transfer => {
             let rcvr = prompt::request_rcvr_addr("recipient")?;

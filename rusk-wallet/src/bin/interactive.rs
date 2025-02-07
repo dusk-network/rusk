@@ -10,6 +10,7 @@ use std::fmt::Display;
 
 use bip39::{Language, Mnemonic, MnemonicType};
 use inquire::{InquireError, Select};
+use konst::result::err;
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
 use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
@@ -87,26 +88,33 @@ pub(crate) async fn run_loop(
                     if confirm(&cmd, wallet)? {
                         // run command
                         prompt::hide_cursor()?;
-                        let res = cmd.run(wallet, settings).await?;
+                        match cmd.run(wallet, settings).await {
+                            Ok(res) => {
+                                prompt::show_cursor()?;
+                                // output results
+                                println!("\r{}", res);
+                                if let RunResult::Tx(hash) = res {
+                                    let tx_id: String =
+                                        hex::encode(hash.to_bytes());
 
-                        prompt::show_cursor()?;
-                        // output results
-                        println!("\r{}", res);
-                        if let RunResult::Tx(hash) = res {
-                            let tx_id = hex::encode(hash.to_bytes());
+                                    // Wait for transaction confirmation
+                                    // from network
+                                    let gql = GraphQL::new(
+                                        settings.state.to_string(),
+                                        io::status::interactive,
+                                    )?;
+                                    gql.wait_for(&tx_id).await?;
 
-                            // Wait for transaction confirmation
-                            // from network
-                            let gql = GraphQL::new(
-                                settings.state.to_string(),
-                                io::status::interactive,
-                            )?;
-                            gql.wait_for(&tx_id).await?;
-
-                            if let Some(explorer) = &settings.explorer {
-                                let url = format!("{explorer}{tx_id}");
-                                println!("> URL: {url}");
-                                prompt::launch_explorer(url)?;
+                                    if let Some(explorer) = &settings.explorer {
+                                        let url = format!("{explorer}{tx_id}");
+                                        println!("> URL: {url}");
+                                        prompt::launch_explorer(url)?;
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                println!("Error: {}", e);
+                                continue;
                             }
                         }
                     }
