@@ -13,7 +13,10 @@ import { transactions } from "$lib/mock-data";
 import networkStore from "./networkStore";
 import settingsStore from "./settingsStore";
 
-const AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
+const VITE_SYNC_INTERVAL = import.meta.env.VITE_SYNC_INTERVAL;
+const AUTO_SYNC_INTERVAL = !isNaN(Number(VITE_SYNC_INTERVAL))
+  ? Number(VITE_SYNC_INTERVAL)
+  : 5 * 60 * 1000;
 
 let autoSyncId = 0;
 
