@@ -725,7 +725,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let (contract_events, finality) =
                 self.db.read().await.update(|db| {
-
                     info!(src = "try_accept", event = "before accept",);
                     let (txs, verification_output, contract_events) = vm
                         .accept(
