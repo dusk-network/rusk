@@ -1,4 +1,7 @@
 use anyhow::{Result, anyhow};
+use bs58;
+use dusk_bytes::DeserializableSlice;
+use dusk_core::signatures::bls::PublicKey;
 use std::sync::Arc;
 use yerpc::rpc;
 use crate::node::Rusk;
@@ -13,6 +16,26 @@ impl Api {
     pub fn new(rusk: Arc<Rusk>) -> Self {
         Self { rusk }
     }
+
+    /// Helper function to fetch account data for a given address.
+    fn get_account_data(&self, address: &str) -> Result<AccountInfo> {
+        let pk_bytes = bs58::decode(address)
+            .into_vec()
+            .map_err(|_| anyhow!("Invalid bs58 account"))?;
+
+        let pk = PublicKey::from_slice(&pk_bytes)
+            .map_err(|_| anyhow!("Invalid BLS account"))?;
+
+        let account = self
+            .rusk
+            .account(&pk)
+            .map_err(|e| anyhow!("Cannot query the state: {e:?}"))?;
+
+        Ok(AccountInfo {
+            balance: account.balance,
+            nonce: account.nonce,
+        })
+    }
 }
 
 #[rpc(all_positional = true, openrpc_outdir = "./")]
@@ -25,17 +48,12 @@ impl Api {
 
     /// Retrieves the balance and nonce of a public account given its address.
     pub async fn get_account(&self, address: String) -> Result<AccountInfo> {
-        // TODO: Implement logic to fetch account info
-        Ok(AccountInfo {
-            balance: 1000000,
-            nonce: 5,
-        })
+        self.get_account_data(&address)
     }
 
     /// Retrieves the balance of a public account given its address.
     pub async fn get_balance(&self, address: String) -> Result<u64> {
-        // TODO: Implement logic to fetch account balance
-        Ok(123456)
+        self.get_account_data(&address).map(|account| account.balance)
     }
 
     /// Retrieves block information given a block hash.
