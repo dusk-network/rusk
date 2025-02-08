@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 
 use kadcast::config::Config as KadcastConfig;
@@ -21,12 +22,18 @@ use node::{LongLivedService, Node};
 
 #[cfg(feature = "archive")]
 use node::archive::Archive;
+use tokio::spawn;
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
 use crate::node::{ChainEventStreamer, RuskNode, RuskVmConfig, Services};
 use crate::{Rusk, VERSION};
+
+use crate::rpc::api::Api;
+use crate::rpc::http::router as http_router;
+use crate::rpc::ws::router as ws_router;
+use axum::{Extension, Router};
 
 #[derive(Default)]
 pub struct RuskNodeBuilder {
@@ -248,6 +255,31 @@ impl RuskNodeBuilder {
                 )
                 .await?;
             return chain_srv.revert_last_final().await;
+        }
+
+        // JSON-RPC server
+        {
+            let json_rpc_addr = "127.0.0.1:7070".to_owned();
+
+            let api = Arc::new(Api::new(Arc::new(rusk.clone())));
+
+            let rpc_router = Router::new()
+                .merge(http_router())
+                .merge(ws_router())
+                .layer(Extension(api));
+
+            // Spawn the server in the background
+            spawn(async move {
+                let listener = tokio::net::TcpListener::bind(&json_rpc_addr)
+                    .await
+                    .expect("Failed to bind JSON-RPC server");
+
+                info!("Starting JSON-RPC server at {json_rpc_addr}");
+
+                axum::serve(listener, rpc_router)
+                    .await
+                    .expect("JSON-RPC server crashed");
+            });
         }
 
         let mut service_list: Vec<Box<Services>> = vec![
