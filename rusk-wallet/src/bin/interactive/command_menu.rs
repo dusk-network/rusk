@@ -6,6 +6,7 @@
 
 use std::fmt::Display;
 
+use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 use dusk_core::transfer::data::MAX_MEMO_SIZE;
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
@@ -15,6 +16,7 @@ use rusk_wallet::gas::{
 };
 use rusk_wallet::{
     Address, Error, Wallet, MAX_CONTRACT_INIT_ARG_SIZE, MAX_FUNCTION_NAME_SIZE,
+    MIN_CONVERTIBLE,
 };
 
 use super::ProfileOp;
@@ -169,6 +171,21 @@ pub(crate) async fn online(
                 .public_key(stake_idx)
                 .expect("public key to exists in interactive mode");
 
+            let min_val = {
+                let has_stake = wallet
+                    .stake_info(stake_idx)
+                    .await?
+                    .map(|s| s.amount.is_some())
+                    .unwrap_or_default();
+
+                // if the user has stake then they are performing a topup
+                if has_stake {
+                    MIN_CONVERTIBLE
+                } else {
+                    DEFAULT_MINIMUM_STAKE.into()
+                }
+            };
+
             let owner = match wallet.find_stake_owner_account(stake_pk).await {
                 Ok(account) => account,
                 Err(Error::NotStaked) => {
@@ -177,6 +194,7 @@ pub(crate) async fn online(
                         .iter()
                         .map(|p| Address::Public(p.public_addr))
                         .collect();
+
                     prompt::request_address(stake_idx, choices)?
                 }
                 e => e?,
@@ -185,7 +203,7 @@ pub(crate) async fn online(
             ProfileOp::Run(Box::new(Command::Stake {
                 address: Some(addr),
                 owner: Some(owner),
-                amt: prompt::request_stake_token_amt(balance)?,
+                amt: prompt::request_stake_token_amt(balance, min_val)?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
