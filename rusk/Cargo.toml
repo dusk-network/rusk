@@ -57,6 +57,9 @@ hyper-tungstenite = { workspace = true }
 hyper = { workspace = true, features = ["server", "http1", "http2"] }
 hyper-util = { workspace = true, features = ["server", "http1", "http2"] }
 http-body-util = { workspace = true }
+axum = { workspace = true }
+schemars = { workspace = true }
+yerpc = { workspace = true }
 
 tokio-stream = { workspace = true, features = ["sync"] }
 tokio-util = { workspace = true, features = ["rt"] }
