@@ -1,7 +1,13 @@
-use std::sync::Arc;
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
+use crate::rpc::api::Api;
 use axum::{response::IntoResponse, routing::post, Extension, Json, Router};
 use serde_json::Value;
-use crate::rpc::api::Api;
+use std::sync::Arc;
 
 pub fn router() -> Router {
     Router::new().route("/rpc", post(handle_request))
@@ -50,7 +56,8 @@ async fn handle_request(
 
 /// Extracts a parameter from the JSON payload
 fn extract_param(payload: &Value, key: &str) -> String {
-    payload.get("params")
+    payload
+        .get("params")
         .and_then(|p| p.get(key))
         .and_then(|v| v.as_str())
         .unwrap_or("")
@@ -58,7 +65,9 @@ fn extract_param(payload: &Value, key: &str) -> String {
 }
 
 /// Handles successful and error responses
-fn handle_rpc_call<T: serde::Serialize>(result: Result<T, anyhow::Error>) -> Value {
+fn handle_rpc_call<T: serde::Serialize>(
+    result: Result<T, anyhow::Error>,
+) -> Value {
     match result {
         Ok(data) => serde_json::to_value(data).unwrap(),
         Err(e) => json_rpc_error(-32000, &e.to_string(), Value::Null),

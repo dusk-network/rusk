@@ -9,9 +9,10 @@
 mod bloom;
 mod error;
 pub mod http;
-pub mod rpc;
 #[cfg(feature = "chain")]
 pub mod node;
+#[cfg(feature = "chain")]
+pub mod rpc;
 
 mod builder;
 pub mod verifier;

@@ -1,11 +1,17 @@
-use anyhow::{Result, anyhow};
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
+use crate::node::Rusk;
+use crate::rpc::types::{AccountInfo, BlockInfo, TransactionInfo};
+use anyhow::{anyhow, Result};
 use bs58;
 use dusk_bytes::DeserializableSlice;
 use dusk_core::signatures::bls::PublicKey;
 use std::sync::Arc;
 use yerpc::rpc;
-use crate::node::Rusk;
-use crate::rpc::types::{AccountInfo, BlockInfo, TransactionInfo};
 
 #[derive(Clone)]
 pub struct Api {
@@ -53,7 +59,8 @@ impl Api {
 
     /// Retrieves the balance of a public account given its address.
     pub async fn get_balance(&self, address: String) -> Result<u64> {
-        self.get_account_data(&address).map(|account| account.balance)
+        self.get_account_data(&address)
+            .map(|account| account.balance)
     }
 
     /// Retrieves block information given a block hash.
@@ -67,7 +74,10 @@ impl Api {
     }
 
     /// Retrieves transaction details given a transaction hash.
-    pub async fn get_transaction(&self, tx_hash: String) -> Result<TransactionInfo> {
+    pub async fn get_transaction(
+        &self,
+        tx_hash: String,
+    ) -> Result<TransactionInfo> {
         // TODO: Implement logic to fetch transaction data
         Ok(TransactionInfo {
             tx_hash,
