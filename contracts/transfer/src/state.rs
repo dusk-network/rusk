@@ -377,7 +377,7 @@ impl TransferState {
     /// Transfer funds from one contract's balance to another.
     ///
     /// Contracts can call the function and expect that if it succeeds the funds
-    /// are succesfully transferred to the contract they specify. Contracts
+    /// are successfully transferred to the contract they specify. Contracts
     /// receiving funds are expected to expose the function specified by the
     /// sender, which is called using a [`ReceiveFromContract`] as argument. It
     /// is recommended that the receiving contract check that the call
