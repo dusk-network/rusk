@@ -68,6 +68,11 @@ export class Transfer extends BasicTransfer {
 
     return builder;
   }
+
+  memo(value) {
+    this[_attributes].memo = value;
+    return this;
+  }
 }
 
 class AccountTransfer extends Transfer {
@@ -82,11 +87,6 @@ class AccountTransfer extends Transfer {
 
   nonce(value) {
     this[_attributes].nonce = value;
-    return this;
-  }
-
-  memo(value) {
-    this[_attributes].memo = value;
     return this;
   }
 
@@ -154,6 +154,7 @@ class AddressTransfer extends Transfer {
       amount: transfer_value,
       obfuscated: obfuscated_transaction,
       gas,
+      memo: data,
     } = attributes;
     const sender = this.bookentry.profile;
     const receiver = base58.decode(to);
@@ -163,7 +164,7 @@ class AddressTransfer extends Transfer {
     // Pick notes to spend from the treasury
     const picked = await bookkeeper.pick(
       sender.address,
-      transfer_value + gas.total,
+      transfer_value + gas.total
     );
 
     const syncer = new AddressSyncer(network);
@@ -195,7 +196,7 @@ class AddressTransfer extends Transfer {
       gas_limit: gas.limit,
       gas_price: gas.price,
       chainId,
-      data: null,
+      data,
     });
 
     // Attempt to prove the transaction
@@ -225,7 +226,7 @@ export class UnshieldTransfer extends BasicTransfer {
     // Pick notes to spend from the treasury
     const picked = await bookkeeper.pick(
       profile.address,
-      allocate_value + gas.total,
+      allocate_value + gas.total
     );
 
     const syncer = new AddressSyncer(network);
@@ -321,7 +322,7 @@ export class StakeTransfer extends BasicTransfer {
 
     if (!isTopup && stake_value < minimumStake) {
       throw new RangeError(
-        `Stake amount must be greater or equal than ${minimumStake}`,
+        `Stake amount must be greater or equal than ${minimumStake}`
       );
     }
 
@@ -335,7 +336,7 @@ export class StakeTransfer extends BasicTransfer {
 
     if (hasStake && !isTopup) {
       throw new Error(
-        "Stake already exists. Use `topup` to add to the current stake",
+        "Stake already exists. Use `topup` to add to the current stake"
       );
     } else if (!hasStake && isTopup) {
       throw new Error("No stake to topup. Use `stake` to create a new stake");
@@ -392,7 +393,7 @@ export class UnstakeTransfer extends BasicTransfer {
 
     if (remainingStake > 0n && remainingStake < minimumStake) {
       throw new RangeError(
-        `Remaining stake must be greater or equal than ${minimumStake}`,
+        `Remaining stake must be greater or equal than ${minimumStake}`
       );
     }
 
@@ -436,11 +437,11 @@ export class WithdrawStakeRewardTransfer extends BasicTransfer {
       throw new Error(`No stake available to withdraw the reward from`);
     } else if (reward_amount > reward) {
       throw new RangeError(
-        `The withdrawn reward amount must be less or equal to ${reward}`,
+        `The withdrawn reward amount must be less or equal to ${reward}`
       );
     } else if (!reward_amount) {
       throw new RangeError(
-        `Can't withdraw an empty reward amount. I mean, you could, but it would be pointless.`,
+        `Can't withdraw an empty reward amount. I mean, you could, but it would be pointless.`
       );
     }
 

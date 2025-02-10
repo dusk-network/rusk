@@ -46,7 +46,7 @@ export function load(source, importsURL) {
       const minimumStake = await u64(ptr(globals.MINIMUM_STAKE));
 
       return [{ key, item }, minimumStake];
-    }),
+    })
   )();
 }
 
@@ -79,7 +79,7 @@ export function useAsProtocolDriver(source, importsURL) {
 export async function opening(bytes) {
   const task = protocolDriverModule.task(async function (
     { malloc, opening },
-    { memcpy },
+    { memcpy }
   ) {
     const buffer = new Uint8Array(DataBuffer.from(bytes));
 
@@ -98,7 +98,7 @@ export async function opening(bytes) {
 export async function displayScalar(bytes) {
   const task = protocolDriverModule.task(async function (
     { malloc, display_scalar },
-    { memcpy },
+    { memcpy }
   ) {
     let ptr = await malloc(32);
     await memcpy(ptr, bytes, 32);
@@ -120,7 +120,7 @@ export async function displayScalar(bytes) {
 export async function bookmarks(notes) {
   const task = protocolDriverModule.task(async function (
     { malloc, bookmarks },
-    { memcpy },
+    { memcpy }
   ) {
     if (notes.length === 0) {
       return [];
@@ -140,7 +140,7 @@ export async function bookmarks(notes) {
     let code = await bookmarks(ptr, bookmarks_ptr);
     if (code > 0) throw DriverError.from(code);
     bookmarks_ptr = new DataView(
-      (await memcpy(null, bookmarks_ptr, 4)).buffer,
+      (await memcpy(null, bookmarks_ptr, 4)).buffer
     ).getUint32(0, true);
 
     return await memcpy(null, bookmarks_ptr, notes.size * 8);
@@ -152,7 +152,7 @@ export async function bookmarks(notes) {
 export async function pickNotes(owner, notes, value) {
   const task = protocolDriverModule.task(async function (
     { malloc, pick_notes },
-    { memcpy },
+    { memcpy }
   ) {
     if (notes.length === 0) {
       return new Map();
@@ -184,14 +184,14 @@ export async function pickNotes(owner, notes, value) {
 
     let len = new DataView((await memcpy(null, ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     notesBuffer = await memcpy(null, ptr + 4, len);
 
     let notesLen = new DataView(notesBuffer.buffer).getUint32(
       notesBuffer.byteLength - 4,
-      true,
+      true
     );
 
     let itemSize = (notesBuffer.buffer.byteLength - 8) / notesLen;
@@ -231,7 +231,7 @@ export const generateProfile = (seed, n) =>
 
       // Return the content of the `out` boxed value
       return out.valueOf();
-    }),
+    })
   )();
 
 export const mapOwned = (owners, notes) =>
@@ -245,7 +245,7 @@ export const mapOwned = (owners, notes) =>
 
       const firstOwner = owners[0];
       const sharesSameSource = owners.every((owner) =>
-        firstOwner.sameSourceOf(owner),
+        firstOwner.sameSourceOf(owner)
       );
 
       if (!sharesSameSource) {
@@ -256,7 +256,7 @@ export const mapOwned = (owners, notes) =>
       let entrySize = keySize + itemSize;
 
       let notesBuffer = new Uint8Array(
-        DataBuffer.from(notes, { size: notes.byteLength / itemSize }),
+        DataBuffer.from(notes, { size: notes.byteLength / itemSize })
       );
 
       // Allocates memory on the WASM heap and then places `seed` into it.
@@ -277,7 +277,7 @@ export const mapOwned = (owners, notes) =>
       indexes[0] = owners.length;
       indexes.set(
         owners.map((p) => +p),
-        1,
+        1
       );
 
       let idx_ptr = await box(indexes);
@@ -291,7 +291,7 @@ export const mapOwned = (owners, notes) =>
         +idx_ptr,
         +notes_ptr,
         +out_ptr,
-        +info_ptr,
+        +info_ptr
       );
       if (code > 0) throw DriverError.from(code);
 
@@ -328,13 +328,13 @@ export const mapOwned = (owners, notes) =>
       }
 
       return [results, { blockHeight, bookmark }];
-    }),
+    })
   )();
 
 export async function balance(seed, n, notes) {
   const task = await protocolDriverModule.task(async function (
     { malloc, balance },
-    { memcpy },
+    { memcpy }
   ) {
     // Copy the seed to avoid invalidating the original buffer
     seed = new Uint8Array(seed);
@@ -363,10 +363,10 @@ export async function balance(seed, n, notes) {
 export const accountsIntoRaw = async (users) =>
   protocolDriverModule.task(async function (
     { malloc, accounts_into_raw },
-    { memcpy },
+    { memcpy }
   ) {
     let buffer = new Uint8Array(
-      DataBuffer.from(DataBuffer.flatten(users.map((user) => user.valueOf()))),
+      DataBuffer.from(DataBuffer.flatten(users.map((user) => user.valueOf())))
     );
 
     // copy buffer into WASM memory
@@ -383,12 +383,12 @@ export const accountsIntoRaw = async (users) =>
     // Copy the result from WASM memory
     out_ptr = new DataView((await memcpy(null, out_ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     let len = new DataView((await memcpy(null, out_ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     buffer = await memcpy(null, out_ptr + 4, len);
@@ -404,7 +404,7 @@ export const accountsIntoRaw = async (users) =>
 export const intoProven = async (tx, proof) =>
   protocolDriverModule.task(async function (
     { malloc, into_proven },
-    { memcpy },
+    { memcpy }
   ) {
     let buffer = tx.valueOf();
     const tx_ptr = await malloc(buffer.byteLength);
@@ -426,11 +426,11 @@ export const intoProven = async (tx, proof) =>
     if (code > 0) throw DriverError.from(code);
 
     proved_ptr = new DataView(
-      (await memcpy(null, proved_ptr, 4)).buffer,
+      (await memcpy(null, proved_ptr, 4)).buffer
     ).getUint32(0, true);
 
     const len = new DataView(
-      (await memcpy(null, proved_ptr, 4)).buffer,
+      (await memcpy(null, proved_ptr, 4)).buffer
     ).getUint32(0, true);
 
     buffer = await memcpy(null, proved_ptr + 4, len);
@@ -474,7 +474,7 @@ export const phoenix = async (info) =>
     new DataView(transfer_value.buffer).setBigUint64(
       0,
       info.transfer_value,
-      true,
+      true
     );
     ptr.transfer_value = await malloc(8);
     await memcpy(ptr.transfer_value, transfer_value);
@@ -494,6 +494,15 @@ export const phoenix = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
+    const data = serializeMemo(info.data);
+
+    if (data) {
+      ptr.data = await malloc(data.byteLength);
+      await memcpy(ptr.data, data);
+    } else {
+      ptr.data = null;
+    }
+
     let tx = await malloc(4);
     let proof = await malloc(4);
 
@@ -512,31 +521,31 @@ export const phoenix = async (info) =>
       ptr.gas_limit,
       ptr.gas_price,
       info.chainId,
-      info.data,
+      ptr.data,
       tx,
-      proof,
+      proof
     );
 
     if (code > 0) throw DriverError.from(code);
 
     let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     const tx_buffer = await memcpy(null, tx_ptr, tx_len);
 
     let proof_ptr = new DataView(
-      (await memcpy(null, proof, 4)).buffer,
+      (await memcpy(null, proof, 4)).buffer
     ).getUint32(0, true);
 
     let proof_len = new DataView(
-      (await memcpy(null, proof_ptr, 4)).buffer,
+      (await memcpy(null, proof_ptr, 4)).buffer
     ).getUint32(0, true);
 
     const proof_buffer = await memcpy(null, proof_ptr + 4, proof_len);
@@ -562,7 +571,7 @@ export const moonlight = async (info) =>
     new DataView(transfer_value.buffer).setBigUint64(
       0,
       info.transfer_value,
-      true,
+      true
     );
     ptr.transfer_value = await malloc(8);
     await memcpy(ptr.transfer_value, transfer_value);
@@ -612,19 +621,19 @@ export const moonlight = async (info) =>
       info.chainId,
       ptr.data,
       tx,
-      hash,
+      hash
     );
 
     if (code > 0) throw DriverError.from(code);
 
     let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
@@ -636,7 +645,7 @@ export const moonlight = async (info) =>
 export const unshield = async (info) =>
   protocolDriverModule.task(async function (
     { malloc, phoenix_to_moonlight },
-    { memcpy },
+    { memcpy }
   ) {
     const ptr = Object.create(null);
 
@@ -671,7 +680,7 @@ export const unshield = async (info) =>
     new DataView(allocate_value.buffer).setBigUint64(
       0,
       info.allocate_value,
-      true,
+      true
     );
     ptr.allocate_value = await malloc(8);
     await memcpy(ptr.allocate_value, allocate_value);
@@ -703,29 +712,29 @@ export const unshield = async (info) =>
       ptr.gas_price,
       info.chainId,
       tx,
-      proof,
+      proof
     );
 
     if (code > 0) throw DriverError.from(code);
 
     let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     const tx_buffer = await memcpy(null, tx_ptr, tx_len);
 
     let proof_ptr = new DataView(
-      (await memcpy(null, proof, 4)).buffer,
+      (await memcpy(null, proof, 4)).buffer
     ).getUint32(0, true);
 
     let proof_len = new DataView(
-      (await memcpy(null, proof_ptr, 4)).buffer,
+      (await memcpy(null, proof_ptr, 4)).buffer
     ).getUint32(0, true);
 
     const proof_buffer = await memcpy(null, proof_ptr + 4, proof_len);
@@ -736,7 +745,7 @@ export const unshield = async (info) =>
 export const shield = async (info) =>
   protocolDriverModule.task(async function (
     { malloc, moonlight_to_phoenix },
-    { memcpy },
+    { memcpy }
   ) {
     const ptr = Object.create(null);
 
@@ -754,7 +763,7 @@ export const shield = async (info) =>
     new DataView(allocate_value.buffer).setBigUint64(
       0,
       info.allocate_value,
-      true,
+      true
     );
     ptr.allocate_value = await malloc(8);
     await memcpy(ptr.allocate_value, allocate_value);
@@ -788,19 +797,19 @@ export const shield = async (info) =>
       ptr.nonce,
       info.chainId,
       tx,
-      hash,
+      hash
     );
 
     if (code > 0) throw DriverError.from(code);
 
     let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
@@ -812,7 +821,7 @@ export const shield = async (info) =>
 export const stake = async (info) =>
   protocolDriverModule.task(async function (
     { malloc, moonlight_stake },
-    { memcpy },
+    { memcpy }
   ) {
     const ptr = Object.create(null);
 
@@ -855,19 +864,19 @@ export const stake = async (info) =>
       ptr.nonce,
       info.chainId,
       tx,
-      hash,
+      hash
     );
 
     if (code > 0) throw DriverError.from(code);
 
     let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
@@ -879,7 +888,7 @@ export const stake = async (info) =>
 export const unstake = async (info) =>
   protocolDriverModule.task(async function (
     { malloc, moonlight_unstake },
-    { memcpy },
+    { memcpy }
   ) {
     const ptr = Object.create(null);
 
@@ -897,7 +906,7 @@ export const unstake = async (info) =>
     new DataView(unstake_value.buffer).setBigUint64(
       0,
       info.unstake_value,
-      true,
+      true
     );
     ptr.unstake_value = await malloc(8);
     await memcpy(ptr.unstake_value, unstake_value);
@@ -930,19 +939,19 @@ export const unstake = async (info) =>
       ptr.nonce,
       info.chainId,
       tx,
-      hash,
+      hash
     );
 
     if (code > 0) throw DriverError.from(code);
 
     let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
@@ -954,7 +963,7 @@ export const unstake = async (info) =>
 export const withdraw = async (info) =>
   protocolDriverModule.task(async function (
     { malloc, moonlight_stake_reward },
-    { memcpy },
+    { memcpy }
   ) {
     const ptr = Object.create(null);
 
@@ -972,7 +981,7 @@ export const withdraw = async (info) =>
     new DataView(reward_amount.buffer).setBigUint64(
       0,
       info.reward_amount,
-      true,
+      true
     );
     ptr.reward_amount = await malloc(8);
     await memcpy(ptr.reward_amount, reward_amount);
@@ -1005,19 +1014,19 @@ export const withdraw = async (info) =>
       ptr.nonce,
       info.chainId,
       tx,
-      hash,
+      hash
     );
 
     if (code > 0) throw DriverError.from(code);
 
     let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     let tx_len = new DataView((await memcpy(null, tx_ptr, 4)).buffer).getUint32(
       0,
-      true,
+      true
     );
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
