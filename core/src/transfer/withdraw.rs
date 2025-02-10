@@ -169,6 +169,7 @@ impl Withdraw {
 
 /// The receiver of the [`Withdraw`] value.
 #[derive(Debug, Clone, Copy, PartialEq, Archive, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[archive_attr(derive(CheckBytes))]
 pub enum WithdrawReceiver {
     /// The stealth address to withdraw to, when the withdrawal is into Phoenix
