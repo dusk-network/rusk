@@ -106,7 +106,7 @@ mod tests {
     fn golang_compatibility() {
         let mut test_vectors = vec![];
 
-        // Test merkle tree againt same vectors used by
+        // Test merkle tree against same vectors used by
         // https://github.com/dusk-network/dusk-crypto/blob/more_fixtures/merkletree/merkletree_test.go
         test_vectors.push((vec![], EMPTY_NODE.0));
 
