@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add PartialEq, Eq to `BlockState` [#3359]
+- Add `SpentTransaction::shielded` & `SpentTransaction::public` getter fn [#3464]
 
 ### Removed
 
@@ -28,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Types used for interacting with Dusk node 
 
 <!-- Issues -->
+[#3464]: https://github.com/dusk-network/rusk/issues/3464
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 

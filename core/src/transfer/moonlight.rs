@@ -163,7 +163,7 @@ impl Transaction {
     }
 
     /// Return the receiver of the transaction if it's different from the
-    /// sender.
+    /// sender. Otherwise, return None.
     #[must_use]
     pub fn receiver(&self) -> Option<&AccountPublicKey> {
         if self.payload.sender == self.payload.receiver {
@@ -240,7 +240,7 @@ impl Transaction {
 
     /// Returns the transaction data, if it exists.
     #[must_use]
-    fn data(&self) -> Option<&TransactionData> {
+    pub fn data(&self) -> Option<&TransactionData> {
         self.payload.data.as_ref()
     }
 

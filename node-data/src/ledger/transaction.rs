@@ -7,7 +7,9 @@
 use std::io;
 
 use dusk_bytes::Serializable as DuskSerializable;
-use dusk_core::signatures::bls;
+use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
+use dusk_core::transfer::phoenix::Transaction as PhoenixTransaction;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use serde::Serialize;
 use sha3::Digest;
@@ -46,12 +48,40 @@ impl From<ProtocolTransaction> for Transaction {
     }
 }
 
+/// A spent transaction is a transaction that has been included in a block and
+/// was executed.
 #[derive(Debug, Clone, Serialize)]
 pub struct SpentTransaction {
+    /// The transaction that was executed.
     pub inner: Transaction,
+    /// The height of the block in which the transaction was included.
     pub block_height: u64,
+    /// The amount of gas that was spent during the execution of the
+    /// transaction.
     pub gas_spent: u64,
+    /// An optional error message if the transaction execution yielded an
+    /// error.
     pub err: Option<String>,
+}
+
+impl SpentTransaction {
+    /// Returns the underlying public transaction, if it is one. Otherwise,
+    /// returns `None`.
+    pub fn public(&self) -> Option<&MoonlightTransaction> {
+        match &self.inner.inner {
+            ProtocolTransaction::Moonlight(public_tx) => Some(public_tx),
+            _ => None,
+        }
+    }
+
+    /// Returns the underlying shielded transaction, if it is one. Otherwise,
+    /// returns `None`.
+    pub fn shielded(&self) -> Option<&PhoenixTransaction> {
+        match &self.inner.inner {
+            ProtocolTransaction::Phoenix(shielded_tx) => Some(shielded_tx),
+            _ => None,
+        }
+    }
 }
 
 impl Transaction {
@@ -129,7 +159,7 @@ impl Eq for SpentTransaction {}
 
 pub enum SpendingId {
     Nullifier([u8; 32]),
-    AccountNonce(bls::PublicKey, u64),
+    AccountNonce(AccountPublicKey, u64),
 }
 
 impl SpendingId {
