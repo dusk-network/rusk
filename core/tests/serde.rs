@@ -9,10 +9,14 @@
 use bls12_381_bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
+use dusk_bytes::Serializable;
 use dusk_core::signatures::schnorr::PublicKey as NotePublicKey;
 use dusk_core::signatures::schnorr::SecretKey as NoteSecretKey;
 use dusk_core::stake::{
     Reward, RewardReason, SlashEvent, StakeEvent, StakeFundOwner, StakeKeys,
+};
+use dusk_core::transfer::data::{
+    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
 };
 use dusk_core::transfer::moonlight::Fee as MoonlightFee;
 use dusk_core::transfer::phoenix::Fee as PhoenixFee;
@@ -22,7 +26,7 @@ use dusk_core::transfer::{
     ContractToAccountEvent, ContractToContractEvent, ConvertEvent,
     DepositEvent, MoonlightTransactionEvent, PhoenixTransactionEvent,
 };
-use dusk_core::{BlsScalar, JubJubScalar};
+use dusk_core::{BlsScalar, JubJubAffine, JubJubScalar};
 use ff::Field;
 use phoenix_core::{
     Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey, Sender,
@@ -351,7 +355,7 @@ fn serde_phoenix_fee() {
         Sender::encrypt(&note_pk, &sender_pk, &blinder)
     };
 
-    let fee = PhoenixFee {
+    let mut fee = PhoenixFee {
         gas_limit: rng.next_u64(),
         gas_price: rng.next_u64(),
         stealth_address,
@@ -361,4 +365,110 @@ fn serde_phoenix_fee() {
     let ser = serde_json::to_string(&fee).unwrap();
     let deser = serde_json::from_str(&ser).unwrap();
     assert_eq!(fee, deser);
+
+    fee.sender = {
+        let mut contract_info = [0; 4 * JubJubAffine::SIZE];
+        rng.fill_bytes(&mut contract_info);
+        Sender::ContractInfo(contract_info)
+    };
+
+    let ser = serde_json::to_string(&fee).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(fee, deser);
+}
+
+fn rnd_contract_bytecode<R: Rng>(rng: &mut R) -> ContractBytecode {
+    let mut bytes = vec![0; rng.gen_range(1..100)];
+    rng.fill_bytes(&mut bytes);
+
+    let hash: [u8; 32] = rng.gen();
+
+    ContractBytecode { hash, bytes }
+}
+
+#[test]
+fn serde_contract_bytecode() {
+    let mut rng = StdRng::seed_from_u64(42);
+    let contract_bytecode = rnd_contract_bytecode(&mut rng);
+
+    let ser = serde_json::to_string(&contract_bytecode).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(contract_bytecode, deser);
+}
+
+fn rnd_contract_deploy<R: Rng>(rng: &mut R) -> ContractDeploy {
+    let contract_bytecode = rnd_contract_bytecode(rng);
+    let owner = vec![0; rng.gen_range(1..32)];
+    let init_args = Some(vec![0; rng.gen_range(1..32)]);
+    let nonce = rng.gen();
+
+    ContractDeploy {
+        bytecode: contract_bytecode,
+        owner,
+        init_args,
+        nonce,
+    }
+}
+
+#[test]
+fn serde_contract_deploy() {
+    let mut rng = StdRng::seed_from_u64(42);
+    let mut contract_deploy = rnd_contract_deploy(&mut rng);
+
+    let ser = serde_json::to_string(&contract_deploy).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(contract_deploy, deser);
+
+    contract_deploy.init_args = None;
+
+    let ser = serde_json::to_string(&contract_deploy).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(contract_deploy, deser);
+}
+
+fn rnd_contract_call<R: Rng>(rng: &mut R) -> ContractCall {
+    let mut contract_id_bytes = [0; CONTRACT_ID_BYTES];
+    rng.fill_bytes(&mut contract_id_bytes);
+    let contract_id = ContractId::from_bytes(contract_id_bytes);
+    let fn_name = "fn_name".to_string();
+    let fn_args = vec![0; rng.gen_range(1..32)];
+
+    ContractCall {
+        contract: contract_id,
+        fn_name,
+        fn_args,
+    }
+}
+
+#[test]
+fn serde_contract_call() {
+    let mut rng = StdRng::seed_from_u64(42);
+    let contract_call = rnd_contract_call(&mut rng);
+
+    let ser = serde_json::to_string(&contract_call).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(contract_call, deser);
+}
+
+#[test]
+fn serde_transaction_data() {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    let call_transaction_data =
+        TransactionData::Call(rnd_contract_call(&mut rng));
+    let ser = serde_json::to_string(&call_transaction_data).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(call_transaction_data, deser);
+
+    let deploy_transaction_data =
+        TransactionData::Deploy(rnd_contract_deploy(&mut rng));
+    let ser = serde_json::to_string(&deploy_transaction_data).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(deploy_transaction_data, deser);
+
+    let memo_transaction_data =
+        TransactionData::Memo(vec![0; rng.gen_range(1..32)]);
+    let ser = serde_json::to_string(&memo_transaction_data).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(memo_transaction_data, deser);
 }

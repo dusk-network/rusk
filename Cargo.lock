@@ -1655,6 +1655,7 @@ dependencies = [
  "dusk-plonk",
  "dusk-poseidon",
  "ff",
+ "hex",
  "jubjub-schnorr",
  "phoenix-circuits",
  "phoenix-core",
