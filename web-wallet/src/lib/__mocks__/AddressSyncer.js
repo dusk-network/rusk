@@ -1,4 +1,5 @@
-import { AddressSyncer } from "$lib/vendor/w3sper.js/src/network/syncer/address";
+// we are importing the file directly to avoid importing our own mock
+import { AddressSyncer } from "$lib/../../node_modules/@dusk/w3sper/src/network/syncer/address";
 
 import { cacheUnspentNotes } from "$lib/mock-data";
 
@@ -33,17 +34,9 @@ class SyncEvent extends CustomEvent {
 
 class AddressSyncerMock extends AddressSyncer {
   /**
-   * @param {import("$lib/vendor/w3sper.js/src/mod").Network} network
+   * @param {Array<Profile>} profiles
    * @param {Record<string, any>} [options={}]
-   */
-  constructor(network, options = {}) {
-    super(network, options);
-  }
-
-  /**
-   * @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles
-   * @param {Record<string, any>} [options={}]
-   * @returns {Promise<ReadableStream<any>>}
+   * @returns {Promise<ReadableStream<[Array<Map<Uint8Array, Uint8Array>>, { blockHeight: bigint; bookmark: bigint; }]>>}
    */
   // eslint-disable-next-line no-unused-vars
   async notes(profiles, options = {}) {
@@ -96,7 +89,7 @@ class AddressSyncerMock extends AddressSyncer {
 
   /**
    * @param {Uint8Array[]} nullifiers
-   * @returns {Promise<Uint8Array[]>}
+   * @returns {Promise<ArrayBuffer[]>}
    */
   // eslint-disable-next-line no-unused-vars
   async spent(nullifiers) {

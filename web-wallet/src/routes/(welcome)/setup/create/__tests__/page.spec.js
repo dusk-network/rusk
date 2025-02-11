@@ -5,7 +5,7 @@ import { get } from "svelte/store";
 import * as SvelteKit from "@sveltejs/kit";
 import { getKey, setKey } from "lamb";
 import * as bip39 from "bip39";
-import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
+import { ProfileGenerator } from "@dusk/w3sper";
 
 import { networkStore, settingsStore, walletStore } from "$lib/stores";
 import * as walletLib from "$lib/wallet";

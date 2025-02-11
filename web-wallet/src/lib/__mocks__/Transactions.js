@@ -72,7 +72,7 @@ class FakeRuesScope {
   }
 }
 
-class TransactionsMock {
+export class Transactions {
   #scope;
 
   constructor() {
@@ -98,5 +98,3 @@ class TransactionsMock {
     return this.#scope.once;
   }
 }
-
-export default TransactionsMock;

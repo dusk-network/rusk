@@ -1,4 +1,4 @@
-import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
+import { ProfileGenerator } from "@dusk/w3sper";
 
 import decryptBuffer from "./decryptBuffer";
 import encryptBuffer from "./encryptBuffer";
