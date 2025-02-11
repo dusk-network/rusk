@@ -109,6 +109,8 @@ pub(super) fn filter_and_convert(
 ) -> TransormerResult {
     // Keep only the event groups which contain a moonlight in-
     // or outflow
+    // TODO: We need Ord on PublicKey / G2Affine to easy sort & dedup or use
+    // inside BTreeMap
     let mut address_inflow_mappings: Vec<(AccountPublicKey, EventIdentifier)> =
         vec![];
     let mut address_outflow_mappings: Vec<(AccountPublicKey, EventIdentifier)> =
@@ -118,118 +120,161 @@ pub(super) fn filter_and_convert(
     // Iterate over the grouped events and push them to the groups vector in
     // the new format if they are moonlight events
     for (tx_ident, group) in grouped_events {
-        let is_moonlight = group.iter().filter(|event| {
-            // Make sure that the events originate from the transfer contract.
-            if event.target.0 != TRANSFER_CONTRACT {
-                return false;
-            }
+        let is_moonlight = group
+            .iter()
+            .filter(|event| {
+                // Make sure that the events originate from the transfer
+                // contract.
+                if event.target.0 != TRANSFER_CONTRACT {
+                    return false;
+                }
 
-            /*
-            Cases of a moonlight in- or outflow:
-            1. Any MoonlightTransactionEvent. This implicitly also catches a moonlight outflow for deposit, convert or refund (from moonlight)
-            2a. Any withdraw event where the receiver is moonlight. (from phoenix)
-            2b. Any mint event where the receiver is moonlight. (from staking)
-            3. Any convert event where the receiver is moonlight. (from phoenix)
-            */
-            match event.topic.as_str() {
-                MOONLIGHT_TOPIC => {
-                    /*
-                        This also catches deposits & converts.
-                        For deposits & convert the sender will be Some(pk) where pk is the same as the from field of the MoonlightTransactionEvent
-                    */
-                    if let Ok(moonlight_event) =
-                        rkyv::from_bytes::<MoonlightTransactionEvent>(
-                            &event.data,
-                        )
-                    {
-                        // An outflow from the sender address is always the case
-                        address_outflow_mappings
-                            .push((moonlight_event.sender, tx_ident));
+                /*
+                Cases of a moonlight in- or outflow:
+                1. Any MoonlightTransactionEvent. This implicitly also catches a moonlight outflow for deposit, convert or refund (from moonlight)
+                2a. Any withdraw event where the receiver is moonlight. (from phoenix)
+                2b. Any mint event where the receiver is moonlight. (from staking)
+                3. Any convert event where the receiver is moonlight. (from phoenix)
+                */
+                match event.topic.as_str() {
+                    MOONLIGHT_TOPIC => {
+                        /*
+                            This also catches deposits & converts.
+                            For deposits & convert the sender will be Some(pk) where pk is the same as the from field of the MoonlightTransactionEvent
+                        */
+                        if let Ok(moonlight_event) =
+                            rkyv::from_bytes::<MoonlightTransactionEvent>(
+                                &event.data,
+                            )
+                        {
+                            // An outflow from the sender address is always the
+                            // case
+                            if !address_outflow_mappings
+                                .contains(&(moonlight_event.sender, tx_ident))
+                            {
+                                address_outflow_mappings
+                                    .push((moonlight_event.sender, tx_ident));
+                            }
 
-                        // Exhaustively handle all inflow cases
-                        match (
-                            moonlight_event.receiver,
-                            moonlight_event.refund_info,
-                        ) {
-                            (None, refund) => {
-                                // Note: Tx sent to self are also recorded as
-                                // inflows.
-                                // If a group only has one event & the event is
-                                // "moonlight", it has to be a transaction to
-                                // self.
-                                if group.len() == 1 {
-                                    address_inflow_mappings.push((
-                                        moonlight_event.sender,
-                                        tx_ident,
-                                    ));
+                            // Exhaustively handle all inflow cases
+                            match (
+                                moonlight_event.receiver,
+                                moonlight_event.refund_info,
+                            ) {
+                                (None, refund) => {
+                                    // Note: Tx sent to self are also recorded
+                                    // as
+                                    // inflows.
+                                    // If a group only has one event & the event
+                                    // is
+                                    // "moonlight", it has to be a transaction
+                                    // to
+                                    // self.
+                                    if group.len() == 1
+                                        && !address_inflow_mappings.contains(&(
+                                            moonlight_event.sender,
+                                            tx_ident,
+                                        ))
+                                    {
+                                        address_inflow_mappings.push((
+                                            moonlight_event.sender,
+                                            tx_ident,
+                                        ));
+                                    }
+
+                                    // addr != moonlight_event.sender to not
+                                    // record
+                                    // an inflow twice for the same tx
+                                    if let Some((addr, amt)) = refund {
+                                        if amt > 0
+                                            && addr != moonlight_event.sender
+                                            && !address_inflow_mappings
+                                                .contains(&(addr, tx_ident))
+                                        {
+                                            address_inflow_mappings
+                                                .push((addr, tx_ident));
+                                        }
+                                    }
                                 }
+                                (Some(receiver), None) => {
+                                    if !address_inflow_mappings
+                                        .contains(&(receiver, tx_ident))
+                                    {
+                                        address_inflow_mappings
+                                            .push((receiver, tx_ident))
+                                    }
+                                }
+                                (Some(receiver), Some((addr, amt))) => {
+                                    if !address_inflow_mappings
+                                        .contains(&(receiver, tx_ident))
+                                    {
+                                        address_inflow_mappings
+                                            .push((receiver, tx_ident));
+                                    }
 
-                                // addr != moonlight_event.sender to not record
-                                // an inflow twice for the same tx
-                                if let Some((addr, amt)) = refund {
-                                    if amt > 0 && addr != moonlight_event.sender
+                                    if amt > 0
+                                        && addr != receiver
+                                        && addr != moonlight_event.sender
+                                        && !address_inflow_mappings
+                                            .contains(&(addr, tx_ident))
                                     {
                                         address_inflow_mappings
                                             .push((addr, tx_ident));
                                     }
                                 }
                             }
-                            (Some(receiver), None) => address_inflow_mappings
-                                .push((receiver, tx_ident)),
-                            (Some(receiver), Some((addr, amt))) => {
-                                address_inflow_mappings
-                                    .push((receiver, tx_ident));
 
-                                if amt > 0
-                                    && addr != receiver
-                                    && addr != moonlight_event.sender
+                            if !moonlight_event.memo.is_empty() {
+                                memo_mappings
+                                    .push((moonlight_event.memo, tx_ident));
+                            }
+
+                            return true;
+                        }
+                        false
+                    }
+                    WITHDRAW_TOPIC | MINT_TOPIC => {
+                        if let Ok(withdraw_event) =
+                            rkyv::from_bytes::<WithdrawEvent>(&event.data)
+                        {
+                            if let WithdrawReceiver::Moonlight(key) =
+                                withdraw_event.receiver
+                            {
+                                if !address_inflow_mappings
+                                    .contains(&(key, tx_ident))
                                 {
                                     address_inflow_mappings
-                                        .push((addr, tx_ident));
+                                        .push((key, tx_ident));
                                 }
+                                return true;
                             }
                         }
-
-                        if !moonlight_event.memo.is_empty() {
-                            memo_mappings
-                                .push((moonlight_event.memo, tx_ident));
-                        }
-
-                        return true;
+                        false
                     }
-                    false
-                }
-                WITHDRAW_TOPIC | MINT_TOPIC => {
-                    if let Ok(withdraw_event) =
-                        rkyv::from_bytes::<WithdrawEvent>(&event.data)
-                    {
-                        if let WithdrawReceiver::Moonlight(key) =
-                            withdraw_event.receiver
+                    CONVERT_TOPIC => {
+                        if let Ok(convert_event) =
+                            rkyv::from_bytes::<ConvertEvent>(&event.data)
                         {
-                            address_inflow_mappings.push((key, tx_ident));
-                            return true;
+                            if let WithdrawReceiver::Moonlight(key) =
+                                convert_event.receiver
+                            {
+                                if !address_inflow_mappings
+                                    .contains(&(key, tx_ident))
+                                {
+                                    address_inflow_mappings
+                                        .push((key, tx_ident));
+                                }
+                                return true;
+                            }
                         }
+                        false
                     }
-                    false
+                    _ => false,
                 }
-                CONVERT_TOPIC => {
-                    if let Ok(convert_event) =
-                        rkyv::from_bytes::<ConvertEvent>(&event.data)
-                    {
-                        if let WithdrawReceiver::Moonlight(key) =
-                            convert_event.receiver
-                        {
-                            address_inflow_mappings.push((key, tx_ident));
-                            return true;
-                        }
-                    }
-                    false
-                }
-                _ => false,
-            }
-        }).collect::<Vec<&ContractEvent>>();
+            })
+            .collect::<Vec<&ContractEvent>>();
 
-        if !is_moonlight.is_empty(){
+        if !is_moonlight.is_empty() {
             moonlight_tx_mappings.push(MoonlightTxMapping(
                 tx_ident,
                 MoonlightTxEvents::new(group),
