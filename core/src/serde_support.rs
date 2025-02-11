@@ -8,8 +8,6 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use base64::Engine;
 use phoenix_core::{Sender, StealthAddress};
 use serde::de::{Error as SerdeError, MapAccess, Unexpected, Visitor};
 use serde::ser::SerializeStruct;
@@ -832,8 +830,7 @@ impl Serialize for PhoenixTransactionEvent {
             serializer.serialize_struct("PhoenixTransactionEvent", 5)?;
         ser_struct.serialize_field("nullifiers", &self.nullifiers)?;
         ser_struct.serialize_field("notes", &self.notes)?;
-        ser_struct
-            .serialize_field("memo", &BASE64_STANDARD.encode(&self.memo))?;
+        ser_struct.serialize_field("memo", &hex::encode(&self.memo))?;
         ser_struct.serialize_field("gas_spent", &Bigint(self.gas_spent))?;
         ser_struct.serialize_field("refund_note", &self.refund_note)?;
         ser_struct.end()
@@ -923,8 +920,7 @@ impl<'de> Deserialize<'de> for PhoenixTransactionEvent {
                     .ok_or_else(|| SerdeError::missing_field("nullifiers"))?;
                 let memo =
                     memo.ok_or_else(|| SerdeError::missing_field("memo"))?;
-                let memo =
-                    BASE64_STANDARD.decode(memo).map_err(SerdeError::custom)?;
+                let memo = hex::decode(memo).map_err(SerdeError::custom)?;
 
                 Ok(PhoenixTransactionEvent {
                     nullifiers,
@@ -961,8 +957,7 @@ impl Serialize for MoonlightTransactionEvent {
         ser_struct.serialize_field("sender", &self.sender)?;
         ser_struct.serialize_field("receiver", &self.receiver)?;
         ser_struct.serialize_field("value", &Bigint(self.value))?;
-        ser_struct
-            .serialize_field("memo", &BASE64_STANDARD.encode(&self.memo))?;
+        ser_struct.serialize_field("memo", &hex::encode(&self.memo))?;
         ser_struct.serialize_field("gas_spent", &Bigint(self.gas_spent))?;
         ser_struct.serialize_field("refund_info", &refund_info)?;
         ser_struct.end()
@@ -1062,10 +1057,7 @@ impl Serialize for ContractBytecode {
             serializer.serialize_struct("ContractBytecode", 2)?;
 
         ser_struct.serialize_field("hash", &hex::encode(self.hash))?;
-        ser_struct.serialize_field(
-            "bytecode",
-            &BASE64_STANDARD.encode(&self.bytes),
-        )?;
+        ser_struct.serialize_field("bytecode", &hex::encode(&self.bytes))?;
 
         ser_struct.end()
     }
@@ -1090,9 +1082,8 @@ impl<'de> Deserialize<'de> for ContractBytecode {
             SerdeError::invalid_length(decoded_len, &"expected 32 bytes")
         })?;
 
-        let bytes = BASE64_STANDARD
-            .decode(intermediate.bytecode)
-            .map_err(SerdeError::custom)?;
+        let bytes =
+            hex::decode(intermediate.bytecode).map_err(SerdeError::custom)?;
 
         Ok(ContractBytecode { hash, bytes })
     }
@@ -1154,10 +1145,7 @@ impl Serialize for ContractCall {
 
         ser_struct.serialize_field("contract", &self.contract)?;
         ser_struct.serialize_field("fn_name", &self.fn_name)?;
-        ser_struct.serialize_field(
-            "fn_args",
-            &BASE64_STANDARD.encode(&self.fn_args),
-        )?;
+        ser_struct.serialize_field("fn_args", &hex::encode(&self.fn_args))?;
 
         ser_struct.end()
     }
@@ -1178,9 +1166,8 @@ impl<'de> Deserialize<'de> for ContractCall {
 
         let contract = intermediate.contract;
         let fn_name = intermediate.fn_name;
-        let fn_args = BASE64_STANDARD
-            .decode(intermediate.fn_args)
-            .map_err(SerdeError::custom)?;
+        let fn_args =
+            hex::decode(intermediate.fn_args).map_err(SerdeError::custom)?;
 
         Ok(ContractCall {
             contract,
@@ -1211,8 +1198,7 @@ impl Serialize for TransactionData {
             TransactionData::Memo(memo) => {
                 let mut ser_struct =
                     serializer.serialize_struct("TransactionData", 1)?;
-                ser_struct
-                    .serialize_field("memo", &BASE64_STANDARD.encode(memo))?;
+                ser_struct.serialize_field("memo", &hex::encode(memo))?;
                 ser_struct.end()
             }
         }
@@ -1238,8 +1224,7 @@ impl<'de> Deserialize<'de> for TransactionData {
         } else if let Some(deploy) = intermediate.deploy {
             Ok(TransactionData::Deploy(deploy))
         } else if let Some(memo) = intermediate.memo {
-            let memo =
-                BASE64_STANDARD.decode(memo).map_err(SerdeError::custom)?;
+            let memo = hex::decode(memo).map_err(SerdeError::custom)?;
             Ok(TransactionData::Memo(memo))
         } else {
             Err(SerdeError::missing_field("call, deploy or memo"))
@@ -1251,8 +1236,8 @@ impl<'de> Deserialize<'de> for TransactionData {
 // to satisy clippy.
 mod moonlight_transaction_event_helpers {
     use super::{
-        AccountPublicKey, Bigint, Engine, MapAccess, MoonlightTransactionEvent,
-        SerdeError, String, Visitor, BASE64_STANDARD,
+        AccountPublicKey, Bigint, MapAccess, MoonlightTransactionEvent,
+        SerdeError, String, Visitor,
     };
 
     pub struct MoonlightTransactionEventVisitor;
@@ -1339,8 +1324,7 @@ mod moonlight_transaction_event_helpers {
             }
 
             let memo = memo.ok_or_else(|| SerdeError::missing_field("memo"))?;
-            let memo =
-                BASE64_STANDARD.decode(memo).map_err(SerdeError::custom)?;
+            let memo = hex::decode(memo).map_err(SerdeError::custom)?;
             let refund_info = refund_info
                 .ok_or_else(|| SerdeError::missing_field("refund_info"))?
                 .map(|(pk, bigint)| (pk, bigint.0));
