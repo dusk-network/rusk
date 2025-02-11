@@ -5,16 +5,19 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::format;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
+use phoenix_core::{Sender, StealthAddress};
 use serde::de::{Error as SerdeError, MapAccess, Unexpected, Visitor};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::signatures::bls::PublicKey as AccountPublicKey;
 use crate::stake::{Reward, SlashEvent, StakeEvent};
+use crate::transfer::moonlight::Fee as MoonlightFee;
+use crate::transfer::phoenix::Fee as PhoenixFee;
 use crate::transfer::{
     ContractToAccountEvent, ContractToContractEvent, ConvertEvent,
     DepositEvent, MoonlightTransactionEvent, PhoenixTransactionEvent,
@@ -30,8 +33,7 @@ impl Serialize for Bigint {
         &self,
         serializer: S,
     ) -> Result<S::Ok, S::Error> {
-        let s: String = format!("{}", self.0);
-        s.serialize(serializer)
+        serializer.serialize_str(&self.0.to_string())
     }
 }
 
@@ -971,6 +973,78 @@ impl<'de> Deserialize<'de> for MoonlightTransactionEvent {
             &moonlight_transaction_event_helpers::FIELDS,
             moonlight_transaction_event_helpers::MoonlightTransactionEventVisitor,
         )
+    }
+}
+
+impl Serialize for MoonlightFee {
+    fn serialize<S: Serializer>(
+        &self,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut ser_struct = serializer.serialize_struct("Fee", 3)?;
+
+        ser_struct.serialize_field("gas_limit", &Bigint(self.gas_limit))?;
+        ser_struct.serialize_field("gas_price", &Bigint(self.gas_price))?;
+        ser_struct.serialize_field("refund_address", &self.refund_address)?;
+
+        ser_struct.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for MoonlightFee {
+    fn deserialize<D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        struct Fee {
+            gas_limit: Bigint,
+            gas_price: Bigint,
+            refund_address: AccountPublicKey,
+        }
+
+        let fee = Fee::deserialize(deserializer)?;
+        Ok(MoonlightFee {
+            gas_limit: fee.gas_limit.0,
+            gas_price: fee.gas_price.0,
+            refund_address: fee.refund_address,
+        })
+    }
+}
+
+impl Serialize for PhoenixFee {
+    fn serialize<S: Serializer>(
+        &self,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut ser_struct = serializer.serialize_struct("Fee", 4)?;
+
+        ser_struct.serialize_field("gas_limit", &Bigint(self.gas_limit))?;
+        ser_struct.serialize_field("gas_price", &Bigint(self.gas_price))?;
+        ser_struct.serialize_field("stealth_address", &self.stealth_address)?;
+        ser_struct.serialize_field("sender", &self.sender)?;
+        ser_struct.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for PhoenixFee {
+    fn deserialize<D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        struct Fee {
+            gas_limit: Bigint,
+            gas_price: Bigint,
+            stealth_address: StealthAddress,
+            sender: Sender,
+        }
+
+        let fee = Fee::deserialize(deserializer)?;
+        Ok(PhoenixFee {
+            gas_limit: fee.gas_limit.0,
+            gas_price: fee.gas_price.0,
+            stealth_address: fee.stealth_address,
+            sender: fee.sender,
+        })
     }
 }
 

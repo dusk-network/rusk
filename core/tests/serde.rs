@@ -9,9 +9,13 @@
 use bls12_381_bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
+use dusk_core::signatures::schnorr::PublicKey as NotePublicKey;
+use dusk_core::signatures::schnorr::SecretKey as NoteSecretKey;
 use dusk_core::stake::{
     Reward, RewardReason, SlashEvent, StakeEvent, StakeFundOwner, StakeKeys,
 };
+use dusk_core::transfer::moonlight::Fee as MoonlightFee;
+use dusk_core::transfer::phoenix::Fee as PhoenixFee;
 use dusk_core::transfer::withdraw::WithdrawReceiver;
 use dusk_core::transfer::WithdrawEvent;
 use dusk_core::transfer::{
@@ -21,7 +25,7 @@ use dusk_core::transfer::{
 use dusk_core::{BlsScalar, JubJubScalar};
 use ff::Field;
 use phoenix_core::{
-    Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey, Sender,
 };
 use piecrust_uplink::{ContractId, CONTRACT_ID_BYTES};
 use rand::rngs::StdRng;
@@ -276,7 +280,7 @@ fn serde_phoenix_transaction_event() {
 }
 
 #[test]
-fn serde_moonlight_transaction_event_serde() {
+fn serde_moonlight_transaction_event() {
     let mut rng = StdRng::seed_from_u64(42);
     let mut memo = vec![0; 50];
     rng.fill_bytes(&mut memo);
@@ -306,4 +310,55 @@ fn serde_moonlight_transaction_event_serde() {
     assert_eq!(event1, deser1);
     assert_eq!(event2, deser2);
     assert_ne!(deser1, deser2);
+}
+
+#[test]
+fn serde_moonlight_fee() {
+    let mut rng = StdRng::seed_from_u64(42);
+    let fee = MoonlightFee {
+        gas_limit: rng.next_u64(),
+        gas_price: rng.next_u64(),
+        refund_address: AccountPublicKey::from(&AccountSecretKey::random(
+            &mut rng,
+        )),
+    };
+
+    let ser = serde_json::to_string(&fee).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(fee, deser);
+}
+
+#[test]
+fn serde_phoenix_fee() {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    let stealth_address = {
+        let scalar = JubJubScalar::random(&mut rng);
+        let pk = PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
+
+        pk.gen_stealth_address(&scalar)
+    };
+
+    let sender = {
+        let sender_pk =
+            PhoenixPublicKey::from(&PhoenixSecretKey::random(&mut rng));
+        let note_pk = NotePublicKey::from(&NoteSecretKey::random(&mut rng));
+        let blinder = [
+            JubJubScalar::random(&mut rng),
+            JubJubScalar::random(&mut rng),
+        ];
+
+        Sender::encrypt(&note_pk, &sender_pk, &blinder)
+    };
+
+    let fee = PhoenixFee {
+        gas_limit: rng.next_u64(),
+        gas_price: rng.next_u64(),
+        stealth_address,
+        sender,
+    };
+
+    let ser = serde_json::to_string(&fee).unwrap();
+    let deser = serde_json::from_str(&ser).unwrap();
+    assert_eq!(fee, deser);
 }
