@@ -6,6 +6,7 @@
 
 use alloc::format;
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
@@ -14,8 +15,12 @@ use serde::de::{Error as SerdeError, MapAccess, Unexpected, Visitor};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use crate::abi::ContractId;
 use crate::signatures::bls::PublicKey as AccountPublicKey;
 use crate::stake::{Reward, SlashEvent, StakeEvent};
+use crate::transfer::data::{
+    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+};
 use crate::transfer::moonlight::Fee as MoonlightFee;
 use crate::transfer::phoenix::Fee as PhoenixFee;
 use crate::transfer::{
@@ -1045,6 +1050,190 @@ impl<'de> Deserialize<'de> for PhoenixFee {
             stealth_address: fee.stealth_address,
             sender: fee.sender,
         })
+    }
+}
+
+impl Serialize for ContractBytecode {
+    fn serialize<S: Serializer>(
+        &self,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut ser_struct =
+            serializer.serialize_struct("ContractBytecode", 2)?;
+
+        ser_struct.serialize_field("hash", &hex::encode(self.hash))?;
+        ser_struct.serialize_field("bytecode", &hex::encode(&self.bytes))?;
+
+        ser_struct.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for ContractBytecode {
+    fn deserialize<D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        struct IntermediateContractBytecode {
+            hash: String,
+            bytecode: String,
+        }
+
+        let intermediate =
+            IntermediateContractBytecode::deserialize(deserializer)?;
+        let decoded =
+            hex::decode(intermediate.hash).map_err(SerdeError::custom)?;
+        let decoded_len = decoded.len();
+        let hash: [u8; 32] = decoded.try_into().map_err(|_| {
+            SerdeError::invalid_length(decoded_len, &"expected 32 bytes")
+        })?;
+
+        let bytes =
+            hex::decode(intermediate.bytecode).map_err(SerdeError::custom)?;
+
+        Ok(ContractBytecode { hash, bytes })
+    }
+}
+
+impl Serialize for ContractDeploy {
+    fn serialize<S: Serializer>(
+        &self,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut ser_struct =
+            serializer.serialize_struct("ContractDeploy", 4)?; // TODO: is it now 4 or 3? The documentation is unclear.
+
+        ser_struct.serialize_field("bytecode", &self.bytecode)?;
+        ser_struct.serialize_field("owner", &self.owner)?; // TODO: serialize as hex? Why is the owner an arbitrary byte vector?
+
+        if let Some(init_args) = &self.init_args {
+            ser_struct.serialize_field("init_args", init_args)?;
+        } else {
+            ser_struct.skip_field("init_args")?;
+        }
+
+        ser_struct.serialize_field("nonce", &Bigint(self.nonce))?;
+
+        ser_struct.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for ContractDeploy {
+    fn deserialize<D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        struct IntermediateContractDeploy {
+            bytecode: ContractBytecode,
+            owner: Vec<u8>,
+            init_args: Option<Vec<u8>>,
+            nonce: Bigint,
+        }
+
+        let intermediate =
+            IntermediateContractDeploy::deserialize(deserializer)?;
+
+        Ok(ContractDeploy {
+            bytecode: intermediate.bytecode,
+            owner: intermediate.owner,
+            init_args: intermediate.init_args,
+            nonce: intermediate.nonce.0,
+        })
+    }
+}
+
+impl Serialize for ContractCall {
+    fn serialize<S: Serializer>(
+        &self,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut ser_struct = serializer.serialize_struct("ContractCall", 3)?;
+
+        ser_struct.serialize_field("contract", &self.contract)?;
+        ser_struct.serialize_field("fn_name", &self.fn_name)?;
+        ser_struct.serialize_field("fn_args", &hex::encode(&self.fn_args))?;
+
+        ser_struct.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for ContractCall {
+    fn deserialize<D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        struct IntermediateContractCall {
+            contract: ContractId,
+            fn_name: String,
+            fn_args: String,
+        }
+
+        let intermediate = IntermediateContractCall::deserialize(deserializer)?;
+
+        let contract = intermediate.contract;
+        let fn_name = intermediate.fn_name;
+        let fn_args =
+            hex::decode(intermediate.fn_args).map_err(SerdeError::custom)?;
+
+        Ok(ContractCall {
+            contract,
+            fn_name,
+            fn_args,
+        })
+    }
+}
+
+impl Serialize for TransactionData {
+    fn serialize<S: Serializer>(
+        &self,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        match self {
+            TransactionData::Call(call) => {
+                let mut ser_struct =
+                    serializer.serialize_struct("TransactionData", 1)?;
+                ser_struct.serialize_field("call", call)?;
+                ser_struct.end()
+            }
+            TransactionData::Deploy(deploy) => {
+                let mut ser_struct =
+                    serializer.serialize_struct("TransactionData", 1)?;
+                ser_struct.serialize_field("deploy", deploy)?;
+                ser_struct.end()
+            }
+            TransactionData::Memo(memo) => {
+                let mut ser_struct =
+                    serializer.serialize_struct("TransactionData", 1)?;
+                ser_struct.serialize_field("memo", &hex::encode(memo))?;
+                ser_struct.end()
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for TransactionData {
+    fn deserialize<D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        struct IntermediateTransactionData {
+            call: Option<ContractCall>,
+            deploy: Option<ContractDeploy>,
+            memo: Option<String>,
+        }
+
+        let intermediate =
+            IntermediateTransactionData::deserialize(deserializer)?;
+
+        if let Some(call) = intermediate.call {
+            Ok(TransactionData::Call(call))
+        } else if let Some(deploy) = intermediate.deploy {
+            Ok(TransactionData::Deploy(deploy))
+        } else if let Some(memo) = intermediate.memo {
+            let memo = hex::decode(memo).map_err(SerdeError::custom)?;
+            Ok(TransactionData::Memo(memo))
+        } else {
+            Err(SerdeError::missing_field("call, deploy or memo"))
+        }
     }
 }
 
