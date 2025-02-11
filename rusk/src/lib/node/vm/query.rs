@@ -11,6 +11,7 @@ use std::sync::mpsc;
 
 use bytecheck::CheckBytes;
 use dusk_core::abi::{ContractId, StandardBufSerializer};
+use node::vm::VMExecution;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 
@@ -27,9 +28,13 @@ impl Rusk {
     {
         let mut session = self.query_session(None)?;
 
-        // For queries we set a point limit of effectively infinite
         session
-            .call_raw(contract_id, fn_name.as_ref(), fn_arg, u64::MAX)
+            .call_raw(
+                contract_id,
+                fn_name.as_ref(),
+                fn_arg,
+                self.get_block_gas_limit(),
+            )
             .map(|receipt| receipt.data)
             .map_err(Into::into)
     }
@@ -72,18 +77,27 @@ impl Rusk {
     {
         let mut session = self.query_session(None)?;
 
-        // For queries we set a point limit of effectively infinite
         let mut result = session
-            .call(contract_id, call_name, call_arg, u64::MAX)?
+            .call(contract_id, call_name, call_arg, self.get_block_gas_limit())?
             .data;
 
         while let Some(call_arg) = closure(result) {
             result = session
-                .call(contract_id, call_name, &call_arg, u64::MAX)?
+                .call(
+                    contract_id,
+                    call_name,
+                    &call_arg,
+                    self.get_block_gas_limit(),
+                )?
                 .data;
         }
 
-        session.call::<_, ()>(contract_id, call_name, call_arg, u64::MAX)?;
+        session.call::<_, ()>(
+            contract_id,
+            call_name,
+            call_arg,
+            self.get_block_gas_limit(),
+        )?;
 
         Ok(())
     }
