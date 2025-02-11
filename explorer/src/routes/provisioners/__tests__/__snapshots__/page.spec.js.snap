@@ -31,7 +31,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
       class="data-card__content"
     >
       <div
-        class="provisioners-card__list"
+        class="data-card__list"
       >
         
         <dl
@@ -4130,7 +4130,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
       class="data-card__content"
     >
       <div
-        class="table-container provisioners-table provisioners-card__table"
+        class="table-container provisioners-table data-card__table"
       >
         <table
           class="table"

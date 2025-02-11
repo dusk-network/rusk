@@ -31,7 +31,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
       class="data-card__content"
     >
       <div
-        class="blocks-card__list"
+        class="data-card__list"
       >
         
         <dl
@@ -2023,7 +2023,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
       class="data-card__content"
     >
       <div
-        class="table-container blocks-table blocks-card__table"
+        class="table-container blocks-table data-card__table"
       >
         <table
           class="table"

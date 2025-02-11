@@ -35,6 +35,7 @@ VITE_REFETCH_INTERVAL=10000
 VITE_RUSK_PATH="" # Optional, set to '/rusk' for dev mode
 VITE_STATS_REFETCH_INTERVAL=1000
 VITE_TRANSACTIONS_LIST_ENTRIES=100
+VITE_FEATURE_TOKENS=true
 ```
 
 ## Environment variables and dev mode

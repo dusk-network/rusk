@@ -80,6 +80,13 @@ exports[`Main layout > should render the app's main layout 1`] = `
           >
             Provisioners
           </a>
+          
+          <a
+            class="dusk-anchor dusk-anchor--off-surface dusk-nav-list__link"
+            href="/some-base-path/tokens"
+          >
+            Tokens
+          </a>
         </nav>
         
          

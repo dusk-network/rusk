@@ -7,8 +7,6 @@
     TransactionsTable,
   } from "$lib/components";
 
-  import "./TransactionsCard.css";
-
   /** @type {Transaction[] | null}*/
   export let txns;
 
@@ -54,14 +52,13 @@
       }}
 >
   {#if isSmallScreen}
-    <div class="transactions-card__list">
+    <div class="data-card__list">
       {#each displayedTxns as txn (txn)}
         <TransactionsList data={txn} mode="full" />
       {/each}
     </div>
   {:else}
     <TransactionsTable
-      className="transactions-card__table"
       data={displayedTxns}
       displayTooltips={true}
       mode="full"

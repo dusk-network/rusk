@@ -10,6 +10,8 @@ and this project adheres to
 
 ### Added
 
+- Add Tokens page [#3415]
+
 ### Changed
 
 - Replace legacy event system with RUES [#3425]
@@ -148,6 +150,7 @@ and this project adheres to
 [#3338]: https://github.com/dusk-network/rusk/issues/3338
 [#3377]: https://github.com/dusk-network/rusk/issues/3377
 [#3425]: https://github.com/dusk-network/rusk/issues/3425
+[#3415]: https://github.com/dusk-network/rusk/issues/3415
 
 <!-- VERSIONS -->
 

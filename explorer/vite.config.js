@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => {
         API_ENDPOINT: env.VITE_API_ENDPOINT,
         VITE_BLOCKS_LIST_ENTRIES: env.VITE_BLOCKS_LIST_ENTRIES,
         VITE_CHAIN_INFO_ENTRIES: env.VITE_CHAIN_INFO_ENTRIES,
+        VITE_FEATURE_TOKENS: env.VITE_FEATURE_TOKENS,
         VITE_MARKET_DATA_REFETCH_INTERVAL:
           env.VITE_MARKET_DATA_REFETCH_INTERVAL,
         VITE_NODE_URL: env.VITE_NODE_URL,
@@ -59,6 +60,7 @@ export default defineConfig(({ mode }) => {
         VITE_API_ENDPOINT: "https://api.dusk.network/v1",
         VITE_BLOCKS_LIST_ENTRIES: "100",
         VITE_CHAIN_INFO_ENTRIES: "15",
+        VITE_FEATURE_TOKENS: "true",
         VITE_MARKET_DATA_REFETCH_INTERVAL: "120000",
         VITE_NODE_URL: "https://nodes.dusk.network",
         VITE_PROVISIONERS_REFETCH_INTERVAL: "30000",

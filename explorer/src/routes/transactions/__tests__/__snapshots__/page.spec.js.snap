@@ -31,7 +31,7 @@ exports[`Transactions page > should render the Transactions page with the mobile
       class="data-card__content"
     >
       <div
-        class="transactions-card__list"
+        class="data-card__list"
       >
         
         <dl
@@ -2578,7 +2578,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
       class="data-card__content"
     >
       <div
-        class="table-container transactions-table transactions-card__table"
+        class="table-container transactions-table"
       >
         <table
           class="table"

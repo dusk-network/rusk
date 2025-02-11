@@ -72,7 +72,7 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
     class="data-card__content"
   >
     <div
-      class="table-container transactions-table transactions-card__table"
+      class="table-container transactions-table"
     >
       <table
         class="table"
