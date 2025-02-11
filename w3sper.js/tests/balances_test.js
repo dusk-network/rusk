@@ -30,6 +30,29 @@ test("Account Balance", async () => {
   await network.disconnect();
 });
 
+test("Address balance failure", async () => {
+  const network = await Network.connect("http://localhost:8080/");
+  const profileGeneratorA = new ProfileGenerator(seeder);
+  const profileGeneratorB = new ProfileGenerator(() =>
+    new Uint8Array(64).fill(0)
+  );
+
+  // We mix profiles from different sources in order
+  // to make the notes stream fail
+  const profiles = await Promise.all([
+    profileGeneratorA.default,
+    profileGeneratorB.default,
+  ]);
+
+  const addresses = new AddressSyncer(network);
+  const accounts = new AccountSyncer(network);
+  const treasury = new Treasury(profiles);
+
+  await assert.reject(() => treasury.update({ from: 0n, addresses, accounts }));
+
+  await network.disconnect();
+});
+
 test("Balances synchronization", async () => {
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
@@ -59,7 +82,7 @@ test("Balances synchronization", async () => {
   assert.equal(iterationOwnedCountTotal, 1857);
 
   const addressBalances = await Promise.all(
-    owners.map((owner) => bookkeeper.balance(owner.address)),
+    owners.map((owner) => bookkeeper.balance(owner.address))
   );
 
   assert.equal(addressBalances[0].value, 1_026_179_647_718_621n);
@@ -67,7 +90,7 @@ test("Balances synchronization", async () => {
   assert.equal(addressBalances[2].value, 512_720_219_906_168n);
 
   const accountBalances = await Promise.all(
-    owners.map((owner) => bookkeeper.balance(owner.account)),
+    owners.map((owner) => bookkeeper.balance(owner.account))
   );
 
   assert.equal(accountBalances[0].value, 100_1_000_000_000_000n);
@@ -77,11 +100,11 @@ test("Balances synchronization", async () => {
   const bookentry = bookkeeper.as(await profiles.default);
   assert.equal(
     (await bookentry.info.balance("address")).value,
-    1026179647718621n,
+    1026179647718621n
   );
   assert.equal(
     (await bookentry.info.balance("account")).value,
-    1_001_000_000_000_000n,
+    1_001_000_000_000_000n
   );
 
   await network.disconnect();
