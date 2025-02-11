@@ -2,6 +2,7 @@ export { default as decryptBuffer } from "./decryptBuffer";
 export { default as decryptMnemonic } from "./decryptMnemonic";
 export { default as encryptBuffer } from "./encryptBuffer";
 export { default as encryptMnemonic } from "./encryptMnemonic";
+export { default as getAddressInfo } from "./getAddressInfo";
 export { default as getSeedFromMnemonic } from "./getSeedFromMnemonic";
 export { default as initializeWallet } from "./initializeWallet";
 export { default as notesArrayToMap } from "./notesArrayToMap";
