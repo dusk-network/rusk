@@ -9,8 +9,9 @@
     mdiWalletOutline,
   } from "@mdi/js";
   import { areValidGasSettings } from "$lib/contracts";
+  import { getAddressInfo } from "$lib/wallet";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
-  import { getAddressInfo, makeClassName } from "$lib/dusk/string";
+  import { makeClassName } from "$lib/dusk/string";
   import { logo } from "$lib/dusk/icons";
   import {
     AnchorButton,
