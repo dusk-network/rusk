@@ -118,7 +118,7 @@ pub(super) fn filter_and_convert(
     // Iterate over the grouped events and push them to the groups vector in
     // the new format if they are moonlight events
     for (tx_ident, group) in grouped_events {
-        let is_moonlight = group.iter().any(|event| {
+        let is_moonlight = group.iter().filter(|event| {
             // Make sure that the events originate from the transfer contract.
             if event.target.0 != TRANSFER_CONTRACT {
                 return false;
@@ -227,9 +227,9 @@ pub(super) fn filter_and_convert(
                 }
                 _ => false,
             }
-        });
+        }).collect::<Vec<&ContractEvent>>();
 
-        if is_moonlight {
+        if !is_moonlight.is_empty(){
             moonlight_tx_mappings.push(MoonlightTxMapping(
                 tx_ident,
                 MoonlightTxEvents::new(group),
