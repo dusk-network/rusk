@@ -30,6 +30,27 @@ test("Network connection", async () => {
   assert.ok(chain === Network.LOCALNET);
 });
 
+test("Network connection failure", async () => {
+  assert.throws(() => Network.connect(), TypeError);
+
+  const timeoutError = await assert.reject(
+    () =>
+      Network.connect("http://localhost:8080/", {
+        signal: AbortSignal.timeout(0),
+      }),
+    DOMException
+  );
+
+  assert.ok(timeoutError.name === "TimeoutError");
+
+  const networkError = await assert.reject(
+    () => Network.connect("http://localhost.fake:8080/"),
+    DOMException
+  );
+
+  assert.ok(networkError.name === "NetworkError");
+});
+
 test("Network block height", async () => {
   const network = await Network.connect("http://localhost:8080/");
 

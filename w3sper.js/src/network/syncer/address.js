@@ -97,7 +97,7 @@ export class AddressSyncer extends EventTarget {
 
     let response = await this.#network.contracts.transferContract.call[topic](
       body,
-      { headers: { "Rusk-Feeder": "true" } },
+      { headers: { "Rusk-Feeder": "true" } }
     );
     let reader = getBYOBReader(response.body);
 
@@ -117,12 +117,12 @@ export class AddressSyncer extends EventTarget {
 
           const [owned, syncInfo] = await ProtocolDriver.mapOwned(
             profiles,
-            value,
-          ).catch(console.error);
+            value
+          );
 
           let progress =
             Number(
-              ((syncInfo.bookmark * 100n) / lastBookmark.asUint()) * 100n,
+              ((syncInfo.bookmark * 100n) / lastBookmark.asUint()) * 100n
             ) / 10000;
 
           this.dispatchEvent(
@@ -137,13 +137,14 @@ export class AddressSyncer extends EventTarget {
                 current: syncInfo.blockHeight,
                 last: lastBlock,
               },
-            }),
+            })
           );
 
           // Enqueue the result [owned, syncInfo] into the stream
           controller.enqueue([owned, syncInfo]);
         } catch (error) {
           console.error("Error processing stream:", error);
+          await reader.cancel(error); // cancel the response body reader
           controller.error(error); // Signal an error in the stream
         }
       },

@@ -15,7 +15,7 @@ const protocol = { "https:": "wss:", "http:": "ws:" };
 
 const once = (target, topic) =>
   new Promise((resolve) =>
-    target.addEventListener(topic, resolve, { once: true }),
+    target.addEventListener(topic, resolve, { once: true })
   );
 
 class RuesTarget {
@@ -119,26 +119,38 @@ export class Rues extends EventTarget {
     const socket = new WebSocket(url);
     socket.binaryType = "arraybuffer";
     this.#socket = socket;
-    socket.onerror = console.error;
+
+    socket.onerror = (errorEvent) => {
+      console.error(errorEvent);
+
+      if (socket.readyState !== WebSocket.OPEN) {
+        this.#session.reject(
+          errorEvent.error ?? (signal?.aborted ? signal.reason : errorEvent)
+        );
+      }
+    };
 
     if (signal?.aborted) {
       this.#session.reject(signal.reason);
     } else if (signal) {
-      signal.addEventListener("abort", (event) => {
+      signal.addEventListener("abort", () => {
         socket.close();
       });
     }
 
-    await once(socket, "open");
-    const event = await once(socket, "message");
+    once(socket, "open")
+      .then(async () => {
+        const event = await once(socket, "message");
 
-    socket.addEventListener("message", this, { signal });
+        socket.addEventListener("message", this, { signal });
+        this.#session.resolve(event.data);
+        this.dispatchEvent(new CustomEvent("connect"));
+      })
+      .catch((err) => {
+        this.#session.reject(err);
+      });
 
-    this.#session.resolve(event.data);
-
-    this.dispatchEvent(new CustomEvent("connect"));
-
-    return this;
+    return this.#session.promise;
   }
 
   async disconnect() {
