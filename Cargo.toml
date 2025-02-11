@@ -50,20 +50,20 @@ rusk-recovery = { version = "1.0.3-alpha.1", path = "./rusk-recovery/" }
 wallet-core = { version = "1.0.2-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
 
 # Dusk dependencies outside the workspace
-bls12_381-bls = { version = "0.4", default-features = false }
-dusk-bls12_381 = { version = "0.13", default-features = false }
+bls12_381-bls = { version = "0.5", default-features = false }
+dusk-bls12_381 = { version = "0.14", default-features = false }
 dusk-bytes = "0.1.7"
-dusk-jubjub = { version = "0.14.1", default-features = false }
+dusk-jubjub = { version = "0.15.0", default-features = false }
 dusk-merkle = "0.5.3"
-dusk-plonk = { version = "0.20.2", default-features = false }
-dusk-poseidon = "0.40"
-jubjub-schnorr = { version = "0.5", default-features = false }
+dusk-plonk = { version = "0.21.0", default-features = false }
+dusk-poseidon = "0.41"
+jubjub-schnorr = { version = "0.6", default-features = false }
 kadcast = "0.7"
-phoenix-circuits = { version = "0.5", default-features = false }
-phoenix-core = { version = "0.33.1", default-features = false }
+phoenix-circuits = { version = "0.6", default-features = false }
+phoenix-core = { version = "0.34.0", default-features = false }
 piecrust = "0.27.1"
 piecrust-uplink = "0.17.3"
-poseidon-merkle = "0.7"
+poseidon-merkle = "0.8"
 
 # External dependencies
 aes = "0.7.5"

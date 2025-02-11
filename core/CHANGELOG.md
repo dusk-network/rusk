@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `METADATA::PUBLIC_SENDER` [#3341]
 - Add `abi::public_sender` host fn [#3341]
+- Add serde implementations for `StakeEvent`, `SlashEvent`, `Reward`, `WithdrawEvent`, `ConvertEvent`, `DepositEvent`,
+`ContractToContractEvent`, `ContractToAccountEvent`, `PhoenixTransactionEvent` and `MoonlightTransactionEvent`
 
 ## [1.0.0] - 2025-01-23
 
