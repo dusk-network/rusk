@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `abi::public_sender` [#3341]
 - Add `[vm]` config section [#3341]
+- Add Dockerfile for persistent state builds [#1080]
 
 ### Changed
 
@@ -20,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deprecate `[chain].min_deploy_points` config [#3341]
 - Deprecate `[chain].block_gas_limit` config [#3341]
 - Change how Rusk controls the archive for synchronization [#3359]
+- Update `bls12_381-bls` to 0.5
+- Update `dusk-bls12_381` to 0.14
+- Update `dusk-jubjub` to 0.15.0
+- Update `dusk-plonk` to 0.21.0
+- Update `dusk-poseidon` to 0.41
+- Update `jubjub-schnorr` to 0.6
+- Update `phoenix-circuits` to 0.6
+- Update `phoenix-core` to 0.34.0
+- Update `poseidon-merkle` to 0.8
 
 ### Removed
 
@@ -339,6 +349,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1257]: https://github.com/dusk-network/rusk/pull/1257
 [#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#1144]: https://github.com/dusk-network/rusk/issues/1144
+[#1080]: https://github.com/dusk-network/rusk/issues/1080
 [#970]: https://github.com/dusk-network/rusk/issues/970
 [#931]: https://github.com/dusk-network/rusk/issues/931
 [#401]: https://github.com/dusk-network/rusk/issues/401
