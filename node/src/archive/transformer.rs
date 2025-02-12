@@ -15,14 +15,17 @@ use dusk_core::transfer::{
 use node_data::events::contract::{ContractEvent, ContractTxEvent, OriginHash};
 use serde::{Deserialize, Serialize};
 
-/// A group of events that belong to the same Moonlight transaction.
+/// A group of events that belong to the same transaction.
+///
+/// This transaction is guaranteed to have changed the balance of at least one
+/// public account, therefore seen as a transfer.
 #[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub(super) struct MoonlightTxEvents {
+pub(super) struct MoonlightTransferEvents {
     events: Vec<ContractEvent>,
 }
 
-impl MoonlightTxEvents {
+impl MoonlightTransferEvents {
     // Private on purpose
     fn new(events: Vec<ContractEvent>) -> Self {
         Self { events }
@@ -68,16 +71,16 @@ impl EventIdentifier {
 
 pub(super) type AddressMapping = (AccountPublicKey, EventIdentifier);
 pub(super) type MemoMapping = (Vec<u8>, EventIdentifier);
-pub(super) struct MoonlightTxMapping(
+pub(super) struct MoonlightTransferMapping(
     pub EventIdentifier,
-    pub MoonlightTxEvents,
+    pub MoonlightTransferEvents,
 );
 
 pub(super) struct TransormerResult {
     pub address_outflow_mappings: Vec<AddressMapping>,
     pub address_inflow_mappings: Vec<AddressMapping>,
     pub memo_mappings: Vec<MemoMapping>,
-    pub moonlight_tx_mappings: Vec<MoonlightTxMapping>,
+    pub moonlight_tx_mappings: Vec<MoonlightTransferMapping>,
 }
 
 /// Group a list of events from the same block by origin and block height
@@ -107,9 +110,7 @@ pub(super) fn group_by_origins(
 pub(super) fn filter_and_convert(
     grouped_events: BTreeMap<EventIdentifier, Vec<ContractEvent>>,
 ) -> TransormerResult {
-    // Keep only the event groups which contain a moonlight in-
-    // or outflow
-    // TODO: We need Ord on PublicKey / G2Affine to easy sort & dedup or use
+    // TODO: We could add Ord to PublicKey / G2Affine for easy sort & dedup or use
     // inside BTreeMap
     let mut address_inflow_mappings: Vec<(AccountPublicKey, EventIdentifier)> =
         vec![];
@@ -275,9 +276,9 @@ pub(super) fn filter_and_convert(
             .collect::<Vec<&ContractEvent>>();
 
         if !is_moonlight.is_empty() {
-            moonlight_tx_mappings.push(MoonlightTxMapping(
+            moonlight_tx_mappings.push(MoonlightTransferMapping(
                 tx_ident,
-                MoonlightTxEvents::new(group),
+                MoonlightTransferEvents::new(group),
             ));
         }
     }
