@@ -79,7 +79,7 @@ impl Default for HttpConfig {
 }
 
 const fn default_feeder_call_gas() -> u64 {
-    u64::MAX
+    3 * 1_000_000_000
 }
 
 const fn default_listen() -> bool {
