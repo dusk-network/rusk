@@ -9,8 +9,9 @@ use std::collections::BTreeMap;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::withdraw::WithdrawReceiver;
 use dusk_core::transfer::{
-    ConvertEvent, MoonlightTransactionEvent, WithdrawEvent, CONVERT_TOPIC,
-    MINT_TOPIC, MOONLIGHT_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
+    ContractToAccountEvent, ConvertEvent, MoonlightTransactionEvent,
+    WithdrawEvent, CONTRACT_TO_ACCOUNT_TOPIC, CONVERT_TOPIC, MINT_TOPIC,
+    MOONLIGHT_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
 };
 use node_data::events::contract::{ContractEvent, ContractTxEvent, OriginHash};
 use serde::{Deserialize, Serialize};
@@ -110,8 +111,8 @@ pub(super) fn group_by_origins(
 pub(super) fn filter_and_convert(
     grouped_events: BTreeMap<EventIdentifier, Vec<ContractEvent>>,
 ) -> TransormerResult {
-    // TODO: We could add Ord to PublicKey / G2Affine for easy sort & dedup or use
-    // inside BTreeMap
+    // TODO: We could add Ord to PublicKey / G2Affine for easy sort & dedup or
+    // use inside BTreeMap
     let mut address_inflow_mappings: Vec<(AccountPublicKey, EventIdentifier)> =
         vec![];
     let mut address_outflow_mappings: Vec<(AccountPublicKey, EventIdentifier)> =
@@ -267,6 +268,23 @@ pub(super) fn filter_and_convert(
                                 }
                                 return true;
                             }
+                        }
+                        false
+                    }
+                    CONTRACT_TO_ACCOUNT_TOPIC => {
+                        if let Ok(contract_to_account_event) =
+                            rkyv::from_bytes::<ContractToAccountEvent>(
+                                &event.data,
+                            )
+                        {
+                            let key = contract_to_account_event.receiver;
+
+                            if !address_inflow_mappings
+                                .contains(&(key, tx_ident))
+                            {
+                                address_inflow_mappings.push((key, tx_ident));
+                            }
+                            return true;
                         }
                         false
                     }
