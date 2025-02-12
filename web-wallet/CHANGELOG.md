@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix width discrepancy in footer icons [#3163]
+- Fix network methods not reusing the existing connection [#3486]
 
 ## [1.3.0] - 2025-01-28
 
@@ -571,6 +572,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3387]: https://github.com/dusk-network/rusk/issues/3387
 [#3403]: https://github.com/dusk-network/rusk/issues/3403
 [#3420]: https://github.com/dusk-network/rusk/issues/3420
+[#3486]: https://github.com/dusk-network/rusk/issues/3486
 
 <!-- VERSIONS -->
 
