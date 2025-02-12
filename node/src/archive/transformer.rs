@@ -131,13 +131,31 @@ pub(super) fn filter_and_convert(
                     return false;
                 }
 
-                /*
-                Cases of a moonlight in- or outflow:
-                1. Any MoonlightTransactionEvent. This implicitly also catches a moonlight outflow for deposit, convert or refund (from moonlight)
-                2a. Any withdraw event where the receiver is moonlight. (from phoenix)
-                2b. Any mint event where the receiver is moonlight. (from staking)
-                3. Any convert event where the receiver is moonlight. (from phoenix)
-                */
+                // Categorization of events:
+                //
+                // - **Only Moonlight Transaction**
+                //   - `MOONLIGHT_TOPIC` with `MoonlightTransactionEvent`:
+                //     Captures all Moonlight `ProtocolTransactions` (outflows
+                //     from normal transactions, deposits, or converts). Sender
+                //     recorded in outflow mapping; receiver in inflow mapping.
+                //     Refunds (if > 0) are recorded in inflow mapping.
+                //
+                // - **Only Phoenix Transaction**
+                //   - `CONVERT_TOPIC` with `ConvertEvent`: Receiver recorded in
+                //     inflow mapping.
+                //
+                // - **Moonlight or Phoenix Transaction**
+                //   - `WITHDRAW_TOPIC` with `WithdrawEvent`: Receiver recorded
+                //     in inflow mapping.
+                //   - `MINT_TOPIC` with `WithdrawEvent`: Receiver recorded in
+                //     inflow mapping.
+                //   - `CONTRACT_TO_ACCOUNT_TOPIC` with
+                //     `ContractToAccountEvent`: Receiver recorded in inflow
+                //     mapping.
+                //
+                // - **Additional Notes**
+                //   - Mappings are recorded only once per transaction to
+                //     prevent redundancy.
                 match event.topic.as_str() {
                     MOONLIGHT_TOPIC => {
                         /*
