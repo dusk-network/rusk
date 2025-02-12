@@ -10,6 +10,8 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::StakeFundOwner;
+use dusk_core::transfer::Transaction;
+use dusk_vm::{execute, ExecutionConfig};
 use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
@@ -17,7 +19,6 @@ use serde_json::json;
 use std::sync::{mpsc, Arc};
 use std::thread;
 use tokio::task;
-use tungstenite::http::request;
 
 use crate::node::Rusk;
 
@@ -32,9 +33,11 @@ impl HandleRequest for Rusk {
             ("node", _, "provisioners") => true,
             ("account", Some(_), "status") => true,
             ("node", _, "crs") => true,
+            ("transactions", _, "simulate") => true,
             _ => false,
         }
     }
+
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
@@ -46,9 +49,12 @@ impl HandleRequest for Rusk {
                 self.handle_contract_query(contract_id, method, data, feeder)
             }
             ("node", _, "provisioners") => self.get_provisioners(),
-
             ("account", Some(pk), "status") => self.get_account(pk),
             ("node", _, "crs") => self.get_crs(),
+            ("transactions", _, "simulate") => {
+                let tx = request.data.as_string();
+                self.simulate_tx(&tx)
+            }
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
     }
@@ -133,6 +139,33 @@ impl Rusk {
     fn get_crs(&self) -> anyhow::Result<ResponseData> {
         let crs = rusk_profile::get_common_reference_string()?;
         Ok(ResponseData::new(crs).with_header("crs-hash", CRS_17_HASH))
+    }
+
+    fn simulate_tx(&self, tx: &str) -> anyhow::Result<ResponseData> {
+        let tx = hex::decode(tx).map_err(|e| {
+            anyhow::anyhow!("Failed to decode transaction: {e}")
+        })?;
+        let tx = Transaction::from_slice(&tx)
+            .map_err(|e| anyhow::anyhow!("Invalid Data: {e:?}"))?;
+        if tx.gas_limit() > self.get_block_gas_limit() {
+            return Err(anyhow::anyhow!("Gas limit is too high."));
+        }
+        let mut session = self.query_session(None).map_err(|e| {
+            anyhow::anyhow!("Failed to initialize a session: {e:?}")
+        })?;
+        let config = ExecutionConfig {
+            gas_per_deploy_byte: self.gas_per_deploy_byte(),
+            min_deploy_gas_price: self.min_deployment_gas_price(),
+            min_deploy_points: self.min_deploy_points(),
+            with_public_sender: false,
+        };
+        let receipt = execute(&mut session, &tx, &config)
+            .map_err(|e| anyhow::anyhow!("{e:?}"))?;
+        Ok(ResponseData::new(json!({
+            "gas-limit": receipt.gas_limit,
+            "gas-spent": receipt.gas_spent,
+            "data": receipt.data.map_err(|e| anyhow::anyhow!("Contract terminated with error: {e:?}"))?,
+        })))
     }
 }
 
