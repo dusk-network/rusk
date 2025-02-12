@@ -133,6 +133,9 @@ describe("Network store", async () => {
 
       await expect(store.checkBlock(12n, "some-hash")).resolves.toBe(true);
       await expect(store.checkBlock(12n, "some-hash")).resolves.toBe(false);
+
+      // check that the cached network is used
+      expect(connectSpy).toHaveBeenCalledTimes(1);
     });
 
     it("should expose a service method to retrieve a `AccountSyncer` for the network", async () => {
@@ -177,6 +180,9 @@ describe("Network store", async () => {
       networkQuerySpy.mockResolvedValueOnce({ block: null });
 
       await expect(store.getBlockHashByHeight(123n)).resolves.toBe("");
+
+      // check that the cached network is used
+      expect(connectSpy).toHaveBeenCalledTimes(1);
     });
 
     it("should expose a service method to retrieve the current block height", async () => {
@@ -200,6 +206,9 @@ describe("Network store", async () => {
       networkQuerySpy.mockResolvedValueOnce({ lastBlockPair: null });
 
       await expect(store.getLastFinalizedBlockHeight()).resolves.toBe(0n);
+
+      // check that the cached network is used
+      expect(connectSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

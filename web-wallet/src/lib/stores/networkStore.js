@@ -45,8 +45,7 @@ const { set, subscribe } = networkStore;
  * @type {NetworkStoreServices["checkBlock"]}
  */
 const checkBlock = (height, hash) =>
-  network
-    .connect()
+  connect()
     .then(() => network.query(`checkBlock(height: ${height}, hash: "${hash}")`))
     .then(getKey("checkBlock"));
 
@@ -74,8 +73,7 @@ const getAddressSyncer = (options) =>
 
 /** @type {NetworkStoreServices["getBlockHashByHeight"]} */
 const getBlockHashByHeight = (height) =>
-  network
-    .connect()
+  connect()
     .then(() => network.query(`block(height: ${height}) { header { hash } }`))
     .then(getPath("block.header.hash"))
     .then(when(isUndefined, always("")));
@@ -85,8 +83,7 @@ const getCurrentBlockHeight = () => network.blockHeight;
 
 /** @type {NetworkStoreServices["getLastFinalizedBlockHeight"]} */
 const getLastFinalizedBlockHeight = () =>
-  network
-    .connect()
+  connect()
     .then(() => network.query("lastBlockPair { json }"))
     .then(getPath("lastBlockPair.json.last_finalized_block.0"))
     .then(condition(isUndefined, always(0n), BigInt));
