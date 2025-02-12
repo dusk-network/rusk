@@ -755,12 +755,12 @@ mod tests {
     use std::env;
     use std::path::PathBuf;
 
+    use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
     use dusk_core::signatures::bls::SecretKey;
     use dusk_core::transfer::withdraw::WithdrawReceiver;
     use dusk_core::transfer::{
         ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
     };
-    use dusk_core::{ContractId, CONTRACT_ID_BYTES};
     use node_data::events::contract::{
         ContractEvent, ContractTxEvent, WrappedContractId, ORIGIN_HASH_BYTES,
     };
