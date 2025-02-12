@@ -200,7 +200,7 @@ To run:
 docker run -it \
   -v /path/to/consensus.keys:/opt/dusk/conf/consensus.keys \
   -v /path/to/rusk/profile:/opt/dusk/rusk \
-  -e NETWORK=<mainnet|testnet|devnet> \
+  -e NETWORK=<mainnet|testnet> \
   -e DUSK_CONSENSUS_KEYS_PASS=<consensus-keys-password> \
   -p 9000:9000/udp \
   -p 8080:8080/tcp \
@@ -209,10 +209,9 @@ docker run -it \
 
 #### Customizing Configuration
 
-The configuration used for rusk is based on the template file at `https://raw.githubusercontent.com/dusk-network/node-installer/9cdf0be1372ca6cb52cb279bd58781a3a27bf8ae/conf/rusk.toml`.
-As part of the node setup process when the container is started, the kadcast ID, bootstrapping nodes, and genesis timestamp
-will be changed based on the selected network and the resulting configuration will be used for running the node.
-The IP addresses used for listening in kadcast and, if configured, http will be detected and automatically configured.
+The configuration used for rusk is based on the template file at `https://raw.githubusercontent.com/dusk-network/node-installer/ac1dd78eb31be4dba1c9c0986f6d6a06b5bd4fcc/conf/mainnet.toml` for mainnet and `https://raw.githubusercontent.com/dusk-network/node-installer/ac1dd78eb31be4dba1c9c0986f6d6a06b5bd4fcc/conf/testnet.toml` for testnet.
+As part of the node setup process when the container is started, the IP addresses used for listening in kadcast and, if 
+configured, http will be detected and automatically configured.
 
 To customize the configuration, the configuration template file can be copied and modified. The custom configuration template
 should be mounted on `/opt/dusk/conf/rusk.template.toml`.
