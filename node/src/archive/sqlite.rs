@@ -501,7 +501,7 @@ mod tests {
     use std::env;
     use std::path::PathBuf;
 
-    use dusk_core::ContractId;
+    use dusk_core::abi::ContractId;
     use node_data::events::contract::{ContractEvent, WrappedContractId};
     use rand::distributions::Alphanumeric;
     use rand::Rng;
