@@ -147,7 +147,8 @@ pub(super) fn filter_and_convert(
     }
 }
 
-/// Record moonlight inflows/outflows (transfers) based on Event categorization
+/// Record moonlight inflows/outflows (transfers) from a transaction, based on
+/// Event categorization
 ///
 /// # Categories of Events being looked for
 ///
@@ -168,8 +169,7 @@ pub(super) fn filter_and_convert(
 ///   - `CONTRACT_TO_ACCOUNT_TOPIC` with `ContractToAccountEvent`: Receiver
 ///     recorded in inflow mapping.
 ///
-/// - **Additional Notes**
-///   - Mappings are recorded only once per transaction to prevent redundancy.
+///  Mappings are recorded only once per transaction to prevent redundancy.
 ///
 /// # Returns
 ///
@@ -182,6 +182,20 @@ fn record_flows(
     tx_ident: EventIdentifier,
     group: &Vec<ContractEvent>,
 ) -> bool {
+    // Helper to handle inflow mappings without pushing duplicates
+    let mut handle_inflow = |key: AccountPublicKey| {
+        if !address_inflow_mappings.contains(&(key, tx_ident)) {
+            address_inflow_mappings.push((key, tx_ident));
+        }
+    };
+
+    // Helper to handle outflow mappings without pushing duplicates
+    let mut handle_outflow = |key: AccountPublicKey| {
+        if !address_outflow_mappings.contains(&(key, tx_ident)) {
+            address_outflow_mappings.push((key, tx_ident));
+        }
+    };
+
     let filtered_group = group
         .iter()
         .filter(|event| {
@@ -205,14 +219,12 @@ fn record_flows(
 
                     // An outflow from the sender address is always the
                     // case
-                    if !address_outflow_mappings
-                        .contains(&(moonlight_event.sender, tx_ident))
-                    {
-                        address_outflow_mappings
-                            .push((moonlight_event.sender, tx_ident));
-                    }
+                    handle_outflow(moonlight_event.sender);
 
                     // Exhaustively handle all inflow cases
+                    // We don't record refund to sender as inflow (not matter
+                    // which amount) We don't record
+                    // Zero-refunds to anyone as inflow
                     match (
                         moonlight_event.receiver,
                         moonlight_event.refund_info,
@@ -222,52 +234,29 @@ fn record_flows(
                             // as inflows. If a group only has one event &
                             // the event is "moonlight", it has to be a
                             // transaction to self.
-                            if group.len() == 1
-                                && !address_inflow_mappings.contains(&(
-                                    moonlight_event.sender,
-                                    tx_ident,
-                                ))
-                            {
-                                address_inflow_mappings
-                                    .push((moonlight_event.sender, tx_ident));
+                            if group.len() == 1 {
+                                handle_inflow(moonlight_event.sender);
                             }
 
                             // addr != moonlight_event.sender to not record
                             // an inflow twice for the same tx
-                            if let Some((addr, amt)) = refund {
-                                if amt > 0
-                                    && addr != moonlight_event.sender
-                                    && !address_inflow_mappings
-                                        .contains(&(addr, tx_ident))
-                                {
-                                    address_inflow_mappings
-                                        .push((addr, tx_ident));
+                            if let Some((key, amt)) = refund {
+                                if amt > 0 && key != moonlight_event.sender {
+                                    handle_inflow(key);
                                 }
                             }
                         }
                         (Some(receiver), None) => {
-                            if !address_inflow_mappings
-                                .contains(&(receiver, tx_ident))
-                            {
-                                address_inflow_mappings
-                                    .push((receiver, tx_ident))
-                            }
+                            handle_inflow(receiver);
                         }
-                        (Some(receiver), Some((addr, amt))) => {
-                            if !address_inflow_mappings
-                                .contains(&(receiver, tx_ident))
-                            {
-                                address_inflow_mappings
-                                    .push((receiver, tx_ident));
-                            }
+                        (Some(receiver), Some((key, amt))) => {
+                            handle_inflow(receiver);
 
                             if amt > 0
-                                && addr != receiver
-                                && addr != moonlight_event.sender
-                                && !address_inflow_mappings
-                                    .contains(&(addr, tx_ident))
+                                && key != moonlight_event.sender
+                                && key != receiver
                             {
-                                address_inflow_mappings.push((addr, tx_ident));
+                                handle_inflow(key);
                             }
                         }
                     }
@@ -291,9 +280,7 @@ fn record_flows(
                         return false;
                     };
 
-                    if !address_inflow_mappings.contains(&(key, tx_ident)) {
-                        address_inflow_mappings.push((key, tx_ident));
-                    }
+                    handle_inflow(key);
 
                     true
                 }
@@ -310,9 +297,7 @@ fn record_flows(
                         return false;
                     };
 
-                    if !address_inflow_mappings.contains(&(key, tx_ident)) {
-                        address_inflow_mappings.push((key, tx_ident));
-                    }
+                    handle_inflow(key);
 
                     true
                 }
@@ -323,11 +308,7 @@ fn record_flows(
                         return false;
                     };
 
-                    let key = contract_to_account_event.receiver;
-
-                    if !address_inflow_mappings.contains(&(key, tx_ident)) {
-                        address_inflow_mappings.push((key, tx_ident));
-                    }
+                    handle_inflow(contract_to_account_event.receiver);
 
                     true
                 }
