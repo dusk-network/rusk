@@ -11,6 +11,8 @@ mod error;
 pub mod http;
 #[cfg(feature = "chain")]
 pub mod node;
+#[cfg(feature = "chain")]
+pub mod rpc;
 
 mod builder;
 pub mod verifier;

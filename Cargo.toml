@@ -75,6 +75,9 @@ ark-serialize = { version = "0.4.2", default-features = false }
 async-channel = "1.9"
 async-graphql = "5.0.10"
 async-trait = "0.1.83"
+axum = { version = "0.7.9", features = ["ws"] }
+schemars = "0.8.21"
+yerpc = { version = "0.6.2", features = ["support-axum", "openrpc"] }
 base64 = "0.22.1"
 blake2b_simd = { version = "1.0.2", default-features = false }
 blake3 = { version = "1.5.4", default-features = false }
