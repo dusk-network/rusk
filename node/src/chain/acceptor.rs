@@ -99,6 +99,8 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     event_sender: Sender<Event>,
 
     dusk_key: bls::PublicKey,
+
+    finality_activation: u64,
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
@@ -202,6 +204,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         max_queue_size: usize,
         event_sender: Sender<Event>,
         dusk_key: bls::PublicKey,
+        finality_activation: u64,
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
         let tip_state_hash = tip.inner().header().state_hash;
@@ -228,6 +231,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             )?),
             event_sender,
             dusk_key,
+            finality_activation,
         };
 
         // NB. After restart, state_root returned by VM is always the last
@@ -835,15 +839,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 mut new_finals,
             }) = final_results
             {
+                let legacy = blk.header().height < self.finality_activation;
+
                 let (_, new_final_state) =
                     new_finals.pop_last().expect("new_finals to be not empty");
                 let new_final_state_root = new_final_state.state_root;
                 // old final state roots to merge too
-                let old_final_state_roots = new_finals
+                let new_finals = new_finals
                     .into_values()
                     .map(|finalized_info| finalized_info.state_root)
-                    .chain([prev_final_state_root])
                     .collect::<Vec<_>>();
+
+                let old_final_state_roots = if legacy {
+                    [new_finals, vec![prev_final_state_root]].concat()
+                } else {
+                    [vec![prev_final_state_root], new_finals].concat()
+                };
+
                 vm.finalize_state(new_final_state_root, old_final_state_roots)?;
             }
 

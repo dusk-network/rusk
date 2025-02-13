@@ -61,6 +61,7 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     event_sender: Sender<Event>,
     genesis_timestamp: u64,
     dusk_key: BlsPublicKey,
+    finality_activation: u64,
     #[cfg(feature = "archive")]
     archive: Archive,
 }
@@ -98,6 +99,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             self.max_consensus_queue_size,
             self.event_sender.clone(),
             self.dusk_key,
+            self.finality_activation,
         )
         .await?;
 
@@ -257,6 +259,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         event_sender: Sender<Event>,
         genesis_timestamp: u64,
         dusk_key: BlsPublicKey,
+        finality_activation: u64,
         #[cfg(feature = "archive")] archive: Archive,
     ) -> Self {
         info!(
@@ -272,6 +275,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             event_sender,
             genesis_timestamp,
             dusk_key,
+            finality_activation,
             #[cfg(feature = "archive")]
             archive,
         }
