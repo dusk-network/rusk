@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `ledger_txs` to `Ledger` trait and Backend implementation [#3491]
+
 ### Fixed
 
 - Change the way the archive synchronizes with the node Acceptor [#3359]
@@ -30,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-node` release
 
 <!-- Issues -->
+[#3491]: https://github.com/dusk-network/rusk/issues/3491
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3407]: https://github.com/dusk-network/rusk/issues/3407
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
