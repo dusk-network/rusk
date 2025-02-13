@@ -41,7 +41,9 @@
   <ListItem tooltipText={displayTooltips ? "The name of the token." : ""}>
     <svelte:fragment slot="term">Token</svelte:fragment>
     <svelte:fragment slot="definition">
-      <AppAnchor href={`/tokens/token/${data.token}`}>{data.token}</AppAnchor>
+      <AppAnchor href={`/tokens/token?name=${data.token}`}
+        >{data.token}</AppAnchor
+      >
     </svelte:fragment>
   </ListItem>
 
