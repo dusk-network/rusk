@@ -24,6 +24,7 @@ use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
 
 use super::Rusk;
+pub use config::feature::*;
 pub use config::Config as RuskVmConfig;
 
 impl VMExecution for Rusk {
