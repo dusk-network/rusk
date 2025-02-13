@@ -2,7 +2,7 @@
 
 exports[`Send > Address step > should display a warning if the address input is a public account 1`] = `
 <div
-  class="operation svelte-npcavd"
+  class="operation svelte-xvysel"
 >
   <div
     class="dusk-wizard"
@@ -79,10 +79,10 @@ exports[`Send > Address step > should display a warning if the address input is 
      
      
     <div
-      class="operation__send svelte-npcavd"
+      class="operation__send svelte-xvysel"
     >
       <div
-        class="operation__address-wrapper svelte-npcavd"
+        class="operation__address-wrapper svelte-xvysel"
       >
         <p>
           Address
@@ -165,23 +165,6 @@ exports[`Send > Address step > should display a warning if the address input is 
         </button>
       </div>
        
-       
-      <div
-        class="operation__address-wrapper svelte-npcavd"
-      >
-        <p>
-          Memo
-        </p>
-         
-        <div
-          aria-checked="false"
-          aria-disabled="false"
-          class="dusk-switch dusk-switch--on-surface"
-          role="switch"
-          tabindex="0"
-        />
-      </div>
-       
     </div>
      
     <div
@@ -249,7 +232,7 @@ exports[`Send > Address step > should display a warning if the address input is 
 
 exports[`Send > Address step > should display a warning if the address input is self-referential 1`] = `
 <div
-  class="operation svelte-npcavd"
+  class="operation svelte-xvysel"
 >
   <div
     class="dusk-wizard"
@@ -326,10 +309,10 @@ exports[`Send > Address step > should display a warning if the address input is 
      
      
     <div
-      class="operation__send svelte-npcavd"
+      class="operation__send svelte-xvysel"
     >
       <div
-        class="operation__address-wrapper svelte-npcavd"
+        class="operation__address-wrapper svelte-xvysel"
       >
         <p>
           Address
@@ -441,23 +424,6 @@ exports[`Send > Address step > should display a warning if the address input is 
           </p>
         </div>
       </div>
-       
-      <div
-        class="operation__address-wrapper svelte-npcavd"
-      >
-        <p>
-          Memo
-        </p>
-         
-        <div
-          aria-checked="false"
-          aria-disabled="false"
-          class="dusk-switch dusk-switch--on-surface"
-          role="switch"
-          tabindex="0"
-        />
-      </div>
-       
     </div>
      
     <div
@@ -525,7 +491,7 @@ exports[`Send > Address step > should display a warning if the address input is 
 
 exports[`Send > Address step > should render the Send component Address step 1`] = `
 <div
-  class="operation svelte-npcavd"
+  class="operation svelte-xvysel"
 >
   <div
     class="dusk-wizard"
@@ -602,10 +568,10 @@ exports[`Send > Address step > should render the Send component Address step 1`]
      
      
     <div
-      class="operation__send svelte-npcavd"
+      class="operation__send svelte-xvysel"
     >
       <div
-        class="operation__address-wrapper svelte-npcavd"
+        class="operation__address-wrapper svelte-xvysel"
       >
         <p>
           Address
@@ -656,23 +622,6 @@ exports[`Send > Address step > should render the Send component Address step 1`]
             CLOSE
           </span>
         </button>
-      </div>
-       
-       
-      <div
-        class="operation__address-wrapper svelte-npcavd"
-      >
-        <p>
-          Memo
-        </p>
-         
-        <div
-          aria-checked="false"
-          aria-disabled="false"
-          class="dusk-switch dusk-switch--on-surface"
-          role="switch"
-          tabindex="0"
-        />
       </div>
        
     </div>
@@ -743,7 +692,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
 
 exports[`Send > Amount step > should render the Send component Amount step 1`] = `
 <div
-  class="operation svelte-npcavd"
+  class="operation svelte-xvysel"
 >
   <div
     class="dusk-wizard"
@@ -822,11 +771,11 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
      
      
     <div
-      class="operation__send svelte-npcavd"
+      class="operation__send svelte-xvysel"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <div
-        class="operation__amount-wrapper svelte-npcavd"
+        class="operation__amount-wrapper svelte-xvysel"
       >
         <p>
           Amount
@@ -845,7 +794,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
       </div>
        
       <div
-        class="operation__input-wrapper svelte-npcavd"
+        class="operation__input-wrapper svelte-xvysel"
       >
         <input
           class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -870,6 +819,23 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
         </svg>
         
       </div>
+       
+      <div
+        class="operation__input-wrapper svelte-xvysel"
+      >
+        <p>
+          Memo (optional)
+        </p>
+         
+        <div
+          aria-checked="false"
+          aria-disabled="false"
+          class="dusk-switch dusk-switch--on-surface"
+          role="switch"
+          tabindex="0"
+        />
+      </div>
+       
        
       <div
         class="gas-settings svelte-1daay07"
@@ -996,7 +962,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
 
 exports[`Send > Review step > should render the Send component Review step 1`] = `
 <div
-  class="operation svelte-npcavd"
+  class="operation svelte-xvysel"
 >
   <div
     class="dusk-wizard"
@@ -1077,7 +1043,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
      
      
     <div
-      class="operation__send svelte-npcavd"
+      class="operation__send svelte-xvysel"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <span
@@ -1087,10 +1053,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </span>
        
       <dl
-        class="operation__review-transaction svelte-npcavd"
+        class="operation__review-transaction svelte-xvysel"
       >
         <dt
-          class="review-transaction__label svelte-npcavd"
+          class="review-transaction__label svelte-xvysel"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -1109,7 +1075,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="review-transaction__value operation__review-amount svelte-npcavd"
+          class="review-transaction__value operation__review-amount svelte-xvysel"
         >
           <span>
             2,345.000000000
@@ -1131,10 +1097,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </dl>
        
       <dl
-        class="operation__review-transaction svelte-npcavd"
+        class="operation__review-transaction svelte-xvysel"
       >
         <dt
-          class="review-transaction__label svelte-npcavd"
+          class="review-transaction__label svelte-xvysel"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -1153,10 +1119,30 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="operation__review-address svelte-npcavd"
+          class="operation__review-address svelte-xvysel"
         >
           <span>
             47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM
+          </span>
+        </dd>
+      </dl>
+       
+      <dl
+        class="operation__review-transaction svelte-xvysel"
+      >
+        <dt
+          class="review-transaction__label svelte-xvysel"
+        >
+          <span>
+            Memo
+          </span>
+           
+        </dt>
+        <dd
+          class="operation__review-memo svelte-xvysel"
+        >
+          <span>
+            abc-example-memo
           </span>
         </dd>
       </dl>
