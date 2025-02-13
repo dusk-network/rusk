@@ -203,6 +203,10 @@ impl RuskNodeBuilder {
         let archive = Archive::create_or_open(self.db_path.clone()).await;
 
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
+        let finality_activation = self
+            .vm_config
+            .feature(crate::node::FEATURE_ABI_PUBLIC_SENDER)
+            .unwrap_or(u64::MAX);
 
         let rusk = Rusk::new(
             self.state_dir,
@@ -236,6 +240,7 @@ impl RuskNodeBuilder {
             node_sender.clone(),
             self.genesis_timestamp,
             *crate::DUSK_CONSENSUS_KEY,
+            finality_activation,
             #[cfg(feature = "archive")]
             archive.clone(),
         );

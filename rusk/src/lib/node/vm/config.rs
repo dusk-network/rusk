@@ -58,6 +58,10 @@ impl Default for Config {
     }
 }
 
+pub(crate) mod feature {
+    pub const FEATURE_ABI_PUBLIC_SENDER: &str = "ABI_PUBLIC_SENDER";
+}
+
 impl Config {
     pub fn new() -> Self {
         Self {
@@ -115,8 +119,8 @@ impl Config {
 
     /// Create a new `Config` with the given parameters.
     pub fn to_execution_config(&self, block_height: u64) -> ExecutionConfig {
-        let with_public_sender = self
-            .feature("ABI_PUBLIC_SENDER")
+        let with_public_sender: bool = self
+            .feature(feature::FEATURE_ABI_PUBLIC_SENDER)
             .map(|activation| activation >= block_height)
             .unwrap_or_default();
         ExecutionConfig {

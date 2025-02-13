@@ -19,7 +19,7 @@ use node::network::Kadcast;
 use node::LongLivedService;
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
-pub use vm::RuskVmConfig;
+pub use vm::*;
 
 use crate::http::RuesEvent;
 pub(crate) use events::ChainEventStreamer;
