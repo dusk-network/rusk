@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, warn};
 
 use crate::archive::transformer::{
-    self, EventIdentifier, MoonlightTxEvents, MoonlightTxMapping,
+    self, EventIdentifier, MoonlightTransferEvents, MoonlightTransferMapping,
 };
 use crate::archive::{Archive, ArchiveOptions};
 
@@ -194,7 +194,9 @@ impl Archive {
             self.update_outflow_address_tx(pk, tx_hash)?;
         }
 
-        for MoonlightTxMapping(moonlight_tx, events) in moonlight_tx_mappings {
+        for MoonlightTransferMapping(moonlight_tx, events) in
+            moonlight_tx_mappings
+        {
             self.put_moonlight_events(moonlight_tx, events)?;
         }
 
@@ -337,7 +339,7 @@ impl Archive {
                 // Construct the MoonlightGroup from MoonlightTxEvents &
                 // MoonlightTx
                 let moonlight_tx_events =
-                    serde_json::from_slice::<MoonlightTxEvents>(e)?;
+                    serde_json::from_slice::<MoonlightTransferEvents>(e)?;
 
                 moonlight_groups.push(MoonlightGroup {
                     events: moonlight_tx_events.events(),
@@ -512,7 +514,7 @@ impl Archive {
     fn put_moonlight_events(
         &self,
         moonlight_tx: EventIdentifier,
-        events: MoonlightTxEvents,
+        events: MoonlightTransferEvents,
     ) -> Result<()> {
         let txn = self.moonlight_db.transaction();
         let cf = self.cf_txhash_moonlight_events()?;
@@ -753,12 +755,12 @@ mod tests {
     use std::env;
     use std::path::PathBuf;
 
+    use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
     use dusk_core::signatures::bls::SecretKey;
     use dusk_core::transfer::withdraw::WithdrawReceiver;
     use dusk_core::transfer::{
         ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
     };
-    use dusk_core::{ContractId, CONTRACT_ID_BYTES};
     use node_data::events::contract::{
         ContractEvent, ContractTxEvent, WrappedContractId, ORIGIN_HASH_BYTES,
     };
@@ -768,7 +770,7 @@ mod tests {
 
     use super::transformer::{self, filter_and_convert, TransormerResult};
     use super::{
-        AccountPublicKey, Archive, EventIdentifier, MoonlightTxEvents,
+        AccountPublicKey, Archive, EventIdentifier, MoonlightTransferEvents,
     };
 
     // Construct a random test directory path in the temp folder of the OS
@@ -1153,7 +1155,7 @@ mod tests {
             .unwrap()
             .unwrap();
         let fetched_events_by_moonlight_tx =
-            serde_json::from_slice::<MoonlightTxEvents>(
+            serde_json::from_slice::<MoonlightTransferEvents>(
                 &fetched_events_by_moonlight_tx,
             )
             .unwrap();
