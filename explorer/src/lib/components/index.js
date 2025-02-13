@@ -1,3 +1,4 @@
+export { default as AccountOverview } from "./account-overview/AccountOverview.svelte";
 export { default as AppAnchor } from "./app-anchor/AppAnchor.svelte";
 export { default as AppAnchorButton } from "./app-anchor-button/AppAnchorButton.svelte";
 export { default as AppImage } from "./app-image/AppImage.svelte";
@@ -27,7 +28,7 @@ export { default as TransactionsList } from "./transactions-list/TransactionsLis
 export { default as TransactionsTable } from "./transactions-table/TransactionsTable.svelte";
 export { default as TokensTable } from "./tokens-table/TokensTable.svelte";
 export { default as TokenOverview } from "./token-overview/TokenOverview.svelte";
-export { default as TokenDetailItem } from "./token-detail-item/TokenDetailItem.svelte";
+export { default as OverviewPanelDetailsItem } from "./overview-panel-details-item/OverviewPanelDetailsItem.svelte";
 export { default as TokenDetailsTable } from "./token-details-table/TokenDetailsTable.svelte";
 export { default as TokenListDetails } from "./token-list-details/TokenListDetails.svelte";
 export { default as TokenTransactionsList } from "./token-transactions-list/TokenTransactionsList.svelte";
