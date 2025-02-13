@@ -1,6 +1,6 @@
 <script>
   import { Icon } from "$lib/dusk/components";
-  import { TokenDetailItem } from "$lib/components";
+  import { OverviewPanelDetailsItem } from "$lib/components";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
 
   import "./TokenOverview.css";
@@ -28,14 +28,14 @@
   </div>
   <hr class="token-overview-panel__separator" />
   <div class="token-overview-panel__details">
-    <TokenDetailItem
+    <OverviewPanelDetailsItem
       title="{data.totalCurrentSupply} {data.ticker}"
       subtitle="Current Total Supply"
     />
-    <TokenDetailItem
+    <OverviewPanelDetailsItem
       title={data.maxCirculatingSupply}
       subtitle="Max Circulating Supply"
     />
-    <TokenDetailItem title="${data.price}" subtitle="Price" />
+    <OverviewPanelDetailsItem title="${data.price}" subtitle="Price" />
   </div>
 </section>

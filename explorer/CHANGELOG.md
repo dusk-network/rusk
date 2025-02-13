@@ -11,6 +11,7 @@ and this project adheres to
 ### Added
 
 - Add Tokens page [#3415]
+- Add Account page [#3454]
 
 ### Changed
 
@@ -151,6 +152,7 @@ and this project adheres to
 [#3377]: https://github.com/dusk-network/rusk/issues/3377
 [#3425]: https://github.com/dusk-network/rusk/issues/3425
 [#3415]: https://github.com/dusk-network/rusk/issues/3415
+[#3454]: https://github.com/dusk-network/rusk/issues/3454
 
 <!-- VERSIONS -->
 
