@@ -183,6 +183,10 @@ impl RuskNode {
         info.insert("chain_id", n_conf.kadcast_id.into());
         info.insert("kadcast_address", n_conf.public_address.into());
 
+        let vm_conf = self.inner().vm_handler().read().await.vm_config.clone();
+        let vm_conf = serde_json::to_value(vm_conf).unwrap_or_default();
+        info.insert("vm_config", vm_conf);
+
         Ok(ResponseData::new(serde_json::to_value(&info)?))
     }
 

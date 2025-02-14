@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `[vm]` config section [#3341]
 - Add CONTRACT_TO_ACCOUNT inflow case on archive moonlight filtering [#3494]
 - Add Dockerfile for persistent state builds [#1080]
+- Add `vm_config` section to `/on/node/info` [#3341]
 
 ### Changed
 
