@@ -39,16 +39,13 @@ serde_json = { workspace = true }
 serde_with = { workspace = true, features = ["hex"] }
 humantime-serde = { workspace = true }
 bs58 = { workspace = true }
-base64 = { workspace = true }
 hex = { workspace = true }
 parking_lot = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }
 bytecheck = { workspace = true }
 dirs = { workspace = true }
 blake3 = { workspace = true }
-blake2b_simd = { workspace = true }
 
-sha3 = { workspace = true }
 dusk-bytes = { workspace = true }
 kadcast = { workspace = true }
 pin-project = { workspace = true }

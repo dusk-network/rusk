@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
 use bytecheck::CheckBytes;
 use dusk_core::abi::ContractId;
 use futures_util::stream::Iter as StreamIter;
