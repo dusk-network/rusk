@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add simulate transaction API [#1225]
+
 ## [1.1.0] - 2025-02-14
 
 ### Added
@@ -358,6 +362,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1603]: https://github.com/dusk-network/rusk/issues/1603
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1257]: https://github.com/dusk-network/rusk/pull/1257
+[#1225]: https://github.com/dusk-network/rusk/issues/1225
 [#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#1144]: https://github.com/dusk-network/rusk/issues/1144
 [#1080]: https://github.com/dusk-network/rusk/issues/1080
