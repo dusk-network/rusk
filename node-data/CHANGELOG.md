@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-02-14
+
 ### Added
 
 - Add PartialEq, Eq to `BlockState` [#3359]
@@ -33,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.0.1...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.1.0...HEAD
+[1.1.0]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.0.1...dusk-node-data-1.1.0
 [1.0.1]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.0.0...dusk-node-data-1.0.1
 [1.0.0]: https://github.com/dusk-network/rusk/tree/dusk-node-data-1.0.0
