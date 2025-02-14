@@ -2000,7 +2000,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-wallet-core"
-version = "1.0.2-alpha.1"
+version = "1.1.0"
 dependencies = [
  "blake3",
  "bytecheck",

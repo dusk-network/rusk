@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-02-14
+
 ### Changed
 
 - Changed phoenix function to allow data to be passed to transaction [#3438] 
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3438]: https://github.com/dusk-network/rusk/issues/3438
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.0.1...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.1.0...HEAD
+[1.1.0]: https://github.com/dusk-network/rusk/compare/dusk-wallet-core-1.0.1...dusk-wallet-core-1.1.0
 [1.0.1]: https://github.com/dusk-network/rusk/compare/wallet-core-1.0.0...dusk-wallet-core-1.0.1
 [1.0.0]: https://github.com/dusk-network/rusk/tree/wallet-core-1.0.0
