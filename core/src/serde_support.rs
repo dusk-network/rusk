@@ -6,20 +6,23 @@
 
 use alloc::format;
 use alloc::string::String;
+use alloc::vec::Vec;
 
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use base64::Engine;
-use serde::de::{Error as SerdeError, MapAccess, Unexpected, Visitor};
+use serde::de::{Error as SerdeError, Unexpected};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use crate::abi::ContractId;
 use crate::signatures::bls::PublicKey as AccountPublicKey;
-use crate::stake::{Reward, SlashEvent, StakeEvent};
+use crate::stake::{Reward, RewardReason, SlashEvent, StakeEvent, StakeKeys};
+use crate::transfer::phoenix::Note;
+use crate::transfer::withdraw::WithdrawReceiver;
 use crate::transfer::{
     ContractToAccountEvent, ContractToContractEvent, ConvertEvent,
     DepositEvent, MoonlightTransactionEvent, PhoenixTransactionEvent,
     WithdrawEvent,
 };
+use crate::BlsScalar;
 
 // To serialize and deserialize u64s as big ints:
 #[derive(Debug)]
@@ -70,82 +73,18 @@ impl<'de> Deserialize<'de> for StakeEvent {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct StakeEventVisitor;
-
-        const FIELDS: [&str; 3] = ["keys", "value", "locked"];
-
-        impl<'de> Visitor<'de> for StakeEventVisitor {
-            type Value = StakeEvent;
-
-            fn expecting(
-                &self,
-                formatter: &mut alloc::fmt::Formatter,
-            ) -> alloc::fmt::Result {
-                formatter.write_str(
-                    "expecting a struct with fields keys, value and locked",
-                )
-            }
-
-            fn visit_map<A: MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut keys = None;
-                let mut value: Option<Bigint> = None;
-                let mut locked: Option<Bigint> = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "keys" => {
-                            if keys.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "keys",
-                                ));
-                            }
-                            keys = Some(map.next_value()?);
-                        }
-                        "value" => {
-                            if value.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "value",
-                                ));
-                            }
-                            value = Some(map.next_value()?);
-                        }
-                        "locked" => {
-                            if locked.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "locked",
-                                ));
-                            }
-                            locked = Some(map.next_value()?);
-                        }
-                        field => {
-                            return Err(SerdeError::unknown_field(
-                                field, &FIELDS,
-                            ))
-                        }
-                    }
-                }
-
-                Ok(StakeEvent {
-                    keys: keys
-                        .ok_or_else(|| SerdeError::missing_field("keys"))?,
-                    value: value
-                        .ok_or_else(|| SerdeError::missing_field("value"))?
-                        .0,
-                    locked: locked
-                        .ok_or_else(|| SerdeError::missing_field("locked"))?
-                        .0,
-                })
-            }
+        #[derive(Deserialize)]
+        struct Intermediate {
+            keys: StakeKeys,
+            value: Bigint,
+            locked: Bigint,
         }
-
-        deserializer.deserialize_struct(
-            "StakeEvent",
-            &FIELDS,
-            StakeEventVisitor,
-        )
+        let intermediate_event = Intermediate::deserialize(deserializer)?;
+        Ok(StakeEvent {
+            keys: intermediate_event.keys,
+            value: intermediate_event.value.0,
+            locked: intermediate_event.locked.0,
+        })
     }
 }
 
@@ -169,82 +108,18 @@ impl<'de> Deserialize<'de> for SlashEvent {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct SlashEventVisitor;
-
-        const FIELDS: [&str; 3] = ["account", "value", "next_eligibility"];
-
-        impl<'de> Visitor<'de> for SlashEventVisitor {
-            type Value = SlashEvent;
-
-            fn expecting(
-                &self,
-                formatter: &mut alloc::fmt::Formatter,
-            ) -> alloc::fmt::Result {
-                formatter.write_str("expecting a struct with fields account, value and next_eligibility")
-            }
-
-            fn visit_map<A: MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut account = None;
-                let mut value: Option<Bigint> = None;
-                let mut next_eligibility: Option<Bigint> = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "account" => {
-                            if account.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "account",
-                                ));
-                            }
-                            account = Some(map.next_value()?);
-                        }
-                        "value" => {
-                            if value.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "value",
-                                ));
-                            }
-                            value = Some(map.next_value()?);
-                        }
-                        "next_eligibility" => {
-                            if next_eligibility.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "next_eligibility",
-                                ));
-                            }
-                            next_eligibility = Some(map.next_value()?);
-                        }
-                        field => {
-                            return Err(SerdeError::unknown_field(
-                                field, &FIELDS,
-                            ))
-                        }
-                    }
-                }
-
-                Ok(SlashEvent {
-                    account: account
-                        .ok_or_else(|| SerdeError::missing_field("account"))?,
-                    value: value
-                        .ok_or_else(|| SerdeError::missing_field("value"))?
-                        .0,
-                    next_eligibility: next_eligibility
-                        .ok_or_else(|| {
-                            SerdeError::missing_field("next_eligibility")
-                        })?
-                        .0,
-                })
-            }
+        #[derive(Deserialize)]
+        struct Intermediate {
+            pub account: AccountPublicKey,
+            pub value: Bigint,
+            pub next_eligibility: Bigint,
         }
-
-        deserializer.deserialize_struct(
-            "SlashEvent",
-            &FIELDS,
-            SlashEventVisitor,
-        )
+        let intermediate_event = Intermediate::deserialize(deserializer)?;
+        Ok(SlashEvent {
+            account: intermediate_event.account,
+            value: intermediate_event.value.0,
+            next_eligibility: intermediate_event.next_eligibility.0,
+        })
     }
 }
 
@@ -265,77 +140,18 @@ impl<'de> Deserialize<'de> for Reward {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct RewardVisitor;
-
-        const FIELDS: [&str; 3] = ["account", "value", "reason"];
-
-        impl<'de> Visitor<'de> for RewardVisitor {
-            type Value = Reward;
-
-            fn expecting(
-                &self,
-                formatter: &mut alloc::fmt::Formatter,
-            ) -> alloc::fmt::Result {
-                formatter.write_str(
-                    "expecting a struct with fields account, value and reason",
-                )
-            }
-
-            fn visit_map<A: MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut account = None;
-                let mut value: Option<Bigint> = None;
-                let mut reason = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "account" => {
-                            if account.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "account",
-                                ));
-                            }
-                            account = Some(map.next_value()?);
-                        }
-                        "value" => {
-                            if value.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "value",
-                                ));
-                            }
-                            value = Some(map.next_value()?);
-                        }
-                        "reason" => {
-                            if reason.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "reason",
-                                ));
-                            }
-                            reason = Some(map.next_value()?);
-                        }
-                        field => {
-                            return Err(SerdeError::unknown_field(
-                                field, &FIELDS,
-                            ))
-                        }
-                    }
-                }
-
-                Ok(Reward {
-                    account: account
-                        .ok_or_else(|| SerdeError::missing_field("account"))?,
-                    value: value
-                        .ok_or_else(|| SerdeError::missing_field("value"))?
-                        .0,
-                    reason: reason
-                        .ok_or_else(|| SerdeError::missing_field("reason"))?,
-                })
-            }
+        #[derive(Deserialize)]
+        struct Intermediate {
+            account: AccountPublicKey,
+            value: Bigint,
+            reason: RewardReason,
         }
-
-        deserializer.deserialize_struct("Reward", &FIELDS, RewardVisitor)
+        let intermediate_reward = Intermediate::deserialize(deserializer)?;
+        Ok(Reward {
+            account: intermediate_reward.account,
+            value: intermediate_reward.value.0,
+            reason: intermediate_reward.reason,
+        })
     }
 }
 
@@ -356,81 +172,18 @@ impl<'de> Deserialize<'de> for WithdrawEvent {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct WithdrawEventVisitor;
-
-        const FIELDS: [&str; 3] = ["sender", "receiver", "value"];
-
-        impl<'de> Visitor<'de> for WithdrawEventVisitor {
-            type Value = WithdrawEvent;
-
-            fn expecting(
-                &self,
-                formatter: &mut alloc::fmt::Formatter,
-            ) -> alloc::fmt::Result {
-                formatter.write_str(
-                    "expecting a struct with fields sender, receiver and value",
-                )
-            }
-
-            fn visit_map<A: MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut sender = None;
-                let mut value: Option<Bigint> = None;
-                let mut receiver = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "sender" => {
-                            if sender.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "sender",
-                                ));
-                            }
-                            sender = Some(map.next_value()?);
-                        }
-                        "receiver" => {
-                            if receiver.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "receiver",
-                                ));
-                            }
-                            receiver = Some(map.next_value()?);
-                        }
-                        "value" => {
-                            if value.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "value",
-                                ));
-                            }
-                            value = Some(map.next_value()?);
-                        }
-                        field => {
-                            return Err(SerdeError::unknown_field(
-                                field, &FIELDS,
-                            ))
-                        }
-                    }
-                }
-
-                Ok(WithdrawEvent {
-                    sender: sender
-                        .ok_or_else(|| SerdeError::missing_field("sender"))?,
-                    value: value
-                        .ok_or_else(|| SerdeError::missing_field("value"))?
-                        .0,
-                    receiver: receiver
-                        .ok_or_else(|| SerdeError::missing_field("receiver"))?,
-                })
-            }
+        #[derive(Deserialize)]
+        struct Intermediate {
+            pub sender: ContractId,
+            pub receiver: WithdrawReceiver,
+            pub value: Bigint,
         }
-
-        deserializer.deserialize_struct(
-            "WithdrawEvent",
-            &FIELDS,
-            WithdrawEventVisitor,
-        )
+        let intermediate_event = Intermediate::deserialize(deserializer)?;
+        Ok(WithdrawEvent {
+            sender: intermediate_event.sender,
+            receiver: intermediate_event.receiver,
+            value: intermediate_event.value.0,
+        })
     }
 }
 
@@ -451,81 +204,18 @@ impl<'de> Deserialize<'de> for ConvertEvent {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct ConvertEventVisitor;
-
-        const FIELDS: [&str; 3] = ["sender", "receiver", "value"];
-
-        impl<'de> Visitor<'de> for ConvertEventVisitor {
-            type Value = ConvertEvent;
-
-            fn expecting(
-                &self,
-                formatter: &mut alloc::fmt::Formatter,
-            ) -> alloc::fmt::Result {
-                formatter.write_str(
-                    "expecting a struct with fields sender, receiver and value",
-                )
-            }
-
-            fn visit_map<A: MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut sender = None;
-                let mut value: Option<Bigint> = None;
-                let mut receiver = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "sender" => {
-                            if sender.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "sender",
-                                ));
-                            }
-                            sender = Some(map.next_value()?);
-                        }
-                        "receiver" => {
-                            if receiver.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "receiver",
-                                ));
-                            }
-                            receiver = Some(map.next_value()?);
-                        }
-                        "value" => {
-                            if value.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "value",
-                                ));
-                            }
-                            value = Some(map.next_value()?);
-                        }
-                        field => {
-                            return Err(SerdeError::unknown_field(
-                                field, &FIELDS,
-                            ))
-                        }
-                    }
-                }
-
-                Ok(ConvertEvent {
-                    sender: sender
-                        .ok_or_else(|| SerdeError::missing_field("sender"))?,
-                    receiver: receiver
-                        .ok_or_else(|| SerdeError::missing_field("receiver"))?,
-                    value: value
-                        .ok_or_else(|| SerdeError::missing_field("value"))?
-                        .0,
-                })
-            }
+        #[derive(Deserialize)]
+        struct Intermediate {
+            sender: Option<AccountPublicKey>,
+            receiver: WithdrawReceiver,
+            value: Bigint,
         }
-
-        deserializer.deserialize_struct(
-            "ConvertEvent",
-            &FIELDS,
-            ConvertEventVisitor,
-        )
+        let intermediate_event = Intermediate::deserialize(deserializer)?;
+        Ok(ConvertEvent {
+            sender: intermediate_event.sender,
+            receiver: intermediate_event.receiver,
+            value: intermediate_event.value.0,
+        })
     }
 }
 
@@ -546,81 +236,18 @@ impl<'de> Deserialize<'de> for DepositEvent {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct DepositEventVisitor;
-
-        const FIELDS: [&str; 3] = ["sender", "receiver", "value"];
-
-        impl<'de> Visitor<'de> for DepositEventVisitor {
-            type Value = DepositEvent;
-
-            fn expecting(
-                &self,
-                formatter: &mut alloc::fmt::Formatter,
-            ) -> alloc::fmt::Result {
-                formatter.write_str(
-                    "expecting a struct with fields sender, receiver and value",
-                )
-            }
-
-            fn visit_map<A: MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut sender = None;
-                let mut receiver = None;
-                let mut value: Option<Bigint> = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "sender" => {
-                            if sender.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "sender",
-                                ));
-                            }
-                            sender = Some(map.next_value()?);
-                        }
-                        "receiver" => {
-                            if receiver.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "receiver",
-                                ));
-                            }
-                            receiver = Some(map.next_value()?);
-                        }
-                        "value" => {
-                            if value.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "value",
-                                ));
-                            }
-                            value = Some(map.next_value()?);
-                        }
-                        field => {
-                            return Err(SerdeError::unknown_field(
-                                field, &FIELDS,
-                            ))
-                        }
-                    }
-                }
-
-                Ok(DepositEvent {
-                    sender: sender
-                        .ok_or_else(|| SerdeError::missing_field("sender"))?,
-                    receiver: receiver
-                        .ok_or_else(|| SerdeError::missing_field("receiver"))?,
-                    value: value
-                        .ok_or_else(|| SerdeError::missing_field("value"))?
-                        .0,
-                })
-            }
+        #[derive(Deserialize)]
+        struct Intermediate {
+            sender: Option<AccountPublicKey>,
+            receiver: ContractId,
+            value: Bigint,
         }
-
-        deserializer.deserialize_struct(
-            "DepositEvent",
-            &FIELDS,
-            DepositEventVisitor,
-        )
+        let intermediate_event = Intermediate::deserialize(deserializer)?;
+        Ok(DepositEvent {
+            sender: intermediate_event.sender,
+            receiver: intermediate_event.receiver,
+            value: intermediate_event.value.0,
+        })
     }
 }
 
@@ -642,81 +269,18 @@ impl<'de> Deserialize<'de> for ContractToContractEvent {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct ContractToContractEventVisitor;
-
-        const FIELDS: [&str; 3] = ["sender", "receiver", "value"];
-
-        impl<'de> Visitor<'de> for ContractToContractEventVisitor {
-            type Value = ContractToContractEvent;
-
-            fn expecting(
-                &self,
-                formatter: &mut alloc::fmt::Formatter,
-            ) -> alloc::fmt::Result {
-                formatter.write_str(
-                    "expecting a struct with fields sender, receiver and value",
-                )
-            }
-
-            fn visit_map<A: MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut sender = None;
-                let mut receiver = None;
-                let mut value: Option<Bigint> = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "sender" => {
-                            if sender.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "sender",
-                                ));
-                            }
-                            sender = Some(map.next_value()?);
-                        }
-                        "receiver" => {
-                            if receiver.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "receiver",
-                                ));
-                            }
-                            receiver = Some(map.next_value()?);
-                        }
-                        "value" => {
-                            if value.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "value",
-                                ));
-                            }
-                            value = Some(map.next_value()?);
-                        }
-                        field => {
-                            return Err(SerdeError::unknown_field(
-                                field, &FIELDS,
-                            ))
-                        }
-                    }
-                }
-
-                Ok(ContractToContractEvent {
-                    sender: sender
-                        .ok_or_else(|| SerdeError::missing_field("sender"))?,
-                    receiver: receiver
-                        .ok_or_else(|| SerdeError::missing_field("receiver"))?,
-                    value: value
-                        .ok_or_else(|| SerdeError::missing_field("value"))?
-                        .0,
-                })
-            }
+        #[derive(Deserialize)]
+        struct Intermediate {
+            sender: ContractId,
+            receiver: ContractId,
+            value: Bigint,
         }
-
-        deserializer.deserialize_struct(
-            "ContractToContractEvent",
-            &FIELDS,
-            ContractToContractEventVisitor,
-        )
+        let intermediate_event = Intermediate::deserialize(deserializer)?;
+        Ok(ContractToContractEvent {
+            sender: intermediate_event.sender,
+            receiver: intermediate_event.receiver,
+            value: intermediate_event.value.0,
+        })
     }
 }
 
@@ -738,81 +302,18 @@ impl<'de> Deserialize<'de> for ContractToAccountEvent {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct ContractToAccountEventVisitor;
-
-        const FIELDS: [&str; 3] = ["sender", "receiver", "value"];
-
-        impl<'de> Visitor<'de> for ContractToAccountEventVisitor {
-            type Value = ContractToAccountEvent;
-
-            fn expecting(
-                &self,
-                formatter: &mut alloc::fmt::Formatter,
-            ) -> alloc::fmt::Result {
-                formatter.write_str(
-                    "expecting a struct with fields sender, receiver and value",
-                )
-            }
-
-            fn visit_map<A: MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut sender = None;
-                let mut receiver = None;
-                let mut value: Option<Bigint> = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "sender" => {
-                            if sender.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "sender",
-                                ));
-                            }
-                            sender = Some(map.next_value()?);
-                        }
-                        "receiver" => {
-                            if receiver.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "receiver",
-                                ));
-                            }
-                            receiver = Some(map.next_value()?);
-                        }
-                        "value" => {
-                            if value.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "value",
-                                ));
-                            }
-                            value = Some(map.next_value()?);
-                        }
-                        field => {
-                            return Err(SerdeError::unknown_field(
-                                field, &FIELDS,
-                            ))
-                        }
-                    }
-                }
-
-                Ok(ContractToAccountEvent {
-                    sender: sender
-                        .ok_or_else(|| SerdeError::missing_field("sender"))?,
-                    receiver: receiver
-                        .ok_or_else(|| SerdeError::missing_field("receiver"))?,
-                    value: value
-                        .ok_or_else(|| SerdeError::missing_field("value"))?
-                        .0,
-                })
-            }
+        #[derive(Deserialize)]
+        struct Intermediate {
+            sender: ContractId,
+            receiver: AccountPublicKey,
+            value: Bigint,
         }
-
-        deserializer.deserialize_struct(
-            "ContractToAccountEvent",
-            &FIELDS,
-            ContractToAccountEventVisitor,
-        )
+        let intermediate_event = Intermediate::deserialize(deserializer)?;
+        Ok(ContractToAccountEvent {
+            sender: intermediate_event.sender,
+            receiver: intermediate_event.receiver,
+            value: intermediate_event.value.0,
+        })
     }
 }
 
@@ -825,8 +326,7 @@ impl Serialize for PhoenixTransactionEvent {
             serializer.serialize_struct("PhoenixTransactionEvent", 5)?;
         ser_struct.serialize_field("nullifiers", &self.nullifiers)?;
         ser_struct.serialize_field("notes", &self.notes)?;
-        ser_struct
-            .serialize_field("memo", &BASE64_STANDARD.encode(&self.memo))?;
+        ser_struct.serialize_field("memo", &hex::encode(&self.memo))?;
         ser_struct.serialize_field("gas_spent", &Bigint(self.gas_spent))?;
         ser_struct.serialize_field("refund_note", &self.refund_note)?;
         ser_struct.end()
@@ -837,108 +337,24 @@ impl<'de> Deserialize<'de> for PhoenixTransactionEvent {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct PhoenixTransactionEventVisitor;
-
-        const FIELDS: [&str; 5] =
-            ["nullifiers", "notes", "memo", "gas_spent", "refund_note"];
-
-        impl<'de> Visitor<'de> for PhoenixTransactionEventVisitor {
-            type Value = PhoenixTransactionEvent;
-
-            fn expecting(
-                &self,
-                formatter: &mut alloc::fmt::Formatter,
-            ) -> alloc::fmt::Result {
-                formatter.write_str("expecting a struct with fields nullifiers, notes, memo, gas_spent and refund_note")
-            }
-
-            fn visit_map<A: MapAccess<'de>>(
-                self,
-                mut map: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut nullifiers = None;
-                let mut notes = None;
-                let mut memo: Option<String> = None;
-                let mut gas_spent: Option<Bigint> = None;
-                let mut refund_note = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "nullifiers" => {
-                            if nullifiers.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "nullifiers",
-                                ));
-                            }
-                            nullifiers = Some(map.next_value()?);
-                        }
-                        "notes" => {
-                            if notes.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "notes",
-                                ));
-                            }
-                            notes = Some(map.next_value()?);
-                        }
-                        "memo" => {
-                            if memo.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "memo",
-                                ));
-                            }
-                            memo = Some(map.next_value()?);
-                        }
-                        "gas_spent" => {
-                            if gas_spent.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "gas_spent",
-                                ));
-                            }
-                            gas_spent = Some(map.next_value()?);
-                        }
-                        "refund_note" => {
-                            if refund_note.is_some() {
-                                return Err(SerdeError::duplicate_field(
-                                    "refund_note",
-                                ));
-                            }
-                            refund_note = Some(map.next_value()?);
-                        }
-                        field => {
-                            return Err(SerdeError::unknown_field(
-                                field, &FIELDS,
-                            ))
-                        }
-                    }
-                }
-
-                let nullifiers = nullifiers
-                    .ok_or_else(|| SerdeError::missing_field("nullifiers"))?;
-                let memo =
-                    memo.ok_or_else(|| SerdeError::missing_field("memo"))?;
-                let memo =
-                    BASE64_STANDARD.decode(memo).map_err(SerdeError::custom)?;
-
-                Ok(PhoenixTransactionEvent {
-                    nullifiers,
-                    notes: notes
-                        .ok_or_else(|| SerdeError::missing_field("memo"))?,
-                    memo,
-                    gas_spent: gas_spent
-                        .ok_or_else(|| SerdeError::missing_field("gas_spent"))?
-                        .0,
-                    refund_note: refund_note.ok_or_else(|| {
-                        SerdeError::missing_field("refund_note")
-                    })?,
-                })
-            }
+        #[derive(Deserialize)]
+        struct Intermediate {
+            pub nullifiers: Vec<BlsScalar>,
+            pub notes: Vec<Note>,
+            pub memo: String,
+            pub gas_spent: Bigint,
+            pub refund_note: Option<Note>,
         }
-
-        deserializer.deserialize_struct(
-            "PhoenixTransactionEvent",
-            &FIELDS,
-            PhoenixTransactionEventVisitor,
-        )
+        let intermediate_event = Intermediate::deserialize(deserializer)?;
+        let memo =
+            hex::decode(intermediate_event.memo).map_err(SerdeError::custom)?;
+        Ok(PhoenixTransactionEvent {
+            nullifiers: intermediate_event.nullifiers,
+            notes: intermediate_event.notes,
+            memo,
+            gas_spent: intermediate_event.gas_spent.0,
+            refund_note: intermediate_event.refund_note,
+        })
     }
 }
 
@@ -954,8 +370,7 @@ impl Serialize for MoonlightTransactionEvent {
         ser_struct.serialize_field("sender", &self.sender)?;
         ser_struct.serialize_field("receiver", &self.receiver)?;
         ser_struct.serialize_field("value", &Bigint(self.value))?;
-        ser_struct
-            .serialize_field("memo", &BASE64_STANDARD.encode(&self.memo))?;
+        ser_struct.serialize_field("memo", &hex::encode(&self.memo))?;
         ser_struct.serialize_field("gas_spent", &Bigint(self.gas_spent))?;
         ser_struct.serialize_field("refund_info", &refund_info)?;
         ser_struct.end()
@@ -966,127 +381,29 @@ impl<'de> Deserialize<'de> for MoonlightTransactionEvent {
     fn deserialize<D: Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        deserializer.deserialize_struct(
-            "MoonlightTransactionEvent",
-            &moonlight_transaction_event_helpers::FIELDS,
-            moonlight_transaction_event_helpers::MoonlightTransactionEventVisitor,
-        )
-    }
-}
-
-// `MoonlightTransactionEvent`'s visitor for deserialization is in this module
-// to satisy clippy.
-mod moonlight_transaction_event_helpers {
-    use super::{
-        AccountPublicKey, Bigint, Engine, MapAccess, MoonlightTransactionEvent,
-        SerdeError, String, Visitor, BASE64_STANDARD,
-    };
-
-    pub struct MoonlightTransactionEventVisitor;
-
-    pub const FIELDS: [&str; 6] = [
-        "sender",
-        "receiver",
-        "value",
-        "memo",
-        "gas_spent",
-        "refund_info",
-    ];
-
-    impl<'de> Visitor<'de> for MoonlightTransactionEventVisitor {
-        type Value = MoonlightTransactionEvent;
-
-        fn expecting(
-            &self,
-            formatter: &mut alloc::fmt::Formatter,
-        ) -> alloc::fmt::Result {
-            formatter.write_str("expecting a struct with fields sender, receiver, value, memo, gas_spent and refund_info")
+        #[derive(Deserialize)]
+        struct Intermediate {
+            sender: AccountPublicKey,
+            receiver: Option<AccountPublicKey>,
+            value: Bigint,
+            memo: String,
+            gas_spent: Bigint,
+            refund_info: Option<(AccountPublicKey, Bigint)>,
         }
-
-        fn visit_map<A: MapAccess<'de>>(
-            self,
-            mut map: A,
-        ) -> Result<Self::Value, A::Error> {
-            let mut sender = None;
-            let mut receiver = None;
-            let mut value: Option<Bigint> = None;
-            let mut memo: Option<String> = None;
-            let mut gas_spent: Option<Bigint> = None;
-            let mut refund_info: Option<Option<(AccountPublicKey, Bigint)>> =
-                None;
-
-            while let Some(key) = map.next_key()? {
-                match key {
-                    "sender" => {
-                        if sender.is_some() {
-                            return Err(SerdeError::duplicate_field("sender"));
-                        }
-                        sender = Some(map.next_value()?);
-                    }
-                    "receiver" => {
-                        if receiver.is_some() {
-                            return Err(SerdeError::duplicate_field(
-                                "receiver",
-                            ));
-                        }
-                        receiver = Some(map.next_value()?);
-                    }
-                    "value" => {
-                        if value.is_some() {
-                            return Err(SerdeError::duplicate_field("value"));
-                        }
-                        value = Some(map.next_value()?);
-                    }
-                    "memo" => {
-                        if memo.is_some() {
-                            return Err(SerdeError::duplicate_field("memo"));
-                        }
-                        memo = Some(map.next_value()?);
-                    }
-                    "gas_spent" => {
-                        if gas_spent.is_some() {
-                            return Err(SerdeError::duplicate_field(
-                                "gas_spent",
-                            ));
-                        }
-                        gas_spent = Some(map.next_value()?);
-                    }
-                    "refund_info" => {
-                        if refund_info.is_some() {
-                            return Err(SerdeError::duplicate_field(
-                                "refund_info",
-                            ));
-                        }
-                        refund_info = Some(map.next_value()?);
-                    }
-                    field => {
-                        return Err(SerdeError::unknown_field(field, &FIELDS))
-                    }
-                }
-            }
-
-            let memo = memo.ok_or_else(|| SerdeError::missing_field("memo"))?;
-            let memo =
-                BASE64_STANDARD.decode(memo).map_err(SerdeError::custom)?;
-            let refund_info = refund_info
-                .ok_or_else(|| SerdeError::missing_field("refund_info"))?
-                .map(|(pk, bigint)| (pk, bigint.0));
-
-            Ok(MoonlightTransactionEvent {
-                sender: sender
-                    .ok_or_else(|| SerdeError::missing_field("sender"))?,
-                receiver: receiver
-                    .ok_or_else(|| SerdeError::missing_field("receiver"))?,
-                value: value
-                    .ok_or_else(|| SerdeError::missing_field("value"))?
-                    .0,
-                memo,
-                gas_spent: gas_spent
-                    .ok_or_else(|| SerdeError::missing_field("gas_spent"))?
-                    .0,
-                refund_info,
-            })
-        }
+        let intermediate_event = Intermediate::deserialize(deserializer)?;
+        let memo =
+            hex::decode(intermediate_event.memo).map_err(SerdeError::custom)?;
+        let refund_info = intermediate_event
+            .refund_info
+            .map(|(pk, bigint)| (pk, bigint.0));
+        Ok(MoonlightTransactionEvent {
+            sender: intermediate_event.sender,
+            receiver: intermediate_event.receiver,
+            value: intermediate_event.value.0,
+            memo,
+            gas_spent: intermediate_event.gas_spent.0,
+            refund_info,
+        })
     }
 }
 
