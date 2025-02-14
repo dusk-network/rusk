@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update `bls12_381-bls` to 0.5 [#2773]
+- Update `dusk-bls12_381` to 0.14 [#2773]
+- Update `dusk-jubjub` to 0.15.0 [#2773]
+- Update `dusk-plonk` to 0.21.0 [#2773]
+- Update `dusk-poseidon` to 0.41 [#2773]
+- Update `jubjub-schnorr` to 0.6 [#2773]
+- Update `phoenix-circuits` to 0.6 [#2773]
+- Update `phoenix-core` to 0.34.0 [#2773]
+- Update `poseidon-merkle` to 0.8 [#2773]
+
 ## [1.0.1] - 2025-01-23
 
 ### Changed
