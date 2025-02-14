@@ -30,24 +30,24 @@ resolver = "2"
 
 [workspace.dependencies]
 # Workspace internal dependencies
-dusk-consensus = "1.0.1"
-# dusk-consensus = { version = "1.0.2-alpha.1", path = "./consensus/" }
-dusk-core = "1.1.0"
-# dusk-core = { version = "1.1.0", path = "./core/" }
-dusk-vm = "1.1.0"
-# dusk-vm = { version = "1.1.0", path = "./vm/" }
-node = { version = "1.1.0", package = "dusk-node" }
-# node = { version = "1.1.0", path = "./node/", package = "dusk-node" }
-node-data = { version = "1.1.0", package = "dusk-node-data" }
-# node-data = { version = "1.1.0", path = "./node-data/", package = "dusk-node-data" }
-rusk-profile = "1.0.1"
-# rusk-profile = { version = "1.0.2-alpha.1", path = "./rusk-profile/" }
-rusk-prover = "1.1.0"
-# rusk-prover = { version = "1.1.1-alpha.1", path = "./rusk-prover/" }
-rusk-recovery = "1.0.3"
-# rusk-recovery = { version = "1.0.4-alpha.1", path = "./rusk-recovery/" }
-wallet-core = { version = "1.1.0", package = "dusk-wallet-core" }
-# wallet-core = { version = "1.1.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
+# dusk-consensus = "1.0.1"
+dusk-consensus = { version = "1.0.2-alpha.1", path = "./consensus/" }
+# dusk-core = "1.1.0"
+dusk-core = { version = "1.1.1-alpha.1", path = "./core/" }
+# dusk-vm = "1.1.0"
+dusk-vm = { version = "1.1.1-alpha.1", path = "./vm/" }
+# node = { version = "1.1.0", package = "dusk-node" }
+node = { version = "1.1.1-alpha.1", path = "./node/", package = "dusk-node" }
+# node-data = { version = "1.1.0", package = "dusk-node-data" }
+node-data = { version = "1.1.1-alpha.1", path = "./node-data/", package = "dusk-node-data" }
+# rusk-profile = "1.0.1"
+rusk-profile = { version = "1.0.2-alpha.1", path = "./rusk-profile/" }
+# rusk-prover = "1.1.0"
+rusk-prover = { version = "1.1.1-alpha.1", path = "./rusk-prover/" }
+# rusk-recovery = "1.0.3"
+rusk-recovery = { version = "1.0.4-alpha.1", path = "./rusk-recovery/" }
+# wallet-core = { version = "1.1.0", package = "dusk-wallet-core" }
+wallet-core = { version = "1.1.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
 
 # Dusk dependencies outside the workspace
 bls12_381-bls = { version = "0.5", default-features = false }
