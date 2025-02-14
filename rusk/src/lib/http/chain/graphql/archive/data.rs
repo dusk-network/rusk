@@ -49,6 +49,8 @@ impl ContractEvents {
 /// TODO: #2773 add serde feature to dusk-core
 pub mod deserialized_archive_data {
     use super::*;
+
+    use dusk_core::abi::ContractId;
     use dusk_core::stake::STAKE_CONTRACT;
     use dusk_core::transfer::withdraw::WithdrawReceiver;
     use dusk_core::transfer::{
@@ -56,9 +58,7 @@ pub mod deserialized_archive_data {
         CONVERT_TOPIC, DEPOSIT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC,
         TRANSFER_CONTRACT, WITHDRAW_TOPIC,
     };
-    use node_data::events::contract::{
-        ContractEvent, OriginHash, WrappedContractId,
-    };
+    use node_data::events::contract::{ContractEvent, OriginHash};
     use serde::ser::SerializeStruct;
     use serde::{Deserialize, Serialize};
 
@@ -128,10 +128,7 @@ pub mod deserialized_archive_data {
         {
             let withdraw_event = &self.0;
             let mut state = serializer.serialize_struct("WithdrawEvent", 3)?;
-            state.serialize_field(
-                "sender",
-                &WrappedContractId(withdraw_event.sender),
-            )?;
+            state.serialize_field("sender", &withdraw_event.sender)?;
             state.serialize_field(
                 "receiver",
                 &match withdraw_event.receiver {
@@ -197,10 +194,7 @@ pub mod deserialized_archive_data {
                     .sender
                     .map(|pk| bs58::encode(pk.to_bytes()).into_string()),
             )?;
-            state.serialize_field(
-                "receiver",
-                &WrappedContractId(deposit_event.receiver),
-            )?;
+            state.serialize_field("receiver", &deposit_event.receiver)?;
             state.serialize_field("value", &deposit_event.value)?;
 
             state.end()
@@ -209,14 +203,14 @@ pub mod deserialized_archive_data {
 
     #[derive(Debug, Clone, PartialEq, Serialize)]
     pub struct DeserializedContractEvent {
-        pub target: WrappedContractId,
+        pub target: ContractId,
         pub topic: String,
         pub data: serde_json::Value,
     }
 
     impl From<ContractEvent> for DeserializedContractEvent {
         fn from(event: ContractEvent) -> Self {
-            let deserialized_data = if event.target.0 == TRANSFER_CONTRACT {
+            let deserialized_data = if event.target == TRANSFER_CONTRACT {
                 match event.topic.as_str() {
                     MOONLIGHT_TOPIC => rkyv::from_bytes::<
                         MoonlightTransactionEvent,
