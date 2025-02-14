@@ -1,6 +1,6 @@
 /**
  * Transforms a Response into a Promise that resolves
- * with the Reponse itself if its status is ok, and
+ * with the Response itself if its status is ok, and
  * rejects with an Error otherwise.
  *
  * @param {Response} response
