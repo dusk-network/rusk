@@ -43,7 +43,7 @@ node-data = { version = "1.1.0", package = "dusk-node-data" }
 rusk-profile = "1.0.1"
 # rusk-profile = { version = "1.0.2-alpha.1", path = "./rusk-profile/" }
 # rusk-prover = "1.0.1"
-rusk-prover = { version = "1.0.2-alpha.1", path = "./rusk-prover/" }
+rusk-prover = { version = "1.1.0", path = "./rusk-prover/" }
 rusk-recovery = "1.0.3"
 # rusk-recovery = { version = "1.0.4-alpha.1", path = "./rusk-recovery/" }
 # wallet-core = { version = "1.0.1", package = "dusk-wallet-core" }
