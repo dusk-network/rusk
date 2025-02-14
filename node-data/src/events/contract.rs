@@ -6,9 +6,8 @@
 
 //! This module defines the contract event type and related types.
 
-use anyhow::Result;
-use dusk_core::abi::{ContractId, Event, CONTRACT_ID_BYTES};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use dusk_core::abi::{ContractId, Event};
+use serde::{Deserialize, Serialize};
 
 pub const ORIGIN_HASH_BYTES: usize = 32;
 /// Origin hash of a contract event. This is in most cases the transaction hash.
@@ -24,71 +23,12 @@ pub struct ContractTxEvent {
     pub origin: OriginHash,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
-#[repr(C)]
-pub struct WrappedContractId(pub ContractId);
-
-impl TryFrom<String> for WrappedContractId {
-    type Error = anyhow::Error;
-
-    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
-        let source_bytes = hex::decode(value)?;
-        let mut source_array = [0u8; CONTRACT_ID_BYTES];
-
-        if source_bytes.len() != CONTRACT_ID_BYTES {
-            return Err(anyhow::anyhow!(
-                "Invalid length: expected {} bytes, got {}",
-                CONTRACT_ID_BYTES,
-                source_bytes.len()
-            ));
-        } else {
-            source_array.copy_from_slice(&source_bytes);
-        }
-
-        Ok(WrappedContractId(ContractId::from_bytes(source_array)))
-    }
-}
-
-impl Serialize for WrappedContractId {
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let source_hex = hex::encode(self.0.as_bytes());
-        s.serialize_str(&source_hex)
-    }
-}
-
-impl<'de> Deserialize<'de> for WrappedContractId {
-    fn deserialize<D>(deserializer: D) -> Result<WrappedContractId, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let source_hex: String = Deserialize::deserialize(deserializer)?;
-        let source_bytes =
-            hex::decode(source_hex).map_err(serde::de::Error::custom)?;
-        let mut source_array = [0u8; CONTRACT_ID_BYTES];
-
-        if source_bytes.len() != CONTRACT_ID_BYTES {
-            return Err(serde::de::Error::custom(format!(
-                "Invalid length: expected {} bytes, got {}",
-                CONTRACT_ID_BYTES,
-                source_bytes.len()
-            )));
-        } else {
-            source_array.copy_from_slice(&source_bytes);
-        }
-
-        Ok(WrappedContractId(ContractId::from_bytes(source_array)))
-    }
-}
-
 /// Wrapper around a contract event that is to be archived or sent to a
 /// websocket client.
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ContractEvent {
-    pub target: WrappedContractId,
+    pub target: ContractId,
     pub topic: String,
     #[serde_as(as = "serde_with::hex::Hex")]
     pub data: Vec<u8>,
@@ -97,7 +37,7 @@ pub struct ContractEvent {
 impl From<Event> for ContractEvent {
     fn from(event: Event) -> Self {
         Self {
-            target: WrappedContractId(event.source),
+            target: event.source,
             topic: event.topic,
             data: event.data,
         }
@@ -107,7 +47,7 @@ impl From<Event> for ContractEvent {
 impl From<ContractEvent> for Event {
     fn from(contract_event: ContractEvent) -> Self {
         Event {
-            source: contract_event.target.0,
+            source: contract_event.target,
             topic: contract_event.topic,
             data: contract_event.data,
         }
@@ -116,6 +56,8 @@ impl From<ContractEvent> for Event {
 
 #[cfg(test)]
 mod tests {
+    use dusk_core::abi::CONTRACT_ID_BYTES;
+
     use super::*;
 
     fn exec_core_event() -> Event {
