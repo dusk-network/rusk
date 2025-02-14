@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-02-14
+
 ### Changed
 
 - Change `dusk_core::transfer::moonlight::Transaction::data` fn visibility to public
@@ -35,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#2773]: https://github.com/dusk-network/rusk/issues/2773
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-core-1.0.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-core-1.1.0...HEAD
+[1.1.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.0.0...dusk-core-1.1.0
 [1.0.0]: https://github.com/dusk-network/rusk/compare/dusk-core-0.1.0...dusk-core-1.0.0
 [0.1.0]: https://github.com/dusk-network/rusk/tree/dusk-core-0.1.0
