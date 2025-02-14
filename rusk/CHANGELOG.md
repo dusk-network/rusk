@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add CONTRACT_TO_ACCOUNT inflow case on archive moonlight filtering [#3494]
 - Add Dockerfile for persistent state builds [#1080]
 - Add `vm_config` section to `/on/node/info` [#3341]
+- Add simulate transaction API [#1225]
 
 ### Changed
 
@@ -358,6 +359,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1603]: https://github.com/dusk-network/rusk/issues/1603
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1257]: https://github.com/dusk-network/rusk/pull/1257
+[#1225]: https://github.com/dusk-network/rusk/issues/1225
 [#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#1144]: https://github.com/dusk-network/rusk/issues/1144
 [#1080]: https://github.com/dusk-network/rusk/issues/1080
