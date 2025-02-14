@@ -1801,7 +1801,6 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-trait",
- "base64 0.22.1",
  "blake2b_simd",
  "blake3",
  "bs58",
