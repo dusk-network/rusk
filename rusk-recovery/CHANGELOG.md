@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2025-02-14
+
 ### Changed
 
 - Change deprecated `tempdir` with `tempfile` dependency [#3407]
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3407]: https://github.com/dusk-network/rusk/issues/3407
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.0.2...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.0.3...HEAD
+[1.0.3]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.0.2...rusk-recovery-1.0.3
 [1.0.2]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.0.1...rusk-recovery-1.0.2
 [1.0.1]: https://github.com/dusk-network/rusk/tree/rusk-recovery-1.0.1
