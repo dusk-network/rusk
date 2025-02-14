@@ -1,6 +1,6 @@
 [package]
 name = "rusk-recovery"
-version = "1.0.3"
+version = "1.0.4-alpha.1"
 edition = "2021"
 autobins = false
 description = "Tool to restore Rusk to factory settings"
