@@ -793,7 +793,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let mut stakes = vec![];
             for event in contract_events {
-                if event.event.target.0 == STAKE_CONTRACT {
+                if event.event.target == STAKE_CONTRACT {
                     stakes.push(event.event);
                 }
             }

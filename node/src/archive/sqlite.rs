@@ -247,7 +247,7 @@ impl Archive {
             let event = data::ArchivedEvent {
                 origin: hex::encode(event.origin),
                 topic: event.event.topic,
-                source: event.event.target.0.to_string(),
+                source: event.event.target.to_string(),
                 data: event.event.data,
             };
 
@@ -305,7 +305,7 @@ impl Archive {
         1. Any PhoenixTransactionEvent (through notes & refund_note)
         */
         let phoenix_event_present = events.iter().any(|event| {
-            event.event.target.0 == dusk_core::transfer::TRANSFER_CONTRACT
+            event.event.target == dusk_core::transfer::TRANSFER_CONTRACT
                 && event.event.topic == dusk_core::transfer::PHOENIX_TOPIC
         });
 
@@ -343,7 +343,7 @@ impl Archive {
             let origin = hex::encode(ident.origin());
 
             for event in events {
-                let source = event.target.0.to_string();
+                let source = event.target.to_string();
 
                 sqlx::query!(
                     r#"INSERT INTO finalized_events (block_height, block_hash, origin, topic, source, data) VALUES (?, ?, ?, ?, ?, ?)"#,
@@ -421,11 +421,37 @@ impl Archive {
 }
 
 mod data {
+    use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
     use node_data::events::contract::{
         ContractEvent, ContractTxEvent, ORIGIN_HASH_BYTES,
     };
     use serde::{Deserialize, Serialize};
     use sqlx::FromRow;
+
+    // TODO: implement TryFrom<String> in piecrust for ContractId
+    // Remove this once https://github.com/dusk-network/piecrust/pull/421 is available
+    struct WrappedContractId(pub ContractId);
+
+    impl TryFrom<String> for WrappedContractId {
+        type Error = anyhow::Error;
+
+        fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+            let source_bytes = hex::decode(value)?;
+            let mut source_array = [0u8; CONTRACT_ID_BYTES];
+
+            if source_bytes.len() != CONTRACT_ID_BYTES {
+                return Err(anyhow::anyhow!(
+                    "Invalid length: expected {} bytes, got {}",
+                    CONTRACT_ID_BYTES,
+                    source_bytes.len()
+                ));
+            } else {
+                source_array.copy_from_slice(&source_bytes);
+            }
+
+            Ok(WrappedContractId(ContractId::from_bytes(source_array)))
+        }
+    }
 
     /// Archived ContractTxEvent
     ///
@@ -465,9 +491,11 @@ mod data {
                 origin_array.copy_from_slice(&origin);
             }
 
+            let target = WrappedContractId::try_from(value.source)?;
+
             Ok(ContractTxEvent {
                 event: ContractEvent {
-                    target: value.source.try_into()?,
+                    target: target.0,
                     topic: value.topic,
                     data: value.data,
                 },
@@ -502,7 +530,7 @@ mod tests {
     use std::path::PathBuf;
 
     use dusk_core::abi::ContractId;
-    use node_data::events::contract::{ContractEvent, WrappedContractId};
+    use node_data::events::contract::ContractEvent;
     use rand::distributions::Alphanumeric;
     use rand::Rng;
     use util::truncate_string;
@@ -546,7 +574,7 @@ mod tests {
         vec![
             ContractTxEvent {
                 event: ContractEvent {
-                    target: WrappedContractId(ContractId::from_bytes([0; 32])),
+                    target: ContractId::from_bytes([0; 32]),
                     topic: "contract1".to_string(),
                     data: vec![1, 6, 1, 8],
                 },
@@ -554,7 +582,7 @@ mod tests {
             },
             ContractTxEvent {
                 event: ContractEvent {
-                    target: WrappedContractId(ContractId::from_bytes([1; 32])),
+                    target: ContractId::from_bytes([1; 32]),
                     topic: "contract2".to_string(),
                     data: vec![1, 2, 3],
                 },
@@ -583,7 +611,7 @@ mod tests {
             events.iter().zip(fetched_events.iter())
         {
             assert_eq!(
-                contract_tx_event.event.target.0.to_string(),
+                contract_tx_event.event.target.to_string(),
                 fetched_event.source /* if this fails do hex::decode here
                                       * and to bytes above */
             );
