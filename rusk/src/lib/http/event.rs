@@ -736,7 +736,7 @@ impl From<node_data::events::contract::ContractTxEvent> for RuesEvent {
         Self {
             uri: RuesEventUri {
                 component: "contracts".into(),
-                entity: Some(hex::encode(event.target.0)),
+                entity: Some(hex::encode(event.target.to_bytes())),
                 topic: event.topic,
             },
             data: event.data.into(),

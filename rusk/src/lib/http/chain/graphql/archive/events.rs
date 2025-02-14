@@ -6,12 +6,10 @@
 
 //! Module for GraphQL that relates to stored events in the archive.
 
-use async_graphql::{Context, FieldError, FieldResult, Object};
-use dusk_core::abi::CONTRACT_ID_BYTES;
-use node_data::events::contract::WrappedContractId;
-
 use super::data::ContractEvents;
 use crate::http::chain::graphql::{DBContext, OptResult};
+use async_graphql::{Context, FieldError, FieldResult, Object};
+use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
 
 pub async fn events_by_height(
     ctx: &Context<'_>,

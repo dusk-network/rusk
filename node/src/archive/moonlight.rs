@@ -762,7 +762,7 @@ mod tests {
         ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
     };
     use node_data::events::contract::{
-        ContractEvent, ContractTxEvent, WrappedContractId, ORIGIN_HASH_BYTES,
+        ContractEvent, ContractTxEvent, ORIGIN_HASH_BYTES,
     };
     use rand::distributions::Alphanumeric;
     use rand::rngs::StdRng;
@@ -789,9 +789,7 @@ mod tests {
     fn dummy_data(topic: &str) -> ContractTxEvent {
         ContractTxEvent {
             event: ContractEvent {
-                target: WrappedContractId(ContractId::from_bytes(
-                    [0; CONTRACT_ID_BYTES],
-                )),
+                target: ContractId::from_bytes([0; CONTRACT_ID_BYTES]),
                 topic: topic.to_owned(),
                 data: vec![1, 6, 1, 8],
             },
@@ -804,9 +802,8 @@ mod tests {
 
         ContractTxEvent {
             event: ContractEvent {
-                target: WrappedContractId(
-                    dusk_core::transfer::TRANSFER_CONTRACT,
-                ),
+                target: dusk_core::transfer::TRANSFER_CONTRACT,
+
                 topic: "phoenix".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&fake_phoenix_tx_event_data)
                     .unwrap()
@@ -825,9 +822,8 @@ mod tests {
 
         ContractTxEvent {
             event: ContractEvent {
-                target: WrappedContractId(
-                    dusk_core::transfer::TRANSFER_CONTRACT,
-                ),
+                target: dusk_core::transfer::TRANSFER_CONTRACT,
+
                 topic: "convert".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&convert_event)
                     .unwrap()
@@ -855,9 +851,8 @@ mod tests {
 
         ContractTxEvent {
             event: ContractEvent {
-                target: WrappedContractId(
-                    dusk_core::transfer::TRANSFER_CONTRACT,
-                ),
+                target: dusk_core::transfer::TRANSFER_CONTRACT,
+
                 topic: "moonlight".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&moonlight_tx_event)
                     .unwrap()
@@ -876,9 +871,7 @@ mod tests {
 
         ContractTxEvent {
             event: ContractEvent {
-                target: WrappedContractId(
-                    dusk_core::transfer::TRANSFER_CONTRACT,
-                ),
+                target: dusk_core::transfer::TRANSFER_CONTRACT,
                 topic: "withdraw".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&withdraw_event)
                     .unwrap()
@@ -897,9 +890,8 @@ mod tests {
 
         ContractTxEvent {
             event: ContractEvent {
-                target: WrappedContractId(
-                    dusk_core::transfer::TRANSFER_CONTRACT,
-                ),
+                target: dusk_core::transfer::TRANSFER_CONTRACT,
+
                 topic: "deposit".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&deposit_event)
                     .unwrap()
@@ -918,9 +910,7 @@ mod tests {
 
         ContractTxEvent {
             event: ContractEvent {
-                target: WrappedContractId(
-                    dusk_core::transfer::TRANSFER_CONTRACT,
-                ),
+                target: dusk_core::transfer::TRANSFER_CONTRACT,
                 topic: "deposit".to_string(),
                 data: rkyv::to_bytes::<_, 256>(&deposit_event)
                     .unwrap()
@@ -1186,10 +1176,7 @@ mod tests {
         assert_eq!(fetched_tx1[0].origin(), &[4; 32]);
         fetched_tx1[0].events().iter().for_each(|e| {
             assert_eq!(e.topic, "moonlight");
-            assert_eq!(
-                e.target,
-                WrappedContractId(dusk_core::transfer::TRANSFER_CONTRACT)
-            );
+            assert_eq!(e.target, usk_core::transfer::TRANSFER_CONTRACT);
 
             let moonlight_event =
                 rkyv::from_bytes::<MoonlightTransactionEvent>(&e.data).unwrap();
@@ -1208,10 +1195,7 @@ mod tests {
             assert_eq!(fetched_tx.origin(), &[i as u8; ORIGIN_HASH_BYTES]);
             fetched_tx.events().iter().for_each(|e| {
                 assert_eq!(e.topic, "moonlight");
-                assert_eq!(
-                    e.target,
-                    WrappedContractId(dusk_core::transfer::TRANSFER_CONTRACT)
-                );
+                assert_eq!(e.target, dusk_core::transfer::TRANSFER_CONTRACT);
 
                 let moonlight_event =
                     rkyv::from_bytes::<MoonlightTransactionEvent>(&e.data)
