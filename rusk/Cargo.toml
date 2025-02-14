@@ -46,7 +46,6 @@ bytecheck = { workspace = true }
 dirs = { workspace = true }
 blake3 = { workspace = true }
 
-sha3 = { workspace = true }
 dusk-bytes = { workspace = true }
 kadcast = { workspace = true }
 pin-project = { workspace = true }
