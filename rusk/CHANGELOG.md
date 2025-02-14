@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-02-14
+
 ### Added
 
 - Add `abi::public_sender` [#3341]
@@ -369,7 +371,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.0.2...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.1.0...HEAD
+[1.1.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.0.2...dusk-rusk-1.1.0
 [1.0.2]: https://github.com/dusk-network/rusk/compare/rusk-1.0.1...dusk-rusk-1.0.2
 [1.0.1]: https://github.com/dusk-network/rusk/compare/rusk-1.0.0...rusk-1.0.1
 [1.0.0]: https://github.com/dusk-network/rusk/compare/v0.8.0...rusk-1.0.0
