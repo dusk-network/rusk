@@ -243,7 +243,7 @@ async fn exec() -> anyhow::Result<()> {
                 let (mut w, pwd) = match file {
                     Some(file) => {
                         // if we restore and old version file make sure we
-                        // know the corrrect version before asking for the
+                        // know the correct version before asking for the
                         // password
                         let file_version = dat::read_file_version(file)?;
 
