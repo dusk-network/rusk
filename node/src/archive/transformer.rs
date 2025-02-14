@@ -201,7 +201,7 @@ fn record_flows(
         .filter(|event| {
             // Make sure that the events originate from the transfer
             // contract.
-            if event.target.0 != TRANSFER_CONTRACT {
+            if event.target != TRANSFER_CONTRACT {
                 return false;
             }
 
