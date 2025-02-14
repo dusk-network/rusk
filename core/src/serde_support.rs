@@ -8,8 +8,6 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use base64::Engine;
 use serde::de::{Error as SerdeError, Unexpected};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -328,8 +326,7 @@ impl Serialize for PhoenixTransactionEvent {
             serializer.serialize_struct("PhoenixTransactionEvent", 5)?;
         ser_struct.serialize_field("nullifiers", &self.nullifiers)?;
         ser_struct.serialize_field("notes", &self.notes)?;
-        ser_struct
-            .serialize_field("memo", &BASE64_STANDARD.encode(&self.memo))?;
+        ser_struct.serialize_field("memo", &hex::encode(&self.memo))?;
         ser_struct.serialize_field("gas_spent", &Bigint(self.gas_spent))?;
         ser_struct.serialize_field("refund_note", &self.refund_note)?;
         ser_struct.end()
@@ -349,9 +346,8 @@ impl<'de> Deserialize<'de> for PhoenixTransactionEvent {
             pub refund_note: Option<Note>,
         }
         let intermediate_event = Intermediate::deserialize(deserializer)?;
-        let memo = BASE64_STANDARD
-            .decode(intermediate_event.memo)
-            .map_err(SerdeError::custom)?;
+        let memo =
+            hex::decode(intermediate_event.memo).map_err(SerdeError::custom)?;
         Ok(PhoenixTransactionEvent {
             nullifiers: intermediate_event.nullifiers,
             notes: intermediate_event.notes,
@@ -374,8 +370,7 @@ impl Serialize for MoonlightTransactionEvent {
         ser_struct.serialize_field("sender", &self.sender)?;
         ser_struct.serialize_field("receiver", &self.receiver)?;
         ser_struct.serialize_field("value", &Bigint(self.value))?;
-        ser_struct
-            .serialize_field("memo", &BASE64_STANDARD.encode(&self.memo))?;
+        ser_struct.serialize_field("memo", &hex::encode(&self.memo))?;
         ser_struct.serialize_field("gas_spent", &Bigint(self.gas_spent))?;
         ser_struct.serialize_field("refund_info", &refund_info)?;
         ser_struct.end()
@@ -396,9 +391,8 @@ impl<'de> Deserialize<'de> for MoonlightTransactionEvent {
             refund_info: Option<(AccountPublicKey, Bigint)>,
         }
         let intermediate_event = Intermediate::deserialize(deserializer)?;
-        let memo = BASE64_STANDARD
-            .decode(intermediate_event.memo)
-            .map_err(SerdeError::custom)?;
+        let memo =
+            hex::decode(intermediate_event.memo).map_err(SerdeError::custom)?;
         let refund_info = intermediate_event
             .refund_info
             .map(|(pk, bigint)| (pk, bigint.0));
