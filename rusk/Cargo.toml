@@ -45,7 +45,6 @@ rkyv = { workspace = true, features = ["size_32"] }
 bytecheck = { workspace = true }
 dirs = { workspace = true }
 blake3 = { workspace = true }
-blake2b_simd = { workspace = true }
 
 sha3 = { workspace = true }
 dusk-bytes = { workspace = true }
