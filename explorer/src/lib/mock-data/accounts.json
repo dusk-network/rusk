@@ -1,0 +1,82 @@
+[
+  {
+    "address": "0xe5601aae15c846ead69dab4c86a049405",
+    "balance": 90993,
+    "staked_balance": 13802,
+    "active_stake": 9795,
+    "inactive_stake": 4007,
+    "rewards": 987
+  },
+  {
+    "address": "0xea8bdd8e92be744e843c644bf581455ea",
+    "balance": 83097,
+    "staked_balance": 13179,
+    "active_stake": 4469,
+    "inactive_stake": 8710,
+    "rewards": 3561
+  },
+  {
+    "address": "0x883c4c22510df65fe29ebf6dd0ed710f6",
+    "balance": 93610,
+    "staked_balance": 49767,
+    "active_stake": 39775,
+    "inactive_stake": 9992,
+    "rewards": 3616
+  },
+  {
+    "address": "0x39aae05835f723cc8a7152b63f7d73ffc",
+    "balance": 12804,
+    "staked_balance": 5582,
+    "active_stake": 4737,
+    "inactive_stake": 845,
+    "rewards": 4834
+  },
+  {
+    "address": "0xad36bbf36e1cca4b3997abf14f611c2de",
+    "balance": 92044,
+    "staked_balance": 9446,
+    "active_stake": 2944,
+    "inactive_stake": 6502,
+    "rewards": 1766
+  },
+  {
+    "address": "0xdd211bb967327a5edd05592c5e44816e8",
+    "balance": 84539,
+    "staked_balance": 79912,
+    "active_stake": 37637,
+    "inactive_stake": 42275,
+    "rewards": 2528
+  },
+  {
+    "address": "0x1a229291051ec42a3e8abcfb7e9400cb0f",
+    "balance": 61410,
+    "staked_balance": 1460,
+    "active_stake": 1324,
+    "inactive_stake": 136,
+    "rewards": 1399
+  },
+  {
+    "address": "0xdc7f07a38332a73b6d3eb456c57548509",
+    "balance": 35094,
+    "staked_balance": 7814,
+    "active_stake": 4616,
+    "inactive_stake": 3198,
+    "rewards": 972
+  },
+  {
+    "address": "0x156a5e0592cfba9e2d6c9fe95d6f6bbbed",
+    "balance": 85970,
+    "staked_balance": 44119,
+    "active_stake": 12865,
+    "inactive_stake": 31254,
+    "rewards": 4555
+  },
+  {
+    "address": "0x127de00849726e14bb7e889f42fb1cc4d5",
+    "balance": 32429,
+    "staked_balance": 26072,
+    "active_stake": 18899,
+    "inactive_stake": 7173,
+    "rewards": 849
+  }
+]
