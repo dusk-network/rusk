@@ -17,7 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change key derivation to PBKDF2 and wallet encryption to AES-GCM [#3391]
 - Change default deploy gas limit to be accepted by std mempool
 
-### Fixed
+### Add
+
+- Add pagenation for transaction history to not pollute the stdout [#3292]
+
+### Fix
 
 - Fix wrong lower limit for stake operation when performing topup [#3394]
 - Fix `is_synced()` method in the wallet to avoid overflow [#3593]
@@ -82,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2396]: https://github.com/dusk-network/rusk/issues/2396
 [#2340]: https://github.com/dusk-network/rusk/issues/2340
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
+[#3292]: https://github.com/dusk-network/rusk/issues/3292
 [#3394]: https://github.com/dusk-network/rusk/issues/3394
 
 <!-- Releases -->
