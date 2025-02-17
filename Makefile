@@ -18,7 +18,7 @@ wasm: setup-compiler ## Generate the WASM for all the contracts and wallet-core
 	$(MAKE) -C ./contracts $@
 	$(MAKE) -C ./wallet-core $@
 
-contracts: ## Execute the test for all contracts
+contracts: setup-compiler ## Execute the test for all contracts
 	$(MAKE) -j1 -C ./contracts all
 
 test: keys wasm ## Run the tests
