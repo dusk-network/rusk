@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Remove `WrappedContractId` [#3503]
+
 ## [1.1.0] - 2025-02-14
 
 ### Added
@@ -31,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Types used for interacting with Dusk node 
 
 <!-- Issues -->
+[#3503]: https://github.com/dusk-network/rusk/issues/3503]
 [#3464]: https://github.com/dusk-network/rusk/issues/3464
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3405]: https://github.com/dusk-network/rusk/issues/3405

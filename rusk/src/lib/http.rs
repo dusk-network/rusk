@@ -674,9 +674,7 @@ mod tests {
     use super::*;
 
     use dusk_core::abi::ContractId;
-    use node_data::events::contract::{
-        ContractEvent, ContractTxEvent, WrappedContractId,
-    };
+    use node_data::events::contract::{ContractEvent, ContractTxEvent};
     use std::net::TcpStream;
     use tungstenite::client;
 
@@ -848,17 +846,15 @@ mod tests {
         )
         .expect("Session ID should be parsed");
 
-        const SUB_CONTRACT_ID: WrappedContractId =
-            WrappedContractId(ContractId::from_bytes([1; 32]));
-        const MAYBE_SUB_CONTRACT_ID: WrappedContractId =
-            WrappedContractId(ContractId::from_bytes([2; 32]));
-        const NON_SUB_CONTRACT_ID: WrappedContractId =
-            WrappedContractId(ContractId::from_bytes([3; 32]));
+        const SUB_CONTRACT_ID: ContractId = ContractId::from_bytes([1; 32]);
+        const MAYBE_SUB_CONTRACT_ID: ContractId =
+            ContractId::from_bytes([2; 32]);
+        const NON_SUB_CONTRACT_ID: ContractId = ContractId::from_bytes([3; 32]);
 
         const TOPIC: &str = "topic";
 
-        let sub_contract_id_hex = hex::encode(SUB_CONTRACT_ID.0);
-        let maybe_sub_contract_id_hex = hex::encode(MAYBE_SUB_CONTRACT_ID.0);
+        let sub_contract_id_hex = hex::encode(SUB_CONTRACT_ID);
+        let maybe_sub_contract_id_hex = hex::encode(MAYBE_SUB_CONTRACT_ID);
 
         let client = reqwest::Client::new();
 
