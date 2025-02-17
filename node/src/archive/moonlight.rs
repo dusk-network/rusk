@@ -56,16 +56,15 @@ pub enum Order {
     Descending,
 }
 
-/// Group of events belonging to a single Moonlight **transaction** and
+/// Group of events belonging to a single **transaction** and
 /// additional metadata.
 ///
-/// One Moonlight transaction can contain multiple events and multiple transfers
+/// One transaction can contain multiple events and multiple transfers
 /// of assets. The underlying Vec<ContractEvent> contains at least one event
 /// that relates to a moonlight in- or outflow.
 ///
 /// This can be a "moonlight" event or
-/// a "withdraw", "mint", or "convert" event, where there is a Moonlight
-/// address as WithdrawReceiver.
+/// a "withdraw", "contract_to_account", "mint", or "convert" event
 #[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MoonlightGroup {
@@ -165,7 +164,7 @@ impl Archive {
         &self,
         grouped_events: BTreeMap<EventIdentifier, Vec<ContractEvent>>,
     ) -> Result<()> {
-        debug!("Loading moonlight transaction events into the moonlight db");
+        debug!("Loading transaction events into the moonlight db");
 
         let transformer::TransormerResult {
             address_outflow_mappings,
@@ -174,10 +173,7 @@ impl Archive {
             moonlight_tx_mappings,
         } = transformer::filter_and_convert(grouped_events);
 
-        debug!(
-            "Found {} moonlight transactions",
-            moonlight_tx_mappings.len()
-        );
+        debug!("Found {} moonlight transfers", moonlight_tx_mappings.len());
 
         let address_inflow_mappings =
             util::check_duplicates(address_inflow_mappings);
@@ -246,9 +242,10 @@ impl Archive {
         self.append_moonlight_tx(self.cf_memo_tx()?, &memo, moonlight_tx)
     }
 
-    /// Get the full moonlight transaction history of a given AccountPublicKey.
+    /// Get the full moonlight transfer history of a given AccountPublicKey.
     ///
-    /// Returns all finalized moonlight events for the given public key
+    /// Returns all finalized moonlight events affecting the balance of the
+    /// given public key
     pub fn full_moonlight_history(
         &self,
         pk: AccountPublicKey,
@@ -743,7 +740,7 @@ mod util {
         }
 
         if len_before != deduped.len() {
-            warn!("Found duplicates in address mappings for moonlight transactions. Duplicates have been removed. This is a bug.");
+            warn!("Found duplicates in address mappings for transactions. Duplicates have been removed. This is a bug.");
         }
 
         deduped

@@ -8,8 +8,46 @@ use async_graphql::Object;
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use node::archive::MoonlightGroup;
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Serialize};
+use translator::{IntermediateEvent, IntermediateMoonlightGroup};
 
+/// List of archived transactions where each transaction includes at least one
+/// event indicating a Moonlight transfer of funds (Not necessarily a moonlight
+/// transaction).
 pub struct MoonlightTransfers(pub Vec<MoonlightGroup>);
+
+impl Serialize for MoonlightTransfers {
+    /// Serializes TRANSFER_CONTRACT events specifically as JSON, falling back
+    /// to hex encoding for other event types.
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut moonlight_groups: &Vec<MoonlightGroup> = &self.0;
+        let mut serializable_groups: Vec<IntermediateMoonlightGroup> = vec![];
+
+        // yoink the events from the moonlight group
+        for group in moonlight_groups {
+            // convert the events of that group to intermediate events
+            let intermediate_events: Vec<IntermediateEvent> = group
+                .events()
+                .iter()
+                .map(|event| IntermediateEvent::from(event.clone()))
+                .collect();
+
+            // push the intermediate events to the serializable group
+            serializable_groups.push(IntermediateMoonlightGroup {
+                events: serde_json::to_value(intermediate_events)
+                    .unwrap_or_default(),
+                origin: *group.origin(),
+                block_height: group.block_height(),
+            });
+        }
+
+        serializable_groups.serialize(serializer)
+    }
+}
 
 pub struct ContractEvents(pub(super) serde_json::Value);
 
@@ -34,7 +72,7 @@ impl TryInto<NewAccountPublicKey> for String {
 #[Object]
 impl MoonlightTransfers {
     pub async fn json(&self) -> serde_json::Value {
-        serde_json::to_value(&self.0).unwrap_or_default()
+        serde_json::to_value(self).unwrap_or_default()
     }
 }
 
@@ -46,220 +84,164 @@ impl ContractEvents {
 }
 
 /// Interim solution for sending out deserialized event data
-/// TODO: #2773 add serde feature to dusk-core
-pub mod deserialized_archive_data {
-    use super::*;
-
+/// TODO: data driver should further simplify this
+pub mod translator {
     use dusk_core::abi::ContractId;
-    use dusk_core::stake::STAKE_CONTRACT;
+    use dusk_core::stake::StakeEvent;
+    use dusk_core::stake::{Reward, SlashEvent, STAKE_CONTRACT};
     use dusk_core::transfer::withdraw::WithdrawReceiver;
     use dusk_core::transfer::{
-        ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
-        CONVERT_TOPIC, DEPOSIT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC,
-        TRANSFER_CONTRACT, WITHDRAW_TOPIC,
+        ContractToAccountEvent, ContractToContractEvent, ConvertEvent,
+        DepositEvent, MoonlightTransactionEvent, PhoenixTransactionEvent,
+        WithdrawEvent, CONTRACT_TO_ACCOUNT_TOPIC, CONTRACT_TO_CONTRACT_TOPIC,
+        CONVERT_TOPIC, DEPOSIT_TOPIC, MINT_CONTRACT_TOPIC, MINT_TOPIC,
+        MOONLIGHT_TOPIC, PHOENIX_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
     };
     use node_data::events::contract::{ContractEvent, OriginHash};
     use serde::ser::SerializeStruct;
     use serde::{Deserialize, Serialize};
 
+    use super::*;
+
     #[serde_with::serde_as]
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-    pub struct DeserializedMoonlightGroup {
+    pub(super) struct IntermediateMoonlightGroup {
         pub events: serde_json::Value,
         #[serde_as(as = "serde_with::hex::Hex")]
         pub origin: OriginHash,
         pub block_height: u64,
     }
-    pub struct DeserializedMoonlightGroups(pub Vec<DeserializedMoonlightGroup>);
 
-    #[Object]
-    impl DeserializedMoonlightGroups {
-        pub async fn json(&self) -> serde_json::Value {
-            serde_json::to_value(&self.0).unwrap_or_default()
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq)]
-    pub struct DeserializedMoonlightTransactionEvent(
-        pub MoonlightTransactionEvent,
-    );
-
-    impl Serialize for DeserializedMoonlightTransactionEvent {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
-        {
-            let moonlight_event = &self.0;
-
-            let mut state =
-                serializer.serialize_struct("MoonlightTransactionEvent", 6)?;
-            state.serialize_field(
-                "sender",
-                &bs58::encode(moonlight_event.sender.to_bytes()).into_string(),
-            )?;
-            state.serialize_field(
-                "receiver",
-                &moonlight_event
-                    .receiver
-                    .map(|r| bs58::encode(r.to_bytes()).into_string()),
-            )?;
-            state.serialize_field("value", &moonlight_event.value)?;
-            state
-                .serialize_field("memo", &hex::encode(&moonlight_event.memo))?;
-            state.serialize_field("gas_spent", &moonlight_event.gas_spent)?;
-            state.serialize_field(
-                "refund_info",
-                &moonlight_event.refund_info.map(|(pk, amt)| {
-                    (bs58::encode(pk.to_bytes()).into_string(), amt)
-                }),
-            )?;
-
-            state.end()
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq)]
-    pub struct DeserializedWithdrawEvent(pub WithdrawEvent);
-
-    impl Serialize for DeserializedWithdrawEvent {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
-        {
-            let withdraw_event = &self.0;
-            let mut state = serializer.serialize_struct("WithdrawEvent", 3)?;
-            state.serialize_field("sender", &withdraw_event.sender)?;
-            state.serialize_field(
-                "receiver",
-                &match withdraw_event.receiver {
-                    WithdrawReceiver::Moonlight(pk) => {
-                        bs58::encode(pk.to_bytes()).into_string()
-                    }
-                    WithdrawReceiver::Phoenix(pk) => {
-                        bs58::encode(pk.to_bytes()).into_string()
-                    }
-                },
-            )?;
-            state.serialize_field("value", &withdraw_event.value)?;
-
-            state.end()
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq)]
-    pub struct DeserializedConvertEvent(pub ConvertEvent);
-
-    impl Serialize for DeserializedConvertEvent {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
-        {
-            let convert_event = &self.0;
-            let mut state = serializer.serialize_struct("ConvertEvent", 3)?;
-            state.serialize_field(
-                "sender",
-                &convert_event
-                    .sender
-                    .map(|pk| bs58::encode(pk.to_bytes()).into_string()),
-            )?;
-            state.serialize_field(
-                "receiver",
-                &match convert_event.receiver {
-                    WithdrawReceiver::Moonlight(pk) => {
-                        bs58::encode(pk.to_bytes()).into_string()
-                    }
-                    WithdrawReceiver::Phoenix(pk) => {
-                        bs58::encode(pk.to_bytes()).into_string()
-                    }
-                },
-            )?;
-            state.serialize_field("value", &convert_event.value)?;
-            state.end()
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq)]
-    pub struct DeserializedDepositEvent(pub DepositEvent);
-
-    impl Serialize for DeserializedDepositEvent {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
-        {
-            let deposit_event = &self.0;
-            let mut state = serializer.serialize_struct("DepositEvent", 3)?;
-            state.serialize_field(
-                "sender",
-                &deposit_event
-                    .sender
-                    .map(|pk| bs58::encode(pk.to_bytes()).into_string()),
-            )?;
-            state.serialize_field("receiver", &deposit_event.receiver)?;
-            state.serialize_field("value", &deposit_event.value)?;
-
-            state.end()
-        }
-    }
-
+    /// Intermediate Event struct which can represent the data field in
+    /// different formats.
     #[derive(Debug, Clone, PartialEq, Serialize)]
-    pub struct DeserializedContractEvent {
+    pub(super) struct IntermediateEvent {
         pub target: ContractId,
         pub topic: String,
         pub data: serde_json::Value,
     }
 
-    impl From<ContractEvent> for DeserializedContractEvent {
-        fn from(event: ContractEvent) -> Self {
-            let deserialized_data = if event.target == TRANSFER_CONTRACT {
-                match event.topic.as_str() {
-                    MOONLIGHT_TOPIC => rkyv::from_bytes::<
-                        MoonlightTransactionEvent,
-                    >(&event.data)
-                    .map(|e| {
-                        serde_json::to_value(
-                            DeserializedMoonlightTransactionEvent(e),
-                        )
+    fn handle_unknown_genesis(
+        event_data: Vec<u8>,
+    ) -> Result<serde_json::Value, serde_json::Error> {
+        tracing::warn!("Unknown genesis event found while calling translate_transfer_events");
+
+        serde_json::to_value(hex::encode(event_data))
+    }
+
+    /// This function expects an event from the transfer contract.
+    ///
+    /// Otherwise it will return the hex encoded data.
+    fn translate_transfer_events(
+        transfer_contract_event: ContractEvent,
+    ) -> Result<serde_json::Value, serde_json::Error> {
+        match transfer_contract_event.topic.as_str() {
+            MOONLIGHT_TOPIC => rkyv::from_bytes::<MoonlightTransactionEvent>(
+                &transfer_contract_event.data,
+            )
+            .map(serde_json::to_value)
+            .unwrap_or_else(|_| {
+                handle_unknown_genesis(transfer_contract_event.data)
+            }),
+            WITHDRAW_TOPIC | MINT_TOPIC => {
+                rkyv::from_bytes::<WithdrawEvent>(&transfer_contract_event.data)
+                    .map(serde_json::to_value)
+                    .unwrap_or_else(|_| {
+                        handle_unknown_genesis(transfer_contract_event.data)
                     })
-                    .unwrap_or_else(|_| serde_json::to_value(event.data)),
-                    WITHDRAW_TOPIC | MINT_TOPIC => rkyv::from_bytes::<
-                        WithdrawEvent,
-                    >(
-                        &event.data
-                    )
-                    .map(|e| serde_json::to_value(DeserializedWithdrawEvent(e)))
-                    .unwrap_or_else(|_| serde_json::to_value(event.data)),
-                    CONVERT_TOPIC => {
-                        rkyv::from_bytes::<ConvertEvent>(&event.data)
-                            .map(|e| {
-                                serde_json::to_value(DeserializedConvertEvent(
-                                    e,
-                                ))
-                            })
-                            .unwrap_or_else(|_| {
-                                serde_json::to_value(event.data)
-                            })
-                    }
-                    DEPOSIT_TOPIC => {
-                        rkyv::from_bytes::<DepositEvent>(&event.data)
-                            .map(|e| {
-                                serde_json::to_value(DeserializedDepositEvent(
-                                    e,
-                                ))
-                            })
-                            .unwrap_or_else(|_| {
-                                serde_json::to_value(event.data)
-                            })
-                    }
-                    _ => serde_json::to_value(hex::encode(event.data)),
-                }
-            } else {
-                serde_json::to_value(hex::encode(event.data))
+            }
+            CONVERT_TOPIC => {
+                rkyv::from_bytes::<ConvertEvent>(&transfer_contract_event.data)
+                    .map(serde_json::to_value)
+                    .unwrap_or_else(|_| {
+                        handle_unknown_genesis(transfer_contract_event.data)
+                    })
+            }
+            DEPOSIT_TOPIC => {
+                rkyv::from_bytes::<DepositEvent>(&transfer_contract_event.data)
+                    .map(serde_json::to_value)
+                    .unwrap_or_else(|_| {
+                        handle_unknown_genesis(transfer_contract_event.data)
+                    })
+            }
+            CONTRACT_TO_ACCOUNT_TOPIC => {
+                rkyv::from_bytes::<ContractToAccountEvent>(
+                    &transfer_contract_event.data,
+                )
+                .map(serde_json::to_value)
+                .unwrap_or_else(|_| {
+                    handle_unknown_genesis(transfer_contract_event.data)
+                })
+            }
+            MINT_CONTRACT_TOPIC | CONTRACT_TO_CONTRACT_TOPIC => {
+                rkyv::from_bytes::<ContractToContractEvent>(
+                    &transfer_contract_event.data,
+                )
+                .map(serde_json::to_value)
+                .unwrap_or_else(|_| {
+                    handle_unknown_genesis(transfer_contract_event.data)
+                })
+            }
+            PHOENIX_TOPIC => rkyv::from_bytes::<PhoenixTransactionEvent>(
+                &transfer_contract_event.data,
+            )
+            .map(serde_json::to_value)
+            .unwrap_or_else(|_| {
+                handle_unknown_genesis(transfer_contract_event.data)
+            }),
+            _ => handle_unknown_genesis(transfer_contract_event.data),
+        }
+    }
+
+    /// This function expects an event from the stake contract.
+    ///
+    /// Otherwise it will return the hex encoded data.
+    fn translate_stake_events(
+        stake_contract_event: ContractEvent,
+    ) -> Result<serde_json::Value, serde_json::Error> {
+        match stake_contract_event.topic.as_str() {
+            "stake" | "unstake" | "withdraw" => {
+                rkyv::from_bytes::<StakeEvent>(&stake_contract_event.data)
+                    .map(serde_json::to_value)
+                    .unwrap_or_else(|_| {
+                        handle_unknown_genesis(stake_contract_event.data)
+                    })
+            }
+            "reward" => {
+                rkyv::from_bytes::<Vec<Reward>>(&stake_contract_event.data)
+                    .map(serde_json::to_value)
+                    .unwrap_or_else(|_| {
+                        handle_unknown_genesis(stake_contract_event.data)
+                    })
+            }
+            "slash" | "hard_slash" => {
+                rkyv::from_bytes::<Vec<SlashEvent>>(&stake_contract_event.data)
+                    .map(serde_json::to_value)
+                    .unwrap_or_else(|_| {
+                        handle_unknown_genesis(stake_contract_event.data)
+                    })
+            }
+            _ => handle_unknown_genesis(stake_contract_event.data),
+        }
+    }
+
+    /// TODO: core should be able to provide this translation from bytes to
+    /// struct & from bytes to json for events?
+    impl From<ContractEvent> for IntermediateEvent {
+        fn from(event: ContractEvent) -> Self {
+            let target = event.target;
+            let topic = event.topic.clone();
+
+            let deserialized_data = match event.target {
+                TRANSFER_CONTRACT => translate_transfer_events(event),
+                STAKE_CONTRACT => translate_stake_events(event),
+                _ => serde_json::to_value(hex::encode(event.data)),
             }
             .unwrap_or_else(|e| serde_json::Value::String(e.to_string()));
 
             Self {
-                target: event.target,
-                topic: event.topic,
+                target,
+                topic,
                 data: deserialized_data,
             }
         }
