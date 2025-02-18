@@ -165,6 +165,9 @@ pub enum Error {
     /// Error while querying archival node
     #[error("Archive node query error: {0}")]
     ArchiveJsonError(String),
+    /// Trying to withdraw more reward than the person has
+    #[error("Trying to withdraw more than existing reward")]
+    NotEnoughReward,
 }
 
 impl From<dusk_bytes::Error> for Error {

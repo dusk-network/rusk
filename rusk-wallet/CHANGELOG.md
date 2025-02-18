@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change dependency declaration to not require strict equal [#3405]
+- Change withdraw rewards to withdraw partial amount [#2538]
 
 ### Fix
 
