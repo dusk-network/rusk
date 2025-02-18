@@ -12,7 +12,7 @@ pub async fn tx_by_hash(
     ctx: &Context<'_>,
     hash: String,
 ) -> OptResult<SpentTransaction> {
-    let (db, _) = ctx.data::<DBContext>()?;
+    let (db, _, _) = ctx.data::<DBContext>()?;
     let hash = hex::decode(hash)?;
     let tx = db.read().await.view(|t| t.ledger_tx(&hash))?;
     Ok(tx.map(SpentTransaction))
@@ -26,7 +26,7 @@ pub async fn last_transactions(
         return Err(FieldError::new("count must be positive"));
     }
 
-    let (db, _) = ctx.data::<DBContext>()?;
+    let (db, _, _) = ctx.data::<DBContext>()?;
     let transactions = db.read().await.view(|t| {
         let mut txs = vec![];
         let mut current_block =
@@ -57,7 +57,7 @@ pub async fn last_transactions(
 pub async fn mempool<'a>(
     ctx: &Context<'_>,
 ) -> FieldResult<Vec<Transaction<'a>>> {
-    let (db, _) = ctx.data::<DBContext>()?;
+    let (db, _, _) = ctx.data::<DBContext>()?;
     db.read().await.view(|db| {
         let txs = db.mempool_txs_sorted_by_fee()?.map(|t| t.into()).collect();
         Ok(txs)
@@ -68,7 +68,7 @@ pub async fn mempool_by_hash<'a>(
     ctx: &Context<'_>,
     hash: String,
 ) -> OptResult<Transaction<'a>> {
-    let (db, _) = ctx.data::<DBContext>()?;
+    let (db, _, _) = ctx.data::<DBContext>()?;
     let hash = &hex::decode(hash)?[..];
     let hash = hash.try_into()?;
     let tx = db.read().await.view(|db| db.mempool_tx(hash))?;

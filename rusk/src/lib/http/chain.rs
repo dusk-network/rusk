@@ -110,11 +110,11 @@ impl RuskNode {
 
         #[cfg(feature = "archive")]
         let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
-            .data((self.db(), self.archive()))
+            .data((self.db(), self.archive(), self.inner().vm_handler()))
             .finish();
         #[cfg(not(feature = "archive"))]
         let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
-            .data((self.db(), ()))
+            .data((self.db(), (), self.inner().vm_handler()))
             .finish();
 
         if gql_query.trim().is_empty() {

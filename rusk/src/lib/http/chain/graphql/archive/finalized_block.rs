@@ -15,7 +15,7 @@ pub async fn check_finalized_block(
     block_height: i64,
     hex_block_hash: String,
 ) -> FieldResult<bool> {
-    let (_, archive) = ctx.data::<DBContext>()?;
+    let (_, archive, _) = ctx.data::<DBContext>()?;
 
     archive
         .match_finalized_block_height_hash(block_height, &hex_block_hash)
@@ -27,7 +27,7 @@ pub async fn check_finalized_block(
 pub async fn last_finalized_block(
     ctx: &Context<'_>,
 ) -> FieldResult<(u64, String)> {
-    let (_, archive) = ctx.data::<DBContext>()?;
+    let (_, archive, _) = ctx.data::<DBContext>()?;
 
     archive.fetch_last_finalized_block().await.map_err(|e| {
         FieldError::new(format!("Cannot get last finalized block: {}", e))

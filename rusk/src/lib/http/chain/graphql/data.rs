@@ -7,6 +7,7 @@
 use std::ops::Deref;
 
 use async_graphql::{FieldError, FieldResult, Object, SimpleObject};
+use dusk_core::transfer::moonlight::AccountData;
 use node::database::{Ledger, LightBlock, DB};
 use serde::{Deserialize, Serialize};
 
@@ -300,6 +301,36 @@ impl Transaction<'_> {
 
     pub async fn memo(&self) -> Option<String> {
         self.0.inner.memo().map(hex::encode)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct MoonlightAccountData {
+    balance: u64,
+    nonce: u64,
+}
+
+impl From<AccountData> for MoonlightAccountData {
+    fn from(value: AccountData) -> Self {
+        Self {
+            balance: value.balance,
+            nonce: value.nonce,
+        }
+    }
+}
+
+#[Object]
+impl MoonlightAccountData {
+    pub async fn balance(&self) -> u64 {
+        self.balance
+    }
+
+    pub async fn nonce(&self) -> u64 {
+        self.nonce
+    }
+
+    pub async fn json(&self) -> serde_json::Value {
+        serde_json::to_value(self).unwrap_or_default()
     }
 }
 

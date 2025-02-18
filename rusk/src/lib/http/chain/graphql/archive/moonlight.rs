@@ -27,7 +27,7 @@ pub async fn full_moonlight_history(
     address: String,
     ordering: Option<String>,
 ) -> OptResult<DeserializedMoonlightGroups> {
-    let (_, archive) = ctx.data::<DBContext>()?;
+    let (_, archive, _) = ctx.data::<DBContext>()?;
     let v = bs58::decode(address).into_vec()?;
 
     let pk_bytes: [u8; 96] = v
@@ -81,7 +81,7 @@ pub async fn fetch_moonlight_history(
     max_count: Option<usize>,
     page_count: Option<usize>,
 ) -> OptResult<MoonlightTransfers> {
-    let (_, archive) = ctx.data::<DBContext>()?;
+    let (_, archive, _) = ctx.data::<DBContext>()?;
 
     let sender: Option<AccountPublicKey> = sender
         .map(|s| s.try_into())
@@ -105,7 +105,7 @@ pub async fn moonlight_tx_by_memo(
     ctx: &Context<'_>,
     memo: Vec<u8>,
 ) -> OptResult<MoonlightTransfers> {
-    let (_, archive) = ctx.data::<DBContext>()?;
+    let (_, archive, _) = ctx.data::<DBContext>()?;
 
     let moonlight_events = archive.moonlight_txs_by_memo(memo)?;
 

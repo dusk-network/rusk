@@ -14,12 +14,14 @@ use block::*;
 use data::*;
 use tx::*;
 
+use crate::Rusk;
 use async_graphql::{Context, FieldError, FieldResult, Object};
 use dusk_core::abi::ContractId;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, DB};
 use node_data::ledger::Label;
+
 #[cfg(feature = "archive")]
 use {
     archive::data::deserialized_archive_data::DeserializedMoonlightGroups,
@@ -34,9 +36,9 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 #[cfg(feature = "archive")]
-pub type DBContext = (Arc<RwLock<Backend>>, Archive);
+pub type DBContext = (Arc<RwLock<Backend>>, Archive, Arc<RwLock<Rusk>>);
 #[cfg(not(feature = "archive"))]
-pub type DBContext = (Arc<RwLock<Backend>>, ());
+pub type DBContext = (Arc<RwLock<Backend>>, (), Arc<RwLock<Rusk>>);
 
 pub type OptResult<T> = FieldResult<Option<T>>;
 
@@ -275,9 +277,19 @@ impl Query {
         ctx: &Context<'_>,
         height: i64,
     ) -> OptResult<u64> {
-        let (_, archive) = ctx.data::<DBContext>()?;
+        let (_, archive, _) = ctx.data::<DBContext>()?;
         let next_height = archive.next_phoenix(height).await?;
 
         Ok(next_height)
+    }
+
+    async fn account(
+        &self,
+        ctx: &Context<'_>,
+        address: String,
+    ) -> FieldResult<MoonlightAccountData> {
+        let (_, _, vm_handler) = ctx.data::<DBContext>()?;
+        let account_info = vm_handler.read().await.get_account(&address)?;
+        Ok(account_info.into())
     }
 }

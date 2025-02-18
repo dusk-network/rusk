@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add graphql endpoint to retrieve moonlight account info [#3509]
+
 ## [1.1.0] - 2025-02-14
 
 ### Added
@@ -339,6 +343,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3509]: https://github.com/dusk-network/rusk/issues/3509
 [#3494]: https://github.com/dusk-network/rusk/issues/3494
 [#3481]: https://github.com/dusk-network/rusk/issues/3481
 [#3359]: https://github.com/dusk-network/rusk/issues/3359

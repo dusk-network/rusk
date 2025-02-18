@@ -15,7 +15,7 @@ pub async fn events_by_height(
     ctx: &Context<'_>,
     height: i64,
 ) -> OptResult<ContractEvents> {
-    let (_, archive) = ctx.data::<DBContext>()?;
+    let (_, archive, _) = ctx.data::<DBContext>()?;
     let mut events;
 
     if height < 0 {
@@ -39,7 +39,7 @@ pub async fn events_by_hash(
     ctx: &Context<'_>,
     hash: String,
 ) -> OptResult<ContractEvents> {
-    let (_, archive) = ctx.data::<DBContext>()?;
+    let (_, archive, _) = ctx.data::<DBContext>()?;
     let events = archive
         .fetch_json_events_by_hash(&hash)
         .await
@@ -52,7 +52,7 @@ pub async fn finalized_events_by_contractid(
     ctx: &Context<'_>,
     hex_contract_id: String,
 ) -> OptResult<ContractEvents> {
-    let (_, archive) = ctx.data::<DBContext>()?;
+    let (_, archive, _) = ctx.data::<DBContext>()?;
 
     // shallow check if contract id is valid
     if hex_contract_id.len() != CONTRACT_ID_BYTES * 2 {

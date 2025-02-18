@@ -10,6 +10,7 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::StakeFundOwner;
+use dusk_core::transfer::moonlight::AccountData;
 use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
@@ -45,10 +46,10 @@ impl HandleRequest for Rusk {
                 let data = request.data.as_bytes();
                 self.handle_contract_query(contract_id, method, data, feeder)
             }
-            ("node", _, "provisioners") => self.get_provisioners(),
+            ("node", _, "provisioners") => self.handle_get_provisioners(),
 
-            ("account", Some(pk), "status") => self.get_account(pk),
-            ("node", _, "crs") => self.get_crs(),
+            ("account", Some(pk), "status") => self.handle_get_account(pk),
+            ("node", _, "crs") => self.handle_get_crs(),
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
     }
@@ -87,7 +88,7 @@ impl Rusk {
         }
     }
 
-    fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
+    fn handle_get_provisioners(&self) -> anyhow::Result<ResponseData> {
         let prov: Vec<_> = self
             .provisioners(None)
             .expect("Cannot query state for provisioners")
@@ -112,27 +113,31 @@ impl Rusk {
         Ok(ResponseData::new(serde_json::to_value(prov)?))
     }
 
-    fn get_account(&self, pk: &str) -> anyhow::Result<ResponseData> {
+    fn handle_get_account(&self, pk: &str) -> anyhow::Result<ResponseData> {
+        let account = self.get_account(pk).map(|account| {
+            json!({
+                "balance": account.balance,
+                "nonce": account.nonce,
+            })
+        })?;
+        Ok(ResponseData::new(account))
+    }
+
+    fn handle_get_crs(&self) -> anyhow::Result<ResponseData> {
+        let crs = rusk_profile::get_common_reference_string()?;
+        Ok(ResponseData::new(crs).with_header("crs-hash", CRS_17_HASH))
+    }
+}
+
+impl Rusk {
+    pub fn get_account(&self, pk: &str) -> anyhow::Result<AccountData> {
         let pk = bs58::decode(pk)
             .into_vec()
             .map_err(|_| anyhow::anyhow!("Invalid bs58 account"))?;
         let pk = BlsPublicKey::from_slice(&pk)
             .map_err(|_| anyhow::anyhow!("Invalid bls account"))?;
-        let account = self
-            .account(&pk)
-            .map(|account| {
-                json!({
-                    "balance": account.balance,
-                    "nonce": account.nonce,
-                })
-            })
-            .map_err(|e| anyhow::anyhow!("Cannot query the state {e:?}"))?;
-        Ok(ResponseData::new(account))
-    }
-
-    fn get_crs(&self) -> anyhow::Result<ResponseData> {
-        let crs = rusk_profile::get_common_reference_string()?;
-        Ok(ResponseData::new(crs).with_header("crs-hash", CRS_17_HASH))
+        self.account(&pk)
+            .map_err(|e| anyhow::anyhow!("Cannot query the state {e:?}"))
     }
 }
 
