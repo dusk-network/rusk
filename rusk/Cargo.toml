@@ -114,6 +114,7 @@ chain = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
 archive = ["chain", "node/archive"]
 network-trace = ["node/network-trace"]
 http-wasm = []
+dynamic-verifier = []
 
 [[bench]]
 name = "block_ingestion"
