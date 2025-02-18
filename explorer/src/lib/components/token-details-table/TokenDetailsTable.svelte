@@ -1,6 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
+  import { makeClassName, middleEllipsis } from "$lib/dusk/string";
   import {
     Table,
     TableBody,
@@ -8,8 +9,13 @@
     TableHead,
     TableRow,
   } from "$lib/components/table";
-  import { TransactionStatus, TransactionType } from "$lib/components";
-  import { makeClassName, middleEllipsis } from "$lib/dusk/string";
+  import { createValueFormatter } from "$lib/dusk/value";
+  import { luxToDusk } from "$lib/dusk/currency";
+  import {
+    AppAnchor,
+    TransactionStatus,
+    TransactionType,
+  } from "$lib/components";
 
   /** @type {string | undefined} */
   export let className = undefined;
@@ -22,6 +28,8 @@
 
   const HASH_CHARS_LENGTH = 10;
 
+  const formatter = createValueFormatter("en");
+
   $: classes = makeClassName(["tokens-table", className]);
 </script>
 
@@ -31,6 +39,7 @@
       <TableCell type="th">From</TableCell>
       <TableCell type="th">To</TableCell>
       <TableCell type="th">ID</TableCell>
+      <TableCell type="th">Amount (Dusk)</TableCell>
       <TableCell type="th">Fee (Dusk)</TableCell>
       <TableCell type="th">Status</TableCell>
       <TableCell type="th">Type</TableCell>
@@ -39,22 +48,31 @@
   <TableBody>
     {#each data as transaction (transaction)}
       <TableRow>
-        <TableCell
-          >{middleEllipsis(
-            transaction.from ? transaction.from : "",
-            HASH_CHARS_LENGTH
-          )}</TableCell
-        >
-        <TableCell
-          >{middleEllipsis(
-            transaction.to ? transaction.to : "",
-            HASH_CHARS_LENGTH
-          )}</TableCell
-        >
+        <TableCell>
+          <AppAnchor href={`/account/?account=${transaction.from}`}>
+            {middleEllipsis(
+              transaction.from ? transaction.from : "",
+              HASH_CHARS_LENGTH
+            )}
+          </AppAnchor>
+        </TableCell>
+        <TableCell>
+          <AppAnchor href={`/account/?account=${transaction.to}`}>
+            {middleEllipsis(
+              transaction.to ? transaction.to : "",
+              HASH_CHARS_LENGTH
+            )}
+          </AppAnchor>
+        </TableCell>
         <TableCell
           >{middleEllipsis(transaction.txid, HASH_CHARS_LENGTH)}</TableCell
         >
-        <TableCell>{transaction.gasprice}</TableCell>
+        <TableCell>
+          {transaction.amount
+            ? formatter(luxToDusk(transaction.amount))
+            : "N/A"}
+        </TableCell>
+        <TableCell>{formatter(luxToDusk(transaction.gasprice))}</TableCell>
         <TableCell>
           <TransactionStatus
             errorMessage={transaction.txerror}

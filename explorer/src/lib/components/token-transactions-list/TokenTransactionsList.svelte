@@ -1,6 +1,10 @@
 <svelte:options immutable={true} />
 
 <script>
+  import { onMount } from "svelte";
+  import { createValueFormatter } from "$lib/dusk/value";
+  import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
+  import { luxToDusk } from "$lib/dusk/currency";
   import {
     AppAnchor,
     DataGuard,
@@ -9,11 +13,6 @@
     TransactionStatus,
     TransactionType,
   } from "$lib/components";
-  import { createValueFormatter } from "$lib/dusk/value";
-  import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
-  import { RelativeTime } from "$lib/dusk/components";
-  import { luxToDusk } from "$lib/dusk/currency";
-  import { onMount } from "svelte";
 
   /** @type {boolean} */
   export let autoRefreshTime = false;
@@ -28,6 +27,13 @@
   let screenWidth = window.innerWidth;
 
   const formatter = createValueFormatter("en");
+
+  const displayCharacterSettings = {
+    maxCharCount: 25,
+    maxScreenWidth: 1024,
+    minCharCount: 4,
+    minScreenWidth: 320,
+  };
 
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -49,10 +55,18 @@
     >
       <svelte:fragment slot="term">From</svelte:fragment>
       <svelte:fragment slot="definition">
-        {middleEllipsis(
-          data.from,
-          calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
-        )}
+        <AppAnchor href={`/account/?account=${data.from}`}>
+          {middleEllipsis(
+            data.from,
+            calculateAdaptiveCharCount(
+              screenWidth,
+              displayCharacterSettings.minScreenWidth,
+              displayCharacterSettings.maxScreenWidth,
+              displayCharacterSettings.minCharCount,
+              displayCharacterSettings.maxCharCount
+            )
+          )}
+        </AppAnchor>
       </svelte:fragment>
     </ListItem>
   {/if}
@@ -62,10 +76,18 @@
     >
       <svelte:fragment slot="term">To</svelte:fragment>
       <svelte:fragment slot="definition">
-        {middleEllipsis(
-          data.to,
-          calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
-        )}
+        <AppAnchor href={`/account/?account=${data.to}`}>
+          {middleEllipsis(
+            data.to,
+            calculateAdaptiveCharCount(
+              screenWidth,
+              displayCharacterSettings.minScreenWidth,
+              displayCharacterSettings.maxScreenWidth,
+              displayCharacterSettings.minCharCount,
+              displayCharacterSettings.maxCharCount
+            )
+          )}
+        </AppAnchor>
       </svelte:fragment>
     </ListItem>
   {/if}
@@ -79,26 +101,27 @@
         href={`/transactions/transaction?id=${data.txid}`}
         >{middleEllipsis(
           data.txid,
-          calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
+          calculateAdaptiveCharCount(
+            screenWidth,
+            displayCharacterSettings.minScreenWidth,
+            displayCharacterSettings.maxScreenWidth,
+            displayCharacterSettings.minCharCount,
+            displayCharacterSettings.maxCharCount
+          )
         )}</AppAnchor
       >
     </svelte:fragment>
   </ListItem>
 
-  <!-- TIMESTAMP -->
-  <ListItem
-    tooltipText={displayTooltips
-      ? "Time elapsed since the transaction was created"
-      : ""}
-  >
-    <svelte:fragment slot="term">relative time</svelte:fragment>
-    <RelativeTime
-      autoRefresh={autoRefreshTime}
-      date={data.date}
-      className="transaction-details__list-timestamp"
-      slot="definition"
-    />
-  </ListItem>
+  <!-- AMOUNT -->
+  {#if data.amount}
+    <ListItem tooltipText={displayTooltips ? "The transaction amount" : ""}>
+      <svelte:fragment slot="term">Amount</svelte:fragment>
+      <svelte:fragment slot="definition">
+        {formatter(luxToDusk(data.amount))} DUSK
+      </svelte:fragment>
+    </ListItem>
+  {/if}
 
   <!-- TX FEE -->
   <ListItem tooltipText={displayTooltips ? "The transaction fee amount" : ""}>

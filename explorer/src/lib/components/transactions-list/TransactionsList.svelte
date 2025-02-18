@@ -34,6 +34,13 @@
 
   const formatter = createValueFormatter("en");
 
+  const displayCharacterSettings = {
+    maxCharCount: 25,
+    maxScreenWidth: 1024,
+    minCharCount: 4,
+    minScreenWidth: 320,
+  };
+
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -57,7 +64,13 @@
         href={`/transactions/transaction?id=${data.txid}`}
         >{middleEllipsis(
           data.txid,
-          calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
+          calculateAdaptiveCharCount(
+            screenWidth,
+            displayCharacterSettings.minScreenWidth,
+            displayCharacterSettings.maxScreenWidth,
+            displayCharacterSettings.minCharCount,
+            displayCharacterSettings.maxCharCount
+          )
         )}</AppAnchor
       >
     </svelte:fragment>
