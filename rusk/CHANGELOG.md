@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change plonk verification to use embed verification data by default [#3507]
+- Change `prover` feature to include `recovery keys` subcommand [#3507]
+
+### Removed
+
+- Remove `recovery-keys` feature [#3507]
 
 ## [1.1.0] - 2025-02-14
 

@@ -19,11 +19,6 @@ clippy: ## Run clippy
 		-- -D warnings
 	@cargo clippy \
 		--no-default-features \
-		--features recovery-keys \
-		--release \
-		-- -D warnings
-	@cargo clippy \
-		--no-default-features \
 		--features recovery-state \
 		--release \
 		-- -D warnings
@@ -59,10 +54,10 @@ bench: ## Run the benchmarks
 run:
 	@cargo r --release --bin rusk
 
-recovery-keys: ## Build circuit keys
+recovery-keys: ## Build prover keys
 	@cargo r \
 		--no-default-features \
-		--features recovery-keys \
+		--features prover \
 		--release \
 		-- recovery keys
 

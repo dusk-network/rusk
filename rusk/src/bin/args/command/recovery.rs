@@ -13,7 +13,7 @@ use tracing::info;
 #[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Eq, Hash, Clone, Subcommand, Debug)]
 pub enum RecoveryCommand {
-    #[cfg(feature = "recovery-keys")]
+    #[cfg(feature = "prover")]
     /// Check ZK keys and regenerate them if missing
     Keys {
         /// Keeps untracked keys
@@ -73,7 +73,7 @@ impl RecoveryCommand {
                 init,
                 output,
             } => crate::args::state::recovery_state(init, force, output),
-            #[cfg(feature = "recovery-keys")]
+            #[cfg(feature = "prover")]
             Self::Keys { keep, crs_url } => {
                 rusk_recovery_tools::keys::exec(keep, crs_url)
             }

@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let log = Log::new(config.log_level(), config.log_filter());
 
-    #[cfg(any(feature = "recovery-state", feature = "recovery-keys"))]
+    #[cfg(any(feature = "recovery-state", feature = "prover"))]
     if let Some(args::command::Command::Recovery(recovery)) =
         args.command.clone()
     {
