@@ -14,11 +14,9 @@ mod rusk;
 mod stream;
 
 pub(crate) use event::{
-    BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
-    RequestData,
+    DataType, ExecutionError, MessageResponse as EventResponse,
 };
 
-use dusk_core::abi::Event;
 use tokio::task::JoinError;
 use tracing::{debug, info, warn};
 
@@ -30,25 +28,21 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::str::FromStr;
-use std::sync::mpsc as std_mpsc;
 use std::sync::Arc;
-use std::task::{Context, Poll};
 
 use async_trait::async_trait;
 
-use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::ToSocketAddrs;
-use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
+use tokio::sync::{broadcast, mpsc, RwLock};
 use tokio::{io, task};
-use tokio_stream::wrappers::{BroadcastStream, ReceiverStream};
+use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
-use tokio_util::either::Either;
 
-use http_body_util::{BodyExt, Full};
+use http_body_util::Full;
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::service::Service;
 use hyper::{
-    body::{self, Body, Bytes, Incoming},
+    body::{Bytes, Incoming},
     HeaderMap, Method, Request, Response, StatusCode,
 };
 use hyper_tungstenite::{tungstenite, HyperWebsocket};
@@ -57,12 +51,9 @@ use hyper_util::server::conn::auto::Builder as HttpBuilder;
 use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::{CloseFrame, Message};
 
-use futures_util::stream::iter as stream_iter;
-use futures_util::{SinkExt, TryStreamExt};
+use futures_util::SinkExt;
 
-use anyhow::Error as AnyhowError;
 use hyper_util::rt::TokioIo;
-use rand::rngs::OsRng;
 
 #[cfg(feature = "node")]
 use node_data::events::contract::ContractEvent;
@@ -73,14 +64,13 @@ use crate::VERSION;
 pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
 
 use self::event::{ResponseData, RuesEventUri, SessionId};
-use self::stream::{Listener, Stream};
+use self::stream::Listener;
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 const RUSK_VERSION_STRICT_HEADER: &str = "Rusk-Version-Strict";
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
-    local_addr: SocketAddr,
     _shutdown: broadcast::Sender<Infallible>,
 }
 
@@ -104,7 +94,7 @@ impl HttpServer {
         addr: A,
         headers: HeaderMap,
         cert_and_key: Option<(P1, P2)>,
-    ) -> io::Result<Self>
+    ) -> io::Result<(Self, SocketAddr)>
     where
         A: ToSocketAddrs,
         H: HandleRequest,
@@ -131,11 +121,11 @@ impl HttpServer {
             ws_event_channel_cap,
         ));
 
-        Ok(Self {
+        let server = Self {
             handle,
-            local_addr,
             _shutdown: shutdown_sender,
-        })
+        };
+        Ok((server, local_addr))
     }
 }
 
@@ -274,7 +264,7 @@ where
     /// A request may be a "normal" request, or a WebSocket upgrade request. In
     /// the former case, the request is handled on the spot, while in the
     /// latter task running the stream handler loop is spawned.
-    fn call(&self, mut req: Request<Incoming>) -> Self::Future {
+    fn call(&self, req: Request<Incoming>) -> Self::Future {
         let sources = self.sources.clone();
         let sockets_map = self.sockets_map.clone();
         let events = self.events.resubscribe();
@@ -283,7 +273,7 @@ where
         let headers = self.headers.clone();
 
         Box::pin(async move {
-            let mut rsp = handle_request(
+            let rsp = handle_request(
                 req,
                 sources,
                 sockets_map,
@@ -315,13 +305,12 @@ enum SubscriptionAction {
     Unsubscribe(RuesEventUri),
 }
 
-async fn handle_stream_rues<H: HandleRequest>(
+async fn handle_stream_rues(
     sid: SessionId,
     websocket: HyperWebsocket,
     events: broadcast::Receiver<RuesEvent>,
     mut subscriptions: mpsc::Receiver<SubscriptionAction>,
     mut shutdown: broadcast::Receiver<Infallible>,
-    handler: Arc<H>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
     >,
@@ -341,9 +330,6 @@ async fn handle_stream_rues<H: HandleRequest>(
         return;
     }
 
-    // FIXME make this a configuration parameter
-    const DISPATCH_BUFFER_SIZE: usize = 16;
-
     let mut subscription_set = HashSet::new();
 
     let mut events = BroadcastStream::new(events);
@@ -351,7 +337,7 @@ async fn handle_stream_rues<H: HandleRequest>(
     loop {
         tokio::select! {
             recv = stream.next() => {
-                match (recv) {
+                match recv {
                     Some(Ok(Message::Close(msg))) => {
                         debug!("Closing stream for {sid} due to {msg:?}");
                         let _ = stream.close(msg).await;
@@ -411,7 +397,7 @@ async fn handle_stream_rues<H: HandleRequest>(
             Some(event) = events.next() => {
                 let mut event = match event {
                     Ok(event) => event,
-                    Err(err) => {
+                    Err(_) => {
                         // If the event channel is closed, it means the
                         // server has stopped producing events, so we
                         // should inform the client and stop.
@@ -499,14 +485,13 @@ async fn handle_request_rues<H: HandleRequest>(
             events,
             subscriptions,
             shutdown,
-            handler.clone(),
             sockets_map.clone(),
         ));
 
         Ok(response.map(Into::into))
     } else if req.method() == Method::POST {
         let (event, binary_resp) = RuesDispatchEvent::from_request(req).await?;
-        let is_binary = event.is_binary();
+        let _is_binary = event.is_binary();
         let mut resp_headers = event.x_headers();
         let (responder, mut receiver) = mpsc::unbounded_channel();
         handle_execution_rues(handler, event, responder).await;
@@ -530,8 +515,6 @@ async fn handle_request_rues<H: HandleRequest>(
 
         Ok(resp)
     } else {
-        let headers = req.headers();
-
         let sid = match SessionId::parse_from_req(&req) {
             None => {
                 return response(
@@ -585,7 +568,7 @@ async fn handle_request_rues<H: HandleRequest>(
 }
 
 async fn handle_request<H>(
-    mut req: Request<Incoming>,
+    req: Request<Incoming>,
     sources: Arc<H>,
     sockets_map: Arc<
         RwLock<HashMap<SessionId, mpsc::Sender<SubscriptionAction>>>,
@@ -672,6 +655,7 @@ mod tests {
     use super::*;
 
     use dusk_core::abi::ContractId;
+    use event::{BinaryWrapper, RequestData};
     use node_data::events::contract::{ContractEvent, ContractTxEvent};
     use std::net::TcpStream;
     use tungstenite::client;
@@ -688,7 +672,7 @@ mod tests {
 
     #[async_trait]
     impl HandleRequest for TestHandle {
-        fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
+        fn can_handle_rues(&self, _: &RuesDispatchEvent) -> bool {
             true
         }
         async fn handle_rues(
@@ -721,7 +705,7 @@ mod tests {
         let (_, event_receiver) = broadcast::channel(16);
         let ws_event_channel_cap = 2;
 
-        let server = HttpServer::bind(
+        let (_server, local_addr) = HttpServer::bind(
             TestHandle,
             event_receiver,
             ws_event_channel_cap,
@@ -739,7 +723,7 @@ mod tests {
 
         let client = reqwest::Client::new();
         let response = client
-            .post(format!("http://{}/on/test/echo", server.local_addr))
+            .post(format!("http://{}/on/test/echo", local_addr))
             .body(request_bytes.to_vec())
             .send()
             .await
@@ -768,7 +752,7 @@ mod tests {
         let (_, event_receiver) = broadcast::channel(16);
         let ws_event_channel_cap = 2;
 
-        let server = HttpServer::bind(
+        let (_server, local_addr) = HttpServer::bind(
             TestHandle,
             event_receiver,
             ws_event_channel_cap,
@@ -792,7 +776,7 @@ mod tests {
         let response = client
             .post(format!(
                 "https://localhost:{}/on/test/echo",
-                server.local_addr.port()
+                local_addr.port()
             ))
             .body(request_bytes.clone())
             .send()
@@ -817,7 +801,7 @@ mod tests {
         let (event_sender, event_receiver) = broadcast::channel(16);
         let ws_event_channel_cap = 2;
 
-        let server = HttpServer::bind(
+        let (_server, local_addr) = HttpServer::bind(
             TestHandle,
             event_receiver,
             ws_event_channel_cap,
@@ -828,10 +812,10 @@ mod tests {
         .await
         .expect("Binding the server to the address should succeed");
 
-        let stream = TcpStream::connect(server.local_addr)
+        let stream = TcpStream::connect(local_addr)
             .expect("Connecting to the server should succeed");
 
-        let ws_uri = format!("ws://{}/on", server.local_addr);
+        let ws_uri = format!("ws://{local_addr}/on");
         let (mut stream, _) = client(ws_uri, stream)
             .expect("Handshake with the server should succeed");
 
@@ -858,8 +842,7 @@ mod tests {
 
         let response = client
             .get(format!(
-                "http://{}/on/contracts:{sub_contract_id_hex}/{TOPIC}",
-                server.local_addr
+                "http://{local_addr}/on/contracts:{sub_contract_id_hex}/{TOPIC}",
             ))
             .header("Rusk-Session-Id", sid.to_string())
             .send()
@@ -870,8 +853,7 @@ mod tests {
 
         let response = client
             .get(format!(
-                "http://{}/on/contracts:{maybe_sub_contract_id_hex}/{TOPIC}",
-                server.local_addr
+                "http://{local_addr}/on/contracts:{maybe_sub_contract_id_hex}/{TOPIC}",
             ))
             .header("Rusk-Session-Id", sid.to_string())
             .send()
@@ -939,8 +921,7 @@ mod tests {
 
         let response = client
             .delete(format!(
-                "http://{}/on/contracts:{maybe_sub_contract_id_hex}/{TOPIC}",
-                server.local_addr
+                "http://{local_addr}/on/contracts:{maybe_sub_contract_id_hex}/{TOPIC}",
             ))
             .header("Rusk-Session-Id", sid.to_string())
             .send()
@@ -970,8 +951,35 @@ mod tests {
         assert_eq!(received_event, event, "Event should be the same");
     }
 
+    fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
+        if bytes.len() < 4 {
+            return Err(anyhow::anyhow!("not enough bytes"));
+        }
+
+        let len = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+            as usize;
+        let (_, left) = bytes.split_at(4);
+
+        Ok((len, left))
+    }
+
+    type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
+    pub(crate) fn parse_header(bytes: &[u8]) -> anyhow::Result<Header> {
+        let (len, bytes) = parse_len(bytes)?;
+        if bytes.len() < len {
+            return Err(anyhow::anyhow!(
+                "not enough bytes for parsed len {len}"
+            ));
+        }
+
+        let (header_bytes, bytes) = bytes.split_at(len);
+        let header = serde_json::from_slice(header_bytes)?;
+
+        Ok((header, bytes))
+    }
+
     pub fn from_bytes(data: &[u8]) -> anyhow::Result<RuesEvent> {
-        let (mut headers, data) = crate::http::event::parse_header(data)?;
+        let (mut headers, data) = parse_header(data)?;
 
         let path = headers
             .remove("Content-Location")

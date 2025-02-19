@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::fs::File;
-use std::future::Future;
 use std::io::BufReader;
 use std::net::SocketAddr;
 use std::path::Path;
@@ -13,14 +12,10 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use hyper::body::Body;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use tokio::io::{self, AsyncRead, AsyncWrite, ReadBuf};
 use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
-use tokio_rustls::rustls::internal::msgs::codec::Codec;
-use tokio_rustls::rustls::pki_types::{
-    CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer,
-};
+use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::server::TlsStream;
 use tokio_rustls::TlsAcceptor;

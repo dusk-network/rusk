@@ -8,17 +8,10 @@
 
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
-use dusk_core::transfer::{
-    ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
-    CONVERT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, TRANSFER_CONTRACT,
-    WITHDRAW_TOPIC,
-};
-use node::archive::{MoonlightGroup, Order};
-use node_data::events::contract::ContractEvent;
+use node::archive::Order;
 
 use async_graphql::{Context, FieldError};
 
-use super::data::translator::*;
 use super::data::{MoonlightTransfers, NewAccountPublicKey};
 use crate::http::chain::graphql::{DBContext, OptResult};
 

@@ -38,17 +38,17 @@ impl RuskHttpBuilder {
                 _ => None,
             };
 
-            _ws_server = Some(
-                HttpServer::bind(
-                    handler,
-                    rues_receiver,
-                    http.ws_event_channel_cap,
-                    http.address,
-                    http.headers,
-                    cert_and_key,
-                )
-                .await?,
-            );
+            let (server, _) = HttpServer::bind(
+                handler,
+                rues_receiver,
+                http.ws_event_channel_cap,
+                http.address,
+                http.headers,
+                cert_and_key,
+            )
+            .await?;
+
+            _ws_server = Some(server);
         }
 
         if let Some(s) = _ws_server {

@@ -8,31 +8,24 @@ mod geo;
 pub mod graphql;
 
 use std::collections::HashMap;
-use std::net::SocketAddr;
-use std::ops::Deref;
 use std::sync::Arc;
 
-use dusk_consensus::commons::Database;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_vm::execute;
-use node::chain::ChainSrv;
-use node::database::rocksdb::{Backend, DBTransaction, MD_HASH_KEY};
+use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{self, Ledger, LightBlock, Mempool, Metadata, DB};
 use node::mempool::MempoolSrv;
-use node::network::Kadcast;
 use node::vm::VMExecution;
-use node::Network;
 use node_data::ledger::Transaction;
-use node_data::message::Message;
-
-use graphql::{DBContext, Query};
 
 use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,
 };
+use graphql::Query;
 use serde_json::{json, Map, Value};
 use tracing::error;
 
+use super::event::RequestData;
 use super::*;
 use crate::node::RuskNode;
 use crate::{VERSION, VERSION_BUILD};

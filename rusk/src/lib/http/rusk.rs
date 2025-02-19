@@ -10,14 +10,11 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::StakeFundOwner;
-use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
 use serde_json::json;
-use std::sync::{mpsc, Arc};
+use std::sync::mpsc;
 use std::thread;
-use tokio::task;
-use tungstenite::http::request;
 
 use crate::node::Rusk;
 
@@ -76,7 +73,8 @@ impl Rusk {
             let rusk = self.clone();
 
             thread::spawn(move || {
-                rusk.feeder_query_raw(contract_id, fn_name, data, sender);
+                let _ =
+                    rusk.feeder_query_raw(contract_id, fn_name, data, sender);
             });
             Ok(ResponseData::new(receiver))
         } else {
