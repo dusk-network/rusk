@@ -1,6 +1,11 @@
 <svelte:options immutable={true} />
 
 <script>
+  import { onMount } from "svelte";
+  import { RelativeTime } from "$lib/dusk/components";
+  import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
+  import { createValueFormatter } from "$lib/dusk/value";
+  import { luxToDusk } from "$lib/dusk/currency";
   import {
     AppAnchor,
     DataGuard,
@@ -9,11 +14,7 @@
     TransactionStatus,
     TransactionType,
   } from "$lib/components";
-  import { createValueFormatter } from "$lib/dusk/value";
-  import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
-  import { RelativeTime } from "$lib/dusk/components";
-  import { luxToDusk } from "$lib/dusk/currency";
-  import { onMount } from "svelte";
+  import { addressCharPropertiesDefaults } from "$lib/constants";
 
   import "./TransactionsList.css";
 
@@ -33,6 +34,9 @@
   let screenWidth = window.innerWidth;
 
   const formatter = createValueFormatter("en");
+
+  const { minScreenWidth, maxScreenWidth, minCharCount, maxCharCount } =
+    addressCharPropertiesDefaults;
 
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -57,7 +61,13 @@
         href={`/transactions/transaction?id=${data.txid}`}
         >{middleEllipsis(
           data.txid,
-          calculateAdaptiveCharCount(screenWidth, 320, 1024, 4, 25)
+          calculateAdaptiveCharCount(
+            screenWidth,
+            minScreenWidth,
+            maxScreenWidth,
+            minCharCount,
+            maxCharCount
+          )
         )}</AppAnchor
       >
     </svelte:fragment>
