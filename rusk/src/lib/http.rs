@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![allow(unused)]
-
 #[cfg(feature = "chain")]
 mod chain;
 mod event;
