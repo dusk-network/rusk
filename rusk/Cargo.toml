@@ -56,7 +56,6 @@ hyper-util = { workspace = true, features = ["server", "http1", "http2"] }
 http-body-util = { workspace = true }
 
 tokio-stream = { workspace = true, features = ["sync"] }
-tokio-util = { workspace = true, features = ["rt"] }
 tokio-rustls = { workspace = true }
 rustls-pemfile = { workspace = true }
 async-trait = { workspace = true }
