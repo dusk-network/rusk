@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change plonk verification to use embed verification data by default [#3507]
+- Change responses for moonlight gql endpoints (archive node) [#3512]
 
 ## [1.1.0] - 2025-02-14
 
@@ -347,6 +348,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3512]: https://github.com/dusk-network/rusk/issues/3512
 [#3507]: https://github.com/dusk-network/rusk/issues/3507
 [#3494]: https://github.com/dusk-network/rusk/issues/3494
 [#3481]: https://github.com/dusk-network/rusk/issues/3481
