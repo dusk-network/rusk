@@ -26,7 +26,7 @@ impl RuskNode {
             return Ok(cache.1.clone());
         }
 
-        let mut nodes = self.network().read().await.table().await;
+        let nodes = self.network().read().await.table().await;
         let mut locations = vec![];
 
         let client = reqwest::Client::new();
@@ -47,7 +47,7 @@ impl RuskNode {
             };
             if let Ok(v) = client.get(url).send().await {
                 let resp = v.bytes().await?.to_vec();
-                let mut resp: Value = serde_json::from_slice(&resp)?;
+                let resp: Value = serde_json::from_slice(&resp)?;
                 let mut object = Value::Object(Map::new());
                 object["lat"] = resp["lat"].clone();
                 object["lon"] = resp["lon"].clone();

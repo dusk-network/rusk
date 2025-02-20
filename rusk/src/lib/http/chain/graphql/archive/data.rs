@@ -8,8 +8,7 @@ use async_graphql::Object;
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use node::archive::MoonlightGroup;
-use serde::ser::SerializeStruct;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use translator::{IntermediateEvent, IntermediateMoonlightGroup};
 
 /// List of archived transactions where each transaction includes at least one
@@ -24,7 +23,7 @@ impl Serialize for MoonlightTransfers {
     where
         S: serde::Serializer,
     {
-        let mut moonlight_groups: &Vec<MoonlightGroup> = &self.0;
+        let moonlight_groups: &Vec<MoonlightGroup> = &self.0;
         let mut serializable_groups: Vec<IntermediateMoonlightGroup> = vec![];
 
         // yoink the events from the moonlight group
@@ -64,7 +63,7 @@ impl TryInto<NewAccountPublicKey> for String {
 
         Ok(NewAccountPublicKey(
             AccountPublicKey::from_bytes(&pk_bytes)
-                .map_err(|e| "Failed to serialize bytes".to_string())?,
+                .map_err(|e| format!("Failed to deserialize bytes {e:?}"))?,
         ))
     }
 }
@@ -89,7 +88,6 @@ pub mod translator {
     use dusk_core::abi::ContractId;
     use dusk_core::stake::StakeEvent;
     use dusk_core::stake::{Reward, SlashEvent, STAKE_CONTRACT};
-    use dusk_core::transfer::withdraw::WithdrawReceiver;
     use dusk_core::transfer::{
         ContractToAccountEvent, ContractToContractEvent, ConvertEvent,
         DepositEvent, MoonlightTransactionEvent, PhoenixTransactionEvent,
@@ -98,10 +96,7 @@ pub mod translator {
         MOONLIGHT_TOPIC, PHOENIX_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
     };
     use node_data::events::contract::{ContractEvent, OriginHash};
-    use serde::ser::SerializeStruct;
     use serde::{Deserialize, Serialize};
-
-    use super::*;
 
     #[serde_with::serde_as]
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -22,11 +22,8 @@ use node::database::{Ledger, DB};
 use node_data::ledger::Label;
 #[cfg(feature = "archive")]
 use {
-    archive::data::*,
-    archive::events::*,
-    archive::finalized_block::*,
-    archive::moonlight::*,
-    node::archive::{Archive, MoonlightGroup},
+    archive::data::*, archive::events::*, archive::finalized_block::*,
+    archive::moonlight::*, node::archive::Archive,
 };
 
 use std::sync::Arc;
@@ -259,7 +256,6 @@ impl Query {
     ///
     /// If `only_finalized` is set to `true`, only finalized blocks will be
     /// checked `only_finalized` is set to `false` by default.
-    #[cfg(feature = "archive")]
     async fn check_block(
         &self,
         ctx: &Context<'_>,
@@ -268,6 +264,12 @@ impl Query {
         only_finalized: Option<bool>,
     ) -> FieldResult<bool> {
         if only_finalized.unwrap_or(false) {
+            #[cfg(not(feature = "archive"))]
+            return Err(FieldError::new(
+                "only_finalized is supported only by archiver",
+            ));
+
+            #[cfg(feature = "archive")]
             check_finalized_block(ctx, height as i64, hash).await
         } else {
             check_block(ctx, height, hash).await

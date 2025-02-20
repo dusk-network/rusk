@@ -57,7 +57,7 @@ pub async fn last_blocks(
     ctx: &Context<'_>,
     count: u64,
 ) -> FieldResult<Vec<Block>> {
-    if (count < 1) {
+    if count < 1 {
         return Err(FieldError::new("count must be positive"));
     }
     let (db, _) = ctx.data::<DBContext>()?;
@@ -66,7 +66,7 @@ pub async fn last_blocks(
     let blocks = db.read().await.view(|t| {
         let mut blocks = vec![last_block];
         let mut count = count - 1;
-        while (count > 0) {
+        while count > 0 {
             match t.light_block(&hash_to_search)? {
                 None => break,
                 Some(h) => {
