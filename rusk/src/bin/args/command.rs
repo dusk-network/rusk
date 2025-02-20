@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#[cfg(any(feature = "recovery-state", feature = "recovery-keys"))]
+#[cfg(any(feature = "recovery-state", feature = "prover"))]
 pub mod recovery;
 
 #[cfg(feature = "chain")]
@@ -15,7 +15,7 @@ use clap::Subcommand;
 #[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Eq, Hash, Clone, Subcommand, Debug)]
 pub enum Command {
-    #[cfg(any(feature = "recovery-state", feature = "recovery-keys"))]
+    #[cfg(any(feature = "recovery-state", feature = "prover"))]
     #[clap(subcommand)]
     Recovery(recovery::RecoveryCommand),
 
