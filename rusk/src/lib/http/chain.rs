@@ -9,13 +9,18 @@ pub mod graphql;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::ops::Deref;
 use std::sync::Arc;
 
+use dusk_consensus::commons::Database;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
-use node::database::rocksdb::{Backend, DBTransaction};
-use node::database::{Mempool, DB};
+use dusk_vm::execute;
+use node::chain::ChainSrv;
+use node::database::rocksdb::{Backend, DBTransaction, MD_HASH_KEY};
+use node::database::{self, Ledger, LightBlock, Mempool, Metadata, DB};
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
+use node::vm::VMExecution;
 use node::Network;
 use node_data::ledger::Transaction;
 use node_data::message::Message;
@@ -59,6 +64,7 @@ impl HandleRequest for RuskNode {
             ("graphql", _, "query") => true,
             ("transactions", _, "preverify") => true,
             ("transactions", _, "propagate") => true,
+            ("transactions", _, "simulate") => true,
             ("network", _, "peers") => true,
             ("network", _, "peers_location") => true,
             ("node", _, "info") => true,
@@ -79,6 +85,9 @@ impl HandleRequest for RuskNode {
             }
             ("transactions", _, "propagate") => {
                 self.propagate_tx(request.data.as_bytes()).await
+            }
+            ("transactions", _, "simulate") => {
+                self.simulate_tx(request.data.as_bytes()).await
             }
             ("network", _, "peers") => {
                 let amount = request.data.as_string().trim().parse()?;
@@ -253,4 +262,51 @@ impl RuskNode {
 
         Ok(ResponseData::new(serde_json::to_value(stats)?))
     }
+
+    async fn simulate_tx(&self, tx: &[u8]) -> anyhow::Result<ResponseData> {
+        let tx = ProtocolTransaction::from_slice(tx)
+            .map_err(|e| anyhow::anyhow!("Invalid transaction: {e:?}"))?;
+        let (config, mut session) = {
+            let vm_handler = self.inner().vm_handler();
+            let vm_handler = vm_handler.read().await;
+            if tx.gas_limit() > vm_handler.get_block_gas_limit() {
+                return Err(anyhow::anyhow!("Gas limit is too high."));
+            }
+            let tip = load_tip(&self.db())
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to load the tip: {e}"))?
+                .ok_or_else(|| anyhow::anyhow!("Could not find the tip"))?;
+            let height = tip.header.height;
+            let config = vm_handler.vm_config.to_execution_config(height);
+            let session = vm_handler
+                .new_block_session(height, vm_handler.tip.read().current)
+                .map_err(|e| {
+                    anyhow::anyhow!("Failed to initialize a session: {e}")
+                })?;
+            (config, session)
+        };
+        let receipt = execute(&mut session, &tx, &config);
+        let resp = match receipt {
+            Ok(receipt) => json!({
+                "gas-spent": receipt.gas_spent,
+                "error": receipt.data.err().map(|err| format!("{err:?}")),
+            }),
+            Err(err) => json!({
+                "gas-spent": 0,
+                "error": format!("{err:?}")
+            }),
+        };
+        Ok(ResponseData::new(resp))
+    }
+}
+
+async fn load_tip<DB: database::DB>(
+    db: &Arc<RwLock<DB>>,
+) -> anyhow::Result<Option<LightBlock>> {
+    db.read().await.view(|t| {
+        anyhow::Ok(t.op_read(MD_HASH_KEY)?.and_then(|tip_hash| {
+            t.light_block(&tip_hash[..])
+                .expect("block to be found if metadata is set")
+        }))
+    })
 }
