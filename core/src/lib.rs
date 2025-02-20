@@ -11,6 +11,7 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
+#![feature(cfg_eval)]
 #![feature(const_fn_floating_point_arithmetic)]
 #![cfg_attr(not(target_family = "wasm"), deny(unused_crate_dependencies))]
 #![deny(unused_extern_crates)]
@@ -27,9 +28,6 @@ pub use error::Error;
 
 mod dusk;
 pub use dusk::{dusk, from_dusk, Dusk, LUX};
-
-#[cfg(feature = "serde")]
-mod serde_support;
 
 // elliptic curve types
 pub use dusk_bls12_381::BlsScalar;
