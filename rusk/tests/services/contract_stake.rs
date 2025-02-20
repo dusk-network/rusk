@@ -7,12 +7,14 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use dusk_core::stake::{self, Stake, DEFAULT_MINIMUM_STAKE, EPOCH};
+use dusk_core::stake::{
+    self, Stake, DEFAULT_MINIMUM_STAKE, EPOCH, STAKE_CONTRACT,
+};
 
 use dusk_bytes::Serializable;
 use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::ContractCall;
-use dusk_core::transfer::{self, Transaction};
+use dusk_core::transfer::{self, ReceiveFromContract, Transaction};
 use dusk_vm::gen_contract_id;
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
@@ -44,6 +46,59 @@ fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
 
     new_state(dir, &snapshot, vm_config)
 }
+fn wallet(rusk: &Rusk) -> wallet::Wallet<TestStore, TestStateClient> {
+    // Create a wallet
+    wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache: Arc::new(RwLock::new(HashMap::new())),
+        },
+    )
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn stake_from_contract_direct() -> Result<()> {
+    // Setup the logger
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = stake_state(&tmp)?;
+
+    // Create a wallet
+    let wallet = wallet(&rusk);
+
+    deploy_proxy_contract(&rusk, &wallet);
+
+    let wrong_call = ReceiveFromContract {
+        contract: STAKE_CONTRACT,
+        // no need to put valid data here, since we expect a fast-fail
+        data: vec![],
+        value: 100,
+    };
+    let call =
+        ContractCall::new(STAKE_CONTRACT, "stake_from_contract", &wrong_call)
+            .expect("call to be successful");
+
+    let stake_from_contract = wallet
+        .moonlight_execute(
+            0,
+            0,
+            DEFAULT_MINIMUM_STAKE,
+            GAS_LIMIT,
+            GAS_PRICE,
+            Some(call),
+        )
+        .expect("stake to be successful");
+    let tx = execute_transaction(
+        stake_from_contract,
+        &rusk,
+        1,
+        "Panic: Cannot be called by a root ICC",
+        None,
+    );
+    Ok(())
+}
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn stake_from_contract() -> Result<()> {
@@ -55,16 +110,8 @@ pub async fn stake_from_contract() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = stake_state(&tmp)?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
     // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
+    let wallet = wallet(&rusk);
 
     let contract_id = deploy_proxy_contract(&rusk, &wallet);
 
