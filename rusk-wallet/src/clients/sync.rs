@@ -86,10 +86,9 @@ pub(crate) async fn sync_db(
             if vk.owns(note.stealth_address()) {
                 let nullifier = note.gen_nullifier(sk);
                 let spent =
-                    fetch_existing_nullifiers_remote(client, &[nullifier])
+                    !fetch_existing_nullifiers_remote(client, &[nullifier])
                         .await?
-                        .first()
-                        .is_some();
+                        .is_empty();
 
                 let note = (note.clone(), nullifier);
 

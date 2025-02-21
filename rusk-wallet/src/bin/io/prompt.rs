@@ -251,7 +251,7 @@ pub(crate) fn request_token_amt(
 ) -> Result<Dusk, Error> {
     let min = MIN_CONVERTIBLE;
 
-    request_token(action, min, balance, None).map_err(Error::from)
+    request_token(action, min, balance, None)
 }
 
 /// Request amount of tokens that can be 0
@@ -261,7 +261,7 @@ pub(crate) fn request_optional_token_amt(
 ) -> Result<Dusk, Error> {
     let min = Dusk::from(0);
 
-    request_token(action, min, balance, None).map_err(Error::from)
+    request_token(action, min, balance, None)
 }
 
 /// Request amount of tokens that can't be lower than the `min` argument and
@@ -270,7 +270,7 @@ pub(crate) fn request_stake_token_amt(
     balance: Dusk,
     min: Dusk,
 ) -> Result<Dusk, Error> {
-    request_token("stake", min, balance, None).map_err(Error::from)
+    request_token("stake", min, balance, None)
 }
 
 /// Request gas limit
@@ -372,7 +372,7 @@ pub(crate) fn request_address(
 pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
     let validator = |path_str: &str| {
         let path = PathBuf::from(path_str);
-        if path.extension().map_or(false, |ext| ext == "wasm") {
+        if path.extension().is_some_and(|ext| ext == "wasm") {
             Ok(Validation::Valid)
         } else {
             Ok(Validation::Invalid("Not a valid directory".into()))
