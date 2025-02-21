@@ -248,7 +248,7 @@ impl RuskNode {
             let total: u64 = gas_prices.iter().sum();
             let count = gas_prices.len() as u64;
             // ceiling division to round up
-            (total + count - 1) / count
+            total.div_ceil(count)
         };
 
         let max_gas_price = *gas_prices.iter().max().unwrap();

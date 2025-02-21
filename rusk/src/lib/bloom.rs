@@ -141,7 +141,7 @@ pub struct BloomIuf<'a> {
     bloom: &'a mut Bloom,
 }
 
-impl<'a> BloomIuf<'a> {
+impl BloomIuf<'_> {
     /// Updates the underlying hasher with the given `bytes`.
     pub fn update(&mut self, bytes: impl AsRef<[u8]>) {
         self.hasher.update(bytes.as_ref());

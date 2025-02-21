@@ -55,9 +55,6 @@ use futures_util::SinkExt;
 
 use hyper_util::rt::TokioIo;
 
-#[cfg(feature = "node")]
-use node_data::events::contract::ContractEvent;
-
 use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
