@@ -354,10 +354,12 @@ impl Slash {
                 return Ok(None);
             }
         };
-        let provisioner = (*provisioner.inner()).try_into().map_err(|e| {
-            error!("Unable to generate provisioners from IterationInfo: {e:?}");
-            e
-        })?;
+        let provisioner =
+            (*provisioner.inner()).try_into().inspect_err(|e| {
+                error!(
+                    "Unable to generate provisioners from IterationInfo: {e:?}"
+                );
+            })?;
         Ok(Some(Self {
             provisioner,
             r#type: slash,
