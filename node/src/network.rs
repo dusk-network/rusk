@@ -185,7 +185,7 @@ impl<const N: usize> Kadcast<N> {
 
     async fn send_with_metrics(
         &self,
-        bytes: &Vec<u8>,
+        bytes: &[u8],
         recv_addr: Vec<SocketAddr>,
     ) {
         if !recv_addr.is_empty() {
