@@ -75,7 +75,7 @@ impl<V: StepVote> Aggregator<V> {
 
         self.votes
             .get(&(msg_step, *vote))
-            .map_or(false, |(_, cluster)| cluster.contains_key(signer))
+            .is_some_and(|(_, cluster)| cluster.contains_key(signer))
     }
 
     pub fn collect_vote(
