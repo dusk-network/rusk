@@ -180,7 +180,7 @@ fn record_flows(
     address_outflow_mappings: &mut Vec<(AccountPublicKey, EventIdentifier)>,
     memo_mappings: &mut Vec<(Vec<u8>, EventIdentifier)>,
     tx_ident: EventIdentifier,
-    group: &Vec<ContractEvent>,
+    group: &[ContractEvent],
 ) -> bool {
     // Helper to handle inflow mappings without pushing duplicates
     let mut handle_inflow = |key: AccountPublicKey| {
