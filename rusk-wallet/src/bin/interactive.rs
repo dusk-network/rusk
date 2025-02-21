@@ -529,7 +529,7 @@ fn status_emoji(status: bool) -> String {
     }
 }
 
-impl<'a> Display for ProfileSelect<'a> {
+impl Display for ProfileSelect<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ProfileSelect::Index(index, profile) => write!(
