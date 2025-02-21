@@ -6,33 +6,23 @@
 
 //! Module for GraphQL that relates to stored events in the archive.
 
-use async_graphql::{Context, FieldError, FieldResult, Object};
-use dusk_core::abi::CONTRACT_ID_BYTES;
-use node_data::events::contract::WrappedContractId;
-
 use super::data::ContractEvents;
 use crate::http::chain::graphql::{DBContext, OptResult};
+use async_graphql::{Context, FieldError};
+use dusk_core::abi::CONTRACT_ID_BYTES;
 
 pub async fn events_by_height(
     ctx: &Context<'_>,
     height: i64,
 ) -> OptResult<ContractEvents> {
     let (_, archive) = ctx.data::<DBContext>()?;
-    let mut events;
 
-    if height < 0 {
-        events = archive.fetch_json_last_events().await.map_err(|e| {
-            FieldError::new(format!("Cannot fetch events: {}", e))
-        })?;
+    let events = if height < 0 {
+        archive.fetch_json_last_events().await
     } else {
-        events =
-            archive
-                .fetch_json_events_by_height(height)
-                .await
-                .map_err(|e| {
-                    FieldError::new(format!("Cannot fetch events: {}", e))
-                })?;
+        archive.fetch_json_events_by_height(height).await
     }
+    .map_err(|e| FieldError::new(format!("Cannot fetch events: {e}")))?;
 
     Ok(Some(ContractEvents(serde_json::from_str(&events)?)))
 }

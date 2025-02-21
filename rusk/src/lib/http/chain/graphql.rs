@@ -22,12 +22,8 @@ use node::database::{Ledger, DB};
 use node_data::ledger::Label;
 #[cfg(feature = "archive")]
 use {
-    archive::data::deserialized_archive_data::DeserializedMoonlightGroups,
-    archive::data::*,
-    archive::events::*,
-    archive::finalized_block::*,
-    archive::moonlight::*,
-    node::archive::{Archive, MoonlightGroup},
+    archive::data::*, archive::events::*, archive::finalized_block::*,
+    archive::moonlight::*, node::archive::Archive,
 };
 
 use std::sync::Arc;
@@ -180,16 +176,24 @@ impl Query {
         })
     }
 
+    /// Retrieves the events of all historical transactions that have been
+    /// affecting the moonlight balance of the given address.
     #[cfg(feature = "archive")]
     async fn full_moonlight_history(
         &self,
         ctx: &Context<'_>,
         address: String,
         ord: Option<String>,
-    ) -> OptResult<DeserializedMoonlightGroups> {
+    ) -> OptResult<MoonlightTransfers> {
         full_moonlight_history(ctx, address, ord).await
     }
 
+    /// Retrieves raw events from transactions where at least one event within a
+    /// transaction indicates a transfer of funds.
+    ///
+    /// Filter by topic="moonlight" and target=TRANSFER_CONTRACT on events for a
+    /// tx, to get only events from moonlight transactions. (Instead of both
+    /// phoenix or moonlight transactions)
     #[allow(clippy::too_many_arguments)]
     #[cfg(feature = "archive")]
     async fn moonlight_history(
@@ -223,7 +227,7 @@ impl Query {
         moonlight_tx_by_memo(ctx, memo).await
     }
 
-    /// Get contract events by height or hash.
+    /// Get contract events by block height or hash.
     #[cfg(feature = "archive")]
     async fn contract_events(
         &self,
@@ -252,7 +256,6 @@ impl Query {
     ///
     /// If `only_finalized` is set to `true`, only finalized blocks will be
     /// checked `only_finalized` is set to `false` by default.
-    #[cfg(feature = "archive")]
     async fn check_block(
         &self,
         ctx: &Context<'_>,
@@ -261,6 +264,12 @@ impl Query {
         only_finalized: Option<bool>,
     ) -> FieldResult<bool> {
         if only_finalized.unwrap_or(false) {
+            #[cfg(not(feature = "archive"))]
+            return Err(FieldError::new(
+                "only_finalized is supported only by archiver",
+            ));
+
+            #[cfg(feature = "archive")]
             check_finalized_block(ctx, height as i64, hash).await
         } else {
             check_block(ctx, height, hash).await

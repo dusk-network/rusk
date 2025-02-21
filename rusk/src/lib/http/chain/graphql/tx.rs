@@ -22,7 +22,7 @@ pub async fn last_transactions(
     ctx: &Context<'_>,
     count: usize,
 ) -> FieldResult<Vec<SpentTransaction>> {
-    if (count < 1) {
+    if count < 1 {
         return Err(FieldError::new("count must be positive"));
     }
 

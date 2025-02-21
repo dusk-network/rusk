@@ -8,17 +8,10 @@
 
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
-use dusk_core::transfer::{
-    ConvertEvent, DepositEvent, MoonlightTransactionEvent, WithdrawEvent,
-    CONVERT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC, TRANSFER_CONTRACT,
-    WITHDRAW_TOPIC,
-};
-use node::archive::{MoonlightGroup, Order};
-use node_data::events::contract::ContractEvent;
+use node::archive::Order;
 
 use async_graphql::{Context, FieldError};
 
-use super::data::deserialized_archive_data::*;
 use super::data::{MoonlightTransfers, NewAccountPublicKey};
 use crate::http::chain::graphql::{DBContext, OptResult};
 
@@ -26,7 +19,7 @@ pub async fn full_moonlight_history(
     ctx: &Context<'_>,
     address: String,
     ordering: Option<String>,
-) -> OptResult<DeserializedMoonlightGroups> {
+) -> OptResult<MoonlightTransfers> {
     let (_, archive) = ctx.data::<DBContext>()?;
     let v = bs58::decode(address).into_vec()?;
 
@@ -43,32 +36,10 @@ pub async fn full_moonlight_history(
         _ => None,
     };
 
-    let moonlight_groups = archive.full_moonlight_history(pk, ord)?;
-
-    let mut deser_moonlight_groups = Vec::new();
-
-    if let Some(moonlight_groups) = moonlight_groups {
-        for moonlight_group in moonlight_groups {
-            let deser_events = moonlight_group
-                .events()
-                .iter()
-                .map(|event| event.clone().into())
-                .collect::<Vec<DeserializedContractEvent>>();
-
-            let deserialized_moonlight_group = DeserializedMoonlightGroup {
-                events: serde_json::to_value(deser_events)?,
-                origin: *moonlight_group.origin(),
-                block_height: moonlight_group.block_height(),
-            };
-
-            deser_moonlight_groups.push(deserialized_moonlight_group);
-        }
-    }
-
-    if deser_moonlight_groups.is_empty() {
-        Ok(None)
+    if let Some(moonlight_events) = archive.full_moonlight_history(pk, ord)? {
+        Ok(Some(MoonlightTransfers(moonlight_events)))
     } else {
-        Ok(Some(DeserializedMoonlightGroups(deser_moonlight_groups)))
+        Ok(None)
     }
 }
 

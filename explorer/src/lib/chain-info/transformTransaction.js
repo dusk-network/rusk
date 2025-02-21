@@ -2,6 +2,7 @@ import { unixTsToDate } from "$lib/dusk/date";
 
 /** @type {(v: GQLTransaction) => Transaction} */
 const transformTransaction = (tx) => ({
+  amount: undefined,
   blockhash: tx.blockHash,
   blockheight: tx.blockHeight,
   date: unixTsToDate(tx.blockTimestamp),
