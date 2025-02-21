@@ -19,6 +19,7 @@ test("Network connection", async () => {
     "kadcastAddress",
     "version",
     "versionBuild",
+    "vmConfig",
     "chain",
   ]);
 
