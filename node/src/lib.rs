@@ -6,7 +6,6 @@
 
 #![deny(unused_crate_dependencies)]
 #![deny(unused_extern_crates)]
-#![feature(lazy_cell)]
 
 #[cfg(feature = "archive")]
 pub mod archive;

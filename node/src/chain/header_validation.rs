@@ -30,7 +30,6 @@ use node_data::ledger::{Fault, InvalidFault, Seed};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger, StepName};
-use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::{debug, error};
 
@@ -40,9 +39,6 @@ use crate::database::Ledger;
 const MARGIN_TIMESTAMP: u64 = 3;
 
 // TODO: Use thiserror instead of anyhow
-
-#[derive(Debug, Error)]
-enum HeaderVerificationErr {}
 
 /// An implementation of the all validation checks of a candidate block header
 /// according to current context
