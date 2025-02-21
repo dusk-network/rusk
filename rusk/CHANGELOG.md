@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change plonk verification to use embed verification data by default [#3507]
 - Change responses for moonlight gql endpoints (archive node) [#3512]
+- Update rust toolchain to nightly 2025-01-03 (1.85.0) [#3470]
 
 ## [1.1.0] - 2025-02-14
 
@@ -348,7 +349,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+<<<<<<< HEAD
 [#3512]: https://github.com/dusk-network/rusk/issues/3512
+=======
+[#3470]: https://github.com/dusk-network/rusk/issues/3470
+>>>>>>> fac21872 (workspace: update rust toolchain to nightly 2025-01-03 (1.85.0))
 [#3507]: https://github.com/dusk-network/rusk/issues/3507
 [#3494]: https://github.com/dusk-network/rusk/issues/3494
 [#3481]: https://github.com/dusk-network/rusk/issues/3481
