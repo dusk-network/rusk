@@ -25,8 +25,8 @@ wasm: ## Generate the optimized WASM for the contract given
     		--target wasm32-unknown-unknown
 			
 clippy: ## Run clippy
-	@cargo clippy --all-features --release -- -D warnings
-	@cargo clippy -Z build-std=core,alloc --release --target wasm32-unknown-unknown -- -D warnings
+	@cargo +dusk clippy --all-features --release -- -D warnings
+	@cargo +dusk clippy -Z build-std=core,alloc --release --target wasm32-unknown-unknown -- -D warnings
 
 doc: ## Run doc gen
 	@cargo doc --release
