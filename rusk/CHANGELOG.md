@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change plonk verification to use embed verification data by default [#3507]
 - Change responses for moonlight gql endpoints (archive node) [#3512]
 
+## [1.1.1] - 2025-02-21
+
+### Changed
+
+- Upgrade piecrust to `0.27.2`
+
 ## [1.1.0] - 2025-02-14
 
 ### Added
@@ -383,7 +389,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.1.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.1.1...HEAD
+[1.1.1]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.1.0...dusk-rusk-1.1.1
 [1.1.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.0.2...dusk-rusk-1.1.0
 [1.0.2]: https://github.com/dusk-network/rusk/compare/rusk-1.0.1...dusk-rusk-1.0.2
 [1.0.1]: https://github.com/dusk-network/rusk/compare/rusk-1.0.0...rusk-1.0.1
