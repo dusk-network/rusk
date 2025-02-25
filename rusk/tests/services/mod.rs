@@ -9,6 +9,7 @@ pub mod contract_stake;
 pub mod conversion;
 //pub mod deploy;
 pub mod finalization;
+pub mod finalization_order;
 pub mod gas_behavior;
 pub mod mainnet;
 pub mod moonlight_stake;
