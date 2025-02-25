@@ -1,0 +1,29 @@
+{
+    "nullifiers": [
+        "437d451847795bf26fafc54b41589de1b0158cd9f4e370dcad44dca4b6bb350f"
+    ],
+    "notes": [
+        {
+            "note_type": "Obfuscated",
+            "value_commitment": "df675ccef61cecb6b2fbefd0f9e8fbe3d8a08913603875f2d589f2254cbf1b5d",
+            "stealth_address": "3VBAmezAcZuVcZpa5pv3xLmYvZN9DcMg5DErbbZmPyWnSs5FQUaSeZDeoXnDWVyLU4XvaEPpqndkTdqYaDKLvtcF",
+            "pos": "18446744073709551615",
+            "value_enc": "2657f47fa888eed9a4e5def1d8937cfe8362d63b18b32d2a0ab95d941fc0279e1567977447f394edf40582dd689120fd9def28254e88bcfbcfed19d8b39550a5152a4b13",
+            "sender": {
+                "Encryption": [
+                    [
+                        "635868acc173324f02cd983f8e49b32075fc80d7fd43baa17c3259b506874088",
+                        "96a172ec67e48affb7a2f07b0b1e769259bb9155239cb81b75068ede519e1637"
+                    ],
+                    [
+                        "f2a0637e4ff135789cba8ac33be3f831503bbefa875530d5118b77e973981013",
+                        "d6993d8cc7d9ab4fb5c79c48d72fec7b0219f2ce45a333811391ac693c32d31d"
+                    ]
+                ]
+            }
+        }
+    ],
+    "memo": "1e3aba7a1f21d50037ae6bd23910a1ee09ac4e992e01938152f6d2dd43970164da3fc7b517b61024fcad5acd80e4e5859021",
+    "gas_spent": "11747410698588460779",
+    "refund_note": null
+}
