@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use rand::prelude::*;
@@ -79,6 +79,29 @@ fn submit_blocks(rusk: &Rusk, txs: &[Transaction]) -> Vec<[u8; 32]> {
         let root = rusk.state_root();
         roots.push(root);
         height += 1;
+    }
+
+    roots
+}
+
+fn submit_empty_blocks(rusk: &Rusk, blocks: u64) -> Vec<[u8; 32]> {
+    let mut roots = vec![];
+
+    let base_root = rusk.state_root();
+    roots.push(base_root);
+
+    for height in 0..blocks {
+        let (_, root) = generator_procedure2(
+            &rusk,
+            &[],
+            height,
+            BLOCK_GAS_LIMIT,
+            vec![],
+            None,
+            None,
+        )
+        .expect("block to be created");
+        roots.push(root);
     }
 
     roots
@@ -176,6 +199,29 @@ fn prepare_commits(
     ))
 }
 
+fn prepare_empty_commits(rusk: &Rusk) -> Result<([u8; 32], [u8; 32])> {
+    logger();
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    let empty_blocks_roots = submit_empty_blocks(&rusk, 2);
+
+    println!(
+        "empty blocks roots={:?}",
+        empty_blocks_roots
+            .iter()
+            .map(|r| hex::encode(r))
+            .collect::<Vec<_>>()
+    );
+
+    Ok((
+        *empty_blocks_roots.get(1).unwrap(),
+        *empty_blocks_roots.get(2).unwrap(),
+    ))
+}
+
 fn new_wallet(
     rusk: &Rusk,
     cache: Arc<RwLock<HashMap<Vec<u8>, DummyCacheItem>>>,
@@ -191,47 +237,47 @@ fn new_wallet(
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn finalization_order_correct() -> Result<()> {
-    // let tmp = tempdir().expect("Should be able to create temporary directory");
-    let tmp = Path::new("/Users/miloszm/.dusk/rusk/state");
+    let tmp = tempdir().expect("Should be able to create temporary directory");
     let cache = Arc::new(RwLock::new(HashMap::new()));
     let amount = 1000u64;
-    let rusk = initial_state(tmp)?;
+    let rusk = initial_state(tmp.as_ref())?;
     let (root_a, root_b, root_c) =
         prepare_commits(&rusk, cache.clone(), amount)?;
-    rusk.finalize_state(root_c, vec![root_a, root_b])
+    let (root_e1, root_e2) = prepare_empty_commits(&rusk)?;
+    rusk.finalize_state(root_e2, vec![root_a, root_b, root_c, root_e1])
         .expect("finalization should work");
-    // let rusk = previous_state(&tmp)?;
-    // let wallet = new_wallet(&rusk, cache.clone());
-    // assert_eq!(
-    //     wallet
-    //         .get_balance(3)
-    //         .expect("Failed to get the balance")
-    //         .value,
-    //     3 * amount, // NOTE: 3 * amount is correct
-    //     "Wrong resulting balance for the receiver"
-    // );
+    let rusk = previous_state(&tmp)?;
+    let wallet = new_wallet(&rusk, cache.clone());
+    assert_eq!(
+        wallet
+            .get_balance(3)
+            .expect("Failed to get the balance")
+            .value,
+        3 * amount, // NOTE: 3 * amount is correct
+        "Wrong resulting balance for the receiver"
+    );
     Ok(())
 }
 
-// #[tokio::test(flavor = "multi_thread")]
-// pub async fn finalization_order_incorrect() -> Result<()> {
-//     let tmp = tempdir().expect("Should be able to create temporary directory");
-//     let cache = Arc::new(RwLock::new(HashMap::new()));
-//     let amount = 1000u64;
-//     let rusk = initial_state(tmp.as_ref())?;
-//     let (root_a, root_b, root_c) =
-//         prepare_commits(&rusk, cache.clone(), amount)?;
-//     rusk.finalize_state(root_a, vec![root_b, root_c])
-//         .expect("finalization should work"); // good - problem caught
-//     let rusk = previous_state(&tmp)?;
-//     let wallet = new_wallet(&rusk, cache.clone());
-//     assert_eq!(
-//         wallet
-//             .get_balance(3)
-//             .expect("Failed to get the balance")
-//             .value,
-//         1 * amount, // NOTE: 1 * amount instead of 3 * amount
-//         "Wrong resulting balance for the receiver"
-//     );
-//     Ok(())
-// }
+#[tokio::test(flavor = "multi_thread")]
+pub async fn finalization_order_incorrect() -> Result<()> {
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+    let amount = 1000u64;
+    let rusk = initial_state(tmp.as_ref())?;
+    let (root_a, root_b, root_c) =
+        prepare_commits(&rusk, cache.clone(), amount)?;
+    rusk.finalize_state(root_a, vec![root_b, root_c])
+        .expect("finalization should work"); // good - problem caught
+    let rusk = previous_state(&tmp)?;
+    let wallet = new_wallet(&rusk, cache.clone());
+    assert_eq!(
+        wallet
+            .get_balance(3)
+            .expect("Failed to get the balance")
+            .value,
+        1 * amount, // NOTE: 1 * amount instead of 3 * amount
+        "Wrong resulting balance for the receiver"
+    );
+    Ok(())
+}
