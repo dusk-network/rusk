@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/// Buildfile for the rusk crate.
+//! Buildfile for the rusk crate.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Ensure we run the build script again even if we change just the build.rs

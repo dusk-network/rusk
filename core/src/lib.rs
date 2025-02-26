@@ -11,6 +11,8 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::used_underscore_binding)]
+#![allow(stable_features)]
 #![feature(const_fn_floating_point_arithmetic)]
 #![cfg_attr(not(target_family = "wasm"), deny(unused_crate_dependencies))]
 #![deny(unused_extern_crates)]

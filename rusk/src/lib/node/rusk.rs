@@ -270,8 +270,8 @@ impl Rusk {
     /// Accept the given transactions.
     ///
     ///   * `consistency_check` - represents a state_root, the caller expects to
-    ///   be returned on successful transactions execution. Passing a None
-    ///   value disables the check.
+    ///     be returned on successful transactions execution. Passing a None
+    ///     value disables the check.
     ///
     /// # Returns
     ///  - Vec<SpentTransaction> - The transactions that were spent.

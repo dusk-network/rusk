@@ -147,10 +147,12 @@ impl Archive {
         Arc::new(
             OptimisticTransactionDB::open_cf_descriptors(
                 &rocksdb_opts,
-                path,
+                &path,
                 cfs,
             )
-            .expect("should be a valid database in {path}"),
+            .unwrap_or_else(|_| {
+                panic!("should be a valid database in {path:?}")
+            }),
         )
     }
 
@@ -650,7 +652,7 @@ mod util {
                         tx.block_height()
                     })
                     .ok()
-                    .map_or(false, |idx| {
+                    .is_some_and(|idx| {
                         outflows[idx].origin() == inflow_tx.origin()
                     })
             })
@@ -676,7 +678,7 @@ mod util {
                 // Remove all transactions that are above the to_block
                 while moonlight_tx
                     .last()
-                    .map_or(false, |tx| tx.block_height() > to_block)
+                    .is_some_and(|tx| tx.block_height() > to_block)
                 {
                     moonlight_tx.pop();
                 }
@@ -709,7 +711,7 @@ mod util {
     }
 
     /// Find lower bound for MoonlightTx.
-    fn lower_bound(moonlight_tx: &Vec<EventIdentifier>, target: u64) -> usize {
+    fn lower_bound(moonlight_tx: &[EventIdentifier], target: u64) -> usize {
         let mut left = 0;
         let mut right = moonlight_tx.len();
 

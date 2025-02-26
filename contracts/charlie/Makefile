@@ -2,7 +2,7 @@ all: wasm clippy
 
 wasm: ## Generate the optimized WASM for the contract given
 	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)= -C link-args=-zstack-size=65536" \
-    	cargo build \
+    	cargo +dusk build \
     		--release \
     		--color=always \
 			-Z build-std=core,alloc \
@@ -11,7 +11,7 @@ wasm: ## Generate the optimized WASM for the contract given
 test:
 
 clippy:
-	@cargo clippy -Z build-std=core,alloc --release --target wasm32-unknown-unknown -- -D warnings
+	@cargo +dusk clippy -Z build-std=core,alloc --release --target wasm32-unknown-unknown -- -D warnings
 
 doc:
 

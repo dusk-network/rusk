@@ -222,10 +222,12 @@ impl DB for Backend {
             rocksdb: Arc::new(
                 OptimisticTransactionDB::open_cf_descriptors(
                     &blocks_cf_opts,
-                    path,
+                    &path,
                     cfs,
                 )
-                .expect("should be a valid database in {path}"),
+                .unwrap_or_else(|_| {
+                    panic!("should be a valid database in {path:?}")
+                }),
             ),
         }
     }
@@ -300,7 +302,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
     metadata_cf: &'db ColumnFamily,
 }
 
-impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
+impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
     fn store_block(
         &mut self,
         header: &Header,
@@ -606,7 +608,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 }
 
 /// Implementation of the `Candidate` trait for `DBTransaction<'db, DB>`.
-impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
+impl<DB: DBAccess> ConsensusStorage for DBTransaction<'_, DB> {
     /// Stores a candidate block in the database.
     ///
     /// # Arguments
@@ -822,7 +824,7 @@ impl<'db, DB: DBAccess> ConsensusStorage for DBTransaction<'db, DB> {
     }
 }
 
-impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
+impl<DB: DBAccess> Persist for DBTransaction<'_, DB> {
     /// Deletes all items from both CF_LEDGER and CF_CANDIDATES column families
     fn clear_database(&mut self) -> Result<()> {
         // Create an iterator over the column family CF_LEDGER
@@ -855,7 +857,7 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
     }
 }
 
-impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
+impl<DB: DBAccess> Mempool for DBTransaction<'_, DB> {
     fn store_mempool_tx(
         &mut self,
         tx: &Transaction,
@@ -1127,7 +1129,7 @@ impl<DB: DBAccess> Iterator for MemPoolFeeIterator<'_, DB> {
     }
 }
 
-impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
+impl<DB: DBAccess> std::fmt::Debug for DBTransaction<'_, DB> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //  Print ledger blocks
         let iter = self.inner.iterator_cf(self.ledger_cf, IteratorMode::Start);
@@ -1168,7 +1170,7 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
     }
 }
 
-impl<'db, DB: DBAccess> Metadata for DBTransaction<'db, DB> {
+impl<DB: DBAccess> Metadata for DBTransaction<'_, DB> {
     fn op_write<T: AsRef<[u8]>>(&mut self, key: &[u8], value: T) -> Result<()> {
         self.put_cf(self.metadata_cf, key, value)?;
         Ok(())
@@ -1179,7 +1181,7 @@ impl<'db, DB: DBAccess> Metadata for DBTransaction<'db, DB> {
     }
 }
 
-impl<'db, DB: DBAccess> DBTransaction<'db, DB> {
+impl<DB: DBAccess> DBTransaction<'_, DB> {
     /// A thin wrapper around inner.put_cf that calculates a db transaction
     /// disk footprint
     fn put_cf<K: AsRef<[u8]>, V: AsRef<[u8]>>(
