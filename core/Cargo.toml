@@ -34,7 +34,7 @@ ark-serialize = { workspace = true, optional = true }
 
 # serde support dependencies
 serde = { workspace = true, features = ["derive"], optional = true }
-hex = { workspace = true, optional = true }
+serde_with = { workspace = true, features = ["hex"], optional = true }
 
 [dev-dependencies]
 rand = { workspace = true, features = ["std", "std_rng"] }
@@ -75,7 +75,7 @@ std = ["dusk-plonk/std"]
 
 serde = [
     "dep:serde",
-    "hex",
+    "dep:serde_with",
     "piecrust-uplink/serde",
     "bls12_381-bls/serde",
     "phoenix-core/serde",

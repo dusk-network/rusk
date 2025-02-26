@@ -6,6 +6,9 @@
 
 //! Types used by Dusk's stake contract.
 
+#[cfg(feature = "serde")]
+use serde_with::{serde_as, DisplayFromStr};
+
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -360,15 +363,19 @@ impl Withdraw {
 /// Event emitted after a stake contract operation is performed.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize, PartialEq)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StakeEvent {
     /// Keys associated to the event.
     pub keys: StakeKeys,
     /// Effective value of the relevant operation, be it `stake`,
     /// `unstake`,`withdraw`
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
     /// The locked amount involved in the operation (e.g., for `stake` or
     /// `unstake`). Defaults to zero for operations that do not involve
     /// locking.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub locked: u64,
 }
 
@@ -403,12 +410,16 @@ impl StakeEvent {
 /// Event emitted after a slash operation is performed.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize, PartialEq)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SlashEvent {
     /// Account slashed.
     pub account: BlsPublicKey,
     /// Slashed amount
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
     /// New eligibility for the slashed account
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub next_eligibility: u64,
 }
 
@@ -664,10 +675,13 @@ impl StakeAmount {
 /// and emitted as an event, once a reward succeeds.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Reward {
     /// The account to be rewarded.
     pub account: BlsPublicKey,
     /// The amount to reward.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
     /// The reason for the reward.
     pub reason: RewardReason,

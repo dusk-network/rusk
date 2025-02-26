@@ -7,6 +7,9 @@
 //! Types related to Dusk's transfer contract that are shared across the
 //! network.
 
+#[cfg(feature = "serde")]
+use serde_with::{hex::Hex, serde_as, DisplayFromStr};
+
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::cmp::max;
@@ -440,12 +443,15 @@ pub struct ContractToAccount {
 /// Event data emitted on a withdrawal from a contract.
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WithdrawEvent {
     /// The contract withdrawn from.
     pub sender: ContractId,
     /// The receiver of the value.
     pub receiver: WithdrawReceiver,
     /// The value withdrawn.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
 }
 
@@ -463,6 +469,8 @@ impl From<Withdraw> for WithdrawEvent {
 /// vice-versa.
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConvertEvent {
     /// The originator of the conversion, if it is possible to determine. From
     /// Moonlight to Phoenix it is possible, but the same cannot be done the
@@ -471,6 +479,7 @@ pub struct ConvertEvent {
     /// The receiver of the value.
     pub receiver: WithdrawReceiver,
     /// The value converted.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
 }
 
@@ -492,6 +501,8 @@ impl ConvertEvent {
 /// Event data emitted on a deposit to a contract.
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DepositEvent {
     /// The originator of the deposit, if it is possible to determine. If the
     /// depositor is using Moonlight this will be available. If they're using
@@ -500,45 +511,57 @@ pub struct DepositEvent {
     /// The receiver of the value.
     pub receiver: ContractId,
     /// The value deposited.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
 }
 
 /// Event data emitted on a transfer from a contract to a contract.
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ContractToContractEvent {
     /// The sender of the funds.
     pub sender: ContractId,
     /// The receiver of the funds.
     pub receiver: ContractId,
     /// The value transferred.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
 }
 
 /// Event data emitted on a transfer from a contract to a Moonlight account.
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ContractToAccountEvent {
     /// The sender of the funds.
     pub sender: ContractId,
     /// The receiver of the funds.
     pub receiver: AccountPublicKey,
     /// The value transferred.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
 }
 
 /// Event data emitted on a phoenix transaction's completion.
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PhoenixTransactionEvent {
     /// Nullifiers of the notes spent during the transaction.
     pub nullifiers: Vec<BlsScalar>,
     /// Notes produced during the transaction.
     pub notes: Vec<Note>,
     /// The memo included in the transaction.
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     pub memo: Vec<u8>,
     /// Gas spent by the transaction.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub gas_spent: u64,
+
     /// Optional gas-refund note if the refund is positive.
     pub refund_note: Option<Note>,
 }
@@ -546,18 +569,27 @@ pub struct PhoenixTransactionEvent {
 /// Event data emitted on a moonlight transaction's completion.
 #[derive(Debug, Clone, Archive, PartialEq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MoonlightTransactionEvent {
     /// The account that initiated the transaction.
     pub sender: AccountPublicKey,
     /// The receiver of the funds if any were transferred.
     pub receiver: Option<AccountPublicKey>,
     /// Transfer amount
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
     /// The memo included in the transaction.
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     pub memo: Vec<u8>,
     /// Gas spent by the transaction.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub gas_spent: u64,
     /// Optional refund-info in the case that the refund-address is different
     /// from the sender.
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "Option<(serde_with::Same, DisplayFromStr)>")
+    )]
     pub refund_info: Option<(AccountPublicKey, u64)>,
 }
