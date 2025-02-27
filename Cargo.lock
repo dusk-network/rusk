@@ -750,7 +750,7 @@ checksum = "9b53eb2c00ecaf0635c278ed7701386a6e83e9b578181ee248ed52f339957b9c"
 dependencies = [
  "bs58",
  "bytecheck",
- "dusk-bls12_381 0.14.1",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "ff",
  "rand_core 0.6.4",
@@ -1589,9 +1589,9 @@ dependencies = [
 
 [[package]]
 name = "dusk-bls12_381"
-version = "0.14.1"
+version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6321527ff3adf7664566879499556bcf476fec7eaf9b1e62d82db2f7054dee82"
+checksum = "633aa835dd9e4db7ad5dc94a3f95d44ff5c6856ec3c83c15eb75366cfb5ee68a"
 dependencies = [
  "blake2b_simd",
  "bytecheck",
@@ -1648,7 +1648,7 @@ dependencies = [
  "ark-serialize",
  "bls12_381-bls 0.5.0",
  "bytecheck",
- "dusk-bls12_381 0.14.1",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "dusk-jubjub",
  "dusk-plonk",
@@ -1675,7 +1675,7 @@ dependencies = [
  "bitvec",
  "blake2b_simd",
  "bytecheck",
- "dusk-bls12_381 0.14.1",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "ff",
  "group",
@@ -1766,7 +1766,7 @@ checksum = "c425aa88fb1fd44c4bb72c0fe6abd37eae9de5b1f42d375d16c95aa1efceb327"
 dependencies = [
  "bytecheck",
  "cfg-if",
- "dusk-bls12_381 0.14.1",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "dusk-jubjub",
  "ff",
@@ -1788,7 +1788,7 @@ version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f66925505adc9db3671ebed59f5f2f196306efbe6ede8de9761e7830af5ddb84"
 dependencies = [
- "dusk-bls12_381 0.14.1",
+ "dusk-bls12_381 0.14.2",
  "dusk-jubjub",
  "dusk-plonk",
  "dusk-safe",
@@ -1885,10 +1885,14 @@ dependencies = [
  "dusk-bytes",
  "dusk-core",
  "ff",
+ "hex",
+ "hkdf",
+ "num-bigint",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rkyv",
  "sha2 0.10.8",
+ "tiny-bip39",
  "zeroize",
 ]
 
@@ -2918,7 +2922,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "008885a6d1b73ef18a827ad0faf7cf48d1c5a28d52a9e863b90a421a92799443"
 dependencies = [
  "bytecheck",
- "dusk-bls12_381 0.14.1",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "dusk-jubjub",
  "dusk-plonk",
@@ -3696,7 +3700,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d42a8482526bf7bcb3a6d34ad171a26f495319a520b9eb8a68837d837e3b0cf9"
 dependencies = [
- "dusk-bls12_381 0.14.1",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "dusk-jubjub",
  "dusk-plonk",
@@ -3718,7 +3722,7 @@ dependencies = [
  "bls12_381-bls 0.4.0",
  "bs58",
  "bytecheck",
- "dusk-bls12_381 0.14.1",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "dusk-jubjub",
  "dusk-poseidon",
@@ -3885,7 +3889,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6316347b2cf759ff0303ad280008ac89a36ed9f970e4cdfd1585d8ba5ed60134"
 dependencies = [
  "bytecheck",
- "dusk-bls12_381 0.14.1",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "dusk-merkle",
  "dusk-plonk",
