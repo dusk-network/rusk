@@ -17,6 +17,7 @@ zeroize = { workspace = true, features = ["derive"] }
 rand_chacha = { workspace = true }
 blake3 = { workspace = true }
 sha2 = { workspace = true }
+hkdf = { workspace = true }
 rand = { workspace = true }
 ff = { workspace = true }
 dusk-core = { workspace = true }
@@ -27,6 +28,9 @@ dlmalloc = { workspace = true, features = ["global"] }
 
 [dev-dependencies]
 rand = { workspace = true, features = ["std_rng"] }
+hex = { workspace = true }
+num-bigint = { workspace = true }
+tiny-bip39 = { workspace = true }
 
 [features]
 debug = []
