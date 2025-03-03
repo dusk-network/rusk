@@ -11,7 +11,7 @@ repository = "https://github.com/dusk-network/rusk"
 dusk-bytes = { workspace = true }
 sha3 = { workspace = true }
 sha2 = { workspace = true }
-rand = { workspace = true, features = ["std_rng"] }
+rand = { workspace = true, features = ["std_rng", "getrandom"] }
 hex = { workspace = true }
 dusk-core = { workspace = true, features = ["serde"] }
 
@@ -19,7 +19,7 @@ block-modes = { workspace = true }
 aes = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-serde_with = { workspace = true, features = ["hex"] }
+serde_with = { workspace = true, features = ["hex", "base64"] }
 base64 = { workspace = true }
 async-channel = { workspace = true }
 chrono = { workspace = true }
@@ -33,6 +33,7 @@ fake = { workspace = true, features = ['derive'], optional = true }
 
 [dev-dependencies]
 fake = { workspace = true, features = ['derive'] }
+tempfile = { workspace = true }
 
 [features]
 faker = ["dep:fake"]
