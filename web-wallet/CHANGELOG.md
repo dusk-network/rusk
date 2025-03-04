@@ -9,15 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+- Update Transactions list design [#1922]
+
+### Removed
+
+### Fixed
+
+## [1.4.0] - 2025-03-04
+
+### Added
+
 - Add memo field to send flow [#3112]
 - Add "VITE_SYNC_INTERVAL" ENV variable [#3403]
 
 ### Changed
 
-- Update Transactions list design [#1922]
 - Auto-focus text field (Unlock page) [#3420]
-
-### Removed
 
 ### Fixed
 
