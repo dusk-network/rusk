@@ -1,3 +1,5 @@
+<svelte:options immutable={true} />
+
 <script>
   import { Card, Icon } from "$lib/dusk/components";
   import { mdiAlertOutline } from "@mdi/js";
