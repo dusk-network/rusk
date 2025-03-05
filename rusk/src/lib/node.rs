@@ -10,7 +10,6 @@ mod vm;
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
 
 use dusk_core::{dusk, Dusk};
 
@@ -20,13 +19,12 @@ use node::network::Kadcast;
 use node::LongLivedService;
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
+pub use vm::RuskVmConfig;
 
 use crate::http::RuesEvent;
 pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
-use {
-    node::archive::Archive, node_data::archive::ArchivalData, tokio::sync::mpsc,
-};
+use node::archive::Archive;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
@@ -40,16 +38,12 @@ pub struct Rusk {
     pub(crate) vm: Arc<VM>,
     dir: PathBuf,
     pub(crate) chain_id: u8,
-    pub(crate) generation_timeout: Option<Duration>,
-    pub(crate) gas_per_deploy_byte: u64,
-    pub(crate) min_deployment_gas_price: u64,
+    pub(crate) vm_config: RuskVmConfig,
     pub(crate) min_gas_limit: u64,
-    pub(crate) min_deploy_points: u64,
     pub(crate) feeder_gas_limit: u64,
-    pub(crate) block_gas_limit: u64,
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
     #[cfg(feature = "archive")]
-    pub(crate) archive_sender: mpsc::Sender<ArchivalData>,
+    pub archive: Archive,
 }
 
 pub(crate) type Services =

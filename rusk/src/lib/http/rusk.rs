@@ -4,15 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::event::Event;
 use super::*;
 
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::abi::ContractId;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::StakeFundOwner;
 use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
+use serde_json::json;
 use std::sync::{mpsc, Arc};
 use std::thread;
 use tokio::task;
@@ -24,26 +25,12 @@ const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 
 #[async_trait]
 impl HandleRequest for Rusk {
-    fn can_handle(&self, request: &MessageRequest) -> bool {
-        let route = request.event.to_route();
-        if matches!(route, (Target::Host(_), "rusk", "preverify")) {
-            // moved to chain
-            // here just for backward compatibility
-            return false;
-        }
-        if route.2.starts_with("prove_") {
-            return false;
-        }
-        matches!(
-            route,
-            (Target::Contract(_), ..) | (Target::Host(_), "rusk", _)
-        )
-    }
     fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
         #[allow(clippy::match_like_matches_macro)]
         match request.uri.inner() {
             ("contracts", Some(_), _) => true,
             ("node", _, "provisioners") => true,
+            ("account", Some(_), "status") => true,
             ("node", _, "crs") => true,
             _ => false,
         }
@@ -59,41 +46,15 @@ impl HandleRequest for Rusk {
                 self.handle_contract_query(contract_id, method, data, feeder)
             }
             ("node", _, "provisioners") => self.get_provisioners(),
-            ("node", _, "crs") => self.get_crs(),
-            _ => Err(anyhow::anyhow!("Unsupported")),
-        }
-    }
 
-    async fn handle(
-        &self,
-        request: &MessageRequest,
-    ) -> anyhow::Result<ResponseData> {
-        match &request.event.to_route() {
-            (Target::Contract(_), ..) => {
-                let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
-                self.handle_contract_query_legacy(&request.event, feeder)
-            }
-            (Target::Host(_), "rusk", "provisioners") => {
-                self.get_provisioners()
-            }
-            (Target::Host(_), "rusk", "crs") => self.get_crs(),
+            ("account", Some(pk), "status") => self.get_account(pk),
+            ("node", _, "crs") => self.get_crs(),
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
     }
 }
 
 impl Rusk {
-    fn handle_contract_query_legacy(
-        &self,
-        event: &Event,
-        feeder: bool,
-    ) -> anyhow::Result<ResponseData> {
-        let contract = event.target.inner();
-        let topic = &event.topic;
-        let data = event.data.as_bytes();
-
-        self.handle_contract_query(contract, topic, data, feeder)
-    }
     fn handle_contract_query(
         &self,
         contract: &str,
@@ -149,6 +110,24 @@ impl Rusk {
             .collect();
 
         Ok(ResponseData::new(serde_json::to_value(prov)?))
+    }
+
+    fn get_account(&self, pk: &str) -> anyhow::Result<ResponseData> {
+        let pk = bs58::decode(pk)
+            .into_vec()
+            .map_err(|_| anyhow::anyhow!("Invalid bs58 account"))?;
+        let pk = BlsPublicKey::from_slice(&pk)
+            .map_err(|_| anyhow::anyhow!("Invalid bls account"))?;
+        let account = self
+            .account(&pk)
+            .map(|account| {
+                json!({
+                    "balance": account.balance,
+                    "nonce": account.nonce,
+                })
+            })
+            .map_err(|e| anyhow::anyhow!("Cannot query the state {e:?}"))?;
+        Ok(ResponseData::new(account))
     }
 
     fn get_crs(&self) -> anyhow::Result<ResponseData> {

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Login > Mnemonic phrase workflow > should render the login page and show the field to enter the mnemonic phrase, if there is no login info stored 1`] = `
+exports[`Unlock Wallet > Mnemonic phrase workflow > should render the Unlock Wallet page and show the field to enter the mnemonic phrase, if there is no login info stored 1`] = `
 <section
   class="login svelte-1e8gc2s"
 >
@@ -67,9 +67,11 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
           class="login__form svelte-1e8gc2s"
         >
           <input
+            aria-label="Mnemonic phrase"
             autocomplete="current-password"
+            autofocus=""
             class="dusk-textbox dusk-textbox-password"
-            name="mnemonic"
+            name="Mnemonic phrase"
             placeholder="Mnemonic phrase"
             required=""
             type="password"
@@ -126,7 +128,7 @@ exports[`Login > Mnemonic phrase workflow > should render the login page and sho
 </section>
 `;
 
-exports[`Login > Password workflow > should show the password field and the link to restore the wallet if there is login info stored 1`] = `
+exports[`Unlock Wallet > Password workflow > should show the password field and the link to restore the wallet if there is login info stored 1`] = `
 <section
   class="login svelte-1e8gc2s"
 >
@@ -193,9 +195,11 @@ exports[`Login > Password workflow > should show the password field and the link
           class="login__form svelte-1e8gc2s"
         >
           <input
+            aria-label="Password"
             autocomplete="current-password"
+            autofocus=""
             class="dusk-textbox dusk-textbox-password"
-            name="password"
+            name="Password"
             placeholder="Password"
             required=""
             type="password"

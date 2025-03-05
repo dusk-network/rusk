@@ -4,15 +4,22 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod config;
+
 use blake2b_simd::Params;
-use dusk_core::abi::{ContractError, ContractId, CONTRACT_ID_BYTES};
-use dusk_core::transfer::{
-    data::ContractBytecode, Transaction, TRANSFER_CONTRACT,
-};
+use dusk_core::abi::{ContractError, ContractId, Metadata, CONTRACT_ID_BYTES};
+use dusk_core::transfer::data::ContractBytecode;
+use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use piecrust::{CallReceipt, Error, Session};
 
-/// Executes a transaction, returning the receipt of the call and the gas spent.
-/// The following steps are performed:
+pub use config::Config;
+
+/// Executes a transaction in the provided session.
+///
+/// This function processes the transaction, invoking smart contracts or
+/// updating state.
+///
+/// During the execution the following steps are performed:
 ///
 /// 1. Check if the transaction contains contract deployment data, and if so,
 ///    verifies if gas limit is enough for deployment and if the gas price is
@@ -45,34 +52,44 @@ use piecrust::{CallReceipt, Error, Session};
 /// related to deployment, as it is either discarded or it charges the
 /// full gas limit. It might be re-executed only if some other transaction
 /// failed to fit the block.
+///
+/// # Arguments
+/// * `session` - A mutable reference to the session executing the transaction.
+/// * `tx` - The transaction to execute.
+/// * `config` - The configuration for the execution of the transaction.
+///
+/// # Returns
+/// A result indicating success or failure.
 pub fn execute(
     session: &mut Session,
     tx: &Transaction,
-    gas_per_deploy_byte: u64,
-    min_deploy_points: u64,
-    min_deploy_gas_price: u64,
+    config: &Config,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
-    deploy_check(tx, gas_per_deploy_byte, min_deploy_gas_price)?;
+    deploy_check(tx, config)?;
+
+    if config.with_public_sender {
+        let _ = session
+            .set_meta(Metadata::PUBLIC_SENDER, tx.moonlight_sender().copied());
+    }
 
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
-    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
-        TRANSFER_CONTRACT,
-        "spend_and_execute",
-        tx.strip_off_bytecode().as_ref().unwrap_or(tx),
-        tx.gas_limit(),
-    )?;
+    let mut receipt = session
+        .call::<_, Result<Vec<u8>, ContractError>>(
+            TRANSFER_CONTRACT,
+            "spend_and_execute",
+            tx.strip_off_bytecode().as_ref().unwrap_or(tx),
+            tx.gas_limit(),
+        )
+        .map_err(|e| {
+            clear_session(session, config);
+            e
+        })?;
 
     // Deploy if this is a deployment transaction and spend part is successful.
-    contract_deploy(
-        session,
-        tx,
-        gas_per_deploy_byte,
-        min_deploy_points,
-        &mut receipt,
-    );
+    contract_deploy(session, tx, config, &mut receipt);
 
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
@@ -93,15 +110,21 @@ pub fn execute(
 
     receipt.events.extend(refund_receipt.events);
 
+    clear_session(session, config);
+
     Ok(receipt)
 }
 
-fn deploy_check(
-    tx: &Transaction,
-    gas_per_deploy_byte: u64,
-    min_deploy_gas_price: u64,
-) -> Result<(), Error> {
+fn clear_session(session: &mut Session, config: &Config) {
+    if config.with_public_sender {
+        let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
+    }
+}
+
+fn deploy_check(tx: &Transaction, config: &Config) -> Result<(), Error> {
     if tx.deploy().is_some() {
+        let gas_per_deploy_byte = config.gas_per_deploy_byte;
+        let min_deploy_gas_price = config.min_deploy_gas_price;
         let deploy_charge =
             tx.deploy_charge(gas_per_deploy_byte, min_deploy_gas_price);
 
@@ -128,11 +151,13 @@ fn deploy_check(
 fn contract_deploy(
     session: &mut Session,
     tx: &Transaction,
-    gas_per_deploy_byte: u64,
-    min_deploy_points: u64,
+    config: &Config,
     receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
 ) {
     if let Some(deploy) = tx.deploy() {
+        let gas_per_deploy_byte = config.gas_per_deploy_byte;
+        let min_deploy_points = config.min_deploy_points;
+
         let gas_left = tx.gas_limit() - receipt.gas_spent;
         if receipt.data.is_ok() {
             let deploy_charge =
@@ -176,10 +201,15 @@ fn verify_bytecode_hash(bytecode: &ContractBytecode) -> bool {
     bytecode.hash == computed
 }
 
-/// Generate a [`ContractId`] address from:
-/// - slice of bytes,
-/// - nonce
-/// - owner
+/// Generates a unique identifier for a smart contract.
+///
+/// # Arguments
+/// * 'bytes` - The contract bytecode.
+/// * `nonce` - A unique nonce.
+/// * `owner` - The contract-owner.
+///
+/// # Returns
+/// A unique [`ContractId`].
 ///
 /// # Panics
 /// Panics if [blake2b-hasher] doesn't produce a [`CONTRACT_ID_BYTES`]

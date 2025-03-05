@@ -12,8 +12,6 @@ use std::{
 use node::database::DatabaseOptions;
 use serde::{Deserialize, Serialize};
 
-pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
-
 use crate::args::Args;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
@@ -24,16 +22,21 @@ pub(crate) struct ChainConfig {
     consensus_keys_path: Option<PathBuf>,
     #[serde(with = "humantime_serde")]
     #[serde(default)]
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
     generation_timeout: Option<Duration>,
 
     max_queue_size: Option<usize>,
 
     // NB: changing the gas_per_deploy_byte/block_gas_limit is equivalent to
     // forking the chain.
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
     gas_per_deploy_byte: Option<u64>,
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
     min_deployment_gas_price: Option<u64>,
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
     min_deploy_points: Option<u64>,
     min_gas_limit: Option<u64>,
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
     block_gas_limit: Option<u64>,
 
     #[serde(with = "humantime_serde")]
@@ -82,19 +85,27 @@ impl ChainConfig {
         self.db_options.clone().unwrap_or_default()
     }
 
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
     pub(crate) fn generation_timeout(&self) -> Option<Duration> {
+        #[allow(deprecated)]
         self.generation_timeout
     }
 
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
     pub(crate) fn gas_per_deploy_byte(&self) -> Option<u64> {
+        #[allow(deprecated)]
         self.gas_per_deploy_byte
     }
 
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
     pub(crate) fn min_deployment_gas_price(&self) -> Option<u64> {
+        #[allow(deprecated)]
         self.min_deployment_gas_price
     }
 
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
     pub(crate) fn min_deploy_points(&self) -> Option<u64> {
+        #[allow(deprecated)]
         self.min_deploy_points
     }
 
@@ -106,8 +117,10 @@ impl ChainConfig {
         self.max_queue_size.unwrap_or(10_000)
     }
 
-    pub(crate) fn block_gas_limit(&self) -> u64 {
-        self.block_gas_limit.unwrap_or(DEFAULT_BLOCK_GAS_LIMIT)
+    #[deprecated(since = "1.0.3", note = "please use `RuskVmConfig` instead")]
+    pub(crate) fn block_gas_limit(&self) -> Option<u64> {
+        #[allow(deprecated)]
+        self.block_gas_limit
     }
 
     pub(crate) fn genesis_timestamp(&self) -> u64 {

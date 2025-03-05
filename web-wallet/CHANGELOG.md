@@ -9,10 +9,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add memo field to send flow [#3112]
+
 ### Changed
 
 - Update Transactions list design [#1922]
+- Auto-focus text field (Unlock page) [#3420]
+
+### Removed
+
+### Fixed
+
+## [1.3.0] - 2025-01-28
+
+### Added
+
+- Add support for partial unstake/claim rewards [#3009]
+- Add "Unstake" flow validation [#3009]
+- Store the wallet creation block height and show it in settings [#3381]
+
+### Changed
+
+- Change Review step label to "Overview" (Send flow) [#3387]
+
+### Removed
+
+- Remove gas settings from Overview step (Stake/Unstake flows) [#3009]
+
+### Fixed
+
+- Fix creation of a new wallet causing the sync to start from genesis [#3362]
+
+## [1.2.0] - 2025-01-16
+
+### Added
+
+- Add ephemeral encryption to secure the seed while in memory [#3354]
+
+### Changed
+
+- Ensure connected wallet is disconnected when closing the app [#3269]
+- Update Wallet Access terminology [#3356]
+
+### Removed
+
+- Remove version number from app title [#3339]
+
+### Fixed
+
+- Fix Migration UI sometimes stuck while loading balance [#3269]
+- Fix Reown modal's disconnect failing to disconnect [#3269]
+
+## [1.1.0] - 2025-01-09
+
+### Changed
+
+- Make Password setting enabled by default (Create/Restore Wallet flow) [#3287]
+
+### Removed
+
+- Remove "Swap to nDUSK" step (Create Wallet flow) [#3333]
+
+## [1.0.0] - 2024-12-23
+
+### Added
+
+- Add "VITE_REOWN_PROJECT_ID" ENV variable [#3267]
+- Add additional notices to the Migrate flow [#3267]
+
+### Changed
+
 - Prioritize Public Account in the interface and transaction flows [#3259]
+- Enhance Migrate flow layout, aligning it to the rest of the transaction-based flows [#3267]
+- Display the Migration Requirements details using the `Banner` component [#3267]
+- Update the Approval Success copy for clarity (Migrate flow) [#3267]
+- Trigger sync after a successful migration [#3267]
 - Disable source wallet option on migration initialization (Migrate flow) [#3270]
 
 ### Removed
@@ -451,6 +522,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2999]: https://github.com/dusk-network/rusk/issues/2999
 [#3000]: https://github.com/dusk-network/rusk/issues/3000
 [#3006]: https://github.com/dusk-network/rusk/issues/3006
+[#3009]: https://github.com/dusk-network/rusk/issues/3009
 [#3010]: https://github.com/dusk-network/rusk/issues/3010
 [#3028]: https://github.com/dusk-network/rusk/issues/3028
 [#3032]: https://github.com/dusk-network/rusk/issues/3032
@@ -467,6 +539,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3097]: https://github.com/dusk-network/rusk/issues/3097
 [#3098]: https://github.com/dusk-network/rusk/issues/3098
 [#3099]: https://github.com/dusk-network/rusk/issues/3099
+[#3112]: https://github.com/dusk-network/rusk/issues/3112
 [#3113]: https://github.com/dusk-network/rusk/issues/3113
 [#3129]: https://github.com/dusk-network/rusk/issues/3129
 [#3156]: https://github.com/dusk-network/rusk/issues/3156
@@ -481,11 +554,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3245]: https://github.com/dusk-network/rusk/issues/3245
 [#3259]: https://github.com/dusk-network/rusk/issues/3259
 [#3265]: https://github.com/dusk-network/rusk/issues/3265
+[#3267]: https://github.com/dusk-network/rusk/issues/3267
+[#3269]: https://github.com/dusk-network/rusk/issues/3269
 [#3270]: https://github.com/dusk-network/rusk/issues/3270
+[#3287]: https://github.com/dusk-network/rusk/issues/3287
+[#3333]: https://github.com/dusk-network/rusk/issues/3333
+[#3339]: https://github.com/dusk-network/rusk/issues/3339
+[#3354]: https://github.com/dusk-network/rusk/issues/3354
+[#3356]: https://github.com/dusk-network/rusk/issues/3356
+[#3362]: https://github.com/dusk-network/rusk/issues/3362
+[#3381]: https://github.com/dusk-network/rusk/issues/3381
+[#3387]: https://github.com/dusk-network/rusk/issues/3387
+[#3420]: https://github.com/dusk-network/rusk/issues/3420
 
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[1.3.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.3.0
+[1.2.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.2.0
+[1.1.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.1.0
+[1.0.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.0.0
 [0.10.1]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.10.1
 [0.10.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.10.0
 [0.9.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v0.9.0

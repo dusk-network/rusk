@@ -54,14 +54,12 @@ const toHeadersVariables = unless(
  * @param {{ query: string, variables?: Record<string, string | number> }} queryInfo
  */
 const gqlGet = (queryInfo) =>
-  fetch(makeNodeUrl("/02/Chain"), {
-    body: JSON.stringify({
-      data: queryInfo.query,
-      topic: "gql",
-    }),
+  fetch(makeNodeUrl("/on/graphql/query"), {
+    body: queryInfo.query.replace(/\s+/g, " ").trim(),
     headers: {
       Accept: "application/json",
       "Accept-Charset": "utf-8",
+      Connection: "Keep-Alive",
       "Content-Type": "application/json",
       ...toHeadersVariables(queryInfo.variables),
     },
@@ -80,6 +78,7 @@ const apiGet = (endpoint, params) =>
     headers: {
       Accept: "application/json",
       "Accept-Charset": "utf-8",
+      Connection: "Keep-Alive",
     },
     method: "GET",
   })
@@ -95,6 +94,7 @@ const nodePost = (endpoint) =>
     headers: {
       Accept: "application/json",
       "Accept-Charset": "utf-8",
+      Connection: "Keep-Alive",
     },
     method: "POST",
   })

@@ -1,12 +1,11 @@
 import { get, writable } from "svelte/store";
-import { setKey, setPathIn } from "lamb";
+import { setKey } from "lamb";
 import {
   Bookkeeper,
   Bookmark,
   ProfileGenerator,
 } from "$lib/vendor/w3sper.js/src/mod";
 
-import walletCache from "$lib/wallet-cache";
 import WalletTreasury from "$lib/wallet-treasury";
 
 import { transactions } from "$lib/mock-data";
@@ -90,22 +89,18 @@ const updateCacheAfterTransaction = async (txInfo) => {
      * writing the pending notes info, as we'll
      * change soon how they are handled (probably by w3sper directly).
      */
-    await walletCache
-      .setPendingNoteInfo(txInfo.nullifiers, txInfo.hash)
+    await treasury
+      .updateCachedPendingNotes(txInfo.nullifiers, txInfo.hash)
       .catch(() => {});
   } else {
-    const address = String(getCurrentProfile()?.address);
-    const currentBalance = await walletCache.getBalanceInfo(address);
+    const profile = getCurrentProfile();
 
     /**
      * We update the stored `nonce` so that if a transaction is made
      * before the sync gives us an updated one, the transaction
      * won't be rejected by reusing the old value.
      */
-    await walletCache.setBalanceInfo(
-      address,
-      setPathIn(currentBalance, "unshielded.nonce", txInfo.nonce)
-    );
+    profile && (await treasury.updateCachedNonce(profile, txInfo.nonce));
   }
 
   return txInfo;
@@ -113,23 +108,21 @@ const updateCacheAfterTransaction = async (txInfo) => {
 
 /** @type {() => Promise<void>} */
 const updateBalance = async () => {
-  const { currentProfile } = get(walletStore);
+  const profile = getCurrentProfile();
 
-  if (!currentProfile) {
+  if (!profile) {
     return;
   }
 
-  const shielded = await bookkeeper.balance(currentProfile.address);
-  const unshielded = await bookkeeper.balance(currentProfile.account);
+  const shielded = await bookkeeper.balance(profile.address);
+  const unshielded = await bookkeeper.balance(profile.account);
   const balance = { shielded, unshielded };
 
   /**
    * We ignore the error as the cached balance is only
    * a nice to have for the user.
    */
-  await walletCache
-    .setBalanceInfo(currentProfile.address.toString(), balance)
-    .catch(() => {});
+  await treasury.setCachedBalance(profile, balance).catch(() => {});
 
   update((currentStore) => ({
     ...currentStore,
@@ -139,21 +132,20 @@ const updateBalance = async () => {
 
 /** @type {() => Promise<void>} */
 const updateStakeInfo = async () => {
-  const { currentProfile } = get(walletStore);
+  const profile = getCurrentProfile();
 
-  if (!currentProfile) {
+  if (!profile) {
     return;
   }
 
-  const stakeInfo = await bookkeeper.stakeInfo(currentProfile.account);
+  /** @type {StakeInfo} */
+  const stakeInfo = await bookkeeper.stakeInfo(profile.account);
 
   /**
    * We ignore the error as the cached stake info is only
    * a nice to have for the user.
    */
-  await walletCache
-    .setStakeInfo(currentProfile.account.toString(), stakeInfo)
-    .catch(() => {});
+  await treasury.setCachedStakeInfo(profile, stakeInfo).catch(() => {});
 
   update((currentStore) => ({
     ...currentStore,
@@ -172,10 +164,10 @@ const abortSync = () => {
 };
 
 /** @type {WalletStoreServices["clearLocalData"]} */
-const clearLocalData = () => {
+const clearLocalData = async () => {
   abortSync();
 
-  return walletCache.clear();
+  await treasury.clearCache();
 };
 
 /** @type {WalletStoreServices["clearLocalDataAndInit"]} */
@@ -202,11 +194,8 @@ const getTransactionsHistory = async () => transactions;
 /** @type {WalletStoreServices["init"]} */
 async function init(profileGenerator, syncFromBlock) {
   const currentProfile = await profileGenerator.default;
-  const currentAddress = currentProfile.address.toString();
-  const cachedBalance = await walletCache.getBalanceInfo(currentAddress);
-  const cachedStakeInfo = await walletCache.getStakeInfo(
-    currentProfile.account.toString()
-  );
+  const cachedBalance = await treasury.getCachedBalance(currentProfile);
+  const cachedStakeInfo = await treasury.getCachedStakeInfo(currentProfile);
   const minimumStake = await bookkeeper.minimumStake;
 
   treasury.setProfiles([currentProfile]);
@@ -223,7 +212,7 @@ async function init(profileGenerator, syncFromBlock) {
 
   sync(syncFromBlock)
     .then(() => {
-      settingsStore.update(setKey("userId", currentAddress));
+      settingsStore.update(setKey("userId", currentProfile.address.toString()));
     })
     .finally(updateStaticInfo);
 }
@@ -297,7 +286,7 @@ async function sync(fromBlock) {
     syncController = new AbortController();
 
     const { block, bookmark, lastFinalizedBlockHeight } =
-      await walletCache.getSyncInfo();
+      await treasury.getCachedSyncInfo();
 
     /** @type {bigint | Bookmark} */
     let from;
@@ -324,7 +313,7 @@ async function sync(fromBlock) {
     }
 
     if (from === 0n) {
-      await walletCache.clear();
+      await treasury.clearCache();
     }
 
     update((currentStore) => ({
@@ -391,7 +380,7 @@ async function sync(fromBlock) {
 }
 
 /** @type {WalletStoreServices["transfer"]} */
-const transfer = async (to, amount, gas) =>
+const transfer = async (to, amount, memo, gas) =>
   sync()
     .then(networkStore.connect)
     .then((network) => {
@@ -399,6 +388,7 @@ const transfer = async (to, amount, gas) =>
         .as(getCurrentProfile())
         .transfer(amount)
         .to(to)
+        .memo(memo)
         .gas(gas);
 
       return network.execute(
@@ -422,11 +412,13 @@ const unshield = async (amount, gas) =>
     .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["unstake"]} */
-const unstake = async (gas) =>
+const unstake = async (amount, gas) =>
   sync()
     .then(networkStore.connect)
     .then((network) =>
-      network.execute(bookkeeper.as(getCurrentProfile()).unstake().gas(gas))
+      network.execute(
+        bookkeeper.as(getCurrentProfile()).unstake(amount).gas(gas)
+      )
     )
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));

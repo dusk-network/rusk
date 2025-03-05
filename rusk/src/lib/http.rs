@@ -17,7 +17,7 @@ mod stream;
 
 pub(crate) use event::{
     BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
-    RequestData, Target,
+    RequestData,
 };
 
 use dusk_core::abi::Event;
@@ -74,10 +74,11 @@ use crate::VERSION;
 
 pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
 
-use self::event::{MessageRequest, ResponseData, RuesEventUri, SessionId};
+use self::event::{ResponseData, RuesEventUri, SessionId};
 use self::stream::{Listener, Stream};
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
+const RUSK_VERSION_STRICT_HEADER: &str = "Rusk-Version-Strict";
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
@@ -147,26 +148,6 @@ pub struct DataSources {
 
 #[async_trait]
 impl HandleRequest for DataSources {
-    fn can_handle(&self, request: &MessageRequest) -> bool {
-        self.sources.iter().any(|s| s.can_handle(request))
-    }
-    async fn handle(
-        &self,
-        request: &MessageRequest,
-    ) -> anyhow::Result<ResponseData> {
-        info!(
-            "Received {:?}:{} request",
-            request.event.target, request.event.topic
-        );
-        request.check_rusk_version()?;
-        for h in &self.sources {
-            if h.can_handle(request) {
-                return h.handle(request).await;
-            }
-        }
-        Err(anyhow::anyhow!("unsupported target type"))
-    }
-
     fn can_handle_rues(&self, event: &RuesDispatchEvent) -> bool {
         self.sources.iter().any(|s| s.can_handle_rues(event))
     }
@@ -248,155 +229,6 @@ async fn listening_loop<H>(
                     let conn = http.serve_connection_with_upgrades(stream, service);
                     conn.await
                 });
-            }
-        }
-    }
-}
-
-async fn handle_stream<H: HandleRequest>(
-    sources: Arc<H>,
-    websocket: HyperWebsocket,
-    target: Target,
-    mut shutdown: broadcast::Receiver<Infallible>,
-) {
-    let mut stream = match websocket.await {
-        Ok(stream) => stream,
-        Err(_) => return,
-    };
-
-    // Add this block to disable requests through websockets
-    // {
-    //     let _ = stream
-    //         .close(Some(CloseFrame {
-    //             code: CloseCode::Unsupported,
-    //             reason: Cow::from("Websocket is currently unsupported"),
-    //         }))
-    //         .await;
-    //     #[allow(clippy::needless_return)]
-    //     return;
-    // }
-
-    let (responder, mut responses) = mpsc::unbounded_channel::<EventResponse>();
-
-    'outer: loop {
-        tokio::select! {
-            // If the server shuts down we send a close frame to the client
-            // and stop.
-            _ = shutdown.recv() => {
-                let _ = stream.close(Some(CloseFrame {
-                    code: CloseCode::Away,
-                    reason: Cow::from("Shutting down"),
-                })).await;
-                break;
-            }
-
-            rsp = responses.recv() => {
-                // `responder` is never dropped so this can never be `None`
-                let rsp = rsp.unwrap();
-
-                if let DataType::Channel(c) = rsp.data {
-                    let mut datas = stream_iter(c).map(|e| {
-                        EventResponse {
-                            data: e.into(),
-                            headers: rsp.headers.clone(),
-                            error: None
-                        }
-                    });//.await;
-                    while let Some(c) = datas.next().await {
-                        let rsp = serde_json::to_string(&c).unwrap_or_else(|err| {
-                            serde_json::to_string(
-                                &EventResponse::from_error(
-                                    format!("Failed serializing response: {err}")
-                                )).expect("serializing error response should succeed")
-                            });
-
-                        // If we error in sending the message we send a close frame
-                        // to the client and stop.
-                        if stream.send(Message::Text(rsp)).await.is_err() {
-                            let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Error,
-                            reason: Cow::from("Failed sending response"),
-                            })).await;
-                            // break;
-                        }
-                    }
-
-
-                } else {
-                    // Serialize the response to text. If this does not succeed,
-                    // we simply serialize an error response.
-                    let rsp = serde_json::to_string(&rsp).unwrap_or_else(|err| {
-                        serde_json::to_string(
-                            &EventResponse::from_error(
-                                format!("Failed serializing response: {err}")
-                            )).expect("serializing error response should succeed")
-                        });
-
-                    // If we error in sending the message we send a close frame
-                    // to the client and stop.
-                    if stream.send(Message::Text(rsp)).await.is_err() {
-                        let _ = stream.close(Some(CloseFrame {
-                        code: CloseCode::Error,
-                        reason: Cow::from("Failed sending response"),
-                        })).await;
-                        break;
-                    }
-                }
-            }
-
-            msg = stream.next() => {
-
-                let mut req = match msg {
-                    Some(Ok(msg)) => match msg {
-                        // We received a text request.
-                        Message::Text(msg) => {
-                            serde_json::from_str(&msg)
-                                .map_err(|err| anyhow::anyhow!("Failed deserializing request: {err}"))
-                        },
-                        // We received a binary request.
-                        Message::Binary(msg) => {
-                            MessageRequest::parse(&msg)
-                                .map_err(|err| anyhow::anyhow!("Failed deserializing request: {err}"))
-                        }
-                        // Any other type of message is unsupported.
-                        _ => Err(anyhow::anyhow!("Only text and binary messages are supported"))
-                    }
-                    // Errored while receiving the message, we will
-                    // close the stream and return a close frame.
-                    Some(Err(err)) => {
-                        Err(anyhow::anyhow!("Failed receiving message: {err}"))
-                    }
-                    // The stream has stopped producing messages, and we
-                    // should close it and stop. The client likely has done
-                    // this on purpose, and it's a part of the normal
-                    // operation of the server.
-                    None => {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Normal,
-                            reason: Cow::from("Stream stopped"),
-                        })).await;
-                        break;
-                    }
-                };
-                match req {
-                    // We received a valid request and should spawn a new task to handle it
-                    Ok(mut req) => {
-                        req.event.target=target.clone();
-                        task::spawn(handle_execution(
-                            sources.clone(),
-                            req,
-                            responder.clone(),
-                        ));
-                    },
-                    Err(e) => {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Error,
-                            reason: Cow::from(e.to_string()),
-                        })).await;
-                        break;
-                    }
-                }
-
             }
         }
     }
@@ -626,41 +458,6 @@ async fn handle_stream_rues<H: HandleRequest>(
     sockets.remove(&sid);
 }
 
-async fn handle_dispatch<H: HandleRequest>(
-    uri: RuesEventUri,
-    body: Incoming,
-    handler: Arc<H>,
-    sender: mpsc::Sender<Result<RuesEvent, AnyhowError>>,
-) {
-    let bytes = match body.collect().await {
-        Ok(bytes) => bytes.to_bytes(),
-        Err(err) => {
-            let _ = sender.send(Err(err.into())).await;
-            return;
-        }
-    };
-
-    let req = match MessageRequest::parse(&bytes) {
-        Ok(req) => req,
-        Err(err) => {
-            let _ = sender.send(Err(err)).await;
-            return;
-        }
-    };
-
-    let rsp = match handler.handle(&req).await {
-        Ok(rsp) => rsp,
-        Err(err) => {
-            let _ = sender.send(Err(err)).await;
-            return;
-        }
-    };
-
-    let (data, headers) = rsp.into_inner();
-
-    sender.send(Ok(RuesEvent { uri, data, headers })).await;
-}
-
 fn response(
     status: StatusCode,
     body: impl Into<Bytes>,
@@ -819,9 +616,7 @@ where
 
     #[cfg(feature = "http-wasm")]
     if path == "/static/drivers/wallet-core.wasm" {
-        let wallet_wasm = include_bytes!(
-            "../../../target/wasm32-unknown-unknown/release/wallet_core.wasm"
-        );
+        let wallet_wasm = include_bytes!("../assets/wallet_core-1.0.0.wasm");
         let mut response =
             Response::new(Full::from(wallet_wasm.to_vec()).into());
         response.headers_mut().append(
@@ -831,66 +626,7 @@ where
         return Ok(response);
     }
 
-    if hyper_tungstenite::is_upgrade_request(&req) {
-        let target = req.uri().path().try_into()?;
-
-        let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
-        task::spawn(handle_stream(sources, websocket, target, shutdown));
-
-        Ok(response.map(Into::into))
-    } else {
-        let (execution_request, binary_resp) =
-            MessageRequest::from_request(req).await?;
-
-        let mut resp_headers = execution_request.x_headers();
-
-        let (responder, mut receiver) = mpsc::unbounded_channel();
-        handle_execution(sources, execution_request, responder).await;
-
-        let execution_response = receiver
-            .recv()
-            .await
-            .expect("An execution should always return a response");
-        resp_headers.extend(execution_response.headers.clone());
-        let mut resp = execution_response.into_http(binary_resp)?;
-
-        for (k, v) in resp_headers {
-            let k = HeaderName::from_str(&k)?;
-            let v = match v {
-                serde_json::Value::String(s) => HeaderValue::from_str(&s),
-                serde_json::Value::Null => HeaderValue::from_str(""),
-                _ => HeaderValue::from_str(&v.to_string()),
-            }?;
-            resp.headers_mut().append(k, v);
-        }
-
-        Ok(resp)
-    }
-}
-
-async fn handle_execution<H>(
-    sources: Arc<H>,
-    request: MessageRequest,
-    responder: mpsc::UnboundedSender<EventResponse>,
-) where
-    H: HandleRequest,
-{
-    let mut rsp = sources
-        .handle(&request)
-        .await
-        .map(|data| {
-            let (data, mut headers) = data.into_inner();
-            headers.append(&mut request.x_headers());
-            EventResponse {
-                data,
-                error: None,
-                headers,
-            }
-        })
-        .unwrap_or_else(|e| request.to_error(e.to_string()));
-
-    rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
-    let _ = responder.send(rsp);
+    Err(ExecutionError::Generic(anyhow::anyhow!("Unsupported path")))
 }
 
 async fn handle_execution_rues<H>(
@@ -924,12 +660,6 @@ async fn handle_execution_rues<H>(
 
 #[async_trait]
 pub trait HandleRequest: Send + Sync + 'static {
-    fn can_handle(&self, request: &MessageRequest) -> bool;
-    async fn handle(
-        &self,
-        request: &MessageRequest,
-    ) -> anyhow::Result<ResponseData>;
-
     fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool;
     async fn handle_rues(
         &self,
@@ -942,7 +672,6 @@ mod tests {
     use std::{fs, thread};
 
     use super::*;
-    use event::Event as EventRequest;
 
     use dusk_core::abi::ContractId;
     use node_data::events::contract::{
@@ -963,26 +692,15 @@ mod tests {
 
     #[async_trait]
     impl HandleRequest for TestHandle {
-        fn can_handle(&self, _request: &MessageRequest) -> bool {
-            true
-        }
-
         fn can_handle_rues(&self, request: &RuesDispatchEvent) -> bool {
-            false
+            true
         }
         async fn handle_rues(
             &self,
             request: &RuesDispatchEvent,
         ) -> anyhow::Result<ResponseData> {
-            unimplemented!()
-        }
-
-        async fn handle(
-            &self,
-            request: &MessageRequest,
-        ) -> anyhow::Result<ResponseData> {
-            let response = match request.event.to_route() {
-                (_, _, "stream") => {
+            let response = match request.uri.inner() {
+                ("test", _, "stream") => {
                     let (sender, rec) = std::sync::mpsc::channel();
                     thread::spawn(move || {
                         for f in STREAMED_DATA.iter() {
@@ -991,7 +709,10 @@ mod tests {
                     });
                     ResponseData::new(rec)
                 }
-                _ => ResponseData::new(request.event_data().to_vec()),
+                ("test", _, "echo") => {
+                    ResponseData::new(request.data.as_bytes().to_vec())
+                }
+                _ => anyhow::bail!("Unsupported"),
             };
             Ok(response)
         }
@@ -1018,19 +739,12 @@ mod tests {
         let data = Vec::from(&b"I am call data 0"[..]);
         let data = RequestData::Binary(BinaryWrapper { inner: data });
 
-        let event = EventRequest {
-            target: Target::None,
-            data,
-            topic: "topic".into(),
-        };
-
-        let request = serde_json::to_vec(&event)
-            .expect("Serializing request should succeed");
+        let request_bytes = data.as_bytes();
 
         let client = reqwest::Client::new();
         let response = client
-            .post(format!("http://{}/01/target", server.local_addr))
-            .body(request)
+            .post(format!("http://{}/on/test/echo", server.local_addr))
+            .body(request_bytes.to_vec())
             .send()
             .await
             .expect("Requesting should succeed");
@@ -1039,7 +753,6 @@ mod tests {
             response.bytes().await.expect("There should be a response");
         let response_bytes =
             hex::decode(response_bytes).expect("data to be hex encoded");
-        let request_bytes = event.data.as_bytes();
 
         assert_eq!(
             request_bytes, response_bytes,
@@ -1072,15 +785,7 @@ mod tests {
 
         let data = Vec::from(&b"I am call data 0"[..]);
         let data = RequestData::Binary(BinaryWrapper { inner: data });
-
-        let event = EventRequest {
-            target: Target::None,
-            data,
-            topic: "topic".into(),
-        };
-
-        let request = serde_json::to_vec(&event)
-            .expect("Serializing request should succeed");
+        let request_bytes = data.as_bytes().to_vec();
 
         let client = reqwest::ClientBuilder::new()
             .add_root_certificate(certificate)
@@ -1090,10 +795,10 @@ mod tests {
 
         let response = client
             .post(format!(
-                "https://localhost:{}/01/target",
+                "https://localhost:{}/on/test/echo",
                 server.local_addr.port()
             ))
-            .body(request)
+            .body(request_bytes.clone())
             .send()
             .await
             .expect("Requesting should succeed");
@@ -1102,96 +807,11 @@ mod tests {
             response.bytes().await.expect("There should be a response");
         let response_bytes =
             hex::decode(response_bytes).expect("data to be hex encoded");
-        let request_bytes = event.data.as_bytes();
 
         assert_eq!(
             request_bytes, response_bytes,
             "Data received the same as sent"
         );
-    }
-
-    #[tokio::test(flavor = "multi_thread")]
-    async fn websocket_queries() {
-        let cert_and_key: Option<(String, String)> = None;
-
-        let (_, event_receiver) = broadcast::channel(16);
-        let ws_event_channel_cap = 2;
-
-        let server = HttpServer::bind(
-            TestHandle,
-            event_receiver,
-            ws_event_channel_cap,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
-
-        let stream = TcpStream::connect(server.local_addr)
-            .expect("Connecting to the server should succeed");
-
-        let ws_uri = format!("ws://{}/01/stream", server.local_addr);
-        let (mut stream, _) = client(ws_uri, stream)
-            .expect("Handshake with the server should succeed");
-
-        let event = EventRequest {
-            target: Target::None,
-            data: RequestData::Text("Not used".into()),
-            topic: "stream".into(),
-        };
-        let request_x_header: serde_json::Map<String, serde_json::Value> =
-            serde_json::from_str(r#"{"X-requestid": "100"}"#)
-                .expect("headers to be serialized");
-
-        let request = MessageRequest {
-            event,
-            headers: request_x_header.clone(),
-        };
-
-        let request = serde_json::to_string(&request).unwrap();
-
-        stream
-            .send(Message::Text(request))
-            .expect("Sending request to the server should succeed");
-
-        let mut responses = vec![];
-
-        while responses.len() < STREAMED_DATA.len() {
-            let msg = stream
-                .read()
-                .expect("Response should be received without error");
-
-            let msg = match msg {
-                Message::Text(msg) => msg,
-                _ => panic!("Shouldn't receive anything but text"),
-            };
-            let response: EventResponse = serde_json::from_str(&msg)
-                .expect("Response should deserialize successfully");
-
-            let mut response_x_header = response.headers.clone();
-            response_x_header.retain(|k, _| k.to_lowercase().starts_with("x-"));
-            assert_eq!(
-                response_x_header, request_x_header,
-                "x-headers to be propagated back"
-            );
-            assert!(response.error.is_none(), "There should be no error");
-            match response.data {
-                DataType::Binary(BinaryWrapper { inner }) => {
-                    responses.push(inner);
-                }
-                _ => panic!("WS stream is supposed to return binary data"),
-            }
-        }
-
-        for (idx, response) in responses.iter().enumerate() {
-            let expected_data = STREAMED_DATA[idx];
-            assert_eq!(
-                &response[..],
-                expected_data,
-                "Response data should be the same as the request `fn_args`"
-            );
-        }
     }
 
     #[tokio::test(flavor = "multi_thread")]

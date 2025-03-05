@@ -1,7 +1,11 @@
 [package]
 name = "dusk-core"
-version = "0.1.0"
+version = "1.0.1-alpha.1"
 edition = "2021"
+
+description = "Types used for interacting with Dusk's transfer and stake contracts."
+license = "MPL-2.0"
+repository = "https://github.com/dusk-network/rusk"
 
 [dependencies]
 dusk-bls12_381 = { workspace = true, features = ["rkyv-impl"] }

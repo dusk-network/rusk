@@ -7,16 +7,9 @@ import {
   head,
   isUndefined,
   mapWith,
-  pairs,
-  pipe,
-  skipIf,
-  unless,
   updateKey,
   when,
 } from "lamb";
-
-/** @typedef {{ nullifiers?: Uint8Array[] } | { addresses?: string[] } | { accounts?: string[] }} RawCriteria */
-/** @typedef {{ field: "nullifier", values: Uint8Array[] } | { field: "address", values: string[]} | { field: "account", values: string[]} | undefined} Criteria */
 
 /** @type {(buffer: ArrayBuffer) => Uint8Array} */
 const bufferToUint8Array = (buffer) => new Uint8Array(buffer);
@@ -38,22 +31,6 @@ const restorePendingInfo = mapWith(updateNullifier);
 const restoreNotes = mapWith(compose(updateNullifier, updateNote));
 
 const restoreNullifiers = mapWith(bufferToUint8Array);
-
-/** @type {(rawCriteria: RawCriteria) => Criteria} */
-const toCriteria = pipe([
-  skipIf(isUndefined),
-  pairs,
-  head,
-  unless(isUndefined, (pair) => ({
-    field:
-      pair[0] === "nullifiers"
-        ? "nullifier"
-        : pair[0] === "addresses"
-          ? "address"
-          : "account",
-    values: pair[1],
-  })),
-]);
 
 class WalletCache {
   /** @type {Dexie} */
@@ -88,15 +65,14 @@ class WalletCache {
    * @template {boolean} PK
    * @param {TName} tableName
    * @param {PK} primaryKeysOnly
-   * @param {RawCriteria} [rawCriteria]
+   * @param {WalletCacheCriteria} [criteria]
    * @returns {Promise<WalletCacheGetEntriesReturnType<TName, PK>>}
    */
-  async #getEntriesFrom(tableName, primaryKeysOnly, rawCriteria) {
-    const criteria = rawCriteria && toCriteria(rawCriteria);
+  async #getEntriesFrom(tableName, primaryKeysOnly, criteria) {
     const table = this.#db.table(tableName);
     const data =
       /** @type {import("dexie").PromiseExtended<WalletCacheGetEntriesReturnType<TName, PK>>} */ (
-        criteria && criteria.values.length
+        criteria?.values.length
           ? table
               .where(criteria.field)
               .anyOf(criteria.values)
@@ -176,7 +152,8 @@ class WalletCache {
    */
   getBalanceInfo(address) {
     return this.#getEntriesFrom("balancesInfo", false, {
-      addresses: [address],
+      field: "address",
+      values: [address],
     })
       .then(getPath("0.balance"))
       .then(when(isUndefined, () => this.#emptyBalanceInfo));
@@ -186,30 +163,33 @@ class WalletCache {
    * @param {Uint8Array[]} [nullifiers]
    * @returns {Promise<WalletCachePendingNoteInfo[]>}
    */
-  getPendingNotesInfo(nullifiers) {
-    return this.#getEntriesFrom("pendingNotesInfo", false, { nullifiers }).then(
-      restorePendingInfo
-    );
+  getPendingNotesInfo(nullifiers = []) {
+    return this.#getEntriesFrom("pendingNotesInfo", false, {
+      field: "nullifier",
+      values: nullifiers,
+    }).then(restorePendingInfo);
   }
 
   /**
    * @param {string[]} [addresses] Base58 encoded addresses to fetch the spent notes of
    * @returns {Promise<WalletCacheNote[]>}
    */
-  getSpentNotes(addresses) {
-    return this.#getEntriesFrom("spentNotes", false, { addresses }).then(
-      restoreNotes
-    );
+  getSpentNotes(addresses = []) {
+    return this.#getEntriesFrom("spentNotes", false, {
+      field: "address",
+      values: addresses,
+    }).then(restoreNotes);
   }
 
   /**
    * @param {string[]} [addresses] Base58 encoded addresses to fetch the spent notes of
    * @returns {Promise<Uint8Array[]>}
    */
-  getSpentNotesNullifiers(addresses) {
-    return this.#getEntriesFrom("spentNotes", true, { addresses }).then(
-      restoreNullifiers
-    );
+  getSpentNotesNullifiers(addresses = []) {
+    return this.#getEntriesFrom("spentNotes", true, {
+      field: "address",
+      values: addresses,
+    }).then(restoreNullifiers);
   }
 
   /**
@@ -218,7 +198,8 @@ class WalletCache {
    */
   getStakeInfo(account) {
     return this.#getEntriesFrom("stakeInfo", false, {
-      accounts: [account],
+      field: "account",
+      values: [account],
     })
       .then(getPath("0.stakeInfo"))
       .then(
@@ -254,20 +235,22 @@ class WalletCache {
    * @param {string[]} [addresses] Base58 encoded addresses to fetch the unspent notes of
    * @returns {Promise<WalletCacheNote[]>}
    */
-  getUnspentNotes(addresses) {
-    return this.#getEntriesFrom("unspentNotes", false, { addresses }).then(
-      restoreNotes
-    );
+  getUnspentNotes(addresses = []) {
+    return this.#getEntriesFrom("unspentNotes", false, {
+      field: "address",
+      values: addresses,
+    }).then(restoreNotes);
   }
 
   /**
    * @param {string[]} [addresses] Base58 encoded addresses to fetch the unspent notes of
    * @returns {Promise<Uint8Array[]>}
    */
-  getUnspentNotesNullifiers(addresses) {
-    return this.#getEntriesFrom("unspentNotes", true, { addresses }).then(
-      restoreNullifiers
-    );
+  getUnspentNotesNullifiers(addresses = []) {
+    return this.#getEntriesFrom("unspentNotes", true, {
+      field: "address",
+      values: addresses,
+    }).then(restoreNullifiers);
   }
 
   /**
@@ -314,7 +297,7 @@ class WalletCache {
    * @param {string} txId
    * @returns {Promise<void>}
    */
-  async setPendingNoteInfo(nullifiers, txId) {
+  async setPendingNotesInfo(nullifiers, txId) {
     const data = nullifiers.map((nullifier) => ({ nullifier, txId }));
 
     await this.#db

@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod test_wallet;
+
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
@@ -24,6 +26,8 @@ use futures::StreamExt;
 use rusk::{Error, Result, Rusk};
 use test_wallet::{self as wallet, Store};
 use tracing::info;
+
+pub use test_wallet::Wallet;
 
 #[derive(Debug, Clone)]
 pub struct TestStore;

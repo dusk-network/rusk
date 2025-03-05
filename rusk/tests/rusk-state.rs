@@ -27,7 +27,7 @@ use ff::Field;
 use parking_lot::RwLockWriteGuard;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::{Rusk, RuskTip};
+use rusk::node::{Rusk, RuskTip, RuskVmConfig};
 use rusk::Result;
 use tempfile::tempdir;
 use tracing::info;
@@ -43,8 +43,9 @@ const INITIAL_BALANCE: u64 = 10_000_000_000;
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("./config/rusk-state.toml"))
         .expect("Cannot deserialize config");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
+    new_state(dir, &snapshot, vm_config)
 }
 
 fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
@@ -185,13 +186,14 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
     let snapshot = toml::from_str(include_str!("./config/bench.toml"))
         .expect("Cannot deserialize config");
 
-    let rusk = new_state(&tmp, &snapshot, 100_000_000_000)?;
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(100_000_000_000);
+    let rusk = new_state(&tmp, &snapshot, vm_config)?;
 
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
 
     let wallet =
-        test_wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
+        crate::wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
 
     const N_ADDRESSES: usize = 100;
 
@@ -247,13 +249,14 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
     let snapshot = toml::from_str(include_str!("./config/bench.toml"))
         .expect("Cannot deserialize config");
 
-    let rusk = new_state(&tmp, &snapshot, 100_000_000_000)?;
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(100_000_000_000);
+    let rusk = new_state(&tmp, &snapshot, vm_config)?;
 
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
 
     let wallet =
-        test_wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
+        crate::wallet::Wallet::new(TestStore, TestStateClient { rusk, cache });
 
     const N_ADDRESSES: usize = 100;
 

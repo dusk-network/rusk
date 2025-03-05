@@ -9,8 +9,9 @@ import {
 } from "vitest";
 import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
+import { setKey } from "lamb";
 
-import mockedWalletStore from "../../../../__mocks__/mockedWalletStore";
+import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
 import * as navigation from "$lib/navigation";
 import {
   gasStore,
@@ -83,6 +84,18 @@ describe("Settings", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
+  it("should show the wallet creation block height if it's greater than zero", () => {
+    settingsStore.update(setKey("walletCreationBlockHeight", 123n));
+
+    const { container, getByDisplayValue } = render(Settings, {});
+    const creationBlockInput = getByDisplayValue("123");
+
+    expect(creationBlockInput).toBeInTheDocument();
+    expect(container.firstChild).toMatchSnapshot();
+
+    settingsStore.reset();
+  });
+
   it("should disable the reset wallet button while a sync is in progress", async () => {
     const { getByRole } = render(Settings);
     const resetButton = getByRole("button", { name: /reset wallet/i });
@@ -93,7 +106,10 @@ describe("Settings", () => {
     await act(() => {
       mockedWalletStore.setMockedStoreValue({
         ...initialWalletStoreState,
-        syncStatus: { isInProgress: true },
+        syncStatus: {
+          ...initialWalletStoreState.syncStatus,
+          isInProgress: true,
+        },
       });
     });
 
@@ -123,10 +139,10 @@ describe("Settings", () => {
     expect(backButton).toHaveAttribute("aria-disabled", "false");
   });
 
-  it("should reset wallet store and navigate to login page on clicking the Log Out button", async () => {
+  it("should reset wallet store and navigate to landing page on clicking the Lock Wallet button", async () => {
     const { getByRole } = render(Settings);
 
-    const button = getByRole("button", { name: "Log out" });
+    const button = getByRole("button", { name: "Lock Wallet" });
 
     await fireEvent.click(button);
     await vi.advanceTimersToNextTimerAsync();
@@ -143,7 +159,7 @@ describe("Settings", () => {
     const settingsResetSpy = vi.spyOn(settingsStore, "reset");
     const loginInfoStorageSpy = vi.spyOn(loginInfoStorage, "remove");
 
-    afterEach(() => {
+    beforeEach(() => {
       clearDataSpy.mockClear();
       confirmSpy.mockClear();
       settingsResetSpy.mockClear();

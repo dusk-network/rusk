@@ -27,7 +27,7 @@ export {
 import { Bookmark } from "@dusk/w3sper";
 
 const WASM_RELEASE_PATH =
-  "../target/wasm32-unknown-unknown/release/wallet_core.wasm";
+  "../target/wasm32-unknown-unknown/release/dusk_wallet_core.wasm";
 
 export function getLocalWasmBuffer() {
   if (typeof Deno !== "undefined") {

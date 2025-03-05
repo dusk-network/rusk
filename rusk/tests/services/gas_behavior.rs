@@ -14,17 +14,20 @@ use dusk_core::transfer::{
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{
+    test_wallet as wallet, TestStateClient, TestStore,
+};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
+
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 const GAS_LIMIT_0: u64 = 100_000_000;
@@ -36,8 +39,9 @@ const DEPOSIT: u64 = 0;
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/gas-behavior.toml"))
         .expect("Cannot deserialize config");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
+    new_state(dir, &snapshot, vm_config)
 }
 
 const SENDER_INDEX_0: u8 = 0;

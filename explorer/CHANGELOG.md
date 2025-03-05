@@ -3,9 +3,32 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+### Added
+
+### Changed
+
+- Replace legacy event system with RUES [#3425]
+
+### Removed
+
+- Remove version number from app title [#3338]
+
+### Fixed
+
+- Fix wrong owner key shown in provisioners table [#3377]
+
+## [1.0.1] - 2025-01-07
+
+### Fixed
+
+- Fix Owner key (Provisioners page) [#3305]
+
+## [1.0.0] - 2024-12-22
 
 ### Added
 
@@ -16,8 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change Stake details labels [#3218]
 - Change Transaction Type tooltips [#3249]
-
-### Removed
 
 ### Fixed
 
@@ -41,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change `raw` payload to `json` in transaction details [#2364]
 - Change average gas price display value to “lux” [#2416]
-- Update blocks table headers – `FEE` to `GAS`, `AVG` to `AVG PRICE`, and `TOTAL` to `USED` [#2416]
+- Update blocks table headers – `FEE` to `GAS`, `AVG` to `AVG PRICE`, and
+  `TOTAL` to `USED` [#2416]
 - Update block rewards tooltip information [#2166]
 - Hide "Show More" button when error occurs [#2585]
 - Update footer layout [#2640]
@@ -122,10 +144,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3215]: https://github.com/dusk-network/rusk/issues/3215
 [#3218]: https://github.com/dusk-network/rusk/issues/3218
 [#3249]: https://github.com/dusk-network/rusk/issues/3249
+[#3305]: https://github.com/dusk-network/rusk/issues/3305
+[#3338]: https://github.com/dusk-network/rusk/issues/3338
+[#3377]: https://github.com/dusk-network/rusk/issues/3377
+[#3425]: https://github.com/dusk-network/rusk/issues/3425
 
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.0.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.0.1
+[1.0.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.0.0
 [0.3.0]: https://github.com/dusk-network/rusk/tree/explorer-0.3.0
 [0.2.0]: https://github.com/dusk-network/rusk/tree/explorer-0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/tree/explorer-0.1.0

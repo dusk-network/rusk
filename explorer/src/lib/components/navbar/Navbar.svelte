@@ -72,6 +72,9 @@
       case 3:
         return "devnet";
 
+      case 41:
+        return "mainnet dry-run #2";
+
       default:
         return "localnet";
     }

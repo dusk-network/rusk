@@ -15,21 +15,20 @@ use dusk_core::transfer::data::{
 use dusk_vm::{gen_contract_id, ContractData, Error as VMError, VM};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::{Result, Rusk};
+use rusk::node::RuskVmConfig;
+use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
-use test_wallet::{self as wallet, Wallet};
 use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_DEPLOYMENT_GAS_PRICE;
-use crate::common::state::DEFAULT_MIN_DEPLOY_POINTS;
-use crate::common::state::{generator_procedure, ExecuteResult};
 use crate::common::state::{
-    DEFAULT_GAS_PER_DEPLOY_BYTE, DEFAULT_MIN_GAS_LIMIT,
+    generator_procedure, ExecuteResult, DEFAULT_MIN_GAS_LIMIT,
 };
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{
+    test_wallet as wallet, TestStateClient, TestStore, Wallet,
+};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -59,7 +58,8 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
         toml::from_str(include_str!("../config/contract_deployment.toml"))
             .expect("Cannot deserialize config");
 
-    let (_vm, _commit_id) = state::deploy(dir, &snapshot, |session| {
+    let dusk_key = *DUSK_CONSENSUS_KEY;
+    let deploy = state::deploy(dir, &snapshot, dusk_key, |session| {
         let alice_bytecode = include_bytes!(
             "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
         );
@@ -97,17 +97,15 @@ fn initial_state<P: AsRef<Path>>(dir: P, deploy_bob: bool) -> Result<Rusk> {
     })
     .expect("Deploying initial state should succeed");
 
+    let (_vm, _commit_id) = deploy;
+
     let (sender, _) = broadcast::channel(10);
 
     let rusk = Rusk::new(
         dir,
         CHAIN_ID,
-        None,
-        DEFAULT_GAS_PER_DEPLOY_BYTE,
-        DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        RuskVmConfig::new(),
         DEFAULT_MIN_GAS_LIMIT,
-        DEFAULT_MIN_DEPLOY_POINTS,
-        BLOCK_GAS_LIMIT,
         u64::MAX,
         sender,
     )

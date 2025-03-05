@@ -71,16 +71,16 @@ run: keys state web-wallet ## Run the server
 
 prepare-dev: keys wasm ## Preparation steps for launching a local node for development
 		@cp examples/consensus.keys ~/.dusk/rusk/consensus.keys \
-	&& cargo r --release -p rusk -- recovery state --init examples/genesis.toml -o /tmp/example.state || echo "Example genesis state already exists. Not overriding it"
+	&& cargo r --release -p dusk-rusk -- recovery state --init examples/genesis.toml -o /tmp/example.state || echo "Example genesis state already exists. Not overriding it"
 
 run-dev: ## Launch a local ephemeral node for development
 	@echo "Starting a local ephemeral node for development (without archive)" && \
-	DUSK_CONSENSUS_KEYS_PASS=password cargo r --release -p rusk -- -s /tmp/example.state || \
+	DUSK_CONSENSUS_KEYS_PASS=password cargo r --release -p dusk-rusk -- -s /tmp/example.state || \
 	echo "Failed to start the node. Make sure you have run 'make prepare-dev' before running this command"
 
 run-dev-archive: ## Launch a local ephemeral archive node for development
 	@echo "Starting a local ephemeral archive node for development" && \
-	DUSK_CONSENSUS_KEYS_PASS=password cargo r --release --features archive -p rusk  -- -s /tmp/example.state || \
+	DUSK_CONSENSUS_KEYS_PASS=password cargo r --release --features archive -p dusk-rusk  -- -s /tmp/example.state || \
 	echo "Failed to start the node. Make sure you have run 'make prepare-dev' before running this command"
 
 rusk: keys state web-wallet ## Build rusk binary

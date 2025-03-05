@@ -40,7 +40,8 @@ describe("Restore", async () => {
   const seed = walletLib.getSeedFromMnemonic(mnemonic);
   const userId = await walletLib
     .profileGeneratorFrom(seed)
-    .default.then(getKey("address"))
+    .then(getKey("default"))
+    .then(getKey("address"))
     .then(String);
   const gotoSpy = vi.spyOn(navigation, "goto");
   const settingsResetSpy = vi.spyOn(settingsStore, "reset");
@@ -150,16 +151,30 @@ describe("Restore", async () => {
     await fireEvent.click(
       getByRole("button", { name: "Paste mnemonic phrase" })
     );
-    await tick();
+
     expect(nextButton).toBeEnabled();
     await fireEvent.click(nextButton);
 
     // Set Password step
+    await fireEvent.click(getByRole("switch"));
+
     await fireEvent.click(getByRole("button", { name: "Next" }));
     expect(loginInfoStorage.get()).toBeNull();
 
     // Block Height Step
     await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic, 0n);
+
+    await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
+
+    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(
+      expect.any(ProfileGenerator),
+      0n
+    );
 
     // Syncing Step
     await fireEvent.click(getByRole("button", { name: "Next" }));
@@ -169,14 +184,6 @@ describe("Restore", async () => {
 
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-    expect(initWalletSpy).toHaveBeenCalledTimes(1);
-    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic, 0n);
-    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(
-      expect.any(ProfileGenerator),
-      0n
-    );
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });
@@ -202,8 +209,6 @@ describe("Restore", async () => {
     // Set Password step
     expect(loginInfoStorage.get()).toBeNull();
 
-    await fireEvent.click(getByRole("switch"));
-
     await fireInput(asInput(getByPlaceholderText("Set Password")), pwd);
     await fireInput(asInput(getByPlaceholderText("Confirm Password")), pwd);
 
@@ -217,6 +222,18 @@ describe("Restore", async () => {
     // Block Height step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
+    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic, 0n);
+
+    await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
+
+    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(
+      expect.any(ProfileGenerator),
+      0n
+    );
+
     // Network Sync step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
@@ -225,14 +242,6 @@ describe("Restore", async () => {
 
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-    expect(initWalletSpy).toHaveBeenCalledTimes(1);
-    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic, 0n);
-    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(
-      expect.any(ProfileGenerator),
-      0n
-    );
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });

@@ -1,9 +1,13 @@
 [package]
 name = "rusk-recovery"
-version = "0.6.0"
+version = "1.0.3-alpha.1"
 edition = "2021"
 autobins = false
 description = "Tool to restore Rusk to factory settings"
+repository = "https://github.com/dusk-network/rusk"
+categories = ["cryptography", "cryptography::cryptocurrencies"]
+keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
+license = "MPL-2.0"
 
 [lib]
 name = "rusk_recovery_tools"
@@ -15,7 +19,6 @@ rusk-profile = { workspace = true }
 
 # stake and keys feature dependency
 dusk-core = { workspace = true, features = ["zk", "std"], optional = true }
-once_cell = { workspace = true, optional = true }
 tracing = { workspace = true, features = ["log"], optional = true }
 
 # state feature dependencies
@@ -35,16 +38,19 @@ url = { workspace = true, optional = true }
 zip = { workspace = true, optional = true }
 
 # keys feature dependencies
-cargo_toml = { workspace = true, optional = true }
 dusk-plonk = { workspace = true, features = ["rkyv-impl"], optional = true }
-lazy_static = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["full"], optional = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[build-dependencies]
+cargo_toml = { workspace = true }
 
 [features]
 state = [
     "dusk-core",
-    "once_cell",
     "tracing",
     "serde_derive",
     "serde",
@@ -61,13 +67,4 @@ state = [
     "url",
     "zip",
 ]
-keys = [
-    "dusk-core",
-    "once_cell",
-    "tracing",
-    "cargo_toml",
-    "dusk-plonk",
-    "lazy_static",
-    "reqwest",
-    "tokio",
-]
+keys = ["dusk-core", "tracing", "dusk-plonk", "reqwest", "tokio"]

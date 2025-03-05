@@ -19,13 +19,13 @@ use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
 
+#[cfg(feature = "archive")]
+use node::archive::Archive;
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
-#[cfg(feature = "archive")]
-use {node::archive::Archive, node::archive::ArchivistSrv};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
-use crate::node::{ChainEventStreamer, RuskNode, Services};
+use crate::node::{ChainEventStreamer, RuskNode, RuskVmConfig, Services};
 use crate::{Rusk, VERSION};
 
 #[derive(Default)]
@@ -39,13 +39,8 @@ pub struct RuskNodeBuilder {
     db_options: DatabaseOptions,
     max_chain_queue_size: usize,
     genesis_timestamp: u64,
-
-    generation_timeout: Option<Duration>,
-    gas_per_deploy_byte: Option<u64>,
-    min_deployment_gas_price: Option<u64>,
+    vm_config: RuskVmConfig,
     min_gas_limit: Option<u64>,
-    min_deploy_points: Option<u64>,
-    block_gas_limit: u64,
     feeder_call_gas: u64,
     state_dir: PathBuf,
 
@@ -54,11 +49,7 @@ pub struct RuskNodeBuilder {
     command_revert: bool,
 }
 
-const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
-const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2000;
 const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
-const DEFAULT_MIN_DEPLOY_POINTS: u64 = 5_000_000;
-
 impl RuskNodeBuilder {
     pub fn with_consensus_keys(mut self, consensus_keys_path: String) -> Self {
         self.consensus_keys_path = consensus_keys_path;
@@ -115,27 +106,34 @@ impl RuskNodeBuilder {
         self
     }
 
-    pub fn with_generation_timeout(
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_generation_timeout<O: Into<Option<Duration>>>(
         mut self,
-        generation_timeout: Option<Duration>,
+        generation_timeout: O,
     ) -> Self {
-        self.generation_timeout = generation_timeout;
+        self.vm_config.generation_timeout = generation_timeout.into();
         self
     }
 
-    pub fn with_gas_per_deploy_byte(
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_gas_per_deploy_byte<O: Into<Option<u64>>>(
         mut self,
-        gas_per_deploy_byte: Option<u64>,
+        gas_per_deploy_byte: O,
     ) -> Self {
-        self.gas_per_deploy_byte = gas_per_deploy_byte;
+        if let Some(gas_per_deploy_byte) = gas_per_deploy_byte.into() {
+            self.vm_config.gas_per_deploy_byte = gas_per_deploy_byte;
+        }
         self
     }
 
-    pub fn with_min_deployment_gas_price(
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_min_deployment_gas_price<O: Into<Option<u64>>>(
         mut self,
-        min_deployment_gas_price: Option<u64>,
+        min_deployment_gas_price: O,
     ) -> Self {
-        self.min_deployment_gas_price = min_deployment_gas_price;
+        if let Some(min_deploy_gas_price) = min_deployment_gas_price.into() {
+            self.vm_config.min_deployment_gas_price = min_deploy_gas_price;
+        }
         self
     }
 
@@ -144,16 +142,25 @@ impl RuskNodeBuilder {
         self
     }
 
-    pub fn with_min_deploy_points(
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_min_deploy_points<O: Into<Option<u64>>>(
         mut self,
-        min_deploy_points: Option<u64>,
+        min_deploy_points: O,
     ) -> Self {
-        self.min_deploy_points = min_deploy_points;
+        if let Some(min_deploy_points) = min_deploy_points.into() {
+            self.vm_config.min_deploy_points = min_deploy_points;
+        }
         self
     }
 
-    pub fn with_block_gas_limit(mut self, block_gas_limit: u64) -> Self {
-        self.block_gas_limit = block_gas_limit;
+    #[deprecated(since = "1.0.3", note = "please use `with_vm_config` instead")]
+    pub fn with_block_gas_limit<O: Into<Option<u64>>>(
+        mut self,
+        block_gas_limit: O,
+    ) -> Self {
+        if let Some(block_gas_limit) = block_gas_limit.into() {
+            self.vm_config.block_gas_limit = block_gas_limit;
+        }
         self
     }
 
@@ -177,6 +184,11 @@ impl RuskNodeBuilder {
         self
     }
 
+    pub fn with_vm_config(mut self, vm_config: RuskVmConfig) -> Self {
+        self.vm_config = vm_config;
+        self
+    }
+
     /// Build the RuskNode and corresponding services
     pub async fn build_and_run(self) -> anyhow::Result<()> {
         let channel_cap = self
@@ -188,37 +200,22 @@ impl RuskNodeBuilder {
         let (node_sender, node_receiver) = mpsc::channel(1000);
 
         #[cfg(feature = "archive")]
-        let (archive_sender, archive_receiver) = mpsc::channel(1000);
+        let archive = Archive::create_or_open(self.db_path.clone()).await;
 
-        let gas_per_deploy_byte = self
-            .gas_per_deploy_byte
-            .unwrap_or(DEFAULT_GAS_PER_DEPLOY_BYTE);
-        let min_deployment_gas_price = self
-            .min_deployment_gas_price
-            .unwrap_or(DEFAULT_MIN_DEPLOYMENT_GAS_PRICE);
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
-        let min_deploy_points =
-            self.min_deploy_points.unwrap_or(DEFAULT_MIN_DEPLOY_POINTS);
 
         let rusk = Rusk::new(
             self.state_dir,
             self.kadcast.kadcast_id.unwrap_or_default(),
-            self.generation_timeout,
-            gas_per_deploy_byte,
-            min_deployment_gas_price,
+            self.vm_config,
             min_gas_limit,
-            min_deploy_points,
-            self.block_gas_limit,
             self.feeder_call_gas,
             rues_sender.clone(),
             #[cfg(feature = "archive")]
-            archive_sender.clone(),
+            archive.clone(),
         )
         .map_err(|e| anyhow::anyhow!("Cannot instantiate VM {e}"))?;
         info!("Rusk VM loaded");
-
-        #[cfg(feature = "archive")]
-        let archive = Archive::create_or_open(self.db_path.clone()).await;
 
         let node = {
             let db = rocksdb::Backend::create_or_open(
@@ -238,6 +235,9 @@ impl RuskNodeBuilder {
             self.max_chain_queue_size,
             node_sender.clone(),
             self.genesis_timestamp,
+            *crate::DUSK_CONSENSUS_KEY,
+            #[cfg(feature = "archive")]
+            archive.clone(),
         );
         if self.command_revert {
             chain_srv
@@ -264,8 +264,6 @@ impl RuskNodeBuilder {
             service_list.push(Box::new(ChainEventStreamer {
                 node_receiver,
                 rues_sender,
-                #[cfg(feature = "archive")]
-                archivist_sender: archive_sender,
             }));
 
             let mut handler = DataSources::default();
@@ -292,12 +290,6 @@ impl RuskNodeBuilder {
                 .await?,
             );
         }
-
-        #[cfg(feature = "archive")]
-        service_list.push(Box::new(ArchivistSrv {
-            archive_receiver,
-            archivist: archive,
-        }));
 
         node.inner().initialize(&mut service_list).await?;
         node.inner().spawn_all(service_list).await?;

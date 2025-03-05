@@ -18,36 +18,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, macos-latest, macos-15, windows-latest, arm-linux]
+        os: [ubuntu-24.04, macos-latest, macos-15, windows-latest, arm-linux]
         compiler: [cargo]
         include:
-          - os: ubuntu-20.04
-            compiler: cargo
+          - os: ubuntu-24.04
             target: linux-x64
-
-          - os: ubuntu-22.04
-            compiler: cargo
-            target: linux-x64-libssl3
-
-          - os: macos-latest
-            compiler: cargo
-            target: macos-intel
-
-          - os: macos-15
-            compiler: cargo
-            target: macos-arm64
-            flags: --target=aarch64-apple-darwin
-            platform: aarch64-apple-darwin
-
-          - os: windows-latest
-            compiler: cargo
-            target: windows-x64
-
           - os: arm-linux
-            compiler: cargo
             target: linux-arm64
             flags: --target=aarch64-unknown-linux-gnu
             platform: aarch64-unknown-linux-gnu
+          - os: macos-latest
+            target: macos-intel
+          - os: macos-15
+            target: macos-arm64
+            flags: --target=aarch64-apple-darwin
+            platform: aarch64-apple-darwin
+          - os: windows-latest
+            target: windows-x64
 
     steps:
       - name: Checkout Repository
@@ -62,31 +49,28 @@ jobs:
         run: rustup target add aarch64-apple-darwin
         if: ${{ matrix.os == 'macos-15' }}
 
-      - name: Build Wallet
+      - name: Build Rusk Wallet
         shell: bash
         working-directory: ./rusk-wallet
-        run: ${{matrix.compiler}} b --release --verbose ${{matrix.flags}}
+        run: cargo build --release --verbose ${{matrix.flags}}
 
       - name: Get semver from wallet binary
         run: |
-          ls -la target/release
-          export SEMVER=$(cargo pkgid --mainfest-path ./rusk-wallet/Cargo.toml | perl -lpe 's/.*\@(.*)/$1/')
+          export SEMVER=$(cargo pkgid --manifest-path ./rusk-wallet/Cargo.toml | sed -E 's/.*#([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
           echo "SEMVER=$SEMVER" >> $GITHUB_ENV
 
       - name: "Pack binaries"
         run: |
-          mkdir rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          echo "Fetching changelog and readme files..."
-          mv target/${{matrix.platform}}/release/rusk-wallet rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          cp ./rusk-wallet/CHANGELOG.md rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          cp ./rusk-wallet/README.md rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          tar -czvf ruskwallet${{env.SEMVER}}-${{matrix.target}}.tar.gz rusk-wallet${{env.SEMVER}}-${{matrix.target}}
+          mkdir rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
+          mv target/${{matrix.platform}}/release/rusk-wallet rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
+          cp ./rusk-wallet/CHANGELOG.md rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
+          cp ./rusk-wallet/README.md rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
+          tar -czvf rusk-wallet-${{env.SEMVER}}-${{matrix.target}}.tar.gz rusk-wallet-${{env.SEMVER}}-${{matrix.target}}
           ls -la *.gz
 
-      - name: "Upload Wallet Artifacts"
-        uses: actions/upload-artifact@v3
+      - name: Upload Wallet Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: wallet-binaries-${{env.SEMVER}}
-          path: |
-            ./*.gz
+          name: rusk-wallet-${{ env.SEMVER }}-${{ matrix.target }}
+          path: ./rusk-wallet-${{ env.SEMVER }}-${{ matrix.target }}.tar.gz
           retention-days: 5

@@ -5,7 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [Unreleased]
+
+### Added
+
+- Add `abi::public_sender` [#3341]
+- Add `[vm]` config section [#3341]
+
+### Changed
+
+- Deprecate `[chain].gas_per_deploy_byte` config [#3341]
+- Deprecate `[chain].min_deployment_gas_price` config [#3341]
+- Deprecate `[chain].generation_timeout` config [#3341]
+- Deprecate `[chain].min_deploy_points` config [#3341]
+- Deprecate `[chain].block_gas_limit` config [#3341]
+- Change how Rusk controls the archive for synchronization [#3359]
+
+### Removed
+
+- Remove legacy event system 
+- Remove archive mpsc channel & archive event forwarding [#3359]
+
+## [1.0.2] - 2025-01-27
+
+### Added
+
+- Add `/on/account:<address>/status` endpoint [#3422]
+
+### Changed
+
+- Change dependency declaration to not require strict equal [#3405]
+
+## [1.0.1] - 2025-01-20
+
+### Added
+
+- Add `Rusk-Version-Strict` header for version match
+- Add support for `cargo install`
+
+### Changed
+
+- Change `check_rusk_version` to ignore pre-release by default
+- Increase archive channel capacity from 1000 to 10000 [#3359]
+- Change `/static/drivers/wallet-core.wasm` to embed version `1.0.0`
 
 ## [1.0.0] - 2025-01-05
 
@@ -278,6 +320,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+<!-- Issues -->
+[#3359]: https://github.com/dusk-network/rusk/issues/3359
+[#3422]: https://github.com/dusk-network/rusk/issues/3422
+[#3405]: https://github.com/dusk-network/rusk/issues/3405
+[#3341]: https://github.com/dusk-network/rusk/issues/3341
+[#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3206]: https://github.com/dusk-network/rusk/issues/3206
 [#2597]: https://github.com/dusk-network/rusk/issues/2597
 [#2536]: https://github.com/dusk-network/rusk/issues/2536
@@ -301,7 +349,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
 
-[unreleased]: https://github.com/dusk-network/rusk/compare/rusk-1.0.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.0.2...HEAD
+[1.0.2]: https://github.com/dusk-network/rusk/compare/rusk-1.0.1...dusk-rusk-1.0.2
+[1.0.1]: https://github.com/dusk-network/rusk/compare/rusk-1.0.0...rusk-1.0.1
 [1.0.0]: https://github.com/dusk-network/rusk/compare/v0.8.0...rusk-1.0.0
 [0.8.0]: https://github.com/dusk-network/rusk/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/dusk-network/rusk/compare/v0.6.0...v0.7.0

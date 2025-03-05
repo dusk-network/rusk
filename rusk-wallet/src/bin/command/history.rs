@@ -27,8 +27,8 @@ pub struct TransactionHistory {
 impl TransactionHistory {
     pub fn header() -> String {
         format!(
-            "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12}",
-            "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE"
+            "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12} | {: ^8}",
+            "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE", "TRANSACTION_TYPE"
         )
     }
 }
@@ -42,20 +42,25 @@ impl Display for TransactionHistory {
         };
 
         let fee = match self.direction {
-            TransactionDirection::In => "".into(),
+            TransactionDirection::In => format!("{: >12.9}", ""),
             TransactionDirection::Out => {
-                let fee = self.fee;
+                let fee: u64 = self.fee;
                 let fee = from_dusk(fee);
                 format!("{: >12.9}", fee)
             }
         };
 
         let tx_id = &self.id;
-        let heigth = self.height;
+        let height = self.height;
+
+        let tx_type = match self.tx {
+            Transaction::Moonlight(_) => dusk_core::transfer::MOONLIGHT_TOPIC,
+            Transaction::Phoenix(_) => dusk_core::transfer::PHOENIX_TOPIC,
+        };
 
         write!(
             f,
-            "{heigth: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee}",
+            "{height: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee} | {tx_type}",
         )
     }
 }
@@ -152,7 +157,57 @@ pub(crate) async fn transaction_from_notes(
     Ok(ret)
 }
 
-#[derive(PartialEq)]
+pub(crate) async fn moonlight_history(
+    settings: &Settings,
+    address: rusk_wallet::Address,
+) -> anyhow::Result<Vec<TransactionHistory>> {
+    let gql =
+        GraphQL::new(settings.state.to_string(), io::status::interactive)?;
+
+    let history = gql
+        .moonlight_history(address.clone())
+        .await?
+        .full_moonlight_history;
+
+    let mut collected_history = Vec::new();
+
+    for history_item in history.json {
+        let id = history_item.origin;
+        let events = history_item.events;
+        let height = history_item.block_height;
+        let tx = gql.moonlight_tx(&id).await?;
+
+        for event in events {
+            let data = event.data;
+            let gas_spent = data.gas_spent;
+            let mut amount = data.value;
+            let sender = data.sender;
+
+            let direction: TransactionDirection =
+                match sender == address.to_string() {
+                    true => {
+                        amount = -amount;
+
+                        TransactionDirection::Out
+                    }
+                    false => TransactionDirection::In,
+                };
+
+            collected_history.push(TransactionHistory {
+                direction,
+                height,
+                amount,
+                fee: gas_spent * tx.gas_price(),
+                tx: tx.clone(),
+                id: id.clone(),
+            })
+        }
+    }
+
+    Ok(collected_history)
+}
+
+#[derive(PartialEq, Debug)]
 enum TransactionDirection {
     In,
     Out,

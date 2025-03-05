@@ -54,7 +54,7 @@ exports[`Send > Address step > should display a warning if the address input is 
           class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
           id="step-some-generated-id"
         >
-          Review
+          Overview
            
         </span>
         <span
@@ -85,7 +85,7 @@ exports[`Send > Address step > should display a warning if the address input is 
         class="operation__address-wrapper svelte-npcavd"
       >
         <p>
-          Address:
+          Address
         </p>
          
         <button
@@ -102,7 +102,7 @@ exports[`Send > Address step > should display a warning if the address input is 
       </div>
        
       <textarea
-        class="dusk-textbox dusk-textbox-multiline operation__send-address "
+        class="dusk-textbox dusk-textbox-multiline operation__send-address"
         required=""
       />
       
@@ -163,6 +163,23 @@ exports[`Send > Address step > should display a warning if the address input is 
             CLOSE
           </span>
         </button>
+      </div>
+       
+       
+      <div
+        class="operation__address-wrapper svelte-npcavd"
+      >
+        <p>
+          Memo
+        </p>
+         
+        <div
+          aria-checked="false"
+          aria-disabled="false"
+          class="dusk-switch dusk-switch--on-surface"
+          role="switch"
+          tabindex="0"
+        />
       </div>
        
     </div>
@@ -284,7 +301,7 @@ exports[`Send > Address step > should display a warning if the address input is 
           class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
           id="step-some-generated-id"
         >
-          Review
+          Overview
            
         </span>
         <span
@@ -315,7 +332,7 @@ exports[`Send > Address step > should display a warning if the address input is 
         class="operation__address-wrapper svelte-npcavd"
       >
         <p>
-          Address:
+          Address
         </p>
          
         <button
@@ -332,7 +349,7 @@ exports[`Send > Address step > should display a warning if the address input is 
       </div>
        
       <textarea
-        class="dusk-textbox dusk-textbox-multiline operation__send-address "
+        class="dusk-textbox dusk-textbox-multiline operation__send-address"
         required=""
       />
       
@@ -424,6 +441,23 @@ exports[`Send > Address step > should display a warning if the address input is 
           </p>
         </div>
       </div>
+       
+      <div
+        class="operation__address-wrapper svelte-npcavd"
+      >
+        <p>
+          Memo
+        </p>
+         
+        <div
+          aria-checked="false"
+          aria-disabled="false"
+          class="dusk-switch dusk-switch--on-surface"
+          role="switch"
+          tabindex="0"
+        />
+      </div>
+       
     </div>
      
     <div
@@ -543,7 +577,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
           class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
           id="step-some-generated-id"
         >
-          Review
+          Overview
            
         </span>
         <span
@@ -574,7 +608,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
         class="operation__address-wrapper svelte-npcavd"
       >
         <p>
-          Address:
+          Address
         </p>
          
         <button
@@ -591,7 +625,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
       </div>
        
       <textarea
-        class="dusk-textbox dusk-textbox-multiline operation__send-address operation__send-address--invalid"
+        class="dusk-textbox dusk-textbox-multiline operation__send-address"
         required=""
       />
       
@@ -622,6 +656,23 @@ exports[`Send > Address step > should render the Send component Address step 1`]
             CLOSE
           </span>
         </button>
+      </div>
+       
+       
+      <div
+        class="operation__address-wrapper svelte-npcavd"
+      >
+        <p>
+          Memo
+        </p>
+         
+        <div
+          aria-checked="false"
+          aria-disabled="false"
+          class="dusk-switch dusk-switch--on-surface"
+          role="switch"
+          tabindex="0"
+        />
       </div>
        
     </div>
@@ -744,7 +795,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
           class="dusk-stepper__step-label dusk-stepper__step-label--invisible"
           id="step-some-generated-id"
         >
-          Review
+          Overview
            
         </span>
         <span
@@ -778,7 +829,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
         class="operation__amount-wrapper svelte-npcavd"
       >
         <p>
-          Amount:
+          Amount
         </p>
          
         <button
@@ -997,7 +1048,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
           class="dusk-stepper__step-label"
           id="step-some-generated-id"
         >
-          Review
+          Overview
            
         </span>
         <span
@@ -1053,7 +1104,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
           
            
           <span>
-            Amount:
+            Amount
           </span>
            
         </dt>
@@ -1097,7 +1148,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
           
            
           <span>
-            To:
+            To
           </span>
            
         </dt>

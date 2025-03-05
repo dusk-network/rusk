@@ -1,6 +1,8 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { tick } from "svelte";
+import { get } from "svelte/store";
+import * as SvelteKit from "@sveltejs/kit";
 import { getKey, setKey } from "lamb";
 import * as bip39 from "bip39";
 import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
@@ -12,6 +14,7 @@ import loginInfoStorage from "$lib/services/loginInfoStorage";
 import * as shuffleArray from "$lib/dusk/array";
 
 import Create from "../+page.svelte";
+import { load } from "../+page.js";
 
 /**
  * @param {HTMLElement} input
@@ -49,12 +52,18 @@ describe("Create", async () => {
   const seed = walletLib.getSeedFromMnemonic(mnemonic);
   const userId = await walletLib
     .profileGeneratorFrom(seed)
-    .default.then(getKey("address"))
+    .then(getKey("default"))
+    .then(getKey("address"))
     .then(String);
 
-  const blockHeightSpy = vi
-    .spyOn(networkStore, "getCurrentBlockHeight")
-    .mockResolvedValue(currentBlockHeight);
+  const baseProps = {
+    data: { currentBlockHeight },
+  };
+  const baseOptions = {
+    props: baseProps,
+    target: document.body,
+  };
+
   const generateMnemonicSpy = vi
     .spyOn(bip39, "generateMnemonic")
     .mockReturnValue(mnemonic);
@@ -68,10 +77,10 @@ describe("Create", async () => {
     .mockResolvedValue(undefined);
   const initWalletSpy = vi.spyOn(walletLib, "initializeWallet");
 
-  afterEach(async () => {
+  afterEach(() => {
     cleanup();
     settingsStore.reset();
-    blockHeightSpy.mockClear();
+
     generateMnemonicSpy.mockClear();
     shuffleArraySpy.mockClear();
     clearAndInitSpy.mockClear();
@@ -81,7 +90,6 @@ describe("Create", async () => {
   });
 
   afterAll(() => {
-    blockHeightSpy.mockRestore();
     generateMnemonicSpy.mockRestore();
     shuffleArraySpy.mockRestore();
     clearAndInitSpy.mockRestore();
@@ -90,22 +98,55 @@ describe("Create", async () => {
     initWalletSpy.mockRestore();
   });
 
+  describe("Create page load", () => {
+    const blockHeightSpy = vi
+      .spyOn(networkStore, "getCurrentBlockHeight")
+      .mockResolvedValue(currentBlockHeight);
+
+    afterEach(() => {
+      blockHeightSpy.mockClear();
+    });
+
+    afterAll(() => {
+      blockHeightSpy.mockRestore();
+    });
+
+    it('should retrieve the current block height and pass it to the page as "page data"', async () => {
+      // @ts-ignore we don't care for load parameters here
+      await expect(load()).resolves.toStrictEqual({ currentBlockHeight });
+    });
+
+    it("should call the svelte kit error if the current block height can't be retrieved", async () => {
+      const svelteKitErrorSpy = vi.spyOn(SvelteKit, "error");
+
+      blockHeightSpy.mockRejectedValueOnce(new Error("some error"));
+
+      // @ts-ignore we don't care for load parameters here
+      await expect(load()).rejects.toThrow();
+
+      expect(svelteKitErrorSpy).toHaveBeenCalledTimes(1);
+      expect(svelteKitErrorSpy).toHaveBeenCalledWith(500, expect.any(String));
+
+      svelteKitErrorSpy.mockRestore();
+    });
+  });
+
   it("should render the Existing Wallet notice step of the Create flow if there is a userId saved in localStorage", () => {
     settingsStore.update(setKey("userId", userId));
 
-    const { container } = render(Create);
+    const { container } = render(Create, baseOptions);
 
     expect(container.firstChild).toMatchSnapshot();
   });
 
   it("should render the Terms of Service step of the Create flow if there is no userId saved in localStorage", () => {
-    const { container } = render(Create);
+    const { container } = render(Create, baseOptions);
 
     expect(container.firstChild).toMatchSnapshot();
   });
 
   it("should render the `Securely store your mnemonic phrase!` agreement step after the ToS", async () => {
-    const { container, getByRole } = render(Create);
+    const { container, getByRole } = render(Create, baseOptions);
 
     const mathRandomSpy = vi.spyOn(Math, "random").mockReturnValue(42);
 
@@ -117,7 +158,7 @@ describe("Create", async () => {
   });
 
   it("should not allow the user proceed unless both agreement checks are selected on the `Securely store your mnemonic phrase!` step", async () => {
-    const { getByRole, getAllByRole } = render(Create);
+    const { getByRole, getAllByRole } = render(Create, baseOptions);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
 
@@ -148,7 +189,7 @@ describe("Create", async () => {
   });
 
   it("correctly renders the Mnemonic Preview page", async () => {
-    const { container, getByRole, getAllByRole } = render(Create);
+    const { container, getByRole, getAllByRole } = render(Create, baseOptions);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
 
@@ -161,7 +202,7 @@ describe("Create", async () => {
   });
 
   it("correctly renders the Mnemonic Verification page", async () => {
-    const { container, getByRole, getAllByRole } = render(Create);
+    const { container, getByRole, getAllByRole } = render(Create, baseOptions);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
 
@@ -175,7 +216,7 @@ describe("Create", async () => {
   });
 
   it("doesn't let the user proceed if they have entered mismatching Mnemonic", async () => {
-    const { container, getByRole, getAllByRole } = render(Create);
+    const { container, getByRole, getAllByRole } = render(Create, baseOptions);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
 
@@ -203,7 +244,7 @@ describe("Create", async () => {
   });
 
   it("lets the user proceed if they have entered a matching Mnemonic", async () => {
-    const { container, getByRole, getAllByRole } = render(Create);
+    const { container, getByRole, getAllByRole } = render(Create, baseOptions);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
 
@@ -227,7 +268,7 @@ describe("Create", async () => {
   });
 
   it("ensures that the Undo button on the Mnemonic Validate step works as expected", async () => {
-    const { container, getByRole, getAllByRole } = render(Create);
+    const { container, getByRole, getAllByRole } = render(Create, baseOptions);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
 
@@ -253,7 +294,7 @@ describe("Create", async () => {
   });
 
   it("ensures the Password step renders as expected", async () => {
-    const { container, getByRole, getAllByRole } = render(Create);
+    const { container, getByRole, getAllByRole } = render(Create, baseOptions);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
 
@@ -273,42 +314,17 @@ describe("Create", async () => {
 
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
-    // Password disabled
+    // Password enabled
     expect(container.firstChild).toMatchSnapshot();
 
     await fireEvent.click(getByRole("switch"));
 
-    // Password enabled
-    expect(container.firstChild).toMatchSnapshot();
-  });
-
-  it("ensures the Swap To Native Dusk step renders as expected", async () => {
-    const { container, getByRole, getAllByRole } = render(Create);
-
-    await fireEvent.click(getByRole("button", { name: "Accept" }));
-
-    await fireEvent.click(getAllByRole("checkbox")[0]);
-    await fireEvent.click(getAllByRole("checkbox")[1]);
-
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-
-    const mnemonicSplit = mnemonic.split(" ");
-
-    mnemonicSplit.forEach(async (word) => {
-      await fireEvent.click(getByRole("button", { name: word }));
-    });
-
-    await tick();
-
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-
+    // Password disabled
     expect(container.firstChild).toMatchSnapshot();
   });
 
   it("ensures the Network Syncing step renders as expected", async () => {
-    const { container, getByRole, getAllByRole } = render(Create);
+    const { container, getByRole, getAllByRole } = render(Create, baseOptions);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
 
@@ -324,21 +340,14 @@ describe("Create", async () => {
       await fireEvent.click(getByRole("button", { name: word }));
     });
 
-    await tick();
-
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-
-    expect(blockHeightSpy).toHaveBeenCalledTimes(1);
 
     expect(container.firstChild).toMatchSnapshot();
   });
 
   it("ensures the All Done step renders as expected", async () => {
-    vi.useFakeTimers();
-
-    const { container, getByRole, getAllByRole } = render(Create);
+    const { container, getByRole, getAllByRole } = render(Create, baseOptions);
 
     await fireEvent.click(getByRole("button", { name: "Accept" }));
 
@@ -354,9 +363,6 @@ describe("Create", async () => {
       await fireEvent.click(getByRole("button", { name: word }));
     });
 
-    await tick();
-
-    await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await fireEvent.click(getByRole("button", { name: "Next" }));
@@ -364,22 +370,15 @@ describe("Create", async () => {
     expect(container.firstChild).toMatchSnapshot();
 
     /*
-     * We wait for the sync promise to complete, because it
-     * sets the `userId` in the settingsStore.
-     * Without waiting for it, the setting of the `userId`
-     * happens after the `settingsStore.reset()` call in the
-     * `afterEach` hook and leaves the store "dirty" for
-     * subsequent tests.
+     * We wait for the `clearLocalDataAndInit` call inside `initializeWallet`
+     * as the promise is not awaited and can happen after the test ends
+     * invalidating the checks of other tests.
      */
-    await vi.runOnlyPendingTimersAsync();
-
-    vi.useRealTimers();
+    await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
   });
 
   it("should initialize the wallet without setting a password", async () => {
-    vi.useFakeTimers();
-
-    const { getByRole, getAllByRole } = render(Create);
+    const { getByRole, getAllByRole } = render(Create, baseOptions);
 
     // ToS step
     await fireEvent.click(getByRole("button", { name: "Accept" }));
@@ -400,51 +399,47 @@ describe("Create", async () => {
       await fireEvent.click(getByRole("button", { name: word }));
     });
 
-    await tick();
-
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
     // Set Password step
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-    expect(loginInfoStorage.get()).toBeNull();
+    await fireEvent.click(getByRole("switch"));
 
-    // Swap ERC20 to Native Dusk step
     await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    expect(loginInfoStorage.get()).toBeNull();
 
     // Network Syncing step
     await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic, currentBlockHeight);
+
+    await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
+
+    expect(get(settingsStore).walletCreationBlockHeight).toBe(
+      currentBlockHeight
+    );
+    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(
+      expect.any(ProfileGenerator),
+      currentBlockHeight
+    );
 
     // All Done step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-    expect(initWalletSpy).toHaveBeenCalledTimes(1);
-    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic);
-    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(
-      expect.any(ProfileGenerator),
-      undefined
-    );
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
-
-    /*
-     * We wait for the sync promise to complete, because it
-     * sets the `userId` in the settingsStore.
-     * Without waiting for it, the setting of the `userId`
-     * happens after the `settingsStore.reset()` call in the
-     * `afterEach` hook and leaves the store "dirty" for
-     * subsequent tests.
-     */
-    await vi.runOnlyPendingTimersAsync();
-
-    vi.useRealTimers();
   });
 
   it("should initialize the wallet encrypted mnemonic saved in localStorage", async () => {
-    const { getByPlaceholderText, getByRole, getAllByRole } = render(Create);
+    const { getByPlaceholderText, getByRole, getAllByRole } = render(
+      Create,
+      baseOptions
+    );
 
     // ToS step
     await fireEvent.click(getByRole("button", { name: "Accept" }));
@@ -465,43 +460,44 @@ describe("Create", async () => {
       await fireEvent.click(getByRole("button", { name: word }));
     });
 
-    await tick();
-
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
     // Set Password step
     expect(loginInfoStorage.get()).toBeNull();
-
-    await fireEvent.click(getByRole("switch"));
 
     await fireInput(asInput(getByPlaceholderText("Set Password")), pwd);
     await fireInput(asInput(getByPlaceholderText("Confirm Password")), pwd);
 
     expect(loginInfoStorage.get()).toBeNull();
+
     await fireEvent.click(getByRole("button", { name: "Next" }));
     await vi.waitFor(() => {
       expect(loginInfoStorage.get()).not.toBeNull();
     });
 
-    // Swap ERC20 to Native Dusk step
-    await fireEvent.click(getByRole("button", { name: "Next" }));
-
     // Network Syncing step
     await fireEvent.click(getByRole("button", { name: "Next" }));
+
+    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledTimes(1);
+    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic, currentBlockHeight);
+
+    await vi.waitUntil(() => clearAndInitSpy.mock.calls.length === 1);
+
+    expect(get(settingsStore).walletCreationBlockHeight).toBe(
+      currentBlockHeight
+    );
+    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
+    expect(clearAndInitSpy).toHaveBeenCalledWith(
+      expect.any(ProfileGenerator),
+      currentBlockHeight
+    );
 
     // All Done step
     await fireEvent.click(getByRole("button", { name: "Next" }));
 
     await vi.waitUntil(() => gotoSpy.mock.calls.length > 0);
 
-    expect(settingsResetSpy).toHaveBeenCalledTimes(1);
-    expect(initWalletSpy).toHaveBeenCalledTimes(1);
-    expect(initWalletSpy).toHaveBeenCalledWith(mnemonic);
-    expect(clearAndInitSpy).toHaveBeenCalledTimes(1);
-    expect(clearAndInitSpy).toHaveBeenCalledWith(
-      expect.any(ProfileGenerator),
-      undefined
-    );
     expect(gotoSpy).toHaveBeenCalledTimes(1);
     expect(gotoSpy).toHaveBeenCalledWith("/dashboard");
   });

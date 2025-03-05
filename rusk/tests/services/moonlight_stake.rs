@@ -11,14 +11,16 @@ use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use std::collections::HashMap;
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 use tracing::info;
 
 use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{
+    test_wallet as wallet, TestStateClient, TestStore,
+};
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
@@ -30,8 +32,9 @@ const GAS_PRICE: u64 = 1;
 fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/stake.toml"))
         .expect("Cannot deserialize config");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
+    new_state(dir, &snapshot, vm_config)
 }
 
 /// Stakes an amount Dusk and produces a block with this single transaction,

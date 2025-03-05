@@ -50,7 +50,9 @@ describe("Unstake", () => {
     const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
 
     const unstakeProps = {
-      maxAmount: 278_000_000_000n,
+      availableBalance: 10_000_000_000_000n,
+      maxWithdrawAmount: 278_000_000_000n,
+      minStakeRequirement: 1_000_000_000n,
       operationCtaIconPath: mdiDatabaseArrowDownOutline,
       operationCtaLabel: "Unstake",
       operationOverviewLabel: "Unstake Amount",
@@ -74,7 +76,7 @@ describe("Unstake", () => {
       };
 
       const { container, getByRole } = render(Unstake, baseOptions);
-      const nextButton = getByRole("button", { name: "Unstake" });
+      const nextButton = getByRole("button", { name: "Next" });
 
       expect(nextButton).toBeEnabled();
       expect(container.firstChild).toMatchSnapshot();
@@ -88,10 +90,13 @@ describe("Unstake", () => {
 
       await vi.advanceTimersToNextTimerAsync();
 
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
       await fireEvent.click(getByRole("button", { name: "Unstake" }));
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
+        unstakeProps.maxWithdrawAmount,
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -115,9 +120,9 @@ describe("Unstake", () => {
 
       await vi.advanceTimersToNextTimerAsync();
 
-      const unstakeButton = getByRole("button", { name: "Unstake" });
+      const nextButton = getByRole("button", { name: "Next" });
 
-      expect(unstakeButton).toBeDisabled();
+      expect(nextButton).toBeDisabled();
     });
   });
 
@@ -125,7 +130,9 @@ describe("Unstake", () => {
     const expectedExplorerLink = `/explorer/transactions/transaction?id=${lastTxId}`;
 
     const claimRewardsProps = {
-      maxAmount: 345_000_000_000n,
+      availableBalance: 10_000_000_000_000n,
+      maxWithdrawAmount: 345_000_000_000n,
+      minStakeRequirement: undefined,
       operationCtaIconPath: mdiGiftOpenOutline,
       operationCtaLabel: "Claim Rewards",
       operationOverviewLabel: "Rewards Amount",
@@ -149,7 +156,7 @@ describe("Unstake", () => {
       };
 
       const { container, getByRole } = render(Unstake, baseOptions);
-      const nextButton = getByRole("button", { name: "Claim Rewards" });
+      const nextButton = getByRole("button", { name: "Next" });
 
       expect(nextButton).toBeEnabled();
       expect(container.firstChild).toMatchSnapshot();
@@ -163,10 +170,13 @@ describe("Unstake", () => {
 
       await vi.advanceTimersToNextTimerAsync();
 
+      await fireEvent.click(getByRole("button", { name: "Next" }));
+
       await fireEvent.click(getByRole("button", { name: "Claim Rewards" }));
 
       expect(baseProps.execute).toHaveBeenCalledTimes(1);
       expect(baseProps.execute).toHaveBeenCalledWith(
+        claimRewardsProps.maxWithdrawAmount,
         baseProps.gasSettings.gasPrice,
         baseProps.gasSettings.gasLimit
       );
@@ -190,9 +200,9 @@ describe("Unstake", () => {
 
       await vi.advanceTimersToNextTimerAsync();
 
-      const claimButton = getByRole("button", { name: "Claim Rewards" });
+      const nextButton = getByRole("button", { name: "Next" });
 
-      expect(claimButton).toBeDisabled();
+      expect(nextButton).toBeDisabled();
     });
   });
 });

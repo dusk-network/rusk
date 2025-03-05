@@ -5,6 +5,7 @@
     mdiAccountQuestionOutline,
     mdiApplicationCogOutline,
     mdiArrowLeft,
+    mdiCubeOutline,
     mdiGasStationOutline,
     mdiRestoreAlert,
   } from "@mdi/js";
@@ -17,8 +18,9 @@
     Select,
     Switch,
   } from "$lib/dusk/components";
-  import { AppAnchorButton, GasControls } from "$lib/components";
+  import { AppAnchorButton, CopyField, GasControls } from "$lib/components";
   import { currencies } from "$lib/dusk/currency";
+  import { createNumberFormatter } from "$lib/dusk/number";
   import { gasStore, settingsStore, walletStore } from "$lib/stores";
   import { areValidGasSettings } from "$lib/contracts";
   import { logout } from "$lib/navigation";
@@ -68,7 +70,15 @@
   let resetError = null;
 
   $: ({ syncStatus } = $walletStore);
-  $: ({ currency, darkMode, gasLimit, gasPrice } = $settingsStore);
+  $: ({
+    currency,
+    darkMode,
+    gasLimit,
+    gasPrice,
+    language,
+    walletCreationBlockHeight,
+  } = $settingsStore);
+  $: numberFormatter = createNumberFormatter(language);
 </script>
 
 <section class="settings">
@@ -154,6 +164,23 @@
       </div>
     </article>
     <hr />
+    {#if walletCreationBlockHeight}
+      <article class="settings-group">
+        <header class="settings-group__header">
+          <Icon path={mdiCubeOutline} />
+          <h3 class="h4 settings-group__heading">
+            Wallet Creation Block Height
+          </h3>
+        </header>
+        <CopyField
+          className="settings-group__control"
+          displayValue={numberFormatter(walletCreationBlockHeight)}
+          name="Block Height"
+          rawValue={String(walletCreationBlockHeight)}
+        />
+      </article>
+      <hr />
+    {/if}
     <article class="settings-group">
       <header class="settings-group__header">
         <Icon path={mdiAccountQuestionOutline} />
@@ -218,108 +245,106 @@
     icon={{ path: mdiArrowLeft }}
     text="Back"
   />
-  <Button on:click={() => logout(false)} variant="tertiary" text="Log out" />
+  <Button
+    on:click={() => logout(false)}
+    variant="tertiary"
+    text="Lock Wallet"
+  />
 </div>
 
 <style lang="postcss">
-  .settings {
-    overflow-y: hidden;
-    background-color: var(--surface-color);
-    border-radius: 1.125em;
+  :global {
+    .settings {
+      overflow-y: hidden;
+      background-color: var(--surface-color);
+      border-radius: 1.125em;
 
-    & > * {
-      padding: 1em 1em 0 1em;
+      & > * {
+        padding: 1em 1em 0 1em;
+      }
+
+      &,
+      &__content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--default-gap);
+      }
+
+      &__content {
+        overflow-y: auto;
+      }
     }
 
-    &,
-    &__content {
+    .settings-group {
       display: flex;
       flex-direction: column;
-      gap: var(--default-gap);
-    }
-
-    &__content {
-      overflow-y: auto;
-    }
-
-    :global(& button, & select, & a) {
+      align-items: flex-start;
+      gap: var(--small-gap);
       width: 100%;
-    }
-  }
+      margin-bottom: 0.5em;
 
-  .settings-group {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--small-gap);
-    width: 100%;
-    margin-bottom: 0.5em;
+      &__header {
+        text-transform: capitalize;
+        display: flex;
+        align-items: center;
+        gap: 0.75em;
+      }
 
-    &__header {
-      text-transform: capitalize;
-      display: flex;
-      align-items: center;
-      gap: 0.75em;
-    }
+      &__heading {
+        line-height: 140%;
+      }
 
-    &__heading {
-      line-height: 140%;
-    }
+      &__control {
+        align-items: center;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 0.5em;
+        width: 100%;
 
-    &__control {
-      align-items: center;
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      gap: 0.5em;
-      width: 100%;
+        &--with-label {
+          flex-direction: column;
+          justify-content: start;
+          align-items: stretch;
 
-      &--with-label {
-        flex-direction: column;
-        justify-content: start;
-        align-items: stretch;
+          & > span {
+            line-height: 140%;
+          }
+        }
 
-        & > span {
-          line-height: 140%;
+        &--switch {
+          background-color: var(--background-color);
+          padding: 0.625em 0.75em 0.625em 0.75em;
+          border-radius: 1.5em;
         }
       }
 
-      &--switch {
-        background-color: var(--background-color);
-        padding: 0.625em 0.75em 0.625em 0.75em;
-        border-radius: 1.5em;
+      &__multi-control-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--default-gap);
+        width: 100%;
+      }
+
+      &:last-of-type {
+        margin-bottom: 1em;
       }
     }
 
-    &__multi-control-content {
+    .settings-actions {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      justify-content: space-between;
       gap: var(--default-gap);
-      width: 100%;
+
+      & > * {
+        flex: 1;
+      }
     }
 
-    :global(&__select) {
-      text-transform: uppercase;
+    .dusk-button.settings-group__button--state--danger {
+      background-color: var(--error-color);
+      color: var(--on-danger-color);
     }
-
-    &:last-of-type {
-      margin-bottom: 1em;
-    }
-  }
-
-  .settings-actions {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    gap: var(--default-gap);
-
-    :global(& button, & a) {
-      width: 100%;
-    }
-  }
-
-  :global(.dusk-button.settings-group__button--state--danger) {
-    background-color: var(--error-color);
-    color: var(--on-danger-color);
   }
 </style>

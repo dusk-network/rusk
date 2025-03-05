@@ -11,13 +11,15 @@ use std::sync::{Arc, RwLock};
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
+use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
-use test_wallet::{self as wallet};
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{TestStateClient, TestStore};
+use crate::common::wallet::{
+    test_wallet as wallet, TestStateClient, TestStore,
+};
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 
@@ -28,8 +30,9 @@ const INITIAL_MOONLIGHT_BALANCE: u64 = 10_000_000_000;
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/convert.toml"))
         .expect("Cannot deserialize config");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, BLOCK_GAS_LIMIT)
+    new_state(dir, &snapshot, vm_config)
 }
 
 /// Makes a transaction that converts Dusk from Phoenix to Moonlight, and

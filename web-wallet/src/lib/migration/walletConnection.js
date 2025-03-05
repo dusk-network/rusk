@@ -2,17 +2,34 @@ import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 // eslint-disable-next-line import/no-unresolved
 import { bsc, mainnet, sepolia } from "@reown/appkit/networks";
-import { disconnect, getAccount, getBalance, watchAccount } from "@wagmi/core";
+import {
+  disconnect,
+  getAccount,
+  getBalance,
+  reconnect,
+  watchAccount,
+} from "@wagmi/core";
 import { readable } from "svelte/store";
 
-// Required project metadata
-const projectId = "b5303e1c8374b100fbb7f181884fef28";
-const metadata = {
-  description: "Dusk Web-Wallet",
-  icons: [],
-  name: "Dusk Migration",
-  url: "https://127.0.0.1:5173/dashboard/",
-};
+/**
+ * @constant {string} projectId - The ID of the project, sourced from an environment variable.
+ *
+ * @description
+ * This constant retrieves the project ID from the environment variable `VITE_REOWN_PROJECT_ID`.
+ * If the environment variable is not set, it defaults to an empty string. This behavior is not ideal
+ * because an empty `projectId` will cause the modal initialization to fail.
+ *
+ * While this issue typically arises due to a developer error (e.g., forgetting to set the environment variable),
+ * resolving it properly requires a broader refactor of the codebase to better handle missing or invalid `projectId` values.
+ *
+ * Additionally, when the `projectId` is missing, the "migrate" functionality will not be accessible in the UI,
+ * effectively hiding the "broken" flow. Therefore, while the error can occur, users are unlikely to encounter it.
+ *
+ * **To improve:**
+ * Consider implementing a mechanism to ensure `VITE_REOWN_PROJECT_ID` is always defined during the build or
+ * runtime processes, potentially throwing a clear error during startup if it is missing.
+ */
+const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || "";
 
 /** @typedef {import("@reown/appkit/networks").AppKitNetwork} AppKitNetwork */
 /** @type {[AppKitNetwork, ...AppKitNetwork[]]} */
@@ -25,6 +42,8 @@ const wagmiAdapter = new WagmiAdapter({
 
 export const wagmiConfig = wagmiAdapter.wagmiConfig;
 
+reconnect(wagmiConfig);
+
 // Create the Reown App Kit modal
 export const modal = createAppKit({
   adapters: [wagmiAdapter],
@@ -33,23 +52,14 @@ export const modal = createAppKit({
     onramp: false,
     swaps: false,
   },
-  metadata,
   networks,
   projectId,
   themeMode: "dark",
 });
 
-// Svelte store to track the current account, and update if a new account is set
-// Note that this can change at will by the user outside
-// of the app itself
-export const account = readable(getAccount(wagmiConfig), (set) => {
-  set(getAccount(wagmiConfig));
-  return watchAccount(wagmiConfig, {
-    onChange(newAccount) {
-      set(newAccount);
-    },
-  });
-});
+export const account = readable(getAccount(wagmiConfig), (set) =>
+  watchAccount(wagmiConfig, { onChange: set })
+);
 
 /** @param {`0x${string}`} address */
 export const accountBalance = (address) =>
@@ -59,6 +69,8 @@ export const accountBalance = (address) =>
   });
 
 export async function walletDisconnect() {
-  await disconnect(wagmiConfig);
+  disconnect(wagmiConfig);
   await modal?.disconnect();
 }
+
+window.addEventListener("beforeunload", walletDisconnect);

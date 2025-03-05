@@ -1,8 +1,9 @@
 [package]
-name = "node"
-version = "0.1.0"
+name = "dusk-node"
+version = "1.0.2-alpha.1"
 edition = "2021"
 autobins = false
+repository = "https://github.com/dusk-network/rusk"
 description = "An implementation of dusk-blockchain node in pure Rust"
 categories = ["cryptography", "cryptography::cryptocurrencies"]
 keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
@@ -26,7 +27,6 @@ dusk-bytes = { workspace = true }
 node-data = { workspace = true }
 dusk-core = { workspace = true }
 smallvec = { workspace = true }
-rusk-recovery = { workspace = true, features = ["state"] }
 
 serde = { workspace = true }
 humantime-serde = { workspace = true }
@@ -49,7 +49,7 @@ serde_with = { workspace = true, features = ["hex"], optional = true }
 fake = { workspace = true, features = ['derive'] }
 node-data = { workspace = true, features = ["faker"] }
 rand = { workspace = true }
-tempdir = { workspace = true }
+tempfile = { workspace = true }
 criterion = { workspace = true, features = ["async_futures"] }
 
 [features]

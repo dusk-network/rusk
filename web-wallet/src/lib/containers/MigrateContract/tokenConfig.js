@@ -5,13 +5,13 @@ export const tokens = {
   mainnet: {
     "BEP-20": {
       chainId: bsc.id,
-      migrationContract: "0x9f5d1c067710fc6ed49a6444afd69b64799a57b6",
+      migrationContract: "0x32979f040feb67a5223acb0716fe4c7a5956488c",
       name: "BEP-20",
       tokenContract: "0xb2bd0749dbe21f623d9baba856d3b0f0e1bfec9c",
     },
     "ERC-20": {
       chainId: mainnet.id,
-      migrationContract: "0x9f5d1c067710fc6ed49a6444afd69b64799a57b6",
+      migrationContract: "0x36b8e0b938c0172c20e14cc32e7f0e51dcf1084f",
       name: "ERC-20",
       tokenContract: "0x940a2db1b7008b6c776d4faaca729d6d4a4aa551",
     },

@@ -37,7 +37,7 @@
   let isSyncCompleted = false;
 
   /** @type {boolean} */
-  let showPasswordSetup = false;
+  let showPasswordSetup = true;
 
   /** @type {boolean} */
   let isValidMnemonic = false;

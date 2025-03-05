@@ -13,7 +13,7 @@
 
 extern crate alloc;
 
-pub use self::execute::{execute, gen_contract_id};
+pub use self::execute::{execute, gen_contract_id, Config as ExecutionConfig};
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
     Session,
@@ -36,8 +36,12 @@ pub(crate) mod cache;
 mod execute;
 pub mod host_queries;
 
-/// Dusk VM is a [`PiecrustVM`] enriched with the host functions specified in
-/// Dusk's ABI.
+/// The Virtual Machine (VM) for executing smart contracts in the Dusk Network.
+///
+/// The `VM` struct serves as the core for managing the network's state,
+/// executing smart contracts, and interfacing with host functions. It supports
+/// both persistent and ephemeral sessions for handling transactions, contract
+/// queries and contract deployments.
 pub struct VM(PiecrustVM);
 
 impl From<PiecrustVM> for VM {
@@ -53,14 +57,28 @@ impl Debug for VM {
 }
 
 impl VM {
-    /// Creates a new `VM`, reading the given directory for existing commits
-    /// and bytecode.
+    /// Creates a new instance of the virtual machine.
     ///
-    /// The directory will be used to save any future session commits made by
-    /// this `VM` instance.
+    /// This method initializes the VM with a given root directory and
+    /// registers the necessary host-queries for contract execution.
+    ///
+    /// # Arguments
+    /// * `root_dir` - The path to the root directory for the VM's state
+    ///   storage. This directory will be used to save any future session
+    ///   commits made by this `VM` instance.
+    ///
+    /// # Returns
+    /// A new `VM` instance.
     ///
     /// # Errors
     /// If the directory contains unparseable or inconsistent data.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use dusk_vm::VM;
+    ///
+    /// let vm = VM::new("/path/to/root_dir");
+    /// ```
     pub fn new(
         root_dir: impl AsRef<Path> + Into<PathBuf>,
     ) -> Result<Self, Error> {
@@ -69,26 +87,69 @@ impl VM {
         Ok(vm)
     }
 
-    /// Creates a new `VM` using a new temporary directory.
+    /// Creates an ephemeral VM instance.
     ///
-    /// Any session commits made by this machine should be considered discarded
-    /// once this `VM` instance drops.
+    /// This method initializes a VM that operates in memory without persisting
+    /// state. It is useful for testing or temporary computations.
+    ///
+    /// # Returns
+    /// A new ephemeral `VM` instance.
     ///
     /// # Errors
     /// If creating a temporary directory fails.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use dusk_vm::VM;
+    ///
+    /// let vm = VM::ephemeral();
+    /// ```
     pub fn ephemeral() -> Result<VM, Error> {
         let mut vm: Self = PiecrustVM::ephemeral()?.into();
         vm.register_host_queries();
         Ok(vm)
     }
 
-    /// Spawn a [`Session`] on top of the given `commit`, given the `chain_id`
-    /// and `block_height`.
+    /// Creates a new session for transaction execution.
+    ///
+    /// This method initializes a session with a specific base state commit,
+    /// chain identifier, and block height. Sessions allow for isolated
+    /// transaction execution without directly affecting the persistent VM
+    /// state until finalized.
+    ///
+    /// # Arguments
+    /// * `base` - A 32-byte array representing the base state from which the
+    ///   session begins.
+    /// * `chain_id` - The identifier of the network.
+    /// * `block_height` - The current block height at which the session is
+    ///   created.
+    ///
+    /// # Returns
+    /// A `Result` containing a `Session` instance for executing transactions,
+    /// or an error if the session cannot be initialized.
     ///
     /// # Errors
     /// If base commit is provided but does not exist.
     ///
-    /// [`Session`]: Session
+    /// # Examples
+    /// ```rust
+    /// use dusk_vm::VM;
+    ///
+    /// const CHAIN_ID: u8 = 42;
+    ///
+    /// // create a genesis session
+    /// let vm = VM::ephemeral().unwrap();
+    /// let session = vm.genesis_session(CHAIN_ID);
+    ///
+    /// // [...] apply changes to the network through the running session
+    ///
+    /// // commit the changes
+    /// let base = session.commit().unwrap();
+    ///
+    /// // spawn a new session on top of the base-commit
+    /// let block_height = 21;
+    /// let session = vm.session(base, CHAIN_ID, block_height).unwrap();
+    /// ```
     pub fn session(
         &self,
         base: [u8; 32],
@@ -103,8 +164,28 @@ impl VM {
         )
     }
 
-    /// Spawn a new genesis-[`Session`] given the `chain_id` with a
-    /// `block_height` of 0.
+    /// Initializes a session for setting up the genesis block.
+    ///
+    /// This method creates a session specifically for defining the genesis
+    /// block, which serves as the starting state of the network. The
+    /// genesis session uses the specified chain ID.
+    ///
+    /// # Arguments
+    /// * `chain_id` - The identifier of the blockchain chain for which the
+    ///   genesis state is initialized.
+    ///
+    /// # Returns
+    /// A `Session` instance for defining the genesis block.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use dusk_vm::VM;
+    ///
+    /// const CHAIN_ID: u8 = 42;
+    ///
+    /// let vm = VM::ephemeral().unwrap();
+    /// let genesis_session = vm.genesis_session(CHAIN_ID);
+    /// ```
     pub fn genesis_session(&self, chain_id: u8) -> Session {
         self.0
             .session(
@@ -119,28 +200,37 @@ impl VM {
             .expect("Creating a genesis session should always succeed")
     }
 
-    /// Return all existing commits.
+    /// Retrieves all pending commits in the VM.
+    ///
+    /// This method fetches unfinalized state changes for inspection or
+    /// processing.
+    ///
+    /// # Returns
+    /// A vector of commits.
     pub fn commits(&self) -> Vec<[u8; 32]> {
         self.0.commits()
     }
 
-    /// Deletes the given commit from disk.
+    /// Deletes a specified commit from the VM.
+    ///
+    /// # Arguments
+    /// * `commit` - The commit to be deleted.
     pub fn delete_commit(&self, root: [u8; 32]) -> Result<(), Error> {
         self.0.delete_commit(root)
     }
 
-    /// Finalizes the given commit on disk.
+    /// Finalizes a specified commit, applying its state changes permanently.
+    ///
+    /// # Arguments
+    /// * `commit` - The commit to be finalized.
     pub fn finalize_commit(&self, root: [u8; 32]) -> Result<(), Error> {
         self.0.finalize_commit(root)
     }
 
-    /// Return the root directory of the virtual machine.
+    /// Returns the root directory of the VM.
     ///
     /// This is either the directory passed in by using [`new`], or the
     /// temporary directory created using [`ephemeral`].
-    ///
-    /// [`new`]: VM::new
-    /// [`ephemeral`]: VM::ephemeral
     pub fn root_dir(&self) -> &Path {
         self.0.root_dir()
     }

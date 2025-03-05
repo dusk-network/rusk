@@ -14,6 +14,7 @@
   import { migrate } from "$lib/migration/migration";
   import { createDataStore } from "$lib/dusk/svelte-stores";
   import { createEventDispatcher } from "svelte";
+  import { walletStore } from "$lib/stores";
 
   /** @type {bigint} */
   export let amount;
@@ -46,6 +47,9 @@
       });
       if (result.status === "success") {
         dispatch("incrementStep");
+        setTimeout(() => {
+          walletStore.sync();
+        }, 20000);
       } else {
         throw new Error("Could not validate the transaction receipt");
       }
@@ -58,35 +62,35 @@
 <div class="migrate__execute">
   {#if !isLoading && !data && !error}
     <div class="migrate__execute-approval">
-      <Icon path={mdiCheckDecagramOutline} />
-      <span>Migration Approved</span>
+      <Icon path={mdiCheckDecagramOutline} size="large" />
+      <span>Approval successful! You may now proceed with the migration.</span>
     </div>
   {:else if error}
     <div class="migrate__execute-approval">
-      <Icon path={mdiAlertOutline} />
+      <Icon path={mdiAlertOutline} size="large" />
       <span>Action has been rejected on the connected wallet.</span>
     </div>
   {:else if isLoading && !migrationHash}
     <div class="migrate__execute-approval">
-      <Icon path={mdiTimerSand} />
+      <Icon path={mdiTimerSand} size="large" />
       <span>Migration in progress...</span>
     </div>
   {/if}
   {#if migrationHash && chain?.blockExplorers}
     <div class="migrate__execute-approval">
-      <Icon path={mdiTimerSand} />
-      <span>Migration has been submitted</span>
+      <Icon path={mdiTimerSand} size="large" />
+      <span>Your migration request is being processed...</span>
+      <Banner title="Migration in Progress" variant="info">
+        <p>
+          Your migration request is currently being executed and may take a few
+          minutes to complete. You can track the transaction status <AppAnchor
+            href={`${chain.blockExplorers.default.url}/tx/${migrationHash}`}
+            target="_blank"
+            rel="noopener noreferrer">here</AppAnchor
+          >.
+        </p>
+      </Banner>
     </div>
-    <Banner title="Migration in progress..." variant="info">
-      <p>
-        Migration takes some minutes to complete. Your transaction is being
-        executed and you can check its status <AppAnchor
-          href={`${chain.blockExplorers.default.url}/tx/${migrationHash}`}
-          target="_blank"
-          rel="noopener noreferrer">here</AppAnchor
-        >.
-      </p>
-    </Banner>
   {/if}
   {#if (isLoading || !data || error) && !migrationHash}
     <Button
@@ -102,13 +106,13 @@
     display: flex;
     justify-content: center;
     flex-direction: column;
+    gap: 1.875em;
 
     &-approval {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: var(--default-gap);
-      padding: 2.25em 0;
     }
   }
 </style>

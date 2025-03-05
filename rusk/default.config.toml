@@ -21,12 +21,21 @@
 [chain]
 #db_path = '/home/user/.dusk/rusk'
 #consensus_keys_path = '/home/user/.dusk/rusk/consensus.keys'
-#generation_timeout = '3s'
-# Note: changing the gas per deploy byte parameter is equivalent to forking the chain.
-#gas_per_deploy_byte = 100
-#min_deployment_gas_price = 2000
-#min_gas_limit = 75000
-#min_deploy_points = 5000000
+min_gas_limit = 150000
+
+# Note: changing the vm settings is equivalent to forking the chain.
+[vm]
+generation_timeout = '3s'
+gas_per_deploy_byte = 100
+min_deployment_gas_price = 2000
+min_deploy_points = 5000000
+block_gas_limit = 3000000000
+
+[vm.features]
+# ABI_PUBLIC_SENDER = <TBD>
+# key = activation_height
+# key = activation_height
+# key = activation_height
 
 [databroker]
 max_inv_entries = 100

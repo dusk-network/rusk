@@ -4,13 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::{mpsc, Mutex};
+use std::sync::{mpsc, LazyLock, Mutex};
 use std::{io, thread};
 
 use dusk_core::transfer::phoenix::TRANSCRIPT_LABEL;
 use dusk_plonk::prelude::{Compiler, PublicParameters};
-use lazy_static::lazy_static;
-use once_cell::sync::Lazy;
 use rusk_profile::Circuit as CircuitProfile;
 use tracing::{info, warn};
 
@@ -18,11 +16,10 @@ use crate::Theme;
 
 mod circuits;
 
-lazy_static! {
-    static ref CRS_URL: Mutex<String> = Mutex::new(String::default());
-}
+static CRS_URL: LazyLock<Mutex<String>> =
+    LazyLock::new(|| Mutex::new(String::new()));
 
-static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
+static PUB_PARAMS: LazyLock<PublicParameters> = LazyLock::new(|| {
     let theme = Theme::default();
     info!("{} CRS from cache", theme.action("Fetching"));
     match rusk_profile::get_common_reference_string() {
@@ -148,7 +145,7 @@ pub fn exec(
 
     // This force init is needed to check CRS and create it (if not available)
     // See also: https://github.com/dusk-network/rusk/issues/767
-    Lazy::force(&PUB_PARAMS);
+    LazyLock::force(&PUB_PARAMS);
 
     // cache all circuit descriptions, check if they changed
     circuits::cache_all()?;
@@ -174,6 +171,6 @@ mod tests {
     use super::*;
     #[test]
     fn test_crs() {
-        Lazy::force(&PUB_PARAMS);
+        LazyLock::force(&PUB_PARAMS);
     }
 }

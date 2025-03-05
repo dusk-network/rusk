@@ -19,13 +19,13 @@
   </Banner>
   <h3>Long Content</h3>
   <Banner
-    title="Setting a password for your web wallet is optional."
+    title="Setting a password for your web wallet is recommended."
     variant="info"
   >
     <p>
-      Doing so allows you the convenience of opening your wallet file using a
-      password, but it weakens the overall security. Not using a password
-      requires you to input the full mnemonic to open your wallet.
+      Without a password, you will need to input your full mnemonic each time to
+      access your wallet. This could expose your mnemonic to potential threats.
+      Setting a password is highly recommended for better wallet security.
     </p>
   </Banner>
 </section>

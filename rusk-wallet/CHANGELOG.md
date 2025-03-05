@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change dependency declaration to not require strict equal [#3405]
+
+## [0.1.0] - 2025-01-20
+
 ### Add
 
 - Add gas cost calculation to contract deploy [#2768]
@@ -36,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix stake info for inactive stakes with rewards [#2766]
 - Fix Moonlight stake reward withdrawal [#2523]
 
+<!-- Issues -->
+[#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3263]: https://github.com/dusk-network/rusk/issues/3263
 [#2839]: https://github.com/dusk-network/rusk/issues/2839
 [#2768]: https://github.com/dusk-network/rusk/issues/2768
@@ -57,5 +65,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
 
 <!-- Releases -->
-[unreleased]: https://github.com/dusk-network/rusk/compare/master
-<!-- [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-wallet-0.1.0 -->
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...HEAD
+[0.1.0]: https://github.com/dusk-network/rusk/tree/rusk-wallet-0.1.0

@@ -19,6 +19,7 @@ type SettingsStoreContent = {
   hideStakingNotice: boolean;
   language: string;
   userId: string;
+  walletCreationBlockHeight: bigint;
 };
 
 type SettingsStore = Writable<SettingsStoreContent> & {
@@ -138,6 +139,7 @@ type WalletStoreServices = {
   transfer: (
     to: string,
     amount: bigint,
+    memo: string,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<TransactionInfo>;
 
@@ -147,6 +149,7 @@ type WalletStoreServices = {
   ) => Promise<TransactionInfo>;
 
   unstake: (
+    amount: bigint,
     gas: import("$lib/vendor/w3sper.js/src/mod").Gas
   ) => Promise<TransactionInfo>;
 

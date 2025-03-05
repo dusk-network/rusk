@@ -93,10 +93,10 @@ describe("appStore", () => {
       statsFetchInterval,
     } = get(appStore);
 
-    expect(fetchInterval).toBe(1000);
+    expect(fetchInterval).toBe(10000);
     expect(marketDataFetchInterval).toBe(120000);
     expect(provisionersFetchInterval).toBe(30000);
-    expect(statsFetchInterval).toBe(1000);
+    expect(statsFetchInterval).toBe(10000);
 
     vi.unstubAllEnvs();
   });

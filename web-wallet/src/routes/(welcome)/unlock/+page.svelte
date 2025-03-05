@@ -29,7 +29,7 @@
 
   /** @type {(seed: Uint8Array) => Promise<import("$lib/vendor/w3sper.js/src/mod").ProfileGenerator>} */
   async function checkLocalData(seed) {
-    const profileGenerator = profileGeneratorFrom(seed);
+    const profileGenerator = await profileGeneratorFrom(seed);
     const defaultAddress = (await profileGenerator.default).address.toString();
     const currentAddress = $settingsStore.userId;
 
@@ -46,7 +46,7 @@
       ? getSeedFromMnemonic(mnemonic)
       : Promise.reject(new InvalidMnemonicError());
 
-  /** @type {(loginInfo: MnemonicEncryptInfo) => (pwd: string) => Promise<Uint8Array>} */
+  /** @type {(loginInfo: WalletEncryptInfo) => (pwd: string) => Promise<Uint8Array>} */
   const getSeedFromInfo = (loginInfo) => (pwd) =>
     decryptMnemonic(loginInfo, pwd).then(getSeedFromMnemonic, () =>
       Promise.reject(new InvalidPasswordError())
@@ -111,11 +111,13 @@
         <Textbox
           bind:this={fldSecret}
           bind:value={secretText}
-          name={loginInfo ? "password" : "mnemonic"}
+          name={modeLabel}
+          aria-label={modeLabel}
           placeholder={modeLabel}
           required
           type="password"
           autocomplete="current-password"
+          autofocus
         />
         {#if error instanceof InvalidMnemonicError}
           <Banner title="Invalid mnemonic phrase" variant="error">

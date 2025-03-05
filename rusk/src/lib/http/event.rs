@@ -4,25 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::RUSK_VERSION_HEADER;
-
 use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
 use bytecheck::CheckBytes;
 use dusk_core::abi::ContractId;
 use futures_util::stream::Iter as StreamIter;
 use futures_util::{stream, Stream, StreamExt};
 use http_body_util::{BodyExt, Either, Full, StreamBody};
-use hyper::body::{Buf, Frame};
+use hyper::body::{Body, Buf, Bytes, Frame, Incoming};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
-use hyper::{
-    body::{Body, Bytes, Incoming},
-    Request, Response,
-};
+use hyper::{Request, Response};
 use pin_project::pin_project;
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use rkyv::Archive;
-use semver::{Version, VersionReq};
+use semver::{Prerelease, Version, VersionReq};
 use serde::de::{Error, MapAccess, Unexpected, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -35,153 +30,7 @@ use std::sync::mpsc;
 use std::task::{Context, Poll};
 use tungstenite::http::HeaderValue;
 
-/// A request sent by the websocket client.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Event {
-    #[serde(skip)]
-    pub target: Target,
-    pub topic: String,
-    pub data: RequestData,
-}
-
-impl Event {
-    pub fn to_route(&self) -> (&Target, &str, &str) {
-        (&self.target, self.target.inner(), self.topic.as_ref())
-    }
-}
-
-/// A request sent by the websocket client.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MessageRequest {
-    pub headers: serde_json::Map<String, serde_json::Value>,
-    pub event: Event,
-}
-
-impl MessageRequest {
-    pub fn to_error<S>(&self, err: S) -> MessageResponse
-    where
-        S: AsRef<str>,
-    {
-        MessageResponse {
-            headers: self.x_headers(),
-            data: DataType::None,
-            error: Some(err.as_ref().to_string()),
-        }
-    }
-
-    pub fn event_data(&self) -> &[u8] {
-        self.event.data.as_bytes()
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Default, Clone)]
-pub enum Target {
-    #[default]
-    None,
-    Contract(String), // 0x01
-    Host(String),     // 0x02
-    Debugger(String), // 0x03
-}
-
-impl Target {
-    pub fn inner(&self) -> &str {
-        match self {
-            Self::None => "",
-            Self::Contract(s) => s,
-            Self::Host(s) => s,
-            Self::Debugger(s) => s,
-        }
-    }
-}
-
-impl TryFrom<&str> for Target {
-    type Error = anyhow::Error;
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let paths: Vec<_> =
-            value.split('/').skip_while(|p| p.is_empty()).collect();
-        let target_type: i32 = paths
-            .first()
-            .ok_or_else(|| anyhow::anyhow!("Missing target type"))?
-            .parse()?;
-        let target = paths
-            .get(1)
-            .ok_or_else(|| anyhow::anyhow!("Missing target"))?
-            .to_string();
-
-        let target = match target_type {
-            0x01 => Target::Contract(target),
-            0x02 => Target::Host(target),
-            0x03 => Target::Debugger(target),
-            ty => {
-                return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
-            }
-        };
-
-        Ok(target)
-    }
-}
-
-impl MessageRequest {
-    pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
-        let mut h = self.headers.clone();
-        h.retain(|k, _| k.to_lowercase().starts_with("x-"));
-        h
-    }
-
-    pub fn header(&self, name: &str) -> Option<&serde_json::Value> {
-        self.headers
-            .iter()
-            .find_map(|(k, v)| k.eq_ignore_ascii_case(name).then_some(v))
-    }
-
-    pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
-        let (headers, bytes) = parse_header(bytes)?;
-        let event = Event::parse(bytes)?;
-        Ok(Self { event, headers })
-    }
-
-    pub async fn from_request(
-        req: Request<Incoming>,
-    ) -> anyhow::Result<(Self, bool)> {
-        let headers = req
-            .headers()
-            .iter()
-            .map(|(k, v)| {
-                let v = if v.is_empty() {
-                    serde_json::Value::Null
-                } else {
-                    serde_json::from_slice::<serde_json::Value>(v.as_bytes())
-                        .unwrap_or(serde_json::Value::String(
-                            v.to_str().unwrap().to_string(),
-                        ))
-                };
-                (k.to_string().to_lowercase(), v)
-            })
-            .collect();
-        let (event, binary_response) = Event::from_request(req).await?;
-
-        let req = MessageRequest { event, headers };
-
-        Ok((req, binary_response))
-    }
-
-    pub fn check_rusk_version(&self) -> anyhow::Result<()> {
-        if let Some(v) = self.header(RUSK_VERSION_HEADER) {
-            let req = match v.as_str() {
-                Some(v) => VersionReq::from_str(v),
-                None => VersionReq::from_str(&v.to_string()),
-            }?;
-
-            let current = Version::from_str(&crate::VERSION)?;
-            if !req.matches(&current) {
-                return Err(anyhow::anyhow!(
-                    "Mismatched rusk version: requested {req} - current {current}",
-                ));
-            }
-        }
-        Ok(())
-    }
-}
+use super::{RUSK_VERSION_HEADER, RUSK_VERSION_STRICT_HEADER};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MessageResponse {
@@ -478,52 +327,6 @@ pub struct BinaryWrapper {
     pub inner: Vec<u8>,
 }
 
-impl Event {
-    pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
-        let (topic, bytes) = parse_string(bytes)?;
-        let data = bytes.to_vec().into();
-
-        Ok(Self {
-            target: Target::None,
-            topic,
-            data,
-        })
-    }
-    pub async fn from_request(
-        req: Request<Incoming>,
-    ) -> anyhow::Result<(Self, bool)> {
-        let (parts, req_body) = req.into_parts();
-        // HTTP REQUEST
-        let binary_request = parts
-            .headers
-            .get(CONTENT_TYPE)
-            .and_then(|h| h.to_str().ok())
-            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
-            .unwrap_or_default();
-
-        let target = parts.uri.path().try_into()?;
-
-        let body = req_body.collect().await?.to_bytes();
-
-        let mut event = match binary_request {
-            true => Event::parse(&body)
-                .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
-            false => serde_json::from_slice(&body)
-                .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
-        };
-        event.target = target;
-
-        let binary_response = binary_request
-            || parts
-                .headers
-                .get(ACCEPT)
-                .and_then(|h| h.to_str().ok())
-                .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
-                .unwrap_or_default();
-
-        Ok((event, binary_response))
-    }
-}
 const CONTENT_TYPE: &str = "content-type";
 const ACCEPT: &str = "accept";
 const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
@@ -813,20 +616,10 @@ impl RuesDispatchEvent {
     }
 
     pub fn check_rusk_version(&self) -> anyhow::Result<()> {
-        if let Some(v) = self.header(RUSK_VERSION_HEADER) {
-            let req = match v.as_str() {
-                Some(v) => VersionReq::from_str(v),
-                None => VersionReq::from_str(&v.to_string()),
-            }?;
-
-            let current = Version::from_str(&crate::VERSION)?;
-            if !req.matches(&current) {
-                return Err(anyhow::anyhow!(
-                    "Mismatched rusk version: requested {req} - current {current}",
-                ));
-            }
-        }
-        Ok(())
+        check_rusk_version(
+            self.header(RUSK_VERSION_HEADER),
+            self.header(RUSK_VERSION_STRICT_HEADER).is_some(),
+        )
     }
 
     pub fn is_binary(&self) -> bool {
@@ -970,16 +763,35 @@ impl From<node_data::events::Event> for RuesEvent {
     }
 }
 
-#[cfg(test)]
-mod tests {
+pub fn check_rusk_version(
+    version: Option<&serde_json::Value>,
+    strict: bool,
+) -> anyhow::Result<()> {
+    if let Some(v) = version {
+        let req = match v.as_str() {
+            Some(v) => VersionReq::from_str(v),
+            None => VersionReq::from_str(&v.to_string()),
+        }?;
 
-    use super::*;
+        let mut current = Version::from_str(&crate::VERSION)?;
 
-    #[test]
-    fn event() {
-        let data =
-            "120000006c65617665735f66726f6d5f6865696768740000000000000000";
-        let data = hex::decode(data).unwrap();
-        let event = Event::parse(&data).unwrap();
+        // if client is not requesting a strict check we should ignore the
+        // prerelease version of the current binary
+        //
+        // If instead the client request a strict version we should respect
+        // that and check the version as is
+        //
+        // This solves the issue when connecting to a node that is in`-dev`
+        // mode
+        if !strict {
+            current.pre = Prerelease::EMPTY;
+        }
+
+        if !req.matches(&current) {
+            return Err(anyhow::anyhow!(
+                "Mismatched rusk version: requested {req} - current {current}",
+            ));
+        }
     }
+    Ok(())
 }

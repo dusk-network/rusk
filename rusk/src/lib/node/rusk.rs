@@ -6,7 +6,7 @@
 
 use std::path::Path;
 use std::sync::{mpsc, Arc};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use std::{fs, io};
 
 use dusk_bytes::Serializable;
@@ -25,37 +25,34 @@ use dusk_core::transfer::{
     moonlight::AccountData, PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, Dusk};
-use dusk_vm::{execute, CallReceipt, Error as VMError, Session, VM};
-use node::DUSK_CONSENSUS_KEY;
-use node_data::events::contract::{ContractEvent, ContractTxEvent};
+use dusk_vm::{
+    execute, CallReceipt, Error as VMError, ExecutionConfig, Session, VM,
+};
+#[cfg(feature = "archive")]
+use node::archive::Archive;
+use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 use tracing::info;
-#[cfg(feature = "archive")]
-use {node_data::archive::ArchivalData, tokio::sync::mpsc::Sender};
 
+use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::http::RuesEvent;
 use crate::node::{coinbase_value, Rusk, RuskTip};
 use crate::Error::InvalidCreditsCount;
-use crate::{Error, Result};
+use crate::{Error, Result, DUSK_CONSENSUS_KEY};
 
 impl Rusk {
-    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         dir: P,
         chain_id: u8,
-        generation_timeout: Option<Duration>,
-        gas_per_deploy_byte: u64,
-        min_deployment_gas_price: u64,
+        vm_config: RuskVmConfig,
         min_gas_limit: u64,
-        min_deploy_points: u64,
-        block_gas_limit: u64,
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
-        #[cfg(feature = "archive")] archive_sender: Sender<ArchivalData>,
+        #[cfg(feature = "archive")] archive: Archive,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
@@ -88,16 +85,12 @@ impl Rusk {
             vm,
             dir: dir.into(),
             chain_id,
-            generation_timeout,
-            gas_per_deploy_byte,
-            min_deployment_gas_price,
+            vm_config,
             min_gas_limit,
-            min_deploy_points,
             feeder_gas_limit,
             event_sender,
             #[cfg(feature = "archive")]
-            archive_sender,
-            block_gas_limit,
+            archive,
         })
     }
 
@@ -110,7 +103,7 @@ impl Rusk {
         let started = Instant::now();
 
         let block_height = params.round;
-        let block_gas_limit = self.block_gas_limit;
+        let block_gas_limit = self.vm_config.block_gas_limit;
         let generator = params.generator_pubkey.inner();
         let to_slash = params.to_slash.clone();
         let prev_state_root = params.prev_state_root;
@@ -129,11 +122,13 @@ impl Rusk {
 
         let mut event_bloom = Bloom::new();
 
+        let execution_config = self.vm_config.to_execution_config(block_height);
+
         // We always write the faults len in a u32
         let mut size_left = params.max_txs_bytes - u32::SIZE;
 
         for unspent_tx in txs {
-            if let Some(timeout) = self.generation_timeout {
+            if let Some(timeout) = self.vm_config.generation_timeout {
                 if started.elapsed() > timeout {
                     info!("execute_transactions timeout triggered {timeout:?}");
                     break;
@@ -159,13 +154,7 @@ impl Rusk {
                 continue;
             }
 
-            match execute(
-                &mut session,
-                &unspent_tx.inner,
-                self.gas_per_deploy_byte,
-                self.min_deploy_points,
-                self.min_deployment_gas_price,
-            ) {
+            match execute(&mut session, &unspent_tx.inner, &execution_config) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
@@ -183,9 +172,7 @@ impl Rusk {
                             let _ = execute(
                                 &mut session,
                                 &spent_tx.inner.inner,
-                                self.gas_per_deploy_byte,
-                                self.min_deploy_points,
-                                self.min_deployment_gas_price,
+                                &execution_config,
                             );
                         }
 
@@ -264,6 +251,7 @@ impl Rusk {
         voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let session = self.new_block_session(block_height, prev_commit)?;
+        let execution_config = self.vm_config.to_execution_config(block_height);
 
         accept(
             session,
@@ -274,9 +262,7 @@ impl Rusk {
             txs,
             slashing,
             voters,
-            self.gas_per_deploy_byte,
-            self.min_deploy_points,
-            self.min_deployment_gas_price,
+            &execution_config,
         )
         .map(|(a, b, _, _)| (a, b))
     }
@@ -286,6 +272,12 @@ impl Rusk {
     ///   * `consistency_check` - represents a state_root, the caller expects to
     ///   be returned on successful transactions execution. Passing a None
     ///   value disables the check.
+    ///
+    /// # Returns
+    ///  - Vec<SpentTransaction> - The transactions that were spent.
+    /// - VerificationOutput - The verification output.
+    /// - Vec<ContractTxEvent> - All contract events that were emitted from the
+    ///   given transactions.
     #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
         &self,
@@ -301,9 +293,11 @@ impl Rusk {
     ) -> Result<(
         Vec<SpentTransaction>,
         VerificationOutput,
-        Vec<ContractEvent>,
+        Vec<ContractTxEvent>,
     )> {
         let session = self.new_block_session(block_height, prev_commit)?;
+
+        let execution_config = self.vm_config.to_execution_config(block_height);
 
         let (spent_txs, verification_output, session, events) = accept(
             session,
@@ -314,9 +308,7 @@ impl Rusk {
             &txs[..],
             slashing,
             voters,
-            self.gas_per_deploy_byte,
-            self.min_deploy_points,
-            self.min_deployment_gas_price,
+            &execution_config,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -329,29 +321,21 @@ impl Rusk {
             }
         }
 
-        self.set_current_commit(session.commit()?);
+        info!(src = "vm_accept", event = "before commit");
+        let commit = session.commit()?;
+        info!(src = "vm_accept", event = "after commit");
+        self.set_current_commit(commit);
+        info!(src = "vm_accept", event = "after set_current_commit");
 
-        // Sent all events from this block to the archivist
-        #[cfg(feature = "archive")]
-        {
-            let _ = self.archive_sender.try_send(ArchivalData::ArchivedEvents(
-                block_height,
-                block_hash,
-                events.clone(),
-            ));
-        }
-
-        let mut stake_events = vec![];
+        let contract_events = events.clone();
         for event in events {
-            if event.event.target.0 == STAKE_CONTRACT {
-                stake_events.push(event.event.clone());
-            }
             // Send VM event to RUES
             let event = RuesEvent::from(event);
             let _ = self.event_sender.send(event);
-        }
+        } // TODO: move this also in acceptor (async fn try_accept_block) where
+          // stake events are filtered, to avoid looping twice?
 
-        Ok((spent_txs, verification_output, stake_events))
+        Ok((spent_txs, verification_output, contract_events))
     }
 
     pub fn finalize_state(
@@ -552,10 +536,6 @@ impl Rusk {
         }
         Ok(())
     }
-
-    pub(crate) fn block_gas_limit(&self) -> u64 {
-        self.block_gas_limit
-    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -568,15 +548,15 @@ fn accept(
     txs: &[Transaction],
     slashing: Vec<Slash>,
     voters: &[Voter],
-    gas_per_deploy_byte: u64,
-    min_deploy_points: u64,
-    min_deployment_gas_price: u64,
+    execution_config: &ExecutionConfig,
 ) -> Result<(
     Vec<SpentTransaction>,
     VerificationOutput,
     Session,
     Vec<ContractTxEvent>,
 )> {
+    info!(src = "vm_accept", event = "init");
+
     let mut session = session;
 
     let mut block_gas_left = block_gas_limit;
@@ -590,13 +570,10 @@ fn accept(
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
         let tx_id = unspent_tx.id();
-        let receipt = execute(
-            &mut session,
-            tx,
-            gas_per_deploy_byte,
-            min_deploy_points,
-            min_deployment_gas_price,
-        )?;
+
+        info!(src = "vm_accept", event = "before execute");
+        let receipt = execute(&mut session, tx, execution_config)?;
+        info!(src = "vm_accept", event = "after execute");
 
         event_bloom.add_events(&receipt.events);
 
@@ -627,6 +604,7 @@ fn accept(
         });
     }
 
+    info!(src = "vm_accept", event = "before reward");
     let coinbase_events = reward_slash_and_update_root(
         &mut session,
         block_height,
@@ -635,6 +613,7 @@ fn accept(
         slashing,
         voters,
     )?;
+    info!(src = "vm_accept", event = "after reward");
 
     event_bloom.add_events(&coinbase_events);
 
@@ -647,7 +626,9 @@ fn accept(
         .collect();
     events.extend(coinbase_events);
 
+    info!(src = "vm_accept", event = "before calculating root");
     let state_root = session.root();
+    info!(src = "vm_accept", event = "after calculating root");
 
     Ok((
         spent_txs,

@@ -1,0 +1,19 @@
+push = true
+tag = true
+tag-name = "{{prefix}}{{version}}"
+publish = false
+pre-release-commit-message = "{{crate_name}}: release `{{version}}`"
+tag-message = "{{crate_name}}: tag {{version}}"
+consolidate-commits = false
+pre-release-replacements = [
+  # replace unreleased with version number and date
+  { file = "CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [Unreleased]\n\n## [{{version}}] - {{date}}", exactly = 1 },
+  # Add temporary placeholder for next release
+  { file = "CHANGELOG.md", search = "\\[Unreleased\\]:", replace = "<!-- Next release -->\n[Unreleased]:", exactly = 1 },
+  # Update the version number in the comparison ling
+  { file = "CHANGELOG.md", search = "Unreleased\\]:", replace = "{{version}}]:", exactly = 1 },
+  # Update the tag name to compare with
+  { file = "CHANGELOG.md", search = "\\.\\.\\.HEAD", replace = "...{{tag_name}}", exactly = 1 },
+  # Replace temporary placeholder with the unreleased comparison link
+  { file = "CHANGELOG.md", search = "<!-- Next release -->", replace = "[Unreleased]: https://github.com/dusk-network/rusk/compare/{{tag_name}}...HEAD", exactly = 1 },
+]

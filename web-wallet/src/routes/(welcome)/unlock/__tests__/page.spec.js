@@ -24,7 +24,7 @@ import {
 } from "$lib/wallet";
 import loginInfoStorage from "$lib/services/loginInfoStorage";
 
-import Login from "../+page.svelte";
+import UnlockWallet from "../+page.svelte";
 
 /** @param {HTMLElement} container */
 function getTextInput(container) {
@@ -34,13 +34,14 @@ function getTextInput(container) {
   );
 }
 
-describe("Login", async () => {
+describe("Unlock Wallet", async () => {
   const mnemonic = generateMnemonic();
   const pwd = "some pwd";
   const loginInfo = await encryptMnemonic(mnemonic, pwd);
   const seed = getSeedFromMnemonic(mnemonic);
   const userId = await profileGeneratorFrom(seed)
-    .default.then(getKey("address"))
+    .then(getKey("default"))
+    .then(getKey("address"))
     .then(String);
 
   const getErrorElement = () => document.querySelector(".banner--error");
@@ -70,14 +71,14 @@ describe("Login", async () => {
   });
 
   describe("Mnemonic phrase workflow", () => {
-    it("should render the login page and show the field to enter the mnemonic phrase, if there is no login info stored", () => {
-      const { container } = render(Login, {});
+    it("should render the Unlock Wallet page and show the field to enter the mnemonic phrase, if there is no login info stored", () => {
+      const { container } = render(UnlockWallet, {});
 
       expect(container.firstChild).toMatchSnapshot();
     });
 
     it("should show an error message if the user enters an invalid mnemonic", async () => {
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 
@@ -99,7 +100,7 @@ describe("Login", async () => {
     });
 
     it("should redirect to the Restore flow if the user inputs a valid mnemonic with no prior wallet created", async () => {
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 
@@ -116,7 +117,7 @@ describe("Login", async () => {
       const currentUserID = "some-user-id";
       settingsStore.update(setKey("userId", currentUserID));
 
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 
@@ -132,7 +133,7 @@ describe("Login", async () => {
     it("should unlock the Wallet if the entered mnemonic is the last one used", async () => {
       settingsStore.update(setKey("userId", userId));
 
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 
@@ -150,7 +151,7 @@ describe("Login", async () => {
     it("should trim and lower case the entered mnemonic before validating it", async () => {
       settingsStore.update(setKey("userId", userId));
 
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 
@@ -176,13 +177,13 @@ describe("Login", async () => {
     });
 
     it("should show the password field and the link to restore the wallet if there is login info stored", () => {
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
 
       expect(container.firstChild).toMatchSnapshot();
     });
 
     it("should show an error message if the user enters the wrong password", async () => {
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 
@@ -210,7 +211,7 @@ describe("Login", async () => {
     it("should redirect to the Restore flow if the user inputs the correct password with no prior wallet created", async () => {
       settingsStore.update(setKey("userId", ""));
 
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 
@@ -237,7 +238,7 @@ describe("Login", async () => {
 
       settingsStore.update(setKey("userId", currentUserID));
 
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 
@@ -256,7 +257,7 @@ describe("Login", async () => {
     it("should unlock the Wallet is the entered password is for the last used mnemonic", async () => {
       settingsStore.update(setKey("userId", userId));
 
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 
@@ -274,7 +275,7 @@ describe("Login", async () => {
     it("should trim the entered password before validating it", async () => {
       settingsStore.update(setKey("userId", userId));
 
-      const { container } = render(Login, {});
+      const { container } = render(UnlockWallet, {});
       const form = getAsHTMLElement(container, "form");
       const textInput = getTextInput(container);
 

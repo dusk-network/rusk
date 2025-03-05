@@ -4,9 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use alloc::string::FromUtf8Error;
-use alloc::vec::Vec;
 use core::convert::Infallible;
+use std::string::FromUtf8Error;
 
 use dusk_bytes::Error as BytesError;
 use dusk_core::signatures::bls::{
@@ -30,6 +29,7 @@ use rkyv::ser::serializers::{
 use rkyv::validation::validators::CheckDeserializeError;
 use rusk_prover::LocalProver;
 use wallet_core::keys::{derive_bls_sk, derive_phoenix_sk};
+// use wallet_core::prelude::*;
 use wallet_core::transaction::{
     moonlight, moonlight_deployment, moonlight_stake, moonlight_stake_reward,
     moonlight_to_phoenix, moonlight_unstake, phoenix as phoenix_transaction,
@@ -39,7 +39,7 @@ use wallet_core::transaction::{
 use wallet_core::{phoenix_balance, BalanceInfo};
 use zeroize::Zeroize;
 
-use crate::{StateClient, Store};
+use super::{StateClient, Store};
 
 const MAX_INPUT_NOTES: usize = 4;
 

@@ -4,10 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod config;
 mod query;
 
 use dusk_consensus::errors::VstError;
-use node_data::events::contract::ContractEvent;
+use node_data::events::contract::ContractTxEvent;
 use tracing::{debug, info};
 
 use dusk_bytes::DeserializableSlice;
@@ -23,6 +24,7 @@ use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
 
 use super::Rusk;
+pub use config::Config as RuskVmConfig;
 
 impl VMExecution for Rusk {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(
@@ -88,7 +90,7 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<(
         Vec<SpentTransaction>,
         VerificationOutput,
-        Vec<ContractEvent>,
+        Vec<ContractTxEvent>,
     )> {
         debug!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
@@ -97,7 +99,7 @@ impl VMExecution for Rusk {
 
         let slashing = Slash::from_block(blk)?;
 
-        let (txs, verification_output, stake_events) = self
+        let (txs, verification_output, contract_events) = self
             .accept_transactions(
                 prev_root,
                 blk.header().height,
@@ -114,7 +116,7 @@ impl VMExecution for Rusk {
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
-        Ok((txs, verification_output, stake_events))
+        Ok((txs, verification_output, contract_events))
     }
 
     fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {
@@ -265,15 +267,15 @@ impl VMExecution for Rusk {
     }
 
     fn get_block_gas_limit(&self) -> u64 {
-        self.block_gas_limit()
+        self.vm_config.block_gas_limit
     }
 
     fn gas_per_deploy_byte(&self) -> u64 {
-        self.gas_per_deploy_byte
+        self.vm_config.gas_per_deploy_byte
     }
 
     fn min_deployment_gas_price(&self) -> u64 {
-        self.min_deployment_gas_price
+        self.vm_config.min_deployment_gas_price
     }
 
     fn min_gas_limit(&self) -> u64 {
@@ -281,7 +283,7 @@ impl VMExecution for Rusk {
     }
 
     fn min_deploy_points(&self) -> u64 {
-        self.min_deploy_points
+        self.vm_config.min_deploy_points
     }
 }
 

@@ -69,6 +69,11 @@ export class Transfer extends BasicTransfer {
 
     return builder;
   }
+
+  memo(value) {
+    this[_attributes].memo = value;
+    return this;
+  }
 }
 
 class AccountTransfer extends Transfer {
@@ -83,11 +88,6 @@ class AccountTransfer extends Transfer {
 
   nonce(value) {
     this[_attributes].nonce = value;
-    return this;
-  }
-
-  memo(value) {
-    this[_attributes].memo = value;
     return this;
   }
 
@@ -155,7 +155,9 @@ class AddressTransfer extends Transfer {
       amount: transfer_value,
       obfuscated: obfuscated_transaction,
       gas,
+      memo: data,
     } = attributes;
+
     const sender = this.bookentry.profile;
     const receiver = base58.decode(to);
 
@@ -196,7 +198,7 @@ class AddressTransfer extends Transfer {
       gas_limit: gas.limit,
       gas_price: gas.price,
       chainId,
-      data: null,
+      data,
     });
 
     // Attempt to prove the transaction

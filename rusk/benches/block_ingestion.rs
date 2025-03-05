@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![feature(lazy_cell)]
+extern crate alloc;
 
 #[path = "../tests/common/mod.rs"]
 mod common;
@@ -22,8 +23,8 @@ use node_data::ledger::Transaction;
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
-use rusk::Rusk;
-use rusk_recovery_tools::state::DUSK_CONSENSUS_KEY;
+use rusk::node::RuskVmConfig;
+use rusk::{Rusk, DUSK_CONSENSUS_KEY};
 use tempfile::tempdir;
 
 use common::state::new_state;
@@ -157,7 +158,8 @@ pub fn accept_benchmark(c: &mut Criterion) {
     let snapshot = toml::from_str(include_str!("../tests/config/bench.toml"))
         .expect("Cannot deserialize config");
 
-    let rusk = new_state(&tmp, &snapshot, BLOCK_GAS_LIMIT)
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
+    let rusk = new_state(&tmp, &snapshot, vm_config)
         .expect("Creating state should work");
 
     let phoenix_txs = load_phoenix_txs();

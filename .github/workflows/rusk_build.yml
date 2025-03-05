@@ -48,11 +48,14 @@ jobs:
         include:
           - os: ubuntu-24.04
             target: linux-x64
+            target_folder: target
           - os: macos-15
             target: macos-arm64
+            target_folder: target/aarch64-apple-darwin
             flags: --target=aarch64-apple-darwin
           - os: arm-linux
             target: linux-arm64
+            target_folder: target/aarch64-unknown-linux-gnu
             flags: --target=aarch64-unknown-linux-gnu
       fail-fast: false
 
@@ -89,15 +92,6 @@ jobs:
             echo "SKIP_WASM=false" >> $GITHUB_ENV
           fi
 
-      - name: Compile keys
-        shell: bash
-        run: make keys
-
-      - name: Compile WASM Contracts
-        if: ${{ env.SKIP_WASM != 'true' }}
-        shell: bash
-        run: make wasm
-
       - name: Build Rusk binary
         shell: bash
         working-directory: ./rusk
@@ -105,13 +99,14 @@ jobs:
 
       - name: Extract Version
         run: |
-          export SEMVER=$(cargo pkgid --manifest-path ./rusk/Cargo.toml | sed -E 's/.*#([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          export SEMVER=$(cargo pkgid --manifest-path ./rusk/Cargo.toml | sed -E 's/.*@([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
           echo "SEMVER=$SEMVER" >> $GITHUB_ENV
 
       - name: Package Binaries
         run: |
+          find . -name "rusk"
           mkdir rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
-          mv target/release/rusk rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
+          mv ${{ matrix.target_folder }}/release/rusk rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
           tar -czvf rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}.tar.gz \
             rusk-${{ env.SEMVER }}-${{ matrix.target }}-${{ matrix.feature }}
 

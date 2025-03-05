@@ -167,7 +167,6 @@ fn read_from_file(
     }
 
     // attempt to load and decode wallet
-    println!("{path:?}");
     let ciphertext = fs::read(&path).map_err(|e| {
         anyhow::anyhow!(
             "{} should be valid consensus keys file {e}",
