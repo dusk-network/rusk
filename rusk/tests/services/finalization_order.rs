@@ -11,11 +11,12 @@ use std::sync::{Arc, RwLock};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 
-use dusk_core::transfer::Transaction;
+use dusk_core::transfer::{Transaction, data::{ContractBytecode, ContractDeploy, TransactionData}};
 use rusk::{node::RuskVmConfig, Result, Rusk};
 use tempfile::tempdir;
 use tokio::sync::broadcast;
 use tracing::info;
+use dusk_core::abi::ContractId;
 
 use crate::common::logger;
 use crate::common::state::{
@@ -32,6 +33,10 @@ const INITIAL_BALANCE: u64 = 10_000_000_000;
 const CHAIN_ID: u8 = 0xFA;
 const TXS_PER_BLOCK: u8 = 1;
 const RECEIVER_INDEX: u8 = 4 * TXS_PER_BLOCK;
+const SENDER_INDEX: u8 = 13;
+const DEPLOY_GAS_LIMIT: u64 = 200_000_000;
+const DEPLOY_GAS_PRICE: u64 = 2000;
+const DEPLOY_OWNER: [u8; 32] = [1; 32];
 
 // Creates the Rusk initial state for the tests below
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
@@ -203,25 +208,91 @@ fn prepare_transactions(
     txs
 }
 
-fn prepare_transactions_for_one_block(
+fn prepare_transactions_for_one_block<Rng: RngCore + CryptoRng>(
     wallet: &Wallet<TestStore, TestStateClient>,
     amount: u64,
+    height: u64,
+    rng: &mut Rng
 ) -> Vec<Transaction> {
     let receiver = wallet
         .phoenix_public_key(RECEIVER_INDEX)
         .expect("Failed to get public key");
 
-    let mut rng = StdRng::seed_from_u64(0xdead);
-
     let mut txs = Vec::with_capacity(TXS_PER_BLOCK as usize);
 
     for i in 0..TXS_PER_BLOCK {
         let tx = wallet
-            .phoenix_transfer(&mut rng, i, &receiver, amount, GAS_LIMIT, 1)
+            .phoenix_transfer(rng, i, &receiver, amount, GAS_LIMIT, 1)
             .expect("Failed to transfer");
         txs.push(tx);
     }
 
+    let deployment_txs = prepare_deployment_transactions(wallet, height, rng);
+    for deployment_tx in deployment_txs {
+        txs.push(deployment_tx);
+    }
+
+    txs
+}
+
+fn bytecode_hash(bytecode: impl AsRef<[u8]>) -> ContractId {
+    let hash = blake3::hash(bytecode.as_ref());
+    ContractId::from_bytes(hash.into())
+}
+
+fn prepare_deployment_transaction<Rng: RngCore + CryptoRng>(
+    wallet: &Wallet<TestStore, TestStateClient>,
+    bytecode: impl AsRef<[u8]>,
+    rng: &mut Rng,
+    height: u64,
+) -> Transaction {
+    let init_value = 5u8;
+    let init_args = Some(vec![init_value]);
+
+    let hash = bytecode_hash(&bytecode.as_ref()).to_bytes();
+    let tx = wallet
+        .phoenix_execute(
+            rng,
+            SENDER_INDEX,
+            DEPLOY_GAS_LIMIT,
+            DEPLOY_GAS_PRICE,
+            0u64,
+            TransactionData::Deploy(ContractDeploy {
+                bytecode: ContractBytecode {
+                    hash,
+                    bytes: bytecode.as_ref().to_vec(),
+                },
+                owner: DEPLOY_OWNER.to_vec(),
+                init_args,
+                nonce: 0,
+            }),
+    )
+    .expect("Making transaction should succeed");
+    tx
+}
+
+fn prepare_deployment_transactions<Rng: RngCore + CryptoRng>(
+    wallet: &Wallet<TestStore, TestStateClient>,
+    height: u64,
+    rng: &mut Rng,
+) -> Vec<Transaction> {
+    let bytecode_bob = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+    ).to_vec();
+    let bytecode_alice = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+    ).to_vec();
+    let bytecode_charlie = include_bytes!(
+        "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
+    ).to_vec();
+    let mut txs = vec![];
+    if height == 0 {
+        txs.push(prepare_deployment_transaction(wallet, &bytecode_bob, rng, height));
+    } else if height == 1 {
+        txs.push(prepare_deployment_transaction(wallet, &bytecode_alice, rng, height));
+    } else {
+        txs.push(prepare_deployment_transaction(wallet, &bytecode_charlie, rng, height));
+    }
     txs
 }
 
@@ -254,11 +325,12 @@ fn prepare_commits(
     ))
 }
 
-fn do_block(
+fn do_block<Rng: RngCore + CryptoRng>(
     rusk: &Rusk,
     cache: Arc<RwLock<HashMap<Vec<u8>, DummyCacheItem>>>,
     amount: u64,
-    block: u64
+    block: u64,
+    rng: &mut Rng,
 ) -> Result<[u8; 32]> {
     logger();
 
@@ -268,7 +340,7 @@ fn do_block(
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    let txs = prepare_transactions_for_one_block(&wallet, amount);
+    let txs = prepare_transactions_for_one_block(&wallet, amount, block, rng);
 
     let root = submit_block(&rusk, block, &txs);
 
@@ -342,17 +414,18 @@ pub async fn finalization_order_correct() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn finalization_after_empty_block() -> Result<()> {
+    let mut rng = StdRng::seed_from_u64(0xcafe);
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let cache = Arc::new(RwLock::new(HashMap::new()));
     let amount = 1000u64;
     let rusk = initial_state(tmp.as_ref())?;
 
-    let root_a = do_block(&rusk, cache.clone(), amount, 0)?;
-    let root_b = do_block(&rusk, cache.clone(), amount, 1)?;
+    let root_a = do_block(&rusk, cache.clone(), amount, 0, &mut rng)?;
+    let root_b = do_block(&rusk, cache.clone(), amount, 1, &mut rng)?;
     rusk.finalize_state(root_b, vec![root_a])?;
     let root_empty = do_empty_block(&rusk, 2)?;
     rusk.finalize_state(root_empty, vec![root_b])?;
-    let root_c = do_block(&rusk, cache.clone(), amount, 3)?;
+    let root_c = do_block(&rusk, cache.clone(), amount, 3, &mut rng)?;
     rusk.finalize_state(root_c, vec![root_empty])?;
 
     let rusk = previous_state(&tmp)?;
