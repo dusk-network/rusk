@@ -68,6 +68,81 @@ address = "21qrgR6XXoE5Jv97MEa6w11nQuzo3trkKcLwrtGMdkdPRyVbyTPNzRet32rX3taZeLjXv
 seed = 57005
 notes = [10_000_000_000_000]
 
+[[phoenix_balance]]
+address = "2vW324Kn9QxQdYngn6Wu5QJZ3AuMCHBSVEw1nUaRtxvmbS4efRVJho5ChoVLjYJwxA6hxJbvkhgwAFdEqyxdgjik"
+seed = 57005
+notes = [10_000_000_000_000]
+
+[[phoenix_balance]]
+address = "3jaU8Atz1tgcFHA6SPuforum8dm5jbADJxoqmekw77mRv96aj2gh36mP4jESbLZRVfh9Zpce921SbDKrHCrgr96X"
+seed = 57005
+notes = [10_000_000_000_000]
+
+[[phoenix_balance]]
+address = "2L4A9ufMmhCwc4VcC1guL5vW5B3CzjyhBuBAneU2GpedNMPXTDALY4vFATgxwZuxSW7zCUgjcuRvQaiYPfUUqiK"
+seed = 57005
+notes = [10_000_000_000_000]
+
+[[phoenix_balance]]
+address = "33McXDGhwLbvF9fxSfEzR7dQZeapRD3hUdnscL4t7XD5TKS5SGgJBKExJ7LFAxrVpsHoxnxBLoTqJwj4JfLMKkkn"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "5KQhdTnMAwDDFs23t2NWvSKfBZuf3Q4zm4R687CurZKWVXPuwkmX7ipt63wahDRxcqRreeaJ2YYtJ6updHjj2ttq"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "5oK9gF3gxUmpUyQNLMfCg71a7E8X8Rx3Xr7J7k6LupsBK44XraFe48osC3sJG2XCYgTqaxCUZA4MGUN97XEmszPp"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "4XwE8LmHJaKN1W1DycyFKQHHn8qapekjHaK5vReqdPDKzGpimns2xM9CsxutKY4E9ewZQvc9vRJTkeWp4LQWcG1F"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "rgUY7fCjwaGHD9f8UyAXJ4yJgNHgDnmyC7EWU7SDDuGo3KJPasZtMJheLbNXNGVygAmZL2fEpzJkAMhL4cJLwP3"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "5LPjsubaXqAhrRoLF3s7XjZUmtTe38xFffVvar8YYATsMy6SVBfYssnTjBs8pQd5xh6krGzSmrppSmzC17GX4UZ"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "crGaYYkbCWAXEoVmtjzJXhYWifE68TkAxvZjNEUqA2AkWJiENcFbaSR5HetE3mHrKEkgJAxEgjAPT34UDKBhJni"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "2hZ6E58B3xgVK6AoVLbyqoYLGKYzDNUJMLBao9nhhypyxt7axM9UwRWVZ7QdV4W6mkXWCeAfMGTG9aXyvyTqXTH2"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "g3uJ37m5SfGXazaTG1XHBZRSShCoEJtbyGsCR519JithwsfEqbcvNDK5YeyVK4nVL17PVZvoHD7xevk7X7JvRU7"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "4FSc4RRBBcbsu6wmLLJocciKADFW7NfbRi29aJ4fnJeocRzqiSbGzBztb1gjB5JMRuZtqvWWViM4oreYdTzW4zue"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "5RaiJk4Mi1SNbEQFDQqibKZVpKxLt9CE9F5GaAAyLyDjLS8kQtK9nNTGdaHcJCVZFkBrAnRec1YKaC2kmUCzQcc6"
+seed = 57005
+notes = [10_000_000_000]
+
+[[phoenix_balance]]
+address = "4JvQ3RV68fskV9ZiXRjVqDb3vyjyiwjwjywYYuKbY66v2dekU7NdbwR8ZwjecHVHRaKNNzkAvT4UzVNAwPPBVHMS"
+seed = 57005
+notes = [10_000_000_000]
+
 [[moonlight_account]]
 address = 'qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3'
 balance = 10_000_000_000

@@ -27,7 +27,7 @@ use crate::common::wallet::{
     test_wallet as wallet, DummyCacheItem, TestStateClient, TestStore, Wallet,
 };
 
-const BLOCK_GAS_LIMIT: u64 = 48_000_000;
+const BLOCK_GAS_LIMIT: u64 = 1_000_000_000;
 const GAS_LIMIT: u64 = 12_000_000; // Lowest value for a transfer
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 const CHAIN_ID: u8 = 0xFA;
@@ -244,7 +244,7 @@ fn prepare_deployment_transaction<Rng: RngCore + CryptoRng>(
     wallet: &Wallet<TestStore, TestStateClient>,
     bytecode: impl AsRef<[u8]>,
     rng: &mut Rng,
-    height: u64,
+    nonce: u64,
 ) -> Transaction {
     let init_value = 5u8;
     let init_args = Some(vec![init_value]);
@@ -253,7 +253,7 @@ fn prepare_deployment_transaction<Rng: RngCore + CryptoRng>(
     let tx = wallet
         .phoenix_execute(
             rng,
-            SENDER_INDEX,
+            SENDER_INDEX + nonce as u8,
             DEPLOY_GAS_LIMIT,
             DEPLOY_GAS_PRICE,
             0u64,
@@ -264,7 +264,7 @@ fn prepare_deployment_transaction<Rng: RngCore + CryptoRng>(
                 },
                 owner: DEPLOY_OWNER.to_vec(),
                 init_args,
-                nonce: 0,
+                nonce,
             }),
     )
     .expect("Making transaction should succeed");
@@ -286,12 +286,14 @@ fn prepare_deployment_transactions<Rng: RngCore + CryptoRng>(
         "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
     ).to_vec();
     let mut txs = vec![];
-    if height == 0 {
-        txs.push(prepare_deployment_transaction(wallet, &bytecode_bob, rng, height));
-    } else if height == 1 {
-        txs.push(prepare_deployment_transaction(wallet, &bytecode_alice, rng, height));
-    } else {
-        txs.push(prepare_deployment_transaction(wallet, &bytecode_charlie, rng, height));
+    for nonce in 0..4 {
+        if height == 0 {
+            txs.push(prepare_deployment_transaction(wallet, &bytecode_bob, rng, nonce));
+        } else if height == 1 {
+            txs.push(prepare_deployment_transaction(wallet, &bytecode_alice, rng, nonce));
+        } else {
+            txs.push(prepare_deployment_transaction(wallet, &bytecode_charlie, rng, nonce));
+        }
     }
     txs
 }
