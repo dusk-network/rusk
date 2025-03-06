@@ -82,14 +82,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
-        let state_hash = tip.inner().header().state_hash;
-        let provisioners_list = vm.read().await.get_provisioners(state_hash)?;
-
         // Initialize Acceptor
         let acc = Acceptor::init_consensus(
             &self.keys_path,
             tip,
-            provisioners_list,
             db,
             network,
             vm,
