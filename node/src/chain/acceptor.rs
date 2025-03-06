@@ -196,7 +196,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub async fn init_consensus(
         keys_path: &str,
         tip: BlockWithLabel,
-        provisioners_list: Provisioners,
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
@@ -208,6 +207,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
         let tip_state_hash = tip.inner().header().state_hash;
+        let provisioners_list =
+            vm.read().await.get_provisioners(tip_state_hash)?;
 
         let mut provisioners_list = ContextProvisioners::new(provisioners_list);
 
