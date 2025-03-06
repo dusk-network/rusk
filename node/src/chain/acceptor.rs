@@ -44,10 +44,12 @@ use crate::archive::Archive;
 use crate::chain::header_validation::{verify_att, verify_faults, Validator};
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
-    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
-    MD_STATE_ROOT_KEY,
+    Backend, MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION,
+    MD_HASH_KEY, MD_STATE_ROOT_KEY,
 };
-use crate::database::{self, ConsensusStorage, Ledger, Mempool, Metadata};
+use crate::database::{
+    self, ConsensusStorage, DatabaseOptions, Ledger, Mempool, Metadata, DB,
+};
 use crate::{vm, Message, Network};
 
 const CANDIDATES_DELETION_OFFSET: u64 = 10;
@@ -215,7 +217,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             provisioners_list.apply_changes(changed_provisioners);
         }
 
-        let acc = Self {
+        let mut acc = Self {
             tip: RwLock::new(tip),
             provisioners_list: RwLock::new(provisioners_list),
             db: db.clone(),
@@ -256,6 +258,36 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     event = "VM accepted state loaded",
                     state_root = hex::encode(tip_state_hash),
                 );
+            }
+        }
+        let ext_db_parent_path = env::var("RUSK_EXT_CHAIN").unwrap_or_default();
+
+        if !ext_db_parent_path.is_empty() {
+            let opts = DatabaseOptions {
+                create_if_missing: false,
+                ..Default::default()
+            };
+            let db_ext = Backend::create_or_open(ext_db_parent_path, opts);
+            let tip_ext = db_ext
+                .view(|t| {
+                    anyhow::Ok(t.op_read(MD_HASH_KEY)?.and_then(|tip_hash| {
+                        t.block(&tip_hash[..])
+                            .expect("block to be found if metadata is set")
+                    }))
+                })?
+                .expect("Cannot find tip for ext block")
+                .header()
+                .height;
+
+            if tip_ext > tip_height {
+                info!("detected ext db at height {tip_ext}. Syncing local db starting from {tip_height}" );
+
+                for height in tip_height + 1..=tip_ext {
+                    let blk = db_ext
+                        .view(|db| db.block_by_height(height))?
+                        .expect("block to be found");
+                    acc.try_accept_block(&blk, false).await?;
+                }
             }
         }
 

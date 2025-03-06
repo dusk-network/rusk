@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `create_if_missing` field to `DatabaseOptions`
+- Add support for `RUSK_EXT_CHAIN` env
+
 ### Fixed
 
 - Change the way the archive synchronizes with the node Acceptor [#3359]
