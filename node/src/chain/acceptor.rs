@@ -44,10 +44,12 @@ use crate::archive::Archive;
 use crate::chain::header_validation::{verify_att, verify_faults, Validator};
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
-    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
+    self, MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
     MD_STATE_ROOT_KEY,
 };
-use crate::database::{self, ConsensusStorage, Ledger, Mempool, Metadata};
+use crate::database::{
+    self, ConsensusStorage, DatabaseOptions, Ledger, Mempool, Metadata, DB,
+};
 use crate::{vm, Message, Network};
 
 const CANDIDATES_DELETION_OFFSET: u64 = 10;
@@ -196,7 +198,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub async fn init_consensus(
         keys_path: &str,
         tip: BlockWithLabel,
-        provisioners_list: Provisioners,
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
@@ -208,6 +209,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
         let tip_state_hash = tip.inner().header().state_hash;
+        let provisioners_list =
+            vm.read().await.get_provisioners(tip_state_hash)?;
 
         let mut provisioners_list = ContextProvisioners::new(provisioners_list);
 
@@ -217,7 +220,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             provisioners_list.apply_changes(changed_provisioners);
         }
 
-        let acc = Self {
+        let mut acc = Self {
             tip: RwLock::new(tip),
             provisioners_list: RwLock::new(provisioners_list),
             db: db.clone(),
@@ -259,6 +262,35 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     event = "VM accepted state loaded",
                     state_root = hex::encode(tip_state_hash),
                 );
+            }
+        }
+        let ext_db_parent_path = env::var("RUSK_EXT_CHAIN").unwrap_or_default();
+
+        if !ext_db_parent_path.is_empty() {
+            let ext_db = crate::database::rocksdb::Backend::create_or_open(
+                ext_db_parent_path,
+                DatabaseOptions::default(),
+            );
+            let tip_ext = ext_db
+                .view(|t| {
+                    anyhow::Ok(t.op_read(MD_HASH_KEY)?.and_then(|tip_hash| {
+                        t.block(&tip_hash[..])
+                            .expect("block to be found if metadata is set")
+                    }))
+                })?
+                .expect("Cannot find tip for ext block")
+                .header()
+                .height;
+
+            if tip_ext > tip_height {
+                info!("detected ext db at height {tip_ext}. Syncing local db starting from {tip_height}" );
+
+                for height in tip_height+1..=tip_ext {
+                    let blk = ext_db
+                        .view(|db| db.block_by_height(height))?
+                        .expect("block to be found");
+                    acc.try_accept_block(&blk, false).await?;
+                }
             }
         }
 

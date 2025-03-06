@@ -89,7 +89,7 @@ pub enum HeaderError {
     UnsupportedVersion,
     #[error("empty block hash")]
     EmptyHash,
-    #[error("invalid block height block_height: {0}, curr_height: {0}")]
+    #[error("invalid block height block_height: {0}, curr_height: {1}")]
     MismatchHeight(u64, u64),
     #[error("block time is less than minimum block time")]
     BlockTimeLess,
