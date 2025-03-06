@@ -31,9 +31,10 @@ const BLOCK_GAS_LIMIT: u64 = 1_000_000_000;
 const GAS_LIMIT: u64 = 12_000_000; // Lowest value for a transfer
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 const CHAIN_ID: u8 = 0xFA;
-const TXS_PER_BLOCK: u8 = 1;
-const RECEIVER_INDEX: u8 = 4 * TXS_PER_BLOCK;
-const SENDER_INDEX: u8 = 13;
+const TXS_PER_BLOCK: u8 = 6;
+const NUM_BLOCKS: u8 = 4;
+const RECEIVER_INDEX: u8 = NUM_BLOCKS * TXS_PER_BLOCK;
+const SENDER_INDEX: u8 = RECEIVER_INDEX + 1;
 const DEPLOY_GAS_LIMIT: u64 = 200_000_000;
 const DEPLOY_GAS_PRICE: u64 = 2000;
 const DEPLOY_OWNER: [u8; 32] = [1; 32];
@@ -287,7 +288,7 @@ fn prepare_deployment_transactions<Rng: RngCore + CryptoRng>(
     )
     .to_vec();
     let mut txs = vec![];
-    for nonce in 0..4 {
+    for nonce in 0..2 {
         if height == 0 {
             txs.push(prepare_deployment_transaction(wallet, &bytecode_bob, rng, nonce));
         } else if height == 1 {
