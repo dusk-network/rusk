@@ -283,8 +283,9 @@ fn prepare_deployment_transactions<Rng: RngCore + CryptoRng>(
         "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
     ).to_vec();
     let bytecode_charlie = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/charlie.wasm"
-    ).to_vec();
+        "../../../target/wasm32-unknown-unknown/release/charlie.wasm"
+    )
+    .to_vec();
     let mut txs = vec![];
     for nonce in 0..4 {
         if height == 0 {
@@ -430,6 +431,7 @@ pub async fn finalization_after_empty_block() -> Result<()> {
     let root_c = do_block(&rusk, cache.clone(), amount, 3, &mut rng)?;
     rusk.finalize_state(root_c, vec![root_empty])?;
 
+    println!("root_c: {}", hex::encode(root_c));
     let rusk = previous_state(&tmp)?;
     println!("xroot={}", hex::encode(rusk.state_root()));
     let wallet = new_wallet(&rusk, cache.clone());
