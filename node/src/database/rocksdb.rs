@@ -153,7 +153,7 @@ impl DB for Backend {
         // A set of options for initializing any blocks-related CF (including
         // METADATA CF)
         let mut blocks_cf_opts = Options::default();
-        blocks_cf_opts.create_if_missing(true);
+        blocks_cf_opts.create_if_missing(db_opts.create_if_missing);
         blocks_cf_opts.create_missing_column_families(true);
         blocks_cf_opts.set_level_compaction_dynamic_level_bytes(true);
         blocks_cf_opts

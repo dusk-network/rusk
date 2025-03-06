@@ -237,6 +237,9 @@ pub struct DatabaseOptions {
 
     /// Enables a set of flags for collecting DB stats as log data.
     pub enable_debug: bool,
+
+    /// Create the database if missing
+    pub create_if_missing: bool,
 }
 
 impl Default for DatabaseOptions {
@@ -246,6 +249,7 @@ impl Default for DatabaseOptions {
             mempool_cf_max_write_buffer_size: 10 * 1024 * 1024, // 10 MiB
             blocks_cf_disable_block_cache: true,
             enable_debug: false,
+            create_if_missing: true,
         }
     }
 }
