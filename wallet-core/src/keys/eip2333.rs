@@ -93,7 +93,7 @@ const HKDF_OUTPUT_SIZE: usize = SHA256_DIGEST_SIZE * HKDF_DIGESTS;
 ///
 /// # Panics
 /// Panics if the HKDF-Expand operation fails due to an invalid length of the
-/// `okm` slice.
+/// `okm` slice (`okm.lenght() > 255 * size_of(usize)`).
 #[allow(clippy::similar_names)]
 fn hkdf(salt: &[u8], ikm: &[u8], info: &[u8], okm: &mut [u8]) {
     // PRK = HKDF-Extract(salt, IKM)
@@ -138,7 +138,8 @@ fn hkdf(salt: &[u8], ikm: &[u8], info: &[u8], okm: &mut [u8]) {
 /// * `lamport_sk` - A container for the resulting lamport SK
 ///
 /// # Panics
-/// Panics if the HKDF expansion fails due to an invalid output length.
+/// Panics if the HKDF expansion fails due to an invalid output length
+/// (`okm.lenght() > 255 * size_of(usize)`).
 #[allow(clippy::similar_names)]
 fn ikm_to_lamport_sk(
     ikm: &[u8],
@@ -275,13 +276,15 @@ fn parent_sk_to_lamport_pk(parent_sk: &BlsScalar, index: u32) -> Vec<u8> {
 /// Panics if HKDF extraction/expansion fail.
 #[allow(clippy::similar_names)]
 fn hkdf_mod_r(ikm: &[u8], key_info: &[u8]) -> BlsScalar {
+    const L : usize = 48;
+
     // IKM || I2OSP(0, 1)
     let ikm_combined = [ikm, &[0u8]].concat();
     // key_info || I2OSP(L, 2)
-    let key_info_combined = [key_info, &[0u8, 48u8]].concat();
+    let key_info_combined = [key_info, &[0u8, L as u8]].concat();
 
     // HKDF output size L (=48)
-    let mut okm: [u8; 48] = [0u8; 48];
+    let mut okm: [u8; L] = [0u8; L];
 
     // SK = 0
     let mut sk = BlsScalar::zero();
@@ -298,12 +301,14 @@ fn hkdf_mod_r(ikm: &[u8], key_info: &[u8]) -> BlsScalar {
         // Convert okm to a 64-byte little-endian value
         let mut okm_le_64 = [0u8; 64];
         okm.reverse();
-        okm_le_64[..48].copy_from_slice(&okm);
+        okm_le_64[..L].copy_from_slice(&okm);
 
         // SK = OS2IP(OKM) mod r
         sk = BlsScalar::from_bytes_wide(&okm_le_64);
 
         // salt = H(salt)
+        // Since this is needed for the next iteration, we only compute the
+        // digest if such iteration is going to be executed
         if sk.is_zero().into() {
             salt = Sha256::digest(salt);
         }
@@ -342,7 +347,7 @@ fn hkdf_mod_r(ikm: &[u8], key_info: &[u8]) -> BlsScalar {
 /// # Panics
 /// Panics if `parent_sk_to_lamport_pk` or `hkdf_mod_r` fail.
 #[must_use]
-pub fn derive_child_sk(parent_sk: &BlsScalar, index: u32) -> BlsScalar {
+fn derive_child_sk(parent_sk: &BlsScalar, index: u32) -> BlsScalar {
     // NOTE: `parent_sk` is in little-endian encoding but it's converted to
     // big-endian encoding by `parent_sk_to_lamport_pk`
 
@@ -385,7 +390,7 @@ pub fn derive_child_sk(parent_sk: &BlsScalar, index: u32) -> BlsScalar {
 ///
 /// # Panics
 /// Panics if `hkdf_mod_r`fails.
-pub fn derive_master_sk(seed: &[u8]) -> Result<BlsScalar, String> {
+fn derive_master_sk(seed: &[u8]) -> Result<BlsScalar, String> {
     if seed.len() < 32 {
         return Err(
             "seed must be greater than or equal to 32 bytes".to_string()
@@ -415,7 +420,7 @@ pub fn derive_master_sk(seed: &[u8]) -> Result<BlsScalar, String> {
 /// This function returns an error if the first node in the path is not `m`, one
 /// of the child indexes is not an integer between 0 and 2^32, or the path
 /// contains no child node
-pub fn get_path_indexes(path_str: &str) -> Result<Vec<u32>, String> {
+fn get_path_indexes(path_str: &str) -> Result<Vec<u32>, String> {
     let mut path: Vec<&str> = path_str.split('/').collect();
     let m = path.remove(0);
     if m != "m" {

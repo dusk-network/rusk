@@ -24,7 +24,6 @@ extern crate alloc;
 #[macro_use]
 mod ffi;
 
-pub mod eip2333;
 pub mod keys;
 pub mod notes;
 pub mod transaction;
