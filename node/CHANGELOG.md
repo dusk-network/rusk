@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Remove `WrappedContractId` [#3503]
+
 ## [1.1.0] - 2025-02-14
 
 ### Added
