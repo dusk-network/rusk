@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change plonk verification to use embed verification data by default [#3507]
 - Change responses for moonlight gql endpoints (archive node) [#3512]
+- Change `prover` feature to include `recovery-keys` feature [#3507]
 
 ## [1.1.1] - 2025-02-21
 

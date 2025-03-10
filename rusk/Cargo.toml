@@ -99,15 +99,14 @@ rustc_tools_util = { workspace = true }
 default = [
     "ephemeral",
     "recovery-state",
-    "recovery-keys",
     "prover",
     "chain",
     "http-wasm",
 ]
-ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state", "chain"]
+ephemeral = ["recovery-state", "chain"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]
-prover = ["dep:rusk-prover"]
+prover = ["dep:rusk-prover", "recovery-keys"]
 testwallet = ["dep:futures"]
 chain = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
 archive = ["chain", "node/archive", "dusk-core/serde"]
