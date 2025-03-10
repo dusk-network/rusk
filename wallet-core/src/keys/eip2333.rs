@@ -276,12 +276,16 @@ fn parent_sk_to_lamport_pk(parent_sk: &BlsScalar, index: u32) -> Vec<u8> {
 /// Panics if HKDF extraction/expansion fail.
 #[allow(clippy::similar_names)]
 fn hkdf_mod_r(ikm: &[u8], key_info: &[u8]) -> BlsScalar {
-    const L : usize = 48;
+    const L: usize = 48;
 
     // IKM || I2OSP(0, 1)
     let ikm_combined = [ikm, &[0u8]].concat();
     // key_info || I2OSP(L, 2)
-    let key_info_combined = [key_info, &[0u8, L as u8]].concat();
+    let key_info_combined = [
+        key_info,
+        &[0u8, u8::try_from(L).expect("L should be castable to u8")],
+    ]
+    .concat();
 
     // HKDF output size L (=48)
     let mut okm: [u8; L] = [0u8; L];
