@@ -6,6 +6,8 @@
 
 //! Utilities to derive keys from the seed.
 
+pub mod eip2333;
+
 use alloc::vec::Vec;
 use core::ops::Range;
 
