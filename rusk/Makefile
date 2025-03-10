@@ -59,7 +59,7 @@ bench: ## Run the benchmarks
 run:
 	@cargo r --release --bin rusk
 
-recovery-keys: ## Build circuit keys
+recovery-keys: ## Build prover keys
 	@cargo r \
 		--no-default-features \
 		--features recovery-keys \
