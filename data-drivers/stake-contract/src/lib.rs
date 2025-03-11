@@ -19,10 +19,12 @@ extern crate alloc;
 #[cfg(target_family = "wasm")]
 mod bindgen;
 
+use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use dusk_data_driver::{ConvertibleContract, Error};
+use dusk_core::stake::{Reward, SlashEvent, StakeEvent};
+use dusk_data_driver::{rkyv_to_json, ConvertibleContract, Error, JsonValue};
 
 /// The contract driver for encoding and decoding transactions.
 #[derive(Default)]
@@ -43,7 +45,7 @@ impl ConvertibleContract for ContractDriver {
         &self,
         fn_name: &str,
         rkyv: &[u8],
-    ) -> Result<serde_json::Value, Error> {
+    ) -> Result<JsonValue, Error> {
         todo!()
     }
 
@@ -52,17 +54,23 @@ impl ConvertibleContract for ContractDriver {
         &self,
         fn_name: &str,
         rkyv: &[u8],
-    ) -> Result<serde_json::Value, Error> {
+    ) -> Result<JsonValue, Error> {
         todo!()
     }
 
-    #[allow(unused_variables)]
     fn decode_event(
         &self,
         event_name: &str,
         rkyv: &[u8],
-    ) -> Result<serde_json::Value, Error> {
-        todo!()
+    ) -> Result<JsonValue, Error> {
+        match event_name {
+            "stake" | "unstake" | "withdraw" => {
+                rkyv_to_json::<StakeEvent>(rkyv)
+            }
+            "reward" => rkyv_to_json::<Vec<Reward>>(rkyv),
+            "slash" | "hard_slash" => rkyv_to_json::<SlashEvent>(rkyv),
+            event => Err(Error::Unsupported(format!("event {event}"))),
+        }
     }
 
     fn get_schema(&self) -> String {
