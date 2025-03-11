@@ -146,7 +146,9 @@ exports[`Main layout > should render the app's main layout 1`] = `
         class="footer__copyright-container"
       >
         <p>
-          © 2018 - 2024 Dusk Network B.V. All Rights Reserved.
+          © 2018 - 
+          2025
+           Dusk Network B.V. All Rights Reserved.
         </p>
          
         <p>
