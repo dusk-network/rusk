@@ -30,7 +30,7 @@ use dusk_core::transfer::{
     CONVERT_TOPIC, DEPOSIT_TOPIC, MINT_CONTRACT_TOPIC, MINT_TOPIC,
     MOONLIGHT_TOPIC, PHOENIX_TOPIC, WITHDRAW_TOPIC,
 };
-use dusk_data_driver::{rkyv_to_json, ConvertibleContract, Error};
+use dusk_data_driver::{rkyv_to_json, ConvertibleContract, Error, JsonValue};
 
 /// The contract driver for encoding and decoding transactions.
 #[derive(Default)]
@@ -51,7 +51,7 @@ impl ConvertibleContract for ContractDriver {
         &self,
         fn_name: &str,
         rkyv: &[u8],
-    ) -> Result<serde_json::Value, Error> {
+    ) -> Result<JsonValue, Error> {
         todo!()
     }
 
@@ -60,7 +60,7 @@ impl ConvertibleContract for ContractDriver {
         &self,
         fn_name: &str,
         rkyv: &[u8],
-    ) -> Result<serde_json::Value, Error> {
+    ) -> Result<JsonValue, Error> {
         todo!()
     }
 
@@ -68,8 +68,22 @@ impl ConvertibleContract for ContractDriver {
         &self,
         event_name: &str,
         rkyv: &[u8],
-    ) -> Result<serde_json::Value, Error> {
-        todo!()
+    ) -> Result<JsonValue, Error> {
+        match event_name {
+            MOONLIGHT_TOPIC => rkyv_to_json::<MoonlightTransactionEvent>(rkyv),
+            PHOENIX_TOPIC => rkyv_to_json::<PhoenixTransactionEvent>(rkyv),
+            CONTRACT_TO_CONTRACT_TOPIC | MINT_CONTRACT_TOPIC => {
+                rkyv_to_json::<ContractToContractEvent>(rkyv)
+            }
+            CONTRACT_TO_ACCOUNT_TOPIC => {
+                rkyv_to_json::<ContractToAccountEvent>(rkyv)
+            }
+            WITHDRAW_TOPIC | MINT_TOPIC => rkyv_to_json::<WithdrawEvent>(rkyv),
+            DEPOSIT_TOPIC => rkyv_to_json::<DepositEvent>(rkyv),
+            CONVERT_TOPIC => rkyv_to_json::<ConvertEvent>(rkyv),
+
+            event => Err(Error::Unsupported(format!("event {event}"))),
+        }
     }
 
     fn get_schema(&self) -> String {

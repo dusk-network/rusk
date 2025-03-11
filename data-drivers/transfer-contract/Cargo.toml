@@ -16,4 +16,3 @@ dusk-data-driver = { workspace = true }
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen = { workspace = true }
 dlmalloc = { workspace = true, features = ["global"] }
-serde_json = { workspace = true }

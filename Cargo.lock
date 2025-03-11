@@ -1875,7 +1875,6 @@ dependencies = [
  "dlmalloc",
  "dusk-core",
  "dusk-data-driver",
- "serde_json",
  "wasm-bindgen",
 ]
 
