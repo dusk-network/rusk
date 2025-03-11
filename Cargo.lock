@@ -1869,6 +1869,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dusk-stake-contract-dd"
+version = "0.0.1-alpha.1"
+dependencies = [
+ "dlmalloc",
+ "dusk-data-driver",
+ "serde_json",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "dusk-transfer-contract-dd"
 version = "0.0.1-alpha.1"
 dependencies = [
