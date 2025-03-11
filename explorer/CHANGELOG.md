@@ -24,6 +24,7 @@ and this project adheres to
 ### Fixed
 
 - Fix wrong owner key shown in provisioners table [#3377]
+- Fix current year not displayed in footer [#3545]
 
 ## [1.0.1] - 2025-01-07
 
@@ -153,6 +154,7 @@ and this project adheres to
 [#3425]: https://github.com/dusk-network/rusk/issues/3425
 [#3415]: https://github.com/dusk-network/rusk/issues/3415
 [#3454]: https://github.com/dusk-network/rusk/issues/3454
+[#3545]: https://github.com/dusk-network/rusk/issues/3454
 
 <!-- VERSIONS -->
 

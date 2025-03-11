@@ -1,4 +1,12 @@
-import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { cleanup, fireEvent } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { duskAPI } from "$lib/services";
@@ -53,6 +61,16 @@ const appStore =
   );
 
 describe("Main layout", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 0, 1));
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
   const getNodeInfoSpy = vi
     .spyOn(duskAPI, "getNodeInfo")
     .mockResolvedValue(apiNodeInfo);
