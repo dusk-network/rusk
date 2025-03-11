@@ -1,4 +1,4 @@
-SUBDIRS := data-driver
+SUBDIRS := data-driver transfer-contract
 
 all: $(SUBDIRS) ## Build all data drivers
 

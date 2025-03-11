@@ -1,0 +1,19 @@
+[package]
+name = "dusk-transfer-contract-dd"
+version = "0.0.1-alpha.1"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dusk-core = { workspace = true, features = ["serde"] }
+
+# data-driver dependency
+dusk-data-driver = { workspace = true }
+
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+wasm-bindgen = { workspace = true }
+dlmalloc = { workspace = true, features = ["global"] }
+serde_json = { workspace = true }
