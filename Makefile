@@ -18,6 +18,9 @@ wasm: setup-compiler ## Generate the WASM for all the contracts and wallet-core
 	$(MAKE) -C ./contracts $@
 	$(MAKE) -C ./wallet-core $@
 
+data-drivers: ## Build the data-driver WASM files
+	$(MAKE) -C ./data-drivers wasm
+
 contracts: setup-compiler ## Execute the test for all contracts
 	$(MAKE) -j1 -C ./contracts all
 
@@ -26,6 +29,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./core/ $@
 	$(MAKE) state
 	$(MAKE) -j1 -C ./contracts $@
+	$(MAKE) -j1 -C ./data-drivers $@
 	$(MAKE) -C ./rusk-recovery $@
 	$(MAKE) -C ./rusk-prover/ $@
 	$(MAKE) -C ./node-data $@
@@ -38,6 +42,7 @@ test: keys wasm ## Run the tests
 clippy: ## Run clippy
 	$(MAKE) -C ./core/ $@
 	$(MAKE) -j1 -C ./contracts $@
+	$(MAKE) -j1 -C ./data-drivers $@
 	$(MAKE) -C ./vm $@
 	$(MAKE) -C ./rusk-profile $@
 	$(MAKE) -C ./rusk-recovery $@
@@ -96,4 +101,4 @@ COMPILER_VERSION=v0.2.0
 setup-compiler: ## Setup the Dusk Contract Compiler
 	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
 
-.PHONY: all abi keys state wasm contracts test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet web-wallet setup-compiler
+.PHONY: all abi keys state wasm contracts test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet web-wallet setup-compiler data-drivers
