@@ -27,7 +27,6 @@ use dusk_core::transfer::phoenix::{
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
 use dusk_core::BlsScalar;
-use serde::Serialize;
 use wallet_core::prelude::keys::{
     derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
     derive_phoenix_vk,
@@ -496,32 +495,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::NotDirectory);
         }
 
-        // get our keys for this address
-        let keys = self.provisioner_keys(profile_idx)?;
+        let (pk, sk) = self.provisioner_keys(profile_idx)?;
+        let path = PathBuf::from(dir);
+        let filename = filename.unwrap_or(profile_idx.to_string());
 
-        // set up the path
-        let mut path = PathBuf::from(dir);
-        path.push(filename.unwrap_or(profile_idx.to_string()));
-
-        // export public key to disk
-        let bytes = keys.0.to_bytes();
-        fs::write(path.with_extension("cpk"), bytes)?;
-
-        // create node-compatible json structure
-        let bls = BlsKeyPair {
-            public_key_bls: keys.0.to_bytes(),
-            secret_key_bls: keys.1.to_bytes(),
-        };
-        let json = serde_json::to_string(&bls)?;
-
-        // encrypt data
-        let mut bytes = json.as_bytes().to_vec();
-        bytes = crate::crypto::encrypt(&bytes, pwd)?;
-
-        // export key-pair to disk
-        fs::write(path.with_extension("keys"), bytes)?;
-
-        Ok((path.with_extension("keys"), path.with_extension("cpk")))
+        Ok(node_data::bls::save_consensus_keys(
+            &path, &filename, &pk, &sk, pwd,
+        )?)
     }
 
     /// Return the index of the address passed, returns an error if the address
@@ -635,26 +615,6 @@ pub struct DecodedNote {
     pub block_height: u64,
     /// Nullified by
     pub nullified_by: Option<BlsScalar>,
-}
-
-/// BLS key-pair helper structure
-#[derive(Serialize)]
-struct BlsKeyPair {
-    #[serde(with = "base64")]
-    secret_key_bls: [u8; 32],
-    #[serde(with = "base64")]
-    public_key_bls: [u8; 96],
-}
-
-mod base64 {
-    use base64::engine::general_purpose::STANDARD as BASE64;
-    use base64::Engine;
-    use serde::{Serialize, Serializer};
-
-    pub fn serialize<S: Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
-        let base64 = BASE64.encode(v);
-        String::serialize(&base64, s)
-    }
 }
 
 #[cfg(test)]
