@@ -10,8 +10,13 @@ crate-type = ["cdylib", "rlib"]
 dusk-core = { workspace = true }
 ringbuffer = { workspace = true }
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-dusk-core = { workspace = true, features = ["abi-dlmalloc"] }
+# data-driver dependency
+dusk-data-driver = { path = "../../data-driver", optional = true }
+wasm-bindgen = { version = "0.2", default-features = false, optional = true }
+dlmalloc = { version = "0.2", features = ["global"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+rkyv = { workspace = true, default-features = false, optional = true }
+bytecheck = { workspace = true, default-features = false, optional = true }
 
 [dev-dependencies]
 dusk-vm = { workspace = true }
@@ -24,3 +29,21 @@ dusk-bytes = { workspace = true }
 
 [build-dependencies]
 rusk-profile = { workspace = true }
+
+
+[[bin]]
+name = "transfer-contract-dd"
+path = "data-driver/bindgen.rs"
+required-features = ["data-driver"]
+
+[features]
+contract = ["dusk-core/abi-dlmalloc"]
+data-driver = [
+    "dusk-core/serde",
+    "serde",
+    "dlmalloc",
+    "wasm-bindgen",
+    "dusk-data-driver",
+    "rkyv",
+    "bytecheck",
+]

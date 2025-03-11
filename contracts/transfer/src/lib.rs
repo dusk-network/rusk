@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![cfg(not(feature = "data-driver"))]
 #![cfg_attr(target_family = "wasm", no_std)]
 #![cfg(target_family = "wasm")]
 #![feature(arbitrary_self_types)]

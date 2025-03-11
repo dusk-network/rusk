@@ -5534,8 +5534,11 @@ dependencies = [
 name = "transfer-contract"
 version = "0.10.1"
 dependencies = [
+ "bytecheck",
+ "dlmalloc",
  "dusk-bytes",
  "dusk-core",
+ "dusk-data-driver",
  "dusk-vm",
  "ff",
  "rand 0.8.5",
@@ -5543,6 +5546,8 @@ dependencies = [
  "rkyv",
  "rusk-profile",
  "rusk-prover",
+ "serde",
+ "wasm-bindgen",
 ]
 
 [[package]]
