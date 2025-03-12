@@ -7,22 +7,23 @@
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use aes::Aes256;
-use base64::engine::general_purpose::STANDARD as BASE64_ENGINE;
-use base64::Engine;
 use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, BlockModeError, Cbc};
+use block_modes::{BlockMode, BlockModeError, Cbc, InvalidKeyIvLength};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use rand::rngs::StdRng;
+use rand::rngs::{OsRng, StdRng};
+use rand::RngCore;
 use rand::SeedableRng;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use serde_with::base64::Base64;
+use serde_with::serde_as;
 use sha2::{Digest, Sha256};
-use tracing::warn;
+
 pub const PUBLIC_BLS_SIZE: usize = BlsPublicKey::SIZE;
 
 /// Extends BlsPublicKey by implementing a few traits
@@ -157,16 +158,6 @@ fn read_from_file(
     path: PathBuf,
     pwd: &str,
 ) -> anyhow::Result<(BlsPublicKey, BlsSecretKey)> {
-    use serde::Deserialize;
-
-    /// Bls key pair helper structure
-    #[derive(Deserialize)]
-    struct BlsKeyPair {
-        secret_key_bls: String,
-        public_key_bls: String,
-    }
-
-    // attempt to load and decode wallet
     let ciphertext = fs::read(&path).map_err(|e| {
         anyhow::anyhow!(
             "{} should be valid consensus keys file {e}",
@@ -178,40 +169,73 @@ fn read_from_file(
     hasher.update(pwd.as_bytes());
     let hashed_pwd = hasher.finalize().to_vec();
 
-    let bytes = match decrypt(&ciphertext[..], &hashed_pwd) {
-        Ok(bytes) => bytes,
-        Err(_) => {
-            let bytes = decrypt(&ciphertext[..], &hashed_pwd).map_err(|e| {
-                anyhow::anyhow!("Invalid consensus keys password {e}")
-            })?;
-            warn!("Your consensus keys are in the old format");
-            warn!("Consider to export them using a new version of the wallet");
-            bytes
-        }
-    };
+    let bytes = decrypt(&ciphertext[..], &hashed_pwd)
+        .map_err(|e| anyhow::anyhow!("Invalid consensus keys password {e}"))?;
 
     let keys: BlsKeyPair = serde_json::from_slice(&bytes)
         .map_err(|e| anyhow::anyhow!("keys files should contain json {e}"))?;
 
-    let sk_bytes = BASE64_ENGINE
-        .decode(keys.secret_key_bls)
-        .map_err(|e| anyhow::anyhow!("sk should be base64 {e}"))?;
-
-    let sk = BlsSecretKey::from_slice(&sk_bytes)
+    let sk = BlsSecretKey::from_slice(&keys.secret_key_bls)
         .map_err(|e| anyhow::anyhow!("sk should be valid {e:?}"))?;
 
-    let pk = BlsPublicKey::from_slice(
-        &BASE64_ENGINE
-            .decode(keys.public_key_bls)
-            .map_err(|e| anyhow::anyhow!("pk should be base64 {e}"))?[..],
-    )
-    .map_err(|e| anyhow::anyhow!("pk should be valid {e:?}"))?;
+    let pk = BlsPublicKey::from_slice(&keys.public_key_bls)
+        .map_err(|e| anyhow::anyhow!("pk should be valid {e:?}"))?;
 
     Ok((pk, sk))
 }
 
+pub fn save_consensus_keys(
+    path: &Path,
+    filename: &str,
+    pk: &BlsPublicKey,
+    sk: &BlsSecretKey,
+    pwd: &[u8],
+) -> Result<(PathBuf, PathBuf), ConsensusKeysError> {
+    let path = path.join(filename);
+    let bytes = pk.to_bytes();
+    fs::write(path.with_extension("cpk"), bytes)?;
+
+    let bls = BlsKeyPair {
+        public_key_bls: pk.to_bytes().to_vec(),
+        secret_key_bls: sk.to_bytes().to_vec(),
+    };
+    let json = serde_json::to_string(&bls)?;
+
+    let mut bytes = json.as_bytes().to_vec();
+    bytes = encrypt(&bytes, pwd)?;
+
+    fs::write(path.with_extension("keys"), bytes)?;
+
+    Ok((path.with_extension("keys"), path.with_extension("cpk")))
+}
+
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+struct BlsKeyPair {
+    #[serde_as(as = "Base64")]
+    secret_key_bls: Vec<u8>,
+    #[serde_as(as = "Base64")]
+    public_key_bls: Vec<u8>,
+}
+
+type Aes256Cbc = Cbc<Aes256, Pkcs7>;
+
+fn encrypt(
+    plaintext: &[u8],
+    pwd: &[u8],
+) -> Result<Vec<u8>, ConsensusKeysError> {
+    let mut iv = vec![0; 16];
+    let mut rng = OsRng;
+    rng.fill_bytes(&mut iv);
+
+    let cipher = Aes256Cbc::new_from_slices(pwd, &iv)?;
+    let enc = cipher.encrypt_vec(plaintext);
+
+    let ciphertext = iv.into_iter().chain(enc).collect();
+    Ok(ciphertext)
+}
+
 fn decrypt(data: &[u8], pwd: &[u8]) -> Result<Vec<u8>, BlockModeError> {
-    type Aes256Cbc = Cbc<Aes256, Pkcs7>;
     let iv = &data[..16];
     let enc = &data[16..];
 
@@ -219,25 +243,101 @@ fn decrypt(data: &[u8], pwd: &[u8]) -> Result<Vec<u8>, BlockModeError> {
     cipher.decrypt_vec(enc)
 }
 
-/// Loads wallet files from $DUSK_WALLET_DIR and returns a vector of all loaded
-/// consensus keys.
-///
-/// It reads $DUSK_CONSENSUS_KEYS_PASS var to unlock wallet files.
-pub fn load_provisioners_keys(n: usize) -> Vec<(BlsSecretKey, PublicKey)> {
-    let mut keys = vec![];
+#[derive(Debug, thiserror::Error)]
+pub enum ConsensusKeysError {
+    #[error("Consensus keys file corrupted")]
+    InvalidKeyIvLength(#[from] InvalidKeyIvLength),
 
-    let dir = std::env::var("DUSK_WALLET_DIR").unwrap();
-    let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS").unwrap();
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 
-    for i in 0..n {
-        let mut path = dir.clone();
-        path.push_str(&format!("node_{i}.keys"));
-        let path_buf = PathBuf::from(path);
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+}
 
-        let (pk, sk) = read_from_file(path_buf, &pwd).unwrap();
+#[cfg(test)]
+mod tests {
+    use anyhow::anyhow;
+    use tempfile::tempdir;
 
-        keys.push((sk, PublicKey::new(pk)));
+    use super::*;
+
+    #[test]
+    fn test_save_load_consensus_keys() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let dir = tempdir()?;
+
+        let mut rng = StdRng::seed_from_u64(64);
+        let sk = BlsSecretKey::random(&mut rng);
+        let pk = BlsPublicKey::from(&sk);
+        let pwd = "password";
+
+        save_consensus_keys(
+            dir.path(),
+            "consensus",
+            &pk,
+            &sk,
+            &hashed_password(pwd),
+        )?;
+        let keys_path = dir.path().join("consensus.keys");
+        let (loaded_sk, loaded_pk) = load_keys(
+            keys_path
+                .to_str()
+                .ok_or(anyhow!("Failed to convert path to string"))?
+                .to_string(),
+            pwd.to_string(),
+        )?;
+        let pk_bytes = fs::read(dir.path().join("consensus.cpk"))?;
+        let pk_bytes: [u8; PUBLIC_BLS_SIZE] = pk_bytes
+            .try_into()
+            .map_err(|_| anyhow!("Invalid BlsPublicKey bytes"))?;
+        let loaded_cpk = BlsPublicKey::from_bytes(&pk_bytes)
+            .map_err(|err| anyhow!("{err:?}"))?;
+
+        assert_eq!(loaded_sk, sk);
+        assert_eq!(loaded_pk.inner, pk);
+        assert_eq!(loaded_cpk, pk);
+
+        Ok(())
     }
 
-    keys
+    #[test]
+    fn test_can_still_load_keys_saved_by_wallet_impl(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // test-data/wallet-generated-consensus-keys contains consensus keys
+        // exported by the former rusk-wallet implementation to save consensus
+        // keys.
+        // This test checks if what is saved by the former implementation
+        // is still loaded correctly.
+        let mut rng = StdRng::seed_from_u64(64);
+        let sk = BlsSecretKey::random(&mut rng);
+        let pk = BlsPublicKey::from(&sk);
+
+        let pwd = "password".to_string();
+        let wallet_gen_keys_path = get_wallet_gen_consensus_keys_path();
+        let (loaded_sk, loaded_pk) =
+            load_keys(wallet_gen_keys_path.to_str().unwrap().to_string(), pwd)?;
+
+        assert_eq!(loaded_sk, sk);
+        assert_eq!(loaded_pk.inner, pk);
+
+        Ok(())
+    }
+
+    fn hashed_password(pwd: &str) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.update(pwd.as_bytes());
+        hasher.finalize().to_vec()
+    }
+
+    fn get_wallet_gen_consensus_keys_path() -> PathBuf {
+        let mut path = PathBuf::from(file!());
+        // Remove the filename
+        path.pop();
+        // Remove the current directory
+        let path: PathBuf = path.components().skip(1).collect();
+        path.join("test-data")
+            .join("wallet-generated-consensus-keys")
+            .join("consensus.keys")
+    }
 }

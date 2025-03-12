@@ -1754,6 +1754,7 @@ dependencies = [
  "serde_with",
  "sha2 0.10.8",
  "sha3",
+ "tempfile",
  "thiserror",
  "tracing",
 ]
@@ -4382,7 +4383,6 @@ version = "0.1.1-dev"
 dependencies = [
  "aes 0.7.5",
  "anyhow",
- "base64 0.22.1",
  "blake2b_simd",
  "blake3",
  "block-modes",
@@ -4392,6 +4392,7 @@ dependencies = [
  "dirs",
  "dusk-bytes",
  "dusk-core",
+ "dusk-node-data",
  "dusk-wallet-core",
  "flume 0.10.14",
  "futures",
