@@ -10,6 +10,7 @@ members = [
     "contracts/stake",
     "contracts/transfer",
 
+    "data-driver",
     "core",
     "vm",
     "wallet-core",
