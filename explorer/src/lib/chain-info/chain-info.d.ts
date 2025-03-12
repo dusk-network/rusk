@@ -31,7 +31,7 @@ type ChainInfo = {
 
 type SearchResult = {
   id: string;
-  type: "block" | "transaction";
+  type: "account" | "block" | "transaction";
 };
 
 type Transaction = {

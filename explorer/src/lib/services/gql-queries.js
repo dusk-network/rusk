@@ -42,6 +42,18 @@ fragment BlockInfo on Block {
 }
 `;
 
+/** @param {string} address */
+export const getFullMoonlightAccountHistoryQuery = (address) => ({
+  query: `
+    query GetFullMoonlightHistory($address: String!) {
+      fullMoonlightHistory(address: $address) {
+        json
+      }
+    }
+  `,
+  variables: { address },
+});
+
 /** @param {number} height */
 export const getBlockHashQueryInfo = (height) => ({
   query: `

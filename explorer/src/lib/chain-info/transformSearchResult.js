@@ -1,30 +1,27 @@
-import { compose, flatMapWith, ownValues, reduce } from "lamb";
+/**
+ * Transforms a GQL search result into a standardized search result.
+ * @param {GQLSearchResult} entry - The GQL search result to transform
+ * @returns {SearchResult | null} The transformed search result
+ */
+const transformSearchResult = (entry) => {
+  if (entry.block) {
+    return {
+      id: entry.block.header.hash,
+      type: "block",
+    };
+  } else if (entry.tx) {
+    return {
+      id: entry.tx.id,
+      type: "transaction",
+    };
+  } else if (entry.account) {
+    return {
+      id: entry.account.id,
+      type: "account",
+    };
+  }
 
-/** @type {(v: GQLSearchResult[]) => SearchResult[]} */
-const transformSearchResult = compose(
-  (entries) =>
-    reduce(
-      entries,
-      (result, entry) => {
-        if (entry) {
-          result.push(
-            entry.header?.hash
-              ? {
-                  id: entry.header.hash,
-                  type: "block",
-                }
-              : {
-                  id: entry.id,
-                  type: "transaction",
-                }
-          );
-        }
-
-        return result;
-      },
-      /** @type {SearchResult[]} */ ([])
-    ),
-  flatMapWith(ownValues)
-);
+  return null;
+};
 
 export default transformSearchResult;

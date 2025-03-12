@@ -12,7 +12,7 @@
         "hash": "fda46b4e06cc78542db9c780adbaee83a27fdf917de653e8ac34294cf924dd63"
       }
     },
-    "transaction": null
+    "tx": null
   },
   {
     "block": {
@@ -20,19 +20,19 @@
         "hash": "fda46b4e06cc78542db9c780adbaee83a27fdf917de653e8ac34294cf924dd63"
       }
     },
-    "transaction": {
+    "tx": {
       "id": "38a21c90324dd1ea8a3eb749a520d4f33b2304fe150eb121086fb4cf13777908"
     }
   },
   {
     "block": null,
-    "transaction": {
+    "tx": {
       "id": "38a21c90324dd1ea8a3eb749a520d4f33b2304fe150eb121086fb4cf13777908"
     }
   },
   {
     "block": null,
-    "transaction": null
+    "tx": null
   },
   {
     "block": null

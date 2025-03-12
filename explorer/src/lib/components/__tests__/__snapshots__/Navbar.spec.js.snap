@@ -94,11 +94,11 @@ exports[`Navbar > renders the Navbar component 1`] = `
       <form>
         <div
           class="textbox-button"
-          style="width: 190px;"
+          style="width: 250px;"
         >
           <input
             class="dusk-textbox dusk-textbox-text textbox-button__input"
-            placeholder="Block/Hash"
+            placeholder="Account/Block/Hash"
             required=""
             type="text"
           />

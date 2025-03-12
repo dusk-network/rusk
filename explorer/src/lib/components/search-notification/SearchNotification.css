@@ -29,6 +29,7 @@
 .search-notification__content-query {
   font-family: "Soehne Mono";
   font-weight: 500;
+  word-break: break-word;
 }
 
 .search-notification__footer-text {
