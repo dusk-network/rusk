@@ -50,7 +50,12 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
       <dd
         class="details-list__definition"
       >
-        4877687c2dbf154248d3ddee9ba...39056f82a46819da041d4ac0e04
+        <a
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+          href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+        >
+          4877687c2dbf154248d3ddee9...056f82a46819da041d4ac0e04
+        </a>
       </dd>
       <dt
         class="details-list__term"
@@ -87,6 +92,77 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           487,166
         </a>
       </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The sender of the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          From
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <a
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+          href="/some-base-path/accounts/?key=214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F"
+        >
+          214twXJifCt8TeGRFaxcAcb1H...9LduJb3iM3kQNnMrFS8aw197F
+        </a>
+      </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The receiver of the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          To
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <a
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+          href="/some-base-path/accounts/?key=214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F"
+        >
+          214twXJifCt8TeGRFaxcAcb1H...9LduJb3iM3kQNnMrFS8aw197F
+        </a>
+      </dd>
+      
       <dt
         class="details-list__term"
       >
@@ -487,7 +563,12 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dd
         class="details-list__definition"
       >
-        4877687c2dbf154248d3ddee9ba...39056f82a46819da041d4ac0e04
+        <a
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+          href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+        >
+          4877687c2dbf154248d3ddee9...056f82a46819da041d4ac0e04
+        </a>
       </dd>
       <dt
         class="details-list__term"
@@ -524,6 +605,77 @@ exports[`Transaction Details > renders the Transaction Details component with th
           487,166
         </a>
       </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The sender of the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          From
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <a
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+          href="/some-base-path/accounts/?key=214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F"
+        >
+          214twXJifCt8TeGRFaxcAcb1H...9LduJb3iM3kQNnMrFS8aw197F
+        </a>
+      </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The receiver of the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          To
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <a
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+          href="/some-base-path/accounts/?key=214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F"
+        >
+          214twXJifCt8TeGRFaxcAcb1H...9LduJb3iM3kQNnMrFS8aw197F
+        </a>
+      </dd>
+      
       <dt
         class="details-list__term"
       >
@@ -932,7 +1084,12 @@ exports[`Transaction Details > renders the Transaction Details component with th
       <dd
         class="details-list__definition"
       >
-        4877687c2dbf154248d3ddee9ba...39056f82a46819da041d4ac0e04
+        <a
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+          href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+        >
+          4877687c2dbf154248d3ddee9...056f82a46819da041d4ac0e04
+        </a>
       </dd>
       <dt
         class="details-list__term"
@@ -969,6 +1126,77 @@ exports[`Transaction Details > renders the Transaction Details component with th
           487,166
         </a>
       </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The sender of the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          From
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <a
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+          href="/some-base-path/accounts/?key=214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F"
+        >
+          214twXJifCt8TeGRFaxcAcb1H...9LduJb3iM3kQNnMrFS8aw197F
+        </a>
+      </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The receiver of the transaction"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          To
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <a
+          class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+          href="/some-base-path/accounts/?key=214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F"
+        >
+          214twXJifCt8TeGRFaxcAcb1H...9LduJb3iM3kQNnMrFS8aw197F
+        </a>
+      </dd>
+      
       <dt
         class="details-list__term"
       >
@@ -1317,8 +1545,8 @@ exports[`Transaction Details > renders the Transaction Details component with th
           <pre>
             {
   "type": "moonlight",
-  "from": "214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F",
-  "to": null,
+  "sender": "214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F",
+  "receiver": "214twXJifCt8TeGRFaxcAcb1HUScSuGa9K5vLHZ26Xyb9iTUCesPjH4YCiMN2tzHQeYuB6e2HEtNvXitaWqP68NiV71wrfNPft4ExcoKzR29LduJb3iM3kQNnMrFS8aw197F",
   "value": 0,
   "deposit": 0,
   "fee": {
