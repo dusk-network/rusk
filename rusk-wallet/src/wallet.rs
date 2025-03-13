@@ -488,7 +488,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         profile_idx: u8,
         dir: &Path,
         filename: Option<String>,
-        pwd: &[u8],
+        pwd: &str,
     ) -> Result<(PathBuf, PathBuf), Error> {
         // we're expecting a directory here
         if !dir.is_dir() {
