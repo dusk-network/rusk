@@ -23,6 +23,7 @@ use inquire::{
     Confirm, CustomType, InquireError, Password, PasswordDisplayMode, Select,
     Text,
 };
+use rusk_wallet::dat::version_without_pre_higher;
 use rusk_wallet::{
     currency::{Dusk, Lux},
     dat::DatFileVersion,
@@ -56,6 +57,7 @@ pub(crate) fn create_new_password() -> Result<String, InquireError> {
 pub(crate) fn request_auth(
     msg: &str,
     password: &Option<String>,
+    salt: Option<&[u8; 32]>,
     file_version: DatFileVersion,
 ) -> anyhow::Result<Vec<u8>> {
     let pwd = match password.as_ref() {
@@ -64,12 +66,13 @@ pub(crate) fn request_auth(
         None => ask_pwd(msg)?,
     };
 
-    Ok(hash(file_version, &pwd))
+    hash(file_version, &pwd, salt)
 }
 
 /// Request the user to create a wallet password
 pub(crate) fn create_password(
     password: &Option<String>,
+    salt: Option<&[u8; 32]>,
     file_version: DatFileVersion,
 ) -> anyhow::Result<Vec<u8>> {
     let pwd = match password.as_ref() {
@@ -77,7 +80,7 @@ pub(crate) fn create_password(
         None => create_new_password()?,
     };
 
-    Ok(hash(file_version, &pwd))
+    hash(file_version, &pwd, salt)
 }
 
 /// Display the mnemonic phrase to the user and ask for confirmation
@@ -127,17 +130,29 @@ pub(crate) fn request_mnemonic_phrase() -> anyhow::Result<String> {
     }
 }
 
-/// Use sha256 for Rusk Binary Format, and blake for the rest
-fn hash(file_version: DatFileVersion, pwd: &str) -> Vec<u8> {
+fn hash(
+    file_version: DatFileVersion,
+    pwd: &str,
+    salt: Option<&[u8; 32]>,
+) -> anyhow::Result<Vec<u8>> {
     match file_version {
-        DatFileVersion::RuskBinaryFileFormat(_) => {
-            let mut hasher = Sha256::new();
-
-            hasher.update(pwd.as_bytes());
-
-            hasher.finalize().to_vec()
+        DatFileVersion::RuskBinaryFileFormat(version) => {
+            if version_without_pre_higher(version) >= (0, 0, 2, 0) {
+                let salt = salt
+                    .ok_or_else(|| anyhow::anyhow!("Couldn't find the salt"))?;
+                Ok(pbkdf2::pbkdf2_hmac_array::<Sha256, 32>(
+                    pwd.as_bytes(),
+                    salt,
+                    10_000,
+                )
+                .to_vec())
+            } else {
+                let mut hasher = Sha256::new();
+                hasher.update(pwd.as_bytes());
+                Ok(hasher.finalize().to_vec())
+            }
         }
-        _ => blake3::hash(pwd.as_bytes()).as_bytes().to_vec(),
+        _ => Ok(blake3::hash(pwd.as_bytes()).as_bytes().to_vec()),
     }
 }
 
