@@ -405,14 +405,18 @@ pub enum RefundAddress<'a> {
 /// its funds to another contract.
 #[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ContractToContract {
     /// Contract to transfer funds to.
     pub contract: ContractId,
     /// Amount to send to the contract.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
     /// Function name to call on the contract.
     pub fn_name: String,
     /// Extra data sent along with [`ReceiveFromContract`]
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     pub data: Vec<u8>,
 }
 
@@ -420,12 +424,16 @@ pub struct ContractToContract {
 /// another contract.
 #[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ReceiveFromContract {
     /// Contract that sent the funds.
     pub contract: ContractId,
     /// Amount sent by the contract.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
     /// Extra data sent by the sender.
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     pub data: Vec<u8>,
 }
 
@@ -433,10 +441,13 @@ pub struct ReceiveFromContract {
 /// its funds to an account.
 #[derive(Debug, Clone, Archive, PartialEq, Eq, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ContractToAccount {
     /// Account to transfer funds to.
     pub account: AccountPublicKey,
     /// Amount to send to the account.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
 }
 

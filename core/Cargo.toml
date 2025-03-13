@@ -79,4 +79,5 @@ serde = [
     "piecrust-uplink/serde",
     "bls12_381-bls/serde",
     "phoenix-core/serde",
+    "jubjub-schnorr/serde"
 ]
