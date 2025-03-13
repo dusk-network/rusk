@@ -3741,6 +3741,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pbkdf2"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8ed6a7761f76e3b9f92dfb0a60a6a6477c61024b775147ff0973a02653abaf2"
+dependencies = [
+ "digest 0.10.7",
+ "hmac 0.12.1",
+]
+
+[[package]]
 name = "pem-rfc7468"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4548,6 +4558,7 @@ name = "rusk-wallet"
 version = "0.1.1-dev"
 dependencies = [
  "aes 0.7.5",
+ "aes-gcm",
  "anyhow",
  "blake2b_simd",
  "blake3",
@@ -4566,6 +4577,7 @@ dependencies = [
  "inquire",
  "konst 0.3.9",
  "open",
+ "pbkdf2 0.12.2",
  "rand 0.8.5",
  "reqwest",
  "rkyv",
@@ -5455,7 +5467,7 @@ dependencies = [
  "anyhow",
  "hmac 0.8.1",
  "once_cell",
- "pbkdf2",
+ "pbkdf2 0.4.0",
  "rand 0.7.3",
  "rustc-hash",
  "sha2 0.9.9",
