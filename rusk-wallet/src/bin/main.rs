@@ -18,9 +18,11 @@ use std::io::Write;
 use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Parser;
 use inquire::InquireError;
+use rand::rngs::OsRng;
+use rand::RngCore;
 use rocksdb::ErrorKind;
 use rusk_wallet::currency::Dusk;
-use rusk_wallet::dat::{self, LATEST_VERSION};
+use rusk_wallet::dat::{self, DatFileVersion, LATEST_VERSION};
 use rusk_wallet::{
     Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
 };
@@ -36,6 +38,7 @@ use io::{prompt, status, WalletArgs};
 pub(crate) struct WalletFile {
     path: WalletPath,
     pwd: Vec<u8>,
+    salt: Option<[u8; 32]>,
 }
 
 impl SecureWalletFile for WalletFile {
@@ -45,6 +48,10 @@ impl SecureWalletFile for WalletFile {
 
     fn pwd(&self) -> &[u8] {
         &self.pwd
+    }
+
+    fn salt(&self) -> Option<&[u8; 32]> {
+        self.salt.as_ref()
     }
 }
 
@@ -193,15 +200,19 @@ async fn exec() -> anyhow::Result<()> {
         return Ok(());
     };
 
-    let file_version = dat::read_file_version(&wallet_path);
+    let file_version_and_salt = dat::read_file_version_and_salt(&wallet_path);
 
     // get our wallet ready
     let mut wallet: Wallet<WalletFile> = match cmd {
         // if `cmd` is `None` we are in interactive mode and need to load the
         // wallet from file
         None => {
-            interactive::load_wallet(&wallet_path, &settings, file_version)
-                .await?
+            interactive::load_wallet(
+                &wallet_path,
+                &settings,
+                file_version_and_salt,
+            )
+            .await?
         }
         // else we check if we need to replace the wallet and then load it
         Some(ref cmd) => match cmd {
@@ -212,10 +223,12 @@ async fn exec() -> anyhow::Result<()> {
                 // create a new randomly generated mnemonic phrase
                 let mnemonic =
                     Mnemonic::new(MnemonicType::Words12, Language::English);
+                let salt = gen_salt();
                 // ask user for a password to secure the wallet
                 // latest version is used for dat file
                 let pwd = prompt::create_password(
                     password,
+                    Some(&salt),
                     dat::DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
                 )?;
 
@@ -235,39 +248,45 @@ async fn exec() -> anyhow::Result<()> {
                 w.save_to(WalletFile {
                     path: wallet_path,
                     pwd,
+                    salt: Some(salt),
                 })?;
 
                 w
             }
             Command::Restore { file } => {
-                let (mut w, pwd) = match file {
+                let (mut w, pwd, salt) = match file {
                     Some(file) => {
                         // if we restore and old version file make sure we
                         // know the corrrect version before asking for the
                         // password
-                        let file_version = dat::read_file_version(file)?;
+                        let (file_version, salt) =
+                            dat::read_file_version_and_salt(file)?;
 
                         let pwd = prompt::request_auth(
                             "Please enter wallet password",
                             password,
+                            salt.as_ref(),
                             file_version,
                         )?;
 
                         let w = Wallet::from_file(WalletFile {
                             path: file.clone(),
                             pwd: pwd.clone(),
+                            salt,
                         })?;
 
-                        (w, pwd)
+                        (w, pwd, salt)
                     }
                     // Use the latest dat file version when there's no dat file
                     // provided when restoring the wallet
                     None => {
                         // ask user for 12-word mnemonic phrase
                         let phrase = prompt::request_mnemonic_phrase()?;
+                        let salt = gen_salt();
                         // ask user for a password to secure the wallet
                         let pwd = prompt::create_password(
                             password,
+                            Some(&salt),
                             dat::DatFileVersion::RuskBinaryFileFormat(
                                 LATEST_VERSION,
                             ),
@@ -275,13 +294,18 @@ async fn exec() -> anyhow::Result<()> {
                         // create wallet
                         let w = Wallet::new(phrase)?;
 
-                        (w, pwd)
+                        (w, pwd, Some(salt))
                     }
                 };
 
                 w.save_to(WalletFile {
                     path: wallet_path,
                     pwd,
+                    salt: if salt.is_some() {
+                        salt
+                    } else {
+                        Some(gen_salt())
+                    },
                 })?;
 
                 w
@@ -289,21 +313,47 @@ async fn exec() -> anyhow::Result<()> {
 
             _ => {
                 // Grab the file version for a random command
-                let file_version = file_version?;
+                let (file_version, salt) = file_version_and_salt?;
                 // load wallet from file
                 let pwd = prompt::request_auth(
                     "Please enter wallet password",
                     password,
+                    salt.as_ref(),
                     file_version,
                 )?;
 
                 Wallet::from_file(WalletFile {
                     path: wallet_path,
                     pwd,
+                    salt,
                 })?
             }
         },
     };
+
+    let file_version = wallet.get_file_version()?;
+
+    let password = &settings.password;
+
+    if file_version.is_old() {
+        let salt = gen_salt();
+        let pwd = prompt::request_auth(
+                "Updating your wallet data file, please enter your wallet password ",
+                password,
+                Some(&salt),
+                DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+            )?;
+
+        wallet.save_to(WalletFile {
+            path: wallet
+                .file()
+                .clone()
+                .expect("wallet file should never be none")
+                .path,
+            pwd,
+            salt: Some(salt),
+        })?;
+    }
 
     // set our status callback
     let status_cb = match is_headless {
@@ -410,4 +460,11 @@ async fn exec() -> anyhow::Result<()> {
     wallet.close();
 
     Ok(())
+}
+
+fn gen_salt() -> [u8; 32] {
+    let mut salt = [0; 32];
+    let mut rng = OsRng;
+    rng.fill_bytes(&mut salt);
+    salt
 }
