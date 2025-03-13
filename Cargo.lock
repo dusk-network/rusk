@@ -1667,6 +1667,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dusk-data-driver"
+version = "0.0.1-alpha.1"
+dependencies = [
+ "bytecheck",
+ "rkyv",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "dusk-jubjub"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1857,6 +1867,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c3954d110d0d0f20555048d7171c2e6dfb54fd9a4220d30cc73dc66a88af42d"
 dependencies = [
  "zeroize",
+]
+
+[[package]]
+name = "dusk-stake-contract-dd"
+version = "0.0.1-alpha.1"
+dependencies = [
+ "dlmalloc",
+ "dusk-core",
+ "dusk-data-driver",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "dusk-transfer-contract-dd"
+version = "0.0.1-alpha.1"
+dependencies = [
+ "dlmalloc",
+ "dusk-core",
+ "dusk-data-driver",
+ "wasm-bindgen",
 ]
 
 [[package]]

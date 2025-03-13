@@ -1,0 +1,16 @@
+[package]
+name = "dusk-data-driver"
+version = "0.0.1-alpha.1"
+edition = "2021"
+
+description = "Data driver contract interface to support json serialization"
+license = "MPL-2.0"
+repository = "https://github.com/dusk-network/rusk"
+
+[dependencies]
+rkyv = { workspace = true, features = ["size_32", "alloc", "validation"] }
+bytecheck = { workspace = true }
+
+# serde support dependencies
+serde = { workspace = true }
+serde_json = { workspace = true }
