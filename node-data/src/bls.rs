@@ -277,13 +277,7 @@ mod tests {
         let pk = BlsPublicKey::from(&sk);
         let pwd = "password";
 
-        save_consensus_keys(
-            dir.path(),
-            "consensus",
-            &pk,
-            &sk,
-            pwd,
-        )?;
+        save_consensus_keys(dir.path(), "consensus", &pk, &sk, pwd)?;
         let keys_path = dir.path().join("consensus.keys");
         let (loaded_sk, loaded_pk) = load_keys(
             keys_path
