@@ -23,39 +23,98 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use dusk_core::stake::{Reward, SlashEvent, StakeEvent};
-use dusk_data_driver::{rkyv_to_json, ConvertibleContract, Error, JsonValue};
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::{
+    Reward, SlashEvent, Stake, StakeConfig, StakeData, StakeEvent, StakeKeys,
+    Withdraw, WithdrawToContract,
+};
+use dusk_core::transfer::ReceiveFromContract;
+use dusk_data_driver::{
+    json_to_rkyv, rkyv_to_json, rkyv_to_json_u64, ConvertibleContract, Error,
+    JsonValue,
+};
 
 /// The contract driver for encoding and decoding transactions.
 #[derive(Default)]
 pub struct ContractDriver;
 
 impl ConvertibleContract for ContractDriver {
-    #[allow(unused_variables)]
     fn encode_input_fn(
         &self,
         fn_name: &str,
         json: &str,
     ) -> Result<Vec<u8>, Error> {
-        todo!()
+        match fn_name {
+            // Transactions
+            "stake" => json_to_rkyv::<Stake>(json),
+            "unstake" | "withdraw" => json_to_rkyv::<Withdraw>(json),
+            "stake_from_contract" => json_to_rkyv::<ReceiveFromContract>(json),
+            "unstake_from_contract" | "withdraw_from_contract" => {
+                json_to_rkyv::<WithdrawToContract>(json)
+            }
+            // Queries (TBD)
+            "get_stake" | "get_stake_keys" => {
+                json_to_rkyv::<BlsPublicKey>(json)
+            }
+            "burnt_amount" | "get_version" | "get_config" | "stakes" => {
+                json_to_rkyv::<()>("null")
+            }
+
+            // Unsupported
+            name => Err(Error::Unsupported(format!("fn_name {name}"))),
+        }
     }
 
-    #[allow(unused_variables)]
     fn decode_input_fn(
         &self,
         fn_name: &str,
         rkyv: &[u8],
     ) -> Result<JsonValue, Error> {
-        todo!()
+        match fn_name {
+            // Transactions
+            "stake" => rkyv_to_json::<Stake>(rkyv),
+            "unstake" | "withdraw" => rkyv_to_json::<Withdraw>(rkyv),
+            "stake_from_contract" => rkyv_to_json::<ReceiveFromContract>(rkyv),
+            "unstake_from_contract" | "withdraw_from_contract" => {
+                rkyv_to_json::<WithdrawToContract>(rkyv)
+            }
+            // Queries (TBD)
+            "get_stake" | "get_stake_keys" => {
+                rkyv_to_json::<BlsPublicKey>(rkyv)
+            }
+            "burnt_amount" | "get_version" | "get_config" => {
+                rkyv_to_json::<()>(rkyv)
+            }
+
+            // Unsupported
+            name => Err(Error::Unsupported(format!("fn_name {name}"))),
+        }
     }
 
-    #[allow(unused_variables)]
     fn decode_output_fn(
         &self,
         fn_name: &str,
         rkyv: &[u8],
     ) -> Result<JsonValue, Error> {
-        todo!()
+        match fn_name {
+            // Transactions
+            "stake"
+            | "unstake"
+            | "withdraw"
+            | "stake_from_contract"
+            | "unstake_from_contract"
+            | "withdraw_from_contract" => Ok(JsonValue::Null),
+            // Queries (TBD)
+            "get_stake" => rkyv_to_json::<Option<StakeData>>(rkyv),
+            "get_stake_keys" => rkyv_to_json::<Option<StakeKeys>>(rkyv),
+            "burnt_amount" | "get_version" => rkyv_to_json_u64(rkyv),
+            "get_config" => rkyv_to_json::<StakeConfig>(rkyv),
+
+            "stakes" => rkyv_to_json::<(StakeKeys, StakeData)>(rkyv),
+
+            // Unsupported
+            name => Err(Error::Unsupported(format!("fn_name {name}"))),
+        }
     }
 
     fn decode_event(
