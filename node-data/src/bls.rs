@@ -165,9 +165,7 @@ fn read_from_file(
         )
     })?;
 
-    let mut hasher = Sha256::new();
-    hasher.update(pwd.as_bytes());
-    let hashed_pwd = hasher.finalize().to_vec();
+    let hashed_pwd = hash_sha256(pwd);
 
     let bytes = decrypt(&ciphertext[..], &hashed_pwd)
         .map_err(|e| anyhow::anyhow!("Invalid consensus keys password {e}"))?;
@@ -189,7 +187,7 @@ pub fn save_consensus_keys(
     filename: &str,
     pk: &BlsPublicKey,
     sk: &BlsSecretKey,
-    pwd: &[u8],
+    pwd: &str,
 ) -> Result<(PathBuf, PathBuf), ConsensusKeysError> {
     let path = path.join(filename);
     let bytes = pk.to_bytes();
@@ -202,11 +200,18 @@ pub fn save_consensus_keys(
     let json = serde_json::to_string(&bls)?;
 
     let mut bytes = json.as_bytes().to_vec();
-    bytes = encrypt(&bytes, pwd)?;
+    let pwd = hash_sha256(pwd);
+    bytes = encrypt(&bytes, &pwd)?;
 
     fs::write(path.with_extension("keys"), bytes)?;
 
     Ok((path.with_extension("keys"), path.with_extension("cpk")))
+}
+
+fn hash_sha256(pwd: &str) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(pwd.as_bytes());
+    hasher.finalize().to_vec()
 }
 
 #[serde_as]
@@ -277,7 +282,7 @@ mod tests {
             "consensus",
             &pk,
             &sk,
-            &hashed_password(pwd),
+            pwd,
         )?;
         let keys_path = dir.path().join("consensus.keys");
         let (loaded_sk, loaded_pk) = load_keys(
@@ -322,12 +327,6 @@ mod tests {
         assert_eq!(loaded_pk.inner, pk);
 
         Ok(())
-    }
-
-    fn hashed_password(pwd: &str) -> Vec<u8> {
-        let mut hasher = Sha256::new();
-        hasher.update(pwd.as_bytes());
-        hasher.finalize().to_vec()
     }
 
     fn get_wallet_gen_consensus_keys_path() -> PathBuf {
