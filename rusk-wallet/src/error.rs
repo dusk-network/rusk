@@ -114,6 +114,9 @@ pub enum Error {
     /// Wrong wallet password
     #[error("Invalid password")]
     BlockMode(#[from] block_modes::BlockModeError),
+    /// Encryption error from encrypting with AES-GCM for new wallet dat format
+    #[error("Encryption error: {0}")]
+    Encryption(#[from] aes_gcm::Error),
     /// Reached the maximum number of attempts
     #[error("Reached the maximum number of attempts")]
     AttemptsExhausted,

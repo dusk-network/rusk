@@ -490,7 +490,9 @@ impl Command {
                     Some(pwd) => pwd,
                     None => match settings.password.as_ref() {
                         Some(p) => p.to_string(),
-                        None => prompt::ask_pwd("Provide a password for your provisioner keys")?,
+                        None => prompt::ask_pwd(
+                            "Provide a password for your provisioner keys",
+                        )?,
                     },
                 };
 

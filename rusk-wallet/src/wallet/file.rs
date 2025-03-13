@@ -14,6 +14,8 @@ pub trait SecureWalletFile {
     fn path(&self) -> &WalletPath;
     /// Returns the hashed password
     fn pwd(&self) -> &[u8];
+    /// Returns the seed used to hash the password
+    fn salt(&self) -> Option<&[u8; 32]>;
 }
 
 /// Wrapper around `PathBuf` for wallet paths

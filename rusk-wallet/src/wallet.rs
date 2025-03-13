@@ -182,6 +182,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
                 // create file payload
                 let seed = self.store.get_seed();
+                let salt = f.salt().expect("Couldn't find the salt");
                 let mut payload = seed.to_vec();
 
                 payload.push(self.profiles.len() as u8);
@@ -193,6 +194,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                     Vec::with_capacity(header.len() + payload.len());
 
                 content.extend_from_slice(&header);
+                content.extend_from_slice(salt);
                 content.extend_from_slice(&payload);
 
                 // write the content to file
@@ -623,7 +625,8 @@ pub struct DecodedNote {
 
 #[cfg(test)]
 mod tests {
-
+    use rand::rngs::OsRng;
+    use rand::RngCore;
     use tempfile::tempdir;
 
     use super::*;
@@ -634,6 +637,7 @@ mod tests {
     struct WalletFile {
         path: WalletPath,
         pwd: Vec<u8>,
+        salt: [u8; 32],
     }
 
     impl SecureWalletFile for WalletFile {
@@ -643,6 +647,10 @@ mod tests {
 
         fn pwd(&self) -> &[u8] {
             &self.pwd
+        }
+
+        fn salt(&self) -> Option<&[u8; 32]> {
+            Some(&self.salt)
         }
     }
 
@@ -688,7 +696,8 @@ mod tests {
 
         // create and save
         let mut wallet: Wallet<WalletFile> = Wallet::new("uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic")?;
-        let file = WalletFile { path, pwd };
+        let salt = gen_salt();
+        let file = WalletFile { path, pwd, salt };
         wallet.save_to(file.clone())?;
 
         // load from file and check
@@ -699,5 +708,12 @@ mod tests {
         assert!(original_addr.eq(&loaded_addr));
 
         Ok(())
+    }
+
+    fn gen_salt() -> [u8; 32] {
+        let mut salt = [0; 32];
+        let mut rng = OsRng;
+        rng.fill_bytes(&mut salt);
+        salt
     }
 }
