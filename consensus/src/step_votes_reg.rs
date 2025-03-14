@@ -166,9 +166,10 @@ impl AttInfoRegistry {
         }
     }
 
-    /// Set step votes per iteration
-    /// Returns a quorum if both validation and ratification for an iteration
-    /// exist
+    /// Set Validation or Ratification step votes for a specific iteration
+    /// 
+    /// Returns a Quorum message if both validation and ratification reached a
+    /// quorum
     pub(crate) fn set_step_votes(
         &mut self,
         iteration: u8,
