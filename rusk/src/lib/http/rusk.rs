@@ -6,10 +6,14 @@
 
 use super::*;
 
+use anyhow::anyhow;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::stake::StakeFundOwner;
+use dusk_core::stake::{StakeFundOwner, STAKE_CONTRACT};
+use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_data_driver::ConvertibleContract;
+use event::RequestData;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
 use serde_json::json;
@@ -39,8 +43,13 @@ impl HandleRequest for Rusk {
         match request.uri.inner() {
             ("contracts", Some(contract_id), method) => {
                 let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
-                let data = request.data.as_bytes();
-                self.handle_contract_query(contract_id, method, data, feeder)
+                self.handle_contract_query(
+                    contract_id,
+                    method,
+                    &request.data,
+                    feeder,
+                    request.is_json(),
+                )
             }
             ("node", _, "provisioners") => self.get_provisioners(),
 
@@ -55,9 +64,10 @@ impl Rusk {
     fn handle_contract_query(
         &self,
         contract: &str,
-        topic: &str,
-        data: &[u8],
+        fn_name: &str,
+        data: &RequestData,
         feeder: bool,
+        json: bool,
     ) -> anyhow::Result<ResponseData> {
         let contract_bytes = hex::decode(contract)?;
 
@@ -65,23 +75,83 @@ impl Rusk {
             .try_into()
             .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
         let contract_id = ContractId::from_bytes(contract_bytes);
-        let fn_name = topic.to_string();
-        let data = data.to_vec();
+
+        let mut driver: Option<Box<dyn ConvertibleContract>> = None;
+
+        let call_arg = if json {
+            let json = data.as_string();
+            driver = match contract_id {
+                TRANSFER_CONTRACT => {
+                    Some(Box::new(dusk_transfer_contract_dd::ContractDriver))
+                }
+                STAKE_CONTRACT => {
+                    Some(Box::new(dusk_stake_contract_dd::ContractDriver))
+                }
+                _ => anyhow::bail!("Unsupported contract {contract}"),
+            };
+
+            driver
+                .as_ref()
+                .expect("driver to be set")
+                .encode_input_fn(fn_name, &json)
+                .map_err(|e| anyhow::anyhow!("InvalidJson {e:?}"))?
+        } else {
+            data.as_bytes().to_vec()
+        };
+
+        let fn_name = fn_name.to_string();
         if feeder {
             let (sender, receiver) = mpsc::channel();
 
             let rusk = self.clone();
+            let fn_name_feeder = fn_name.clone();
 
             thread::spawn(move || {
-                let _ =
-                    rusk.feeder_query_raw(contract_id, fn_name, data, sender);
+                let _ = rusk.feeder_query_raw(
+                    contract_id,
+                    fn_name_feeder,
+                    call_arg,
+                    sender,
+                );
             });
-            Ok(ResponseData::new(receiver))
+
+            if let Some(driver) = driver {
+                let (json_sender, json_receiver) = mpsc::channel();
+                thread::spawn(move || {
+                    let mut first = true;
+                    json_sender.send("[".as_bytes().to_vec())?;
+                    while let Some(raw_output) = receiver.iter().next() {
+                        let json = driver
+                            .decode_output_fn(&fn_name, &raw_output)
+                            .map_err(|e| anyhow!("cannot decode {e}"))?;
+                        if first {
+                            first = false;
+                        } else {
+                            json_sender.send(",".as_bytes().to_vec())?;
+                        }
+                        json_sender
+                            .send(json.to_string().as_bytes().to_vec())?;
+                    }
+                    json_sender.send("]".as_bytes().to_vec())?;
+                    anyhow::Ok(())
+                });
+                Ok(ResponseData::new(DataType::JsonChannel(json_receiver)))
+            } else {
+                Ok(ResponseData::new(receiver))
+            }
         } else {
-            let data = self
-                .query_raw(contract_id, fn_name, data)
+            let raw_output = self
+                .query_raw(contract_id, &fn_name, call_arg)
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
-            Ok(ResponseData::new(data))
+            let response = if let Some(driver) = driver {
+                match driver.decode_output_fn(&fn_name, &raw_output) {
+                    Ok(json) => ResponseData::new(json),
+                    Err(_) => ResponseData::new(raw_output),
+                }
+            } else {
+                ResponseData::new(raw_output)
+            };
+            Ok(response)
         }
     }
 
