@@ -196,7 +196,8 @@ impl MsgHandler for RatificationHandler {
             })?;
 
         // Record updated Ratification StepVotes in global registry
-        let _ = self.sv_registry.lock().await.set_step_votes(
+        // If we reached a quorum on both steps, return the Quorum message
+        if let _ = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &vote,
             ratification_sv,
