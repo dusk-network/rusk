@@ -197,28 +197,15 @@ impl MsgHandler for RatificationHandler {
 
         // Record updated Ratification StepVotes in global registry
         // If we reached a quorum on both steps, return the Quorum message
-        if let _ = self.sv_registry.lock().await.set_step_votes(
+        if let Some(qmsg) = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &vote,
             ratification_sv,
             StepName::Ratification,
             quorum_reached,
             &generator.expect("There must be a valid generator"),
-        );
-
-        if quorum_reached {
-            // INFO: we set Validation SV to our local result to always include
-            // a quorum-reaching (if any) SV even if the Ratification result is
-            // NoQuorum
-            let validation_sv = *self.validation_result.sv();
-
-            return Ok(StepOutcome::Ready(self.build_quorum_msg(
-                ru,
-                iteration,
-                vote,
-                validation_sv,
-                ratification_sv,
-            )));
+        ) {
+            return Ok(StepOutcome::Ready(qmsg));
         }
 
         Ok(StepOutcome::Pending)
