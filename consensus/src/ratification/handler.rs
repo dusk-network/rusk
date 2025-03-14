@@ -126,10 +126,8 @@ impl MsgHandler for RatificationHandler {
             return Err(ConsensusError::VoteMismatch(vr_vote, vote));
         }
 
-        // If the vote is a Quorum, check it against our result
-        // (NoQuorum votes need no verification)
+        // If the vote is a Quorum, check it against our Validation result
         if vote != Vote::NoQuorum {
-            // If our result is NoQuorum, verify votes and update our result
             let local_vote = *self.validation_result().vote();
             match local_vote {
                 Vote::NoQuorum => {
@@ -197,8 +195,9 @@ impl MsgHandler for RatificationHandler {
                 ConsensusError::InvalidVote(vote)
             })?;
 
-        // Record any signature in global registry
-        let _ = self.sv_registry.lock().await.set_step_votes(
+        // Record updated Ratification StepVotes in global registry
+        // If we reached a quorum on both steps, return the Quorum message
+        if let _ = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &vote,
             ratification_sv,
