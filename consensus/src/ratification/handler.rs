@@ -6,12 +6,11 @@
 
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::Attestation;
 use node_data::message::payload::{Ratification, ValidationResult, Vote};
 use node_data::message::{
-    payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
+    ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
 };
-use node_data::{ledger, StepName};
+use node_data::StepName;
 use tracing::{debug, error, info, warn};
 
 use crate::aggregator::{Aggregator, StepVote};
@@ -273,32 +272,6 @@ impl RatificationHandler {
             validation_result: Default::default(),
             curr_iteration: 0,
         }
-    }
-
-    fn build_quorum_msg(
-        &self,
-        ru: &RoundUpdate,
-        iteration: u8,
-        vote: Vote,
-        validation: ledger::StepVotes,
-        ratification: ledger::StepVotes,
-    ) -> Message {
-        let header = node_data::message::ConsensusHeader {
-            prev_block_hash: ru.hash(),
-            round: ru.round,
-            iteration,
-        };
-
-        let quorum = payload::Quorum {
-            header,
-            att: Attestation {
-                result: vote.into(),
-                validation,
-                ratification,
-            },
-        };
-
-        quorum.into()
     }
 
     pub(crate) fn reset(&mut self, iter: u8, validation: ValidationResult) {
