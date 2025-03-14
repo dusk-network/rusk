@@ -27,7 +27,7 @@ use rusk_wallet::{
 };
 use wallet_core::BalanceInfo;
 
-use crate::io::prompt::{self, create_password};
+use crate::io::prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
 
@@ -489,15 +489,15 @@ impl Command {
                 name,
                 export_pwd,
             } => {
-                let file_version = wallet.get_file_version()?;
                 let pwd = match export_pwd {
-                    Some(pwd) => create_password(&Some(pwd), file_version),
-                    None => prompt::request_auth(
-                        "Provide a password for your provisioner keys",
-                        &settings.password,
-                        wallet.get_file_version()?,
-                    ),
-                }?;
+                    Some(pwd) => pwd,
+                    None => match settings.password.as_ref() {
+                        Some(p) => p.to_string(),
+                        None => prompt::ask_pwd(
+                            "Provide a password for your provisioner keys",
+                        )?,
+                    },
+                };
 
                 let profile_idx = profile_idx.unwrap_or_default();
 
