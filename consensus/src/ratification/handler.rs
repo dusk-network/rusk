@@ -6,12 +6,11 @@
 
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::Attestation;
 use node_data::message::payload::{Ratification, ValidationResult, Vote};
 use node_data::message::{
-    payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
+    ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
 };
-use node_data::{ledger, StepName};
+use node_data::StepName;
 use tracing::{debug, error, info, warn};
 
 use crate::aggregator::{Aggregator, StepVote};
@@ -126,10 +125,13 @@ impl MsgHandler for RatificationHandler {
             return Err(ConsensusError::VoteMismatch(vr_vote, vote));
         }
 
-        // If the vote is a Quorum, check it against our result
-        // (NoQuorum votes need no verification)
-        if vote != Vote::NoQuorum {
-            // If our result is NoQuorum, verify votes and update our result
+        if vote == Vote::NoQuorum {
+            // If the vote is NoQuorum, ensure StepVotes is empty
+            if !p.validation_result.sv().is_empty() {
+                return Err(ConsensusError::InvalidVote(vote));
+            }
+        } else {
+            // If the vote is a Quorum, check it against our Validation result
             let local_vote = *self.validation_result().vote();
             match local_vote {
                 Vote::NoQuorum => {
@@ -197,29 +199,17 @@ impl MsgHandler for RatificationHandler {
                 ConsensusError::InvalidVote(vote)
             })?;
 
-        // Record any signature in global registry
-        let _ = self.sv_registry.lock().await.set_step_votes(
+        // Record updated Ratification StepVotes in global registry
+        // If we reached a quorum on both steps, return the Quorum message
+        if let Some(qmsg) = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &vote,
             ratification_sv,
             StepName::Ratification,
             quorum_reached,
             &generator.expect("There must be a valid generator"),
-        );
-
-        if quorum_reached {
-            // INFO: we set Validation SV to our local result to always include
-            // a quorum-reaching (if any) SV even if the Ratification result is
-            // NoQuorum
-            let validation_sv = *self.validation_result.sv();
-
-            return Ok(StepOutcome::Ready(self.build_quorum_msg(
-                ru,
-                iteration,
-                vote,
-                validation_sv,
-                ratification_sv,
-            )));
+        ) {
+            return Ok(StepOutcome::Ready(qmsg));
         }
 
         Ok(StepOutcome::Pending)
@@ -287,32 +277,6 @@ impl RatificationHandler {
             validation_result: Default::default(),
             curr_iteration: 0,
         }
-    }
-
-    fn build_quorum_msg(
-        &self,
-        ru: &RoundUpdate,
-        iteration: u8,
-        vote: Vote,
-        validation: ledger::StepVotes,
-        ratification: ledger::StepVotes,
-    ) -> Message {
-        let header = node_data::message::ConsensusHeader {
-            prev_block_hash: ru.hash(),
-            round: ru.round,
-            iteration,
-        };
-
-        let quorum = payload::Quorum {
-            header,
-            att: Attestation {
-                result: vote.into(),
-                validation,
-                ratification,
-            },
-        };
-
-        quorum.into()
     }
 
     pub(crate) fn reset(&mut self, iter: u8, validation: ValidationResult) {
