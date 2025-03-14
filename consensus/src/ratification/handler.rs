@@ -125,8 +125,13 @@ impl MsgHandler for RatificationHandler {
             return Err(ConsensusError::VoteMismatch(vr_vote, vote));
         }
 
-        // If the vote is a Quorum, check it against our Validation result
-        if vote != Vote::NoQuorum {
+        if vote == Vote::NoQuorum {
+            // If the vote is NoQuorum, ensure StepVotes is empty
+            if !p.validation_result.sv().is_empty() {
+                return Err(ConsensusError::InvalidVote(vote));
+            }
+        } else {
+            // If the vote is a Quorum, check it against our Validation result
             let local_vote = *self.validation_result().vote();
             match local_vote {
                 Vote::NoQuorum => {
