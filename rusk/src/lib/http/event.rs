@@ -60,17 +60,34 @@ impl MessageResponse {
                 }
                 DataType::Text(text) => Full::from(Bytes::from(text)).into(),
                 DataType::Json(value) => {
-                    headers.insert(CONTENT_TYPE, CONTENT_TYPE_JSON.clone());
+                    headers.insert(
+                        CONTENT_TYPE,
+                        HeaderValue::from_static(CONTENT_TYPE_JSON),
+                    );
                     Full::from(Bytes::from(value.to_string())).into()
                 }
                 DataType::Channel(receiver) => FullOrStreamBody {
                     either: Either::Right(StreamBody::new(
                         BinaryOrTextStream {
-                            is_binary,
+                            hex: !is_binary,
                             stream: stream::iter(receiver),
                         },
                     )),
                 },
+                DataType::JsonChannel(receiver) => {
+                    headers.insert(
+                        CONTENT_TYPE,
+                        HeaderValue::from_static(CONTENT_TYPE_JSON),
+                    );
+                    FullOrStreamBody {
+                        either: Either::Right(StreamBody::new(
+                            BinaryOrTextStream {
+                                hex: false,
+                                stream: stream::iter(receiver),
+                            },
+                        )),
+                    }
+                }
                 DataType::None => Full::new(Bytes::new()).into(),
             }
         };
@@ -128,7 +145,7 @@ impl Body for FullOrStreamBody {
 
 #[pin_project]
 pub struct BinaryOrTextStream {
-    is_binary: bool,
+    hex: bool,
     #[pin]
     stream: StreamIter<<mpsc::Receiver<Vec<u8>> as IntoIterator>::IntoIter>,
 }
@@ -142,11 +159,11 @@ impl Stream for BinaryOrTextStream {
     ) -> Poll<Option<Self::Item>> {
         let this = self.project();
         this.stream.poll_next(cx).map(|next| {
-            next.map(|x| match this.is_binary {
-                true => Ok(Frame::data(Bytes::from(x))),
-                false => Ok(Frame::data(Bytes::from(
+            next.map(|x| match this.hex {
+                true => Ok(Frame::data(Bytes::from(
                     hex::encode(x).as_bytes().to_vec(),
                 ))),
+                false => Ok(Frame::data(Bytes::from(x))),
             })
         })
     }
@@ -239,6 +256,8 @@ pub enum DataType {
     Json(serde_json::Value),
     #[serde(skip)]
     Channel(mpsc::Receiver<Vec<u8>>),
+    #[serde(skip)]
+    JsonChannel(mpsc::Receiver<Vec<u8>>),
     #[default]
     None,
 }
@@ -315,8 +334,7 @@ pub struct BinaryWrapper {
 const CONTENT_TYPE: &str = "content-type";
 const ACCEPT: &str = "accept";
 const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
-static CONTENT_TYPE_JSON: HeaderValue =
-    HeaderValue::from_static("application/json");
+const CONTENT_TYPE_JSON: &str = "application/json";
 
 #[derive(Debug)]
 pub enum ExecutionError {
@@ -564,6 +582,13 @@ impl RuesDispatchEvent {
             .get(CONTENT_TYPE)
             .and_then(|h| h.as_str())
             .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
+            .unwrap_or_default()
+    }
+    pub fn is_json(&self) -> bool {
+        self.headers
+            .get(CONTENT_TYPE)
+            .and_then(|h| h.as_str())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_JSON))
             .unwrap_or_default()
     }
     pub async fn from_request(
