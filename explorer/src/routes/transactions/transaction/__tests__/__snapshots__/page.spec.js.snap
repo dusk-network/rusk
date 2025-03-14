@@ -88,7 +88,12 @@ exports[`Transaction Details > should render the Transaction details page and qu
         <dd
           class="details-list__definition"
         >
-          4877687c2dbf154248d3ddee9ba...39056f82a46819da041d4ac0e04
+          <a
+            class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+            href="/some-base-path/transactions/transaction?id=4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04"
+          >
+            4877687c2dbf154248d3ddee9...056f82a46819da041d4ac0e04
+          </a>
         </dd>
         <dt
           class="details-list__term"
@@ -125,6 +130,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             487,166
           </a>
         </dd>
+        
         <dt
           class="details-list__term"
         >

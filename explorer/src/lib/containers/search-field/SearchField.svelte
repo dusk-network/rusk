@@ -17,50 +17,54 @@
     value = "";
   }
 
-  /**
-   * Function accepts 64 character long alphanumeric strings
-   */
   function submitHandler() {
-    if (/^([0-9a-fA-F]{64}|\d+)$/g.test(value)) {
-      duskAPI
-        .search(value)
-        .then((data) => {
-          const type = data.length ? data[0].type : undefined;
-          switch (type) {
-            case "block":
-              resetField();
-              goto(`/blocks/block?id=${data[0].id}`);
-              break;
-            case "transaction":
-              resetField();
-              goto(`/transactions/transaction?id=${data[0].id}`);
-              break;
-            default:
-              dispatch("invalid", {
-                query: value,
-                res: new Error(errorMessage),
-              });
-              resetField();
-          }
-        })
-        .catch((e) => {
-          dispatch("invalid", { query: value, res: e });
-          resetField();
-        });
-    } else {
+    const validInputRegex = /^[a-zA-Z0-9]+$/;
+    if (!value || !validInputRegex.test(value)) {
       dispatch("invalid", {
         query: value,
-        res: new Error(errorMessage),
+        res: new Error("Input must contain only alphanumeric characters"),
       });
       resetField();
+      return;
     }
+
+    duskAPI
+      .search(value)
+      .then((data) => {
+        if (!data) {
+          dispatch("invalid", {
+            query: value,
+            res: new Error(errorMessage),
+          });
+          return;
+        }
+        switch (data.type) {
+          case "block":
+            goto(`/blocks/block?id=${data.id}`);
+            break;
+          case "transaction":
+            goto(`/transactions/transaction?id=${data.id}`);
+            break;
+          case "account":
+            goto(`/accounts/?key=${data.id}`);
+            break;
+          default:
+            dispatch("invalid", {
+              query: value,
+              res: new Error(errorMessage),
+            });
+        }
+      })
+      .finally(() => {
+        resetField();
+      });
   }
 </script>
 
 <form on:submit|preventDefault={submitHandler}>
   <TextboxAndButton
     bind:value
-    placeholder="Block/Hash"
+    placeholder="Account/Block/Hash"
     icon={{
       path: mdiMagnify,
       position: "after",

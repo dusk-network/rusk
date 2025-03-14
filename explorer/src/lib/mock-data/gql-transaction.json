@@ -6,6 +6,8 @@
     "err": null,
     "gasSpent": 290766,
     "id": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
+    "sender": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
+    "receiver": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
     "tx": {
       "callData": null,
       "gasLimit": 500000000,

@@ -36,9 +36,9 @@
 <Table className={classes}>
   <TableHead>
     <TableRow>
+      <TableCell type="th">ID</TableCell>
       <TableCell type="th">From</TableCell>
       <TableCell type="th">To</TableCell>
-      <TableCell type="th">ID</TableCell>
       <TableCell type="th">Amount (Dusk)</TableCell>
       <TableCell type="th">Fee (Dusk)</TableCell>
       <TableCell type="th">Status</TableCell>
@@ -48,6 +48,9 @@
   <TableBody>
     {#each data as transaction (transaction)}
       <TableRow>
+        <TableCell
+          >{middleEllipsis(transaction.txid, HASH_CHARS_LENGTH)}</TableCell
+        >
         <TableCell>
           <AppAnchor href={`/account/?account=${transaction.from}`}>
             {middleEllipsis(
@@ -64,9 +67,6 @@
             )}
           </AppAnchor>
         </TableCell>
-        <TableCell
-          >{middleEllipsis(transaction.txid, HASH_CHARS_LENGTH)}</TableCell
-        >
         <TableCell>
           {transaction.amount
             ? formatter(luxToDusk(transaction.amount))

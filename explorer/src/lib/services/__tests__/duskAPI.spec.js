@@ -491,7 +491,11 @@ describe("duskAPI", () => {
       .mockResolvedValueOnce(makeOKResponse(heightResult));
 
     await expect(duskAPI.search(fakeHash1)).resolves.toStrictEqual(
-      transformSearchResult([hashResult, heightResult])
+      transformSearchResult(hashResult)
+    );
+
+    await expect(duskAPI.search(fakeHash2)).resolves.toStrictEqual(
+      transformSearchResult(heightResult)
     );
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
@@ -512,13 +516,13 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[1][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[1][1]).toMatchInlineSnapshot(`
       {
-        "body": "query($height: Float!) { block(height: $height) { header { hash } } }",
+        "body": "query($id: String!) { block(hash: $id) { header { hash } }, tx(hash: $id) { id } }",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Connection": "Keep-Alive",
           "Content-Type": "application/json",
-          "Rusk-gqlvar-height": "1.1111111111111112e+63",
+          "Rusk-gqlvar-id": ""2222222222222222222222222222222222222222222222222222222222222222"",
         },
         "method": "POST",
       }
@@ -534,7 +538,7 @@ describe("duskAPI", () => {
     );
 
     await expect(duskAPI.search(entryHash)).resolves.toStrictEqual(
-      transformSearchResult([mockData.gqlSearchPossibleResults[0]])
+      transformSearchResult(mockData.gqlSearchPossibleResults[0])
     );
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -562,7 +566,7 @@ describe("duskAPI", () => {
     );
 
     await expect(duskAPI.search(entryHeight)).resolves.toStrictEqual(
-      transformSearchResult([mockData.gqlSearchPossibleResults[0]])
+      transformSearchResult(mockData.gqlSearchPossibleResults[0])
     );
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -583,7 +587,7 @@ describe("duskAPI", () => {
   });
 
   it("should not perform any search at all if the query string doesn't satisfy criteria for both hash and height", async () => {
-    await expect(duskAPI.search("abc")).resolves.toStrictEqual([]);
+    await expect(duskAPI.search("abc")).resolves.toStrictEqual(null);
 
     expect(fetchSpy).not.toHaveBeenCalled();
   });
