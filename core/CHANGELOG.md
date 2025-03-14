@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add Serde JSON support for genesis contract args [#3533]
+
 ## [1.1.0] - 2025-02-14
 
 ### Changed
@@ -33,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add types, type-alias, functionality, re-exports and modules to interact with dusk-network
 
 <!-- Issues -->
+[#3533]: https://github.com/dusk-network/rusk/issues/3533
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#2773]: https://github.com/dusk-network/rusk/issues/2773

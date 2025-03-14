@@ -2952,6 +2952,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "008885a6d1b73ef18a827ad0faf7cf48d1c5a28d52a9e863b90a421a92799443"
 dependencies = [
+ "bs58",
  "bytecheck",
  "dusk-bls12_381 0.14.2",
  "dusk-bytes",
@@ -2961,6 +2962,8 @@ dependencies = [
  "ff",
  "rand_core 0.6.4",
  "rkyv",
+ "serde",
+ "serde_json",
  "zeroize",
 ]
 

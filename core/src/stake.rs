@@ -7,7 +7,7 @@
 //! Types used by Dusk's stake contract.
 
 #[cfg(feature = "serde")]
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{hex::Hex, serde_as, DisplayFromStr};
 
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -47,10 +47,13 @@ pub const DEFAULT_MINIMUM_STAKE: Dusk = dusk(1_000.0);
 /// Configuration for the stake contract
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StakeConfig {
     /// Number of warnings before being penalized
     pub warnings: u8,
     /// Minimum amount of Dusk that can be staked
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub minimum_stake: Dusk,
 }
 
@@ -81,9 +84,12 @@ pub const fn next_epoch(block_height: u64) -> u64 {
 /// Stake a value on the stake contract.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Stake {
     chain_id: u8,
     keys: StakeKeys,
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     value: u64,
     signature: DoubleSignature,
 }
@@ -218,10 +224,14 @@ impl Stake {
 /// and the name of the function to invoke on the target contract.
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WithdrawToContract {
     account: BlsPublicKey,
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     value: u64,
     fn_name: String,
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     data: Vec<u8>,
 }
 
@@ -289,6 +299,7 @@ impl WithdrawToContract {
 /// This is used in both `unstake` and `withdraw`.
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Withdraw {
     account: BlsPublicKey,
     withdraw: TransferWithdraw,
@@ -438,10 +449,13 @@ pub struct SlashEvent {
     Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
 )]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StakeData {
     /// Amount staked and eligibility.
     pub amount: Option<StakeAmount>,
     /// The reward for participating in consensus.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub reward: u64,
     /// Faults
     pub faults: u8,
@@ -539,6 +553,7 @@ impl From<ContractId> for StakeFundOwner {
     Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
 )]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DoubleSignature {
     /// Signature created with the account key
     pub account: BlsSignature,
@@ -623,12 +638,17 @@ impl StakeData {
     Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
 )]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StakeAmount {
     /// The value staked.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub value: u64,
     /// The amount that has been locked (due to a soft slash).
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub locked: u64,
     /// The eligibility of the stake.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub eligibility: u64,
 }
 

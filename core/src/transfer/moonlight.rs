@@ -7,6 +7,9 @@
 //! Types related to the moonlight transaction model of Dusk's transfer
 //! contract.
 
+#[cfg(feature = "serde")]
+use serde_with::{serde_as, DisplayFromStr};
+
 use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
@@ -26,10 +29,14 @@ use crate::{BlsScalar, Error};
 /// A Moonlight account's information.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AccountData {
     /// Number used for replay protection.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub nonce: u64,
     /// Account balance.
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
     pub balance: u64,
 }
 
