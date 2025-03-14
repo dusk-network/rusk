@@ -29,11 +29,8 @@ impl Serialize for MoonlightTransfers {
         // yoink the events from the moonlight group
         for group in moonlight_groups {
             // convert the events of that group to intermediate events
-            let intermediate_events: Vec<IntermediateEvent> = group
-                .events()
-                .iter()
-                .map(|event| IntermediateEvent::from(event.clone()))
-                .collect();
+            let intermediate_events: Vec<IntermediateEvent> =
+                group.events().iter().map(IntermediateEvent::from).collect();
 
             // push the intermediate events to the serializable group
             serializable_groups.push(IntermediateMoonlightGroup {
@@ -86,15 +83,11 @@ impl ContractEvents {
 /// TODO: data driver should further simplify this
 pub mod translator {
     use dusk_core::abi::ContractId;
-    use dusk_core::stake::StakeEvent;
-    use dusk_core::stake::{Reward, SlashEvent, STAKE_CONTRACT};
-    use dusk_core::transfer::{
-        ContractToAccountEvent, ContractToContractEvent, ConvertEvent,
-        DepositEvent, MoonlightTransactionEvent, PhoenixTransactionEvent,
-        WithdrawEvent, CONTRACT_TO_ACCOUNT_TOPIC, CONTRACT_TO_CONTRACT_TOPIC,
-        CONVERT_TOPIC, DEPOSIT_TOPIC, MINT_CONTRACT_TOPIC, MINT_TOPIC,
-        MOONLIGHT_TOPIC, PHOENIX_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
-    };
+    use dusk_core::stake::STAKE_CONTRACT;
+    use dusk_core::transfer::TRANSFER_CONTRACT;
+    use dusk_data_driver::ConvertibleContract;
+    use dusk_stake_contract_dd::ContractDriver as StakeContractDriver;
+    use dusk_transfer_contract_dd::ContractDriver as TransferContractDriver;
     use node_data::events::contract::{ContractEvent, OriginHash};
     use serde::{Deserialize, Serialize};
 
@@ -116,123 +109,34 @@ pub mod translator {
         pub data: serde_json::Value,
     }
 
-    fn handle_unknown_genesis(
-        event_data: Vec<u8>,
-    ) -> Result<serde_json::Value, serde_json::Error> {
-        tracing::warn!("Unknown genesis event found while calling translate_transfer_events");
-
-        serde_json::to_value(hex::encode(event_data))
-    }
-
-    /// This function expects an event from the transfer contract.
-    ///
-    /// Otherwise it will return the hex encoded data.
-    fn translate_transfer_events(
-        transfer_contract_event: ContractEvent,
-    ) -> Result<serde_json::Value, serde_json::Error> {
-        match transfer_contract_event.topic.as_str() {
-            MOONLIGHT_TOPIC => rkyv::from_bytes::<MoonlightTransactionEvent>(
-                &transfer_contract_event.data,
-            )
-            .map(serde_json::to_value)
-            .unwrap_or_else(|_| {
-                handle_unknown_genesis(transfer_contract_event.data)
-            }),
-            WITHDRAW_TOPIC | MINT_TOPIC => {
-                rkyv::from_bytes::<WithdrawEvent>(&transfer_contract_event.data)
-                    .map(serde_json::to_value)
-                    .unwrap_or_else(|_| {
-                        handle_unknown_genesis(transfer_contract_event.data)
-                    })
-            }
-            CONVERT_TOPIC => {
-                rkyv::from_bytes::<ConvertEvent>(&transfer_contract_event.data)
-                    .map(serde_json::to_value)
-                    .unwrap_or_else(|_| {
-                        handle_unknown_genesis(transfer_contract_event.data)
-                    })
-            }
-            DEPOSIT_TOPIC => {
-                rkyv::from_bytes::<DepositEvent>(&transfer_contract_event.data)
-                    .map(serde_json::to_value)
-                    .unwrap_or_else(|_| {
-                        handle_unknown_genesis(transfer_contract_event.data)
-                    })
-            }
-            CONTRACT_TO_ACCOUNT_TOPIC => {
-                rkyv::from_bytes::<ContractToAccountEvent>(
-                    &transfer_contract_event.data,
-                )
-                .map(serde_json::to_value)
-                .unwrap_or_else(|_| {
-                    handle_unknown_genesis(transfer_contract_event.data)
-                })
-            }
-            MINT_CONTRACT_TOPIC | CONTRACT_TO_CONTRACT_TOPIC => {
-                rkyv::from_bytes::<ContractToContractEvent>(
-                    &transfer_contract_event.data,
-                )
-                .map(serde_json::to_value)
-                .unwrap_or_else(|_| {
-                    handle_unknown_genesis(transfer_contract_event.data)
-                })
-            }
-            PHOENIX_TOPIC => rkyv::from_bytes::<PhoenixTransactionEvent>(
-                &transfer_contract_event.data,
-            )
-            .map(serde_json::to_value)
-            .unwrap_or_else(|_| {
-                handle_unknown_genesis(transfer_contract_event.data)
-            }),
-            _ => handle_unknown_genesis(transfer_contract_event.data),
-        }
-    }
-
-    /// This function expects an event from the stake contract.
-    ///
-    /// Otherwise it will return the hex encoded data.
-    fn translate_stake_events(
-        stake_contract_event: ContractEvent,
-    ) -> Result<serde_json::Value, serde_json::Error> {
-        match stake_contract_event.topic.as_str() {
-            "stake" | "unstake" | "withdraw" => {
-                rkyv::from_bytes::<StakeEvent>(&stake_contract_event.data)
-                    .map(serde_json::to_value)
-                    .unwrap_or_else(|_| {
-                        handle_unknown_genesis(stake_contract_event.data)
-                    })
-            }
-            "reward" => {
-                rkyv::from_bytes::<Vec<Reward>>(&stake_contract_event.data)
-                    .map(serde_json::to_value)
-                    .unwrap_or_else(|_| {
-                        handle_unknown_genesis(stake_contract_event.data)
-                    })
-            }
-            "slash" | "hard_slash" => {
-                rkyv::from_bytes::<Vec<SlashEvent>>(&stake_contract_event.data)
-                    .map(serde_json::to_value)
-                    .unwrap_or_else(|_| {
-                        handle_unknown_genesis(stake_contract_event.data)
-                    })
-            }
-            _ => handle_unknown_genesis(stake_contract_event.data),
-        }
-    }
-
     /// TODO: core should be able to provide this translation from bytes to
     /// struct & from bytes to json for events?
-    impl From<ContractEvent> for IntermediateEvent {
-        fn from(event: ContractEvent) -> Self {
+    impl From<&ContractEvent> for IntermediateEvent {
+        fn from(event: &ContractEvent) -> Self {
             let target = event.target;
             let topic = event.topic.clone();
+            let data = &event.data;
 
             let deserialized_data = match event.target {
-                TRANSFER_CONTRACT => translate_transfer_events(event),
-                STAKE_CONTRACT => translate_stake_events(event),
-                _ => serde_json::to_value(hex::encode(event.data)),
+                TRANSFER_CONTRACT => {
+                    TransferContractDriver.decode_event(&topic, data)
+                }
+                STAKE_CONTRACT => {
+                    StakeContractDriver.decode_event(&topic, data)
+                }
+                _ => serde_json::to_value(hex::encode(data))
+                    .map_err(dusk_data_driver::Error::from),
             }
-            .unwrap_or_else(|e| serde_json::Value::String(e.to_string()));
+            .unwrap_or_else(|e| {
+                tracing::warn!(
+                    event = "Cannot decode event",
+                    ?target,
+                    topic,
+                    ?e
+                );
+                serde_json::to_value(hex::encode(data))
+                    .expect("String to be serialized")
+            });
 
             Self {
                 target,
