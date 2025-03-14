@@ -195,7 +195,7 @@ impl MsgHandler for RatificationHandler {
                 ConsensusError::InvalidVote(vote)
             })?;
 
-        // Record any signature in global registry
+        // Record updated Ratification StepVotes in global registry
         let _ = self.sv_registry.lock().await.set_step_votes(
             iteration,
             &vote,
