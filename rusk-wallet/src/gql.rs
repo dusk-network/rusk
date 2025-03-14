@@ -253,7 +253,7 @@ impl GraphQL {
     /// Call the graphql endpoint of a node
     pub async fn query(&self, query: &str) -> Result<Vec<u8>, Error> {
         self.client
-            .call("graphql", None, "query", query.as_bytes())
+            .call("graphql", None::<String>, "query", query.as_bytes())
             .await
     }
 }

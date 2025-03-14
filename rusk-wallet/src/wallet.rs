@@ -603,6 +603,23 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         Ok(gas_prices)
     }
+
+    /// do a contract call over http
+    pub async fn http_contract_call(
+        &self,
+        contract_id: String,
+        fn_name: &str,
+        fn_args: Vec<u8>,
+    ) -> Result<Vec<u8>, Error> {
+        let client = self.state()?.client();
+
+        // query the rusk vm
+        let response = client
+            .call("contracts", Some(contract_id), fn_name, &fn_args)
+            .await?;
+
+        Ok(response)
+    }
 }
 
 /// This structs represent a Note decoded enriched with useful chain information
