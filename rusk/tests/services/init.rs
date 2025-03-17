@@ -192,7 +192,7 @@ pub async fn calling_init_via_tx_fails() -> Result<()> {
 
     assert_eq!(
         submit_transactions(&rusk, &wallet).err,
-        Some("Contract does not exist".into())
+        Some("Unknown".into())
     );
 
     // Check the state's root is changed from the original one
