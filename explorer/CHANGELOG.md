@@ -19,6 +19,10 @@ and this project adheres to
 
 ### Fixed
 
+## [1.1.1] - 2025-03-17
+
+- Add current balance (Account page) [#3564]
+
 ## [1.1.0] - 2025-03-17
 
 ### Added
@@ -172,6 +176,7 @@ and this project adheres to
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.1.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.1.1
 [1.1.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.1.0
 [1.0.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.0.1
 [1.0.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.0.0
