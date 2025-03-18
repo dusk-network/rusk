@@ -19,6 +19,21 @@ const mergeMap = (dest, source, lookup) => {
   return;
 };
 
+const originalFetch = globalThis.fetch;
+
+/**
+ * Kind of a dirty trick to avoid having still unresolved
+ * `unsubscribe` promises at the end of each test.
+ *
+ * For now the only DELETE calls are made for unsubscribing
+ * so in this case we make `fetch` behave as a sync function.
+ * The regular `fetch` is used otherwise.
+ */
+globalThis.fetch = (resource, options) =>
+  options?.method === "DELETE"
+    ? Response.json("")
+    : originalFetch(resource, options);
+
 export {
   assert,
   test,
@@ -34,6 +49,47 @@ export function getLocalWasmBuffer() {
     return Deno.readFile(WASM_RELEASE_PATH);
   }
   return Promise.reject("Can't accesso to file system");
+}
+
+export const resolveAfter = (delay, value) =>
+  new Promise((resolve) => {
+    setTimeout(() => resolve(value), delay);
+  });
+
+const _handleTestError = Symbol("handleTestError");
+
+export class FakeWebSocket extends WebSocket {
+  constructor(url, protocols) {
+    super(url, protocols);
+
+    this[_handleTestError] = this[_handleTestError].bind(this);
+
+    globalThis.addEventListener("ws-test-error", this[_handleTestError]);
+  }
+
+  static triggerSocketError(error, delay = 0) {
+    setTimeout(() => {
+      globalThis.dispatchEvent(
+        new CustomEvent("ws-test-error", { detail: error })
+      );
+    }, delay);
+  }
+
+  [_handleTestError](event) {
+    const simulatedError = event.detail;
+
+    this.dispatchEvent(
+      new ErrorEvent("error", {
+        error: simulatedError,
+        message: simulatedError.message,
+      })
+    );
+  }
+
+  close(code, reason) {
+    globalThis.removeEventListener("ws-test-error", this[_handleTestError]);
+    super.close(code, reason);
+  }
 }
 
 // Define a seed for deterministic profile generation
@@ -91,12 +147,12 @@ export class Treasury {
 
     // Get all the nullifiers
     const nullifiers = Array.from(this.#notes.values()).flatMap((innerMap) =>
-      Array.from(innerMap.keys()),
+      Array.from(innerMap.keys())
     );
 
     // Returns which notes have been spent of the given ones
     const spent = (await addresses.spent(nullifiers)).map((n) =>
-      hex(new Uint8Array(n)).join(""),
+      hex(new Uint8Array(n)).join("")
     );
 
     this.#notes.forEach((notes) => {

@@ -38,6 +38,8 @@ const subscribe = async (target, topic, options) => {
 
   const response = await fetch(eventURL, options);
 
+  await response.body?.cancel();
+
   if (!response.ok) {
     switch (response.status) {
       case 400:
@@ -48,12 +50,10 @@ const subscribe = async (target, topic, options) => {
         throw new Error("Unable to subscribe: Target  not found");
       default:
         throw new Error(
-          `Inable to subscribe: Unknown Error ${response.status}: ${response.statusText}`,
+          `Unable to subscribe: Unknown Error ${response.status}: ${response.statusText}`
         );
     }
   }
-
-  await response.body.cancel();
 
   return eventURL;
 };
@@ -79,6 +79,8 @@ const unsubscribe = async (target, topic, options) => {
 
   const response = await fetch(eventURL, { ...options, method: "DELETE" });
 
+  await response.body?.cancel();
+
   if (!response.ok) {
     switch (response.status) {
       case 400:
@@ -89,12 +91,10 @@ const unsubscribe = async (target, topic, options) => {
         throw new Error("Unable to unsubscribe: Target or topic not found");
       default:
         throw new Error(
-          `Unable to unsubscribe: Unknown Error ${response.status}: ${response.statusText}`,
+          `Unable to unsubscribe: Unknown Error ${response.status}: ${response.statusText}`
         );
     }
   }
-
-  await response.body.cancel();
 
   return eventURL;
 };
@@ -102,7 +102,7 @@ const unsubscribe = async (target, topic, options) => {
 export class ListenerError extends Error {
   constructor(message) {
     const [, name, description] = message.match(
-      /([A-Za-z\-]+?[ ]?Error)[: ]? ?(.*)/,
+      /([A-Za-z\-]+?[ ]?Error)[: ]? ?(.*)/
     ) ?? [, "ListenerError", message];
 
     super(description);
@@ -126,27 +126,62 @@ export class ListenerProxy {
   #handler = {
     get(target, topic) {
       return async (listener, options = {}) => {
-        const { signal } = options;
+        const { signal: optionsSignal } = options;
 
-        if (signal?.aborted) {
+        if (optionsSignal?.aborted) {
           return;
         }
 
-        const eventURL = await subscribe(target, topic, options);
         const { rues } = target[_target];
+
         if (target.once) {
-          rues.addEventListener(eventURL.pathname, target.once.resolve, {
-            once: true,
-          });
+          const eventURL = await subscribe(target, topic, options);
+          const listenerController = new AbortController();
+          const { signal } = listenerController;
+          const handleDisrupt = (event) => {
+            target.once.reject(event);
+            listenerController.abort();
+
+            // we don't care about handling errors in this case
+            unsubscribe(target, topic, options).catch(console.error);
+          };
+
+          rues.addEventListener(
+            eventURL.pathname,
+            (event) => {
+              target.once.resolve(event);
+              listenerController.abort();
+            },
+            { signal }
+          );
+          rues.addEventListener("error", handleDisrupt, { signal });
+          rues.addEventListener("disconnect", handleDisrupt, { once: true });
+
+          if (optionsSignal) {
+            optionsSignal.addEventListener("abort", handleDisrupt, {
+              once: true,
+            });
+          }
+
           return target.once.promise;
         } else {
-          rues.addEventListener(eventURL.pathname, listener);
-        }
+          const eventURL = await subscribe(target, topic, options);
 
-        if (signal) {
-          signal.addEventListener("abort", async (event) => {
-            await unsubscribe(target, topic, options);
-          });
+          const handleDisrupt = () => {
+            rues.removeEventListener(eventURL.pathname, listener);
+
+            // we don't care about handling errors in this case
+            unsubscribe(target, topic, options).catch(console.error);
+          };
+
+          rues.addEventListener(eventURL.pathname, listener);
+          rues.addEventListener("disconnect", handleDisrupt, { once: true });
+
+          if (optionsSignal) {
+            optionsSignal.addEventListener("abort", handleDisrupt, {
+              once: true,
+            });
+          }
         }
       };
     },

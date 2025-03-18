@@ -18,7 +18,16 @@ export { AddressSyncer } from "./syncer/address.js";
 export { AccountSyncer } from "./syncer/account.js";
 export { Bookmark } from "./bookmark.js";
 
-export class Network {
+function makeErrorEventFrom(value) {
+  const error = value instanceof Error ? value : new Error(String(value));
+
+  return new ErrorEvent("error", {
+    error,
+    message: error.message,
+  });
+}
+
+export class Network extends EventTarget {
   #rues;
   node;
   contracts;
@@ -31,11 +40,25 @@ export class Network {
   static DEVNET = Node.CHAIN.DEVNET;
 
   constructor(url, options = {}) {
+    super();
+
     this.#rues = new Rues(url, options);
     this.node = new Node(this.#rues);
     this.blocks = new Blocks(this.#rues);
     this.contracts = new Contracts(this.#rues);
     this.transactions = new Transactions(this.#rues);
+
+    const dispatcher = (ruesEvent) => {
+      this.dispatchEvent(
+        ruesEvent instanceof ErrorEvent
+          ? makeErrorEventFrom(ruesEvent.error)
+          : new CustomEvent(ruesEvent.type)
+      );
+    };
+
+    this.#rues.addEventListener("connect", dispatcher);
+    this.#rues.addEventListener("disconnect", dispatcher);
+    this.#rues.addEventListener("error", dispatcher);
   }
 
   get url() {
@@ -72,7 +95,7 @@ export class Network {
   // to a `BigInt` for consistency and future proof of the API's consumers.
   get blockHeight() {
     return this.query("block(height: -1) { header { height } }").then((body) =>
-      BigInt(body?.block?.header?.height ?? 0),
+      BigInt(body?.block?.header?.height ?? 0)
     );
   }
 
@@ -111,7 +134,7 @@ export class Network {
         throw new Error((await response.json())[0]);
       default:
         throw new Error(
-          `Unexpected [${response.status}] : ${response.statusText}}`,
+          `Unexpected [${response.status}] : ${response.statusText}}`
         );
     }
   }

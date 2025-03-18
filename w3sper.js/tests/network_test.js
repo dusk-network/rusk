@@ -6,7 +6,7 @@
 
 import { Network } from "@dusk/w3sper";
 
-import { test, assert } from "./harness.js";
+import { assert, FakeWebSocket, resolveAfter, test } from "./harness.js";
 
 test("Network connection", async () => {
   const network = new Network("http://localhost:8080/");
@@ -29,6 +29,88 @@ test("Network connection", async () => {
   assert.equal(+chain, chainId);
   assert.equal(chain.toString(), "localnet");
   assert.ok(chain === Network.LOCALNET);
+
+  await network.connect();
+
+  assert.ok(network.connected);
+
+  await network.disconnect();
+});
+
+test("Network connection failure", async () => {
+  assert.throws(() => Network.connect(), TypeError);
+
+  const signal = AbortSignal.timeout(10);
+
+  await resolveAfter(11, undefined);
+
+  const timeoutError = await assert.reject(
+    () => Network.connect("http://localhost:8080/", { signal }),
+    DOMException
+  );
+
+  assert.ok(timeoutError.name === "TimeoutError");
+
+  const networkError = await assert.reject(
+    () => Network.connect("http://localhost.fake:8080/"),
+    DOMException
+  );
+
+  assert.ok(networkError.name === "NetworkError");
+});
+
+test("Network's RUES failure after connection is established", async () => {
+  const handledEvents = {
+    connect: 0,
+    disconnect: 0,
+    error: 0,
+  };
+  const countEvent = (event) => {
+    handledEvents[event.type]++;
+  };
+  const RealWebSocket = WebSocket;
+
+  globalThis.WebSocket = FakeWebSocket;
+
+  const network = await Network.connect("http://localhost:8080/", {
+    signal: AbortSignal.timeout(100),
+  });
+
+  network.addEventListener("connect", countEvent);
+  network.addEventListener("disconnect", countEvent);
+  network.addEventListener("error", countEvent);
+
+  // this would wait indefinitely if we didn't trigger the timeout
+  const resultA = await assert.reject(() =>
+    network.transactions.withId("foo-id").once.removed()
+  );
+
+  assert.ok(resultA instanceof CustomEvent);
+  assert.ok(resultA.type === "disconnect");
+  assert.ok(!network.connected);
+
+  await network.connect();
+
+  const fakeError = new Error("some message");
+
+  FakeWebSocket.triggerSocketError(fakeError, 100);
+
+  // this would wait indefinitely if we didn't trigger an error
+  const resultB = await assert.reject(() =>
+    network.transactions.withId("foo-id").once.removed()
+  );
+
+  assert.ok(resultB instanceof ErrorEvent);
+  assert.ok(resultB.type === "error");
+  assert.ok(resultB.error === fakeError);
+
+  await network.disconnect();
+
+  assert.ok(handledEvents.connect === 1);
+  assert.ok(handledEvents.disconnect === 2);
+  assert.ok(handledEvents.error === 1);
+
+  globalThis.WebSocket = RealWebSocket;
 });
 
 test("Network block height", async () => {
