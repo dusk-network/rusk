@@ -1,19 +1,29 @@
 <script>
-  import { createValueFormatter } from "$lib/dusk/value";
-  import { luxToDusk } from "$lib/dusk/currency";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
-  import { OverviewPanelDetailsItem } from "$lib/components";
   import { addressCharPropertiesDefaults } from "$lib/constants";
 
   import "./AccountOverview.css";
+  import { onMount } from "svelte";
 
-  export let data;
-  export let screenWidth;
+  export let accountAddress;
+
+  /** @type {number} */
+  let screenWidth = window.innerWidth;
+
+  onMount(() => {
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+
+      screenWidth = entry.contentRect.width;
+    });
+
+    resizeObserver.observe(document.body);
+
+    return () => resizeObserver.disconnect();
+  });
 
   const { minScreenWidth, maxScreenWidth, minCharCount, maxCharCount } =
     addressCharPropertiesDefaults;
-
-  const formatter = createValueFormatter("en");
 </script>
 
 <section class="account-overview-panel">
@@ -21,7 +31,7 @@
     Account:
     <b class="account-overview-panel__address">
       {middleEllipsis(
-        data.address,
+        accountAddress,
         calculateAdaptiveCharCount(
           screenWidth,
           minScreenWidth,
@@ -32,27 +42,4 @@
       )}
     </b>
   </p>
-  <hr class="account-overview-panel__separator" />
-  <div class="account-overview-panel__details">
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.balance))} DUSK`}
-      subtitle="Current Balance"
-    />
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.staked_balance))} DUSK`}
-      subtitle="Staked Balance"
-    />
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.active_stake))} DUSK`}
-      subtitle="Active Balance"
-    />
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.inactive_stake))} DUSK`}
-      subtitle="Inactive Stake"
-    />
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.inactive_stake))} DUSK`}
-      subtitle="Rewards"
-    />
-  </div>
 </section>

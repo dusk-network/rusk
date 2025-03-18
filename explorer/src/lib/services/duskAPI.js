@@ -24,6 +24,7 @@ import {
 } from "$lib/chain-info";
 
 import * as gqlQueries from "./gql-queries";
+import * as base58 from "../utils/encoders/base58";
 
 /** @type {(blocks: GQLBlock[]) => Block[]} */
 const transformBlocks = mapWith(transformBlock);
@@ -196,6 +197,39 @@ const duskAPI = {
     /* eslint-enable camelcase */
   },
 
+  /** @param {string} address */
+  async getMoonlightAccountTransactions(address) {
+    // Gets contract interactions for the given address
+    const moonlightData = await gqlGet(
+      gqlQueries.getFullMoonlightAccountHistoryQuery(address)
+    );
+    if (!moonlightData.fullMoonlightHistory) {
+      return [];
+    }
+    // Extracts the transaction IDs from the contract interactions
+    const transactionIds = moonlightData.fullMoonlightHistory.json.map(
+      (/** @type {{ origin: any; }} */ block) => block.origin
+    );
+    // Fetches the transaction details for the extracted IDs
+    const results = await Promise.all(
+      transactionIds.map((/** @type {string} */ txnId) =>
+        duskAPI.getTransaction(txnId)
+      )
+    );
+    // Filters out transactions in the mempool
+    const filteredTransactions = results.filter(
+      (transaction) => typeof transaction !== "string"
+    );
+    // Sort transactions by date in descending order (newest first)
+    const sortedTransactions = filteredTransactions.sort((a, b) => {
+      const dateA = new Date(a.timestamp || a.time || a.date || 0);
+      const dateB = new Date(b.timestamp || b.time || b.date || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return sortedTransactions;
+  },
+
   /**
    * @returns {Promise<NodeInfo>}
    */
@@ -273,20 +307,41 @@ const duskAPI = {
   },
 
   /**
-   * @param {string} query
-   * @returns {Promise<SearchResult[]>}
+   * Search function that handles different query formats:
+   * 1. 64-character hexadecimal strings (likely transaction or block hashes)
+   * 2. Numeric strings (likely block heights)
+   * 3. Base58-encoded strings with a decoded length of 96 bytes (likely addresses)
+   *
+   * @param {string} query - The search query string
+   * @returns {Promise<SearchResult|null>} - Promise resolving to transformed search result
    */
-  search(query) {
-    return Promise.all(
-      [
-        query.length === 64
-          ? gqlGet(gqlQueries.searchByHashQueryInfo(query))
-          : undefined,
-        /^\d+$/.test(query)
-          ? gqlGet(gqlQueries.getBlockHashQueryInfo(+query))
-          : undefined,
-      ].filter(Boolean)
-    ).then(transformSearchResult);
+  async search(query) {
+    let searchPromise;
+
+    // Case 1: Handle 64-character hexadecimal strings (likely tx or block hashes)
+    if (query.length === 64) {
+      searchPromise = gqlGet(gqlQueries.searchByHashQueryInfo(query));
+    }
+
+    // Case 2: Handle numeric strings (likely block heights)
+    else if (/^\d+$/.test(query)) {
+      searchPromise = gqlGet(gqlQueries.getBlockHashQueryInfo(+query));
+    }
+
+    // Case 3: Handle potential base58-encoded addresses
+    else {
+      const bytes = base58.decode(query);
+      // If decoded length is 96 bytes, it's likely an address
+      if (bytes?.length === 96) {
+        searchPromise = Promise.resolve({ account: { id: query } });
+      } else {
+        searchPromise = Promise.resolve(null);
+      }
+    }
+
+    const entry = await searchPromise;
+    const result = entry ? transformSearchResult(entry) : null;
+    return result;
   },
 };
 

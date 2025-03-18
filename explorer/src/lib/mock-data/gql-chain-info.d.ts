@@ -26,12 +26,15 @@ type GQLChainInfo = {
 };
 
 type GQLSearchResult = {
-  block: {
+  block?: {
     header: {
       hash: string;
     };
   } | null;
-  transaction?: {
+  tx?: {
+    id: string;
+  } | null;
+  account?: {
     id: string;
   } | null;
 };

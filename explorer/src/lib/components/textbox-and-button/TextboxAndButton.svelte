@@ -8,7 +8,7 @@
   export let placeholder = "";
 
   /** @type {number}*/
-  export let fieldWidth = 190;
+  export let fieldWidth = 250;
 
   /** @type {number}*/
   export let expandedFieldWidth = 300;

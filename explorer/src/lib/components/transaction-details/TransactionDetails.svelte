@@ -1,15 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
-  import {
-    AppAnchor,
-    DataCard,
-    DataGuard,
-    ListItem,
-    StaleDataNotice,
-    TransactionStatus,
-    TransactionType,
-  } from "$lib/components";
+  import { onMount } from "svelte";
   import { Card, RelativeTime, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
@@ -23,7 +15,17 @@
     makeClassName,
     middleEllipsis,
   } from "$lib/dusk/string";
-  import { onMount } from "svelte";
+  import {
+    AppAnchor,
+    DataCard,
+    DataGuard,
+    ListItem,
+    StaleDataNotice,
+    TransactionStatus,
+    TransactionType,
+  } from "$lib/components";
+  import { addressCharPropertiesDefaults } from "$lib/constants";
+
   import "./TransactionDetails.css";
 
   /** @type {string | Undefined} */
@@ -69,7 +71,11 @@
     return () => resizeObserver.disconnect();
   });
 
+  const { minScreenWidth, maxScreenWidth, minCharCount, maxCharCount } =
+    addressCharPropertiesDefaults;
+
   $: classes = makeClassName(["transaction-details", className]);
+  $: jsonPayload = payload ? JSON.parse(payload) : null;
 </script>
 
 <DataCard
@@ -84,11 +90,21 @@
     <!-- TRANSACTION ID -->
     <ListItem tooltipText="The ID of the transaction">
       <svelte:fragment slot="term">ID</svelte:fragment>
-      <svelte:fragment slot="definition"
-        >{middleEllipsis(
-          data.txid,
-          calculateAdaptiveCharCount(screenWidth, 320, 1400, 10, 36)
-        )}</svelte:fragment
+      <svelte:fragment slot="definition">
+        <AppAnchor
+          className="transaction-details__list-anchor"
+          href="/transactions/transaction?id={data.txid}"
+          >{middleEllipsis(
+            data.txid,
+            calculateAdaptiveCharCount(
+              screenWidth,
+              minScreenWidth,
+              maxScreenWidth,
+              minCharCount,
+              maxCharCount
+            )
+          )}</AppAnchor
+        ></svelte:fragment
       >
     </ListItem>
 
@@ -103,6 +119,47 @@
         ></svelte:fragment
       >
     </ListItem>
+
+    {#if data.txtype.toLowerCase() === "moonlight" && data.method === "transfer" && jsonPayload?.sender && jsonPayload?.receiver}
+      <ListItem tooltipText="The sender of the transaction">
+        <svelte:fragment slot="term">From</svelte:fragment>
+        <svelte:fragment slot="definition">
+          <AppAnchor
+            className="transaction-details__list-anchor"
+            href="/accounts/?key={jsonPayload.sender}"
+            >{middleEllipsis(
+              jsonPayload.sender,
+              calculateAdaptiveCharCount(
+                screenWidth,
+                minScreenWidth,
+                maxScreenWidth,
+                minCharCount,
+                maxCharCount
+              )
+            )}</AppAnchor
+          ></svelte:fragment
+        >
+      </ListItem>
+      <ListItem tooltipText="The receiver of the transaction">
+        <svelte:fragment slot="term">To</svelte:fragment>
+        <svelte:fragment slot="definition">
+          <AppAnchor
+            className="transaction-details__list-anchor"
+            href="/accounts/?key={jsonPayload.receiver}"
+            >{middleEllipsis(
+              jsonPayload.receiver,
+              calculateAdaptiveCharCount(
+                screenWidth,
+                minScreenWidth,
+                maxScreenWidth,
+                minCharCount,
+                maxCharCount
+              )
+            )}</AppAnchor
+          ></svelte:fragment
+        >
+      </ListItem>
+    {/if}
 
     <!-- STATUS -->
     <ListItem tooltipText="The transaction status">
@@ -215,8 +272,8 @@
       <svelte:fragment slot="definition">
         {#if isPayloadToggled}
           <Card onSurface={true} className="transaction-details__payload">
-            <pre>{payload
-                ? JSON.stringify(JSON.parse(payload), null, 2)
+            <pre>{jsonPayload
+                ? JSON.stringify(jsonPayload, null, 2)
                 : "---"}</pre>
           </Card>
         {/if}
