@@ -26,12 +26,31 @@
 
   $: ({ data, error, isLoading } = $dataStore);
   $: ({ isSmallScreen } = $appStore);
+
+  let errorFetchingAccountStatus = false;
+  /** @type {AccountStatus|null} */
+  let accountStatus = null;
+  if (key) {
+    duskAPI
+      .getAccountStatus(key)
+      .then((status) => {
+        accountStatus = status;
+        errorFetchingAccountStatus = false;
+      })
+      .catch(() => {
+        errorFetchingAccountStatus = true;
+      });
+  }
 </script>
 
 {#if key}
   <section>
     <article>
-      <AccountOverview accountAddress={key} />
+      <AccountOverview
+        {errorFetchingAccountStatus}
+        accountBalance={accountStatus?.balance}
+        accountAddress={key}
+      />
     </article>
 
     <TransactionsCard

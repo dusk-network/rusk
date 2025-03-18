@@ -118,6 +118,14 @@ const getLast100BlocksTxs = () =>
 
 const duskAPI = {
   /**
+   * @param {string} address
+   * @returns {Promise<AccountStatus>}
+   */
+  getAccountStatus(address) {
+    return nodePost(`/on/account:${address}/status`);
+  },
+
+  /**
    * @param {string} id
    * @returns {Promise<Block>}
    */
@@ -250,7 +258,6 @@ const duskAPI = {
   getProvisioners() {
     return nodePost("/on/node/provisioners");
   },
-
   /**
    * @returns {Promise<Stats>}
    */
