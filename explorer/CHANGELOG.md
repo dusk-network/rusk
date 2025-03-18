@@ -11,6 +11,17 @@ and this project adheres to
 ### Added
 
 - Add Tokens page [#3415]
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## [1.1.0] - 2025-03-17
+
+### Added
+
 - Add Account page [#3454]
 
 ### Changed
@@ -159,6 +170,7 @@ and this project adheres to
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.1.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.1.0
 [1.0.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.0.1
 [1.0.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.0.0
 [0.3.0]: https://github.com/dusk-network/rusk/tree/explorer-0.3.0
