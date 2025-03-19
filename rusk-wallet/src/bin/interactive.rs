@@ -228,7 +228,7 @@ pub(crate) async fn load_wallet(
             let (file_version, salt_and_iv) = file_version_and_salt_iv?;
             let mut attempt = 1;
             loop {
-                let key = prompt::request_auth(
+                let key = prompt::derive_key_from_password(
                     "Please enter your wallet password",
                     password,
                     salt_and_iv.map(|si| si.0).as_ref(),
@@ -259,7 +259,7 @@ pub(crate) async fn load_wallet(
             let salt = gen_salt();
             let iv = gen_iv();
             // ask user for a password to secure the wallet
-            let key = prompt::create_password(
+            let key = prompt::derive_key_from_new_password(
                 password,
                 Some(&salt),
                 DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
@@ -284,7 +284,7 @@ pub(crate) async fn load_wallet(
             let iv = gen_iv();
             // ask user for a password to secure the wallet, create the latest
             // wallet file from the seed
-            let key = prompt::create_password(
+            let key = prompt::derive_key_from_new_password(
                 &None,
                 Some(&salt),
                 DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
