@@ -12,11 +12,14 @@ use bip39::{Language, Mnemonic, MnemonicType};
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
-use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
+use rusk_wallet::{
+    Address, Error, Profile, Wallet, WalletPath, IV_SIZE, MAX_PROFILES,
+    SALT_SIZE,
+};
 
 use crate::io::{self, prompt};
 use crate::settings::Settings;
-use crate::{gen_salt, Command, GraphQL, RunResult, WalletFile};
+use crate::{gen_iv, gen_salt, Command, GraphQL, RunResult, WalletFile};
 
 /// Run the interactive UX loop with a loaded wallet
 pub(crate) async fn run_loop(
@@ -202,11 +205,17 @@ enum ProfileOp {
     Stay,
 }
 
+type Salt = [u8; SALT_SIZE];
+type Iv = [u8; IV_SIZE];
+
 /// Allows the user to load a wallet interactively
 pub(crate) async fn load_wallet(
     wallet_path: &WalletPath,
     settings: &Settings,
-    file_version_and_salt: Result<(DatFileVersion, Option<[u8; 32]>), Error>,
+    file_version_and_salt_iv: Result<
+        (DatFileVersion, Option<(Salt, Iv)>),
+        Error,
+    >,
 ) -> anyhow::Result<Wallet<WalletFile>> {
     let wallet_found =
         wallet_path.inner().exists().then(|| wallet_path.clone());
@@ -216,19 +225,20 @@ pub(crate) async fn load_wallet(
     // display main menu
     let wallet = match menu_wallet(wallet_found, settings).await? {
         MainMenu::Load(path) => {
-            let (file_version, salt) = file_version_and_salt?;
+            let (file_version, salt_and_iv) = file_version_and_salt_iv?;
             let mut attempt = 1;
             loop {
-                let pwd = prompt::request_auth(
+                let key = prompt::request_auth(
                     "Please enter your wallet password",
                     password,
-                    salt.as_ref(),
+                    salt_and_iv.map(|si| si.0).as_ref(),
                     file_version,
                 )?;
                 match Wallet::from_file(WalletFile {
                     path: path.clone(),
-                    pwd,
-                    salt,
+                    aes_key: key,
+                    salt: salt_and_iv.map(|si| si.0),
+                    iv: salt_and_iv.map(|si| si.1),
                 }) {
                     Ok(wallet) => break wallet,
                     Err(_) if attempt > 2 => {
@@ -247,8 +257,9 @@ pub(crate) async fn load_wallet(
             let mnemonic =
                 Mnemonic::new(MnemonicType::Words12, Language::English);
             let salt = gen_salt();
+            let iv = gen_iv();
             // ask user for a password to secure the wallet
-            let pwd = prompt::create_password(
+            let key = prompt::create_password(
                 password,
                 Some(&salt),
                 DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
@@ -260,8 +271,9 @@ pub(crate) async fn load_wallet(
             let path = wallet_path.clone();
             w.save_to(WalletFile {
                 path,
-                pwd,
+                aes_key: key,
                 salt: Some(salt),
+                iv: Some(iv),
             })?;
             w
         }
@@ -269,9 +281,10 @@ pub(crate) async fn load_wallet(
             // ask user for 12-word mnemonic phrase
             let phrase = prompt::request_mnemonic_phrase()?;
             let salt = gen_salt();
+            let iv = gen_iv();
             // ask user for a password to secure the wallet, create the latest
             // wallet file from the seed
-            let pwd = prompt::create_password(
+            let key = prompt::create_password(
                 &None,
                 Some(&salt),
                 DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
@@ -281,8 +294,9 @@ pub(crate) async fn load_wallet(
             let path = wallet_path.clone();
             w.save_to(WalletFile {
                 path,
-                pwd,
+                aes_key: key,
                 salt: Some(salt),
+                iv: Some(iv),
             })?;
             w
         }
