@@ -12,7 +12,7 @@ use std::io::Read;
 use wallet_core::Seed;
 
 use crate::crypto::{decrypt_aes_cbc, decrypt_aes_gcm};
-use crate::{Error, WalletPath};
+use crate::{Error, WalletPath, IV_SIZE, SALT_SIZE};
 
 /// Binary prefix for old Dusk wallet files
 pub const OLD_MAGIC: u32 = 0x1d0c15;
@@ -26,6 +26,11 @@ pub const FILE_TYPE: u16 = 0x0200;
 pub const RESERVED: u16 = 0x0000;
 /// (Major, Minor, Patch, Pre, Pre-Higher)
 type Version = (u8, u8, u8, u8, bool);
+
+type Salt = [u8; SALT_SIZE];
+type Iv = [u8; IV_SIZE];
+
+const FILE_HEADER_SIZE: usize = 12;
 
 /// Versions of the potential wallet DAT files we read
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -49,10 +54,10 @@ impl DatFileVersion {
     }
 }
 
-pub(crate) fn read_salt(
+fn read_salt_and_iv(
     version: DatFileVersion,
     bytes: &[u8],
-) -> Result<Option<[u8; 32]>, Error> {
+) -> Result<Option<(Salt, Iv)>, Error> {
     match version {
         DatFileVersion::Legacy | DatFileVersion::OldWalletCli(_) => Ok(None),
         DatFileVersion::RuskBinaryFileFormat(version)
@@ -61,11 +66,20 @@ pub(crate) fn read_salt(
             Ok(None)
         }
         DatFileVersion::RuskBinaryFileFormat(_) => {
-            if let Some(salt_bytes) = bytes.get(12..12 + 32) {
+            if let (Some(salt_bytes), Some(iv_bytes)) = (
+                bytes.get(FILE_HEADER_SIZE..FILE_HEADER_SIZE + SALT_SIZE),
+                bytes.get(
+                    FILE_HEADER_SIZE + SALT_SIZE
+                        ..FILE_HEADER_SIZE + SALT_SIZE + IV_SIZE,
+                ),
+            ) {
                 let salt = salt_bytes
                     .try_into()
                     .map_err(|_| Error::WalletFileCorrupted)?;
-                Ok(Some(salt))
+                let iv = iv_bytes
+                    .try_into()
+                    .map_err(|_| Error::WalletFileCorrupted)?;
+                Ok(Some((salt, iv)))
             } else {
                 Err(Error::WalletFileCorrupted)
             }
@@ -77,7 +91,8 @@ pub(crate) fn read_salt(
 pub(crate) fn get_seed_and_address(
     file: DatFileVersion,
     mut bytes: Vec<u8>,
-    pwd: &[u8],
+    aes_key: &[u8],
+    iv: Option<&[u8; IV_SIZE]>,
 ) -> Result<(Seed, u8), Error> {
     match file {
         DatFileVersion::Legacy => {
@@ -85,7 +100,7 @@ pub(crate) fn get_seed_and_address(
                 bytes.drain(..3);
             }
 
-            bytes = decrypt_aes_cbc(&bytes, pwd)?;
+            bytes = decrypt_aes_cbc(&bytes, aes_key)?;
 
             // get our seed
             let seed = bytes[..]
@@ -99,7 +114,7 @@ pub(crate) fn get_seed_and_address(
 
             let result: Result<(Seed, u8), Error> = match (major, minor) {
                 (1, 0) => {
-                    let content = decrypt_aes_cbc(&bytes, pwd)?;
+                    let content = decrypt_aes_cbc(&bytes, aes_key)?;
                     let buff = &content[..];
 
                     let seed = buff
@@ -109,7 +124,7 @@ pub(crate) fn get_seed_and_address(
                     Ok((seed, 1))
                 }
                 (2, 0) => {
-                    let content = decrypt_aes_cbc(&bytes, pwd)?;
+                    let content = decrypt_aes_cbc(&bytes, aes_key)?;
                     let buff = &content[..];
 
                     // extract seed
@@ -126,31 +141,24 @@ pub(crate) fn get_seed_and_address(
             result
         }
         DatFileVersion::RuskBinaryFileFormat(version) => {
-            const HEADER_SIZE: usize = 12;
-            const SALT_SIZE: usize = 32;
             const OLD_PAYLOAD_SIZE: usize = 96;
-            const PAYLOAD_SIZE: usize = 93;
-            let (rest, use_aes_gcm) = if version_without_pre_higher(version)
-                < (0, 0, 2, 0)
-            {
-                (
-                    bytes.get(HEADER_SIZE..(HEADER_SIZE + OLD_PAYLOAD_SIZE)),
-                    false,
-                )
-            } else {
-                (
-                    bytes.get(
-                        HEADER_SIZE + SALT_SIZE
-                            ..(HEADER_SIZE + SALT_SIZE + PAYLOAD_SIZE),
-                    ),
-                    true,
-                )
-            };
+            const PAYLOAD_SIZE: usize = 81;
+
+            let (rest, use_aes_gcm) =
+                if version_without_pre_higher(version) < (0, 0, 2, 0) {
+                    let offset = FILE_HEADER_SIZE;
+                    (bytes.get(offset..(offset + OLD_PAYLOAD_SIZE)), false)
+                } else {
+                    let offset = FILE_HEADER_SIZE + SALT_SIZE + IV_SIZE;
+                    (bytes.get(offset..(offset + PAYLOAD_SIZE)), true)
+                };
+
             if let Some(rest) = rest {
                 let content = if use_aes_gcm {
-                    decrypt_aes_gcm(rest, pwd)?
+                    let iv = iv.ok_or(Error::WalletFileCorrupted)?;
+                    decrypt_aes_gcm(rest, aes_key, iv)?
                 } else {
-                    decrypt_aes_cbc(rest, pwd)?
+                    decrypt_aes_cbc(rest, aes_key)?
                 };
 
                 if let Some(seed_buff) = content.get(0..65) {
@@ -260,11 +268,11 @@ pub fn read_file_version(file: &WalletPath) -> Result<DatFileVersion, Error> {
     check_version(Some(&header_buf))
 }
 
-/// Read the first 12 bytes of the dat file, get the file version from
-/// there and read the next 32 bytes as the seed, if present.
-pub fn read_file_version_and_salt(
+/// Read the file version of the dat file from the header and, if present,
+/// the salt and IV.
+pub fn read_file_version_and_salt_iv(
     file: &WalletPath,
-) -> Result<(DatFileVersion, Option<[u8; 32]>), Error> {
+) -> Result<(DatFileVersion, Option<(Salt, Iv)>), Error> {
     let path = &file.wallet;
 
     if !path.is_file() {
@@ -272,10 +280,10 @@ pub fn read_file_version_and_salt(
     }
 
     let mut fs = fs::File::open(path)?;
-    let mut buf = [0; 12 + 32];
+    let mut buf = [0; FILE_HEADER_SIZE + SALT_SIZE + IV_SIZE];
     fs.read_exact(&mut buf)?;
-    let version = check_version(Some(&buf[..12]))?;
-    let salt = read_salt(version, &buf)?;
+    let version = check_version(Some(&buf[..FILE_HEADER_SIZE]))?;
+    let salt = read_salt_and_iv(version, &buf)?;
 
     Ok((version, salt))
 }

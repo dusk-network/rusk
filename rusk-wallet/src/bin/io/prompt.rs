@@ -30,6 +30,7 @@ use rusk_wallet::{
     gas::{self, MempoolGasPrices},
     Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE,
 };
+use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
 
 pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
@@ -66,7 +67,7 @@ pub(crate) fn request_auth(
         None => ask_pwd(msg)?,
     };
 
-    hash(file_version, &pwd, salt)
+    derive_key(file_version, &pwd, salt)
 }
 
 /// Request the user to create a wallet password
@@ -80,7 +81,7 @@ pub(crate) fn create_password(
         None => create_new_password()?,
     };
 
-    hash(file_version, &pwd, salt)
+    derive_key(file_version, &pwd, salt)
 }
 
 /// Display the mnemonic phrase to the user and ask for confirmation
@@ -130,20 +131,20 @@ pub(crate) fn request_mnemonic_phrase() -> anyhow::Result<String> {
     }
 }
 
-fn hash(
+pub(crate) fn derive_key(
     file_version: DatFileVersion,
     pwd: &str,
-    salt: Option<&[u8; 32]>,
+    salt: Option<&[u8; SALT_SIZE]>,
 ) -> anyhow::Result<Vec<u8>> {
     match file_version {
         DatFileVersion::RuskBinaryFileFormat(version) => {
             if version_without_pre_higher(version) >= (0, 0, 2, 0) {
                 let salt = salt
                     .ok_or_else(|| anyhow::anyhow!("Couldn't find the salt"))?;
-                Ok(pbkdf2::pbkdf2_hmac_array::<Sha256, 32>(
+                Ok(pbkdf2::pbkdf2_hmac_array::<Sha256, SALT_SIZE>(
                     pwd.as_bytes(),
                     salt,
-                    10_000,
+                    PBKDF2_ROUNDS,
                 )
                 .to_vec())
             } else {

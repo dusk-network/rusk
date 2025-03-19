@@ -8,14 +8,18 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use crate::{IV_SIZE, SALT_SIZE};
+
 /// Provides access to a secure wallet file
 pub trait SecureWalletFile {
     /// Returns the path
     fn path(&self) -> &WalletPath;
     /// Returns the hashed password
-    fn pwd(&self) -> &[u8];
+    fn aes_key(&self) -> &[u8];
     /// Returns the seed used to hash the password
-    fn salt(&self) -> Option<&[u8; 32]>;
+    fn salt(&self) -> Option<&[u8; SALT_SIZE]>;
+    /// Returns the IV used to encrypt/decrypt wallet data
+    fn iv(&self) -> Option<&[u8; IV_SIZE]>;
 }
 
 /// Wrapper around `PathBuf` for wallet paths
