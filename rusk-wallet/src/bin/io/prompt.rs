@@ -54,11 +54,11 @@ pub(crate) fn create_new_password() -> Result<String, InquireError> {
     pwd
 }
 
-/// Request the user to authenticate with a password
-pub(crate) fn request_auth(
+/// Request the user to authenticate with a password and return the derived key
+pub(crate) fn derive_key_from_password(
     msg: &str,
     password: &Option<String>,
-    salt: Option<&[u8; 32]>,
+    salt: Option<&[u8; SALT_SIZE]>,
     file_version: DatFileVersion,
 ) -> anyhow::Result<Vec<u8>> {
     let pwd = match password.as_ref() {
@@ -70,10 +70,10 @@ pub(crate) fn request_auth(
     derive_key(file_version, &pwd, salt)
 }
 
-/// Request the user to create a wallet password
-pub(crate) fn create_password(
+/// Request the user to create a wallet password and return the derived key
+pub(crate) fn derive_key_from_new_password(
     password: &Option<String>,
-    salt: Option<&[u8; 32]>,
+    salt: Option<&[u8; SALT_SIZE]>,
     file_version: DatFileVersion,
 ) -> anyhow::Result<Vec<u8>> {
     let pwd = match password.as_ref() {
