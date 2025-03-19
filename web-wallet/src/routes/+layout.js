@@ -1,8 +1,5 @@
-import "$lib/dusk/polyfill/asyncIterator";
-import "$lib/dusk/polyfill/promiseWithResolvers";
-
-// eslint-disable-next-line import/no-unresolved
-import "web-streams-polyfill/polyfill";
+/** @see https://github.com/dusk-network/rusk/issues/3570 */
+import "$lib/dusk/polyfill";
 
 export const csr = true;
 export const prerender = true;

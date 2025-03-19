@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix polyfills not being loaded in time on Safari 16.3 [#3570]
+
 ## [1.4.0] - 2025-03-04
 
 ### Added
@@ -582,6 +584,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3403]: https://github.com/dusk-network/rusk/issues/3403
 [#3420]: https://github.com/dusk-network/rusk/issues/3420
 [#3486]: https://github.com/dusk-network/rusk/issues/3486
+[#3570]: https://github.com/dusk-network/rusk/issues/3570
 
 <!-- VERSIONS -->
 
