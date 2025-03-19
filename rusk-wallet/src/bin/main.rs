@@ -236,7 +236,7 @@ async fn exec() -> anyhow::Result<()> {
                 let iv = gen_iv();
                 // ask user for a password to secure the wallet
                 // latest version is used for dat file
-                let key = prompt::create_password(
+                let key = prompt::derive_key_from_new_password(
                     password,
                     Some(&salt),
                     dat::DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
@@ -273,7 +273,7 @@ async fn exec() -> anyhow::Result<()> {
                         let (file_version, salt_and_iv) =
                             dat::read_file_version_and_salt_iv(file)?;
 
-                        let key = prompt::request_auth(
+                        let key = prompt::derive_key_from_password(
                             "Please enter wallet password",
                             password,
                             salt_and_iv.map(|si| si.0).as_ref(),
@@ -297,7 +297,7 @@ async fn exec() -> anyhow::Result<()> {
                         let salt = gen_salt();
                         let iv = gen_iv();
                         // ask user for a password to secure the wallet
-                        let key = prompt::create_password(
+                        let key = prompt::derive_key_from_new_password(
                             password,
                             Some(&salt),
                             dat::DatFileVersion::RuskBinaryFileFormat(
@@ -331,7 +331,7 @@ async fn exec() -> anyhow::Result<()> {
                 let (file_version, salt_and_iv) = file_version_and_salt_iv?;
 
                 // load wallet from file
-                let key = prompt::request_auth(
+                let key = prompt::derive_key_from_password(
                     "Please enter wallet password",
                     password,
                     salt_and_iv.map(|si| si.0).as_ref(),
