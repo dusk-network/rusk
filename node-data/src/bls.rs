@@ -165,9 +165,9 @@ fn read_from_file(
         )
     })?;
 
-    let hashed_pwd = hash_sha256(pwd);
+    let aes_key = hash_sha256(pwd);
 
-    let bytes = decrypt(&ciphertext[..], &hashed_pwd)
+    let bytes = decrypt(&ciphertext[..], &aes_key)
         .map_err(|e| anyhow::anyhow!("Invalid consensus keys password {e}"))?;
 
     let keys: BlsKeyPair = serde_json::from_slice(&bytes)
@@ -200,8 +200,8 @@ pub fn save_consensus_keys(
     let json = serde_json::to_string(&bls)?;
 
     let mut bytes = json.as_bytes().to_vec();
-    let pwd = hash_sha256(pwd);
-    bytes = encrypt(&bytes, &pwd)?;
+    let aes_key = hash_sha256(pwd);
+    bytes = encrypt(&bytes, &aes_key)?;
 
     fs::write(path.with_extension("keys"), bytes)?;
 
