@@ -113,6 +113,48 @@ test("Network's RUES failure after connection is established", async () => {
   globalThis.WebSocket = RealWebSocket;
 });
 
+test("Network's disconnect event is fired when the socket closes on its own", async () => {
+  const RealWebSocket = WebSocket;
+
+  globalThis.WebSocket = FakeWebSocket;
+
+  let firedDisconnect = false;
+
+  const network = await Network.connect("http://localhost:8080/");
+
+  network.addEventListener("disconnect", () => {
+    firedDisconnect = true;
+  });
+
+  FakeWebSocket.triggerSocketClose();
+
+  await resolveAfter(100, undefined);
+
+  assert.ok(firedDisconnect);
+  assert.ok(!network.connected);
+
+  await network.disconnect();
+
+  globalThis.WebSocket = RealWebSocket;
+});
+
+test("Multiple connection calls won't create new sockets if the network is already connected", async () => {
+  let connectCalls = 0;
+  const network = new Network("http://localhost:8080/");
+
+  network.addEventListener("connect", () => {
+    connectCalls++;
+  });
+
+  network.connect();
+  network.connect();
+  await network.connect();
+
+  assert.ok(connectCalls === 1);
+
+  await network.disconnect();
+});
+
 test("Network block height", async () => {
   const network = await Network.connect("http://localhost:8080/");
 

@@ -56,15 +56,24 @@ export const resolveAfter = (delay, value) =>
     setTimeout(() => resolve(value), delay);
   });
 
+const _handleTestClose = Symbol("handleTestClose");
 const _handleTestError = Symbol("handleTestError");
 
 export class FakeWebSocket extends WebSocket {
   constructor(url, protocols) {
     super(url, protocols);
 
+    this[_handleTestClose] = this[_handleTestClose].bind(this);
     this[_handleTestError] = this[_handleTestError].bind(this);
 
+    globalThis.addEventListener("ws-test-close", this[_handleTestClose]);
     globalThis.addEventListener("ws-test-error", this[_handleTestError]);
+  }
+
+  static triggerSocketClose(delay = 0) {
+    setTimeout(() => {
+      globalThis.dispatchEvent(new CustomEvent("ws-test-close"));
+    }, delay);
   }
 
   static triggerSocketError(error, delay = 0) {
@@ -73,6 +82,10 @@ export class FakeWebSocket extends WebSocket {
         new CustomEvent("ws-test-error", { detail: error })
       );
     }, delay);
+  }
+
+  [_handleTestClose]() {
+    this.close();
   }
 
   [_handleTestError](event) {
@@ -87,6 +100,7 @@ export class FakeWebSocket extends WebSocket {
   }
 
   close(code, reason) {
+    globalThis.removeEventListener("ws-test-close", this[_handleTestClose]);
     globalThis.removeEventListener("ws-test-error", this[_handleTestError]);
     super.close(code, reason);
   }

@@ -111,6 +111,18 @@ export class Rues extends EventTarget {
   }
 
   async connect(options = {}) {
+    if (
+      [WebSocket.CONNECTING, WebSocket.OPEN].includes(this.#socket?.readyState)
+    ) {
+      if (options && Object.keys(options).length !== 0) {
+        console.warn(
+          "Options not applied: Rues is already either connected or connecting"
+        );
+      }
+
+      return this.#session.promise;
+    }
+
     const { signal } = options;
 
     if (signal?.aborted) {
@@ -132,6 +144,10 @@ export class Rues extends EventTarget {
       const cause =
         errorEvent.error ?? (signal?.aborted ? signal.reason : errorEvent);
 
+      /**
+       * This handles the case where the WebSocket can't
+       * establish a connection just after being created.
+       */
       if (socket.readyState !== WebSocket.OPEN) {
         this.#session.reject(cause);
       } else {
@@ -143,6 +159,11 @@ export class Rues extends EventTarget {
         );
       }
     };
+
+    once(socket, "close").finally(() => {
+      this.#session = Promise.withResolvers();
+      this.dispatchEvent(new CustomEvent("disconnect"));
+    });
 
     if (signal) {
       signal.addEventListener("abort", () => {
@@ -172,10 +193,6 @@ export class Rues extends EventTarget {
 
     this.#socket.close();
     await once(this.#socket, "close");
-
-    this.#session = Promise.withResolvers();
-
-    this.dispatchEvent(new CustomEvent("disconnect"));
   }
 
   get connected() {
