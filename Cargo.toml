@@ -37,7 +37,7 @@ resolver = "2"
 # dusk-consensus = "1.0.1"
 dusk-consensus = { version = "1.0.2-alpha.1", path = "./consensus/" }
 # dusk-core = "1.1.0"
-dusk-core = { version = "1.2.1-alpha.1", path = "./core/" }
+dusk-core = { version = "1.2.1", path = "./core/" }
 # dusk-vm = "1.1.0"
 dusk-vm = { version = "1.1.1-alpha.1", path = "./vm/" }
 # node = { version = "1.1.0", package = "dusk-node" }

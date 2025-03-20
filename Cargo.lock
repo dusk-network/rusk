@@ -1640,7 +1640,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-core"
-version = "1.2.1-alpha.1"
+version = "1.2.1"
 dependencies = [
  "ark-bn254",
  "ark-groth16",
