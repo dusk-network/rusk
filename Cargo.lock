@@ -1640,7 +1640,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-core"
-version = "1.1.1-alpha.1"
+version = "1.2.1-alpha.1"
 dependencies = [
  "ark-bn254",
  "ark-groth16",
@@ -2558,6 +2558,9 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "hkdf"
@@ -3776,9 +3779,9 @@ dependencies = [
 
 [[package]]
 name = "piecrust"
-version = "0.28.0-rc.6"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c91f996112275d773527d72c61c01142d7f25ef939b70f0c090783042eed2533"
+checksum = "3176181593dd00011be2ab35d7e69a6eb942a2788d64786529b649a591c56cac"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -3798,11 +3801,10 @@ dependencies = [
 
 [[package]]
 name = "piecrust-uplink"
-version = "0.17.3"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e681bcea1ea7f82f8b66649da42d1fb7a23ab85f9d0acbf99fca4e560a2f1400"
+checksum = "f06841f29feebec770eb50944fca6fc5639ea7bae8100b71aa6bfca8cd8246b3"
 dependencies = [
- "base64 0.22.1",
  "bytecheck",
  "dlmalloc",
  "hex",

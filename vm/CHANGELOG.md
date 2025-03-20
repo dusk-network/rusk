@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Change piecrust version requirement to 0.28.0-rc.6
+- Change piecrust version requirement to `0.28.0`
 
 ## [1.1.0] - 2025-02-14
 
