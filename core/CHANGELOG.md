@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add Serde JSON support for genesis contract args [#3533]
 
+### Changed
+
+- Change `piecrust-uplink` version to `0.18.0`
+
 ## [1.1.0] - 2025-02-14
 
 ### Changed
