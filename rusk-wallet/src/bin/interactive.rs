@@ -12,11 +12,14 @@ use bip39::{Language, Mnemonic, MnemonicType};
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
-use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
+use rusk_wallet::{
+    Address, Error, Profile, Wallet, WalletPath, IV_SIZE, MAX_PROFILES,
+    SALT_SIZE,
+};
 
 use crate::io::{self, prompt};
 use crate::settings::Settings;
-use crate::{Command, GraphQL, RunResult, WalletFile};
+use crate::{gen_iv, gen_salt, Command, GraphQL, RunResult, WalletFile};
 
 /// Run the interactive UX loop with a loaded wallet
 pub(crate) async fn run_loop(
@@ -25,7 +28,7 @@ pub(crate) async fn run_loop(
 ) -> anyhow::Result<()> {
     loop {
         // let the user choose (or create) a profile
-        let profile_index = profile_idx(wallet, settings).await?;
+        let profile_index = profile_idx(wallet).await?;
 
         loop {
             let profile = &wallet.profiles()[profile_index as usize];
@@ -131,10 +134,7 @@ enum ProfileSelect<'a> {
     Back,
 }
 
-async fn profile_idx(
-    wallet: &mut Wallet<WalletFile>,
-    settings: &Settings,
-) -> anyhow::Result<u8> {
+async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
     match menu_profile(wallet)? {
         ProfileSelect::Index(index, _) => Ok(index),
         ProfileSelect::New => {
@@ -147,28 +147,8 @@ async fn profile_idx(
             }
 
             let profile_idx = wallet.add_profile();
-            let file_version = wallet.get_file_version()?;
 
-            let password = &settings.password;
-            // if the version file is old, ask for password and save as
-            // latest dat file
-            if file_version.is_old() {
-                let pwd = prompt::request_auth(
-                        "Updating your wallet data file, please enter your wallet password ",
-                        password,
-                        DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-                    )?;
-
-                // UNWRAP: we can safely unwrap here because we know the file is
-                // not None since we've checked the file version
-                wallet.save_to(WalletFile {
-                    path: wallet.file().clone().unwrap().path,
-                    pwd,
-                })?;
-            } else {
-                // else just save
-                wallet.save()?;
-            }
+            wallet.save()?;
 
             Ok(profile_idx)
         }
@@ -225,11 +205,17 @@ enum ProfileOp {
     Stay,
 }
 
+type Salt = [u8; SALT_SIZE];
+type Iv = [u8; IV_SIZE];
+
 /// Allows the user to load a wallet interactively
 pub(crate) async fn load_wallet(
     wallet_path: &WalletPath,
     settings: &Settings,
-    file_version: Result<DatFileVersion, Error>,
+    file_version_and_salt_iv: Result<
+        (DatFileVersion, Option<(Salt, Iv)>),
+        Error,
+    >,
 ) -> anyhow::Result<Wallet<WalletFile>> {
     let wallet_found =
         wallet_path.inner().exists().then(|| wallet_path.clone());
@@ -239,17 +225,20 @@ pub(crate) async fn load_wallet(
     // display main menu
     let wallet = match menu_wallet(wallet_found, settings).await? {
         MainMenu::Load(path) => {
-            let file_version = file_version?;
+            let (file_version, salt_and_iv) = file_version_and_salt_iv?;
             let mut attempt = 1;
             loop {
-                let pwd = prompt::request_auth(
+                let key = prompt::derive_key_from_password(
                     "Please enter your wallet password",
                     password,
+                    salt_and_iv.map(|si| si.0).as_ref(),
                     file_version,
                 )?;
                 match Wallet::from_file(WalletFile {
                     path: path.clone(),
-                    pwd,
+                    aes_key: key,
+                    salt: salt_and_iv.map(|si| si.0),
+                    iv: salt_and_iv.map(|si| si.1),
                 }) {
                     Ok(wallet) => break wallet,
                     Err(_) if attempt > 2 => {
@@ -267,9 +256,12 @@ pub(crate) async fn load_wallet(
             // create a new randomly generated mnemonic phrase
             let mnemonic =
                 Mnemonic::new(MnemonicType::Words12, Language::English);
+            let salt = gen_salt();
+            let iv = gen_iv();
             // ask user for a password to secure the wallet
-            let pwd = prompt::create_password(
+            let key = prompt::derive_key_from_new_password(
                 password,
+                Some(&salt),
                 DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
             )?;
             // display the mnemonic phrase
@@ -277,22 +269,35 @@ pub(crate) async fn load_wallet(
             // create and store the wallet
             let mut w = Wallet::new(mnemonic)?;
             let path = wallet_path.clone();
-            w.save_to(WalletFile { path, pwd })?;
+            w.save_to(WalletFile {
+                path,
+                aes_key: key,
+                salt: Some(salt),
+                iv: Some(iv),
+            })?;
             w
         }
         MainMenu::Recover => {
             // ask user for 12-word mnemonic phrase
             let phrase = prompt::request_mnemonic_phrase()?;
+            let salt = gen_salt();
+            let iv = gen_iv();
             // ask user for a password to secure the wallet, create the latest
             // wallet file from the seed
-            let pwd = prompt::create_password(
+            let key = prompt::derive_key_from_new_password(
                 &None,
+                Some(&salt),
                 DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
             )?;
             // create and store the recovered wallet
             let mut w = Wallet::new(phrase)?;
             let path = wallet_path.clone();
-            w.save_to(WalletFile { path, pwd })?;
+            w.save_to(WalletFile {
+                path,
+                aes_key: key,
+                salt: Some(salt),
+                iv: Some(iv),
+            })?;
             w
         }
         MainMenu::Exit => std::process::exit(0),
