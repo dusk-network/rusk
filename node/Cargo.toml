@@ -1,6 +1,6 @@
 [package]
 name = "dusk-node"
-version = "1.1.1-alpha.1"
+version = "1.2.1-alpha.1"
 edition = "2021"
 autobins = false
 repository = "https://github.com/dusk-network/rusk"
@@ -19,6 +19,7 @@ async-trait = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 async-channel = { workspace = true }
 time-util = { workspace = true, features = ["chrono"] }
+native-tls = { workspace = true } # 0.2.14 requires rustc 1.80.0
 
 rkyv = { workspace = true }
 
