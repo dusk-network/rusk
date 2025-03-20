@@ -46,7 +46,7 @@ pub(crate) async fn sync_db(
     let mut stream = client
         .call_raw(
             CONTRACTS_TARGET,
-            TRANSFER_CONTRACT,
+            Some(TRANSFER_CONTRACT.to_string()),
             "leaves_from_pos",
             &req,
             true,
