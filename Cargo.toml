@@ -69,7 +69,7 @@ jubjub-schnorr = { version = "0.6", default-features = false }
 kadcast = "0.7"
 phoenix-circuits = { version = "0.6", default-features = false }
 phoenix-core = { version = "0.34.0", default-features = false }
-piecrust = "0.28.0-rc.6"
+piecrust = "0.28.0"
 piecrust-uplink = "0.18.0"
 poseidon-merkle = "0.8"
 

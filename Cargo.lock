@@ -3779,9 +3779,9 @@ dependencies = [
 
 [[package]]
 name = "piecrust"
-version = "0.28.0-rc.6"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c91f996112275d773527d72c61c01142d7f25ef939b70f0c090783042eed2533"
+checksum = "3176181593dd00011be2ab35d7e69a6eb942a2788d64786529b649a591c56cac"
 dependencies = [
  "blake3",
  "bytecheck",
