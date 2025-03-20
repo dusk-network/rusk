@@ -19,6 +19,7 @@ async-trait = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 async-channel = { workspace = true }
 time-util = { workspace = true, features = ["chrono"] }
+native-tls = { workspace = true } # 0.2.14 requires rustc 1.80.0
 
 rkyv = { workspace = true }
 

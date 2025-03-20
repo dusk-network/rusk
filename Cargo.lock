@@ -1777,6 +1777,7 @@ dependencies = [
  "memory-stats",
  "metrics",
  "metrics-exporter-prometheus",
+ "native-tls",
  "rand 0.8.5",
  "rkyv",
  "rocksdb",
