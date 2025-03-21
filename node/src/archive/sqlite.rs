@@ -421,37 +421,11 @@ impl Archive {
 }
 
 mod data {
-    use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
     use node_data::events::contract::{
         ContractEvent, ContractTxEvent, ORIGIN_HASH_BYTES,
     };
     use serde::{Deserialize, Serialize};
     use sqlx::FromRow;
-
-    // TODO: implement TryFrom<String> in piecrust for ContractId
-    // Remove this once https://github.com/dusk-network/piecrust/pull/421 is available
-    struct WrappedContractId(pub ContractId);
-
-    impl TryFrom<String> for WrappedContractId {
-        type Error = anyhow::Error;
-
-        fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
-            let source_bytes = hex::decode(value)?;
-            let mut source_array = [0u8; CONTRACT_ID_BYTES];
-
-            if source_bytes.len() != CONTRACT_ID_BYTES {
-                return Err(anyhow::anyhow!(
-                    "Invalid length: expected {} bytes, got {}",
-                    CONTRACT_ID_BYTES,
-                    source_bytes.len()
-                ));
-            } else {
-                source_array.copy_from_slice(&source_bytes);
-            }
-
-            Ok(WrappedContractId(ContractId::from_bytes(source_array)))
-        }
-    }
 
     /// Archived ContractTxEvent
     ///
@@ -491,11 +465,11 @@ mod data {
                 origin_array.copy_from_slice(&origin);
             }
 
-            let target = WrappedContractId::try_from(value.source)?;
+            let target = value.source.try_into()?;
 
             Ok(ContractTxEvent {
                 event: ContractEvent {
-                    target: target.0,
+                    target,
                     topic: value.topic,
                     data: value.data,
                 },
