@@ -1307,8 +1307,7 @@ dependencies = [
 [[package]]
 name = "crumbles"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8e75f60d6b7f88bcbb2468fee550a1db73c5c9d0f89526dfbd5d2aa89039636"
+source = "git+https://github.com/dusk-network/piecrust?branch=issue-419#39bfd037d40eaaef7cc4b1bf6b12eb94153866ea"
 dependencies = [
  "libc",
  "rangemap",
@@ -3693,9 +3692,8 @@ dependencies = [
 
 [[package]]
 name = "piecrust"
-version = "0.28.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcaa45ab19c466d95d233e729167673c876a2075e71fa8a51e4053883c24d11e"
+version = "0.28.0-rc.6"
+source = "git+https://github.com/dusk-network/piecrust?branch=issue-419#39bfd037d40eaaef7cc4b1bf6b12eb94153866ea"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -3716,11 +3714,11 @@ dependencies = [
 [[package]]
 name = "piecrust-uplink"
 version = "0.17.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e681bcea1ea7f82f8b66649da42d1fb7a23ab85f9d0acbf99fca4e560a2f1400"
+source = "git+https://github.com/dusk-network/piecrust?branch=issue-419#39bfd037d40eaaef7cc4b1bf6b12eb94153866ea"
 dependencies = [
  "bytecheck",
  "dlmalloc",
+ "hex",
  "rkyv",
 ]
 
