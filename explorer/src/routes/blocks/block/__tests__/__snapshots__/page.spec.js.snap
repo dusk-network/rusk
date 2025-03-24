@@ -552,35 +552,35 @@ exports[`Block Details > should render the Block Details page and query the nece
                 class="table__row"
               >
                 <th
-                  class="table__header-cell"
+                  class="table__header-cell align-left"
                 >
                   ID
                 </th>
                 
                  
                 <th
-                  class="table__header-cell"
+                  class="table__header-cell align-left"
                 >
                   Gas
                 </th>
                 
                  
                 <th
-                  class="table__header-cell"
+                  class="table__header-cell align-left"
                 >
                   Fee (DUSK)
                 </th>
                 
                  
                 <th
-                  class="table__header-cell"
+                  class="table__header-cell align-left"
                 >
                   Status
                 </th>
                 
                  
                 <th
-                  class="table__header-cell"
+                  class="table__header-cell align-left"
                 >
                   Type
                 </th>
@@ -596,7 +596,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 class="table__row"
               >
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   <a
                     class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -615,7 +615,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 
                  
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   <b
                     class="transaction__fee-price-label"
@@ -637,14 +637,14 @@ exports[`Block Details > should render the Block Details page and query the nece
                 
                  
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   0.000290866
                 </td>
                 
                  
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   <span
                     class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -655,7 +655,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 
                  
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   <div
                     class="transaction-type"
@@ -691,7 +691,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 class="table__row"
               >
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   <a
                     class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -710,7 +710,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 
                  
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   <b
                     class="transaction__fee-price-label"
@@ -732,14 +732,14 @@ exports[`Block Details > should render the Block Details page and query the nece
                 
                  
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   0.000289852
                 </td>
                 
                  
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   <span
                     class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -750,7 +750,7 @@ exports[`Block Details > should render the Block Details page and query the nece
                 
                  
                 <td
-                  class="table__data-cell"
+                  class="table__data-cell align-left"
                 >
                   <div
                     class="transaction-type"

@@ -2035,28 +2035,28 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <th
-                class="table__header-cell"
+                class="table__header-cell align-left"
               >
                 Block
               </th>
               
                
               <th
-                class="table__header-cell"
+                class="table__header-cell align-left"
               >
                 Gas
               </th>
               
                
               <th
-                class="table__header-cell"
+                class="table__header-cell align-left"
               >
                 Txn(s)
               </th>
               
                
               <th
-                class="table__header-cell"
+                class="table__header-cell align-left"
               >
                 Rewards (Dusk)
               </th>
@@ -2072,7 +2072,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2091,7 +2091,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2113,14 +2113,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2132,7 +2132,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2151,7 +2151,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2173,14 +2173,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2192,7 +2192,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2211,7 +2211,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2233,14 +2233,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2252,7 +2252,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2271,7 +2271,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2293,14 +2293,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2312,7 +2312,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2331,7 +2331,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2353,14 +2353,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2372,7 +2372,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2391,7 +2391,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2413,14 +2413,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2432,7 +2432,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2451,7 +2451,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2473,14 +2473,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2492,7 +2492,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2511,7 +2511,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2533,14 +2533,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2552,7 +2552,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2571,7 +2571,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2593,14 +2593,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2612,7 +2612,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2631,7 +2631,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2653,14 +2653,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2672,7 +2672,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2691,7 +2691,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2713,14 +2713,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2732,7 +2732,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2751,7 +2751,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2773,14 +2773,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2792,7 +2792,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2811,7 +2811,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2833,14 +2833,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2852,7 +2852,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2871,7 +2871,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2893,14 +2893,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>
@@ -2912,7 +2912,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -2931,7 +2931,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="block__fee-avg-label"
@@ -2953,14 +2953,14 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 16
               </td>

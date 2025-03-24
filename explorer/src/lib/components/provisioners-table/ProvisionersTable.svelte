@@ -27,6 +27,8 @@
 
   const numberFormatter = createValueFormatter("en");
 
+  const fixedNumberFormatter = createValueFormatter("en", 2, 2);
+
   $: classes = makeClassName(["provisioners-table", className]);
 </script>
 
@@ -37,7 +39,7 @@
       <TableCell type="th">Owner</TableCell>
       <TableCell type="th">Stake</TableCell>
       <TableCell type="th">Slashes</TableCell>
-      <TableCell type="th">Accumulated Reward (DUSK)</TableCell>
+      <TableCell type="th" align="right">Accumulated Reward</TableCell>
     </TableRow>
   </TableHead>
   <TableBody>
@@ -73,7 +75,21 @@
           <b class="provisioners-table__slash-data-label">Hard:</b>
           {numberFormatter(provisioner.hard_faults)}
         </TableCell>
-        <TableCell>{numberFormatter(luxToDusk(provisioner.reward))}</TableCell>
+        {@const parts = fixedNumberFormatter(
+          luxToDusk(provisioner.reward)
+        ).split(".")}
+        <TableCell align="right">
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-type="info"
+            data-tooltip-text="{numberFormatter(
+              luxToDusk(provisioner.reward)
+            )} DUSK"
+          >
+            {parts[0]}.<span class="decimal-shadow">{parts[1]}</span>
+          </span>
+        </TableCell>
       </TableRow>
     {/each}
   </TableBody>

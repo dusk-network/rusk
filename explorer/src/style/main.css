@@ -84,3 +84,7 @@ svg {
     padding: 0 1.25rem;
   }
 }
+
+.decimal-shadow {
+  opacity: 0.5;
+}

@@ -18,13 +18,13 @@ exports[`Table > renders the TableBody component 1`] = `
 
 exports[`Table > renders the TableCell component 1`] = `
 <td
-  class="table__data-cell"
+  class="table__data-cell align-left"
 />
 `;
 
 exports[`Table > renders the TableCell component as a head cell 1`] = `
 <th
-  class="table__header-cell"
+  class="table__header-cell align-left"
 />
 `;
 
