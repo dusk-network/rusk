@@ -16,6 +16,7 @@ use io::prompt::{ask_pwd, derive_key};
 
 use std::fs::{self, File};
 use std::io::Write;
+use std::path::PathBuf;
 
 use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Parser;
@@ -311,11 +312,8 @@ async fn exec() -> anyhow::Result<()> {
                     }
                 };
 
-                let (salt, iv) = if let Some((salt, iv)) = salt_and_iv {
-                    (salt, iv)
-                } else {
-                    (gen_salt(), gen_iv())
-                };
+                let (salt, iv) =
+                    salt_and_iv.unwrap_or_else(|| (gen_salt(), gen_iv()));
                 w.save_to(WalletFile {
                     path: wallet_path,
                     aes_key: key,
@@ -372,7 +370,7 @@ async fn exec() -> anyhow::Result<()> {
             ..old_wallet_file.clone()
         })?;
 
-        save_old_wallet(&old_wallet_file.path)?;
+        let old_wallet_path = save_old_wallet(&old_wallet_file.path)?;
 
         let key = derive_key(
             DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
@@ -385,6 +383,10 @@ async fn exec() -> anyhow::Result<()> {
             salt: Some(salt),
             iv: Some(iv),
         })?;
+        println!(
+            "Update successful. Old wallet data file is saved at {}",
+            old_wallet_path.display()
+        );
     }
 
     // set our status callback
@@ -494,12 +496,12 @@ async fn exec() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn save_old_wallet(wallet_path: &WalletPath) -> Result<(), Error> {
+fn save_old_wallet(wallet_path: &WalletPath) -> Result<PathBuf, Error> {
     let mut old_wallet_path = wallet_path.wallet.clone();
     old_wallet_path.pop();
     old_wallet_path.push("wallet.dat.old");
-    fs::copy(&wallet_path.wallet, old_wallet_path)?;
-    Ok(())
+    fs::copy(&wallet_path.wallet, &old_wallet_path)?;
+    Ok(old_wallet_path)
 }
 
 fn gen_salt() -> [u8; SALT_SIZE] {
