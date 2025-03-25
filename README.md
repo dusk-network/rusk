@@ -17,7 +17,7 @@
 <a href="https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml">
 <img src="https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml/badge.svg" alt="web-wallet CI"></a>
 &nbsp;
-<a href="">
+<a href="https://github.com/dusk-network/rusk/stargazers">
 <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/dusk-network/rusk?style=social"></a>
 &nbsp;
 <a href="https://discord.gg/dusk-official">
