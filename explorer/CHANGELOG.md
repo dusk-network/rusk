@@ -19,6 +19,8 @@ and this project adheres to
 
 ### Fixed
 
+- Fix current balance showing "Loading..." for empty accounts [#3576]
+
 ## [1.1.1] - 2025-03-17
 
 - Add current balance (Account page) [#3564]
@@ -172,6 +174,7 @@ and this project adheres to
 [#3454]: https://github.com/dusk-network/rusk/issues/3454
 [#3545]: https://github.com/dusk-network/rusk/issues/3454
 [#3564]: https://github.com/dusk-network/rusk/issues/3564
+[#3564]: https://github.com/dusk-network/rusk/issues/3576
 [#3578]: https://github.com/dusk-network/rusk/issues/3578
 
 <!-- VERSIONS -->

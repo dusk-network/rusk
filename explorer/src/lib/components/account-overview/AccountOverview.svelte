@@ -55,7 +55,7 @@
     <OverviewPanelDetailsItem
       title={errorFetchingAccountStatus
         ? "N/A"
-        : accountBalance
+        : accountBalance !== undefined
           ? `${formatter(luxToDusk(accountBalance))} DUSK`
           : "Loading..."}
       subtitle="Current Balance"
