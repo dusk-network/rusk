@@ -1,0 +1,117 @@
+# JSON-RPC Server Configuration
+# This file contains all available configuration options with their default values
+
+# HTTP server configuration
+[http]
+# Socket address to bind the HTTP server to (IPv4 or IPv6 address with port)
+bind_address = "127.0.0.1:8546"
+
+# Maximum request body size in bytes (10 MB)
+max_body_size = 10485760
+
+# Request timeout in seconds
+request_timeout = 30
+
+# Maximum number of concurrent connections
+max_connections = 100
+
+# CORS (Cross-Origin Resource Sharing) configuration
+[http.cors]
+# Whether CORS is enabled
+enabled = true
+
+# Allowed origins (empty array means all origins are allowed)
+# Example: allowed_origins = ["https://example.com", "https://test.com"]
+allowed_origins = []
+
+# Allowed HTTP methods
+allowed_methods = ["POST", "GET"]
+
+# Allowed HTTP headers
+allowed_headers = ["Content-Type", "Rusk-Version"]
+
+# Whether to allow credentials (cookies, authorization headers, etc.)
+allow_credentials = false
+
+# Maximum age for preflight requests in seconds (24 hours)
+max_age_seconds = 86400
+
+# WebSocket server configuration
+[ws]
+# Socket address to bind the WebSocket server to
+bind_address = "127.0.0.1:8547"
+
+# Maximum message size in bytes (1 MB)
+max_message_size = 1048576
+
+# Maximum number of concurrent connections
+max_connections = 50
+
+# Maximum number of subscriptions per connection
+max_subscriptions_per_connection = 10
+
+# Idle timeout in seconds (5 minutes)
+idle_timeout = 300
+
+# Maximum number of events per second per connection
+max_events_per_second = 100
+
+# Rate limiting configuration
+[rate_limit]
+# Whether rate limiting is enabled
+enabled = true
+
+# Default rate limit for all methods
+[rate_limit.default_limit]
+# Maximum number of requests within the time window
+requests = 100
+
+# Time window in seconds
+window = 60
+
+# WebSocket connection rate limit
+[rate_limit.websocket_limit]
+# Maximum number of new WebSocket connections within the time window
+requests = 10
+
+# Time window in seconds
+window = 60
+
+# Method-specific rate limits
+# These override the default rate limit for specific method patterns
+# The patterns support * as wildcard
+[[rate_limit.method_limits]]
+method_pattern = "get*"
+limit = { requests = 200, window = 60 }  # 200 requests per minute for all get* methods
+
+[[rate_limit.method_limits]]
+method_pattern = "prove"
+limit = { requests = 10, window = 60 }   # 10 requests per minute for the prove method
+
+# Feature toggles
+[features]
+# Whether to enable WebSocket subscriptions
+enable_websocket = true
+
+# Whether to enable detailed error messages
+# If false, minimal error information is returned to clients
+detailed_errors = true
+
+# Whether to enable method timing metrics
+method_timing = true
+
+# Whether to enable strict version checking
+# If true, clients must specify a compatible Rusk-Version header
+strict_version_checking = false
+
+# Whether to validate parameters strictly
+# If true, extra parameters in requests will cause validation errors
+strict_parameter_validation = true
+
+# Maximum block range allowed for range queries
+# This prevents excessive resource usage in block range queries
+max_block_range = 1000
+
+# Maximum items in batch requests
+# This limits the number of requests that can be batched in a single JSON-RPC call
+max_batch_size = 20

@@ -20,7 +20,7 @@ name = "rusk"
 path = "src/bin/main.rs"
 
 [dependencies]
-tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros", "full"] }
 futures-util = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = [
@@ -84,6 +84,15 @@ rusk-recovery = { workspace = true, optional = true }
 ## testwallet dependencies
 futures = { workspace = true, optional = true }
 
+## JSON-RPC server dependencies
+axum = { workspace = true, features = ["json", "macros"], optional = true }
+http = { workspace = true, optional = true }
+lazy_static = { workspace = true, optional = true }
+proptest = { workspace = true, optional = true }
+thiserror = { workspace = true, optional = true }
+tower = { workspace = true, features = ["util"], optional = true }
+tower-http = { workspace = true, features = ["cors", "limit", "trace"], optional = true }
+
 [dev-dependencies]
 wallet-core = { workspace = true }
 zeroize = { workspace = true, features = ["derive"] }
@@ -113,8 +122,21 @@ archive = ["chain", "node/archive", "dusk-core/serde"]
 network-trace = ["node/network-trace"]
 http-wasm = []
 dynamic-verifier = []
+jsonrpc = [
+    "axum",
+    "http",
+    "lazy_static",
+    "proptest",
+    "thiserror",
+    "tower",
+    "tower-http"
+]
 
 [[bench]]
 name = "block_ingestion"
 harness = false
 required-features = ["testwallet"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

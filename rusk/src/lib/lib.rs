@@ -9,6 +9,7 @@
 mod bloom;
 mod error;
 pub mod http;
+#[cfg(feature = "jsonrpc")]
 pub mod jsonrpc;
 #[cfg(feature = "chain")]
 pub mod node;
