@@ -714,6 +714,15 @@ impl JsonRpcConfig {
             }
         }
 
+        // Override with config file from environment variable
+        // JSON_RPC_CONFIG_PATH if set
+        if let Ok(path) = env::var("RUSK_JSONRPC_CONFIG_PATH") {
+            let path = PathBuf::from(path);
+            if path.exists() {
+                config = Self::from_file(&path)?;
+            }
+        }
+
         // Get environment configuration
         let env_config = Self::from_env()?;
 
