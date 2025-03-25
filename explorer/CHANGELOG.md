@@ -11,7 +11,7 @@ and this project adheres to
 ### Added
 
 - Add Tokens page [#3415]
-- Add current balance (Account page) [#3564]
+- Add "nonce" to transaction details page (Public transactions) [#3578]
 
 ### Changed
 
@@ -172,6 +172,7 @@ and this project adheres to
 [#3454]: https://github.com/dusk-network/rusk/issues/3454
 [#3545]: https://github.com/dusk-network/rusk/issues/3454
 [#3564]: https://github.com/dusk-network/rusk/issues/3564
+[#3578]: https://github.com/dusk-network/rusk/issues/3578
 
 <!-- VERSIONS -->
 

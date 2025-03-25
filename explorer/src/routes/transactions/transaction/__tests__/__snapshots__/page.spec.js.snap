@@ -385,6 +385,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
         >
           290766
         </dd>
+        
         <dt
           class="details-list__term"
         >
