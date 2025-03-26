@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add error handling for Rues' WebSocket [#3227]
 - Add possibility to listen to "connect", "disconnect" and "error" events on the Network instance [#3227]
+- Add keep-alive behaviour in Rues' websocket [#3582]
 
 ### Changed
 
@@ -29,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `AddressSyncer`'s notes stream hiding a case of error while processing notes [#3227]
 - Fix `AddressSyncer`'s BYOB reader not being cancelled after an error [#3227]
 - Fix Rues not dispatching a "disconnect" event when the socket closes on its own [#3568]
+- Fix AbortController's abort on Rues events not triggering unsubscription from server [#3582]
 
 ## [1.0.0] - 2025-01-15
 
@@ -39,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3227]: https://github.com/dusk-network/rusk/issues/3227
 [#3460]: https://github.com/dusk-network/rusk/issues/3460
 [#3568]: https://github.com/dusk-network/rusk/issues/3568
+[#3582]: https://github.com/dusk-network/rusk/issues/3582
 
 <!-- VERSIONS -->
 

@@ -9,6 +9,7 @@ import { ListenerProxy } from "./listener.js";
 import { RuesEvent } from "./event.js";
 import { RuesScope } from "./scope.js";
 
+const KEEP_ALIVE_INTERVAL = 30000;
 const _rues = Symbol("rues");
 
 const protocol = { "https:": "wss:", "http:": "ws:" };
@@ -67,6 +68,7 @@ export class Rues extends EventTarget {
   #scopes;
   #session;
   #version = "1.0.0-rc.0";
+  #keepAliveId;
 
   constructor(url, options = {}) {
     super();
@@ -90,6 +92,20 @@ export class Rues extends EventTarget {
     }
 
     this.#session = Promise.withResolvers();
+  }
+
+  #startKeepAlive() {
+    this.#keepAliveId = setTimeout(() => {
+      // the socket could be closing
+      if (this.#socket.readyState === WebSocket.OPEN) {
+        this.#socket.send("");
+        this.#startKeepAlive();
+      }
+    }, KEEP_ALIVE_INTERVAL);
+  }
+
+  #stopKeepAlive() {
+    clearTimeout(this.#keepAliveId);
   }
 
   get url() {
@@ -161,6 +177,7 @@ export class Rues extends EventTarget {
     };
 
     once(socket, "close").finally(() => {
+      this.#stopKeepAlive();
       this.#session = Promise.withResolvers();
       this.dispatchEvent(new CustomEvent("disconnect"));
     });
@@ -178,6 +195,7 @@ export class Rues extends EventTarget {
         socket.addEventListener("message", this, { signal });
         this.#session.resolve(event.data);
         this.dispatchEvent(new CustomEvent("connect"));
+        this.#startKeepAlive();
       })
       .catch((err) => {
         this.#session.reject(err);
@@ -217,6 +235,9 @@ export class Rues extends EventTarget {
 
   handleEvent(event) {
     if (event instanceof MessageEvent) {
+      this.#stopKeepAlive();
+      this.#startKeepAlive();
+
       let ruesEvent = RuesEvent.from(event);
 
       const scope = this.#scopes.get(ruesEvent.origin.scope);

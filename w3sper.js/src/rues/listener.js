@@ -60,13 +60,13 @@ const subscribe = async (target, topic, options) => {
 
 const unsubscribe = async (target, topic, options) => {
   const headers = merge(target[_target].options.headers, options.headers);
-  options = { ...target[_target].options, ...options, headers };
 
-  const { signal } = options;
-
-  if (signal?.aborted) {
-    return;
-  }
+  /**
+   * We don't use all the options, because if the signal has
+   * been aborted by a user to remove a listener we still
+   * want to unsubscribe from the RUES event.
+   */
+  options = { ...target[_target].options, headers };
 
   const eventURL = new URL(target[_target].toURL() + topic);
   const { rues } = target[_target];
