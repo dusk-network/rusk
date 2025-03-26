@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed AddressTransfer to support memo data [#3460]
+- Prevent new WebSocket creation if a connection is still active [#3568]
 
 ### Removed
 
@@ -27,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix "subscribe" and "unsubscribe" response body being cancelled after error throwing [#3227]
 - Fix `AddressSyncer`'s notes stream hiding a case of error while processing notes [#3227]
 - Fix `AddressSyncer`'s BYOB reader not being cancelled after an error [#3227]
+- Fix Rues not dispatching a "disconnect" event when the socket closes on its own [#3568]
 
 ## [1.0.0] - 2025-01-15
 
@@ -36,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#3227]: https://github.com/dusk-network/rusk/issues/3227
 [#3460]: https://github.com/dusk-network/rusk/issues/3460
+[#3568]: https://github.com/dusk-network/rusk/issues/3568
 
 <!-- VERSIONS -->
 
