@@ -133,8 +133,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 future_msgs.lock().await.remove_msgs_by_round(ru.round - 1);
             }
 
-            let sv_registry =
-                Arc::new(Mutex::new(AttInfoRegistry::new(ru.clone())));
+            let sv_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
 
             let proposal_handler = Arc::new(Mutex::new(
                 proposal::handler::ProposalHandler::new(db.clone()),
