@@ -220,11 +220,6 @@ impl MsgHandler for RatificationHandler {
             quorum_reached,
             &generator.expect("There must be a valid generator"),
         ) {
-            // INFO: we set Validation SV to our local result to always include
-            // a quorum-reaching (if any) SV even if the Ratification result is
-            // NoQuorum
-            let validation_sv = *self.validation_result.sv();
-
             let ch = ConsensusHeader {
                 prev_block_hash: ru.hash(),
                 round: ru.round,
