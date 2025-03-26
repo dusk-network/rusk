@@ -229,6 +229,14 @@
       <svelte:fragment slot="definition">{data.gasspent}</svelte:fragment>
     </ListItem>
 
+    <!-- NONCE -->
+    {#if data.txtype.toLowerCase() === "moonlight" && jsonPayload?.nonce}
+      <ListItem tooltipText="The number of transactions sent from this address">
+        <svelte:fragment slot="term">nonce</svelte:fragment>
+        <svelte:fragment slot="definition">{jsonPayload.nonce}</svelte:fragment>
+      </ListItem>
+    {/if}
+
     <!-- MEMO -->
     <ListItem tooltipText="Transaction reference and additional notes">
       <svelte:fragment slot="term">
