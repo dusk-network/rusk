@@ -126,10 +126,20 @@ impl MsgHandler for RatificationHandler {
             return Err(ConsensusError::VoteMismatch(vr_vote, vote));
         }
 
-        // If the vote is a Quorum, check it against our result
-        // (NoQuorum votes need no verification)
-        if vote != Vote::NoQuorum {
-            // If our result is NoQuorum, verify votes and update our result
+        if vote == Vote::NoQuorum {
+            // If the vote is NoQuorum, ensure StepVotes is empty
+            if !p.validation_result.sv().is_empty() {
+                warn!(
+                    event = "Vote discarded",
+                    step = "Ratification",
+                    reason = "mismatch with msg ValidationResult",
+                    round = ru.round,
+                    iter = iteration
+                );
+                return Err(ConsensusError::InvalidVote(vote));
+            }
+        } else {
+            // If the vote is a Quorum, check it against our Validation result
             let local_vote = *self.validation_result().vote();
             match local_vote {
                 Vote::NoQuorum => {
