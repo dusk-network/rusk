@@ -229,7 +229,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             {
                                 debug!(
                                   event = "Quorum discarded",
-                                  reason = "past round/iter, or fork",
+                                  reason = "past round/future iteration/fork",
                                   round = qround,
                                   iter = qiter,
                                   vote = ?qmsg.vote(),
@@ -272,64 +272,74 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                 continue;
                             }
 
-                            // Store Fail Attestations in the Registry.
-                            //
-                            // INFO: We do it here so we can store
-                            // past-iteration Attestations without interrupting
-                            // the step execution
-                            if let RatificationResult::Fail(vote) = att.result {
-                                // Check if we know this Attestation
-                                let mut sv_registry =
-                                    self.sv_registry.lock().await;
+                            match att.result {
+                                RatificationResult::Fail(vote) => {
+                                    // Store Fail Attestations in the Registry.
+                                    //
+                                    // INFO: We do it here so we can store
+                                    // past-iteration Attestations without
+                                    // interrupting the step execution
 
-                                match sv_registry.get_fail_att(qiter) {
-                                    None => {
-                                        debug!(
-                                          event = "Storing Fail Attestation",
-                                          round = qround,
-                                          iter = qiter,
-                                          vote = ?vote,
-                                        );
+                                    let mut sv_registry =
+                                        self.sv_registry.lock().await;
 
-                                        let generator =
-                                            self.iter_ctx.get_generator(qiter);
+                                    match sv_registry.get_fail_att(qiter) {
+                                        None => {
+                                            debug!(
+                                              event = "Storing Fail Attestation",
+                                              round = qround,
+                                              iter = qiter,
+                                              vote = ?vote,
+                                            );
 
-                                        sv_registry
+                                            let generator = self
+                                                .iter_ctx
+                                                .get_generator(qiter);
+
+                                            sv_registry
                                             .set_attestation(
                                               qiter,
                                               att,
                                               &generator.expect("There must be a valid generator")
                                             );
+                                        }
+
+                                        Some(_) => {
+                                            debug!(
+                                              event = "Quorum discarded",
+                                              reason = "known Fail Attestation",
+                                              round = qround,
+                                              iter = qiter,
+                                              vote = ?vote,
+                                            );
+                                        }
                                     }
 
-                                    Some(_) => {
+                                    if qiter != iter {
+                                        continue;
+                                    }
+                                }
+
+                                RatificationResult::Success(_) => {
+                                    if qiter != iter {
                                         debug!(
                                           event = "Quorum discarded",
-                                          reason = "known Fail Quorum",
+                                          reason = "past iteration",
                                           round = qround,
                                           iter = qiter,
-                                          vote = ?vote,
+                                          vote = ?qmsg.vote(),
                                         );
+
+                                        continue;
                                     }
                                 }
                             }
 
-                            // If we receive a Quorum message for the
+                            // If we received a Quorum message for the
                             // current iteration, we terminate the step and
                             // pass the message to the Consensus task to
                             // terminate the iteration.
-                            // Messages for different iterations are discarded.
-                            if qiter == iter {
-                                return msg;
-                            } else {
-                                debug!(
-                                  event = "Quorum discarded",
-                                  reason = "different iteration",
-                                  round = qround,
-                                  iter = qiter,
-                                  vote = ?qmsg.vote(),
-                                );
-                            }
+                            return msg;
                         }
                         _ => {
                             warn!("Unexpected msg received in Consensus")
