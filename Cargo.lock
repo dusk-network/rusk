@@ -1307,7 +1307,7 @@ dependencies = [
 [[package]]
 name = "crumbles"
 version = "0.3.0"
-source = "git+https://github.com/dusk-network/piecrust?branch=issue-419#39bfd037d40eaaef7cc4b1bf6b12eb94153866ea"
+source = "git+https://github.com/dusk-network/piecrust?branch=issue-419-0.28.1-rc.0#0c05327738daf0b53e1b88626f1fd8501c720b49"
 dependencies = [
  "libc",
  "rangemap",
@@ -3693,7 +3693,7 @@ dependencies = [
 [[package]]
 name = "piecrust"
 version = "0.28.0-rc.6"
-source = "git+https://github.com/dusk-network/piecrust?branch=issue-419#39bfd037d40eaaef7cc4b1bf6b12eb94153866ea"
+source = "git+https://github.com/dusk-network/piecrust?branch=issue-419-0.28.1-rc.0#0c05327738daf0b53e1b88626f1fd8501c720b49"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -3714,7 +3714,7 @@ dependencies = [
 [[package]]
 name = "piecrust-uplink"
 version = "0.17.3"
-source = "git+https://github.com/dusk-network/piecrust?branch=issue-419#39bfd037d40eaaef7cc4b1bf6b12eb94153866ea"
+source = "git+https://github.com/dusk-network/piecrust?branch=issue-419-0.28.1-rc.0#0c05327738daf0b53e1b88626f1fd8501c720b49"
 dependencies = [
  "bytecheck",
  "dlmalloc",

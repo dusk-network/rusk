@@ -175,5 +175,5 @@ overflow-checks = true
 overflow-checks = true
 
 [patch.crates-io]
-piecrust = { git = "https://github.com/dusk-network/piecrust", branch = "issue-419" }
-piecrust-uplink = { git = "https://github.com/dusk-network/piecrust", branch = "issue-419" }
+piecrust = { git = "https://github.com/dusk-network/piecrust", branch = "issue-419-0.28.1-rc.0" }
+piecrust-uplink = { git = "https://github.com/dusk-network/piecrust", branch = "issue-419-0.28.1-rc.0" }
