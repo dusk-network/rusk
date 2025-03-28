@@ -355,6 +355,32 @@ pub(crate) fn request_transaction_model() -> anyhow::Result<TransactionModel> {
     )
 }
 
+pub enum ContractCall {
+    /// Call by http query (return values)
+    Query,
+    /// Call by a transaction (mutating state)
+    Transaction,
+}
+
+impl Display for ContractCall {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ContractCall::Query => write!(f, "By HTTP Query"),
+            ContractCall::Transaction => write!(f, "By Transaction"),
+        }
+    }
+}
+
+/// Request transaction model to use
+pub(crate) fn request_contract_call_method() -> anyhow::Result<ContractCall> {
+    let choices = vec![ContractCall::Query, ContractCall::Transaction];
+
+    Ok(
+        Select::new("Please specify the contract call method to use", choices)
+            .prompt()?,
+    )
+}
+
 /// Request transaction model to use
 pub(crate) fn request_address(
     current_idx: u8,
@@ -372,7 +398,8 @@ pub(crate) fn request_address(
 pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
     let validator = |path_str: &str| {
         let path = PathBuf::from(path_str);
-        if path.extension().map_or(false, |ext| ext == "wasm") {
+        if path.extension().map_or(false, |ext| ext == "wasm") && path.exists()
+        {
             Ok(Validation::Valid)
         } else {
             Ok(Validation::Invalid("Not a valid directory".into()))
