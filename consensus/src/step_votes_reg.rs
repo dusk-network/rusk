@@ -11,12 +11,9 @@ use std::sync::Arc;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Attestation, IterationInfo, StepVotes};
 use node_data::message::payload::{RatificationResult, Vote};
-use node_data::message::{payload, Message};
 use node_data::StepName;
 use tokio::sync::Mutex;
 use tracing::{debug, warn};
-
-use crate::commons::RoundUpdate;
 
 #[derive(Clone)]
 struct AttestationInfo {
@@ -30,7 +27,7 @@ impl fmt::Display for AttestationInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "att_info: {:?}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
+            "att_info: {:?}, validation: (sv:{:?},quorum_reached:{:?}), ratification: (sv:{:?},quorum_reached:{:?})",
             self.att.result,
             self.att.validation,
             self.quorum_reached_validation,
@@ -78,21 +75,20 @@ impl AttestationInfo {
             }
             _ => {
                 warn!(
-                    event = "invalid add_sv",
+                    event = "Invalid step for StepVotes",
                     iter,
+                    ?step,
                     data = format!("{}", self),
-                    quorum_reached,
-                    ?step
                 );
                 return;
             }
         }
 
         debug!(
-            event = "add_sv",
+            event = "StepVotes updated",
             iter,
+            ?step,
             data = format!("{}", self),
-            quorum_reached
         );
     }
 
@@ -152,23 +148,22 @@ impl IterationAtts {
 }
 
 pub struct AttInfoRegistry {
-    ru: RoundUpdate,
-
     /// Iterations attestations for current round keyed by iteration
     att_list: HashMap<u8, IterationAtts>,
 }
 
 impl AttInfoRegistry {
-    pub(crate) fn new(ru: RoundUpdate) -> Self {
+    pub(crate) fn new() -> Self {
         Self {
-            ru,
             att_list: HashMap::new(),
         }
     }
 
-    /// Set step votes per iteration
-    /// Returns a quorum if both validation and ratification for an iteration
-    /// exist
+    /// Set Validation or Ratification step votes for a specific iteration and
+    /// vote
+    ///
+    /// If the iteration reached a result (i.e. a quorum on Ratification), the
+    /// corresponding Attestation is returned
     pub(crate) fn set_step_votes(
         &mut self,
         iteration: u8,
@@ -177,7 +172,7 @@ impl AttInfoRegistry {
         step: StepName,
         quorum_reached: bool,
         generator: &PublicKeyBytes,
-    ) -> Option<Message> {
+    ) -> Option<Attestation> {
         if sv == StepVotes::default() {
             return None;
         }
@@ -187,15 +182,8 @@ impl AttInfoRegistry {
 
         att_info.set_sv(iteration, sv, step, quorum_reached);
 
-        let attestation = att_info.att;
-        let is_ready = att_info.is_ready();
-
-        if is_ready {
-            return Some(Self::build_quorum_msg(
-                &self.ru,
-                iteration,
-                attestation,
-            ));
+        if att_info.is_ready() {
+            return Some(att_info.att);
         }
 
         None
@@ -238,22 +226,6 @@ impl AttInfoRegistry {
             StepName::Ratification,
             true,
         );
-    }
-
-    fn build_quorum_msg(
-        ru: &RoundUpdate,
-        iteration: u8,
-        att: Attestation,
-    ) -> Message {
-        let header = node_data::message::ConsensusHeader {
-            prev_block_hash: ru.hash(),
-            round: ru.round,
-            iteration,
-        };
-
-        let payload = payload::Quorum { header, att };
-
-        payload.into()
     }
 
     pub(crate) fn get_failed_atts(&self, to: u8) -> Vec<Option<IterationInfo>> {
