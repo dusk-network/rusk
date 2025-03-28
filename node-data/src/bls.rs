@@ -165,11 +165,9 @@ fn read_from_file(
         )
     })?;
 
-    let mut hasher = Sha256::new();
-    hasher.update(pwd.as_bytes());
-    let hashed_pwd = hasher.finalize().to_vec();
+    let aes_key = hash_sha256(pwd);
 
-    let bytes = decrypt(&ciphertext[..], &hashed_pwd)
+    let bytes = decrypt(&ciphertext[..], &aes_key)
         .map_err(|e| anyhow::anyhow!("Invalid consensus keys password {e}"))?;
 
     let keys: BlsKeyPair = serde_json::from_slice(&bytes)
@@ -189,7 +187,7 @@ pub fn save_consensus_keys(
     filename: &str,
     pk: &BlsPublicKey,
     sk: &BlsSecretKey,
-    pwd: &[u8],
+    pwd: &str,
 ) -> Result<(PathBuf, PathBuf), ConsensusKeysError> {
     let path = path.join(filename);
     let bytes = pk.to_bytes();
@@ -202,11 +200,18 @@ pub fn save_consensus_keys(
     let json = serde_json::to_string(&bls)?;
 
     let mut bytes = json.as_bytes().to_vec();
-    bytes = encrypt(&bytes, pwd)?;
+    let aes_key = hash_sha256(pwd);
+    bytes = encrypt(&bytes, &aes_key)?;
 
     fs::write(path.with_extension("keys"), bytes)?;
 
     Ok((path.with_extension("keys"), path.with_extension("cpk")))
+}
+
+fn hash_sha256(pwd: &str) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(pwd.as_bytes());
+    hasher.finalize().to_vec()
 }
 
 #[serde_as]
@@ -272,13 +277,7 @@ mod tests {
         let pk = BlsPublicKey::from(&sk);
         let pwd = "password";
 
-        save_consensus_keys(
-            dir.path(),
-            "consensus",
-            &pk,
-            &sk,
-            &hashed_password(pwd),
-        )?;
+        save_consensus_keys(dir.path(), "consensus", &pk, &sk, pwd)?;
         let keys_path = dir.path().join("consensus.keys");
         let (loaded_sk, loaded_pk) = load_keys(
             keys_path
@@ -322,12 +321,6 @@ mod tests {
         assert_eq!(loaded_pk.inner, pk);
 
         Ok(())
-    }
-
-    fn hashed_password(pwd: &str) -> Vec<u8> {
-        let mut hasher = Sha256::new();
-        hasher.update(pwd.as_bytes());
-        hasher.finalize().to_vec()
     }
 
     fn get_wallet_gen_consensus_keys_path() -> PathBuf {
