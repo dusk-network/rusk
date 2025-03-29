@@ -52,6 +52,7 @@ type SerializerError = CompositeSerializerError<
 /// The error type returned by this crate.
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
+#[allow(dead_code)]
 pub enum Error<S: Store, SC: StateClient> {
     /// Underlying store error.
     Store(S::Error),
@@ -161,6 +162,7 @@ impl<S, SC> Wallet<S, SC> {
     }
 
     /// Return the inner Store reference
+    #[allow(dead_code)]
     pub const fn store(&self) -> &S {
         &self.store
     }
@@ -723,6 +725,7 @@ where
     }
 
     /// Transfer Dusk from one account to another using moonlight.
+    #[allow(dead_code)]
     pub fn moonlight_transfer(
         &self,
         sender_index: u8,
@@ -746,7 +749,7 @@ where
     }
 
     /// Creates a generic moonlight transaction.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, dead_code)]
     pub fn moonlight_transaction(
         &self,
         sender_index: u8,
