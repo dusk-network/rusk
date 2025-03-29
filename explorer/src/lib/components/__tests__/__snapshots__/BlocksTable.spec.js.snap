@@ -14,28 +14,28 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <th
-          class="table__header-cell"
+          class="table__header-cell align-left"
         >
           Block
         </th>
         
          
         <th
-          class="table__header-cell"
+          class="table__header-cell align-left"
         >
           Gas
         </th>
         
          
         <th
-          class="table__header-cell"
+          class="table__header-cell align-left"
         >
           Txn(s)
         </th>
         
          
         <th
-          class="table__header-cell"
+          class="table__header-cell align-left"
         >
           Rewards (Dusk)
         </th>
@@ -51,7 +51,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -70,7 +70,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -92,14 +92,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>
@@ -111,7 +111,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -130,7 +130,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -152,14 +152,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>
@@ -171,7 +171,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -190,7 +190,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -212,14 +212,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>
@@ -231,7 +231,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -250,7 +250,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -272,14 +272,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>
@@ -291,7 +291,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -310,7 +310,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -332,14 +332,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>
@@ -351,7 +351,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -370,7 +370,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -392,14 +392,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>
@@ -411,7 +411,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -430,7 +430,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -452,14 +452,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>
@@ -471,7 +471,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -490,7 +490,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -512,14 +512,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>
@@ -531,7 +531,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -550,7 +550,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -572,14 +572,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>
@@ -591,7 +591,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         class="table__row"
       >
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <a
             class="dusk-anchor dusk-anchor--on-surface block__link"
@@ -610,7 +610,7 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           <b
             class="block__fee-avg-label"
@@ -632,14 +632,14 @@ exports[`Blocks Table > should render the \`BlocksTable\` component 1`] = `
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           0
         </td>
         
          
         <td
-          class="table__data-cell"
+          class="table__data-cell align-left"
         >
           16
         </td>

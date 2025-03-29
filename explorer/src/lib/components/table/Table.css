@@ -31,6 +31,19 @@
   font-size: 0.75rem;
 }
 
+.table__header-cell.align-left,
+.table__data-cell.align-left {
+  text-align: left;
+}
+.table__header-cell.align-center,
+.table__data-cell.align-center {
+  text-align: center;
+}
+.table__header-cell.align-right,
+.table__data-cell.align-right {
+  text-align: right;
+}
+
 .table__row:hover {
   background-color: var(--on-primary-color);
 }

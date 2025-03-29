@@ -15,6 +15,8 @@ and this project adheres to
 
 ### Changed
 
+- Changed provisioner rewards column to be more readable
+
 ### Removed
 
 ### Fixed

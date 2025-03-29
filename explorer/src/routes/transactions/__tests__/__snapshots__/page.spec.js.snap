@@ -2590,35 +2590,35 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <th
-                class="table__header-cell"
+                class="table__header-cell align-left"
               >
                 ID
               </th>
               
                
               <th
-                class="table__header-cell"
+                class="table__header-cell align-left"
               >
                 Gas
               </th>
               
                
               <th
-                class="table__header-cell"
+                class="table__header-cell align-left"
               >
                 Fee (DUSK)
               </th>
               
                
               <th
-                class="table__header-cell"
+                class="table__header-cell align-left"
               >
                 Status
               </th>
               
                
               <th
-                class="table__header-cell"
+                class="table__header-cell align-left"
               >
                 Type
               </th>
@@ -2634,7 +2634,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -2653,7 +2653,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -2675,14 +2675,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008221117
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -2693,7 +2693,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -2729,7 +2729,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -2748,7 +2748,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -2770,14 +2770,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008221117
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -2788,7 +2788,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -2824,7 +2824,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -2843,7 +2843,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -2865,14 +2865,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008220846
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -2883,7 +2883,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -2919,7 +2919,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -2938,7 +2938,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -2960,14 +2960,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008221266
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -2978,7 +2978,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3014,7 +3014,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3033,7 +3033,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3055,14 +3055,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008220422
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3073,7 +3073,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3109,7 +3109,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3128,7 +3128,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3150,14 +3150,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008220926
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3168,7 +3168,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3204,7 +3204,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3223,7 +3223,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3245,14 +3245,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008221243
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3263,7 +3263,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3299,7 +3299,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3318,7 +3318,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3340,14 +3340,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008220934
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3358,7 +3358,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3394,7 +3394,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3413,7 +3413,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3435,14 +3435,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008220989
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3453,7 +3453,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3489,7 +3489,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3508,7 +3508,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3530,14 +3530,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008221018
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3548,7 +3548,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3584,7 +3584,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3603,7 +3603,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3625,14 +3625,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008220865
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3643,7 +3643,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3679,7 +3679,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3698,7 +3698,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3720,14 +3720,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008221367
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3738,7 +3738,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3774,7 +3774,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3793,7 +3793,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3815,14 +3815,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008220508
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3833,7 +3833,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3869,7 +3869,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3888,7 +3888,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -3910,14 +3910,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008220823
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -3928,7 +3928,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
@@ -3964,7 +3964,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               class="table__row"
             >
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <a
                   class="dusk-anchor dusk-anchor--on-surface transaction__link"
@@ -3983,7 +3983,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <b
                   class="transaction__fee-price-label"
@@ -4005,14 +4005,14 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 0.008220485
               </td>
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <span
                   class="dusk-badge dusk-badge--variant-success transaction-status"
@@ -4023,7 +4023,7 @@ exports[`Transactions page > should render the Transactions page, start polling 
               
                
               <td
-                class="table__data-cell"
+                class="table__data-cell align-left"
               >
                 <div
                   class="transaction-type"
