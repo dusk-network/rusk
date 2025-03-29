@@ -27,15 +27,7 @@ type SettingsStore = Writable<SettingsStoreContent> & {
   resetGasSettings: () => void;
 };
 
-type TransactionInfo =
-  | {
-      hash: string;
-      nullifiers: Uint8Array[];
-    }
-  | {
-      hash: string;
-      nonce: bigint;
-    };
+type TransactionInfo = Awaited<ReturnType<Network["execute"]>>;
 
 type TransactionsStoreContent = { transactions: Transaction[] };
 
@@ -50,20 +42,12 @@ type NetworkStoreContent = {
   networkName: string;
 };
 
-type NetworkSyncerOptions = {
-  signal?: AbortSignal;
-};
-
 type NetworkStoreServices = {
   checkBlock: (height: bigint, hash: string) => Promise<boolean>;
-  connect: () => Promise<import("$lib/vendor/w3sper.js/src/mod").Network>;
+  connect: () => Promise<Network>;
   disconnect: () => Promise<void>;
-  getAccountSyncer: (
-    options?: NetworkSyncerOptions
-  ) => Promise<import("$lib/vendor/w3sper.js/src/mod").AccountSyncer>;
-  getAddressSyncer: (
-    options?: NetworkSyncerOptions
-  ) => Promise<import("$lib/vendor/w3sper.js/src/mod").AddressSyncer>;
+  getAccountSyncer: () => Promise<AccountSyncer>;
+  getAddressSyncer: () => Promise<AddressSyncer>;
   getBlockHashByHeight: (height: bigint) => Promise<string>;
   getCurrentBlockHeight: () => Promise<bigint>;
   getLastFinalizedBlockHeight: () => Promise<bigint>;
@@ -87,10 +71,10 @@ type WalletStoreBalance = {
 
 type WalletStoreContent = {
   balance: WalletStoreBalance;
-  currentProfile: import("$lib/vendor/w3sper.js/src/mod").Profile | null;
+  currentProfile: Profile | null;
   initialized: boolean;
   minimumStake: bigint;
-  profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>;
+  profiles: Array<Profile>;
   stakeInfo: StakeInfo;
   syncStatus: {
     from: bigint;
@@ -104,35 +88,29 @@ type WalletStoreContent = {
 type WalletStoreServices = {
   abortSync: () => void;
 
+  claimRewards: (amount: bigint, gas: Gas) => Promise<TransactionInfo>;
+
   clearLocalData: () => Promise<void>;
 
   clearLocalDataAndInit: (
-    profileGenerator: import("$lib/vendor/w3sper.js/src/mod").ProfileGenerator,
+    profileGenerator: ProfileGenerator,
     syncFromBlock?: bigint
   ) => Promise<void>;
 
   getTransactionsHistory: () => Promise<any>;
 
   init: (
-    profileGenerator: import("$lib/vendor/w3sper.js/src/mod").ProfileGenerator,
+    profileGenerator: ProfileGenerator,
     syncFromBlock?: bigint
   ) => Promise<void>;
 
   reset: () => void;
 
-  setCurrentProfile: (
-    profile: import("$lib/vendor/w3sper.js/src/mod").Profile
-  ) => Promise<void>;
+  setCurrentProfile: (profile: Profile) => Promise<void>;
 
-  shield: (
-    amount: bigint,
-    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
-  ) => Promise<TransactionInfo>;
+  shield: (amount: bigint, gas: Gas) => Promise<TransactionInfo>;
 
-  stake: (
-    amount: bigint,
-    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
-  ) => Promise<TransactionInfo>;
+  stake: (amount: bigint, gas: Gas) => Promise<TransactionInfo>;
 
   sync: (fromBlock?: bigint) => Promise<void>;
 
@@ -140,23 +118,12 @@ type WalletStoreServices = {
     to: string,
     amount: bigint,
     memo: string,
-    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
+    gas: Gas
   ) => Promise<TransactionInfo>;
 
-  unshield: (
-    amount: bigint,
-    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
-  ) => Promise<TransactionInfo>;
+  unshield: (amount: bigint, gas: Gas) => Promise<TransactionInfo>;
 
-  unstake: (
-    amount: bigint,
-    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
-  ) => Promise<TransactionInfo>;
-
-  claimRewards: (
-    amount: bigint,
-    gas: import("$lib/vendor/w3sper.js/src/mod").Gas
-  ) => Promise<TransactionInfo>;
+  unstake: (amount: bigint, gas: Gas) => Promise<TransactionInfo>;
 };
 
 type WalletStore = Readable<WalletStoreContent> & WalletStoreServices;

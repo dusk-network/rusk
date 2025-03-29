@@ -2,7 +2,7 @@
 
 <script>
   import { getKey, hasKeyValue, map, mapWith, setKey, when } from "lamb";
-  import { Gas } from "$lib/vendor/w3sper.js/src/mod";
+  import { Gas } from "@dusk/w3sper";
   import {
     gasStore,
     operationsStore,

@@ -33,10 +33,9 @@ vi.mock("$lib/stores", async (importOriginal) => {
 });
 
 describe("Receive", () => {
-  const currentProfile =
-    /** @type {import("$lib/vendor/w3sper.js/src/mod").Profile} */ (
-      get(walletStore).currentProfile
-    );
+  const currentProfile = /** @type {Profile} */ (
+    get(walletStore).currentProfile
+  );
   const expectedAddress = currentProfile.address.toString();
   const expectedAccount = currentProfile.account.toString();
 
