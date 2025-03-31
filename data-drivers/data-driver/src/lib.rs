@@ -124,6 +124,19 @@ pub trait ConvertibleContract: Send {
     /// # Errors
     /// - This function does not return an error.
     fn get_schema(&self) -> String;
+
+    /// Returns the current version of the contract interface.
+    ///
+    /// This is useful for ensuring compatibility between different contract
+    /// consumers and implementations.
+    ///
+    /// # Returns
+    /// - `&'static str`: A string representing the semantic version (e.g.,
+    ///   `"0.10.1"`).
+    #[must_use]
+    fn get_version(&self) -> &'static str {
+        "1.0.0"
+    }
 }
 
 /// Converts a JSON string into a serialized RKYV archive.
