@@ -567,7 +567,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub async fn is_synced(&self) -> Result<bool, Error> {
         let state = self.state()?;
         let db_pos = state.cache().last_pos()?.unwrap_or(0);
-        let network_last_pos = state.fetch_num_notes().await? - 1;
+        let num_notes = state.fetch_num_notes().await?;
+
+        // we only subtract if number of notes is higher
+        // than 1 to avoid overflow
+        let network_last_pos = if num_notes > 1 { num_notes - 1 } else { 0 };
 
         Ok(network_last_pos == db_pos)
     }
