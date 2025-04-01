@@ -11,6 +11,7 @@
 use dusk_core::transfer::Transaction;
 use serde::Deserialize;
 use serde_json::Value;
+use serde_with::{serde_as, DisplayFromStr};
 use tokio::time::{sleep, Duration};
 
 use crate::{Address, Error, RuesHttpClient};
@@ -56,10 +57,13 @@ struct BlockResponse {
     pub block: Option<Block>,
 }
 
+#[serde_as]
 #[derive(Deserialize, Debug)]
 pub struct BlockData {
+    #[serde_as(as = "DisplayFromStr")]
     pub gas_spent: u64,
     pub sender: String,
+    #[serde_as(as = "DisplayFromStr")]
     pub value: f64,
 }
 
