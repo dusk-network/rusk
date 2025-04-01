@@ -1,38 +1,28 @@
 <script>
-  import { onMount } from "svelte";
-  import { navigating, page } from "$app/stores";
+  import { page } from "$app/stores";
   import { Card } from "$lib/dusk/components";
   import { AccountOverview, TransactionsCard } from "$lib/components/";
   import { duskAPI } from "$lib/services";
   import { appStore } from "$lib/stores";
   import { createDataStore } from "$lib/dusk/svelte-stores";
 
-  const key = $page.url.searchParams.get("key");
   const dataStore = createDataStore(duskAPI.getMoonlightAccountTransactions);
   const getTransactions = () => {
     if (key) {
+      dataStore.reset();
       dataStore.getData(key);
     }
   };
 
-  onMount(getTransactions);
-
-  $: if (
-    $navigating &&
-    $navigating.from?.route.id === $navigating.to?.route.id
-  ) {
-    $navigating.complete.then(getTransactions);
-  }
-
-  $: ({ data, error, isLoading } = $dataStore);
-  $: ({ isSmallScreen } = $appStore);
-
   let errorFetchingAccountStatus = false;
   /** @type {AccountStatus|null} */
   let accountStatus = null;
-  if (key) {
+
+  /** @param {string} accountKey */
+  function fetchAccountStatus(accountKey) {
+    accountStatus = null;
     duskAPI
-      .getAccountStatus(key)
+      .getAccountStatus(accountKey)
       .then((status) => {
         accountStatus = status;
         errorFetchingAccountStatus = false;
@@ -41,6 +31,14 @@
         errorFetchingAccountStatus = true;
       });
   }
+
+  $: key = $page.url.searchParams.get("key");
+  $: if (key) {
+    getTransactions();
+    fetchAccountStatus(key);
+  }
+  $: ({ data, error, isLoading } = $dataStore);
+  $: ({ isSmallScreen } = $appStore);
 </script>
 
 {#if key}

@@ -22,6 +22,7 @@ and this project adheres to
 ### Fixed
 
 - Fix current balance showing "Loading..." for empty accounts [#3576]
+- Fix Account page does not reload content on key change [#3591]
 
 ## [1.1.1] - 2025-03-17
 
@@ -178,6 +179,7 @@ and this project adheres to
 [#3564]: https://github.com/dusk-network/rusk/issues/3564
 [#3564]: https://github.com/dusk-network/rusk/issues/3576
 [#3578]: https://github.com/dusk-network/rusk/issues/3578
+[#3591]: https://github.com/dusk-network/rusk/issues/3591
 
 <!-- VERSIONS -->
 
