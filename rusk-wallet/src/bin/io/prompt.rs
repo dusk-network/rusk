@@ -308,6 +308,23 @@ pub(crate) fn request_gas_price(
     )
 }
 
+pub(crate) fn request_init_args() -> anyhow::Result<String> {
+    const MAX_INIT_SIZE: usize = 64 * 1024;
+    Ok(Text::new("Introduce init args (hex encoded):")
+        .with_validator(move |input: &str| {
+            let error = match hex::decode(input) {
+                Ok(data) => data.len().gt(&MAX_INIT_SIZE).then_some(format!(
+                    "Input exceeds the maximum size of {MAX_INIT_SIZE} bytes",
+                )),
+                Err(_) => Some("Data must be a valid hex".into()),
+            };
+            Ok(error.map_or(Validation::Valid, |error| {
+                Validation::Invalid(error.into())
+            }))
+        })
+        .prompt()?)
+}
+
 pub(crate) fn request_str(
     name: &str,
     max_length: usize,

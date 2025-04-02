@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix wrong lower limit for stake operation when performing topup [#3394]
 - Fix `is_synced()` method in the wallet to avoid overflow [#3593]
 - Fix transaction history deserialization [#3598]
+- Fix contract init parsing [#3602]
 
 ## [0.1.0] - 2025-01-20
 
@@ -50,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- Issues -->
+[#3602]: https://github.com/dusk-network/rusk/issues/3602
 [#3598]: https://github.com/dusk-network/rusk/issues/3598
 [#3593]: https://github.com/dusk-network/rusk/issues/3593
 [#3405]: https://github.com/dusk-network/rusk/issues/3405

@@ -15,8 +15,7 @@ use rusk_wallet::gas::{
     DEFAULT_PRICE, GAS_PER_DEPLOY_BYTE, MIN_PRICE_DEPLOYMENT,
 };
 use rusk_wallet::{
-    Address, Error, Wallet, MAX_CONTRACT_INIT_ARG_SIZE, MAX_FUNCTION_NAME_SIZE,
-    MIN_CONVERTIBLE,
+    Address, Error, Wallet, MAX_FUNCTION_NAME_SIZE, MIN_CONVERTIBLE,
 };
 
 use super::ProfileOp;
@@ -304,10 +303,7 @@ pub(crate) async fn online(
             ProfileOp::Run(Box::new(Command::ContractDeploy {
                 address: Some(addr),
                 code,
-                init_args: prompt::request_str(
-                    "init arguments",
-                    MAX_CONTRACT_INIT_ARG_SIZE,
-                )?,
+                init_args: prompt::request_init_args()?,
                 deploy_nonce: prompt::request_nonce()?,
                 gas_limit: prompt::request_gas_limit(gas_limit)?,
                 gas_price,

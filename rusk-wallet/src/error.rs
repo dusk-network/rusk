@@ -7,6 +7,7 @@
 use std::io;
 use std::str::Utf8Error;
 
+use hex::FromHexError;
 use inquire::InquireError;
 use node_data::bls::ConsensusKeysError;
 use rand::Error as RngError;
@@ -40,6 +41,9 @@ pub enum Error {
     /// Rkyv errors
     #[error("A serialization error occurred.")]
     Rkyv,
+    /// Hex errors
+    #[error("Invalid Hex data: {0}")]
+    Hex(#[from] FromHexError),
     /// Error creating HTTP client
     #[error("Cannot create HTTP client")]
     HttpClient,
