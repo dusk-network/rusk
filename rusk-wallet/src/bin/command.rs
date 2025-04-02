@@ -244,8 +244,8 @@ pub(crate) enum Command {
         #[arg(short, long)]
         code: PathBuf,
 
-        /// Arguments for init function
-        #[arg(short, long)]
+        /// Arguments for init function (hex encoded rkyv serialized data)
+        #[arg(short, long, default_value_t = String::new())]
         init_args: String,
 
         /// Nonce used for the deploy transaction
