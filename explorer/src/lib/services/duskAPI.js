@@ -205,7 +205,10 @@ const duskAPI = {
     /* eslint-enable camelcase */
   },
 
-  /** @param {string} address */
+  /**
+   * @param {string} address
+   * @returns {Promise<Transaction[]>} sortedTransactions
+   */
   async getMoonlightAccountTransactions(address) {
     // Gets contract interactions for the given address
     const moonlightData = await gqlGet(
@@ -228,8 +231,20 @@ const duskAPI = {
     const filteredTransactions = results.filter(
       (transaction) => typeof transaction !== "string"
     );
+    // Enhance each transaction with 'from' and 'to'
+    const enhancedTransactions = await Promise.all(
+      filteredTransactions.map(async (transaction) => {
+        const details = await duskAPI.getTransactionDetails(transaction.txid);
+        const jsonPayload = JSON.parse(details);
+        return {
+          ...transaction,
+          from: jsonPayload.sender || null,
+          to: jsonPayload.receiver || null,
+        };
+      })
+    );
     // Sort transactions by date in descending order (newest first)
-    const sortedTransactions = filteredTransactions.sort((a, b) => {
+    const sortedTransactions = enhancedTransactions.sort((a, b) => {
       const dateA = new Date(a.timestamp || a.time || a.date || 0);
       const dateB = new Date(b.timestamp || b.time || b.date || 0);
       return dateB.getTime() - dateA.getTime();

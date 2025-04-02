@@ -12,6 +12,7 @@ and this project adheres to
 
 - Add Tokens page [#3415]
 - Add "nonce" to transaction details page (Public transactions) [#3578]
+- Add "in/out" indicator for transfer operations (Account page) [#3579]
 
 ### Changed
 
@@ -179,6 +180,7 @@ and this project adheres to
 [#3564]: https://github.com/dusk-network/rusk/issues/3564
 [#3564]: https://github.com/dusk-network/rusk/issues/3576
 [#3578]: https://github.com/dusk-network/rusk/issues/3578
+[#3579]: https://github.com/dusk-network/rusk/issues/3579
 [#3591]: https://github.com/dusk-network/rusk/issues/3591
 
 <!-- VERSIONS -->

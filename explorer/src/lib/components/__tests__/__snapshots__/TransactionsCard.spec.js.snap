@@ -209,10 +209,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             
@@ -304,10 +305,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             
@@ -399,10 +401,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             
@@ -494,10 +497,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             
@@ -589,10 +593,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             
@@ -684,10 +689,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             
@@ -779,10 +785,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             
@@ -874,10 +881,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             
@@ -969,10 +977,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             
@@ -1064,10 +1073,11 @@ exports[`Transactions Card > should disable the \`Show More\` button if there is
                 
                  
                 <span
-                  class="dusk-badge dusk-badge--variant-neutral"
+                  class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                 >
                   transfer
                 </span>
+                 
               </div>
             </td>
             

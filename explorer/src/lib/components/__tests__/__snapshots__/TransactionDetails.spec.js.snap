@@ -282,10 +282,11 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           
            
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
           >
             transfer
           </span>
+           
         </div>
          
       </dd>
@@ -796,10 +797,11 @@ exports[`Transaction Details > renders the Transaction Details component with th
           
            
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
           >
             transfer
           </span>
+           
         </div>
          
       </dd>
@@ -1318,10 +1320,11 @@ exports[`Transaction Details > renders the Transaction Details component with th
           
            
           <span
-            class="dusk-badge dusk-badge--variant-neutral"
+            class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
           >
             transfer
           </span>
+           
         </div>
          
       </dd>

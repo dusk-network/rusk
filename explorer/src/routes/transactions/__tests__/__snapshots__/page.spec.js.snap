@@ -189,10 +189,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -353,10 +354,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -517,10 +519,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -681,10 +684,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -845,10 +849,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -1009,10 +1014,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -1173,10 +1179,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -1337,10 +1344,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -1501,10 +1509,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -1665,10 +1674,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -1829,10 +1839,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -1993,10 +2004,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -2157,10 +2169,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -2321,10 +2334,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -2485,10 +2499,11 @@ exports[`Transactions page > should render the Transactions page with the mobile
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -2715,10 +2730,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -2810,10 +2826,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -2905,10 +2922,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3000,10 +3018,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3095,10 +3114,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3190,10 +3210,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3285,10 +3306,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3380,10 +3402,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3475,10 +3498,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3570,10 +3594,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3665,10 +3690,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3760,10 +3786,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3855,10 +3882,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -3950,10 +3978,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
@@ -4045,10 +4074,11 @@ exports[`Transactions page > should render the Transactions page, start polling 
                   
                    
                   <span
-                    class="dusk-badge dusk-badge--variant-neutral"
+                    class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                   >
                     transfer
                   </span>
+                   
                 </div>
               </td>
               
