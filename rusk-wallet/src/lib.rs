@@ -45,8 +45,6 @@ use currency::Dusk;
 
 /// The maximum allowed size for function names, set to 64 bytes
 pub const MAX_FUNCTION_NAME_SIZE: usize = 64;
-/// Size for the init argument when deploying a contract
-pub const MAX_CONTRACT_INIT_ARG_SIZE: usize = 128;
 /// The largest amount of Dusk that is possible to convert
 pub const MAX_CONVERTIBLE: Dusk = Dusk::MAX;
 /// The smallest amount of Dusk that is possible to convert
