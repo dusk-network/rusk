@@ -1750,6 +1750,7 @@ dependencies = [
  "dusk-consensus",
  "dusk-core 1.2.1",
  "dusk-node-data 1.2.0",
+ "dusk-wallet-core 1.1.0",
  "fake",
  "hex",
  "humantime-serde",
