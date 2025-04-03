@@ -89,11 +89,7 @@ impl<T: Operations> Generator<T> {
             ..Default::default()
         };
 
-        let header_size = blk_header.size().map_err(|e| {
-            crate::errors::OperationError::InvalidEST(anyhow::anyhow!(
-                "Cannot get header size {e}. This should be a bug"
-            ))
-        })?;
+        let header_size = blk_header.size();
 
         // We always write the faults len in a u32
         let mut faults_size = u32::SIZE;
