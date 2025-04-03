@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::io;
-
 use dusk_bytes::Serializable as DuskSerializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
@@ -25,13 +23,13 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn size(&self) -> io::Result<usize> {
+    pub fn size(&self) -> usize {
         match self.size {
-            Some(size) => Ok(size),
+            Some(size) => size,
             None => {
                 let mut buf = vec![];
-                self.write(&mut buf)?;
-                Ok(buf.len())
+                self.write(&mut buf).expect("write to vec should not fail");
+                buf.len()
             }
         }
     }
