@@ -93,7 +93,7 @@ const HKDF_OUTPUT_SIZE: usize = SHA256_DIGEST_SIZE * HKDF_DIGESTS;
 ///
 /// # Panics
 /// Panics if the HKDF-Expand operation fails due to an invalid length of the
-/// `okm` slice (`okm.lenght() > 255 * size_of(usize)`).
+/// `okm` slice (`okm.length() > 255 * size_of(usize)`).
 #[allow(clippy::similar_names)]
 fn hkdf(salt: &[u8], ikm: &[u8], info: &[u8], okm: &mut [u8]) {
     // PRK = HKDF-Extract(salt, IKM)
@@ -139,7 +139,7 @@ fn hkdf(salt: &[u8], ikm: &[u8], info: &[u8], okm: &mut [u8]) {
 ///
 /// # Panics
 /// Panics if the HKDF expansion fails due to an invalid output length
-/// (`okm.lenght() > 255 * size_of(usize)`).
+/// (`okm.length() > 255 * size_of(usize)`).
 #[allow(clippy::similar_names)]
 fn ikm_to_lamport_sk(
     ikm: &[u8],
