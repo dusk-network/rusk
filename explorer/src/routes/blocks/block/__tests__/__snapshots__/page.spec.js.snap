@@ -677,10 +677,11 @@ exports[`Block Details > should render the Block Details page and query the nece
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -772,10 +773,11 @@ exports[`Block Details > should render the Block Details page and query the nece
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -1517,10 +1519,11 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>
@@ -1780,10 +1783,11 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               
                
               <span
-                class="dusk-badge dusk-badge--variant-neutral"
+                class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
               >
                 transfer
               </span>
+               
             </div>
             
           </dd>

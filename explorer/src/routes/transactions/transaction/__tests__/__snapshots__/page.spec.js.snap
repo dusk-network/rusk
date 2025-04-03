@@ -250,10 +250,11 @@ exports[`Transaction Details > should render the Transaction details page and qu
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
            
         </dd>

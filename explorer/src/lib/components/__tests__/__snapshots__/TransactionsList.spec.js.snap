@@ -123,10 +123,11 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
       
        
       <span
-        class="dusk-badge dusk-badge--variant-neutral"
+        class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
       >
         transfer
       </span>
+       
     </div>
     
   </dd>
@@ -289,10 +290,11 @@ exports[`Transactions List > should render the \`TransactionsList\` component in
       
        
       <span
-        class="dusk-badge dusk-badge--variant-neutral"
+        class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
       >
         transfer
       </span>
+       
     </div>
     
   </dd>

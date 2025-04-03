@@ -2938,10 +2938,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3012,10 +3013,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3086,10 +3088,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3160,10 +3163,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3234,10 +3238,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3308,10 +3313,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3382,10 +3388,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3456,10 +3463,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3530,10 +3538,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3604,10 +3613,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3678,10 +3688,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3752,10 +3763,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3826,10 +3838,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3900,10 +3913,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 
@@ -3974,10 +3988,11 @@ exports[`home page > should render the home page, start polling for the latest c
                     
                      
                     <span
-                      class="dusk-badge dusk-badge--variant-neutral"
+                      class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
                     >
                       transfer
                     </span>
+                     
                   </div>
                 </td>
                 

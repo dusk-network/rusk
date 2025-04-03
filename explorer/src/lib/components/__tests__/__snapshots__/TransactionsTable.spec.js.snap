@@ -139,10 +139,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -234,10 +235,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -329,10 +331,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -424,10 +427,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -519,10 +523,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -614,10 +619,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -709,10 +715,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -804,10 +811,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -899,10 +907,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -994,10 +1003,11 @@ exports[`Transactions Table > should pass additional class names to the rendered
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1121,10 +1131,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1195,10 +1206,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1269,10 +1281,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1343,10 +1356,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1417,10 +1431,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1491,10 +1506,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1565,10 +1581,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1639,10 +1656,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1713,10 +1731,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1787,10 +1806,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -1941,10 +1961,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -2036,10 +2057,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -2131,10 +2153,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -2226,10 +2249,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -2321,10 +2345,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -2416,10 +2441,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -2511,10 +2537,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -2606,10 +2633,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -2701,10 +2729,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
@@ -2796,10 +2825,11 @@ exports[`Transactions Table > should render the \`TransactionsTable\` component 
             
              
             <span
-              class="dusk-badge dusk-badge--variant-neutral"
+              class="dusk-badge dusk-badge--variant-neutral transaction-type__method-badge"
             >
               transfer
             </span>
+             
           </div>
         </td>
         
