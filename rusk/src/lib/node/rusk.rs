@@ -125,32 +125,49 @@ impl Rusk {
         let execution_config = self.vm_config.to_execution_config(block_height);
 
         // We always write the faults len in a u32
-        let mut size_left = params.max_txs_bytes - u32::SIZE;
+        let mut block_space_left = params.max_txs_bytes - u32::SIZE;
 
         for unspent_tx in txs {
             if let Some(timeout) = self.vm_config.generation_timeout {
                 if started.elapsed() > timeout {
-                    info!("execute_transactions timeout triggered {timeout:?}");
+                    info!(
+                        event = "Stopping execute_transactions",
+                        reason = "timeout expired",
+                        ?timeout
+                    );
                     break;
                 }
             }
 
             // Limit execution to the block transactions limit
             if spent_txs.len() >= MAX_NUMBER_OF_TRANSACTIONS {
-                info!("Maximum number of transactions reached");
+                info!(
+                    event = "Stopping execute_transactions",
+                    reason = "maximum number of transactions reached"
+                );
                 break;
             }
 
-            let tx_id_hex = hex::encode(unspent_tx.id());
-            let tx_len = unspent_tx.size().unwrap_or_default();
+            let tx_id = hex::encode(unspent_tx.id());
+            let tx_size = unspent_tx.size().unwrap_or_default();
 
-            if tx_len == 0 {
-                info!("Skipping {tx_id_hex} due to error while calculating the len");
+            if tx_size == 0 {
+                info!(
+                    event = "Skipping transaction",
+                    reason = "error while calculating length",
+                    tx_id
+                );
                 continue;
             }
 
-            if tx_len > size_left {
-                info!("Skipping {tx_id_hex} due size greater than bytes left: {size_left}");
+            if tx_size > block_space_left {
+                info!(
+                    event = "Skipping transaction",
+                    reason = "not enough space in block",
+                    tx_id,
+                    tx_size,
+                    block_space_left
+                );
                 continue;
             }
 
@@ -162,7 +179,13 @@ impl Rusk {
                     // re-execute all spent transactions. We don't discard the
                     // transaction, since it is technically valid.
                     if gas_spent > block_gas_left {
-                        info!("Skipping {tx_id_hex} due gas_spent {gas_spent} greater than left: {block_gas_left}");
+                        info!(
+                            event = "Skipping transaction",
+                            reason = "exceeding block gas limit",
+                            tx_id,
+                            gas_spent,
+                            block_gas_left
+                        );
                         session = self
                             .new_block_session(block_height, prev_state_root)?;
 
@@ -179,11 +202,11 @@ impl Rusk {
                         continue;
                     }
 
-                    size_left -= tx_len;
+                    block_space_left -= tx_size;
 
                     // We're currently ignoring the result of successful calls
-                    let err = receipt.data.err().map(|e| format!("{e}"));
-                    info!("Tx {tx_id_hex} executed with {gas_spent} gas and err {err:?}");
+                    let error = receipt.data.err().map(|e| format!("{e}"));
+                    info!(event = "Tx executed", tx_id, gas_spent, error);
 
                     event_bloom.add_events(&receipt.events);
 
@@ -194,7 +217,7 @@ impl Rusk {
                         inner: unspent_tx,
                         gas_spent,
                         block_height,
-                        err,
+                        err: error,
                     });
                 }
                 Err(VMError::Panic(val)) if val == PANIC_NONCE_NOT_READY => {
@@ -205,8 +228,8 @@ impl Rusk {
                     // TODO: Try to process the transaction as soon as the
                     // nonce is unlocked
                 }
-                Err(e) => {
-                    info!("discard tx {tx_id_hex} due to {e:?}");
+                Err(error) => {
+                    info!(event = "Tx discarded", tx_id, ?error);
                     // An unspendable transaction should be discarded
                     discarded_txs.push(unspent_tx);
                     continue;
