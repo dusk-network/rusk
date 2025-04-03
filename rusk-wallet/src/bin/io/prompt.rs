@@ -309,7 +309,7 @@ pub(crate) fn request_gas_price(
 }
 
 pub(crate) fn request_init_args() -> anyhow::Result<String> {
-    const MAX_INIT_SIZE: usize = 64 * 1024;
+    const MAX_INIT_SIZE: usize = 32 * 1024;
     Ok(Text::new("Introduce init args:")
         .with_help_message("Hex encoded rkyv serialized data")
         .with_validator(move |input: &str| {
