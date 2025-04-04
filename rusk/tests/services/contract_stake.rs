@@ -90,7 +90,7 @@ pub async fn stake_from_contract_direct() -> Result<()> {
             Some(call),
         )
         .expect("stake to be successful");
-    let tx = execute_transaction(
+    let _tx = execute_transaction(
         stake_from_contract,
         &rusk,
         1,
