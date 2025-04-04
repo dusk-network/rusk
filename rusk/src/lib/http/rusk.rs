@@ -30,6 +30,7 @@ impl HandleRequest for Rusk {
         #[allow(clippy::match_like_matches_macro)]
         match request.uri.inner() {
             ("contracts", Some(_), _) => true,
+            ("driver", Some(_), _) => true,
             ("node", _, "provisioners") => true,
             ("account", Some(_), "status") => true,
             ("node", _, "crs") => true,
@@ -51,6 +52,9 @@ impl HandleRequest for Rusk {
                     request.is_json(),
                 )
             }
+            ("driver", Some(contract_id), method) => {
+                Self::handle_data_driver(contract_id, method, &request.data)
+            }
             ("node", _, "provisioners") => self.get_provisioners(),
 
             ("account", Some(pk), "status") => self.get_account(pk),
@@ -61,6 +65,63 @@ impl HandleRequest for Rusk {
 }
 
 impl Rusk {
+    fn data_driver<C: TryInto<ContractId>>(
+        contract_id: C,
+    ) -> anyhow::Result<Option<Box<dyn ConvertibleContract>>> {
+        let contract_id = contract_id
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Invalid contractId"))?;
+
+        let driver: Option<Box<dyn ConvertibleContract>> = match contract_id {
+            TRANSFER_CONTRACT => {
+                Some(Box::new(dusk_transfer_contract_dd::ContractDriver))
+            }
+            STAKE_CONTRACT => {
+                Some(Box::new(dusk_stake_contract_dd::ContractDriver))
+            }
+            _ => None,
+        };
+        Ok(driver)
+    }
+
+    fn handle_data_driver(
+        contract_id: &str,
+        method: &str,
+        data: &RequestData,
+    ) -> anyhow::Result<ResponseData> {
+        let (method, target) = method.split_once(':').unwrap_or((method, ""));
+        let driver = Self::data_driver(contract_id.to_string())?
+            .ok_or(anyhow::anyhow!("Unsupported contractId {contract_id}"))?;
+        let result = match method {
+            "decode_event" => ResponseData::new(
+                driver
+                    .decode_event(target, data.as_bytes())
+                    .map_err(|e| anyhow::anyhow!("{e}"))?,
+            ),
+            "decode_input_fn" => ResponseData::new(
+                driver
+                    .decode_input_fn(target, data.as_bytes())
+                    .map_err(|e| anyhow::anyhow!("{e}"))?,
+            ),
+            "decode_output_fn" => ResponseData::new(
+                driver
+                    .decode_output_fn(target, data.as_bytes())
+                    .map_err(|e| anyhow::anyhow!("{e}"))?,
+            ),
+            "encode_input_fn" => ResponseData::new(
+                driver
+                    .encode_input_fn(target, &data.as_string())
+                    .map_err(|e| anyhow::anyhow!("{e}"))?,
+            ),
+            "get_schema" => ResponseData::new(driver.get_schema().to_string()),
+            "get_version" => {
+                ResponseData::new(driver.get_version().to_string())
+            }
+            method => anyhow::bail!("Unsupported datadriver method {method}"),
+        };
+        Ok(result)
+    }
+
     fn handle_contract_query(
         &self,
         contract: &str,
@@ -69,30 +130,17 @@ impl Rusk {
         feeder: bool,
         json: bool,
     ) -> anyhow::Result<ResponseData> {
-        let contract_bytes = hex::decode(contract)?;
-
-        let contract_bytes = contract_bytes
-            .try_into()
+        let contract_id = ContractId::try_from(contract.to_string())
             .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
-        let contract_id = ContractId::from_bytes(contract_bytes);
 
-        let mut driver: Option<Box<dyn ConvertibleContract>> = None;
+        let mut driver = None;
 
         let call_arg = if json {
             let json = data.as_string();
-            driver = match contract_id {
-                TRANSFER_CONTRACT => {
-                    Some(Box::new(dusk_transfer_contract_dd::ContractDriver))
-                }
-                STAKE_CONTRACT => {
-                    Some(Box::new(dusk_stake_contract_dd::ContractDriver))
-                }
-                _ => anyhow::bail!("Unsupported contract {contract}"),
-            };
-
+            driver = Self::data_driver(contract_id)?;
             driver
                 .as_ref()
-                .expect("driver to be set")
+                .ok_or(anyhow::anyhow!("Unsupported contract {contract}"))?
                 .encode_input_fn(fn_name, &json)
                 .map_err(|e| anyhow::anyhow!("InvalidJson {e:?}"))?
         } else {
