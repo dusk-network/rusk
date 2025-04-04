@@ -116,7 +116,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Loads wallet given a session
     pub fn from_file(file: F) -> Result<Self, Error> {
         let path = file.path();
-        let pwd = file.pwd();
+        let key = file.aes_key();
 
         // make sure file exists
         let pb = path.inner().clone();
@@ -130,7 +130,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let file_version = dat::check_version(bytes.get(0..12))?;
 
         let (seed, address_count) =
-            dat::get_seed_and_address(file_version, bytes, pwd)?;
+            dat::get_seed_and_address(file_version, bytes, key, file.iv())?;
 
         // return early if its legacy
         if let DatFileVersion::Legacy = file_version {
@@ -182,18 +182,26 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
                 // create file payload
                 let seed = self.store.get_seed();
+                let salt = f.salt().expect("Couldn't find the salt");
+                let iv = f.iv().expect("Couldn't find the IV");
                 let mut payload = seed.to_vec();
 
                 payload.push(self.profiles.len() as u8);
 
                 // encrypt the payload
-                payload = encrypt(&payload, f.pwd())?;
+                let encrypted_payload = encrypt(&payload, f.aes_key(), iv)?;
 
-                let mut content =
-                    Vec::with_capacity(header.len() + payload.len());
+                let mut content = Vec::with_capacity(
+                    header.len()
+                        + salt.len()
+                        + iv.len()
+                        + encrypted_payload.len(),
+                );
 
                 content.extend_from_slice(&header);
-                content.extend_from_slice(&payload);
+                content.extend_from_slice(salt);
+                content.extend_from_slice(iv);
+                content.extend_from_slice(&encrypted_payload);
 
                 // write the content to file
                 fs::write(&f.path().wallet, content)?;
@@ -488,7 +496,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         profile_idx: u8,
         dir: &Path,
         filename: Option<String>,
-        pwd: &[u8],
+        pwd: &str,
     ) -> Result<(PathBuf, PathBuf), Error> {
         // we're expecting a directory here
         if !dir.is_dir() {
@@ -623,8 +631,12 @@ pub struct DecodedNote {
 
 #[cfg(test)]
 mod tests {
-
+    use aes_gcm::{AeadCore, Aes256Gcm};
+    use rand::rngs::OsRng;
+    use rand::RngCore;
     use tempfile::tempdir;
+
+    use crate::{IV_SIZE, SALT_SIZE};
 
     use super::*;
 
@@ -633,7 +645,9 @@ mod tests {
     #[derive(Debug, Clone)]
     struct WalletFile {
         path: WalletPath,
-        pwd: Vec<u8>,
+        key: Vec<u8>,
+        salt: [u8; SALT_SIZE],
+        iv: [u8; IV_SIZE],
     }
 
     impl SecureWalletFile for WalletFile {
@@ -641,8 +655,16 @@ mod tests {
             &self.path
         }
 
-        fn pwd(&self) -> &[u8] {
-            &self.pwd
+        fn aes_key(&self) -> &[u8] {
+            &self.key
+        }
+
+        fn salt(&self) -> Option<&[u8; SALT_SIZE]> {
+            Some(&self.salt)
+        }
+
+        fn iv(&self) -> Option<&[u8; IV_SIZE]> {
+            Some(&self.iv)
         }
     }
 
@@ -684,11 +706,18 @@ mod tests {
         let path = WalletPath::from(path);
 
         // we'll need a password too
-        let pwd = blake3::hash("mypassword".as_bytes()).as_bytes().to_vec();
+        let key = blake3::hash("mypassword".as_bytes()).as_bytes().to_vec();
 
         // create and save
         let mut wallet: Wallet<WalletFile> = Wallet::new("uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic")?;
-        let file = WalletFile { path, pwd };
+        let salt = gen_salt();
+        let iv = gen_iv();
+        let file = WalletFile {
+            path,
+            key,
+            salt,
+            iv,
+        };
         wallet.save_to(file.clone())?;
 
         // load from file and check
@@ -699,5 +728,17 @@ mod tests {
         assert!(original_addr.eq(&loaded_addr));
 
         Ok(())
+    }
+
+    fn gen_salt() -> [u8; SALT_SIZE] {
+        let mut salt = [0; SALT_SIZE];
+        let mut rng = OsRng;
+        rng.fill_bytes(&mut salt);
+        salt
+    }
+
+    fn gen_iv() -> [u8; IV_SIZE] {
+        let iv = Aes256Gcm::generate_nonce(OsRng);
+        iv.into()
     }
 }

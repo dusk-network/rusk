@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change dependency declaration to not require strict equal [#3405]
+- Change key derivation to PBKDF2 and wallet encryption to AES-GCM [#3391]
 
 ### Fix
 
@@ -54,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3602]: https://github.com/dusk-network/rusk/issues/3602
 [#3598]: https://github.com/dusk-network/rusk/issues/3598
 [#3593]: https://github.com/dusk-network/rusk/issues/3593
+[#3391]: https://github.com/dusk-network/rusk/issues/3391
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3263]: https://github.com/dusk-network/rusk/issues/3263
 [#2839]: https://github.com/dusk-network/rusk/issues/2839

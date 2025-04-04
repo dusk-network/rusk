@@ -57,6 +57,8 @@ tracing-subscriber = { workspace = true, features = [
 rkyv = { workspace = true }
 inquire = { workspace = true }
 konst = { workspace = true }
+pbkdf2 = { workspace = true }
+aes-gcm = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }

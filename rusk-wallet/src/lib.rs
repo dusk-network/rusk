@@ -53,6 +53,12 @@ pub const MIN_CONVERTIBLE: Dusk = Dusk::new(1);
 pub const EPOCH: u64 = 2160;
 /// Max addresses the wallet can store
 pub const MAX_PROFILES: usize = get_max_profiles();
+/// Size in bytes of the IV used to encrypt wallet data
+pub const IV_SIZE: usize = 12;
+/// Size in bytes of the salt used to encrypt wallet data
+pub const SALT_SIZE: usize = 32;
+/// Number of PBKDF2 rounds used to derive the key for encrypting wallet data
+pub const PBKDF2_ROUNDS: u32 = 10_000;
 
 const DEFAULT_MAX_PROFILES: usize = 2;
 
