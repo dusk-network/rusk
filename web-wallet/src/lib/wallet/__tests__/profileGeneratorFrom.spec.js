@@ -1,12 +1,12 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
+import { ProfileGenerator } from "@dusk/w3sper";
 
 import { getSeedFromMnemonic } from "$lib/wallet";
 
 import { profileGeneratorFrom } from "..";
 
-vi.mock("$lib/vendor/w3sper.js/src/mod", async (importOriginal) => {
-  /** @type {typeof import("$lib/vendor/w3sper.js/src/mod")} */
+vi.mock("@dusk/w3sper", async (importOriginal) => {
+  /** @type {typeof import("@dusk/w3sper")} */
   const original = await importOriginal();
 
   return {

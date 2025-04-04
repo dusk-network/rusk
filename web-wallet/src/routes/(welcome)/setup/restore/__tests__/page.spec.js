@@ -4,7 +4,7 @@ import { generateMnemonic } from "bip39";
 import { getKey, setKey } from "lamb";
 import { get } from "svelte/store";
 import { tick } from "svelte";
-import { ProfileGenerator } from "$lib/vendor/w3sper.js/src/mod";
+import { ProfileGenerator } from "@dusk/w3sper";
 
 import * as navigation from "$lib/navigation";
 import {

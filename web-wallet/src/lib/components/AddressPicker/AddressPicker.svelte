@@ -12,10 +12,10 @@
 
   import "./AddressPicker.css";
 
-  /** @type {import("$lib/vendor/w3sper.js/src/mod").Profile | null} */
+  /** @type {Profile | null} */
   export let currentProfile;
 
-  /** @type {import("$lib/vendor/w3sper.js/src/mod").Profile[]} */
+  /** @type {Profile[]} */
   export let profiles;
 
   /** @type {boolean} */
