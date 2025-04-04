@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `Content-Type: application/json` support for `/on/contracts` endpoint
 - Add transaction serialization check
+- Add max transaction size check
 
 ## [1.2.0] - 2025-03-20
 
