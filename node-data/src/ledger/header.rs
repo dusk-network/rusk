@@ -71,10 +71,10 @@ impl Default for Header {
 }
 
 impl Header {
-    pub fn size(&self) -> io::Result<usize> {
+    pub fn size(&self) -> usize {
         let mut buf = vec![];
-        self.write(&mut buf)?;
-        Ok(buf.len())
+        self.write(&mut buf).expect("write to vec should not fail");
+        buf.len()
     }
 }
 

@@ -14,9 +14,10 @@ use async_trait::async_trait;
 use conf::{
     DEFAULT_DOWNLOAD_REDUNDANCY, DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL,
 };
+use dusk_consensus::config::MAX_BLOCK_SIZE;
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
-use node_data::ledger::{SpendingId, Transaction};
+use node_data::ledger::{Header, SpendingId, Transaction};
 use node_data::message::{payload, AsyncQueue, Payload, Topics};
 use rkyv::ser::serializers::{
     BufferScratch, BufferSerializer, BufferSerializerError,
@@ -54,6 +55,8 @@ pub enum TxAcceptanceError {
     MaxTxnCountExceeded(usize),
     #[error("this transaction is too large to be serialized")]
     TooLarge,
+    #[error("Maximum transaction size exceeded {0}")]
+    MaxSizeExceeded(usize),
     #[error("A generic error occurred {0}")]
     Generic(anyhow::Error),
 }
@@ -216,6 +219,16 @@ impl MempoolSrv {
         max_mempool_txn_count: usize,
     ) -> Result<Vec<TransactionEvent<'t>>, TxAcceptanceError> {
         let tx_id = tx.id();
+        let tx_size = tx.size();
+
+        // We consider the maximum transaction size as the total avilable block
+        // space minus the minimum size of the block header (i.e., the size of
+        // the header in a first-iteration block with no faults)
+        let min_header_size = Header::default().size();
+        let max_tx_size = MAX_BLOCK_SIZE - min_header_size;
+        if tx_size > max_tx_size {
+            return Err(TxAcceptanceError::MaxSizeExceeded(tx_size));
+        }
 
         check_tx_serialization(&tx.inner)?;
 

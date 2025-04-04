@@ -149,16 +149,7 @@ impl Rusk {
             }
 
             let tx_id = hex::encode(unspent_tx.id());
-            let tx_size = unspent_tx.size().unwrap_or_default();
-
-            if tx_size == 0 {
-                info!(
-                    event = "Skipping transaction",
-                    reason = "error while calculating length",
-                    tx_id
-                );
-                continue;
-            }
+            let tx_size = unspent_tx.size();
 
             if tx_size > block_space_left {
                 info!(

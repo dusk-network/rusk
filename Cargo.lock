@@ -1628,7 +1628,7 @@ dependencies = [
  "dusk-bytes",
  "dusk-core 1.2.1",
  "dusk-merkle",
- "dusk-node-data 1.2.0",
+ "dusk-node-data",
  "hex",
  "num-bigint",
  "rand 0.8.5",
@@ -1749,7 +1749,7 @@ dependencies = [
  "dusk-bytes",
  "dusk-consensus",
  "dusk-core 1.2.1",
- "dusk-node-data 1.2.0",
+ "dusk-node-data",
  "dusk-wallet-core 1.1.0",
  "fake",
  "hex",
@@ -1771,33 +1771,6 @@ dependencies = [
  "thiserror",
  "time-util",
  "tokio",
- "tracing",
-]
-
-[[package]]
-name = "dusk-node-data"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ae940a1e0bc70154b013294c796d49c9679c9a9a57ee4ae80b5985b113a56ad"
-dependencies = [
- "aes 0.7.5",
- "anyhow",
- "async-channel",
- "base64 0.22.1",
- "block-modes",
- "bs58",
- "chrono",
- "dusk-bytes",
- "dusk-core 1.2.1",
- "fake",
- "hex",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "serde_with",
- "sha2 0.10.8",
- "sha3",
- "thiserror",
  "tracing",
 ]
 
@@ -1881,7 +1854,7 @@ dependencies = [
  "dusk-core 1.2.1",
  "dusk-data-driver",
  "dusk-node",
- "dusk-node-data 1.2.0",
+ "dusk-node-data",
  "dusk-stake-contract-dd",
  "dusk-transfer-contract-dd",
  "dusk-vm 1.2.0",
@@ -4585,7 +4558,7 @@ dependencies = [
  "dirs",
  "dusk-bytes",
  "dusk-core 1.2.1",
- "dusk-node-data 1.2.0",
+ "dusk-node-data",
  "dusk-wallet-core 1.1.0",
  "flume 0.10.14",
  "futures",
