@@ -11,14 +11,23 @@ and this project adheres to
 ### Added
 
 - Add Tokens page [#3415]
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## [1.2.0] - 2025-04-07
+
+### Added
+
 - Add "nonce" to transaction details page (Public transactions) [#3578]
 - Add "in/out" indicator for transfer operations (Account page) [#3579]
 
 ### Changed
 
-- Changed provisioner rewards column to be more readable
-
-### Removed
+- Changed provisioner rewards column to be more readable [#3581]
 
 ### Fixed
 
@@ -181,11 +190,13 @@ and this project adheres to
 [#3564]: https://github.com/dusk-network/rusk/issues/3576
 [#3578]: https://github.com/dusk-network/rusk/issues/3578
 [#3579]: https://github.com/dusk-network/rusk/issues/3579
+[#3581]: https://github.com/dusk-network/rusk/pull/3581
 [#3591]: https://github.com/dusk-network/rusk/issues/3591
 
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.2.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.2.0
 [1.1.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.1.1
 [1.1.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.1.0
 [1.0.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.0.1
