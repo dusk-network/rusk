@@ -16,4 +16,3 @@ pub mod error;
 pub mod infrastructure;
 // pub mod model; // To be added later
 pub mod service;
-// pub mod transport; // To be added later
