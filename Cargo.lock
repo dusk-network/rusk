@@ -1978,6 +1978,7 @@ dependencies = [
  "regex",
  "reqwest",
  "rkyv",
+ "rocksdb",
  "rusk-profile 1.0.1",
  "rusk-prover",
  "rusk-recovery",
