@@ -245,8 +245,8 @@ pub(crate) enum Command {
         code: PathBuf,
 
         /// Arguments for init function (hex encoded rkyv serialized data)
-        #[arg(short, long, default_value_t = String::new())]
-        init_args: String,
+        #[arg(short, long, default_value = "", value_parser = parse_hex)]
+        init_args: std::vec::Vec<u8>, /* Fully qualify it due to https://github.com/clap-rs/clap/issues/4481#issuecomment-1314475143 */
 
         /// Nonce used for the deploy transaction
         #[arg(short, long)]
@@ -626,7 +626,6 @@ impl Command {
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let init_args = hex::decode(init_args)?;
 
                 let contract_id =
                     wallet.get_contract_id(addr_idx, &code, deploy_nonce)?;

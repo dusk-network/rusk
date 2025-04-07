@@ -324,9 +324,9 @@ pub(crate) fn request_gas_price(
     )
 }
 
-pub(crate) fn request_init_args() -> anyhow::Result<String> {
+pub(crate) fn request_init_args() -> anyhow::Result<Vec<u8>> {
     const MAX_INIT_SIZE: usize = 32 * 1024;
-    Ok(Text::new("Introduce init args:")
+    let init = Text::new("Introduce init args:")
         .with_help_message("Hex encoded rkyv serialized data")
         .with_validator(move |input: &str| {
             let error = match hex::decode(input) {
@@ -339,7 +339,12 @@ pub(crate) fn request_init_args() -> anyhow::Result<String> {
                 Validation::Invalid(error.into())
             }))
         })
-        .prompt()?)
+        .prompt()?;
+    let init = hex::decode(init).map_err(|e| {
+        anyhow::anyhow!("Expecting hex, this should be a bug: {e}")
+    })?;
+
+    Ok(init)
 }
 
 pub(crate) fn request_str(

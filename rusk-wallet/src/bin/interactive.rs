@@ -460,7 +460,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
 
             println!("   > Pay with {}", sender.preview());
             println!("   > Code len = {}", code_len);
-            println!("   > Init args = {}", init_args);
+            println!("   > Init args = {}", hex::encode(init_args));
             println!("   > Deploy nonce = {}", deploy_nonce);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             println!("   > Calculated Contract Id = {}", contract_id);
