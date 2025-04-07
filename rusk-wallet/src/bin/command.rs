@@ -13,7 +13,7 @@ use std::fmt;
 use std::path::PathBuf;
 
 use clap::Subcommand;
-use dusk_core::abi::CONTRACT_ID_BYTES;
+use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::data::ContractCall;
 use dusk_core::BlsScalar;
@@ -630,6 +630,9 @@ impl Command {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
                 let init_args = hex::decode(init_args)?;
 
+                let contract_id =
+                    wallet.get_contract_id(addr_idx, &code, deploy_nonce)?;
+
                 let tx = match address {
                     Address::Shielded(_) => {
                         wallet.sync().await?;
@@ -656,7 +659,7 @@ impl Command {
                     }
                 }?;
 
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::DeployTx(tx.hash(), contract_id.into()))
             }
             Self::CalculateContractId {
                 profile_idx,
@@ -673,7 +676,7 @@ impl Command {
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
                 let contract_id =
-                    wallet.get_contract_id(profile_idx, code, deploy_nonce)?;
+                    wallet.get_contract_id(profile_idx, &code, deploy_nonce)?;
 
                 Ok(RunResult::ContractId(contract_id))
             }
@@ -687,6 +690,7 @@ impl Command {
 /// Possible results of running a command in interactive mode
 pub enum RunResult<'a> {
     Tx(BlsScalar),
+    DeployTx(BlsScalar, ContractId),
     PhoenixBalance(BalanceInfo, bool),
     MoonlightBalance(Dusk),
     StakeInfo(StakeData, bool),
@@ -743,6 +747,12 @@ impl fmt::Display for RunResult<'_> {
                 write!(f, "{}", profiles_string,)
             }
             Tx(hash) => {
+                let hash = hex::encode(hash.to_bytes());
+                write!(f, "> Transaction sent: {hash}",)
+            }
+            DeployTx(hash, contract_id) => {
+                let contract_id = hex::encode(contract_id.as_bytes());
+                writeln!(f, "> Deploying contract: {contract_id}",)?;
                 let hash = hex::encode(hash.to_bytes());
                 write!(f, "> Transaction sent: {hash}",)
             }
