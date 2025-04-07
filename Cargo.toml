@@ -36,22 +36,22 @@ resolver = "2"
 # Workspace internal dependencies
 # dusk-consensus = "1.2.0"
 dusk-consensus = { version = "1.2.1-alpha.1", path = "./consensus/" }
-dusk-core = "1.2.1"
-# dusk-core = { version = "1.2.2-alpha.1", path = "./core/" }
-dusk-vm = "1.2.0"
-# dusk-vm = { version = "1.2.1-alpha.1", path = "./vm/" }
+#dusk-core = "1.2.1"
+ dusk-core = { version = "1.2.2-alpha.1", path = "./core/" }
+#dusk-vm = "1.2.0"
+ dusk-vm = { version = "1.2.1-alpha.1", path = "./vm/" }
 # node = { version = "1.2.0", package = "dusk-node" }
 node = { version = "1.2.1-alpha.1", path = "./node/", package = "dusk-node" }
-# node-data = { version = "1.2.0", package = "dusk-node-data" }
+#node-data = { version = "1.2.0", package = "dusk-node-data" }
 node-data = { version = "1.2.1-alpha.1", path = "./node-data/", package = "dusk-node-data" }
-rusk-profile = "1.0.1"
-# rusk-profile = { version = "1.0.2-alpha.1", path = "./rusk-profile/" }
-rusk-prover = "1.1.0"
-# rusk-prover = { version = "1.1.1-alpha.1", path = "./rusk-prover/" }
-rusk-recovery = "1.0.3"
-# rusk-recovery = { version = "1.0.4-alpha.1", path = "./rusk-recovery/" }
-wallet-core = { version = "1.1.0", package = "dusk-wallet-core" }
-# wallet-core = { version = "1.1.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
+#rusk-profile = "1.0.1"
+ rusk-profile = { version = "1.0.2-alpha.1", path = "./rusk-profile/" }
+#rusk-prover = "1.1.0"
+ rusk-prover = { version = "1.1.1-alpha.1", path = "./rusk-prover/" }
+#rusk-recovery = "1.0.3"
+ rusk-recovery = { version = "1.0.4-alpha.1", path = "./rusk-recovery/" }
+#wallet-core = { version = "1.1.0", package = "dusk-wallet-core" }
+ wallet-core = { version = "1.1.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
 
 dusk-data-driver = { version = "0.0.1-alpha.1", path = "./data-drivers/data-driver" }
 dusk-transfer-contract-dd = { version = "0.0.1-alpha.1", path = "./data-drivers/transfer-contract" }
@@ -69,8 +69,8 @@ jubjub-schnorr = { version = "0.6", default-features = false }
 kadcast = "0.7"
 phoenix-circuits = { version = "0.6", default-features = false }
 phoenix-core = { version = "0.34.0", default-features = false }
-piecrust = "0.28.0"
-piecrust-uplink = "0.18.0"
+piecrust = "0.28.1-rc.0"
+piecrust-uplink = "0.17.0"
 poseidon-merkle = "0.8"
 
 # External dependencies
@@ -186,3 +186,11 @@ overflow-checks = true
 
 [profile.release.package.rusk-wallet]
 overflow-checks = true
+
+
+
+ 
+[patch.crates-io]
+piecrust = { git = "https://github.com/dusk-network/piecrust", branch = "issue-419-0.28.1-rc.0" }
+piecrust-uplink = { git = "https://github.com/dusk-network/piecrust", branch = "issue-419-0.28.1-rc.0" }
+
