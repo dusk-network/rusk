@@ -250,22 +250,24 @@ impl Archive {
         &self,
         pk: AccountPublicKey,
         ord: Option<Order>,
+        from_block: Option<u64>,
+        to_block: Option<u64>,
     ) -> Result<Option<Vec<MoonlightGroup>>> {
         let order = ord.unwrap_or(Order::Ascending);
 
         let inflows = self.fetch_moonlight_history(
             Some(pk),
             None,
-            None,
-            None,
+            from_block,
+            to_block,
             None,
             None,
         )?;
         let outflows = self.fetch_moonlight_history(
             None,
             Some(pk),
-            None,
-            None,
+            from_block,
+            to_block,
             None,
             None,
         )?;
@@ -1039,7 +1041,10 @@ mod tests {
         let archive = Archive::create_or_open(path).await;
 
         let pk = AccountPublicKey::default();
-        assert!(archive.full_moonlight_history(pk, None).unwrap().is_none());
+        assert!(archive
+            .full_moonlight_history(pk, None, None, None, None)
+            .unwrap()
+            .is_none());
 
         let block_events = block_events();
 
@@ -1064,8 +1069,10 @@ mod tests {
         fetched_moonlight_tx.dedup();
         assert_eq!(fetched_moonlight_tx.len(), 6);
 
-        let fetched_events =
-            archive.full_moonlight_history(pk, None).unwrap().unwrap();
+        let fetched_events = archive
+            .full_moonlight_history(pk, None, None, None, None)
+            .unwrap()
+            .unwrap();
         assert_eq!(fetched_events.len(), 6);
 
         for moonlight_events in fetched_events {
@@ -1123,7 +1130,10 @@ mod tests {
         let path = test_dir();
         let archive = Archive::create_or_open(path).await;
         let pk = AccountPublicKey::default();
-        assert!(archive.full_moonlight_history(pk, None).unwrap().is_none());
+        assert!(archive
+            .full_moonlight_history(pk, None, None, None, None)
+            .unwrap()
+            .is_none());
 
         let block_events = block_events();
         let event_groups = transformer::group_by_origins(block_events, 1);
@@ -1173,7 +1183,7 @@ mod tests {
         assert_eq!(fetched_tx1[0].origin(), &[4; 32]);
         fetched_tx1[0].events().iter().for_each(|e| {
             assert_eq!(e.topic, "moonlight");
-            assert_eq!(e.target, usk_core::transfer::TRANSFER_CONTRACT);
+            assert_eq!(e.target, dusk_core::transfer::TRANSFER_CONTRACT);
 
             let moonlight_event =
                 rkyv::from_bytes::<MoonlightTransactionEvent>(&e.data).unwrap();
@@ -1458,7 +1468,10 @@ mod tests {
         let archive = Archive::create_or_open(path).await;
 
         let pk = AccountPublicKey::default();
-        assert!(archive.full_moonlight_history(pk, None).unwrap().is_none());
+        assert!(archive
+            .full_moonlight_history(pk, None, None, None, None)
+            .unwrap()
+            .is_none());
 
         let block_events = block_events();
 
@@ -1483,12 +1496,20 @@ mod tests {
         fetched_moonlight_tx.dedup();
         assert_eq!(fetched_moonlight_tx.len(), 6);
 
-        let mut fetched_events =
-            archive.full_moonlight_history(pk, None).unwrap().unwrap();
+        let mut fetched_events = archive
+            .full_moonlight_history(pk, None, None, None, None)
+            .unwrap()
+            .unwrap();
         assert_eq!(fetched_events.len(), 6);
 
         let fetched_events_reverse_order = archive
-            .full_moonlight_history(pk, Some(super::Order::Descending))
+            .full_moonlight_history(
+                pk,
+                Some(super::Order::Descending),
+                None,
+                None,
+                None,
+            )
             .unwrap()
             .unwrap();
 
