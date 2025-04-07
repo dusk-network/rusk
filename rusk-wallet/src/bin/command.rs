@@ -6,6 +6,7 @@
 
 mod history;
 
+use clap::builder::ValueParser;
 pub use history::TransactionHistory;
 
 use std::fmt;
@@ -213,16 +214,16 @@ pub(crate) enum Command {
         address: Option<Address>,
 
         /// Contract id of the contract to call
-        #[arg(short, long)]
-        contract_id: Vec<u8>,
+        #[arg(short, long, value_parser = ValueParser::new(parse_hex))]
+        contract_id: std::vec::Vec<u8>, /* Fully qualify it due to https://github.com/clap-rs/clap/issues/4481#issuecomment-1314475143 */
 
         /// Function name to call
         #[arg(short = 'n', long)]
         fn_name: String,
 
         /// Function arguments for this call
-        #[arg(short = 'f', long)]
-        fn_args: Vec<u8>,
+        #[arg(short = 'f', long, value_parser = ValueParser::new(parse_hex))]
+        fn_args: std::vec::Vec<u8>, /* Fully qualify it due to https://github.com/clap-rs/clap/issues/4481#issuecomment-1314475143 */
 
         /// Max amount of gas for this transaction
         #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
@@ -298,6 +299,10 @@ pub(crate) enum Command {
 
     /// Show current settings
     Settings,
+}
+
+fn parse_hex(hex_str: &str) -> Result<Vec<u8>, String> {
+    hex::decode(hex_str).map_err(|e| e.to_string())
 }
 
 impl Command {
