@@ -95,14 +95,14 @@ impl AppState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         config: JsonRpcConfig,
-        db_adapter: impl DatabaseAdapter + 'static,
+        db_adapter: Arc<dyn DatabaseAdapter>,
         subscription_manager: SubscriptionManager,
         metrics_collector: MetricsCollector,
         manual_rate_limiters: ManualRateLimiters,
     ) -> Self {
         Self {
             config: Arc::new(config),
-            db_adapter: Arc::new(db_adapter),
+            db_adapter,
             subscription_manager: Arc::new(RwLock::new(subscription_manager)),
             metrics_collector: Arc::new(metrics_collector),
             manual_rate_limiters: Arc::new(manual_rate_limiters),

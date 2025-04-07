@@ -102,7 +102,7 @@
 //!     // 3. Create AppState
 //!     let app_state = Arc::new(AppState::new(
 //!         config.clone(), // Clone config for AppState
-//!         db_adapter,
+//!         Arc::new(db_adapter),
 //!         sub_manager,
 //!         metrics,
 //!         manual_limiters,
