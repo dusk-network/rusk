@@ -6,8 +6,8 @@
 
 pub mod config;
 pub mod error;
+pub mod manual_limiter;
 pub mod metrics;
 pub mod state;
-pub mod manual_limiter;
 
 pub(crate) mod utils;
