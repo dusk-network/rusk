@@ -452,7 +452,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
 
             let contract_id = wallet.get_contract_id(
                 sender_index,
-                code_bytes,
+                &code_bytes,
                 *deploy_nonce,
             )?;
 

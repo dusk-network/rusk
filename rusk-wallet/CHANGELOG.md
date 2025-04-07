@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Add
+
+- Add deploy contract output (display the new contractId)
+
 ### Changed
 
 - Change dependency declaration to not require strict equal [#3405]

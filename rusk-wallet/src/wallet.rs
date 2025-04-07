@@ -541,7 +541,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub fn get_contract_id(
         &self,
         profile_idx: u8,
-        bytes: Vec<u8>,
+        bytes: &[u8],
         nonce: u64,
     ) -> Result<[u8; CONTRACT_ID_BYTES], Error> {
         let owner = self.public_key(profile_idx)?.to_bytes();
@@ -549,7 +549,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut hasher = blake2b_simd::Params::new()
             .hash_length(CONTRACT_ID_BYTES)
             .to_state();
-        hasher.update(bytes.as_ref());
+        hasher.update(bytes);
         hasher.update(&nonce.to_le_bytes()[..]);
         hasher.update(owner.as_ref());
         hasher

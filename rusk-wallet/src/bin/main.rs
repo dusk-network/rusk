@@ -445,6 +445,17 @@ async fn exec() -> anyhow::Result<()> {
 
                     println!("{tx_id}");
                 }
+                RunResult::DeployTx(hash, contract_id) => {
+                    let tx_id = hex::encode(hash.to_bytes());
+                    let contract_id = hex::encode(contract_id.as_bytes());
+                    println!("Deploying {contract_id}",);
+
+                    // Wait for transaction confirmation from network
+                    let gql = GraphQL::new(settings.state, status::headless)?;
+                    gql.wait_for(&tx_id).await?;
+
+                    println!("{tx_id}");
+                }
                 RunResult::StakeInfo(info, reward) => {
                     let rewards = Dusk::from(info.reward);
                     if reward {
