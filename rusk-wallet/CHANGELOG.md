@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change dependency declaration to not require strict equal [#3405]
 - Change key derivation to PBKDF2 and wallet encryption to AES-GCM [#3391]
+- Change default deploy gas limit to be accepted by std mempool
 
 ### Fix
 
