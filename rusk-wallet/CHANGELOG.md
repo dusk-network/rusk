@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `is_synced()` method in the wallet to avoid overflow [#3593]
 - Fix transaction history deserialization [#3598]
 - Fix contract init parsing [#3602]
+- Fix contract call non-interactive parsing [#3602]
 
 ## [0.1.0] - 2025-01-20
 
