@@ -95,7 +95,7 @@ pub(crate) fn create_test_app_state() -> AppState {
 
     AppState::new(
         config,
-        db_adapter,
+        Arc::new(db_adapter),
         sub_manager,
         metrics,
         manual_rate_limiters,
