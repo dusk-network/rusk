@@ -57,6 +57,7 @@ hyper-tungstenite = { workspace = true }
 hyper = { workspace = true, features = ["server", "http1", "http2"] }
 hyper-util = { workspace = true, features = ["server", "http1", "http2"] }
 http-body-util = { workspace = true }
+rocksdb = { workspace = true, optional = true }
 
 tokio-stream = { workspace = true, features = ["sync"] }
 tokio-rustls = { workspace = true }
@@ -128,7 +129,7 @@ recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]
 prover = ["dep:rusk-prover", "recovery-keys"]
 testwallet = ["dep:futures"]
-chain = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
+chain = ["dep:node", "dep:dusk-consensus", "dep:node-data", "dep:rocksdb"]
 archive = ["chain", "node/archive", "dusk-core/serde"]
 network-trace = ["node/network-trace"]
 http-wasm = []
