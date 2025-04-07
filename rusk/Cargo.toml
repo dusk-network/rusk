@@ -64,7 +64,7 @@ rustls-pemfile = { workspace = true }
 async-trait = { workspace = true }
 
 dusk-core = { workspace = true, features = ["zk"] }
-dusk-vm = { workspace = true }
+dusk-vm = { workspace = true, features = ["debug"] }
 rusk-profile = { workspace = true }
 rusk-prover = { workspace = true, features = ["std"], optional = true }
 
