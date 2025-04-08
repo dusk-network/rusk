@@ -28,8 +28,8 @@ impl Address {
     /// Check if the `other` Address uses the same transaction model
     pub fn same_transaction_model(&self, other: &Address) -> Result<(), Error> {
         match (self, other) {
-            (Address::Shielded(_), Address::Shielded(_)) => Ok(()),
-            (Address::Public(_), Address::Public(_)) => Ok(()),
+            (Address::Shielded(_), Address::Shielded(_))
+            | (Address::Public(_), Address::Public(_)) => Ok(()),
             _ => Err(Error::DifferentTransactionModels),
         }
     }
