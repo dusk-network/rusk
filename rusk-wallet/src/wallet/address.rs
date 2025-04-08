@@ -27,6 +27,9 @@ pub enum Address {
 
 impl Address {
     /// Check if the `other` Address uses the same transaction model
+    ///
+    /// # Errors
+    /// If the other address is not the same type as `Self`.
     pub fn same_transaction_model(&self, other: &Address) -> Result<(), Error> {
         match (self, other) {
             (Address::Shielded(_), Address::Shielded(_))

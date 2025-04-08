@@ -252,6 +252,9 @@ pub(crate) fn check_version(
 
 /// Read the first 12 bytes of the dat file and get the file version from
 /// there
+///
+/// # Errors
+/// This function will error if the file is missing or invalid.
 pub fn read_file_version(file: &WalletPath) -> Result<FileVersion, Error> {
     let path = &file.wallet;
 
@@ -271,6 +274,9 @@ pub fn read_file_version(file: &WalletPath) -> Result<FileVersion, Error> {
 
 /// Read the file version of the dat file from the header and, if present,
 /// the salt and IV.
+///
+/// # Errors
+/// This function will error if the wallet-file is corrupted.
 pub fn read_file_version_and_salt_iv(
     file: &WalletPath,
 ) -> Result<(FileVersion, Option<(Salt, Iv)>), Error> {
