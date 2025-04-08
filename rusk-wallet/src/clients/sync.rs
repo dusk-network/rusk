@@ -7,7 +7,19 @@
 use futures::StreamExt;
 use rues::CONTRACTS_TARGET;
 
-use super::*;
+use dusk_bytes::Serializable;
+use dusk_core::transfer::phoenix::{
+    NoteLeaf, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    ViewKey as PhoenixViewKey,
+};
+use dusk_core::BlsScalar;
+use wallet_core::keys::{
+    derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
+};
+use zeroize::Zeroize;
+
+use super::{rues, LocalStore, RuesHttpClient, MAX_PROFILES, TREE_LEAF};
+
 use crate::clients::{Cache, TRANSFER_CONTRACT};
 use crate::Error;
 
