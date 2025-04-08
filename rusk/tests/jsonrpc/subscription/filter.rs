@@ -8,6 +8,7 @@ use std::fmt::Debug;
 
 use rusk::jsonrpc::infrastructure::subscription::filters::{
     BlockEventData, BlockFilter, ContractEventData, ContractFilter, Filter,
+    TransferEventData, TransferFilter,
 };
 
 // --- BlockFilter Tests ---
@@ -285,5 +286,183 @@ fn contract_filter_debug_output() {
         .build();
 
     let expected_debug_minimal = "ContractFilter { contract_id: \"minimal_contract\", event_names: None, include_metadata: false }";
+    assert_eq!(format!("{:?}", filter_minimal), expected_debug_minimal);
+}
+
+// --- TransferFilter Tests ---
+
+// Helper struct for testing non-matching types
+#[derive(Debug)]
+struct NonTransferEvent;
+
+#[test]
+fn transfer_filter_builder_defaults_built() {
+    // Build the filter with the required contract ID and default optional
+    // fields
+    let filter = TransferFilter::builder()
+        .contract_id("default_token".to_string())
+        // Do not set min_amount or include_metadata to check defaults
+        .build();
+
+    assert_eq!(filter.contract_id(), "default_token");
+    assert!(filter.min_amount().is_none());
+    assert!(!filter.include_metadata());
+}
+
+#[test]
+fn transfer_filter_builder_set_fields() {
+    let filter = TransferFilter::builder()
+        .contract_id("token_xyz".to_string())
+        .min_amount(Some(500))
+        .include_metadata(true)
+        .build();
+
+    assert_eq!(filter.contract_id(), "token_xyz");
+    assert_eq!(filter.min_amount(), Some(500));
+    assert!(filter.include_metadata());
+}
+
+#[test]
+fn transfer_filter_builder_required_contract_id() {
+    let filter = TransferFilter::builder()
+        .contract_id("required_token".to_string())
+        .build();
+    assert_eq!(filter.contract_id(), "required_token");
+    assert!(filter.min_amount().is_none());
+    assert!(!filter.include_metadata());
+}
+
+#[test]
+fn transfer_filter_matches_correct_type_and_contract() {
+    let filter = TransferFilter::builder()
+        .contract_id("match_token".to_string())
+        .build(); // No min_amount
+    let event = TransferEventData {
+        contract_id: "match_token".to_string(),
+        amount: 100, // Amount doesn't matter here
+    };
+    assert!(filter.matches(&event));
+}
+
+#[test]
+fn transfer_filter_does_not_match_incorrect_type() {
+    let filter = TransferFilter::builder()
+        .contract_id("any_token".to_string())
+        .build();
+    let non_event = NonTransferEvent;
+    assert!(!filter.matches(&non_event));
+}
+
+#[test]
+fn transfer_filter_does_not_match_different_contract() {
+    let filter = TransferFilter::builder()
+        .contract_id("filter_token".to_string())
+        .build();
+    let event = TransferEventData {
+        contract_id: "different_token".to_string(),
+        amount: 100,
+    };
+    assert!(!filter.matches(&event));
+}
+
+#[test]
+fn transfer_filter_matches_minimum_amount() {
+    let filter = TransferFilter::builder()
+        .contract_id("amount_token".to_string())
+        .min_amount(Some(1000))
+        .build();
+
+    let event_equal = TransferEventData {
+        contract_id: "amount_token".to_string(),
+        amount: 1000,
+    };
+    let event_greater = TransferEventData {
+        contract_id: "amount_token".to_string(),
+        amount: 1500,
+    };
+    let event_less = TransferEventData {
+        contract_id: "amount_token".to_string(),
+        amount: 999,
+    };
+    let event_other_contract = TransferEventData {
+        contract_id: "other".to_string(),
+        amount: 2000,
+    };
+
+    assert!(filter.matches(&event_equal));
+    assert!(filter.matches(&event_greater));
+    assert!(!filter.matches(&event_less));
+    assert!(!filter.matches(&event_other_contract));
+}
+
+#[test]
+fn transfer_filter_matches_any_amount_when_none_specified() {
+    let filter = TransferFilter::builder()
+        .contract_id("any_amount_token".to_string())
+        .min_amount(None) // Explicitly None
+        .build();
+
+    let event1 = TransferEventData {
+        contract_id: "any_amount_token".to_string(),
+        amount: 0, // Should match 0
+    };
+    let event2 = TransferEventData {
+        contract_id: "any_amount_token".to_string(),
+        amount: 1_000_000,
+    };
+    let event_other_contract = TransferEventData {
+        contract_id: "other".to_string(),
+        amount: 500,
+    };
+
+    assert!(filter.matches(&event1));
+    assert!(filter.matches(&event2));
+    assert!(!filter.matches(&event_other_contract));
+}
+
+#[test]
+fn transfer_filter_matches_independent_of_include_metadata_flag() {
+    let filter_with_meta = TransferFilter::builder()
+        .contract_id("meta_token".to_string())
+        .min_amount(Some(100))
+        .include_metadata(true)
+        .build();
+    let filter_without_meta = TransferFilter::builder()
+        .contract_id("meta_token".to_string())
+        .min_amount(Some(100))
+        .include_metadata(false)
+        .build();
+
+    let event = TransferEventData {
+        contract_id: "meta_token".to_string(),
+        amount: 200, // Amount matches min_amount
+    };
+
+    assert!(filter_with_meta.matches(&event));
+    assert!(filter_without_meta.matches(&event));
+}
+
+#[test]
+fn transfer_filter_implements_required_traits() {
+    fn assert_traits<T: Debug + Send + Sync + Clone + 'static>() {}
+    assert_traits::<TransferFilter>();
+}
+
+#[test]
+fn transfer_filter_debug_output() {
+    let filter = TransferFilter::builder()
+        .contract_id("debug_token".to_string())
+        .min_amount(Some(10000))
+        .include_metadata(true)
+        .build();
+
+    let expected_debug = "TransferFilter { contract_id: \"debug_token\", min_amount: Some(10000), include_metadata: true }";
+    assert_eq!(format!("{:?}", filter), expected_debug);
+
+    let filter_minimal = TransferFilter::builder()
+        .contract_id("minimal_token".to_string())
+        .build();
+
+    let expected_debug_minimal = "TransferFilter { contract_id: \"minimal_token\", min_amount: None, include_metadata: false }";
     assert_eq!(format!("{:?}", filter_minimal), expected_debug_minimal);
 }
