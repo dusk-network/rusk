@@ -7,21 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add deploy contract output (display the new contractId)
+
 ### Changed
 
 - Change dependency declaration to not require strict equal [#3405]
 - Change key derivation to PBKDF2 and wallet encryption to AES-GCM [#3391]
+- Change default deploy gas limit to be accepted by std mempool
 
-### Fix
+### Fixed
 
 - Fix wrong lower limit for stake operation when performing topup [#3394]
 - Fix `is_synced()` method in the wallet to avoid overflow [#3593]
 - Fix transaction history deserialization [#3598]
 - Fix contract init parsing [#3602]
+- Fix contract call non-interactive parsing [#3602]
 
 ## [0.1.0] - 2025-01-20
 
-### Add
+### Added
 
 - Add gas cost calculation to contract deploy [#2768]
 - Add more information to `stake-info` [#2659]
@@ -44,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename all instances of recovery phrase to mnemonic phrase [#2839]
 - Rename Shielded account to be aligned with the Web wallet [#3263]
 
-### Fix
+### Fixed
 
 - Fix phoenix balance update [#2488]
 - Fix stake info for inactive stakes with rewards [#2766]

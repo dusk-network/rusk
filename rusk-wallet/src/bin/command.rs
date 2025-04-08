@@ -12,7 +12,7 @@ use std::fmt;
 use std::path::PathBuf;
 
 use clap::Subcommand;
-use dusk_core::abi::CONTRACT_ID_BYTES;
+use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::data::ContractCall;
 use dusk_core::BlsScalar;
@@ -213,16 +213,16 @@ pub(crate) enum Command {
         address: Option<Address>,
 
         /// Contract id of the contract to call
-        #[arg(short, long)]
-        contract_id: Vec<u8>,
+        #[arg(short, long, value_parser = parse_hex)]
+        contract_id: std::vec::Vec<u8>, /* Fully qualify it due to https://github.com/clap-rs/clap/issues/4481#issuecomment-1314475143 */
 
         /// Function name to call
         #[arg(short = 'n', long)]
         fn_name: String,
 
-        /// Function arguments for this call
-        #[arg(short = 'f', long)]
-        fn_args: Vec<u8>,
+        /// Function arguments for this call (hex encoded rkyv serialized data)
+        #[arg(short = 'f', long, value_parser = parse_hex)]
+        fn_args: std::vec::Vec<u8>, /* Fully qualify it due to https://github.com/clap-rs/clap/issues/4481#issuecomment-1314475143 */
 
         /// Max amount of gas for this transaction
         #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
@@ -245,8 +245,8 @@ pub(crate) enum Command {
         code: PathBuf,
 
         /// Arguments for init function (hex encoded rkyv serialized data)
-        #[arg(short, long, default_value_t = String::new())]
-        init_args: String,
+        #[arg(short, long, default_value = "", value_parser = parse_hex)]
+        init_args: std::vec::Vec<u8>, /* Fully qualify it due to https://github.com/clap-rs/clap/issues/4481#issuecomment-1314475143 */
 
         /// Nonce used for the deploy transaction
         #[arg(short, long)]
@@ -298,6 +298,10 @@ pub(crate) enum Command {
 
     /// Show current settings
     Settings,
+}
+
+fn parse_hex(hex_str: &str) -> Result<Vec<u8>, String> {
+    hex::decode(hex_str).map_err(|e| e.to_string())
 }
 
 impl Command {
@@ -574,8 +578,7 @@ impl Command {
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
-                let call = ContractCall::new(contract_id, fn_name, &fn_args)
-                    .map_err(|_| Error::Rkyv)?;
+                let call = ContractCall::new_raw(contract_id, fn_name, fn_args);
 
                 let tx = match address {
                     Address::Shielded(_) => {
@@ -623,7 +626,9 @@ impl Command {
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
                 let gas = Gas::new(gas_limit).with_price(gas_price);
-                let init_args = hex::decode(init_args)?;
+
+                let contract_id =
+                    wallet.get_contract_id(addr_idx, &code, deploy_nonce)?;
 
                 let tx = match address {
                     Address::Shielded(_) => {
@@ -651,7 +656,7 @@ impl Command {
                     }
                 }?;
 
-                Ok(RunResult::Tx(tx.hash()))
+                Ok(RunResult::DeployTx(tx.hash(), contract_id.into()))
             }
             Self::CalculateContractId {
                 profile_idx,
@@ -668,7 +673,7 @@ impl Command {
                     .map_err(|_| Error::InvalidWasmContractPath)?;
 
                 let contract_id =
-                    wallet.get_contract_id(profile_idx, code, deploy_nonce)?;
+                    wallet.get_contract_id(profile_idx, &code, deploy_nonce)?;
 
                 Ok(RunResult::ContractId(contract_id))
             }
@@ -682,6 +687,7 @@ impl Command {
 /// Possible results of running a command in interactive mode
 pub enum RunResult<'a> {
     Tx(BlsScalar),
+    DeployTx(BlsScalar, ContractId),
     PhoenixBalance(BalanceInfo, bool),
     MoonlightBalance(Dusk),
     StakeInfo(StakeData, bool),
@@ -738,6 +744,12 @@ impl fmt::Display for RunResult<'_> {
                 write!(f, "{}", profiles_string,)
             }
             Tx(hash) => {
+                let hash = hex::encode(hash.to_bytes());
+                write!(f, "> Transaction sent: {hash}",)
+            }
+            DeployTx(hash, contract_id) => {
+                let contract_id = hex::encode(contract_id.as_bytes());
+                writeln!(f, "> Deploying contract: {contract_id}",)?;
                 let hash = hex::encode(hash.to_bytes());
                 write!(f, "> Transaction sent: {hash}",)
             }
