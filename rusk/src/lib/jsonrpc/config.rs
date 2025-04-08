@@ -427,7 +427,7 @@ pub enum ConfigError {
 /// This configuration is intended to be created at startup and then
 /// shared as read-only data. It can be safely shared between threads
 /// as long as it's not modified after initialization.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct JsonRpcConfig {
     /// HTTP server configuration
@@ -1908,18 +1908,6 @@ impl JsonRpcConfig {
             cors.max_age(Duration::from_secs(self.http.cors.max_age_seconds));
 
         Some(cors)
-    }
-}
-
-impl Default for JsonRpcConfig {
-    fn default() -> Self {
-        Self {
-            http: HttpServerConfig::default(),
-            ws: WebSocketServerConfig::default(),
-            rate_limit: RateLimitConfig::default(),
-            features: FeatureToggles::default(),
-            sanitization: SanitizationConfig::default(),
-        }
     }
 }
 
