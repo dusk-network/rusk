@@ -22,8 +22,7 @@
 pub mod client_info;
 pub mod db;
 pub mod error;
+pub mod manual_limiter;
 pub mod metrics;
 pub mod state;
-// pub mod subscriptions; // TODO: Uncomment when subscriptions module is
-// created
-pub mod manual_limiter;
+pub mod subscription;
