@@ -16,7 +16,6 @@
 #![deny(clippy::pedantic)]
 #![allow(clippy::needless_pass_by_value)]
 #![allow(clippy::missing_errors_doc)]
-#![allow(clippy::missing_panics_doc)]
 
 mod cache;
 mod clients;
@@ -59,8 +58,9 @@ pub const PBKDF2_ROUNDS: u32 = 10_000;
 
 const DEFAULT_MAX_PROFILES: usize = 2;
 
-// PANIC: the function is const and will panic during compilation if the value
-// is invalid
+// # Panics
+// The function is const and will panic during compilation if the value is
+// invalid or larger that 255.
 const fn get_max_profiles() -> usize {
     match option_env!("WALLET_MAX_PROFILES") {
         Some(v) => match konst::primitive::parse_usize(v) {
