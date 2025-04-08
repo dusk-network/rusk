@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+// allow variable names like `stake_sk` and `stake_pk`.
+#![allow(clippy::similar_names)]
+
 use std::fmt::Debug;
 
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
