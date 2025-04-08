@@ -49,7 +49,8 @@ pub enum SubscriptionError {
     ///
     /// # Example
     /// ```rust
-    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
     /// let error = SubscriptionError::InvalidTopic("unknown_topic".to_string());
     /// assert_eq!(format!("{}", error), "Invalid subscription topic: unknown_topic");
     /// ```
@@ -62,7 +63,8 @@ pub enum SubscriptionError {
     ///
     /// # Example
     /// ```rust
-    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
     /// let error = SubscriptionError::InvalidSubscription("invalid-sub-id".to_string());
     /// assert_eq!(format!("{}", error), "Invalid subscription ID: invalid-sub-id");
     /// ```
@@ -75,7 +77,8 @@ pub enum SubscriptionError {
     ///
     /// # Example
     /// ```rust
-    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
     /// let error = SubscriptionError::InvalidFilter("missing required field".to_string());
     /// assert_eq!(format!("{}", error), "Invalid subscription filter: missing required field");
     /// ```
@@ -88,7 +91,8 @@ pub enum SubscriptionError {
     ///
     /// # Example
     /// ```rust
-    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
     /// let error = SubscriptionError::SessionNotFound("unknown-session-id".to_string());
     /// assert_eq!(format!("{}", error), "Session not found: unknown-session-id");
     /// ```
@@ -102,7 +106,8 @@ pub enum SubscriptionError {
     ///
     /// # Example
     /// ```rust
-    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
     /// let error = SubscriptionError::PublishFailed("connection closed unexpectedly".to_string());
     /// assert_eq!(format!("{}", error), "Failed to publish event: connection closed unexpectedly");
     /// ```
@@ -116,7 +121,8 @@ pub enum SubscriptionError {
     ///
     /// # Example
     /// ```rust
-    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
     /// let error = SubscriptionError::ChannelClosed("background task terminated".to_string());
     /// assert_eq!(format!("{}", error), "Event channel closed: background task terminated");
     /// ```
@@ -129,7 +135,8 @@ pub enum SubscriptionError {
     ///
     /// # Example
     /// ```rust
-    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
     /// let error = SubscriptionError::TopicClosed("mempool_events".to_string());
     /// assert_eq!(format!("{}", error), "Subscription topic closed: mempool_events");
     /// ```
@@ -142,7 +149,8 @@ pub enum SubscriptionError {
     ///
     /// # Example
     /// ```rust
-    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
     /// let error = SubscriptionError::TooManySubscriptions("limit of 10 reached".to_string());
     /// assert_eq!(format!("{}", error), "Too many subscriptions: limit of 10 reached");
     /// ```
@@ -155,10 +163,24 @@ pub enum SubscriptionError {
     ///
     /// # Example
     /// ```rust
-    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
     /// let error = SubscriptionError::InvalidSubscriptionIdFormat("invalid uuid string".to_string());
     /// assert_eq!(format!("{}", error), "Invalid subscription ID format: invalid uuid string");
     /// ```
     #[error("Invalid subscription ID format: {0}")]
     InvalidSubscriptionIdFormat(String),
+
+    /// Indicates that a string used for a `SessionId` is invalid (e.g.,
+    /// empty). Contains a description of the format violation.
+    ///
+    /// # Example
+    /// ```rust
+    /// use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    ///
+    /// let error = SubscriptionError::InvalidSessionIdFormat("Session ID cannot be empty".to_string());
+    /// assert_eq!(format!("{}", error), "Invalid session ID format: Session ID cannot be empty");
+    /// ```
+    #[error("Invalid session ID format: {0}")]
+    InvalidSessionIdFormat(String),
 }

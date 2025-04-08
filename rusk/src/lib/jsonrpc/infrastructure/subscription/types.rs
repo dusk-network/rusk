@@ -23,14 +23,9 @@
 //! These types ensure clear separation and management of different aspects of
 //! the subscription lifecycle.
 
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
-//
-// Copyright (c) DUSK NETWORK. All rights reserved.
-
 use crate::jsonrpc::infrastructure::subscription::error::SubscriptionError;
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use std::fmt::{self, Display};
 use std::str::FromStr;
 use uuid::Uuid;
@@ -71,9 +66,6 @@ pub enum Topic {
     ///
     /// Subscribers receive details about the accepted block, potentially
     /// including transaction data if requested via parameters.
-    ///
-    /// # Example Payload (Conceptual)
-    /// See `rusk::jsonrpc::types::BlockAcceptanceEvent`.
     BlockAcceptance,
 
     /// Subscription topic for notifications when a block becomes finalized
@@ -82,9 +74,6 @@ pub enum Topic {
     ///
     /// Subscribers receive information about the finalized block, confirming
     /// its permanence in the blockchain.
-    ///
-    /// # Example Payload (Conceptual)
-    /// See `rusk::jsonrpc::types::BlockFinalizationEvent`.
     BlockFinalization,
 
     /// Subscription topic for notifications about chain reorganizations
@@ -93,9 +82,6 @@ pub enum Topic {
     ///
     /// Subscribers are notified when the canonical chain changes, receiving
     /// information about the depth of the reorg and the blocks involved.
-    ///
-    /// # Example Payload (Conceptual)
-    /// See `rusk::jsonrpc::types::ChainReorganizationEvent`.
     ChainReorganization,
 
     /// Subscription topic for events emitted by specific smart contracts.
@@ -103,9 +89,6 @@ pub enum Topic {
     ///
     /// Subscribers receive notifications for events matching the specified
     /// contract ID and optional event names provided during subscription.
-    ///
-    /// # Example Payload (Conceptual)
-    /// See `rusk::jsonrpc::types::ContractEvent`.
     ContractEvents,
 
     /// Subscription topic specifically for transfer events emitted by smart
@@ -115,10 +98,6 @@ pub enum Topic {
     /// This is a specialized version of `ContractEvents`, focusing only on
     /// transfer-like events, potentially with additional filtering options
     /// like minimum amount.
-    ///
-    /// # Example Payload (Conceptual)
-    /// See `rusk::jsonrpc::types::ContractEvent` (specifically transfer
-    /// events).
     ContractTransferEvents,
 
     /// Subscription topic for notifications when a transaction is accepted
@@ -128,9 +107,6 @@ pub enum Topic {
     /// Subscribers receive information about transactions entering the
     /// mempool, potentially including full transaction details if
     /// requested.
-    ///
-    /// # Example Payload (Conceptual)
-    /// See `rusk::jsonrpc::types::MempoolAcceptanceEvent`.
     MempoolAcceptance,
 
     /// Subscription topic for general mempool events, such as transaction
@@ -139,9 +115,6 @@ pub enum Topic {
     ///
     /// Subscribers receive notifications about various changes occurring
     /// within the mempool beyond simple acceptance.
-    ///
-    /// # Example Payload (Conceptual)
-    /// See `rusk::jsonrpc::types::MempoolRemovalEvent`.
     MempoolEvents,
 }
 
@@ -149,6 +122,33 @@ impl Topic {
     /// Returns the string representation of the topic.
     ///
     /// This method is used for serialization and logging purposes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusk::jsonrpc::infrastructure::subscription::types::Topic;
+    ///
+    /// let topic = Topic::BlockAcceptance;
+    /// assert_eq!(topic.as_str(), "BlockAcceptance");
+    ///
+    /// let topic = Topic::BlockFinalization;
+    /// assert_eq!(topic.as_str(), "BlockFinalization");
+    ///
+    /// let topic = Topic::ChainReorganization;
+    /// assert_eq!(topic.as_str(), "ChainReorganization");
+    ///
+    /// let topic = Topic::ContractEvents;
+    /// assert_eq!(topic.as_str(), "ContractEvents");
+    ///
+    /// let topic = Topic::ContractTransferEvents;
+    /// assert_eq!(topic.as_str(), "ContractTransferEvents");
+    ///
+    /// let topic = Topic::MempoolAcceptance;
+    /// assert_eq!(topic.as_str(), "MempoolAcceptance");
+    ///
+    /// let topic = Topic::MempoolEvents;
+    /// assert_eq!(topic.as_str(), "MempoolEvents");
+    /// ```
     pub fn as_str(&self) -> &'static str {
         match self {
             Topic::BlockAcceptance => "BlockAcceptance",
@@ -296,5 +296,107 @@ impl FromStr for SubscriptionId {
         Uuid::parse_str(s).map(SubscriptionId).map_err(|e| {
             SubscriptionError::InvalidSubscriptionIdFormat(e.to_string())
         })
+    }
+}
+
+/// Represents a unique identifier for a client's WebSocket connection session.
+///
+/// Each active WebSocket connection needs a unique identifier. This `SessionId`
+/// newtype wraps a String representation of that identifier (e.g., a
+/// stringified ConnectionId from jsonrpsee, or potentially another source).
+///
+/// It is used internally to group all subscriptions belonging to a single
+/// client connection, facilitating cleanup when the connection is closed.
+///
+/// # Examples
+///
+/// Creating from a string:
+///
+/// ```
+/// use rusk::jsonrpc::infrastructure::subscription::types::SessionId;
+/// use std::str::FromStr;
+///
+/// let session_str = "session-abc-123";
+/// let session_id = SessionId::from_str(session_str).unwrap();
+/// assert_eq!(session_id.to_string(), session_str);
+/// ```
+///
+/// Using in a collection:
+///
+/// ```
+/// use std::collections::HashSet;
+/// use rusk::jsonrpc::infrastructure::subscription::types::SessionId;
+/// use std::str::FromStr;
+///
+/// let mut active_sessions = HashSet::new();
+/// let session1 = SessionId::from_str("sess1").unwrap();
+/// let session2 = SessionId::from_str("sess2").unwrap();
+/// active_sessions.insert(session1.clone());
+/// active_sessions.insert(session2);
+///
+/// assert!(active_sessions.contains(&session1));
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)] // Remove Deserialize here
+#[serde(transparent)]
+pub struct SessionId(String);
+
+// Implement Deserialize separately using try_from
+impl<'de> Deserialize<'de> for SessionId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        SessionId::try_from(s).map_err(serde::de::Error::custom)
+    }
+}
+
+impl SessionId {
+    /// Returns a reference to the underlying session ID string.
+    pub fn inner(&self) -> &str {
+        &self.0
+    }
+}
+
+// Implement TryFrom<String> for validation
+impl TryFrom<String> for SessionId {
+    type Error = SubscriptionError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.is_empty() {
+            Err(SubscriptionError::InvalidSessionIdFormat(
+                "Session ID cannot be empty".to_string(),
+            ))
+        } else {
+            Ok(SessionId(value))
+        }
+    }
+}
+
+impl Display for SessionId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for SessionId {
+    type Err = SubscriptionError;
+
+    /// Parses a string slice into a `SessionId`.
+    ///
+    /// Performs basic validation (non-empty) via `TryFrom`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rusk::jsonrpc::infrastructure::subscription::types::SessionId;
+    /// use std::str::FromStr;
+    ///
+    /// let session_str = "session-abc-123";
+    /// let session_id = SessionId::from_str(session_str).unwrap();
+    /// assert_eq!(session_id.to_string(), session_str);
+    /// ```
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        SessionId::try_from(s.to_string())
     }
 }
