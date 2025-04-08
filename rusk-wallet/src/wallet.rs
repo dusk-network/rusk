@@ -78,6 +78,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Creates a new wallet instance deriving its seed from a valid BIP39
     /// mnemonic
+    ///
+    /// # Errors
+    /// This method will error if the provided phrase is not a valid mnemonic.
     pub fn new<P>(phrase: P) -> Result<Self, Error>
     where
         P: Into<String>,
@@ -115,6 +118,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Loads wallet given a session
+    ///
+    /// # Errors
+    /// This method will error if the provided wallet-file is invalid.
     pub fn from_file(file: F) -> Result<Self, Error> {
         let path = file.path();
         let key = file.aes_key();
@@ -170,6 +176,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Saves wallet to file from which it was loaded
     ///
+    /// # Errors
+    /// This method will error if the wallet-file is missing or if the file
+    /// encryption fails.
+    ///
     /// # Panics
     /// This method will panic if there is a wallet-file, but the iv or salt for
     /// the wallet encryption is missing.
@@ -222,6 +232,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Saves wallet to the provided file, changing the previous file path for
     /// the wallet if any. Note that any subsequent calls to [`save`] will
     /// use this new file.
+    ///
+    /// # Errors
+    /// This method will error if the file encryption fails.
     pub fn save_to(&mut self, file: F) -> Result<(), Error> {
         // set our new file and save
         self.file = Some(file);
@@ -229,6 +242,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Access the inner state of the wallet
+    ///
+    /// # Errors
+    /// This method will error if the wallet cannot connect to the network.
     pub fn state(&self) -> Result<&State, Error> {
         if let Some(state) = self.state.as_ref() {
             Ok(state)
@@ -239,6 +255,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Connect the wallet to the network providing a callback for status
     /// updates
+    ///
+    /// # Errors
+    /// This method will error if either the `rusk_addr` or `prov_addr` is
+    /// invalid or if the wallet-file is missing.
     pub async fn connect_with_status<S: Into<String>>(
         &mut self,
         rusk_addr: S,
@@ -273,11 +293,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Sync wallet state
+    ///
+    /// # Errors
+    /// This method will error if the wallet cannot connect to the network.
     pub async fn sync(&self) -> Result<(), Error> {
         self.state()?.sync().await
     }
 
     /// Helper function to register for async-sync outside of connect
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network.
     pub fn register_sync(&mut self) -> Result<(), Error> {
         match self.state.as_mut() {
             Some(w) => {
@@ -298,6 +324,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Fetches the notes from the state.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network,
+    /// if there is no profile stored for the given `profile_idx`, or if the
+    /// stored notes are corrupted.
     pub fn get_all_notes(
         &self,
         profile_idx: u8,
@@ -339,6 +370,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Get the Phoenix balance
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if there is no profile stored for the given `profile_idx`.
     pub async fn get_phoenix_balance(
         &self,
         profile_idx: u8,
@@ -355,6 +390,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Get Moonlight account balance
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if there is no profile stored for the given `profile_idx`.
     pub async fn get_moonlight_balance(
         &self,
         profile_idx: u8,
@@ -475,18 +514,29 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Returns the public account address for a given index.
+    ///
+    /// # Errors
+    /// This will error if the wallet doesn't have a profile stored for the
+    /// given index.
     pub fn public_address(&self, index: u8) -> Result<Address, Error> {
         let addr = *self.public_key(index)?;
         Ok(addr.into())
     }
 
     /// Returns the shielded account address for a given index.
+    ///
+    /// # Errors
+    /// This method will error if there is no profile stored at the given index.
     pub fn shielded_account(&self, index: u8) -> Result<Address, Error> {
         let addr = *self.shielded_key(index)?;
         Ok(addr.into())
     }
 
     /// Obtains stake information for a given address.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if there is no profile stored for the given `profile_idx`.
     pub async fn stake_info(
         &self,
         profile_idx: u8,
@@ -497,6 +547,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Returns BLS key-pair for provisioner nodes
+    ///
+    /// # Errors
+    /// This method will error if the given index doesn't exist or if the
+    /// internally stored keys are corrupted.
     pub fn provisioner_keys(
         &self,
         index: u8,
@@ -513,6 +567,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Exports BLS key-pair for provisioners in node-compatible format
+    ///
+    /// # Errors
+    /// This method will error if the provided `dir` is not valid of if the
+    /// `profile_idx` doesn't exist in the wallet.
     pub fn export_provisioner_keys(
         &self,
         profile_idx: u8,
@@ -536,6 +594,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Return the index of the address passed, returns an error if the address
     /// is not in the wallet profiles.
+    ///
+    /// # Errors
+    /// This method will error if the address is not among the internally stored
+    /// addresses.
     pub fn find_index(&self, addr: &Address) -> Result<u8, Error> {
         // check if the key is stored in our profiles, return its index if
         // found
@@ -557,12 +619,20 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Check if the address is stored in our profiles, return the address if
     /// found
+    ///
+    /// # Errors
+    /// This method will error if the address is not among the internally stored
+    /// addresses.
     pub fn claim(&self, addr: Address) -> Result<Address, Error> {
         self.find_index(&addr)?;
         Ok(addr)
     }
 
     /// Generate a contract id given bytes and nonce
+    ///
+    /// # Errors
+    /// This method will error if the hash maps to an invalid contract-id, this
+    /// would mean there is a bug in the `blake2b_simd` hasher.
     pub fn get_contract_id(
         &self,
         profile_idx: u8,
@@ -586,6 +656,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Return the dat file version from memory or by reading the file
     /// In order to not read the file version more than once per execution
+    ///
+    /// # Errors
+    /// This method will error if the wallet-file cannot be obtained.
     pub fn get_file_version(&self) -> Result<DatFileVersion, Error> {
         if let Some(file_version) = self.file_version {
             Ok(file_version)
@@ -597,6 +670,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Check if the wallet is synced
+    ///
+    /// # Errors
+    /// This method will error if the wallet cannot connect to the network.
     pub async fn is_synced(&self) -> Result<bool, Error> {
         let state = self.state()?;
         let db_pos = state.cache().last_pos()?.unwrap_or(0);
@@ -610,6 +686,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Erase the cache directory
+    ///
+    /// # Errors
+    /// This method will error if the wallet cannot connect to the network.
     pub fn delete_cache(&mut self) -> Result<(), Error> {
         let path = self.cache_path()?;
 
@@ -627,6 +706,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Get gas prices from the mempool
+    ///
+    /// # Errors
+    /// This method will error if the wallet cannot connect to the network or if
+    /// the network response is not valid json.
     pub async fn get_mempool_gas_prices(
         &self,
     ) -> Result<MempoolGasPrices, Error> {

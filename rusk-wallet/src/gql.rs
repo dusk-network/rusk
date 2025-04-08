@@ -106,6 +106,10 @@ pub enum TxStatus {
 
 impl GraphQL {
     /// Create a new GraphQL wallet client
+    ///
+    /// # Errors
+    /// This method errors if a TLS backend cannot be initialized, or the
+    /// resolver cannot load the system configuration.
     pub fn new<S: Into<String>>(
         url: S,
         status: fn(&str),
@@ -117,6 +121,10 @@ impl GraphQL {
     }
 
     /// Wait for a transaction to be confirmed (included in a block)
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// or if the response body is not in JSON format or encoded correctly.
     pub async fn wait_for(&self, tx_id: &str) -> anyhow::Result<()> {
         loop {
             let status = self.tx_status(tx_id).await?;
@@ -136,6 +144,11 @@ impl GraphQL {
     }
 
     /// Obtain transaction status
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// if the response body is not in JSON format or encoded correctly or if
+    /// the transaction couldn't be found.
     async fn tx_status(&self, tx_id: &str) -> Result<TxStatus, Error> {
         let query =
             "query { tx(hash: \"####\") { id, err }}".replace("####", tx_id);
@@ -150,6 +163,10 @@ impl GraphQL {
     }
 
     /// Obtain transactions inside a block
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// or if the response body is not in JSON format or encoded correctly.
     pub async fn txs_for_block(
         &self,
         block_height: u64,
@@ -179,12 +196,19 @@ impl GraphQL {
     }
 
     /// Sends an empty body to url to check if its available
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query.
     pub async fn check_connection(&self) -> Result<(), Error> {
         self.query("").await.map(|_| ())
     }
 
     /// Query the archival node for moonlight transactions given the
     /// `BlsPublicKey`
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// or if the response body is not in JSON format or encoded correctly.
     pub async fn moonlight_history(
         &self,
         address: Address,
@@ -206,6 +230,10 @@ impl GraphQL {
     }
 
     /// Fetch the spent transaction given moonlight tx hash
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// or if the response body is not in JSON format or encoded correctly.
     pub async fn moonlight_tx(
         &self,
         origin: &str,
@@ -256,6 +284,10 @@ impl From<serde_json::Error> for GraphQLError {
 
 impl GraphQL {
     /// Call the graphql endpoint of a node
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// or if the response body is not in JSON format.
     pub async fn query(&self, query: &str) -> Result<Vec<u8>, Error> {
         self.client
             .call("graphql", None, "query", query.as_bytes())
