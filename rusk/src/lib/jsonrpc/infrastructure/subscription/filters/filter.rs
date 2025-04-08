@@ -4,95 +4,141 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! Defines the core [`Filter`] trait for event filtering
-//! within the subscription system.
+//! Defines the core [`Filter`] trait, the central abstraction for event
+//! filtering within the JSON-RPC WebSocket subscription system.
 //!
-//! [`Filter`] allows clients to receive only the subset of events they are
-//! interested in for a given topic, reducing network traffic and client-side
-//! processing.
+//! The subscription system allows clients to subscribe to various topics (e.g.,
+//! new blocks, specific contract events). Filters provide a mechanism for
+//! clients to specify criteria that events must meet to be delivered to them.
+//! This reduces unnecessary network traffic and client-side processing by
+//! ensuring only relevant events are sent.
+//!
+//! # The `Filter` Trait
+//!
+//! Each specific filter implementation (e.g., [`super::BlockFilter`],
+//! [`super::ContractFilter`]) corresponds to the parameters accepted by a
+//! particular WebSocket subscription method. These implementations hold the
+//! client-specified criteria.
+//!
+//! The core logic resides in the [`Filter::matches`] method. The
+//! `SubscriptionManager` calls this method for each published event against
+//! every relevant subscription's filter. If `matches` returns `true`, the event
+//! is sent to that subscriber.
+//!
+//! # Type Handling with `dyn Any`
+//!
+//! To allow a single filtering mechanism across diverse event types (blocks,
+//! transactions, contract logs, etc.), the [`matches`](Filter::matches) method
+//! accepts the event as `&dyn Any`. Implementors of the `Filter` trait are
+//! responsible for:
+//! 1. Attempting to downcast the `&dyn Any` to the concrete event type(s) they
+//!    are designed to handle.
+//! 2. Applying their specific filtering logic based on the fields of the
+//!    downcasted event and the criteria stored within the filter itself.
+//! 3. Returning `false` if the downcast fails (indicating the event type is not
+//!    relevant to this filter) or if the event does not meet the filter's
+//!    criteria.
+//!
+//! Filters must also be `Debug + Send + Sync + 'static` to be stored and safely
+//! used concurrently by the `SubscriptionManager`.
+//!
+//! # Related Modules
+//! - [`crate::jsonrpc::infrastructure::subscription::filters`]: The parent
+//!   module containing specific filter implementations.
+//! - [`crate::jsonrpc::infrastructure::subscription::manager`]: The
+//!   [`SubscriptionManager`] which utilizes `Filter` instances.
+//! - [`crate::jsonrpc::infrastructure::subscription::types`]: Defines parameter
+//!   types used to construct filters.
 
 use std::any::Any;
 use std::fmt::Debug;
 
-/// A trait for defining event filters used in WebSocket subscriptions.
+/// The core trait for event filtering in WebSocket subscriptions.
 ///
-/// Implementors of this trait specify criteria for matching events. The
-/// `SubscriptionManager` uses these filters to determine if a published event
-/// should be sent to a particular subscriber.
+/// Implementors define the logic for matching published events against specific
+/// criteria provided by a client during subscription.
 ///
-/// Filters must be `Send + Sync + 'static` to be stored and used across
-/// threads safely, particularly within the `SubscriptionManager`'s background
-/// task.
+/// The [`SubscriptionManager`](crate::jsonrpc::infrastructure::subscription::manager::SubscriptionManager)
+/// holds instances of types implementing this trait (`Box<dyn Filter>`) and
+/// uses their [`matches`] method to decide whether to forward an event to a
+/// subscriber.
 ///
-/// # Type Safety and `Any`
+/// # Requirements
 ///
-/// The `matches` method takes `&dyn Any` as the event type. This allows a
-/// single filter mechanism to work with various event types published across
-/// different topics. Implementors are responsible for downcasting the `&dyn
-/// Any` argument to the concrete event type they expect for their specific
-/// topic before applying filter logic. If the downcast fails, the filter should
-/// typically return `false` (event doesn't match).
+/// Filters must be `Debug + Send + Sync + 'static` to be stored and shared
+/// across threads safely.
 ///
-/// # Example: Implementing a Simple Filter
+/// # Type Safety with `dyn Any`
+///
+/// The [`matches`] method receives the event as `&dyn Any`. This design allows
+/// the filtering system to handle various event types generically.
+/// Implementations must attempt to downcast the `&dyn Any` to the expected
+/// concrete event type(s) relevant to the filter. If the downcast fails,
+/// `matches` should return `false`.
+///
+/// # Example Implementation
 ///
 /// ```rust
 /// use std::any::Any;
 /// use std::fmt::Debug;
 /// use rusk::jsonrpc::infrastructure::subscription::filters::Filter;
 ///
-/// // Example event type
+/// // Define a specific event type
 /// #[derive(Debug, Clone)]
-/// struct MyEvent {
+/// struct ValueEvent {
 ///     value: i32,
+///     category: String,
 /// }
 ///
-/// // Filter that only matches events with a positive value
+/// // Define a filter that matches ValueEvents with a positive value
 /// #[derive(Debug)]
-/// struct PositiveValueFilter;
+/// struct PositiveValueFilter {
+///     // Filters might hold criteria, e.g., min_value: i32
+/// }
 ///
 /// impl Filter for PositiveValueFilter {
 ///     fn matches(&self, event: &dyn Any) -> bool {
-///         // Attempt to downcast the Any type to our expected event type
-///         if let Some(my_event) = event.downcast_ref::<MyEvent>() {
-///             // Apply filter logic
-///             my_event.value > 0
+///         // 1. Attempt to downcast to the relevant event type
+///         if let Some(value_event) = event.downcast_ref::<ValueEvent>() {
+///             // 2. Apply filter logic
+///             value_event.value > 0
 ///         } else {
-///             // If it's not the type we expect, it doesn't match
+///             // 3. Return false if downcast fails (wrong event type)
 ///             false
 ///         }
 ///     }
 /// }
 ///
-/// let filter = PositiveValueFilter;
-/// let positive_event = MyEvent { value: 10 };
-/// let negative_event = MyEvent { value: -5 };
-/// let zero_event = MyEvent { value: 0 };
-/// struct OtherEvent; // A completely different type
+/// // --- Usage Example (Simplified) ---
+/// let filter: Box<dyn Filter> = Box::new(PositiveValueFilter {});
 ///
-/// assert!(filter.matches(&positive_event));
-/// assert!(!filter.matches(&negative_event));
-/// assert!(!filter.matches(&zero_event));
-/// assert!(!filter.matches(&OtherEvent)); // Doesn't match different types
+/// let event_positive = ValueEvent { value: 10, category: "A".to_string() };
+/// let event_negative = ValueEvent { value: -5, category: "B".to_string() };
+/// struct OtherEvent; // A different, unrelated event type
+///
+/// assert!(filter.matches(&event_positive));  // Matches
+/// assert!(!filter.matches(&event_negative)); // Does not match (value <= 0)
+/// assert!(!filter.matches(&OtherEvent));     // Does not match (wrong type)
 /// ```
 ///
-/// # Extending Filters
+/// # See Also
 ///
-/// Specific filter implementations (like `BlockFilter`, `ContractFilter`, etc.)
-/// will typically be derived from the client-provided subscription parameters
-/// ([`crate::jsonrpc::infrastructure::subscription::types::BlockSubscriptionParams`], etc.)
-/// and will contain the logic specific to their respective event types.
+/// - [`super::BlockFilter`], [`super::ContractFilter`],
+///   [`super::TransferFilter`], [`super::MempoolFilter`] for concrete examples.
 pub trait Filter: Debug + Send + Sync + 'static {
-    /// Checks if the given event matches the criteria defined by this filter.
+    /// Determines if a given event satisfies the criteria defined by this
+    /// filter.
     ///
     /// # Arguments
     ///
-    /// * `event`: A dynamic reference to the event object being published.
-    ///   Implementors should attempt to downcast this to the expected concrete
-    ///   event type.
+    /// * `event`: A dynamically-typed reference (`&dyn Any`) to the event
+    ///   object being published by the system.
     ///
     /// # Returns
     ///
-    /// `true` if the event matches the filter's criteria, `false` otherwise,
-    /// or if the event type is not applicable to this filter.
+    /// - `true` if the event is of the expected type for this filter *and* it
+    ///   meets the filter's specific criteria.
+    /// - `false` if the event is not of the expected type (downcast fails) or
+    ///   if it does not meet the criteria.
     fn matches(&self, event: &dyn Any) -> bool;
 }
