@@ -191,10 +191,7 @@ impl FromStr for Dusk {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parse_result = f64::from_str(s).map_err(|e: ParseFloatError| {
-            Error::Conversion(format!(
-                "Failed to parse Dusk from string: {}",
-                e
-            ))
+            Error::Conversion(format!("Failed to parse Dusk from string: {e}",))
         })?;
 
         Dusk::try_from(parse_result)
