@@ -14,7 +14,8 @@ use serde_json::Value;
 use serde_with::{serde_as, DisplayFromStr};
 use tokio::time::{sleep, Duration};
 
-use crate::{Address, Error, RuesHttpClient};
+use crate::rues::HttpClient as RuesHttpClient;
+use crate::{Address, Error};
 
 /// GraphQL is a helper struct that aggregates all queries done
 /// to the Dusk GraphQL database.

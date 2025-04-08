@@ -23,8 +23,7 @@ use wallet_core::transaction::{
 };
 use zeroize::Zeroize;
 
-use super::file::SecureWalletFile;
-use super::{Address, Wallet};
+use super::{Address, SecureWalletFile, Wallet};
 use crate::clients::Prover;
 use crate::currency::Dusk;
 use crate::gas::Gas;

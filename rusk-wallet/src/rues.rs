@@ -19,12 +19,12 @@ pub const CONTRACTS_TARGET: &str = "contracts";
 
 #[derive(Clone)]
 /// Rusk HTTP Binary Client
-pub struct RuesHttpClient {
+pub struct HttpClient {
     client: reqwest::Client,
     uri: String,
 }
 
-impl RuesHttpClient {
+impl HttpClient {
     /// Create a new HTTP Client
     pub fn new<S: Into<String>>(uri: S) -> Result<Self, Error> {
         let client = reqwest::ClientBuilder::new()
