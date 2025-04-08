@@ -15,9 +15,9 @@ use crate::crypto::{decrypt_aes_cbc, decrypt_aes_gcm};
 use crate::{Error, WalletPath, IV_SIZE, SALT_SIZE};
 
 /// Binary prefix for old Dusk wallet files
-pub const OLD_MAGIC: u32 = 0x1d0c15;
+pub const OLD_MAGIC: u32 = 0x1d_0c15;
 /// Binary prefix for new binary file format
-pub const MAGIC: u32 = 0x72736b;
+pub const MAGIC: u32 = 0x72_736b;
 /// The latest version of the rusk binary format for wallet dat file
 pub const LATEST_VERSION: Version = (0, 0, 2, 0, false);
 /// The type info of the dat file we'll save
@@ -191,7 +191,7 @@ pub(crate) fn check_version(
                 .try_into()
                 .map_err(|_| Error::WalletFileCorrupted)?;
 
-            let magic = u32::from_le_bytes(header_bytes) & 0x00ffffff;
+            let magic = u32::from_le_bytes(header_bytes) & 0x00ff_ffff;
 
             if magic == OLD_MAGIC {
                 // check for version information
@@ -205,14 +205,14 @@ pub(crate) fn check_version(
 
                 let number = u64::from_be_bytes(header_bytes);
 
-                let magic_num = (number & 0xFFFFFF00000000) >> 32;
+                let magic_num = (number & 0xff_ffff_0000_0000) >> 32;
 
                 if (magic_num as u32) != MAGIC {
                     return Ok(DatFileVersion::Legacy);
                 }
 
-                let file_type = (number & 0x000000FFFF0000) >> 16;
-                let reserved = number & 0x0000000000FFFF;
+                let file_type = (number & 0x00_0000_ffff_0000) >> 16;
+                let reserved = number & 0x00_0000_0000_ffff;
 
                 if file_type != FILE_TYPE as u64 {
                     return Err(Error::WalletFileCorrupted);
@@ -228,11 +228,11 @@ pub(crate) fn check_version(
 
                 let version = u32::from_be_bytes(version_bytes);
 
-                let major = (version & 0xff000000) >> 24;
-                let minor = (version & 0x00ff0000) >> 16;
-                let patch = (version & 0x0000ff00) >> 8;
-                let pre = (version & 0x000000f0) >> 4;
-                let higher = version & 0x0000000f;
+                let major = (version & 0xff00_0000) >> 24;
+                let minor = (version & 0x00ff_0000) >> 16;
+                let patch = (version & 0x0000_ff00) >> 8;
+                let pre = (version & 0x0000_00f0) >> 4;
+                let higher = version & 0x000_0000f;
 
                 let pre_higher = matches!(higher, 1);
 
