@@ -148,4 +148,17 @@ pub enum SubscriptionError {
     /// ```
     #[error("Too many subscriptions: {0}")]
     TooManySubscriptions(String),
+
+    /// Indicates that a string could not be parsed into a valid
+    /// `SubscriptionId` because it does not conform to the expected UUID
+    /// format. Contains the underlying parsing error message.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
+    /// let error = SubscriptionError::InvalidSubscriptionIdFormat("invalid uuid string".to_string());
+    /// assert_eq!(format!("{}", error), "Invalid subscription ID format: invalid uuid string");
+    /// ```
+    #[error("Invalid subscription ID format: {0}")]
+    InvalidSubscriptionIdFormat(String),
 }
