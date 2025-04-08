@@ -110,6 +110,7 @@ metrics-exporter-prometheus = { workspace = true }
 tower_governor = { workspace = true }
 dashmap = { workspace = true }
 glob = { workspace = true }
+uuid = { version = "1.8.0", features = ["v4", "serde"] }
 
 [dev-dependencies]
 wallet-core = { workspace = true }
