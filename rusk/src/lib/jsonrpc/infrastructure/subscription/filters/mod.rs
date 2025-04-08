@@ -4,7 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod error;
-pub mod filters;
-pub mod manager;
-pub mod types;
+mod block_filter;
+mod contract_filter;
+mod filter;
+mod mempool_filter;
+mod transfer_filter;
+
+pub use block_filter::*;
+pub use contract_filter::*;
+pub use filter::*;
+// pub use mempool_filter::*;
+// pub use transfer_filter::*;

@@ -6,9 +6,11 @@
 
 use std::fmt::Debug;
 
-use rusk::jsonrpc::infrastructure::subscription::filter::{
-    BlockEventData, BlockFilter, Filter,
+use rusk::jsonrpc::infrastructure::subscription::filters::{
+    BlockEventData, BlockFilter, ContractEventData, ContractFilter, Filter,
 };
+
+// --- BlockFilter Tests ---
 
 // Helper struct for testing non-matching types
 #[derive(Debug)]
@@ -94,4 +96,194 @@ fn block_filter_debug_output() {
         format!("{:?}", filter_false),
         "BlockFilter { include_txs: false }"
     );
+}
+
+// --- ContractFilter Tests ---
+
+// Helper struct for testing non-matching types
+#[derive(Debug)]
+struct NonContractEvent;
+
+#[test]
+fn contract_filter_builder_defaults_built() {
+    // Build the filter with the required contract ID and default optional
+    // fields
+    let filter = ContractFilter::builder()
+        .contract_id("default_contract".to_string())
+        // Do not set event_names or include_metadata to check defaults
+        .build();
+
+    assert_eq!(filter.contract_id(), "default_contract");
+    assert!(
+        filter.event_names().is_none(),
+        "Default event_names should be None"
+    );
+    assert!(!filter.include_metadata());
+}
+
+#[test]
+fn contract_filter_builder_set_fields() {
+    let filter = ContractFilter::builder()
+        .contract_id("contract_abc".to_string())
+        .event_names(Some(vec!["EventA".to_string(), "EventB".to_string()]))
+        .include_metadata(true)
+        .build();
+
+    assert_eq!(filter.contract_id(), "contract_abc");
+    assert_eq!(
+        filter.event_names(),
+        Some(&["EventA".to_string(), "EventB".to_string()][..])
+    );
+    assert!(filter.include_metadata());
+}
+
+#[test]
+fn contract_filter_builder_required_contract_id() {
+    let filter = ContractFilter::builder()
+        .contract_id("required_id".to_string())
+        .build();
+    assert_eq!(filter.contract_id(), "required_id");
+    assert!(filter.event_names().is_none());
+    assert!(!filter.include_metadata());
+}
+
+#[test]
+fn contract_filter_matches_correct_type_and_contract() {
+    let filter = ContractFilter::builder()
+        .contract_id("match_contract".to_string())
+        .build();
+    let event = ContractEventData {
+        contract_id: "match_contract".to_string(),
+        event_name: "SomeEvent".to_string(),
+        has_metadata: false,
+    };
+    assert!(filter.matches(&event));
+}
+
+#[test]
+fn contract_filter_does_not_match_incorrect_type() {
+    let filter = ContractFilter::builder()
+        .contract_id("any_contract".to_string())
+        .build();
+    let non_event = NonContractEvent;
+    assert!(!filter.matches(&non_event));
+}
+
+#[test]
+fn contract_filter_does_not_match_different_contract() {
+    let filter = ContractFilter::builder()
+        .contract_id("filter_contract".to_string())
+        .build();
+    let event = ContractEventData {
+        contract_id: "different_contract".to_string(),
+        event_name: "SomeEvent".to_string(),
+        has_metadata: false,
+    };
+    assert!(!filter.matches(&event));
+}
+
+#[test]
+fn contract_filter_matches_specific_event_name() {
+    let filter = ContractFilter::builder()
+        .contract_id("contract1".to_string())
+        .event_names(Some(vec!["MatchEvent".to_string()]))
+        .build();
+    let event_match = ContractEventData {
+        contract_id: "contract1".to_string(),
+        event_name: "MatchEvent".to_string(),
+        has_metadata: false,
+    };
+    let event_no_match_name = ContractEventData {
+        contract_id: "contract1".to_string(),
+        event_name: "OtherEvent".to_string(),
+        has_metadata: false,
+    };
+    let event_no_match_contract = ContractEventData {
+        contract_id: "contract2".to_string(),
+        event_name: "MatchEvent".to_string(),
+        has_metadata: false,
+    };
+
+    assert!(filter.matches(&event_match));
+    assert!(!filter.matches(&event_no_match_name));
+    assert!(!filter.matches(&event_no_match_contract));
+}
+
+#[test]
+fn contract_filter_matches_any_event_name_when_none_specified() {
+    let filter = ContractFilter::builder()
+        .contract_id("contract_all".to_string())
+        .event_names(None) // Explicitly None
+        .build();
+    let event1 = ContractEventData {
+        contract_id: "contract_all".to_string(),
+        event_name: "EventA".to_string(),
+        has_metadata: false,
+    };
+    let event2 = ContractEventData {
+        contract_id: "contract_all".to_string(),
+        event_name: "EventB".to_string(),
+        has_metadata: false,
+    };
+    let event_other_contract = ContractEventData {
+        contract_id: "other".to_string(),
+        event_name: "EventA".to_string(),
+        has_metadata: false,
+    };
+
+    assert!(filter.matches(&event1));
+    assert!(filter.matches(&event2));
+    assert!(!filter.matches(&event_other_contract));
+}
+
+#[test]
+fn contract_filter_matches_independent_of_include_metadata_flag() {
+    let filter_with_meta = ContractFilter::builder()
+        .contract_id("meta_contract".to_string())
+        .include_metadata(true)
+        .build();
+    let filter_without_meta = ContractFilter::builder()
+        .contract_id("meta_contract".to_string())
+        .include_metadata(false)
+        .build();
+
+    let event = ContractEventData {
+        contract_id: "meta_contract".to_string(),
+        event_name: "AnyEvent".to_string(),
+        has_metadata: true, // Event has metadata, doesn't affect filter match
+    };
+
+    assert!(
+        filter_with_meta.matches(&event),
+        "Filter with metadata should match"
+    );
+    assert!(
+        filter_without_meta.matches(&event),
+        "Filter without metadata should match"
+    );
+}
+
+#[test]
+fn contract_filter_implements_required_traits() {
+    fn assert_traits<T: Debug + Send + Sync + Clone + 'static>() {}
+    assert_traits::<ContractFilter>();
+}
+
+#[test]
+fn contract_filter_debug_output() {
+    let filter = ContractFilter::builder()
+        .contract_id("debug_contract".to_string())
+        .event_names(Some(vec!["DebugEvent".to_string()]))
+        .include_metadata(true)
+        .build();
+
+    let expected_debug = "ContractFilter { contract_id: \"debug_contract\", event_names: Some([\"DebugEvent\"]), include_metadata: true }";
+    assert_eq!(format!("{:?}", filter), expected_debug);
+
+    let filter_minimal = ContractFilter::builder()
+        .contract_id("minimal_contract".to_string())
+        .build();
+
+    let expected_debug_minimal = "ContractFilter { contract_id: \"minimal_contract\", event_names: None, include_metadata: false }";
+    assert_eq!(format!("{:?}", filter_minimal), expected_debug_minimal);
 }
