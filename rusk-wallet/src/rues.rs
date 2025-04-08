@@ -68,7 +68,7 @@ impl RuesHttpClient {
         Ok(())
     }
 
-    /// Send a RuskRequest to a specific target.
+    /// Send a `RuskRequest` to a specific target.
     ///
     /// The response is interpreted as Binary
     pub async fn call<E>(
@@ -87,7 +87,7 @@ impl RuesHttpClient {
         Ok(data.to_vec())
     }
 
-    /// Send a RuskRequest to a specific target without parsing the response
+    /// Send a `RuskRequest` to a specific target without parsing the response
     pub async fn call_raw<E>(
         &self,
         target: &str,

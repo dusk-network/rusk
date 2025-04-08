@@ -180,9 +180,9 @@ pub(crate) fn get_seed_and_address(
     }
 }
 
-/// From the first 12 bytes of the file (header), we check version
+/// From the first 12 bytes of the file [header], we check version
 ///
-/// https://github.com/dusk-network/rusk/wiki/Binary-File-Format/#header
+/// [header]: https://github.com/dusk-network/rusk/wiki/Binary-File-Format/#header
 pub(crate) fn check_version(
     bytes: Option<&[u8]>,
 ) -> Result<DatFileVersion, Error> {
