@@ -14,7 +14,6 @@
 
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
-#![allow(clippy::needless_pass_by_value)]
 
 mod cache;
 mod clients;
