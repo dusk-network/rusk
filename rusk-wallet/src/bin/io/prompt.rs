@@ -33,6 +33,19 @@ use rusk_wallet::{
 use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
 
+pub(crate) trait Prompt {
+    /// Prompt the user to enter a password
+    fn create_new_password(&self) -> Result<String, InquireError>;
+}
+
+pub(crate) struct Prompter;
+
+impl Prompt for Prompter {
+    fn create_new_password(&self) -> Result<String, InquireError> {
+        create_new_password()
+    }
+}
+
 pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
     let pwd = Password::new(msg)
         .with_display_toggle_enabled()
@@ -75,10 +88,11 @@ pub(crate) fn derive_key_from_new_password(
     password: &Option<String>,
     salt: Option<&[u8; SALT_SIZE]>,
     file_version: DatFileVersion,
+    prompter: &dyn Prompt,
 ) -> anyhow::Result<Vec<u8>> {
     let pwd = match password.as_ref() {
         Some(p) => p.to_string(),
-        None => create_new_password()?,
+        None => prompter.create_new_password()?,
     };
 
     derive_key(file_version, &pwd, salt)

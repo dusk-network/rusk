@@ -17,6 +17,7 @@ use rusk_wallet::{
 };
 
 use crate::io::{self, prompt};
+use crate::prompt::Prompter;
 use crate::settings::Settings;
 use crate::{gen_iv, gen_salt, Command, GraphQL, RunResult, WalletFile};
 
@@ -252,7 +253,7 @@ pub(crate) async fn load_wallet(
         }
         // Use the latest binary format when creating a wallet
         MainMenu::Create => {
-            Command::run_create(false, &None, password, &wallet_path)?
+            Command::run_create(false, &None, password, &wallet_path, &Prompter)?
         }
         MainMenu::Recover => {
             // ask user for 12-word mnemonic phrase
@@ -265,6 +266,7 @@ pub(crate) async fn load_wallet(
                 &None,
                 Some(&salt),
                 DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+                &Prompter,
             )?;
             // create and store the recovered wallet
             let mut w = Wallet::new(phrase)?;

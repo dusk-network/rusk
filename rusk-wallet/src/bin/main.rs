@@ -12,7 +12,7 @@ mod settings;
 
 use command::{gen_iv, gen_salt};
 pub(crate) use command::{Command, RunResult};
-use io::prompt::{ask_pwd, derive_key};
+use io::prompt::{ask_pwd, derive_key, Prompter};
 
 use std::fs;
 use std::path::PathBuf;
@@ -230,6 +230,7 @@ async fn exec() -> anyhow::Result<()> {
                 &seed_file,
                 password,
                 &wallet_path,
+                &Prompter,
             )?,
             Command::Restore { file } => {
                 let (mut w, key, salt_and_iv) = match file {
@@ -270,6 +271,7 @@ async fn exec() -> anyhow::Result<()> {
                             dat::DatFileVersion::RuskBinaryFileFormat(
                                 LATEST_VERSION,
                             ),
+                            &Prompter,
                         )?;
                         // create wallet
                         let w = Wallet::new(phrase)?;

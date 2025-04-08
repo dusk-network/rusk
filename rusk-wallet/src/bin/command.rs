@@ -35,6 +35,7 @@ use rusk_wallet::{
 use wallet_core::BalanceInfo;
 
 use crate::io::prompt;
+use crate::prompt::Prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
 
@@ -699,6 +700,7 @@ impl Command {
         seed_file: &Option<PathBuf>,
         password: &Option<String>,
         wallet_path: &WalletPath,
+        prompter: &dyn Prompt,
     ) -> anyhow::Result<Wallet<WalletFile>> {
         // create a new randomly generated mnemonic phrase
         let mnemonic = Mnemonic::new(MnemonicType::Words12, Language::English);
@@ -710,6 +712,7 @@ impl Command {
             password,
             Some(&salt),
             dat::DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+            prompter,
         )?;
 
         match (skip_recovery, seed_file) {
