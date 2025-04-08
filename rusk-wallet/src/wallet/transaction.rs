@@ -492,7 +492,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .fetch_stake(&stake_pk)
             .await?
             .map(|s| s.reward)
-            .unwrap_or(0);
+            .unwrap_or_default();
 
         let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
