@@ -15,7 +15,6 @@
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
 #![allow(clippy::needless_pass_by_value)]
-#![allow(clippy::similar_names)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
