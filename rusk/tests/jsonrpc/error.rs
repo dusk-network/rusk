@@ -355,8 +355,8 @@ fn test_display_impl<E: Display>(error: E, expected_prefix: &str) {
 fn test_infrastructure_and_service_error_display() {
     use rusk::jsonrpc::infrastructure::error::{
         DbError, Error as InfrastructureError, RateLimitError, StateError,
-        SubscriptionError,
     };
+    use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
     use rusk::jsonrpc::service::error::Error as ServiceError;
     test_display_impl(
         InfrastructureError::Database(DbError::Connection(
@@ -377,10 +377,10 @@ fn test_infrastructure_and_service_error_display() {
         "Rate limit error: Rate limit exceeded: ip 1.2.3.4",
     );
     test_display_impl(
-        InfrastructureError::Subscription(SubscriptionError::NotFound(
-            "sub_123".to_string(),
-        )),
-        "Subscription error: Subscription not found: sub_123",
+        InfrastructureError::Subscription(
+            SubscriptionError::InvalidSubscription("sub_123".to_string()),
+        ),
+        "Subscription error: Invalid subscription ID: sub_123",
     );
 
     // Test Service Errors (using placeholder strings)
