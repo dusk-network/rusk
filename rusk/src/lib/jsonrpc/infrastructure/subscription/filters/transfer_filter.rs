@@ -4,28 +4,29 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//! Implements the [`TransferFilter`], a specialized filter for the
-//! `subscribeContractTransferEvents` WebSocket subscription method.
+//! Implements the [`TransferFilter`], a specialized [`Filter`] implementation
+//! used for WebSocket subscriptions related to contract transfer events.
 //!
-//! This module provides the necessary structures and logic to filter contract
-//! transfer events based on the contract ID and a minimum transfer amount,
-//! as specified in the Rusk JSON-RPC WebSocket API documentation.
+//! This filter is designed to be used with subscriptions like
+//! `subscribeContractTransferEvents`. It allows clients to receive
+//! notifications only for transfer events emitted by a specific `contract_id`
+//! (e.g., a token contract) and, optionally, only for transfers where the
+//! `amount` meets a specified minimum.
 //!
-//! The [`TransferFilter`] struct holds the filtering criteria derived from the
-//! client's subscription request parameters (`contract_id`, `min_amount`). It
-//! implements the core [`Filter`] trait, providing the `matches` method which
-//! the `SubscriptionManager` uses to determine if a published event (expected
-//! to be of a type containing transfer details like [`TransferEventData`])
-//! should be sent to the subscriber.
+//! The filter also carries an `include_metadata` flag, which signals to the
+//! `SubscriptionManager` whether the client requested detailed event metadata
+//! in the notification payload; this flag does *not* influence the matching
+//! logic itself.
 //!
-//! A type-state builder ([`TransferFilterBuilder`]) ensures that the required
-//! `contract_id` is always provided during construction.
+//! Construction is done via the [`TransferFilter::builder()`] method, which
+//! uses the type-state pattern to ensure the required `contract_id` is
+//! provided.
 //!
-//! # Related
-//! - [`crate::jsonrpc::infrastructure::subscription::filters::Filter`]: The
-//!   core filtering trait.
-//! - [`crate::jsonrpc::infrastructure::subscription::manager::SubscriptionManager`]:
-//!   Uses filters to route events.
+//! # Related Modules
+//! - [`crate::jsonrpc::infrastructure::subscription::filters`]: Parent module
+//!   defining the core [`Filter`] trait.
+//! - [`crate::jsonrpc::infrastructure::subscription::manager`]: The
+//!   [`SubscriptionManager`] uses filters to route events.
 
 use std::any::Any;
 use std::fmt::Debug;
@@ -33,16 +34,16 @@ use std::marker::PhantomData;
 
 use crate::jsonrpc::infrastructure::subscription::filters::Filter;
 
-/// Placeholder for the actual data type associated with contract transfer
-/// events.
+/// Placeholder struct representing the data associated with a contract transfer
+/// event.
 ///
-/// This is used to demonstrate the downcasting and filtering mechanism in
-/// `TransferFilter::matches`. The actual type will depend on the event
-/// publishing implementation for topics like `ContractTransferEvents`. It must
-/// contain at least the contract ID and the transfer amount for filtering.
+/// This struct is primarily used within this module for demonstrating and
+/// testing the `TransferFilter::matches` logic. The actual event type provided
+/// by the event source (e.g., representing a transfer event parsed from a
+/// contract's logs) must be downcastable to a type that exposes both a
+/// `contract_id` and a numeric `amount` for the filter to function correctly.
 ///
-/// See [`rusk::docs::JSON_RPC_websocket_methods::ContractTransferEvent`] for
-/// the expected structure.
+/// The fields here represent the minimal information needed *by the filter*.
 #[derive(Debug, Clone)]
 pub struct TransferEventData {
     /// The ID of the contract that emitted the event (e.g., token contract).
@@ -52,26 +53,34 @@ pub struct TransferEventData {
     // Other fields like sender, receiver, memo are ignored by this filter.
 }
 
-/// Filter for contract transfer events (`ContractTransferEvents`).
+/// A [`Filter`] implementation for contract transfer event subscriptions.
 ///
-/// This filter matches events based on the `contract_id` and optionally a
-/// minimum transfer `amount`. The `include_metadata` flag indicates whether the
-/// subscription requested detailed metadata in the notification payload, but it
-/// does not affect the filtering logic of the `matches` method itself.
+/// This filter checks incoming events based on a mandatory `contract_id` and an
+/// optional minimum `amount`.
 ///
-/// Use the [`TransferFilter::builder()`] to construct instances.
+/// - The `contract_id` must match the contract that emitted the transfer event.
+/// - If `min_amount` is `Some(min)`, the event's `amount` must be greater than
+///   or equal to `min`.
+/// - If `min_amount` is `None`, any transfer amount from the target contract
+///   matches.
+///
+/// The `include_metadata` field determines the desired verbosity of the
+/// resulting notification payload but does not affect whether an event
+/// `matches` this filter.
+///
+/// Use the [`TransferFilter::builder()`] to construct instances. This requires
+/// setting the `contract_id`.
 ///
 /// # Examples
 ///
 /// ```rust
-/// use std::any::Any;
 /// use rusk::jsonrpc::infrastructure::subscription::filters::{Filter, TransferFilter, TransferEventData};
 ///
 /// // Build a filter for a specific contract, minimum amount 1000, requesting metadata
 /// let filter = TransferFilter::builder()
 ///     .contract_id("token_contract_abc".to_string())
 ///     .min_amount(Some(1000))
-///     .include_metadata(true)
+///     .include_metadata(true) // Does not affect matching
 ///     .build();
 ///
 /// // Create sample transfer events
@@ -93,18 +102,12 @@ pub struct TransferEventData {
 /// };
 /// struct NonTransferEvent;
 ///
-/// // The filter matches the correct event type, contract ID, and amount >= min_amount
+/// // Check matching logic
 /// assert!(filter.matches(&event_match));
 /// assert!(filter.matches(&event_match_exact));
-///
-/// // The filter does not match events below the minimum amount
-/// assert!(!filter.matches(&event_no_match_amount));
-///
-/// // The filter does not match events from other contracts
-/// assert!(!filter.matches(&event_no_match_contract));
-///
-/// // The filter does not match other event types
-/// assert!(!filter.matches(&NonTransferEvent));
+/// assert!(!filter.matches(&event_no_match_amount)); // Amount too low
+/// assert!(!filter.matches(&event_no_match_contract)); // Wrong contract
+/// assert!(!filter.matches(&NonTransferEvent)); // Wrong type
 ///
 /// // Accessing filter properties
 /// assert_eq!(filter.contract_id(), "token_contract_abc");
@@ -119,38 +122,54 @@ pub struct TransferFilter {
 }
 
 impl TransferFilter {
-    /// Creates a new builder for `TransferFilter` requiring the contract ID.
+    /// Creates a new type-state builder for `TransferFilter`.
+    ///
+    /// The builder starts in a state requiring the `contract_id` to be set.
     pub fn builder() -> TransferFilterBuilder<NoContractIdT> {
         TransferFilterBuilder::new()
     }
 
-    /// Returns the contract ID this filter targets.
+    /// Returns the contract ID that this filter targets (e.g., the token
+    /// contract address).
     pub fn contract_id(&self) -> &str {
         &self.contract_id
     }
 
-    /// Returns the optional minimum transfer amount required to match.
+    /// Returns the optional minimum transfer amount required for an event to
+    /// match this filter.
+    ///
+    /// If `Some(amount)`, only transfers of `amount` or greater will match.
+    /// If `None`, the filter does not discriminate based on amount.
     pub fn min_amount(&self) -> Option<u64> {
         self.min_amount
     }
 
-    /// Returns whether the subscription requested inclusion of event metadata.
+    /// Indicates whether the original subscription requested the inclusion of
+    /// detailed event metadata in event notifications.
     ///
-    /// This value is typically used by the `SubscriptionManager` during event
-    /// publication to format the notification payload, not for filtering events
-    /// themselves via the `matches` method.
+    /// This is used by the `SubscriptionManager` when formatting the event data
+    /// to be sent to the client and does not affect the filter's `matches`
+    /// logic.
     pub fn include_metadata(&self) -> bool {
         self.include_metadata
     }
 }
 
 impl Filter for TransferFilter {
-    /// Checks if the event matches the transfer filter criteria.
+    /// Checks if a given event matches the criteria of this transfer filter.
     ///
-    /// It attempts to downcast the event to `TransferEventData`. If successful,
-    /// it checks if the event's `contract_id` matches the filter's.
-    /// If `min_amount` is set in the filter, it further checks if the event's
-    /// `amount` is greater than or equal to the `min_amount`.
+    /// 1. It attempts to downcast the `event` to [`TransferEventData`] (or the
+    ///    actual expected transfer event type).
+    /// 2. If the downcast succeeds, it checks if the event's `contract_id`
+    ///    matches the filter's mandatory `contract_id`. If not, it returns
+    ///    `false`.
+    /// 3. If the contract IDs match and the filter specifies a `min_amount`
+    ///    (`Some(min)`), it checks if the event's `amount` is greater than or
+    ///    equal to `min`. If not, it returns `false`.
+    /// 4. If the contract IDs match and either the filter does *not* specify a
+    ///    `min_amount` (`None`) or the amount condition is met, it returns
+    ///    `true`.
+    /// 5. If the initial downcast fails, it returns `false`.
     ///
     /// # Returns
     ///
@@ -164,38 +183,16 @@ impl Filter for TransferFilter {
     /// let filter = TransferFilter::builder()
     ///     .contract_id("token_contract_abc".to_string())
     ///     .min_amount(Some(1000))
-    ///     .include_metadata(true)
     ///     .build();
     ///
-    /// let event_match = TransferEventData {
-    ///     contract_id: "token_contract_abc".to_string(),
-    ///     amount: 1500,
-    /// };
-    /// let event_match_exact = TransferEventData {
-    ///     contract_id: "token_contract_abc".to_string(),
-    ///     amount: 1000,
-    /// };
-    /// let event_no_match_amount = TransferEventData {
-    ///     contract_id: "token_contract_abc".to_string(),
-    ///     amount: 500,
-    /// };
-    /// let event_no_match_contract = TransferEventData {
-    ///     contract_id: "other_contract".to_string(),
-    ///     amount: 2000,
-    /// };
+    /// let event_match = TransferEventData { contract_id: "token_contract_abc".to_string(), amount: 1500 };
+    /// let event_no_match_amount = TransferEventData { contract_id: "token_contract_abc".to_string(), amount: 500 };
+    /// let event_no_match_contract = TransferEventData { contract_id: "other_contract".to_string(), amount: 2000 };
     /// struct NonTransferEvent;
     ///
-    /// // The filter matches the correct event type, contract ID, and amount >= min_amount
     /// assert!(filter.matches(&event_match));
-    /// assert!(filter.matches(&event_match_exact));
-    ///
-    /// // The filter does not match events below the minimum amount
     /// assert!(!filter.matches(&event_no_match_amount));
-    ///
-    /// // The filter does not match events from other contracts
     /// assert!(!filter.matches(&event_no_match_contract));
-    ///
-    /// // The filter does not match other event types
     /// assert!(!filter.matches(&NonTransferEvent));
     /// ```
     fn matches(&self, event: &dyn Any) -> bool {
@@ -233,10 +230,11 @@ pub struct NoContractIdT; // Suffix 'T' to avoid name clash if used in same modu
 #[derive(Debug)]
 pub struct WithContractIdT(String);
 
-/// Builder for [`TransferFilter`].
+/// Builder for [`TransferFilter`] using the type-state pattern.
 ///
-/// Uses the type-state pattern to ensure the required `contract_id` is
-/// provided before `build()` can be called.
+/// This ensures the mandatory `contract_id` field is set before the filter can
+/// be built. Optional fields like `min_amount` and `include_metadata` can be
+/// set at any point before building.
 ///
 /// Start with [`TransferFilter::builder()`].
 #[derive(Debug)]
@@ -247,22 +245,26 @@ pub struct TransferFilterBuilder<State> {
     _phantom: PhantomData<State>,
 }
 
+// Methods specific to the initial state
 impl TransferFilterBuilder<NoContractIdT> {
-    /// Creates a new builder instance in the `NoContractIdT` state.
+    /// Creates a new builder instance in the initial state (`NoContractIdT`).
     fn new() -> Self {
         Self {
             state: NoContractIdT,
             min_amount: None,
-            include_metadata: false, // Default as per JSON-RPC doc
+            include_metadata: false, // Default
             _phantom: PhantomData,
         }
     }
 }
 
+// Methods available in any state (setting required/optional fields)
 impl<State> TransferFilterBuilder<State> {
-    /// Sets the required contract ID for the filter.
+    /// Sets the mandatory contract ID for the filter (e.g., the token contract
+    /// address).
     ///
-    /// This transitions the builder state to [`WithContractIdT`].
+    /// This transitions the builder into the [`WithContractIdT`] state,
+    /// allowing `build()` to be called.
     pub fn contract_id(
         self,
         contract_id: String,
@@ -275,27 +277,31 @@ impl<State> TransferFilterBuilder<State> {
         }
     }
 
-    /// Sets an optional minimum transfer amount to filter by.
+    /// Sets an optional minimum transfer amount for filtering.
     ///
-    /// If set, only events with an amount greater than or equal to this value
-    /// will match. If `None`, amount is not checked.
+    /// - If `Some(amount)` is provided, the built filter will only match
+    ///   transfer events where the transferred amount is greater than or equal
+    ///   to `amount`.
+    /// - If `None` (the default) is provided, the built filter will match any
+    ///   transfer event from the specified contract, regardless of the amount.
     ///
     /// Defaults to `None`.
     ///
     /// # Note on Types
-    /// While the `subscribeContractTransferEvents` JSON-RPC method accepts
-    /// `min_amount` as an optional numeric *string*, this filter internally
-    /// uses `Option<u64>` for efficient comparison. The responsibility of
-    /// parsing the JSON string parameter into a `u64` lies with the code
-    /// handling the incoming subscription request before constructing this
-    /// filter.
+    /// The underlying JSON-RPC subscription parameter for this might be a
+    /// string, but the filter internally uses `Option<u64>`. The conversion
+    /// from the request parameter (string) to `u64` should happen before
+    /// this builder is called.
     pub fn min_amount(mut self, min_amount: Option<u64>) -> Self {
         self.min_amount = min_amount;
         self
     }
 
-    /// Sets whether the filter should indicate that event metadata is requested
-    /// for notifications.
+    /// Sets whether the subscription requests detailed metadata in transfer
+    /// event notifications.
+    ///
+    /// This controls the verbosity of the payload sent to the client but does
+    /// not affect the filtering logic itself.
     ///
     /// Defaults to `false`.
     pub fn include_metadata(mut self, include_metadata: bool) -> Self {
@@ -304,11 +310,13 @@ impl<State> TransferFilterBuilder<State> {
     }
 }
 
+// Methods specific to the final state (building the object)
 impl TransferFilterBuilder<WithContractIdT> {
     /// Builds the final [`TransferFilter`].
     ///
-    /// This method is only available when the required `contract_id` has been
-    /// set.
+    /// This method is only available once the mandatory `contract_id` has been
+    /// provided via the
+    /// [`contract_id`](TransferFilterBuilder::contract_id) method.
     pub fn build(self) -> TransferFilter {
         TransferFilter {
             contract_id: self.state.0,
