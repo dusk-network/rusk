@@ -11,10 +11,14 @@ use std::sync::{Arc, Mutex};
 
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::stake::{StakeFundOwner, StakeKeys};
+use dusk_core::stake::{StakeData, StakeFundOwner, StakeKeys};
 use dusk_core::transfer::moonlight::AccountData;
-use dusk_core::transfer::phoenix::{Note, NoteLeaf, Prove};
+use dusk_core::transfer::phoenix::{
+    ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
+    PublicKey as PhoenixPublicKey,
+};
 use dusk_core::transfer::Transaction;
+use dusk_core::BlsScalar;
 use dusk_core::Error as ExecutionCoreError;
 use flume::Receiver;
 use rues::RuesHttpClient;
@@ -28,9 +32,8 @@ use zeroize::Zeroize;
 
 use self::sync::sync_db;
 use super::cache::Cache;
-use super::*;
 use crate::store::LocalStore;
-use crate::{Error, MAX_PROFILES};
+use crate::{rues, Address, Error, MAX_PROFILES};
 
 const TRANSFER_CONTRACT: &str =
     "0100000000000000000000000000000000000000000000000000000000000000";

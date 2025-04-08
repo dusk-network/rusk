@@ -13,7 +13,9 @@ use std::num::ParseFloatError;
 use std::ops::{Add, Deref, Div, Mul, Sub};
 use std::str::FromStr;
 
-use super::*;
+use dusk_core::{dusk, from_dusk};
+
+use crate::Error;
 
 /// The underlying unit of Dusk
 pub type Lux = u64;
