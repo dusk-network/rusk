@@ -186,6 +186,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 let iv = f.iv().expect("Couldn't find the IV");
                 let mut payload = seed.to_vec();
 
+                // we know that `len < MAX_PROFILES <= u8::MAX`, so casting to
+                // u8 is safe here
+                #[allow(clippy::cast_possible_truncation)]
                 payload.push(self.profiles.len() as u8);
 
                 // encrypt the payload
@@ -359,6 +362,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// index.
     pub fn add_profile(&mut self) -> u8 {
         let seed = self.store.get_seed();
+        // we know that `len < MAX_PROFILES <= u8::MAX`, so casting to
+        // u8 is safe here
+        #[allow(clippy::cast_possible_truncation)]
         let index = self.profiles.len() as u8;
         let addr = Profile {
             shielded_addr: derive_phoenix_pk(seed, index),
@@ -522,6 +528,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 Address::Shielded(addr) => addr == &profile.shielded_addr,
                 Address::Public(addr) => addr == &profile.public_addr,
             } {
+                // we know that `index < MAX_PROFILES <= u8::MAX`, so
+                // casting to u8 is safe here
+                #[allow(clippy::cast_possible_truncation)]
                 return Ok(index as u8);
             }
         }

@@ -83,6 +83,9 @@ impl State {
     ) -> Result<Self, Error> {
         let cfs = (0..MAX_PROFILES)
             .flat_map(|i| {
+                // we know that `i < MAX_PROFILES <= u8::MAX`, so casting to u8
+                // is safe here
+                #[allow(clippy::cast_possible_truncation)]
                 let pk: PhoenixPublicKey =
                     derive_phoenix_pk(store.get_seed(), i as u8);
 
