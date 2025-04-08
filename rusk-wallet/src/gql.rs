@@ -44,7 +44,7 @@ struct SpentTx {
     pub raw: String,
     pub err: Option<String>,
     #[serde(alias = "gasSpent", default)]
-    pub gas_spent: f64,
+    pub gas_spent: u64,
 }
 
 #[derive(Deserialize)]
@@ -170,7 +170,7 @@ impl GraphQL {
             ret.push(BlockTransaction {
                 tx: ph_tx,
                 id: spent_tx.id,
-                gas_spent: spent_tx.gas_spent as u64,
+                gas_spent: spent_tx.gas_spent,
             });
         }
 
