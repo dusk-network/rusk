@@ -402,7 +402,7 @@ async fn exec() -> anyhow::Result<()> {
         // if there is no command we are in interactive mode and need to run the
         // interactive loop
         None => {
-            wallet.register_sync().await?;
+            wallet.register_sync()?;
             interactive::run_loop(&mut wallet, &settings).await?;
         }
         // else we run the given command and print the result
