@@ -67,6 +67,7 @@ impl Address {
     }
 
     /// A trimmed version of the address to display as preview
+    #[must_use]
     pub fn preview(&self) -> String {
         let addr_key_str = String::from(self);
         format!(
@@ -165,6 +166,7 @@ pub struct Profile {
 
 impl Profile {
     /// Format the shielded account into a string.
+    #[must_use]
     pub fn shielded_account_string(&self) -> String {
         format!(
             "{} - {}",
@@ -174,6 +176,7 @@ impl Profile {
     }
 
     /// Format the public account into a string.
+    #[must_use]
     pub fn public_account_string(&self) -> String {
         format!(
             "{} - {}",
@@ -183,6 +186,7 @@ impl Profile {
     }
 
     /// Format the staking account into a string.
+    #[must_use]
     pub fn staking_account_string(&self) -> String {
         format!(
             "{} - {}",
@@ -192,6 +196,7 @@ impl Profile {
     }
 
     /// Format the shortened shielded account into a string.
+    #[must_use]
     pub fn shielded_account_preview(&self) -> String {
         format!(
             "{} - {}",
@@ -201,6 +206,7 @@ impl Profile {
     }
 
     /// Format the shortened public account into a string.
+    #[must_use]
     pub fn public_account_preview(&self) -> String {
         format!(
             "{} - {}",
@@ -210,6 +216,7 @@ impl Profile {
     }
 
     /// Format the shortened staking account into a string.
+    #[must_use]
     pub fn staking_account_preview(&self) -> String {
         format!(
             "{} - {}",
@@ -219,6 +226,7 @@ impl Profile {
     }
 
     /// Format the profile's index.
+    #[must_use]
     pub fn index_string(profile_idx: u8) -> String {
         let mut index_string = format!("Profile {:2}", profile_idx + 1);
         if profile_idx == 0 {

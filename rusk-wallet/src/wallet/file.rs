@@ -37,6 +37,7 @@ impl WalletPath {
     /// Create wallet path from the path of "wallet.dat" file. The wallet.dat
     /// file should be located in the profile folder, this function also
     /// generates the profile folder from the passed argument
+    #[must_use]
     pub fn new(wallet: &Path) -> Self {
         let wallet = wallet.to_path_buf();
         // The wallet should be in the profile folder
@@ -52,6 +53,7 @@ impl WalletPath {
     }
 
     /// Returns the filename of this path
+    #[must_use]
     pub fn name(&self) -> Option<String> {
         // extract the name
         let name = self.wallet.file_stem()?.to_str()?;
@@ -64,6 +66,7 @@ impl WalletPath {
     }
 
     /// Returns a reference to the `PathBuf` holding the path
+    #[must_use]
     pub fn inner(&self) -> &PathBuf {
         &self.wallet
     }
@@ -75,6 +78,7 @@ impl WalletPath {
     }
 
     /// Generates dir for cache based on network specified
+    #[must_use]
     pub fn cache_dir(&self) -> PathBuf {
         let mut cache = self.profile_dir.clone();
 
