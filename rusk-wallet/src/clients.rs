@@ -210,7 +210,7 @@ impl State {
         Ok(tx)
     }
 
-    /// Selects up to MAX_INPUT_NOTES unspent input notes from the cache. The
+    /// Selects up to `MAX_INPUT_NOTES` unspent input notes from the cache. The
     /// value of the input notes need to cover the cost of the transaction.
     pub(crate) async fn tx_input_notes(
         &self,

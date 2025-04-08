@@ -26,7 +26,7 @@ pub struct GraphQL {
     status: fn(&str),
 }
 
-/// The tx_for_block returns a Vec<BlockTransaction> which contains
+/// The `tx_for_block` returns a Vec<BlockTransaction> which contains
 /// the dusk-core transaction, its id hash and gas spent
 pub struct BlockTransaction {
     /// The dusk-core transaction struct obtained from GraphQL endpoint
@@ -183,7 +183,7 @@ impl GraphQL {
     }
 
     /// Query the archival node for moonlight transactions given the
-    /// BlsPublicKey
+    /// `BlsPublicKey`
     pub async fn moonlight_history(
         &self,
         address: Address,
