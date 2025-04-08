@@ -169,6 +169,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Saves wallet to file from which it was loaded
+    ///
+    /// # Panics
+    /// This method will panic if there is a wallet-file, but the iv or salt for
+    /// the wallet encryption is missing.
     pub fn save(&mut self) -> Result<(), Error> {
         match &self.file {
             Some(f) => {
@@ -387,12 +391,20 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Returns the default shielded account address for this wallet
+    ///
+    /// # Panics
+    /// This function will panic if something went wrong while setting up the
+    /// wallet and there is no address stored at index 0.
     pub fn default_shielded_account(&self) -> Address {
         self.shielded_account(0)
             .expect("there to be an address at index 0")
     }
 
     /// Returns the default public account address for this wallet
+    ///
+    /// # Panics
+    /// This function will panic if something went wrong while setting up the
+    /// wallet and there is no address stored at index 0.
     pub fn default_public_address(&self) -> Address {
         self.public_address(0)
             .expect("there to be an address at index 0")
