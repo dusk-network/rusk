@@ -129,7 +129,7 @@ impl State {
         }
     }
 
-    pub async fn register_sync(&mut self) -> Result<(), Error> {
+    pub fn register_sync(&mut self) {
         let (sync_tx, sync_rx) = flume::unbounded::<String>();
 
         self.sync_rx = Some(sync_rx);
@@ -155,8 +155,6 @@ impl State {
         });
 
         self.sync_join_handle = Some(handle);
-
-        Ok(())
     }
 
     pub async fn sync(&self) -> Result<(), Error> {
