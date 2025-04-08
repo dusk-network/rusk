@@ -27,7 +27,6 @@
 #![allow(clippy::doc_markdown)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::module_name_repetitions)]
-#![allow(clippy::wildcard_imports)]
 #![allow(clippy::needless_pass_by_value)]
 
 mod cache;
@@ -49,13 +48,6 @@ pub use rues::RuesHttpClient;
 pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
 };
-
-use dusk_core::stake::StakeData;
-use dusk_core::transfer::phoenix::{
-    ArchivedNoteLeaf, Note, NoteOpening, PublicKey as PhoenixPublicKey,
-    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
-};
-use dusk_core::{dusk, from_dusk, BlsScalar};
 
 use currency::Dusk;
 

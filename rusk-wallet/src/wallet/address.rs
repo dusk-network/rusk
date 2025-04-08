@@ -9,8 +9,9 @@ use std::hash::Hasher;
 use std::str::FromStr;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
 
-use super::*;
 use crate::Error;
 
 /// Address to perform a transaction with.
