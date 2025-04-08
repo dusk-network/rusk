@@ -237,7 +237,7 @@ impl State {
 
         // construct the transaction input
         let mut tx_input = Vec::<(Note, NoteOpening, BlsScalar)>::new();
-        for (nullifier, note_leaf) in tx_input_notes.iter() {
+        for (nullifier, note_leaf) in &tx_input_notes {
             // fetch the openings for the input-notes
             let opening = self.fetch_opening(note_leaf.as_ref()).await?;
 

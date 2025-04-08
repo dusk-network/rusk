@@ -34,7 +34,6 @@
 #![allow(clippy::map_unwrap_or)]
 #![allow(clippy::needless_pass_by_value)]
 #![allow(clippy::ignored_unit_patterns)]
-#![allow(clippy::explicit_iter_loop)]
 
 mod cache;
 mod clients;
