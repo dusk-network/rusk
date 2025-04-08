@@ -14,18 +14,17 @@
 
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
+#![allow(clippy::needless_pass_by_value)]
 #![allow(clippy::similar_names)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
 #![allow(clippy::unused_async)]
 #![allow(clippy::cast_lossless)]
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::uninlined_format_args)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::doc_markdown)]
-#![allow(clippy::needless_pass_by_value)]
 
 mod cache;
 mod clients;

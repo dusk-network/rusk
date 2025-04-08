@@ -8,7 +8,7 @@ use wallet_core::Seed;
 
 use crate::clients::State;
 
-/// Provides a valid wallet seed to dusk_wallet_core
+/// Provides a valid wallet seed to `wallet_core`
 #[derive(Clone)]
 pub(crate) struct LocalStore {
     seed: Seed,
