@@ -80,9 +80,9 @@ pub(crate) async fn sync_db(
         buffer = leaf_chunk.remainder().to_vec();
     }
 
-    for (sk, vk, pk) in keys.iter() {
+    for (sk, vk, pk) in &keys {
         let pk_bs58 = bs58::encode(pk.to_bytes()).into_string();
-        for (block_height, note) in note_data.iter() {
+        for (block_height, note) in &note_data {
             if vk.owns(note.stealth_address()) {
                 let nullifier = note.gen_nullifier(sk);
                 let spent =
