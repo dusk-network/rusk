@@ -99,3 +99,130 @@ pub trait Filter: Debug + Send + Sync + 'static {
     /// or if the event type is not applicable to this filter.
     fn matches(&self, event: &dyn Any) -> bool;
 }
+
+// --- Block Filter ---
+
+/// Placeholder for the actual data type associated with block-related events.
+///
+/// This is used demonstrate the downcasting mechanism in
+/// `BlockFilter::matches`. The actual type will depend on the event publishing
+/// implementation for topics like `BlockAcceptance` and `BlockFinalization`. It
+/// might be something like `node_data::ledger::Block` or a custom event
+/// structure.
+#[derive(Debug, Clone)]
+pub struct BlockEventData {
+    /// Example field: Block height
+    pub height: u64,
+    /// Example field: Indicates if the block contains transactions.
+    pub has_transactions: bool,
+}
+
+/// Filter for block-related subscription events (`BlockAcceptance`,
+/// `BlockFinalization`).
+///
+/// This filter currently primarily serves to indicate association with block
+/// topics. The `include_txs` field, derived from
+/// [`crate::jsonrpc::infrastructure::subscription::types::BlockSubscriptionParams`],
+/// is stored but not used in the `matches` logic itself. It's intended to be
+/// used later by the `SubscriptionManager` when formatting the notification
+/// payload to decide whether to include full transaction details.
+///
+/// # Examples
+///
+/// ```rust
+/// use std::any::Any;
+/// use rusk::jsonrpc::infrastructure::subscription::filter::{BlockFilter, Filter, BlockEventData};
+///
+/// // Build a filter (e.g., indicating transaction inclusion is desired)
+/// let block_filter = BlockFilter::builder().include_txs(true).build();
+///
+/// // Create a sample block event
+/// let block_event = BlockEventData { height: 123, has_transactions: true };
+/// struct NonBlockEvent;
+///
+/// // The filter matches the correct event type
+/// assert!(block_filter.matches(&block_event));
+///
+/// // The filter does not match other event types
+/// assert!(!block_filter.matches(&NonBlockEvent));
+///
+/// // Accessing the include_txs flag
+/// assert!(block_filter.include_txs());
+/// ```
+#[derive(Debug, Clone)]
+pub struct BlockFilter {
+    include_txs: bool,
+}
+
+impl BlockFilter {
+    /// Creates a new builder for `BlockFilter`.
+    pub fn builder() -> BlockFilterBuilder {
+        BlockFilterBuilder::default()
+    }
+
+    /// Returns whether the subscription requested inclusion of transaction
+    /// data.
+    ///
+    /// This value is typically used by the `SubscriptionManager` during event
+    /// publication to format the notification payload, not for filtering events
+    /// themselves via the `matches` method.
+    pub fn include_txs(&self) -> bool {
+        self.include_txs
+    }
+}
+
+impl Filter for BlockFilter {
+    /// Checks if the event is relevant to block subscriptions.
+    ///
+    /// It attempts to downcast the event to the expected block event type
+    /// (`BlockEventData` placeholder). If successful, it returns `true`,
+    /// indicating the event is of the correct type for this filter. It does
+    /// *not* filter based on the `include_txs` flag.
+    fn matches(&self, event: &dyn Any) -> bool {
+        // Attempt to downcast to the expected concrete event type.
+        // Replace `BlockEventData` with the actual event type when known.
+        event.downcast_ref::<BlockEventData>().is_some()
+    }
+}
+
+/// Builder for [`BlockFilter`].
+///
+/// Provides a fluent interface for constructing a `BlockFilter`.
+///
+/// # Examples
+///
+/// ```rust
+/// use rusk::jsonrpc::infrastructure::subscription::filter::BlockFilter;
+///
+/// let filter_with_txs = BlockFilter::builder().include_txs(true).build();
+/// assert!(filter_with_txs.include_txs());
+///
+/// let filter_without_txs = BlockFilter::builder().include_txs(false).build();
+/// assert!(!filter_without_txs.include_txs());
+///
+/// // Default is false
+/// let filter_default = BlockFilter::builder().build();
+/// assert!(!filter_default.include_txs());
+/// ```
+#[derive(Debug, Default)]
+pub struct BlockFilterBuilder {
+    include_txs: bool,
+}
+
+impl BlockFilterBuilder {
+    /// Sets whether the filter should indicate that full transaction data is
+    /// requested for block event notifications.
+    ///
+    /// Defaults to `false`.
+    pub fn include_txs(mut self, include_txs: bool) -> Self {
+        self.include_txs = include_txs;
+        self
+    }
+
+    /// Builds the final [`BlockFilter`].
+    pub fn build(self) -> BlockFilter {
+        BlockFilter {
+            include_txs: self.include_txs,
+        }
+    }
+}
