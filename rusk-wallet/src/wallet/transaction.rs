@@ -488,11 +488,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let stake_pk = BlsPublicKey::from(&stake_sk);
 
-        let reward_amount = state
-            .fetch_stake(&stake_pk)
-            .await?
-            .map(|s| s.reward)
-            .unwrap_or(0);
+        let reward_amount =
+            state.fetch_stake(&stake_pk).await?.map_or(0, |s| s.reward);
 
         let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
