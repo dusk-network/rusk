@@ -33,7 +33,6 @@
 #![allow(clippy::match_bool)]
 #![allow(clippy::map_unwrap_or)]
 #![allow(clippy::needless_pass_by_value)]
-#![allow(clippy::ignored_unit_patterns)]
 
 mod cache;
 mod clients;

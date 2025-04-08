@@ -140,7 +140,7 @@ impl State {
                 let _ = sync_tx.send("Syncing..".to_string());
 
                 let _ = match sync_db(&client, &cache, &store, status).await {
-                    Ok(_) => sync_tx.send("Syncing Complete".to_string()),
+                    Ok(()) => sync_tx.send("Syncing Complete".to_string()),
                     Err(e) => sync_tx.send(format!("Error during sync:.. {e}")),
                 };
 
