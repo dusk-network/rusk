@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod filter;
-pub mod manager;
-pub mod parameter_types;
-pub mod session_id;
-pub mod subscription_id;
-pub mod topic;
+mod filter;
+mod manager;
+mod parameter_types;
+mod session_id;
+mod subscription_id;
+mod topic;
