@@ -13,5 +13,5 @@ mod transfer_filter;
 pub use block_filter::*;
 pub use contract_filter::*;
 pub use filter::*;
-// pub use mempool_filter::*;
+pub use mempool_filter::*;
 pub use transfer_filter::*;
