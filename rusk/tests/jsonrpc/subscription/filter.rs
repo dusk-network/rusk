@@ -8,7 +8,7 @@ use std::fmt::Debug;
 
 use rusk::jsonrpc::infrastructure::subscription::filters::{
     BlockEventData, BlockFilter, ContractEventData, ContractFilter, Filter,
-    TransferEventData, TransferFilter,
+    MempoolEventData, MempoolFilter, TransferEventData, TransferFilter,
 };
 
 // --- BlockFilter Tests ---
@@ -465,4 +465,180 @@ fn transfer_filter_debug_output() {
 
     let expected_debug_minimal = "TransferFilter { contract_id: \"minimal_token\", min_amount: None, include_metadata: false }";
     assert_eq!(format!("{:?}", filter_minimal), expected_debug_minimal);
+}
+
+// --- MempoolFilter Tests ---
+
+// Helper struct for testing non-matching types
+#[derive(Debug)]
+struct NonMempoolEvent;
+
+#[test]
+fn mempool_filter_builder_defaults() {
+    let filter = MempoolFilter::builder().build();
+    assert!(filter.contract_id().is_none());
+    assert!(!filter.include_details()); // Default is false
+}
+
+#[test]
+fn mempool_filter_builder_set_fields() {
+    let filter = MempoolFilter::builder()
+        .contract_id(Some("contract_abc".to_string()))
+        .include_details(true)
+        .build();
+
+    assert_eq!(filter.contract_id(), Some("contract_abc"));
+    assert!(filter.include_details());
+
+    let filter_no_contract = MempoolFilter::builder()
+        .contract_id(None)
+        .include_details(false)
+        .build();
+
+    assert!(filter_no_contract.contract_id().is_none());
+    assert!(!filter_no_contract.include_details());
+}
+
+#[test]
+fn mempool_filter_matches_correct_type() {
+    let filter_any = MempoolFilter::builder().build(); // Matches any contract
+    let event = MempoolEventData {
+        contract_id: None,
+        has_details: false,
+    };
+    assert!(filter_any.matches(&event));
+}
+
+#[test]
+fn mempool_filter_does_not_match_incorrect_type() {
+    let filter = MempoolFilter::builder().build();
+    let non_event = NonMempoolEvent;
+    assert!(!filter.matches(&non_event));
+}
+
+#[test]
+fn mempool_filter_matches_specific_contract() {
+    let filter = MempoolFilter::builder()
+        .contract_id(Some("match_contract".to_string()))
+        .build();
+
+    let event_match = MempoolEventData {
+        contract_id: Some("match_contract".to_string()),
+        has_details: true,
+    };
+    let event_different = MempoolEventData {
+        contract_id: Some("other_contract".to_string()),
+        has_details: true,
+    };
+    let event_none = MempoolEventData {
+        contract_id: None,
+        has_details: false,
+    };
+
+    assert!(filter.matches(&event_match));
+    assert!(!filter.matches(&event_different));
+    assert!(!filter.matches(&event_none)); // Event has no contract, filter
+                                           // expects one
+}
+
+#[test]
+fn mempool_filter_matches_any_contract_when_none_specified() {
+    let filter_any = MempoolFilter::builder()
+        .contract_id(None) // Explicitly None
+        .build();
+
+    let event_contract_1 = MempoolEventData {
+        contract_id: Some("contract_1".to_string()),
+        has_details: true,
+    };
+    let event_contract_2 = MempoolEventData {
+        contract_id: Some("contract_2".to_string()),
+        has_details: false,
+    };
+    let event_no_contract = MempoolEventData {
+        contract_id: None,
+        has_details: true,
+    };
+
+    assert!(filter_any.matches(&event_contract_1));
+    assert!(filter_any.matches(&event_contract_2));
+    assert!(filter_any.matches(&event_no_contract));
+}
+
+#[test]
+fn mempool_filter_matches_independent_of_include_details_flag() {
+    // Filter requesting details, specific contract
+    let filter_details_specific = MempoolFilter::builder()
+        .contract_id(Some("details_contract".to_string()))
+        .include_details(true)
+        .build();
+    // Filter not requesting details, specific contract
+    let filter_no_details_specific = MempoolFilter::builder()
+        .contract_id(Some("details_contract".to_string()))
+        .include_details(false)
+        .build();
+
+    // Filter requesting details, any contract
+    let filter_details_any = MempoolFilter::builder()
+        .contract_id(None)
+        .include_details(true)
+        .build();
+    // Filter not requesting details, any contract
+    let filter_no_details_any = MempoolFilter::builder()
+        .contract_id(None)
+        .include_details(false)
+        .build();
+
+    let event_matching_contract = MempoolEventData {
+        contract_id: Some("details_contract".to_string()),
+        has_details: true, // Arbitrary event detail status
+    };
+    let event_non_matching_contract = MempoolEventData {
+        contract_id: Some("other".to_string()),
+        has_details: false,
+    };
+    let event_no_contract = MempoolEventData {
+        contract_id: None,
+        has_details: true,
+    };
+
+    // Check specific contract filters
+    assert!(filter_details_specific.matches(&event_matching_contract));
+    assert!(filter_no_details_specific.matches(&event_matching_contract));
+    assert!(!filter_details_specific.matches(&event_non_matching_contract));
+    assert!(!filter_no_details_specific.matches(&event_non_matching_contract));
+    assert!(!filter_details_specific.matches(&event_no_contract));
+    assert!(!filter_no_details_specific.matches(&event_no_contract));
+
+    // Check any contract filters
+    assert!(filter_details_any.matches(&event_matching_contract));
+    assert!(filter_no_details_any.matches(&event_matching_contract));
+    assert!(filter_details_any.matches(&event_non_matching_contract));
+    assert!(filter_no_details_any.matches(&event_non_matching_contract));
+    assert!(filter_details_any.matches(&event_no_contract));
+    assert!(filter_no_details_any.matches(&event_no_contract));
+}
+
+#[test]
+fn mempool_filter_implements_required_traits() {
+    fn assert_traits<T: Debug + Send + Sync + Clone + Default + 'static>() {}
+    assert_traits::<MempoolFilter>();
+}
+
+#[test]
+fn mempool_filter_debug_output() {
+    let filter_specific = MempoolFilter::builder()
+        .contract_id(Some("debug_contract".to_string()))
+        .include_details(true)
+        .build();
+    let expected_debug_specific = "MempoolFilter { contract_id: Some(\"debug_contract\"), include_details: true }";
+    assert_eq!(format!("{:?}", filter_specific), expected_debug_specific);
+
+    let filter_any = MempoolFilter::builder()
+        .contract_id(None)
+        .include_details(false)
+        .build();
+    let expected_debug_any =
+        "MempoolFilter { contract_id: None, include_details: false }";
+    assert_eq!(format!("{:?}", filter_any), expected_debug_any);
 }
