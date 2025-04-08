@@ -31,7 +31,6 @@
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::match_same_arms)]
 #![allow(clippy::match_bool)]
-#![allow(clippy::map_unwrap_or)]
 #![allow(clippy::needless_pass_by_value)]
 
 mod cache;
