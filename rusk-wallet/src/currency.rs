@@ -28,6 +28,7 @@ impl Dusk {
     /// The smallest value that can be represented by Dusk currency
     pub const MIN: Dusk = Dusk(0);
     /// The largest value that can be represented by Dusk currency
+    #[allow(clippy::cast_precision_loss)]
     pub const MAX: Dusk = Dusk(dusk(f64::MAX / dusk(1.0) as f64));
 
     /// Returns a new Dusk based on the [Lux] given
@@ -94,6 +95,7 @@ impl Mul<Lux> for Dusk {
 impl Div for Dusk {
     type Output = Self;
     fn div(self, other: Self) -> Self {
+        #[allow(clippy::cast_precision_loss)]
         Self(dusk(self.0 as f64 / other.0 as f64))
     }
 }
@@ -101,6 +103,7 @@ impl Div for Dusk {
 impl Div<Lux> for Dusk {
     type Output = Self;
     fn div(self, other: Lux) -> Self {
+        #[allow(clippy::cast_precision_loss)]
         Self(dusk(self.0 as f64 / other as f64))
     }
 }
