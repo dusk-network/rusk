@@ -10,19 +10,15 @@ mod interactive;
 mod io;
 mod settings;
 
-use aes_gcm::{AeadCore, Aes256Gcm};
+use command::{gen_iv, gen_salt};
 pub(crate) use command::{Command, RunResult};
 use io::prompt::{ask_pwd, derive_key};
 
-use std::fs::{self, File};
-use std::io::Write;
+use std::fs;
 use std::path::PathBuf;
 
-use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Parser;
 use inquire::InquireError;
-use rand::rngs::OsRng;
-use rand::RngCore;
 use rocksdb::ErrorKind;
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{self, DatFileVersion, LATEST_VERSION};
@@ -229,42 +225,12 @@ async fn exec() -> anyhow::Result<()> {
             Command::Create {
                 skip_recovery,
                 seed_file,
-            } => {
-                // create a new randomly generated mnemonic phrase
-                let mnemonic =
-                    Mnemonic::new(MnemonicType::Words12, Language::English);
-                let salt = gen_salt();
-                let iv = gen_iv();
-                // ask user for a password to secure the wallet
-                // latest version is used for dat file
-                let key = prompt::derive_key_from_new_password(
-                    password,
-                    Some(&salt),
-                    dat::DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-                )?;
-
-                match (skip_recovery, seed_file) {
-                    (_, Some(file)) => {
-                        let mut file = File::create(file)?;
-                        file.write_all(mnemonic.phrase().as_bytes())?
-                    }
-                    // skip phrase confirmation if explicitly
-                    (false, _) => prompt::confirm_mnemonic_phrase(&mnemonic)?,
-                    _ => {}
-                }
-
-                // create wallet
-                let mut w = Wallet::new(mnemonic)?;
-
-                w.save_to(WalletFile {
-                    path: wallet_path,
-                    aes_key: key,
-                    salt: Some(salt),
-                    iv: Some(iv),
-                })?;
-
-                w
-            }
+            } => Command::run_create(
+                *skip_recovery,
+                &seed_file,
+                password,
+                &wallet_path,
+            )?,
             Command::Restore { file } => {
                 let (mut w, key, salt_and_iv) = match file {
                     Some(file) => {
@@ -513,16 +479,4 @@ fn save_old_wallet(wallet_path: &WalletPath) -> Result<PathBuf, Error> {
     old_wallet_path.push("wallet.dat.old");
     fs::copy(&wallet_path.wallet, &old_wallet_path)?;
     Ok(old_wallet_path)
-}
-
-fn gen_salt() -> [u8; SALT_SIZE] {
-    let mut salt = [0; SALT_SIZE];
-    let mut rng = OsRng;
-    rng.fill_bytes(&mut salt);
-    salt
-}
-
-fn gen_iv() -> [u8; IV_SIZE] {
-    let iv = Aes256Gcm::generate_nonce(OsRng);
-    iv.into()
 }

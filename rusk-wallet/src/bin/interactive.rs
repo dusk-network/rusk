@@ -8,7 +8,6 @@ mod command_menu;
 
 use std::fmt::Display;
 
-use bip39::{Language, Mnemonic, MnemonicType};
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
@@ -253,29 +252,7 @@ pub(crate) async fn load_wallet(
         }
         // Use the latest binary format when creating a wallet
         MainMenu::Create => {
-            // create a new randomly generated mnemonic phrase
-            let mnemonic =
-                Mnemonic::new(MnemonicType::Words12, Language::English);
-            let salt = gen_salt();
-            let iv = gen_iv();
-            // ask user for a password to secure the wallet
-            let key = prompt::derive_key_from_new_password(
-                password,
-                Some(&salt),
-                DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-            )?;
-            // display the mnemonic phrase
-            prompt::confirm_mnemonic_phrase(&mnemonic)?;
-            // create and store the wallet
-            let mut w = Wallet::new(mnemonic)?;
-            let path = wallet_path.clone();
-            w.save_to(WalletFile {
-                path,
-                aes_key: key,
-                salt: Some(salt),
-                iv: Some(iv),
-            })?;
-            w
+            Command::run_create(false, &None, password, &wallet_path)?
         }
         MainMenu::Recover => {
             // ask user for 12-word mnemonic phrase

@@ -6,9 +6,17 @@
 
 mod history;
 
+use aes_gcm::AeadCore;
+use aes_gcm::Aes256Gcm;
+use bip39::{Language, Mnemonic, MnemonicType};
 pub use history::TransactionHistory;
+use rand::rngs::OsRng;
+use rand::RngCore;
+use rusk_wallet::dat::{self, LATEST_VERSION};
+use std::io::Write;
 
 use std::fmt;
+use std::fs::File;
 use std::path::PathBuf;
 
 use clap::Subcommand;
@@ -21,7 +29,9 @@ use rusk_wallet::gas::{
     Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
     DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
 };
-use rusk_wallet::{Address, Error, Profile, Wallet, EPOCH, MAX_PROFILES};
+use rusk_wallet::{
+    Address, Error, Profile, Wallet, EPOCH, IV_SIZE, MAX_PROFILES, SALT_SIZE,
+};
 use wallet_core::BalanceInfo;
 
 use crate::io::prompt;
@@ -683,6 +693,47 @@ impl Command {
             Command::Settings => Ok(RunResult::Settings()),
         }
     }
+
+    pub(crate) fn run_create(
+        skip_recovery: bool,
+        seed_file: &Option<PathBuf>,
+        password: &Option<String>,
+        wallet_path: &WalletPath,
+    ) -> anyhow::Result<Wallet<WalletFile>> {
+        // create a new randomly generated mnemonic phrase
+        let mnemonic = Mnemonic::new(MnemonicType::Words12, Language::English);
+        let salt = gen_salt();
+        let iv = gen_iv();
+        // ask user for a password to secure the wallet
+        // latest version is used for dat file
+        let key = prompt::derive_key_from_new_password(
+            password,
+            Some(&salt),
+            dat::DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+        )?;
+
+        match (skip_recovery, seed_file) {
+            (_, Some(file)) => {
+                let mut file = File::create(file)?;
+                file.write_all(mnemonic.phrase().as_bytes())?
+            }
+            // skip phrase confirmation if explicitly
+            (false, _) => prompt::confirm_mnemonic_phrase(&mnemonic)?,
+            _ => {}
+        }
+
+        // create wallet
+        let mut w = Wallet::new(mnemonic)?;
+
+        w.save_to(WalletFile {
+            path: wallet_path.clone(),
+            aes_key: key,
+            salt: Some(salt),
+            iv: Some(iv),
+        })?;
+
+        Ok(w)
+    }
 }
 
 /// Possible results of running a command in interactive mode
@@ -797,4 +848,16 @@ impl fmt::Display for RunResult<'_> {
             Create() | Restore() | Settings() => unreachable!(),
         }
     }
+}
+
+pub(crate) fn gen_salt() -> [u8; SALT_SIZE] {
+    let mut salt = [0; SALT_SIZE];
+    let mut rng = OsRng;
+    rng.fill_bytes(&mut salt);
+    salt
+}
+
+pub(crate) fn gen_iv() -> [u8; IV_SIZE] {
+    let iv = Aes256Gcm::generate_nonce(OsRng);
+    iv.into()
 }
