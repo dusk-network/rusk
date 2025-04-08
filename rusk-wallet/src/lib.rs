@@ -20,7 +20,6 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::unused_async)]
-#![allow(clippy::cast_lossless)]
 
 mod cache;
 mod clients;
