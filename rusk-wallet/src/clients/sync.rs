@@ -34,6 +34,9 @@ pub(crate) async fn sync_db(
     let keys: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> = (0
         ..MAX_PROFILES)
         .map(|i| {
+            // we know that `i < MAX_PROFILES <= u8::MAX`, so casting to u8 is
+            // safe here
+            #[allow(clippy::cast_possible_truncation)]
             let i = i as u8;
             (
                 derive_phoenix_sk(seed, i),
