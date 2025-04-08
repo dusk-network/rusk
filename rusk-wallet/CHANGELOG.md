@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix contract init parsing [#3602]
 - Fix contract call non-interactive parsing [#3602]
 
+### Added
+
+- Add `clippy::padantic`
+
 ## [0.1.0] - 2025-01-20
 
 ### Added
