@@ -26,7 +26,7 @@ use inquire::{
 use rusk_wallet::dat::version_without_pre_higher;
 use rusk_wallet::{
     currency::{Dusk, Lux},
-    dat::DatFileVersion,
+    dat::FileVersion as DatFileVersion,
     gas::{self, MempoolGasPrices},
     Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE,
 };
