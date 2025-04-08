@@ -21,7 +21,6 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::unused_async)]
 #![allow(clippy::cast_lossless)]
-#![allow(clippy::cast_precision_loss)]
 
 mod cache;
 mod clients;
