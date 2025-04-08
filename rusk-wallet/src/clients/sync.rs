@@ -93,10 +93,11 @@ pub(crate) async fn sync_db(
 
                 let note = (note.clone(), nullifier);
 
-                match spent {
-                    true => cache.insert_spent(&pk_bs58, *block_height, note),
-                    false => cache.insert(&pk_bs58, *block_height, note),
-                }?;
+                if spent {
+                    cache.insert_spent(&pk_bs58, *block_height, note)?;
+                } else {
+                    cache.insert(&pk_bs58, *block_height, note)?;
+                }
             }
         }
     }
