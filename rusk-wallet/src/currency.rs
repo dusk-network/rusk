@@ -31,6 +31,7 @@ impl Dusk {
     pub const MAX: Dusk = Dusk(dusk(f64::MAX / dusk(1.0) as f64));
 
     /// Returns a new Dusk based on the [Lux] given
+    #[must_use]
     pub const fn new(lux: Lux) -> Dusk {
         Self(lux)
     }

@@ -46,6 +46,7 @@ pub enum DatFileVersion {
 impl DatFileVersion {
     /// Checks if the file version is older than the latest Rust Binary file
     /// format
+    #[must_use]
     pub fn is_old(&self) -> bool {
         match self {
             Self::Legacy | Self::OldWalletCli(_) => true,
@@ -294,6 +295,7 @@ pub(crate) fn version_bytes(version: Version) -> [u8; 4] {
 }
 
 /// Returns the given version with its last item, pre-higher, removed
+#[must_use]
 pub fn version_without_pre_higher(version: Version) -> (u8, u8, u8, u8) {
     (version.0, version.1, version.2, version.3)
 }
