@@ -215,11 +215,11 @@ pub(crate) fn check_version(
                 let file_type = (number & 0x00_0000_ffff_0000) >> 16;
                 let reserved = number & 0x00_0000_0000_ffff;
 
-                if file_type != FILE_TYPE as u64 {
+                if file_type != u64::from(FILE_TYPE) {
                     return Err(Error::WalletFileCorrupted);
                 };
 
-                if reserved != RESERVED as u64 {
+                if reserved != u64::from(RESERVED) {
                     return Err(Error::WalletFileCorrupted);
                 };
 
