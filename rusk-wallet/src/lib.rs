@@ -28,7 +28,6 @@
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::wildcard_imports)]
-#![allow(clippy::enum_glob_use)]
 #![allow(clippy::needless_pass_by_value)]
 
 mod cache;
