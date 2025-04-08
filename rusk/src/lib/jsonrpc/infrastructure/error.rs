@@ -66,28 +66,11 @@ pub enum RateLimitError {
     ManualMethodLimitExceeded(String),
 }
 
-/// Errors related to managing WebSocket subscriptions.
-#[derive(Error, Debug, PartialEq, Eq, Clone)]
-pub enum SubscriptionError {
-    /// The maximum number of allowed subscriptions has been reached.
-    #[error("Subscription limit reached: {0}")]
-    LimitReached(String),
-    /// Failed to send an update to a subscriber.
-    #[error("Failed to send subscription update: {0}")]
-    SendFailed(String),
-    /// The specified subscription ID was not found.
-    #[error("Subscription not found: {0}")]
-    NotFound(String),
-    /// The communication channel for the subscription was closed.
-    #[error("Subscription channel closed: {0}")]
-    ChannelClosed(String),
-}
-
 /// Consolidated error enum for the infrastructure layer.
 ///
 /// This enum wraps specific infrastructure errors, allowing functions within
 /// this layer to return a unified error type.
-#[derive(Error, Debug, PartialEq, Eq, Clone)]
+#[derive(Error, Debug)]
 pub enum Error {
     /// A database error occurred.
     #[error("Database error: {0}")]
@@ -103,5 +86,8 @@ pub enum Error {
 
     /// A subscription management error occurred.
     #[error("Subscription error: {0}")]
-    Subscription(#[from] SubscriptionError),
+    Subscription(
+        #[from]
+        crate::jsonrpc::infrastructure::subscription::error::SubscriptionError,
+    ),
 }
