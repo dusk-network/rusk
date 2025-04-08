@@ -273,9 +273,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Helper function to register for async-sync outside of connect
-    pub async fn register_sync(&mut self) -> Result<(), Error> {
+    pub fn register_sync(&mut self) -> Result<(), Error> {
         match self.state.as_mut() {
-            Some(w) => w.register_sync().await,
+            Some(w) => {
+                w.register_sync();
+                Ok(())
+            }
             None => Err(Error::Offline),
         }
     }
@@ -290,7 +293,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Fetches the notes from the state.
-    pub async fn get_all_notes(
+    pub fn get_all_notes(
         &self,
         profile_idx: u8,
     ) -> Result<Vec<DecodedNote>, Error> {

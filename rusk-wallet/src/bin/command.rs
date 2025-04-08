@@ -515,7 +515,7 @@ impl Command {
                 let profile_idx = profile_idx.unwrap_or_default();
 
                 wallet.sync().await?;
-                let notes = wallet.get_all_notes(profile_idx).await?;
+                let notes = wallet.get_all_notes(profile_idx)?;
                 let address = wallet.public_address(profile_idx)?;
 
                 let mut phoenix_history =

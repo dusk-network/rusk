@@ -19,7 +19,6 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
-#![allow(clippy::unused_async)]
 
 mod cache;
 mod clients;
