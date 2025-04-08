@@ -70,6 +70,7 @@ impl Gas {
     }
 
     /// Set the price and return the Gas
+    #[must_use]
     pub fn with_price<T>(mut self, price: T) -> Self
     where
         T: Into<Lux>,
