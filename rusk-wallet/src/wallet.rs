@@ -9,7 +9,8 @@ mod file;
 mod transaction;
 
 pub use address::{Address, Profile};
-pub use file::{SecureWalletFile, WalletPath};
+#[allow(clippy::module_name_repetitions)]
+pub use file::{Secure as SecureWalletFile, WalletPath};
 
 use std::fmt::Debug;
 use std::fs;
@@ -38,11 +39,11 @@ use crate::clients::State;
 use crate::crypto::encrypt;
 use crate::currency::Dusk;
 use crate::dat::{
-    self, version_bytes, DatFileVersion, FILE_TYPE, LATEST_VERSION, MAGIC,
-    RESERVED,
+    self, version_bytes, FileVersion as DatFileVersion, FILE_TYPE,
+    LATEST_VERSION, MAGIC, RESERVED,
 };
 use crate::gas::MempoolGasPrices;
-use crate::rues::RuesHttpClient;
+use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
 use crate::Error;
 

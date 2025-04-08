@@ -11,7 +11,7 @@ use std::str::FromStr;
 use crate::{IV_SIZE, SALT_SIZE};
 
 /// Provides access to a secure wallet file
-pub trait SecureWalletFile {
+pub trait Secure {
     /// Returns the path
     fn path(&self) -> &WalletPath;
     /// Returns the hashed password

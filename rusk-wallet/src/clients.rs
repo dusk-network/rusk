@@ -21,7 +21,6 @@ use dusk_core::transfer::Transaction;
 use dusk_core::BlsScalar;
 use dusk_core::Error as ExecutionCoreError;
 use flume::Receiver;
-use rues::RuesHttpClient;
 use tokio::task::JoinHandle;
 use tokio::time::{sleep, Duration};
 use wallet_core::keys::{
@@ -32,8 +31,9 @@ use zeroize::Zeroize;
 
 use self::sync::sync_db;
 use super::cache::Cache;
+use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
-use crate::{rues, Address, Error, MAX_PROFILES};
+use crate::{Address, Error, MAX_PROFILES};
 
 const TRANSFER_CONTRACT: &str =
     "0100000000000000000000000000000000000000000000000000000000000000";

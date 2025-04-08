@@ -15,7 +15,6 @@
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
 #![allow(clippy::needless_pass_by_value)]
-#![allow(clippy::module_name_repetitions)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
 
@@ -34,7 +33,7 @@ pub mod gas;
 
 pub use error::Error;
 pub use gql::{BlockTransaction, GraphQL};
-pub use rues::RuesHttpClient;
+pub use rues::HttpClient as RuesHttpClient;
 pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
 };

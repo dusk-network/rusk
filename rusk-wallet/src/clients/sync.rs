@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use futures::StreamExt;
-use rues::CONTRACTS_TARGET;
 
 use dusk_bytes::Serializable;
 use dusk_core::transfer::phoenix::{
@@ -18,9 +17,10 @@ use wallet_core::keys::{
 };
 use zeroize::Zeroize;
 
-use super::{rues, LocalStore, RuesHttpClient, MAX_PROFILES, TREE_LEAF};
+use super::{LocalStore, MAX_PROFILES, TREE_LEAF};
 
 use crate::clients::{Cache, TRANSFER_CONTRACT};
+use crate::rues::{HttpClient as RuesHttpClient, CONTRACTS_TARGET};
 use crate::Error;
 
 pub(crate) async fn sync_db(

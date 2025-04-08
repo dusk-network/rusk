@@ -25,7 +25,7 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 use rocksdb::ErrorKind;
 use rusk_wallet::currency::Dusk;
-use rusk_wallet::dat::{self, DatFileVersion, LATEST_VERSION};
+use rusk_wallet::dat::{self, FileVersion as DatFileVersion, LATEST_VERSION};
 use rusk_wallet::{
     Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
     IV_SIZE, SALT_SIZE,
@@ -240,7 +240,7 @@ async fn exec() -> anyhow::Result<()> {
                 let key = prompt::derive_key_from_new_password(
                     password,
                     Some(&salt),
-                    dat::DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+                    dat::FileVersion::RuskBinaryFileFormat(LATEST_VERSION),
                 )?;
 
                 match (skip_recovery, seed_file) {
@@ -301,7 +301,7 @@ async fn exec() -> anyhow::Result<()> {
                         let key = prompt::derive_key_from_new_password(
                             password,
                             Some(&salt),
-                            dat::DatFileVersion::RuskBinaryFileFormat(
+                            dat::FileVersion::RuskBinaryFileFormat(
                                 LATEST_VERSION,
                             ),
                         )?;
