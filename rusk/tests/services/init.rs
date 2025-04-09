@@ -131,11 +131,8 @@ fn submit_transactions(
         )
         .expect("Making transaction should succeed");
 
-    let contract_call = ContractCall {
-        contract: contract_id,
-        fn_name: String::from("init"),
-        fn_args: vec![0xab],
-    };
+    let contract_call =
+        ContractCall::new(contract_id, "init").with_raw_args(vec![0xab]);
     let tx_1 = wallet
         .phoenix_execute(
             &mut rng,

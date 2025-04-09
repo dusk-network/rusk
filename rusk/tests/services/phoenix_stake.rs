@@ -202,12 +202,9 @@ fn wallet_reward(
     let stake = wallet.get_stake(2).expect("stake to be found");
     assert_eq!(stake.reward, 0, "stake reward must be empty");
 
-    let contract_call = ContractCall::new(
-        STAKE_CONTRACT.to_bytes(),
-        "reward",
-        &reward_calldata,
-    )
-    .expect("calldata should serialize");
+    let contract_call = ContractCall::new(STAKE_CONTRACT.to_bytes(), "reward")
+        .with_args(&reward_calldata)
+        .expect("calldata should serialize");
     let tx = wallet
         .phoenix_execute(
             &mut rng,

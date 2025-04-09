@@ -86,11 +86,7 @@ fn make_transactions(
     // The first transaction will be a `wallet.execute` to the transfer
     // contract, querying for the root of the tree. This will be given too
     // little gas to execute correctly and error, consuming all gas provided.
-    let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT,
-        fn_name: String::from("root"),
-        fn_args: Vec::new(),
-    };
+    let contract_call = ContractCall::new(TRANSFER_CONTRACT, "root");
     let tx_0 = wallet
         .phoenix_execute(
             &mut rng,
