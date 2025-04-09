@@ -737,6 +737,31 @@ impl Command {
 
         Ok(w)
     }
+
+    pub fn run_restore_from_seed(wallet_path: &WalletPath, prompter: &dyn Prompt) -> anyhow::Result<Wallet<WalletFile>> {
+        // ask user for 12-word mnemonic phrase
+        let phrase = prompt::request_mnemonic_phrase(prompter)?;
+        let salt = gen_salt();
+        let iv = gen_iv();
+        // ask user for a password to secure the wallet, create the latest
+        // wallet file from the seed
+        let key = prompt::derive_key_from_new_password(
+            &None,
+            Some(&salt),
+            dat::DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+            prompter,
+        )?;
+        // create and store the recovered wallet
+        let mut w = Wallet::new(phrase)?;
+        let path = wallet_path.clone();
+        w.save_to(WalletFile {
+            path,
+            aes_key: key,
+            salt: Some(salt),
+            iv: Some(iv),
+        })?;
+        Ok(w)
+    }
 }
 
 /// Possible results of running a command in interactive mode

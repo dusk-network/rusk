@@ -10,7 +10,7 @@ use std::fmt::Display;
 
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
-use rusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
+use rusk_wallet::dat::DatFileVersion;
 use rusk_wallet::{
     Address, Error, Profile, Wallet, WalletPath, IV_SIZE, MAX_PROFILES,
     SALT_SIZE,
@@ -19,7 +19,7 @@ use rusk_wallet::{
 use crate::io::{self, prompt};
 use crate::prompt::Prompter;
 use crate::settings::Settings;
-use crate::{gen_iv, gen_salt, Command, GraphQL, RunResult, WalletFile};
+use crate::{Command, GraphQL, RunResult, WalletFile};
 
 /// Run the interactive UX loop with a loaded wallet
 pub(crate) async fn run_loop(
@@ -252,33 +252,14 @@ pub(crate) async fn load_wallet(
             }
         }
         // Use the latest binary format when creating a wallet
-        MainMenu::Create => {
-            Command::run_create(false, &None, password, &wallet_path, &Prompter)?
-        }
-        MainMenu::Recover => {
-            // ask user for 12-word mnemonic phrase
-            let phrase = prompt::request_mnemonic_phrase()?;
-            let salt = gen_salt();
-            let iv = gen_iv();
-            // ask user for a password to secure the wallet, create the latest
-            // wallet file from the seed
-            let key = prompt::derive_key_from_new_password(
-                &None,
-                Some(&salt),
-                DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-                &Prompter,
-            )?;
-            // create and store the recovered wallet
-            let mut w = Wallet::new(phrase)?;
-            let path = wallet_path.clone();
-            w.save_to(WalletFile {
-                path,
-                aes_key: key,
-                salt: Some(salt),
-                iv: Some(iv),
-            })?;
-            w
-        }
+        MainMenu::Create => Command::run_create(
+            false,
+            &None,
+            password,
+            &wallet_path,
+            &Prompter,
+        )?,
+        MainMenu::Recover => Command::run_restore_from_seed(wallet_path, &Prompter)?,
         MainMenu::Exit => std::process::exit(0),
     };
 

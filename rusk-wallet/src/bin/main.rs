@@ -233,7 +233,7 @@ async fn exec() -> anyhow::Result<()> {
                 &Prompter,
             )?,
             Command::Restore { file } => {
-                let (mut w, key, salt_and_iv) = match file {
+                match file {
                     Some(file) => {
                         // if we restore and old version file make sure we
                         // know the corrrect version before asking for the
@@ -248,48 +248,25 @@ async fn exec() -> anyhow::Result<()> {
                             file_version,
                         )?;
 
-                        let w = Wallet::from_file(WalletFile {
+                        let mut w = Wallet::from_file(WalletFile {
                             path: file.clone(),
                             aes_key: key.clone(),
                             salt: salt_and_iv.map(|si| si.0),
                             iv: salt_and_iv.map(|si| si.1),
                         })?;
 
-                        (w, key, salt_and_iv)
+                        let (salt, iv) =
+                            salt_and_iv.unwrap_or_else(|| (gen_salt(), gen_iv()));
+                        w.save_to(WalletFile {
+                            path: wallet_path,
+                            aes_key: key,
+                            salt: Some(salt),
+                            iv: Some(iv),
+                        })?;
+                        w
                     }
-                    // Use the latest dat file version when there's no dat file
-                    // provided when restoring the wallet
-                    None => {
-                        // ask user for 12-word mnemonic phrase
-                        let phrase = prompt::request_mnemonic_phrase()?;
-                        let salt = gen_salt();
-                        let iv = gen_iv();
-                        // ask user for a password to secure the wallet
-                        let key = prompt::derive_key_from_new_password(
-                            password,
-                            Some(&salt),
-                            dat::DatFileVersion::RuskBinaryFileFormat(
-                                LATEST_VERSION,
-                            ),
-                            &Prompter,
-                        )?;
-                        // create wallet
-                        let w = Wallet::new(phrase)?;
-
-                        (w, key, Some((salt, iv)))
-                    }
-                };
-
-                let (salt, iv) =
-                    salt_and_iv.unwrap_or_else(|| (gen_salt(), gen_iv()));
-                w.save_to(WalletFile {
-                    path: wallet_path,
-                    aes_key: key,
-                    salt: Some(salt),
-                    iv: Some(iv),
-                })?;
-
-                w
+                    None => Command::run_restore_from_seed(&wallet_path, &Prompter)?
+                }
             }
 
             _ => {
