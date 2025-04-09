@@ -355,7 +355,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                     if let Ok(amount) = amount {
                         Ok(DecodedNote {
                             note,
-                            amount,
+                            amount: i128::from(amount),
                             block_height,
                             nullified_by,
                         })
@@ -730,7 +730,7 @@ pub struct DecodedNote {
     /// The Phoenix note
     pub note: Note,
     /// The decoded amount
-    pub amount: u64,
+    pub amount: i128,
     /// The block height
     pub block_height: u64,
     /// Nullified by

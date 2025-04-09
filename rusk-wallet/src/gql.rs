@@ -65,7 +65,7 @@ pub struct BlockData {
     pub gas_spent: u64,
     pub sender: String,
     #[serde_as(as = "DisplayFromStr")]
-    pub value: f64,
+    pub value: i128,
 }
 
 #[derive(Deserialize, Debug)]

@@ -18,7 +18,7 @@ use crate::settings::Settings;
 pub struct TransactionEntry {
     direction: TransactionDirection,
     height: u64,
-    amount: f64,
+    amount: i128,
     fee: u64,
     pub tx: Transaction,
     id: String,
@@ -35,7 +35,13 @@ impl TransactionEntry {
 
 impl Display for TransactionEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let dusk = self.amount / dusk(1.0) as f64;
+        let amount = self
+            .amount
+            .to_string()
+            .parse::<f64>()
+            .expect("self.amount to be lower then i64::MAX");
+        #[allow(clippy::cast_precision_loss)]
+        let dusk = amount / dusk(1.0) as f64;
         let contract = match self.tx.call() {
             None => "transfer",
             Some(call) => &call.fn_name,
@@ -87,7 +93,7 @@ pub(crate) async fn transaction_from_notes(
         // in the tx
         decoded_note.note.set_pos(u64::MAX);
 
-        let note_amount = decoded_note.amount as f64;
+        let note_amount = decoded_note.amount;
 
         let txs = match block_txs.entry(decoded_note.block_height) {
             Entry::Occupied(o) => o.into_mut(),
@@ -108,17 +114,17 @@ pub(crate) async fn transaction_from_notes(
                 })
         });
         if let Some(BlockTransaction { tx, id, gas_spent }) = note_creator {
-            let inputs_amount: f64 = tx
+            let inputs_amount = tx
                 .nullifiers()
                 .iter()
                 .filter_map(|input| {
-                    nullifiers.iter().find_map(|(nullifier, gas)| {
-                        nullifier.eq(input).then_some(gas)
+                    nullifiers.iter().find_map(|(nullifier, amount)| {
+                        nullifier.eq(input).then_some(amount)
                     })
                 })
-                .sum::<u64>() as f64;
+                .sum::<i128>();
 
-            let direction = if inputs_amount > 0f64 {
+            let direction = if inputs_amount > 0 {
                 TransactionDirection::Out
             } else {
                 TransactionDirection::In
