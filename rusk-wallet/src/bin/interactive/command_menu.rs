@@ -139,7 +139,7 @@ pub(crate) async fn online(
                 memo,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
-                    mempool_gas_prices,
+                    &mempool_gas_prices,
                 )?,
             }))
         }
@@ -206,7 +206,7 @@ pub(crate) async fn online(
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
-                    mempool_gas_prices,
+                    &mempool_gas_prices,
                 )?,
             }))
         }
@@ -235,7 +235,7 @@ pub(crate) async fn online(
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
-                    mempool_gas_prices,
+                    &mempool_gas_prices,
                 )?,
             }))
         }
@@ -264,7 +264,7 @@ pub(crate) async fn online(
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
-                    mempool_gas_prices,
+                    &mempool_gas_prices,
                 )?,
             }))
         }
@@ -285,7 +285,7 @@ pub(crate) async fn online(
             // Calculate the effective cost for the deployment
             let gas_price = prompt::request_gas_price(
                 MIN_PRICE_DEPLOYMENT,
-                mempool_gas_prices,
+                &mempool_gas_prices,
             )?;
             let gas_limit =
                 (code_len * GAS_PER_DEPLOY_BYTE) + DEFAULT_LIMIT_TRANSFER;
@@ -342,7 +342,7 @@ pub(crate) async fn online(
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
-                    mempool_gas_prices,
+                    &mempool_gas_prices,
                 )?,
             }))
         }
@@ -374,7 +374,7 @@ pub(crate) async fn online(
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
-                    mempool_gas_prices,
+                    &mempool_gas_prices,
                 )?,
             }))
         }
@@ -397,7 +397,7 @@ pub(crate) async fn online(
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
-                    mempool_gas_prices,
+                    &mempool_gas_prices,
                 )?,
             }))
         }
@@ -411,10 +411,7 @@ pub(crate) async fn online(
         MenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
             profile_idx: Some(profile_idx),
             name: None,
-            dir: prompt::request_dir(
-                "export keys",
-                settings.wallet_dir.clone(),
-            )?,
+            dir: prompt::request_dir("export keys", &settings.wallet_dir)?,
             export_pwd: None,
         })),
         MenuItem::Back => ProfileOp::Back,
@@ -438,10 +435,7 @@ pub(crate) fn offline(
         MenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
             profile_idx: Some(profile_idx),
             name: None,
-            dir: prompt::request_dir(
-                "export keys",
-                settings.wallet_dir.clone(),
-            )?,
+            dir: prompt::request_dir("export keys", &settings.wallet_dir)?,
             export_pwd: None,
         })),
         _ => unreachable!(),
@@ -479,13 +473,9 @@ fn check_min_gas_balance(
 ) -> anyhow::Result<()> {
     let min_required_gas: Dusk = min_required_gas.into();
     if balance < min_required_gas {
-        println!(
-            "Balance too low to cover the minimum gas cost for {}.",
-            action
-        );
+        println!("Balance too low to cover the minimum gas cost for {action}.");
         Err(anyhow::anyhow!(
-            "Balance too low to cover the minimum gas cost for {}.",
-            action
+            "Balance too low to cover the minimum gas cost for {action}."
         ))
     } else {
         Ok(())

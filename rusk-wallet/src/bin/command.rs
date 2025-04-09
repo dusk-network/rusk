@@ -6,7 +6,7 @@
 
 mod history;
 
-pub use history::TransactionHistory;
+pub use history::TransactionEntry;
 
 use std::fmt;
 use std::path::PathBuf;
@@ -21,12 +21,15 @@ use rusk_wallet::gas::{
     Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
     DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
 };
-use rusk_wallet::{Address, Error, Profile, Wallet, EPOCH, MAX_PROFILES};
+use rusk_wallet::{
+    Address, Error, Profile as WalletProfile, Wallet, WalletPath, EPOCH,
+    MAX_PROFILES,
+};
 use wallet_core::BalanceInfo;
 
 use crate::io::prompt;
 use crate::settings::Settings;
-use crate::{WalletFile, WalletPath};
+use crate::WalletFile;
 
 /// Commands that can be run against the Dusk wallet
 #[allow(clippy::large_enum_variant)]
@@ -328,7 +331,7 @@ impl Command {
                             if wallet.is_online().await {
                                 tracing::error!(
                                     "Unable to update the balance {e:?}"
-                                )
+                                );
                             }
                         }
 
@@ -691,19 +694,23 @@ pub enum RunResult<'a> {
     PhoenixBalance(BalanceInfo, bool),
     MoonlightBalance(Dusk),
     StakeInfo(StakeData, bool),
-    Profile((u8, &'a Profile)),
-    Profiles(&'a Vec<Profile>),
+    Profile((u8, &'a WalletProfile)),
+    Profiles(&'a Vec<WalletProfile>),
     ContractId([u8; CONTRACT_ID_BYTES]),
     ExportedKeys(PathBuf, PathBuf),
     Create(),
     Restore(),
     Settings(),
-    History(Vec<TransactionHistory>),
+    History(Vec<TransactionEntry>),
 }
 
 impl fmt::Display for RunResult<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use RunResult::*;
+        use RunResult::{
+            ContractId, Create, DeployTx, ExportedKeys, History,
+            MoonlightBalance, PhoenixBalance, Profile, Profiles, Restore,
+            Settings, StakeInfo, Tx,
+        };
         match self {
             PhoenixBalance(balance, _) => {
                 let total = Dusk::from(balance.value);
@@ -718,40 +725,32 @@ impl fmt::Display for RunResult<'_> {
                 write!(f, "> Total public balance: {balance} DUSK")
             }
             Profile((profile_idx, profile)) => {
-                write!(
-                    f,
-                    "> {}\n>   {}\n>   {}",
-                    crate::Profile::index_string(*profile_idx),
-                    profile.shielded_account_string(),
-                    profile.public_account_string(),
-                )
+                write!(f, "{}", profile.full_profile_string(*profile_idx))
             }
             Profiles(addrs) => {
                 let profiles_string = addrs
                     .iter()
                     .enumerate()
                     .map(|(profile_idx, profile)| {
-                        format!(
-                            "> {}\n>   {}\n>   {}\n",
-                            crate::Profile::index_string(profile_idx as u8),
-                            profile.shielded_account_string(),
-                            profile.public_account_string(),
-                        )
+                        let profile_idx = u8::try_from(profile_idx)
+                            .expect("profile_idx lower than u8::MAX");
+                        profile.full_profile_string(profile_idx)
                     })
-                    .collect::<Vec<String>>()
-                    .join("\n");
+                    .collect::<Vec<_>>()
+                    // double \n cause the full_profile_string ends with no \n
+                    .join("\n\n");
 
-                write!(f, "{}", profiles_string,)
+                write!(f, "{profiles_string}")
             }
             Tx(hash) => {
                 let hash = hex::encode(hash.to_bytes());
-                write!(f, "> Transaction sent: {hash}",)
+                write!(f, "> Transaction sent: {hash}")
             }
             DeployTx(hash, contract_id) => {
                 let contract_id = hex::encode(contract_id.as_bytes());
-                writeln!(f, "> Deploying contract: {contract_id}",)?;
+                writeln!(f, "> Deploying contract: {contract_id}")?;
                 let hash = hex::encode(hash.to_bytes());
-                write!(f, "> Transaction sent: {hash}",)
+                write!(f, "> Transaction sent: {hash}")
             }
             StakeInfo(data, _) => {
                 if let Some(amt) = data.amount {
@@ -787,7 +786,7 @@ impl fmt::Display for RunResult<'_> {
                 )
             }
             History(txns) => {
-                writeln!(f, "{}", TransactionHistory::header())?;
+                writeln!(f, "{}", TransactionEntry::header())?;
                 for th in txns {
                     writeln!(f, "{th}")?;
                 }

@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![deny(clippy::pedantic)]
+
 mod command;
 mod config;
 mod interactive;
@@ -27,12 +29,12 @@ use rocksdb::ErrorKind;
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{self, FileVersion as DatFileVersion, LATEST_VERSION};
 use rusk_wallet::{
-    Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
-    IV_SIZE, SALT_SIZE,
+    Error, GraphQL, SecureWalletFile, Wallet, WalletPath, EPOCH, IV_SIZE,
+    SALT_SIZE,
 };
 use tracing::{error, info, warn, Level};
 
-use crate::command::TransactionHistory;
+use crate::command::TransactionEntry;
 use crate::settings::{LogFormat, Settings};
 
 use config::Config;
@@ -114,19 +116,16 @@ where
                 }
             };
 
-             match prompt::ask_confirm_erase_cache(&msg)? {
-                true => {
-                    if let Some(io_err) = wallet.delete_cache().err() {
-                        error!("Error while deleting the cache: {io_err}");
-                    }
+            if prompt::ask_confirm_erase_cache(&msg)? {
+                if let Some(io_err) = wallet.delete_cache().err() {
+                    error!("Error while deleting the cache: {io_err}");
+                }
 
-                    info!("Restart the application to create new wallet.");
-                },
-                false => {
-                    info!("Wallet cannot proceed will now exit");
-                },
-
+                info!("Restart the application to create new wallet.");
+            } else{
+                info!("Wallet cannot proceed will now exit");
             }
+
 
             // Exit because we cannot proceed because of db error
             // wallet is already closed
@@ -246,7 +245,7 @@ async fn exec() -> anyhow::Result<()> {
                 match (skip_recovery, seed_file) {
                     (_, Some(file)) => {
                         let mut file = File::create(file)?;
-                        file.write_all(mnemonic.phrase().as_bytes())?
+                        file.write_all(mnemonic.phrase().as_bytes())?;
                     }
                     // skip phrase confirmation if explicitly
                     (false, _) => prompt::confirm_mnemonic_phrase(&mnemonic)?,
@@ -390,9 +389,10 @@ async fn exec() -> anyhow::Result<()> {
     }
 
     // set our status callback
-    let status_cb = match is_headless {
-        true => status::headless,
-        false => status::interactive,
+    let status_cb = if is_headless {
+        status::headless
+    } else {
+        status::interactive
     };
 
     wallet = connect(wallet, &settings, status_cb).await?;
@@ -416,24 +416,17 @@ async fn exec() -> anyhow::Result<()> {
                     }
                 }
                 RunResult::MoonlightBalance(balance) => {
-                    println!("Total: {}", balance);
+                    println!("Total: {balance}");
                 }
                 RunResult::Profile((profile_idx, profile)) => {
-                    println!(
-                        "> {}\n>   {}\n>   {}\n",
-                        Profile::index_string(profile_idx),
-                        profile.shielded_account_string(),
-                        profile.public_account_string(),
-                    );
+                    println!("{}", profile.full_profile_string(profile_idx));
+                    println!();
                 }
                 RunResult::Profiles(addrs) => {
-                    for (profile_idx, profile) in addrs.iter().enumerate() {
-                        println!(
-                            "> {}\n>   {}\n>   {}\n\n",
-                            Profile::index_string(profile_idx as u8),
-                            profile.shielded_account_string(),
-                            profile.public_account_string(),
-                        );
+                    for (idx, profile) in addrs.iter().enumerate() {
+                        let idx = u8::try_from(idx)?;
+                        println!("{}", profile.full_profile_string(idx));
+                        println!();
                     }
                 }
                 RunResult::Tx(hash) => {
@@ -448,7 +441,7 @@ async fn exec() -> anyhow::Result<()> {
                 RunResult::DeployTx(hash, contract_id) => {
                     let tx_id = hex::encode(hash.to_bytes());
                     let contract_id = hex::encode(contract_id.as_bytes());
-                    println!("Deploying {contract_id}",);
+                    println!("Deploying {contract_id}");
 
                     // Wait for transaction confirmation from network
                     let gql = GraphQL::new(settings.state, status::headless)?;
@@ -485,19 +478,20 @@ async fn exec() -> anyhow::Result<()> {
                     }
                 }
                 RunResult::ExportedKeys(pub_key, key_pair) => {
-                    println!("{},{}", pub_key.display(), key_pair.display())
+                    println!("{},{}", pub_key.display(), key_pair.display());
                 }
                 RunResult::History(txns) => {
-                    println!("{}", TransactionHistory::header());
+                    println!("{}", TransactionEntry::header());
                     for th in txns {
                         println!("{th}");
                     }
                 }
                 RunResult::ContractId(id) => {
-                    println!("Contract ID: {:?}", id);
+                    println!("Contract ID: {id:?}");
                 }
-                RunResult::Settings() => {}
-                RunResult::Create() | RunResult::Restore() => {}
+                RunResult::Settings()
+                | RunResult::Create()
+                | RunResult::Restore() => {}
             }
         }
     }

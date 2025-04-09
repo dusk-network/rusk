@@ -15,7 +15,7 @@ use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
 use crate::io::{self};
 use crate::settings::Settings;
 
-pub struct TransactionHistory {
+pub struct TransactionEntry {
     direction: TransactionDirection,
     height: u64,
     amount: f64,
@@ -24,7 +24,7 @@ pub struct TransactionHistory {
     id: String,
 }
 
-impl TransactionHistory {
+impl TransactionEntry {
     pub fn header() -> String {
         format!(
             "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12} | {: ^8}",
@@ -33,7 +33,7 @@ impl TransactionHistory {
     }
 }
 
-impl Display for TransactionHistory {
+impl Display for TransactionEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let dusk = self.amount / dusk(1.0) as f64;
         let contract = match self.tx.call() {
@@ -44,9 +44,8 @@ impl Display for TransactionHistory {
         let fee = match self.direction {
             TransactionDirection::In => format!("{: >12.9}", ""),
             TransactionDirection::Out => {
-                let fee: u64 = self.fee;
-                let fee = from_dusk(fee);
-                format!("{: >12.9}", fee)
+                let fee = from_dusk(self.fee);
+                format!("{fee: >12.9}")
             }
         };
 
@@ -68,15 +67,15 @@ impl Display for TransactionHistory {
 pub(crate) async fn transaction_from_notes(
     settings: &Settings,
     mut notes: Vec<DecodedNote>,
-) -> anyhow::Result<Vec<TransactionHistory>> {
+) -> anyhow::Result<Vec<TransactionEntry>> {
     notes.sort_by(|a, b| a.note.pos().cmp(b.note.pos()));
-    let mut ret: Vec<TransactionHistory> = vec![];
+    let mut ret: Vec<TransactionEntry> = vec![];
     let gql =
         GraphQL::new(settings.state.to_string(), io::status::interactive)?;
 
     let nullifiers = notes
         .iter()
-        .flat_map(|note| {
+        .filter_map(|note| {
             note.nullified_by.map(|nullifier| (nullifier, note.amount))
         })
         .collect::<Vec<_>>();
@@ -119,14 +118,15 @@ pub(crate) async fn transaction_from_notes(
                 })
                 .sum::<u64>() as f64;
 
-            let direction = match inputs_amount > 0f64 {
-                true => TransactionDirection::Out,
-                false => TransactionDirection::In,
+            let direction = if inputs_amount > 0f64 {
+                TransactionDirection::Out
+            } else {
+                TransactionDirection::In
             };
 
             match ret.iter_mut().find(|th| &th.id == id) {
                 Some(tx) => tx.amount += note_amount,
-                None => ret.push(TransactionHistory {
+                None => ret.push(TransactionEntry {
                     direction,
                     height: decoded_note.block_height,
                     amount: note_amount - inputs_amount,
@@ -149,7 +149,7 @@ pub(crate) async fn transaction_from_notes(
 
                 // No outgoing txs found, this note should belong to a
                 // preconfigured genesis state
-                None => println!("??? val {}", note_amount),
+                None => println!("??? val {note_amount}"),
             }
         }
     }
@@ -160,7 +160,7 @@ pub(crate) async fn transaction_from_notes(
 pub(crate) async fn moonlight_history(
     settings: &Settings,
     address: rusk_wallet::Address,
-) -> anyhow::Result<Vec<TransactionHistory>> {
+) -> anyhow::Result<Vec<TransactionEntry>> {
     let gql =
         GraphQL::new(settings.state.to_string(), io::status::interactive)?;
 
@@ -183,24 +183,21 @@ pub(crate) async fn moonlight_history(
             let mut amount = data.value;
             let sender = data.sender;
 
-            let direction: TransactionDirection =
-                match sender == address.to_string() {
-                    true => {
-                        amount = -amount;
+            let direction = if sender == address.to_string() {
+                amount = -amount;
+                TransactionDirection::Out
+            } else {
+                TransactionDirection::In
+            };
 
-                        TransactionDirection::Out
-                    }
-                    false => TransactionDirection::In,
-                };
-
-            collected_history.push(TransactionHistory {
+            collected_history.push(TransactionEntry {
                 direction,
                 height,
                 amount,
                 fee: gas_spent * tx.gas_price(),
                 tx: tx.clone(),
                 id: id.clone(),
-            })
+            });
         }
     }
 

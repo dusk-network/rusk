@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::fmt::Display;
-use std::path::PathBuf;
+use std::fmt::{Display, Write};
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{io::stdout, println};
 
@@ -90,7 +90,11 @@ where
     S: std::fmt::Display,
 {
     // inform the user about the mnemonic phrase
-    let msg = format!("The following phrase is essential for you to regain access to your wallet\nin case you lose access to this computer. Please print it or write it down and store it somewhere safe.\n> {} \nHave you backed up this phrase?", phrase);
+    let mut msg = String::new();
+    writeln!(msg, "The following phrase is essential for you to regain access to your wallet")?;
+    writeln!(msg, "in case you lose access to this computer. Please print it or write it down and store it somewhere safe.")?;
+    writeln!(msg, "{phrase}")?;
+    writeln!(msg, "Have you backed up this phrase")?;
 
     // let the user confirm they have backed up their phrase
     let confirm = Confirm::new(&msg)
@@ -100,7 +104,7 @@ where
         .prompt()?;
 
     if !confirm {
-        confirm_mnemonic_phrase(phrase)?
+        confirm_mnemonic_phrase(phrase)?;
     }
 
     Ok(())
@@ -160,7 +164,7 @@ pub(crate) fn derive_key(
 /// Request a directory
 pub(crate) fn request_dir(
     what_for: &str,
-    profile: PathBuf,
+    profile: &Path,
 ) -> Result<std::path::PathBuf> {
     let validator = |dir: &str| {
         let path = PathBuf::from(dir);
@@ -172,7 +176,7 @@ pub(crate) fn request_dir(
         }
     };
 
-    let msg = format!("Please enter a directory to {}:", what_for);
+    let msg = format!("Please enter a directory to {what_for}:");
     let q = match profile.to_str() {
         Some(p) => Text::new(msg.as_str())
             .with_default(p)
@@ -202,7 +206,7 @@ pub(crate) fn ask_confirm_erase_cache(msg: &str) -> anyhow::Result<bool> {
 pub(crate) fn request_rcvr_addr(addr_for: &str) -> anyhow::Result<Address> {
     // let the user input the receiver address
     Ok(Address::from_str(
-        &Text::new(format!("Please enter the {} address:", addr_for).as_str())
+        &Text::new(format!("Please enter the {addr_for} address:").as_str())
             .with_validator(|addr: &str| {
                 if Address::from_str(addr).is_ok() {
                     Ok(Validation::Valid)
@@ -228,22 +232,24 @@ fn request_token(
     let validator = move |value: &f64| {
         let max = std::cmp::min(balance, MAX_CONVERTIBLE);
 
-        match (min..=max).contains(&Dusk::try_from(*value)?) {
-            true => Ok(Validation::Valid),
-            false => Ok(Validation::Invalid(
-                format!("The amount has to be between {} and {}", min, max)
-                    .into(),
-            )),
+        let value = Dusk::try_from(*value)?;
+        let in_range = (min..=max).contains(&value);
+        if in_range {
+            Ok(Validation::Valid)
+        } else {
+            Ok(Validation::Invalid(
+                format!("The amount has to be between {min} and {max}").into(),
+            ))
         }
     };
 
-    let msg = format!("Introduce dusk amount for {}:", action);
+    let msg = format!("Introduce dusk amount for {action}:");
 
     let amount_prompt: CustomType<f64> = CustomType {
         message: &msg,
         starting_input: None,
-        formatter: &|i| format!("{} DUSK", i),
-        default_value_formatter: &|i| format!("{} DUSK", i),
+        formatter: &|i| format!("{i} DUSK"),
+        default_value_formatter: &|i| format!("{i} DUSK"),
         default,
         validators: vec![Box::new(validator)],
         placeholder: Some("123.45"),
@@ -308,7 +314,7 @@ pub(crate) fn request_gas_limit(default_gas_limit: u64) -> anyhow::Result<u64> {
 /// Request gas price
 pub(crate) fn request_gas_price(
     min_gas_price: Lux,
-    mempool_gas_prices: MempoolGasPrices,
+    mempool_gas_prices: &MempoolGasPrices,
 ) -> Result<Lux, Error> {
     let default_gas_price = if mempool_gas_prices.average > min_gas_price {
         mempool_gas_prices.average
@@ -319,7 +325,7 @@ pub(crate) fn request_gas_price(
     Ok(
         CustomType::<u64>::new("Introduce the gas price for this transaction:")
             .with_default(default_gas_price)
-            .with_formatter(&|val| format!("{} LUX", val))
+            .with_formatter(&|val| format!("{val} LUX"))
             .prompt()?,
     )
 }
@@ -351,23 +357,20 @@ pub(crate) fn request_str(
     name: &str,
     max_length: usize,
 ) -> anyhow::Result<String> {
-    Ok(
-        Text::new(format!("Introduce string for {}:", name).as_str())
-            .with_validator(move |input: &str| {
-                if input.len() > max_length {
-                    Ok(Validation::Invalid(
-                        format!(
-                            "Input exceeds the maximum length of {} characters",
-                            max_length
-                        )
-                        .into(),
-                    ))
-                } else {
-                    Ok(Validation::Valid)
-                }
-            })
-            .prompt()?,
-    )
+    Ok(Text::new(format!("Introduce string for {name}:").as_str())
+        .with_validator(move |input: &str| {
+            if input.len() > max_length {
+                Ok(Validation::Invalid(
+                    format!(
+                        "Input exceeds the maximum length of {max_length} characters",
+                    )
+                    .into(),
+                ))
+            } else {
+                Ok(Validation::Valid)
+            }
+        })
+        .prompt()?)
 }
 
 pub enum TransactionModel {
@@ -429,7 +432,7 @@ pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
 
 pub(crate) fn request_bytes(name: &str) -> anyhow::Result<Vec<u8>> {
     let byte_string =
-        Text::new(format!("Introduce hex bytes for {}:", name).as_str())
+        Text::new(format!("Introduce hex bytes for {name}:").as_str())
             .with_validator(|f: &str| match hex::decode(f) {
                 Ok(_) => Ok(Validation::Valid),
                 Err(_) => Ok(Validation::Invalid("Invalid hex string".into())),

@@ -28,19 +28,13 @@ pub(crate) async fn run_loop(
 ) -> anyhow::Result<()> {
     loop {
         // let the user choose (or create) a profile
-        let profile_index = profile_idx(wallet).await?;
+        let profile_index = profile_idx(wallet)?;
 
         loop {
             let profile = &wallet.profiles()[profile_index as usize];
             prompt::hide_cursor()?;
 
-            let op = if !wallet.is_online().await {
-                println!("\r{}", profile.shielded_account_string());
-                println!("{}", profile.public_account_string());
-                println!();
-
-                command_menu::offline(profile_index, settings)
-            } else {
+            let op = if wallet.is_online().await {
                 let is_synced = wallet.is_synced().await?;
                 // get balance for this profile
                 let moonlight_bal =
@@ -79,6 +73,13 @@ pub(crate) async fn run_loop(
                     settings,
                 )
                 .await
+            } else {
+                println!();
+                println!("{}", profile.shielded_account_string());
+                println!("{}", profile.public_account_string());
+                println!();
+
+                command_menu::offline(profile_index, settings)
             };
 
             prompt::hide_cursor()?;
@@ -94,7 +95,8 @@ pub(crate) async fn run_loop(
 
                         prompt::show_cursor()?;
                         // output results
-                        println!("\r{}", res);
+                        println!();
+                        println!("{res}");
                         if let RunResult::Tx(hash) = res {
                             let tx_id = hex::encode(hash.to_bytes());
 
@@ -134,7 +136,7 @@ enum ProfileSelect<'a> {
     Back,
 }
 
-async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
+fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
     match menu_profile(wallet)? {
         ProfileSelect::Index(index, _) => Ok(index),
         ProfileSelect::New => {
@@ -163,7 +165,8 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
     let profiles = wallet.profiles();
 
     for (index, profile) in profiles.iter().enumerate() {
-        menu_items.push(ProfileSelect::Index(index as u8, profile));
+        let index = u8::try_from(index)?;
+        menu_items.push(ProfileSelect::Index(index, profile));
     }
 
     let remaining_profiles =
@@ -366,7 +369,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             let max_fee = gas_limit * gas_price;
             println!("   > Pay with {}", sender.preview());
             println!("   > Recipient = {}", rcvr.preview());
-            println!("   > Amount to transfer = {} DUSK", amt);
+            println!("   > Amount to transfer = {amt} DUSK");
             if let Some(memo) = memo {
                 println!("   > Memo = {memo}");
             }
@@ -390,7 +393,7 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             println!("   > Pay with {}", sender.preview());
             println!("   > Stake to {}", stake_to.preview());
             println!("   > Stake owner {}", owner.preview());
-            println!("   > Amount to stake = {} DUSK", amt);
+            println!("   > Amount to stake = {amt} DUSK");
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
@@ -459,11 +462,11 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
             let contract_id = hex::encode(contract_id);
 
             println!("   > Pay with {}", sender.preview());
-            println!("   > Code len = {}", code_len);
+            println!("   > Code len = {code_len}");
             println!("   > Init args = {}", hex::encode(init_args));
-            println!("   > Deploy nonce = {}", deploy_nonce);
+            println!("   > Deploy nonce = {deploy_nonce}");
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
-            println!("   > Calculated Contract Id = {}", contract_id);
+            println!("   > Calculated Contract Id = {contract_id}");
             if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
             }
@@ -484,13 +487,11 @@ fn status_emoji(status: bool) -> String {
 impl<'a> Display for ProfileSelect<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ProfileSelect::Index(index, profile) => write!(
-                f,
-                "{}\n  {}\n  {}",
-                Profile::index_string(*index),
-                profile.shielded_account_preview(),
-                profile.public_account_preview(),
-            ),
+            ProfileSelect::Index(index, profile) => {
+                writeln!(f, "{}", Profile::index_string(*index))?;
+                writeln!(f, "  {}", profile.shielded_account_preview())?;
+                writeln!(f, "  {}", profile.public_account_preview())
+            }
             ProfileSelect::New => write!(f, "Create a new profile"),
             ProfileSelect::Back => write!(f, "Back"),
         }

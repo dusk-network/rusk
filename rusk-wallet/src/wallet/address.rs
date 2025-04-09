@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::fmt;
+use std::fmt::{self, Write};
 use std::hash::Hasher;
 use std::str::FromStr;
 
@@ -237,6 +237,16 @@ impl Profile {
         }
 
         index_string
+    }
+
+    /// Format the full profile
+    #[must_use]
+    pub fn full_profile_string(&self, profile_idx: u8) -> String {
+        let mut f = String::new();
+        let _ = writeln!(f, "> {}", Self::index_string(profile_idx));
+        let _ = writeln!(f, ">   {}", self.shielded_account_string());
+        let _ = write!(f, ">   {}", self.public_account_string());
+        f
     }
 }
 

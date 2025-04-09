@@ -69,7 +69,7 @@ impl SettingsBuilder {
     pub fn network(self, network: Network) -> Result<Settings, Error> {
         let args = self.args;
 
-        let network = match (args.network, network.clone().network) {
+        let network = match (args.network, network.clone().networks) {
             (Some(label), Some(mut networks)) => {
                 let r = networks.remove(&label);
                 // err if specified network is not in the list
@@ -215,7 +215,7 @@ impl fmt::Display for Settings {
                 "[Not set]"
             }
         )?;
-        writeln!(f, "{}", separator)?;
+        writeln!(f, "{separator}")?;
         writeln!(f, "state: {}", self.state)?;
         writeln!(f, "prover: {}", self.prover)?;
 

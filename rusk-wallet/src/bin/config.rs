@@ -18,7 +18,8 @@ pub(crate) struct Network {
     pub(crate) state: Url,
     pub(crate) prover: Url,
     pub(crate) explorer: Option<Url>,
-    pub(crate) network: Option<HashMap<String, Network>>,
+    #[serde(rename = "network")]
+    pub(crate) networks: Option<HashMap<String, Network>>,
 }
 
 use std::{fs, io};
