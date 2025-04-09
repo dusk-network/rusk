@@ -653,7 +653,8 @@ pub unsafe fn moonlight_stake(
 
     let stake = Stake::new(&stake_sk, &stake_sk, *stake_value, chain_id);
 
-    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)
+    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake")
+        .with_args(&stake)
         .or(Err(ErrorCode::ContractCallError))?;
 
     let tx = crate::transaction::moonlight(

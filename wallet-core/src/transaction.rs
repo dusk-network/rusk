@@ -164,7 +164,8 @@ pub fn phoenix_stake<R: RngCore + CryptoRng, P: Prove>(
 
     let stake = Stake::new(stake_sk, stake_owner_sk, stake_value, chain_id);
 
-    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
+    let contract_call =
+        ContractCall::new(STAKE_CONTRACT, "stake").with_args(&stake)?;
 
     phoenix::<R, P>(
         rng,
@@ -209,7 +210,8 @@ pub fn moonlight_stake(
 
     let stake = Stake::new(stake_sk, stake_owner_sk, stake_value, chain_id);
 
-    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake", &stake)?;
+    let contract_call =
+        ContractCall::new(STAKE_CONTRACT, "stake").with_args(&stake)?;
 
     moonlight(
         moonlight_sender_sk,
@@ -724,7 +726,7 @@ fn stake_reward_to_phoenix<R: RngCore + CryptoRng>(
     let reward_withdraw =
         StakeWithdraw::new(stake_sk, stake_owner_sk, withdraw);
 
-    ContractCall::new(STAKE_CONTRACT, "withdraw", &reward_withdraw)
+    ContractCall::new(STAKE_CONTRACT, "withdraw").with_args(&reward_withdraw)
 }
 
 pub(crate) fn stake_reward_to_moonlight<R: RngCore + CryptoRng>(
@@ -746,7 +748,7 @@ pub(crate) fn stake_reward_to_moonlight<R: RngCore + CryptoRng>(
     let reward_withdraw =
         StakeWithdraw::new(stake_sk, stake_owner_sk, withdraw);
 
-    ContractCall::new(STAKE_CONTRACT, "withdraw", &reward_withdraw)
+    ContractCall::new(STAKE_CONTRACT, "withdraw").with_args(&reward_withdraw)
 }
 
 fn unstake_to_phoenix<R: RngCore + CryptoRng>(
@@ -767,7 +769,7 @@ fn unstake_to_phoenix<R: RngCore + CryptoRng>(
 
     let unstake = StakeWithdraw::new(stake_sk, stake_owner_sk, withdraw);
 
-    ContractCall::new(STAKE_CONTRACT, "unstake", &unstake)
+    ContractCall::new(STAKE_CONTRACT, "unstake").with_args(&unstake)
 }
 
 pub(crate) fn unstake_to_moonlight<R: RngCore + CryptoRng>(
@@ -788,7 +790,7 @@ pub(crate) fn unstake_to_moonlight<R: RngCore + CryptoRng>(
 
     let unstake = StakeWithdraw::new(stake_sk, stake_owner_sk, withdraw);
 
-    ContractCall::new(STAKE_CONTRACT, "unstake", &unstake)
+    ContractCall::new(STAKE_CONTRACT, "unstake").with_args(&unstake)
 }
 
 fn convert_to_moonlight<R: RngCore + CryptoRng>(
@@ -797,17 +799,14 @@ fn convert_to_moonlight<R: RngCore + CryptoRng>(
     gas_payment_token: WithdrawReplayToken,
     convert_value: u64,
 ) -> Result<ContractCall, Error> {
-    ContractCall::new(
+    let fn_args = withdraw_to_moonlight(
+        rng,
+        moonlight_receiver_sk,
         TRANSFER_CONTRACT,
-        "convert",
-        &withdraw_to_moonlight(
-            rng,
-            moonlight_receiver_sk,
-            TRANSFER_CONTRACT,
-            gas_payment_token,
-            convert_value,
-        ),
-    )
+        gas_payment_token,
+        convert_value,
+    );
+    ContractCall::new(TRANSFER_CONTRACT, "convert").with_args(&fn_args)
 }
 
 fn convert_to_phoenix<R: RngCore + CryptoRng>(
@@ -816,17 +815,14 @@ fn convert_to_phoenix<R: RngCore + CryptoRng>(
     gas_payment_token: WithdrawReplayToken,
     convert_value: u64,
 ) -> Result<ContractCall, Error> {
-    ContractCall::new(
+    let fn_args = withdraw_to_phoenix(
+        rng,
+        phoenix_receiver_sk,
         TRANSFER_CONTRACT,
-        "convert",
-        &withdraw_to_phoenix(
-            rng,
-            phoenix_receiver_sk,
-            TRANSFER_CONTRACT,
-            gas_payment_token,
-            convert_value,
-        ),
-    )
+        gas_payment_token,
+        convert_value,
+    );
+    ContractCall::new(TRANSFER_CONTRACT, "convert").with_args(&fn_args)
 }
 
 /// Create a [`Withdraw`] struct to be used to withdraw funds from a contract
