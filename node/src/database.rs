@@ -84,6 +84,7 @@ pub trait Ledger {
         &self,
         tx_ids: Vec<&[u8; 32]>,
     ) -> Result<Vec<SpentTransaction>>;
+    fn ledger_tx_count(&self) -> usize;
 
     fn ledger_tx_exists(&self, tx_id: &[u8]) -> Result<bool>;
 

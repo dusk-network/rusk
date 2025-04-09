@@ -568,6 +568,12 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(spent_transactions)
     }
 
+    fn ledger_tx_count(&self) -> usize {
+        self.inner
+            .iterator_cf(self.ledger_txs_cf, IteratorMode::Start)
+            .count()
+    }
+
     /// Returns true if the transaction exists in the
     /// ledger
     ///
