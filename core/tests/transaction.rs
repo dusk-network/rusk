@@ -136,10 +136,7 @@ fn phoenix_2_2() {
 
     let transfer_value = NOTE_VALUE - GAS_LIMIT * GAS_PRICE;
     let deposit = NOTE_VALUE;
-    let data = Some(
-        ContractCall::new([0u8; 32], "some fn name", &())
-            .expect("Contract-call should generate"),
-    );
+    let data = Some(ContractCall::new([0u8; 32], "some fn name"));
 
     assert!(new_phoenix_tx::<I>(transfer_value, deposit, data).is_ok());
 }
