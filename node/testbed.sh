@@ -50,7 +50,7 @@ killall rusk
 # Determine number of pre-loaded provisioners and mode
 PROV_NUM="$1"
 
-cargo b --release -p rusk
+cargo b --release -p dusk-rusk
 
 # Set paths and addresses
 GENESIS_PATH="./node/testbed.toml"
