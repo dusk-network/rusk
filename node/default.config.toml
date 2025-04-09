@@ -13,6 +13,7 @@ enable_debug = false
 blocks_cf_max_write_buffer_size = 1048576 # 1 MiB
 blocks_cf_disable_block_cache = true
 mempool_cf_max_write_buffer_size = 10485760 # 10 MiB
+create_if_missing = true
 
 [network]
 public_address = '127.0.0.1:9000'
