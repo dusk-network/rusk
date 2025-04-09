@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `ContractCall::new_raw` [#3602]
+- Add `ContractCall::with_args` [#3533]
+- Add `ContractCall::with_raw_args` [#3533]
+
+### Changed
+
+- Change `ContractCall::new` to not take fn_args [#3602]
 
 ## [1.2.1] - 2025-03-20
 

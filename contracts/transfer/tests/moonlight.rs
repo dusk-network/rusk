@@ -348,11 +348,7 @@ fn alice_ping() {
 
     let session = &mut instantiate(&moonlight_pk);
 
-    let contract_call = Some(ContractCall {
-        contract: ALICE_ID,
-        fn_name: String::from("ping"),
-        fn_args: vec![],
-    });
+    let contract_call = ContractCall::new(ALICE_ID, "ping");
 
     let transaction = Transaction::moonlight(
         &moonlight_sk,
@@ -363,7 +359,7 @@ fn alice_ping() {
         LUX,
         MOONLIGHT_GENESIS_NONCE + 1,
         CHAIN_ID,
-        contract_call,
+        Some(contract_call),
     )
     .expect("Creating moonlight transaction should succeed");
 
@@ -418,10 +414,8 @@ fn convert_to_phoenix() {
 
     // a conversion is a deposit into the transfer-contract paired with a
     // withdrawal
-    let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT,
-        fn_name: String::from("convert"),
-        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+    let contract_call = ContractCall::new(TRANSFER_CONTRACT, "convert")
+        .with_args(&Withdraw::new(
             rng,
             &note_sk,
             TRANSFER_CONTRACT,
@@ -430,9 +424,7 @@ fn convert_to_phoenix() {
             WithdrawReceiver::Phoenix(address),
             WithdrawReplayToken::Moonlight(nonce),
         ))
-        .expect("should serialize conversion correctly")
-        .to_vec(),
-    };
+        .expect("should serialize conversion correctly");
 
     let tx = Transaction::moonlight(
         &moonlight_sk,
@@ -536,10 +528,8 @@ fn convert_to_moonlight_fails() {
 
     // a conversion is a deposit into the transfer-contract paired with a
     // withdrawal
-    let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT,
-        fn_name: String::from("convert"),
-        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+    let contract_call = ContractCall::new(TRANSFER_CONTRACT, "convert")
+        .with_args(&Withdraw::new(
             rng,
             &moonlight_sk,
             TRANSFER_CONTRACT,
@@ -550,9 +540,7 @@ fn convert_to_moonlight_fails() {
                 notes[0].gen_nullifier(&phoenix_sk)
             ]),
         ))
-        .expect("should serialize conversion correctly")
-        .to_vec(),
-    };
+        .expect("should serialize conversion correctly");
 
     let tx = Transaction::moonlight(
         &moonlight_sk,
@@ -644,10 +632,8 @@ fn convert_wrong_contract_targeted() {
     // the moonlight replay token
     let nonce = MOONLIGHT_GENESIS_NONCE + 1;
 
-    let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT,
-        fn_name: String::from("convert"),
-        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+    let contract_call = ContractCall::new(TRANSFER_CONTRACT, "convert")
+        .with_args(&Withdraw::new(
             rng,
             &note_sk,
             // this should be the transfer contract, but we're testing the
@@ -657,9 +643,7 @@ fn convert_wrong_contract_targeted() {
             WithdrawReceiver::Phoenix(address),
             WithdrawReplayToken::Moonlight(nonce),
         ))
-        .expect("should serialize conversion correctly")
-        .to_vec(),
-    };
+        .expect("should serialize conversion correctly");
 
     let tx = Transaction::moonlight(
         &moonlight_sk,
@@ -720,18 +704,14 @@ fn contract_to_contract() {
         .expect("Querying the contract balance should succeed");
     assert_eq!(bob_balance, 0, "Bob must have an initial balance of zero");
 
-    let contract_call = Some(ContractCall {
-        contract: ALICE_ID,
-        fn_name: String::from("contract_to_contract"),
-        fn_args: rkyv::to_bytes::<_, 256>(&ContractToContract {
+    let contract_call = ContractCall::new(ALICE_ID, "contract_to_contract")
+        .with_args(&ContractToContract {
             contract: BOB_ID,
             value: TRANSFER_VALUE,
             fn_name: String::from("recv_transfer"),
             data: vec![],
         })
-        .expect("Serializing should succeed")
-        .to_vec(),
-    });
+        .expect("Serializing should succeed");
 
     let transaction = Transaction::moonlight(
         &moonlight_sk,
@@ -742,7 +722,7 @@ fn contract_to_contract() {
         LUX,
         MOONLIGHT_GENESIS_NONCE + 1,
         CHAIN_ID,
-        contract_call,
+        Some(contract_call),
     )
     .expect("Creating moonlight transaction should succeed");
 
@@ -789,16 +769,12 @@ fn contract_to_account() {
 
     let session = &mut instantiate(&moonlight_pk);
 
-    let contract_call = Some(ContractCall {
-        contract: ALICE_ID,
-        fn_name: String::from("contract_to_account"),
-        fn_args: rkyv::to_bytes::<_, 256>(&ContractToAccount {
+    let contract_call = ContractCall::new(ALICE_ID, "contract_to_account")
+        .with_args(&ContractToAccount {
             account: moonlight_pk,
             value: TRANSFER_VALUE,
         })
-        .expect("Serializing should succeed")
-        .to_vec(),
-    });
+        .expect("Serializing should succeed");
 
     let transaction = Transaction::moonlight(
         &moonlight_sk,
@@ -809,7 +785,7 @@ fn contract_to_account() {
         LUX,
         MOONLIGHT_GENESIS_NONCE + 1,
         CHAIN_ID,
-        contract_call,
+        Some(contract_call),
     )
     .expect("Creating moonlight transaction should succeed");
 
@@ -853,16 +829,12 @@ fn contract_to_account_insufficient_funds() {
 
     let session = &mut instantiate(&moonlight_pk);
 
-    let contract_call = Some(ContractCall {
-        contract: ALICE_ID,
-        fn_name: String::from("contract_to_account"),
-        fn_args: rkyv::to_bytes::<_, 256>(&ContractToAccount {
+    let contract_call = ContractCall::new(ALICE_ID, "contract_to_account")
+        .with_args(&ContractToAccount {
             account: moonlight_pk,
             value: TRANSFER_VALUE,
         })
-        .expect("Serializing should succeed")
-        .to_vec(),
-    });
+        .expect("Serializing should succeed");
 
     let transaction = Transaction::moonlight(
         &moonlight_sk,
@@ -873,7 +845,7 @@ fn contract_to_account_insufficient_funds() {
         LUX,
         MOONLIGHT_GENESIS_NONCE + 1,
         CHAIN_ID,
-        contract_call,
+        Some(contract_call),
     )
     .expect("Creating moonlight transaction should succeed");
 
@@ -922,18 +894,15 @@ fn contract_to_account_direct_call() {
 
     let session = &mut instantiate(&moonlight_pk);
 
-    let contract_call = Some(ContractCall {
-        // calling the transfer-contract directly here instead of alice, should
-        // cause a panic
-        contract: TRANSFER_CONTRACT,
-        fn_name: String::from("contract_to_account"),
-        fn_args: rkyv::to_bytes::<_, 256>(&ContractToAccount {
-            account: moonlight_pk,
-            value: TRANSFER_VALUE,
-        })
-        .expect("Serializing should succeed")
-        .to_vec(),
-    });
+    let contract_call =
+        ContractCall::new(TRANSFER_CONTRACT, "contract_to_account")
+            // calling the transfer-contract directly here instead of alice,
+            // should cause a panic
+            .with_args(&ContractToAccount {
+                account: moonlight_pk,
+                value: TRANSFER_VALUE,
+            })
+            .expect("Serializing should succeed");
 
     let transaction = Transaction::moonlight(
         &moonlight_sk,
@@ -944,7 +913,7 @@ fn contract_to_account_direct_call() {
         LUX,
         MOONLIGHT_GENESIS_NONCE + 1,
         CHAIN_ID,
-        contract_call,
+        Some(contract_call),
     )
     .expect("Creating moonlight transaction should succeed");
 

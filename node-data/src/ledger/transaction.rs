@@ -243,8 +243,7 @@ pub mod faker {
             deposit: 0,
         };
 
-        let contract_call =
-            ContractCall::new([21; 32], "some_method", &()).unwrap();
+        let contract_call = ContractCall::new([21; 32], "some_method");
 
         let payload = PhoenixPayload {
             chain_id: 0xFA,

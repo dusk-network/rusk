@@ -8,7 +8,6 @@ use std::sync::mpsc;
 
 pub mod common;
 
-use dusk_bytes::Serializable;
 use dusk_core::abi::ContractId;
 use dusk_core::dusk;
 use dusk_core::signatures::bls::{
@@ -733,11 +732,7 @@ fn alice_ping() {
     let transfer_value = 0;
     let obfuscate_transfer_note = false;
     let deposit = 0;
-    let contract_call = Some(ContractCall {
-        contract: ALICE_ID,
-        fn_name: String::from("ping"),
-        fn_args: vec![],
-    });
+    let contract_call = ContractCall::new(ALICE_ID, "ping");
 
     let tx = create_phoenix_transaction(
         rng,
@@ -751,7 +746,7 @@ fn alice_ping() {
         transfer_value,
         obfuscate_transfer_note,
         deposit,
-        contract_call,
+        Some(contract_call),
     );
 
     let gas_spent = execute(session, &tx, &NO_CONFIG)
@@ -803,11 +798,9 @@ fn contract_deposit() {
     let transfer_value = 0;
     let obfuscate_transfer_note = false;
     let deposit_value = PHOENIX_GENESIS_VALUE / 2;
-    let contract_call = Some(ContractCall {
-        contract: ALICE_ID,
-        fn_name: String::from("deposit"),
-        fn_args: deposit_value.to_bytes().into(),
-    });
+    let contract_call = ContractCall::new(ALICE_ID, "deposit")
+        .with_args(&deposit_value)
+        .expect("Serializing should succeed");
 
     let tx = create_phoenix_transaction(
         rng,
@@ -821,7 +814,7 @@ fn contract_deposit() {
         transfer_value,
         obfuscate_transfer_note,
         deposit_value,
-        contract_call,
+        Some(contract_call),
     );
 
     let gas_spent = execute(session, &tx, &NO_CONFIG)
@@ -902,10 +895,8 @@ fn contract_withdraw() {
         .note
         .gen_nullifier(&phoenix_sender_sk);
 
-    let contract_call = Some(ContractCall {
-        contract: ALICE_ID,
-        fn_name: String::from("withdraw"),
-        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+    let contract_call = ContractCall::new(ALICE_ID, "withdraw")
+        .with_args(&Withdraw::new(
             rng,
             &note_sk,
             ALICE_ID,
@@ -913,9 +904,7 @@ fn contract_withdraw() {
             WithdrawReceiver::Phoenix(address),
             WithdrawReplayToken::Phoenix(vec![genesis_note_nullifier]),
         ))
-        .expect("should serialize Mint correctly")
-        .to_vec(),
-    });
+        .expect("should serialize Mint correctly");
 
     let tx = create_phoenix_transaction(
         rng,
@@ -929,7 +918,7 @@ fn contract_withdraw() {
         transfer_value,
         obfuscate_transfer_note,
         deposit_value,
-        contract_call,
+        Some(contract_call),
     );
 
     let gas_spent = execute(session, &tx, &NO_CONFIG)
@@ -1026,10 +1015,8 @@ fn convert_to_phoenix_fails() {
 
     // a conversion is a deposit into the transfer-contract paired with a
     // withdrawal
-    let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT,
-        fn_name: String::from("convert"),
-        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+    let contract_call = ContractCall::new(TRANSFER_CONTRACT, "convert")
+        .with_args(&Withdraw::new(
             rng,
             &note_sk,
             TRANSFER_CONTRACT,
@@ -1038,9 +1025,7 @@ fn convert_to_phoenix_fails() {
             WithdrawReceiver::Phoenix(address),
             WithdrawReplayToken::Moonlight(nonce),
         ))
-        .expect("should serialize conversion correctly")
-        .to_vec(),
-    };
+        .expect("should serialize conversion correctly");
 
     let tx = create_phoenix_transaction(
         rng,
@@ -1145,10 +1130,8 @@ fn convert_to_moonlight() {
 
     // a conversion is a deposit into the transfer-contract paired with a
     // withdrawal
-    let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT,
-        fn_name: String::from("convert"),
-        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+    let contract_call = ContractCall::new(TRANSFER_CONTRACT, "convert")
+        .with_args(&Withdraw::new(
             rng,
             &moonlight_sk,
             TRANSFER_CONTRACT,
@@ -1159,9 +1142,7 @@ fn convert_to_moonlight() {
                 notes[0].gen_nullifier(&phoenix_sender_sk)
             ]),
         ))
-        .expect("should serialize conversion correctly")
-        .to_vec(),
-    };
+        .expect("should serialize conversion correctly");
 
     let tx = create_phoenix_transaction(
         rng,
@@ -1255,10 +1236,8 @@ fn convert_wrong_contract_targeted() {
         "There should be the genesis note at height 0"
     );
 
-    let contract_call = ContractCall {
-        contract: TRANSFER_CONTRACT,
-        fn_name: String::from("convert"),
-        fn_args: rkyv::to_bytes::<_, 1024>(&Withdraw::new(
+    let contract_call = ContractCall::new(TRANSFER_CONTRACT, "convert")
+        .with_args(&Withdraw::new(
             rng,
             &moonlight_sk,
             // this should be the transfer contract, but we're testing the
@@ -1270,9 +1249,7 @@ fn convert_wrong_contract_targeted() {
                 notes[0].gen_nullifier(&phoenix_sender_sk)
             ]),
         ))
-        .expect("should serialize conversion correctly")
-        .to_vec(),
-    };
+        .expect("should serialize conversion correctly");
 
     let tx = create_phoenix_transaction(
         rng,
@@ -1352,18 +1329,14 @@ fn contract_to_contract() {
         .expect("Querying the contract balance should succeed");
     assert_eq!(bob_balance, 0, "Bob must have an initial balance of zero");
 
-    let contract_call = ContractCall {
-        contract: ALICE_ID,
-        fn_name: String::from("contract_to_contract"),
-        fn_args: rkyv::to_bytes::<_, 256>(&ContractToContract {
+    let contract_call = ContractCall::new(ALICE_ID, "contract_to_contract")
+        .with_args(&ContractToContract {
             contract: BOB_ID,
             value: TRANSFER_VALUE,
             fn_name: String::from("recv_transfer"),
             data: vec![],
         })
-        .expect("Serializing should succeed")
-        .to_vec(),
-    };
+        .expect("Serializing should succeed");
 
     let tx = create_phoenix_transaction(
         rng,
@@ -1448,16 +1421,12 @@ fn contract_to_account() {
         "The moonlight account should have 0 dusk before the transfer"
     );
 
-    let contract_call = ContractCall {
-        contract: ALICE_ID,
-        fn_name: String::from("contract_to_account"),
-        fn_args: rkyv::to_bytes::<_, 256>(&ContractToAccount {
+    let contract_call = ContractCall::new(ALICE_ID, "contract_to_account")
+        .with_args(&ContractToAccount {
             account: moonlight_pk,
             value: TRANSFER_VALUE,
         })
-        .expect("Serializing should succeed")
-        .to_vec(),
-    };
+        .expect("Serializing should succeed");
 
     let tx = create_phoenix_transaction(
         rng,

@@ -7,16 +7,21 @@
 //! Extra data that may be sent with the `data` field of either transaction
 //! type.
 
-use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
+use alloc::{format, vec};
 
 use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
-use rkyv::ser::serializers::AllocSerializer;
-use rkyv::{Archive, Deserialize, Serialize};
+use piecrust_uplink::StandardBufSerializer;
+use rkyv::ser::serializers::{
+    BufferScratch, BufferSerializer, CompositeSerializer,
+};
+use rkyv::ser::Serializer;
+use rkyv::validation::validators::DefaultValidator;
+use rkyv::{Archive, Deserialize, Infallible, Serialize};
 
-use crate::abi::{ContractId, ARGBUF_LEN};
+use crate::abi::ContractId;
 use crate::Error;
 
 /// The maximum size of a memo.
@@ -140,17 +145,48 @@ impl ContractDeploy {
 }
 
 impl ContractCall {
-    /// Creates a new contract call.
+    /// Creates a new contract call with empty `fn_args`.
     ///
-    /// This function initializes a new contract call by serializing the
-    /// function arguments using `rkyv` serialization with a specified
-    /// buffer length.
+    /// Initializes a contract call by setting the function arguments to an
+    /// empty vector.
     ///
     /// # Parameters
     /// - `contract`: A value convertible into a `ContractId`, representing the
     ///   target contract.
     /// - `fn_name`: A value convertible into a `String`, specifying the name of
     ///   the function to be called.
+    pub fn new(
+        contract: impl Into<ContractId>,
+        fn_name: impl Into<String>,
+    ) -> Self {
+        Self {
+            contract: contract.into(),
+            fn_name: fn_name.into(),
+            fn_args: vec![],
+        }
+    }
+
+    /// Consumes `self` and returns a new contract call with raw function
+    /// arguments.
+    ///
+    /// Updates the contract call with raw serialized arguments provided as a
+    /// `Vec<u8>`.
+    ///
+    /// # Parameters
+    /// - `fn_args`: A `Vec<u8>` representing pre-serialized function arguments.
+    #[must_use]
+    pub fn with_raw_args(mut self, fn_args: Vec<u8>) -> Self {
+        self.fn_args = fn_args;
+        self
+    }
+
+    /// Consumes `self` and returns a new contract call with serialized function
+    /// arguments.
+    ///
+    /// Serializes the provided function arguments using `rkyv` serialization
+    /// and returns an updated contract call.
+    ///
+    /// # Parameters
     /// - `fn_args`: A reference to an object implementing `Serialize` for the
     ///   given `AllocSerializer`.
     ///
@@ -160,39 +196,28 @@ impl ContractCall {
     ///
     /// # Errors
     /// Returns an error if `rkyv` serialization fails.
-    pub fn new(
-        contract: impl Into<ContractId>,
-        fn_name: impl Into<String>,
-        fn_args: &impl Serialize<AllocSerializer<ARGBUF_LEN>>,
-    ) -> Result<Self, Error> {
-        let fn_args = rkyv::to_bytes::<_, ARGBUF_LEN>(fn_args)
-            .map_err(|e| Error::Rkyv(format!("{e:?}")))?
-            .to_vec();
-        let call = Self::new_raw(contract, fn_name, fn_args);
-        Ok(call)
-    }
+    pub fn with_args<A>(self, fn_arg: &A) -> Result<Self, Error>
+    where
+        A: for<'b> Serialize<StandardBufSerializer<'b>>,
+        A::Archived: for<'b> CheckBytes<DefaultValidator<'b>>,
+    {
+        // scratch-space and page-size values taken from piecrust-uplink
+        const SCRATCH_SPACE: usize = 1024;
+        const PAGE_SIZE: usize = 0x1000;
 
-    /// Creates a new contract call using raw function arguments.
-    ///
-    /// This function allows initializing a contract call directly with raw
-    /// serialized arguments as a `Vec<u8>`.
-    ///
-    /// # Parameters
-    /// - `contract`: A value convertible into a `ContractId`, representing the
-    ///   target contract.
-    /// - `fn_name`: A value convertible into a `String`, specifying the name of
-    ///   the function to be called.
-    /// - `fn_args`: A `Vec<u8>` representing pre-serialized function arguments.
-    pub fn new_raw(
-        contract: impl Into<ContractId>,
-        fn_name: impl Into<String>,
-        fn_args: Vec<u8>,
-    ) -> Self {
-        Self {
-            contract: contract.into(),
-            fn_name: fn_name.into(),
-            fn_args,
-        }
+        let mut sbuf = [0u8; SCRATCH_SPACE];
+        let scratch = BufferScratch::new(&mut sbuf);
+        let mut buffer = [0u8; PAGE_SIZE];
+        let ser = BufferSerializer::new(&mut buffer[..]);
+        let mut ser = CompositeSerializer::new(ser, scratch, Infallible);
+
+        ser.serialize_value(fn_arg)
+            .map_err(|e| Error::Rkyv(format!("{e:?}")))?;
+        let pos = ser.pos();
+
+        let fn_args = buffer[..pos].to_vec();
+
+        Ok(self.with_raw_args(fn_args))
     }
 
     /// Serialize a `ContractCall` into a variable length byte buffer.

@@ -64,14 +64,9 @@ fn stake_withdraw_unstake() {
 
     // Fashion a Stake struct
     let stake = Stake::new(&stake_sk, &stake_sk, INITIAL_STAKE, CHAIN_ID);
-    let stake_bytes = rkyv::to_bytes::<_, 1024>(&stake)
-        .expect("Should serialize Stake correctly")
-        .to_vec();
-    let contract_call = Some(ContractCall {
-        contract: STAKE_CONTRACT,
-        fn_name: String::from("stake"),
-        fn_args: stake_bytes,
-    });
+    let contract_call = ContractCall::new(STAKE_CONTRACT, "stake")
+        .with_args(&stake)
+        .expect("Should serialize Stake correctly");
 
     let input_note_pos = 0;
 
@@ -84,7 +79,7 @@ fn stake_withdraw_unstake() {
         GAS_PRICE,
         [input_note_pos],
         INITIAL_STAKE,
-        contract_call,
+        Some(contract_call),
     );
 
     let receipt = execute(&mut session, &tx, &NO_CONFIG)
@@ -154,15 +149,9 @@ fn stake_withdraw_unstake() {
     );
     let withdraw = StakeWithdraw::new(&stake_sk, &stake_sk, withdraw);
 
-    let withdraw_bytes = rkyv::to_bytes::<_, 2048>(&withdraw)
-        .expect("Serializing Withdraw should succeed")
-        .to_vec();
-
-    let contract_call = Some(ContractCall {
-        contract: STAKE_CONTRACT,
-        fn_name: String::from("withdraw"),
-        fn_args: withdraw_bytes,
-    });
+    let contract_call = ContractCall::new(STAKE_CONTRACT, "withdraw")
+        .with_args(&withdraw)
+        .expect("Serializing Withdraw should succeed");
 
     let tx = create_transaction(
         rng,
@@ -173,7 +162,7 @@ fn stake_withdraw_unstake() {
         GAS_PRICE,
         input_positions,
         0,
-        contract_call,
+        Some(contract_call),
     );
 
     // set different block height so that the new notes are easily located and
@@ -254,11 +243,9 @@ fn stake_withdraw_unstake() {
         .expect("Serializing Unstake should succeed")
         .to_vec();
 
-    let contract_call = Some(ContractCall {
-        contract: STAKE_CONTRACT,
-        fn_name: String::from("unstake"),
-        fn_args: unstake_bytes,
-    });
+    let contract_call = ContractCall::new(STAKE_CONTRACT, "unstake")
+        .with_args(&unstake)
+        .expect("Serializing Unstake should succeed");
 
     let tx = create_transaction(
         rng,
@@ -269,7 +256,7 @@ fn stake_withdraw_unstake() {
         GAS_PRICE,
         input_positions,
         0,
-        contract_call,
+        Some(contract_call),
     );
 
     // set different block height so that the new notes are easily located and

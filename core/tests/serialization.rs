@@ -178,11 +178,7 @@ fn phoenix_with_call() -> Result<(), Error> {
     let mut fn_args = vec![0; 100];
     rng.fill_bytes(&mut fn_args);
 
-    let call = ContractCall {
-        contract: contract.into(),
-        fn_name: String::from("deposit"),
-        fn_args,
-    };
+    let call = ContractCall::new(contract, "deposit").with_raw_args(fn_args);
 
     let transaction =
         new_phoenix_tx(&mut rng, Some(TransactionData::Call(call)));
@@ -286,11 +282,7 @@ fn moonlight_with_call() -> Result<(), Error> {
     let mut fn_args = vec![0; 100];
     rng.fill_bytes(&mut fn_args);
 
-    let call = ContractCall {
-        contract: contract.into(),
-        fn_name: String::from("deposit"),
-        fn_args,
-    };
+    let call = ContractCall::new(contract, "deposit").with_raw_args(fn_args);
 
     let transaction =
         new_moonlight_tx(&mut rng, Some(TransactionData::Call(call)));

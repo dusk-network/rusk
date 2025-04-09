@@ -76,9 +76,9 @@ pub async fn stake_from_contract_direct() -> Result<()> {
         data: vec![],
         value: 100,
     };
-    let call =
-        ContractCall::new(STAKE_CONTRACT, "stake_from_contract", &wrong_call)
-            .expect("call to be successful");
+    let call = ContractCall::new(STAKE_CONTRACT, "stake_from_contract")
+        .with_args(&wrong_call)
+        .expect("call to be successful");
 
     let stake_from_contract = wallet
         .moonlight_execute(
@@ -126,7 +126,8 @@ pub async fn stake_from_contract() -> Result<()> {
         DEFAULT_MINIMUM_STAKE,
         rusk.chain_id().unwrap(),
     );
-    let call = ContractCall::new(contract_id, "stake", &stake)
+    let call = ContractCall::new(contract_id, "stake")
+        .with_args(&stake)
         .expect("call to be successful");
     let stake_from_contract = wallet
         .moonlight_execute(
@@ -242,7 +243,8 @@ pub async fn stake_from_contract() -> Result<()> {
             .total_funds(),
         3 * DEFAULT_MINIMUM_STAKE
     );
-    let call = ContractCall::new(contract_id, "unstake", &unstake)
+    let call = ContractCall::new(contract_id, "unstake")
+        .with_args(&unstake)
         .expect("call to be successful");
     let unstake_from_contract = wallet
         .moonlight_execute(0, 0, 0, GAS_LIMIT, GAS_PRICE, Some(call.clone()))
@@ -275,7 +277,8 @@ pub async fn stake_from_contract() -> Result<()> {
         ),
     );
 
-    let call = ContractCall::new(contract_id, "withdraw", &withdraw)
+    let call = ContractCall::new(contract_id, "withdraw")
+        .with_args(&withdraw)
         .expect("call to be successful");
     let withdraw_from_contract = wallet
         .moonlight_execute(0, 0, 0, GAS_LIMIT, GAS_PRICE, Some(call.clone()))

@@ -578,7 +578,8 @@ impl Command {
                     .try_into()
                     .map_err(|_| Error::InvalidContractId)?;
 
-                let call = ContractCall::new_raw(contract_id, fn_name, fn_args);
+                let call = ContractCall::new(contract_id, fn_name)
+                    .with_raw_args(fn_args);
 
                 let tx = match address {
                     Address::Shielded(_) => {
