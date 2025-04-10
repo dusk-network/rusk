@@ -41,8 +41,7 @@ use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::http::RuesEvent;
 use crate::node::{coinbase_value, Rusk, RuskTip};
-use crate::Error::InvalidCreditsCount;
-use crate::{Error, Result, DUSK_CONSENSUS_KEY};
+use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
 
 impl Rusk {
     pub fn new<P: AsRef<Path>>(
@@ -346,7 +345,7 @@ impl Rusk {
             if expected_verification != verification_output {
                 // Drop the session if the resulting is inconsistent
                 // with the callers one.
-                return Err(Error::InconsistentState(Box::new(
+                return Err(RuskError::InconsistentState(Box::new(
                     verification_output,
                 )));
             }
@@ -382,7 +381,7 @@ impl Rusk {
 
         let commits = self.vm.commits();
         if !commits.contains(&state_hash) {
-            return Err(Error::CommitNotFound(state_hash));
+            return Err(RuskError::CommitNotFound(state_hash));
         }
 
         tip.current = state_hash;
@@ -486,7 +485,7 @@ impl Rusk {
     ) -> Result<Session> {
         let mut session = self._session(block_height, None)?;
         if session.root() != commit {
-            return Err(Error::TipChanged);
+            return Err(RuskError::TipChanged);
         }
         let _: CallReceipt<()> = session
             .call(STAKE_CONTRACT, "before_state_transition", &(), u64::MAX)
@@ -615,7 +614,7 @@ fn accept(
         dusk_spent += gas_spent * tx.gas_price();
         block_gas_left = block_gas_left
             .checked_sub(gas_spent)
-            .ok_or(Error::OutOfGas)?;
+            .ok_or(RuskError::OutOfGas)?;
 
         spent_txs.push(SpentTransaction {
             inner: unspent_tx.clone(),
@@ -676,7 +675,7 @@ fn reward_slash_and_update_root(
         .sum::<u64>();
 
     if !voters.is_empty() && credits == 0 && block_height > 1 {
-        return Err(InvalidCreditsCount(block_height, 0));
+        return Err(RuskError::InvalidCreditsCount(block_height, 0));
     }
 
     let generator_extra_reward =
