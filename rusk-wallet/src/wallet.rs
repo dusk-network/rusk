@@ -327,6 +327,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         Ok(history)
     }
 
+    /// Checks if the profile at `profile_idx` owns the note with address
+    /// `stealth_address`.
+    pub fn owns_note(
+        &self,
+        stealth_address: &StealthAddress,
+        profile_idx: u8,
+    ) -> bool {
+        let vk = self.derive_phoenix_vk(profile_idx);
+        vk.owns(stealth_address)
+    }
+
     /// Get the Phoenix balance
     pub async fn get_phoenix_balance(
         &self,
