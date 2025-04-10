@@ -49,7 +49,7 @@ pub struct Config {
     pub generation_timeout: Option<Duration>,
 
     /// Set of features to activate
-    pub features: HashMap<String, u64>,
+    features: HashMap<String, u64>,
 }
 
 impl Default for Config {
@@ -121,7 +121,7 @@ impl Config {
     pub fn to_execution_config(&self, block_height: u64) -> ExecutionConfig {
         let with_public_sender: bool = self
             .feature(feature::FEATURE_ABI_PUBLIC_SENDER)
-            .map(|activation| activation >= block_height)
+            .map(|activation| block_height >= activation)
             .unwrap_or_default();
         ExecutionConfig {
             gas_per_deploy_byte: self.gas_per_deploy_byte,
@@ -136,5 +136,18 @@ impl Config {
             .iter()
             .find(|(k, _)| k.eq_ignore_ascii_case(feature))
             .map(|(_, &v)| v)
+    }
+
+    pub fn with_feature<S: Into<String>>(
+        &mut self,
+        feature: S,
+        activation: u64,
+    ) {
+        let feature: String = feature.into();
+        // Check for case insensitive key
+        if self.feature(&feature).is_some() {
+            self.features.remove(&feature);
+        }
+        self.features.insert(feature, activation);
     }
 }
