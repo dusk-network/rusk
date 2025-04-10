@@ -259,7 +259,9 @@ pub(crate) async fn load_wallet(
             &wallet_path,
             &Prompter,
         )?,
-        MainMenu::Recover => Command::run_restore_from_seed(wallet_path, &Prompter)?,
+        MainMenu::Recover => {
+            Command::run_restore_from_seed(wallet_path, &Prompter)?
+        }
         MainMenu::Exit => std::process::exit(0),
     };
 

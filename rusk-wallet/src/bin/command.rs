@@ -532,9 +532,20 @@ impl Command {
                 let mut phoenix_history =
                     history::transaction_from_notes(settings, notes).await?;
 
-                match history::moonlight_history(&wallet, settings, address, profile_idx).await {
-                    Ok(mut moonlight_history) => phoenix_history.append(&mut moonlight_history),
-                    Err(err) => tracing::error!("Failed to fetch archive history with error: {err}"),
+                match history::moonlight_history(
+                    &wallet,
+                    settings,
+                    address,
+                    profile_idx,
+                )
+                .await
+                {
+                    Ok(mut moonlight_history) => {
+                        phoenix_history.append(&mut moonlight_history)
+                    }
+                    Err(err) => tracing::error!(
+                        "Failed to fetch archive history with error: {err}"
+                    ),
                 }
 
                 Ok(RunResult::History(phoenix_history))
@@ -735,7 +746,10 @@ impl Command {
         Ok(w)
     }
 
-    pub fn run_restore_from_seed(wallet_path: &WalletPath, prompter: &dyn Prompt) -> anyhow::Result<Wallet<WalletFile>> {
+    pub fn run_restore_from_seed(
+        wallet_path: &WalletPath,
+        prompter: &dyn Prompt,
+    ) -> anyhow::Result<Wallet<WalletFile>> {
         // ask user for 12-word mnemonic phrase
         let phrase = prompt::request_mnemonic_phrase(prompter)?;
         let salt = gen_salt();

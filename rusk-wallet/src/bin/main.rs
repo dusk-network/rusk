@@ -255,8 +255,8 @@ async fn exec() -> anyhow::Result<()> {
                             iv: salt_and_iv.map(|si| si.1),
                         })?;
 
-                        let (salt, iv) =
-                            salt_and_iv.unwrap_or_else(|| (gen_salt(), gen_iv()));
+                        let (salt, iv) = salt_and_iv
+                            .unwrap_or_else(|| (gen_salt(), gen_iv()));
                         w.save_to(WalletFile {
                             path: wallet_path,
                             aes_key: key,
@@ -265,7 +265,9 @@ async fn exec() -> anyhow::Result<()> {
                         })?;
                         w
                     }
-                    None => Command::run_restore_from_seed(&wallet_path, &Prompter)?
+                    None => {
+                        Command::run_restore_from_seed(&wallet_path, &Prompter)?
+                    }
                 }
             }
 
