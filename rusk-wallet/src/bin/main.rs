@@ -227,7 +227,7 @@ async fn exec() -> anyhow::Result<()> {
                 seed_file,
             } => Command::run_create(
                 *skip_recovery,
-                &seed_file,
+                seed_file,
                 password,
                 &wallet_path,
                 &Prompter,

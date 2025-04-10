@@ -6,6 +6,9 @@
 
 mod history;
 
+#[cfg(test)]
+mod tests;
+
 use aes_gcm::AeadCore;
 use aes_gcm::Aes256Gcm;
 use bip39::{Language, Mnemonic, MnemonicType};
@@ -533,7 +536,7 @@ impl Command {
                     history::transaction_from_notes(settings, notes).await?;
 
                 match history::moonlight_history(
-                    &wallet,
+                    wallet,
                     settings,
                     address,
                     profile_idx,

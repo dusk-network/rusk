@@ -256,7 +256,7 @@ pub(crate) async fn load_wallet(
             false,
             &None,
             password,
-            &wallet_path,
+            wallet_path,
             &Prompter,
         )?,
         MainMenu::Recover => {
