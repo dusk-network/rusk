@@ -6,6 +6,11 @@
 
 use std::{path::Path, usize};
 
+#[cfg(feature = "archive")]
+use node::archive::Archive;
+#[cfg(feature = "archive")]
+use tempfile::tempdir;
+
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
 use rusk::node::RuskVmConfig;
@@ -34,16 +39,16 @@ const CHAIN_ID: u8 = 0xFA;
 pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
 
 // Creates a Rusk initial state in the given directory
-pub fn new_state<P: AsRef<Path>>(
+pub async fn new_state<P: AsRef<Path>>(
     dir: P,
     snapshot: &Snapshot,
     vm_config: RuskVmConfig,
 ) -> Result<Rusk> {
-    new_state_with_chainid(dir, snapshot, vm_config, CHAIN_ID)
+    new_state_with_chainid(dir, snapshot, vm_config, CHAIN_ID).await
 }
 
 // Creates a Rusk initial state in the given directory
-pub fn new_state_with_chainid<P: AsRef<Path>>(
+pub async fn new_state_with_chainid<P: AsRef<Path>>(
     dir: P,
     snapshot: &Snapshot,
     vm_config: RuskVmConfig,
@@ -57,6 +62,12 @@ pub fn new_state_with_chainid<P: AsRef<Path>>(
 
     let (sender, _) = broadcast::channel(10);
 
+    #[cfg(feature = "archive")]
+    let archive_dir =
+        tempdir().expect("Should be able to create temporary directory");
+    #[cfg(feature = "archive")]
+    let archive = Archive::create_or_open(archive_dir.path()).await;
+
     let rusk = Rusk::new(
         dir,
         chain_id,
@@ -64,6 +75,8 @@ pub fn new_state_with_chainid<P: AsRef<Path>>(
         DEFAULT_MIN_GAS_LIMIT,
         u64::MAX,
         sender,
+        #[cfg(feature = "archive")]
+        archive,
     )
     .expect("Instantiating rusk should succeed");
 

@@ -239,7 +239,7 @@ where
 
         let unspent_notes_and_nullifiers = note_leaves
             .into_iter()
-            .zip(nullifiers.into_iter())
+            .zip(nullifiers)
             .filter(|(_note, nullifier)| {
                 !existing_nullifiers.contains(nullifier)
             })
@@ -464,7 +464,7 @@ where
             rng,
             &sender_sk,
             &refund_pk,
-            &receiver_pk,
+            receiver_pk,
             input_notes_openings,
             root,
             transfer_value,
@@ -679,6 +679,7 @@ where
     }
 
     /// Deploy a contract using Phoenix to pay for gas.
+    #[allow(clippy::too_many_arguments)]
     pub fn phoenix_deployment<Rng: RngCore + CryptoRng>(
         &self,
         rng: &mut Rng,
@@ -978,6 +979,7 @@ where
     }
 
     /// Deploy a contract using Moonlight to pay for gas.
+    #[allow(clippy::too_many_arguments)]
     pub fn moonlight_deployment(
         &self,
         sender_index: u8,

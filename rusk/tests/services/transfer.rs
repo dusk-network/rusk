@@ -27,12 +27,12 @@ const INITIAL_BALANCE: u64 = 10_000_000_000;
 const MAX_NOTES: u64 = 10;
 
 // Creates the Rusk initial state for the tests below
-fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/transfer.toml"))
         .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 
 /// Transacts between two accounts on the in the same wallet and produces a
@@ -137,7 +137,7 @@ pub async fn wallet() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp)?;
+    let rusk = initial_state(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 

@@ -22,13 +22,13 @@ use crate::common::state::new_state;
 const GENESIS_BALANCE: u64 = dusk(500_000_000.0);
 
 // Creates the Rusk initial state for the tests below
-fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!(
         "../../../rusk-recovery/config/mainnet.toml"
     ))
     .expect("Cannot deserialize config");
 
-    new_state(dir, &snapshot, RuskVmConfig::default())
+    new_state(dir, &snapshot, RuskVmConfig::default()).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -37,7 +37,7 @@ pub async fn mainnet_genesis() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp)?;
+    let rusk = initial_state(&tmp).await?;
     let mut total_amount = 0u64;
 
     let (sender, receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) =

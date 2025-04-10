@@ -35,23 +35,23 @@ const BOB_BYTECODE: &[u8] = include_bytes!(
 );
 
 // Creates the Rusk initial state for the tests below
-fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot =
         toml::from_str(include_str!("../config/multi_transfer.toml"))
             .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 
 // Creates the Rusk initial state for the tests below
-fn initial_state_deploy<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn initial_state_deploy<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot =
         toml::from_str(include_str!("../config/multi_transfer_deploy.toml"))
             .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 
 /// Executes three different transactions in the same block, expecting only two
@@ -361,7 +361,7 @@ pub async fn multi_transfer() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp)?;
+    let rusk = initial_state(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -402,7 +402,7 @@ pub async fn multi_transfer_deploy() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state_deploy(&tmp)?;
+    let rusk = initial_state_deploy(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 

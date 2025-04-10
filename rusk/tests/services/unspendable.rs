@@ -36,12 +36,12 @@ const GAS_PRICE: u64 = 1;
 const DEPOSIT: u64 = 0;
 
 // Creates the Rusk initial state for the tests below
-fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/unspendable.toml"))
         .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 
 const SENDER_INDEX_0: u8 = 0;
@@ -167,7 +167,7 @@ pub async fn unspendable() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp)?;
+    let rusk = initial_state(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 

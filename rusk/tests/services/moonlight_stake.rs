@@ -29,12 +29,12 @@ const GAS_LIMIT: u64 = 10_000_000_000;
 const GAS_PRICE: u64 = 1;
 
 // Creates the Rusk initial state for the tests below
-fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/stake.toml"))
         .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 
 /// Stakes an amount Dusk and produces a block with this single transaction,
@@ -134,7 +134,7 @@ pub async fn stake() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp)?;
+    let rusk = stake_state(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -211,7 +211,7 @@ pub async fn reward() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp)?;
+    let rusk = stake_state(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 

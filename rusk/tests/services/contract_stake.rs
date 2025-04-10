@@ -38,13 +38,13 @@ const GAS_LIMIT: u64 = 10_000_000_000;
 const GAS_PRICE: u64 = 1;
 
 // Creates the Rusk initial state for the tests below
-fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot =
         toml::from_str(include_str!("../config/stake_from_contract.toml"))
             .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 fn wallet(rusk: &Rusk) -> wallet::Wallet<TestStore, TestStateClient> {
     // Create a wallet
@@ -63,7 +63,7 @@ pub async fn stake_from_contract_direct() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp)?;
+    let rusk = stake_state(&tmp).await?;
 
     // Create a wallet
     let wallet = wallet(&rusk);
@@ -108,7 +108,7 @@ pub async fn stake_from_contract() -> Result<()> {
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp)?;
+    let rusk = stake_state(&tmp).await?;
 
     // Create a wallet
     let wallet = wallet(&rusk);
@@ -188,12 +188,12 @@ pub async fn stake_from_contract() -> Result<()> {
 
     let stake = wallet.get_stake(0).expect("stake to be found");
     assert_eq!(
-        DEFAULT_MINIMUM_STAKE * 2 + (DEFAULT_MINIMUM_STAKE / 10 * 9) as u64,
+        DEFAULT_MINIMUM_STAKE * 2 + (DEFAULT_MINIMUM_STAKE / 10 * 9),
         stake.amount.expect("stake amount to be found").value
     );
 
     assert_eq!(
-        (DEFAULT_MINIMUM_STAKE / 10) as u64,
+        (DEFAULT_MINIMUM_STAKE / 10),
         stake.amount.expect("stake amount to be found").locked
     );
 
@@ -301,7 +301,7 @@ fn deploy_proxy_contract(
         "../../../target/wasm32-unknown-unknown/release/charlie.wasm"
     );
     let contract_id =
-        gen_contract_id(&charlie_byte_code, deploy_nonce, owner.to_bytes());
+        gen_contract_id(charlie_byte_code, deploy_nonce, owner.to_bytes());
     let tx = wallet
         .moonlight_deployment(
             0,
@@ -326,7 +326,7 @@ fn execute_transaction<'a, E: Into<Option<&'a str>>>(
     generator: Option<dusk_core::signatures::bls::PublicKey>,
 ) -> SpentTransaction {
     let (executed_txs, _) = generator_procedure2(
-        &rusk,
+        rusk,
         &[tx],
         block_height,
         BLOCK_GAS_LIMIT,
@@ -340,7 +340,7 @@ fn execute_transaction<'a, E: Into<Option<&'a str>>>(
         .next()
         .expect("Transaction must be executed");
 
-    let tx_error = tx.err.as_ref().map(|e| e.as_str());
+    let tx_error = tx.err.as_deref();
     let error = expected_error.into();
     assert_eq!(tx_error, error, "Output error does not match");
     tx
