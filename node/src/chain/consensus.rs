@@ -10,9 +10,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use dusk_consensus::commons::{RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
-use dusk_consensus::errors::{
-    ConsensusError, HeaderError, OperationError, VstError,
-};
+use dusk_consensus::errors::{ConsensusError, HeaderError, OperationError};
 use dusk_consensus::operations::{
     CallParams, Operations, Output, VerificationOutput, Voter,
 };
@@ -320,31 +318,27 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
-    ) -> Result<VerificationOutput, VstError> {
-        info!("verifying state");
-
+    ) -> Result<VerificationOutput, OperationError> {
         let vm = self.vm.read().await;
 
         vm.verify_state_transition(prev_root, blk, voters)
+            .map_err(OperationError::FailedVST)
     }
 
     async fn execute_state_transition(
         &self,
         params: CallParams,
     ) -> Result<Output, OperationError> {
-        info!("executing state transition");
         let vm = self.vm.read().await;
 
         let db = self.db.read().await;
         let (executed_txs, discarded_txs, verification_output) = db
             .view(|view| {
                 let txs = view.mempool_txs_sorted_by_fee();
-                let ret = vm.execute_state_transition(&params, txs).map_err(
-                    |err| anyhow::anyhow!("failed to call EST {}", err),
-                )?;
+                let ret = vm.execute_state_transition(&params, txs)?;
                 Ok(ret)
             })
-            .map_err(OperationError::InvalidEST)?;
+            .map_err(OperationError::FailedEST)?;
         let _ = db.update(|m| {
             for t in &discarded_txs {
                 if let Ok(_removed) = m.delete_mempool_tx(t.id(), true) {

@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::errors::VstError;
+use dusk_consensus::errors::StateTransitionError;
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
@@ -21,18 +21,17 @@ pub trait VMExecution: Send + Sync + 'static {
         &self,
         params: &CallParams,
         txs: I,
-    ) -> anyhow::Result<(
-        Vec<SpentTransaction>,
-        Vec<Transaction>,
-        VerificationOutput,
-    )>;
+    ) -> Result<
+        (Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput),
+        StateTransitionError,
+    >;
 
     fn verify_state_transition(
         &self,
         prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
-    ) -> Result<VerificationOutput, VstError>;
+    ) -> Result<VerificationOutput, StateTransitionError>;
 
     fn accept(
         &self,
