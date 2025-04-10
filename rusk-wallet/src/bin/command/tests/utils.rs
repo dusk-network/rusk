@@ -1,3 +1,9 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
 use std::collections::{HashMap, HashSet};
 use std::net::TcpStream;
 use std::time::Duration;
@@ -76,8 +82,14 @@ pub async fn wait_for_nodes_to_start() -> anyhow::Result<()> {
     let timeout = Duration::from_secs(3);
     let count = 5;
     for _ in 0..count {
-        let state_status = TcpStream::connect_timeout(&"127.0.0.1:8080".parse().unwrap(), timeout);
-        let prover_status = TcpStream::connect_timeout(&"127.0.0.1:8081".parse().unwrap(), timeout);
+        let state_status = TcpStream::connect_timeout(
+            &"127.0.0.1:8080".parse().unwrap(),
+            timeout,
+        );
+        let prover_status = TcpStream::connect_timeout(
+            &"127.0.0.1:8081".parse().unwrap(),
+            timeout,
+        );
         match (state_status, prover_status) {
             (Ok(_), Ok(_)) => return Ok(()),
             _ => tokio::time::sleep(Duration::from_secs(1)).await,

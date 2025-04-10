@@ -171,7 +171,7 @@ pub(crate) async fn transaction_from_notes(
             }
         }
     }
-    
+
     Ok(ret)
 }
 
