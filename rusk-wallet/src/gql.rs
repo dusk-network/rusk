@@ -303,5 +303,8 @@ async fn deser() -> Result<(), Box<dyn std::error::Error>> {
     let empty_full_moonlight_history = r#"{"fullMoonlightHistory":null}"#;
     serde_json::from_str::<FullMoonlightHistory>(empty_full_moonlight_history).unwrap();
 
+    let full_moonlight_history = include_str!("./gql/full_moonlight_history.json");
+    serde_json::from_str::<FullMoonlightHistory>(full_moonlight_history).unwrap();
+
     Ok(())
 }
