@@ -81,7 +81,7 @@ pub trait Operations: Send + Sync {
         prev_commit: StateRoot,
         blk: &Block,
         voters: &[Voter],
-    ) -> Result<VerificationOutput, VstError>;
+    ) -> Result<VerificationOutput, OperationError>;
 
     async fn execute_state_transition(
         &self,
