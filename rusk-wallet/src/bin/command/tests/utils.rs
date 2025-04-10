@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::net::TcpStream;
 use std::time::Duration;
 
 use rusk_wallet::GraphQL;
@@ -53,11 +54,13 @@ pub fn configure_logger() {
     let filter = EnvFilter::new(directive);
     let _ = tracing_subscriber::fmt().with_env_filter(filter).try_init();
 }
+const STATE_ADDRESS: &str = "http://127.0.0.1:8080";
+const PROVER_ADDRESS: &str = "http://127.0.0.1:8081";
 
 fn wallet_settings(wallet_dir: &TempDir) -> Settings {
     Settings {
-        state: Url::parse("http://127.0.0.1:8080").unwrap(),
-        prover: Url::parse("http://127.0.0.1:8081").unwrap(),
+        state: Url::parse(STATE_ADDRESS).unwrap(),
+        prover: Url::parse(PROVER_ADDRESS).unwrap(),
         explorer: None,
         logging: Logging {
             level: LogLevel::Trace,
@@ -66,6 +69,21 @@ fn wallet_settings(wallet_dir: &TempDir) -> Settings {
         wallet_dir: wallet_dir.path().to_path_buf(),
         password: None,
     }
+}
+
+pub async fn wait_for_nodes_to_start() -> anyhow::Result<()> {
+    tracing::info!("Waiting for nodes to start");
+    let timeout = Duration::from_secs(3);
+    let count = 5;
+    for _ in 0..count {
+        let state_status = TcpStream::connect_timeout(&"127.0.0.1:8080".parse().unwrap(), timeout);
+        let prover_status = TcpStream::connect_timeout(&"127.0.0.1:8081".parse().unwrap(), timeout);
+        match (state_status, prover_status) {
+            (Ok(_), Ok(_)) => return Ok(()),
+            _ => tokio::time::sleep(Duration::from_secs(1)).await,
+        }
+    }
+    Err(anyhow::anyhow!("Nodes never started"))
 }
 
 async fn faucet_wallet() -> anyhow::Result<(Wallet<WalletFile>, Settings)> {

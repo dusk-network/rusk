@@ -10,6 +10,7 @@ use utils::*;
 #[tokio::test]
 async fn test_empty_history() {
     configure_logger();
+    wait_for_nodes_to_start().await.unwrap();
     let (mut wallet, settings) = create_wallet().await.unwrap();
     let cmd = Command::History { profile_idx: None };
     let history = cmd.run(&mut wallet, &settings).await.unwrap();
@@ -23,6 +24,7 @@ async fn test_empty_history() {
 #[tokio::test]
 async fn test_non_empty_history() {
     configure_logger();
+    wait_for_nodes_to_start().await.unwrap();
 
     let (mut wallet, settings) = create_wallet().await.unwrap();
     let (other_wallet, _) = create_wallet().await.unwrap();
