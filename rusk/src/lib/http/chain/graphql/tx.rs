@@ -59,7 +59,7 @@ pub async fn mempool<'a>(
 ) -> FieldResult<Vec<Transaction<'a>>> {
     let (db, _) = ctx.data::<DBContext>()?;
     db.read().await.view(|db| {
-        let txs = db.mempool_txs_sorted_by_fee()?.map(|t| t.into()).collect();
+        let txs = db.mempool_txs_sorted_by_fee().map(|t| t.into()).collect();
         Ok(txs)
     })
 }
