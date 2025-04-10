@@ -7,6 +7,43 @@
 import * as ProtocolDriver from "../../protocol-driver/mod.js";
 import * as base58 from "../../encoders/b58.js";
 
+const HISTORY_CHUNK_SIZE = 50n;
+
+function parseEvents(account, historyEntryEvents) {
+  const from = "N/A";
+  const to = "N/A";
+  const value = 0n;
+
+  return { from, to, value };
+}
+
+function toW3sperHistoryEntry(account, historyEntry, gqlTransaction) {
+  const { from, to, value } = parseEvents(account, historyEntry.events);
+  const direction = account !== from ? "in" : from === to ? "self" : "out";
+
+  return {
+    blockHash: gqlTransaction.blockHash,
+    blockHeight: BigInt(historyEntry.block_height),
+    blockTimestamp: gqlTransaction.blockTimestamp * 1000,
+    direction,
+    feePaid: BigInt(gqlTransaction.gasSpent * gqlTransaction.tx.gasPrice),
+    from,
+    gasLimit: BigInt(gqlTransaction.tx.gasLimit),
+    gasPrice: BigInt(gqlTransaction.tx.gasPrice),
+    gasSpent: BigInt(gqlTransaction.gasSpent),
+    hash: historyEntry.origin,
+    memo: gqlTransaction.tx.memo ?? "",
+    method: gqlTransaction.tx.isDeploy
+      ? "deploy"
+      : gqlTransaction.tx.callData?.fnName ?? "transfer",
+    owner: account, // TODO ask Seppia if it's worth it
+    success: gqlTransaction.err === null,
+    to,
+    type: "public",
+    value,
+  };
+}
+
 /**
  * Represents the value staked, locked, and eligibility of a stake.
  */
@@ -142,6 +179,83 @@ export class AccountSyncer extends EventTarget {
     this.#network = network;
   }
 
+  #createHistoryStream(profile, options) {
+    const { order = "asc", from = 0n, signal, to } = options;
+    const key = profile.account.toString();
+    const nextRange = { from, to };
+
+    return new ReadableStream({
+      cancel(reason) {
+        console.log(`Account history stream canceled (${key}):`, reason);
+      },
+
+      pull: async (controller) => {
+        if (signal?.aborted) {
+          this.cancel(signal.reason ?? "Abort signal received");
+          controller.close();
+          return;
+        }
+
+        const data = await this.#network
+          .query(
+            `fullMoonlightHistory(
+             address: "${key}",
+             fromBlock: ${nextRange.from},
+             maxCount: ${HISTORY_CHUNK_SIZE},
+             ord: "${order}",                      ,
+             ${nextRange.to ? `toBlock: ${nextRange.to}` : ""}
+           ) { json }`,
+
+            { signal }
+          )
+          .then((result) => result.fullMoonlightHistory?.json ?? [])
+          .then((moonlightHistory) =>
+            Promise.all(
+              moonlightHistory.map((historyEntry) =>
+                this.#network
+                  .query(
+                    `tx(hash: "${historyEntry.origin}") {
+                      blockHash,
+                      blockTimestamp,
+                      err,
+                      gasSpent,
+                      tx {
+                        callData {
+                          fnName
+                        },
+                        gasLimit,
+                        gasPrice,
+                        isDeploy,
+                        memo
+                      }
+                    }`
+                  )
+                  .then(({ tx }) => toW3sperHistoryEntry(key, historyEntry, tx))
+              )
+            )
+          )
+          .catch((error) => {
+            console.error(`Error fetching account history (${key})`, error);
+            controller.error(error);
+          });
+
+        for (const entry of data) {
+          controller.enqueue(entry);
+        }
+
+        if (data.length === 0) {
+          controller.close();
+        } else {
+          if (order === "asc") {
+            nextRange.from = data.at(-1).blockHeight + 1n;
+          } else {
+            nextRange.to = data.at(-1).blockHeight - 1n;
+          }
+        }
+      },
+    });
+  }
+
   /**
    * Fetches the balances for the given profiles.
    *
@@ -159,6 +273,24 @@ export class AccountSyncer extends EventTarget {
       .then((responses) => responses.map((resp) => resp.arrayBuffer()))
       .then((buffers) => Promise.all(buffers))
       .then((buffers) => buffers.map(parseBalance));
+  }
+
+  /**
+   * Fetches the moonlight transactions history for
+   * the given profiles.
+   *
+   * @param {Array<Object>} profiles
+   * @param {Object} [options={}]
+   * @param {bigint} [options.from]
+   * @param {string} [options.order="asc"] "asc" or "desc"
+   * @param {AbortSignal} [options.signal]
+   * @param {bigint} [options.to]
+   * @returns {ReadableStream[]}
+   */
+  history(profiles, options = {}) {
+    return profiles.map((profile) =>
+      this.#createHistoryStream(profile, options)
+    );
   }
 
   /**
