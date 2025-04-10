@@ -31,7 +31,7 @@ use dusk_vm::{
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
+use node_data::ledger::{to_str, Hash, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
@@ -109,6 +109,14 @@ impl Rusk {
         let prev_state_root = params.prev_state_root;
 
         let voters = &params.voters_pubkey[..];
+
+        info!(
+            event = "Start EST",
+            height = block_height,
+            prev_state = to_str(&prev_state_root),
+            gas_limit = block_gas_limit,
+            ?to_slash
+        );
 
         let mut session =
             self.new_block_session(block_height, prev_state_root)?;
@@ -264,6 +272,15 @@ impl Rusk {
         slashing: Vec<Slash>,
         voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
+        info!(
+            event = "Start VST",
+            block_hash = to_str(&block_hash),
+            height = block_height,
+            prev_state = to_str(&prev_commit),
+            gas_limit = block_gas_limit,
+            to_slash = ?slashing
+        );
+
         let session = self.new_block_session(block_height, prev_commit)?;
         let execution_config = self.vm_config.to_execution_config(block_height);
 

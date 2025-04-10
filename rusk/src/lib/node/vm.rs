@@ -37,8 +37,6 @@ impl VMExecution for Rusk {
         Vec<Transaction>,
         VerificationOutput,
     )> {
-        info!("Received execute_state_transition request");
-
         let (txs, discarded_txs, verification_output) =
             self.execute_transactions(params, txs).map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
@@ -53,7 +51,6 @@ impl VMExecution for Rusk {
         blk: &Block,
         voters: &[Voter],
     ) -> Result<VerificationOutput, VstError> {
-        info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator.0)
             .map_err(VstError::InvalidGenerator)?;
