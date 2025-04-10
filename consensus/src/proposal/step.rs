@@ -104,8 +104,8 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                             Self::wait_until_next_slot(tip_timestamp).await;
                             return msg;
                         }
-                        Err(e) => {
-                            error!("invalid candidate generated due to {:?}", e)
+                        Err(err) => {
+                            error!(event = "Failed to store candidate", ?err)
                         }
                         _ => {}
                     };

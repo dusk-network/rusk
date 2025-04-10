@@ -146,8 +146,8 @@ impl<T: Operations> Generator<T> {
                 );
                 Ok(blk)
             }
-            Err(e) => Err(crate::errors::OperationError::InvalidEST(
-                anyhow::anyhow!("Cannot create new block {e}",),
+            Err(e) => Err(crate::errors::OperationError::BlockCreation(
+                format!("{e}",),
             )),
         }
     }

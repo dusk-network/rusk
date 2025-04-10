@@ -18,7 +18,7 @@ use tracing::{debug, error, info, Instrument};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
-use crate::errors::VstError;
+use crate::errors::{HeaderError, OperationError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::StepOutcome;
 use crate::operations::{Operations, Voter};
@@ -100,7 +100,10 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
                     .verify_faults(header.height, candidate.faults())
                     .await
                 {
-                    error!(event = "invalid faults", ?err);
+                    error!(
+                        event = "Candidate verification failed",
+                        reason = %err
+                    );
                     Vote::Invalid(header.hash)
                 } else {
                     match Self::call_vst(
@@ -169,26 +172,27 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         candidate: &Block,
         voters: &[Voter],
         executor: &Arc<T>,
-    ) -> Result<(), VstError> {
+    ) -> Result<(), OperationError> {
         let output = executor
             .verify_state_transition(prev_commit, candidate, voters)
             .await?;
 
-        // Ensure the `event_bloom` and `state_root` returned
-        // from the VST call are the
-        // ones we expect to have with the
-        // current candidate block.
+        // Check the header against `event_bloom` and `state_root` from VST
         if output.event_bloom != candidate.header().event_bloom {
-            return Err(VstError::MismatchEventBloom(
-                Box::new(output.event_bloom),
-                Box::new(candidate.header().event_bloom),
+            return Err(OperationError::InvalidHeader(
+                HeaderError::EventBloomMismatch(
+                    Box::new(output.event_bloom),
+                    Box::new(candidate.header().event_bloom),
+                ),
             ));
         }
 
         if output.state_root != candidate.header().state_hash {
-            return Err(VstError::MismatchStateHash(
-                output.state_root,
-                candidate.header().state_hash,
+            return Err(OperationError::InvalidHeader(
+                HeaderError::StateRootMismatch(
+                    output.state_root,
+                    candidate.header().state_hash,
+                ),
             ));
         }
 
