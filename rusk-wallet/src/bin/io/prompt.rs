@@ -17,6 +17,7 @@ use crossterm::{
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
 
+use inquire::error::InquireResult;
 use inquire::ui::RenderConfig;
 use inquire::validator::Validation;
 use inquire::{
@@ -35,7 +36,9 @@ use sha2::{Digest, Sha256};
 
 pub(crate) trait Prompt {
     /// Prompt the user to enter a password
-    fn create_new_password(&self) -> Result<String, InquireError>;
+    fn create_new_password(&self) -> InquireResult<String>;
+
+    fn prompt_text(&self, msg: &str) -> InquireResult<String>;
 }
 
 pub(crate) struct Prompter;
@@ -43,6 +46,10 @@ pub(crate) struct Prompter;
 impl Prompt for Prompter {
     fn create_new_password(&self) -> Result<String, InquireError> {
         create_new_password()
+    }
+
+    fn prompt_text(&self, msg: &str) -> InquireResult<String> {
+        Text::new(msg).prompt()
     }
 }
 
@@ -121,12 +128,14 @@ where
 }
 
 /// Request the user to input the mnemonic phrase
-pub(crate) fn request_mnemonic_phrase() -> anyhow::Result<String> {
+pub(crate) fn request_mnemonic_phrase(
+    prompter: &dyn Prompt,
+) -> anyhow::Result<String> {
     // let the user input the mnemonic phrase
     let mut attempt = 1;
     loop {
         let phrase =
-            Text::new("Please enter the mnemonic phrase: ").prompt()?;
+            prompter.prompt_text("Please enter the mnemonic phrase: ")?;
 
         match Mnemonic::from_phrase(&phrase, Language::English) {
             Ok(phrase) => break Ok(phrase.to_string()),
