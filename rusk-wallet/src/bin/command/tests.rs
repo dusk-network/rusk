@@ -40,7 +40,6 @@ async fn test_non_empty_history() {
     )
     .await
     .unwrap();
-
     let rcv_phoenix =
         rcv_phoenix_from_faucet(phoenix_addr.clone(), 4_000_000_000, gas_price)
             .await
@@ -119,8 +118,13 @@ async fn test_non_empty_history() {
     assert_eq!(
         tx_history,
         vec![
-            // Phoenix transactions come first
-            // Receive money from faucet
+            // Receive money from faucet to moonlight address
+            StrippedTxHistoryItem {
+                direction: TransactionDirection::In,
+                amount: 6_000_000_000.0,
+                fee: txs_info[&rcv_moonlight].gas_spent * gas_price,
+            },
+            // Receive money from faucet to phoenix address
             StrippedTxHistoryItem {
                 direction: TransactionDirection::In,
                 amount: 4_000_000_000.0,
@@ -132,19 +136,6 @@ async fn test_non_empty_history() {
                 amount: -3_000.0,
                 fee: txs_info[&phoenix_trans_to_other_wallet].gas_spent
                     * gas_price,
-            },
-            // Convert 5000 from phoenix to moonlight
-            StrippedTxHistoryItem {
-                direction: TransactionDirection::Out,
-                amount: -5_000.0,
-                fee: txs_info[&phoenix_to_moonlight].gas_spent * gas_price,
-            },
-            // Moonlight transactions
-            // Receive money from faucet
-            StrippedTxHistoryItem {
-                direction: TransactionDirection::In,
-                amount: 6_000_000_000.0,
-                fee: txs_info[&rcv_moonlight].gas_spent * gas_price,
             },
             // Send 4000 to other wallet
             StrippedTxHistoryItem {
@@ -164,6 +155,12 @@ async fn test_non_empty_history() {
                 direction: TransactionDirection::Out,
                 amount: -2_500.0,
                 fee: txs_info[&moonlight_to_phoenix].gas_spent * gas_price,
+            },
+            // Convert 5000 from phoenix to moonlight
+            StrippedTxHistoryItem {
+                direction: TransactionDirection::Out,
+                amount: -5_000.0,
+                fee: txs_info[&phoenix_to_moonlight].gas_spent * gas_price,
             },
             // Receive converted 5000 from phoenix to moonlight
             StrippedTxHistoryItem {

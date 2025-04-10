@@ -171,7 +171,7 @@ pub(crate) async fn transaction_from_notes(
             }
         }
     }
-    ret.sort_by(|a, b| a.height.cmp(&b.height));
+    
     Ok(ret)
 }
 
