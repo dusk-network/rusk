@@ -6,380 +6,230 @@
 
 //! # JSON-RPC Server Configuration
 //!
-//! This module provides configuration management for the JSON-RPC server in
-//! Rusk with security validation. It handles loading configuration from files,
-//! environment variables, and provides default values.
+//! This module provides comprehensive configuration management for the Rusk
+//! JSON-RPC server, incorporating robust security validation. It facilitates
+//! loading configuration settings from multiple sources including TOML files
+//! and environment variables, providing sensible defaults for all options.
 //!
-//! For detailed documentation on all configuration options, file format,
-//! environment variables, and security considerations, please refer to:
-//! [docs/jsonrpc_configuration.md](../../../docs/jsonrpc_configuration.md)
+//! For a detailed external overview of all configuration options, the TOML file
+//! format, environment variable mappings, and security considerations, please
+//! refer to: [docs/jsonrpc_configuration.md](../../../docs/
+//! jsonrpc_configuration.md)
 //!
-//! ## Features
+//! ## Core Features
 //!
-//! - Load configuration from TOML files
-//! - Override settings via environment variables
-//! - Default values for all settings
-//! - Security validation to prevent insecure configurations
-//! - Builder pattern for programmatic configuration
+//! - **Layered Configuration:** Loads settings with clear precedence:
+//!   Environment Variables > Configuration File > Default Values.
+//! - **TOML File Support:** Reads configuration from a specified TOML file
+//!   (default: `default.config.toml` at project root), expecting settings under
+//!   the `[jsonrpc]` section.
+//! - **Environment Variable Overrides:** Allows overriding any configuration
+//!   field via environment variables prefixed with `RUSK_JSONRPC_` (e.g.,
+//!   `RUSK_JSONRPC_HTTP_BIND_ADDRESS`).
+//! - **Default Values:** Provides safe and reasonable defaults for every
+//!   setting, ensuring the server can run without explicit configuration.
+//! - **Security Validation:** Includes built-in checks (`validate()`) to
+//!   prevent common insecure configurations (e.g., public binding without rate
+//!   limits, insecure CORS).
+//! - **Builder Pattern:** Offers a fluent builder API
+//!   (`JsonRpcConfig::builder()`) for programmatic configuration, useful for
+//!   testing or embedding.
+//! - **Sanitization:** Configurable redaction of sensitive terms and path
+//!   information in logs and error messages.
 //!
-//! ## Configuration Sources (in order of precedence)
+//! ## Configuration Sections
 //!
-//! 1. Environment variables (prefixed with `RUSK_JSONRPC_`)
-//! 2. Configuration file (if specified)
-//! 3. Default values
-//!
-//! ## Configuration File Location
-//!
-//! By default, the configuration file (`default.config.toml`) is expected at
-//! the project root. The JSON-RPC specific settings should be placed under the
-//! `[jsonrpc]` section within this file. The path can be overridden by setting
-//! the `RUSK_JSONRPC_CONFIG_PATH` environment variable.
+//! - `[jsonrpc.http]`: HTTP server settings (address, timeouts, CORS, TLS).
+//! - `[jsonrpc.ws]`: WebSocket server settings (address, limits, timeouts).
+//! - `[jsonrpc.rate_limit]`: Rate limiting rules (global, default,
+//!   method-specific).
+//! - `[jsonrpc.features]`: Toggles for specific server features (WebSocket
+//!   support, error detail, block range limits).
+//! - `[jsonrpc.sanitization]`: Control over message sanitization and sensitive
+//!   data redaction.
 //!
 //! ## Usage Examples
 //!
-//! ### Basic Usage with `jsonrpsee`
+//! ### Loading Default Configuration
 //!
-//! ```rust,no_run
-//! use std::sync::Arc;
-//! use std::net::SocketAddr;
+//! The easiest way to get started is by loading the default configuration,
+//! which reads `default.config.toml` if present and applies environment
+//! variables.
+//!
+//! ```rust
 //! use rusk::jsonrpc::config::{JsonRpcConfig, ConfigError};
-//! use rusk::jsonrpc::infrastructure::state::AppState;
-//! use rusk::jsonrpc::infrastructure::db::DatabaseAdapter;
-//! use rusk::jsonrpc::infrastructure::state::SubscriptionManager;
-//! use rusk::jsonrpc::infrastructure::metrics::MetricsCollector;
-//! use rusk::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
-//! use jsonrpsee::server::{Server, ServerBuilder};
-//! use jsonrpsee::RpcModule;
-//! use tower::ServiceBuilder;
-//! use tower_http::cors::CorsLayer;
 //!
-//! // Example dummy DatabaseAdapter
-//! #[derive(Debug, Clone)]
-//! struct DummyDbAdapter;
-//! #[async_trait::async_trait]
-//! impl DatabaseAdapter for DummyDbAdapter {
-//!     // Implement methods...
-//!     async fn get_block_by_height(
-//!         &self, height: u64
-//!     ) -> Result<Option<rusk::jsonrpc::infrastructure::db::BlockData>, rusk::jsonrpc::infrastructure::error::DbError> { Ok(None) }
-//! }
-//!
-//! // Example RPC trait and implementation
-//! #[jsonrpsee::proc_macros::rpc(server, client)]
-//! pub trait ExampleRpc {
-//!     #[method(name = "example_getFeature")]
-//!     async fn example_get_feature(&self, feature_name: String) -> Result<String, jsonrpsee::types::ErrorObjectOwned>;
-//! }
-//!
-//! struct ExampleRpcImpl {
-//!     app_state: Arc<AppState>,
-//! }
-//!
-//! #[async_trait::async_trait]
-//! impl ExampleRpcServer for ExampleRpcImpl {
-//!     async fn example_get_feature(&self, feature_name: String) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
-//!         // Access config via AppState
-//!         let feature_value = match feature_name.as_str() {
-//!             "max_batch_size" => self.app_state.config().features.max_batch_size.to_string(),
-//!             _ => "Feature not found".to_string(),
-//!         };
-//!         Ok(format!("Feature '{}': {}", feature_name, feature_value))
+//! match JsonRpcConfig::load_default() {
+//!     Ok(config) => {
+//!         println!("Successfully loaded default config. HTTP runs on: {}", config.http.bind_address);
+//!         // Proceed with using the config...
 //!     }
-//! }
-//!
-//! #[tokio::main]
-//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     // 1. Load configuration
-//!     let config = JsonRpcConfig::load_default()?;
-//!
-//!     // 2. Initialize shared infrastructure (DB, Metrics, etc.)
-//!     let db_adapter = DummyDbAdapter;
-//!     let sub_manager = SubscriptionManager::default();
-//!     let metrics = MetricsCollector::default();
-//!     let rate_limit_config = Arc::new(config.rate_limit.clone());
-//!     let manual_limiters = ManualRateLimiters::new(rate_limit_config)?;
-//!
-//!     // 3. Create AppState
-//!     let app_state = Arc::new(AppState::new(
-//!         config.clone(), // Clone config for AppState
-//!         Arc::new(db_adapter),
-//!         sub_manager,
-//!         metrics,
-//!         manual_limiters,
-//!     ));
-//!
-//!     // 4. Configure CORS layer (using config helper)
-//!     let cors_layer = config.build_cors_layer().unwrap_or_default();
-//!
-//!     // 5. Configure other middleware (e.g., tower-governor for rate limiting - requires config details)
-//!     // let governor_layer = ... // Setup tower-governor layer based on config.rate_limit.default_limit
-//!
-//!     // 6. Build the overall middleware stack
-//!     let middleware = ServiceBuilder::new()
-//!         .layer(cors_layer);
-//!         // .layer(governor_layer); // Add governor layer here
-//!
-//!     // 7. Build the jsonrpsee server
-//!     let server = ServerBuilder::new()
-//!         .max_request_body_size(config.http.max_body_size as u32)
-//!         .max_connections(config.http.max_connections as u32)
-//!         .build(config.http.bind_address)
-//!         .await?;
-//!
-//!     // 8. Define RPC methods/modules
-//!     let mut rpc_module = RpcModule::new(()); // Base module
-//!     let example_rpc_impl = ExampleRpcImpl { app_state: app_state.clone() };
-//!     rpc_module.merge(example_rpc_impl.into_rpc())?; // Merge your RPC implementation
-//!
-//!     // 9. Start the server & handle
-//!     let server_handle = server.start(rpc_module); // Assign the Result<ServerHandle, _>
-//!     println!("JSON-RPC server listening on {}", config.http.bind_address);
-//!
-//!     // 10. Wait for shutdown signal (e.g., Ctrl+C)
-//!     tokio::signal::ctrl_c().await?;
-//!     server_handle.stop()?;
-//!     println!("Server stopped gracefully.");
-//!
-//!     Ok(())
+//!     Err(e) => {
+//!         eprintln!("Failed to load default JSON-RPC config: {}", e);
+//!         // Handle error, potentially exiting the application
+//!     }
 //! }
 //! ```
 //!
-//! ### Customizing Configuration
+//! ### Loading from a Specific File
+//!
+//! You can specify a custom configuration file path.
 //!
 //! ```rust
-//! use rusk::jsonrpc::config::JsonRpcConfig;
-//! use std::net::SocketAddr;
-//! use std::str::FromStr;
-//! use std::time::Duration;
+//! use rusk::jsonrpc::config::{JsonRpcConfig, ConfigError};
+//! use std::path::Path;
+//! use std::fs;
 //!
-//! // Using the builder pattern
-//! fn create_custom_config() -> JsonRpcConfig {
-//!     JsonRpcConfig::builder()
-//!         .http_bind_address(SocketAddr::from_str("127.0.0.1:9000").unwrap())
-//!         .enable_websocket(true)
-//!         .max_block_range(500)
-//!         .enable_rate_limiting(true)
-//!         .default_rate_limit(200, 60) // 200 requests per minute
-//!         .build()
-//! }
+//! fn load_from_custom_file(path_str: &str) -> Result<JsonRpcConfig, Box<dyn std::error::Error>> {
+//!     let path = Path::new(path_str);
 //!
-//! // Loading from a specific file
-//! fn load_from_specific_file() -> Result<JsonRpcConfig, Box<dyn std::error::Error>> {
-//!     let config = JsonRpcConfig::load(Some(std::path::Path::new("/path/to/config.toml")))?;
+//!     // Example: Create a temporary config file for the doc test
+//!     let content = r#"
+//! [jsonrpc]
+//! [jsonrpc.http]
+//! bind_address = "127.0.0.1:9999"
+//! max_body_size = 1024
+//! [jsonrpc.features]
+//! max_block_range = 50
+//! "#;
+//!     fs::write(path, content)?;
+//!
+//!     // Load configuration specifically from this file
+//!     let config = JsonRpcConfig::load(Some(path))?;
+//!     assert_eq!(config.http.bind_address.port(), 9999);
+//!     assert_eq!(config.features.max_block_range, 50);
+//!     println!("Loaded config from {}: HTTP port={}, Max block range={}",
+//!              path.display(), config.http.bind_address.port(), config.features.max_block_range);
+//!
+//!     // Clean up the temporary file
+//!     fs::remove_file(path)?;
 //!     Ok(config)
 //! }
 //!
-//! // Example default.config.toml structure:
-//! /*
-//! [chain]
-//! # ... other rusk settings ...
-//!
-//! [jsonrpc]
-//! # JSON-RPC specific settings go here
-//! [jsonrpc.http]
-//! bind_address = "127.0.0.1:9000"
-//! max_body_size = 10485760
-//!
-//! [jsonrpc.ws]
-//! bind_address = "127.0.0.1:9001"
-//!
-//! [jsonrpc.rate_limit]
-//! enabled = true
-//!
-//! [jsonrpc.features]
-//! enable_websocket = true
-//!
-//! [jsonrpc.sanitization]
-//! enabled = true
-//! */
+//! // To run this example, ensure you have write permissions in the execution directory
+//! // load_from_custom_file("my_custom_rpc_config.toml").expect("Failed to run custom file load example");
 //! ```
 //!
-//! ### Applying CORS Configuration with `jsonrpsee`
+//! *Note: Environment variables starting with `RUSK_JSONRPC_` will still
+//! override values from the specified file when using `load()`.*
+//! *Use `load_from_file_only()` (typically for tests) to ignore environment
+//! variables.*
 //!
-//! `jsonrpsee` integrates with `tower` middleware. Use the `build_cors_layer`
-//! helper:
+//! ### Using the Builder Pattern
 //!
-//! ```rust,no_run
-//! use rusk::jsonrpc::config::JsonRpcConfig;
-//! use tower::ServiceBuilder;
-//! use jsonrpsee::server::ServerBuilder;
-//!
-//! async fn setup_server_with_cors(config: &JsonRpcConfig) -> Result<(), Box<dyn std::error::Error>> {
-//!     let cors_layer = config.build_cors_layer().unwrap_or_default();
-//!     let middleware = ServiceBuilder::new().layer(cors_layer);
-//!
-//!     let server = ServerBuilder::new()
-//!         // Apply the middleware stack containing CORS
-//!         // Middleware application is context-dependent (e.g., wrapping the service)
-//!         .build(config.http.bind_address)
-//!         .await?;
-//!
-//!     // ... start server with RPC module ...
-//!
-//!     Ok(())
-//! }
-//! ```
-//!
-//! ### Setting Up Rate Limiting (`tower-governor`)
-//!
-//! This requires setting up the `tower-governor` layer and adding it to the
-//! middleware stack.
-//!
-//! ```rust,no_run
-//! # // Suppress warnings for unused items in this example
-//! # #![allow(unused_imports, dead_code)]
-//! use rusk::jsonrpc::config::{JsonRpcConfig, RateLimit};
-//! use tower::ServiceBuilder;
-//! use jsonrpsee::server::ServerBuilder;
-//! use tower_governor::governor::GovernorConfigBuilder;
-//! use tower_governor::GovernorLayer;
-//! use std::time::Duration;
-//! use std::convert::TryInto;
-//! use std::num::NonZeroU32;
-//! use std::sync::Arc;
-//!
-//! async fn setup_server_with_rate_limit(config: &JsonRpcConfig) -> Result<(), Box<dyn std::error::Error>> {
-//!     let governor_layer = if config.rate_limit.enabled {
-//!         let burst_size = NonZeroU32::new(config.rate_limit.default_limit.requests.try_into().unwrap_or(1)).unwrap_or(NonZeroU32::new(1).unwrap());
-//!         let _period = config.rate_limit.default_limit.window; // Period calculation for replenish might be needed
-//!
-//!         let governor_config = GovernorConfigBuilder::default()
-//!             .burst_size(burst_size.into())
-//!             // Configure replenish based on period if needed, e.g. .per_second() or custom logic
-//!             .finish().ok_or("Failed to build Governor config")?;
-//!         Some(GovernorLayer { config: Arc::new(governor_config) })
-//!     } else {
-//!         None
-//!     };
-//!
-//!     let middleware = ServiceBuilder::new()
-//!         .option_layer(governor_layer);
-//!
-//!     let server = ServerBuilder::new()
-//!         // Middleware application is context-dependent
-//!         .build(config.http.bind_address)
-//!         .await?;
-//!
-//!     // ... start server with RPC module ...
-//!
-//!     Ok(())
-//! }
-//! ```
-//!
-//! ### In-Memory Configuration for Testing
+//! Configure the server programmatically.
 //!
 //! ```rust
 //! use rusk::jsonrpc::config::JsonRpcConfig;
 //! use std::net::SocketAddr;
 //! use std::str::FromStr;
+//! use std::time::Duration;
 //!
-//! #[tokio::test]
-//! async fn test_with_config() {
-//!     // Create a test configuration
-//!     let config = JsonRpcConfig::test_config();
+//! let config = JsonRpcConfig::builder()
+//!     .http_bind_address(SocketAddr::from_str("192.168.1.100:8080").unwrap())
+//!     .enable_websocket(false)
+//!     .enable_rate_limiting(true)
+//!     .default_rate_limit(150, 60) // 150 requests per minute default
+//!     .add_method_rate_limit("getBlockByHeight", 500, 60) // Higher limit for specific method
+//!     .max_block_range(2000)
+//!     .enable_sanitization(true)
+//!     .add_sensitive_term("internal_user_id")
+//!     .build();
 //!
-//!     // Or create a specific test configuration
-//!     let custom_test_config = JsonRpcConfig::builder()
-//!         .http_bind_address(SocketAddr::from_str("127.0.0.1:0").unwrap()) // Random port
-//!         .enable_rate_limiting(false) // Disable rate limiting for tests
-//!         .build();
+//! assert!(!config.features.enable_websocket);
+//! assert!(config.rate_limit.enabled);
+//! assert_eq!(config.rate_limit.default_limit.requests, 150);
+//! assert_eq!(config.features.max_block_range, 2000);
+//! assert!(config.sanitization.sensitive_terms.contains(&"internal_user_id".to_string()));
+//! println!("Built custom config: HTTP Address = {}, Rate Limiting Enabled = {}",
+//!          config.http.bind_address, config.rate_limit.enabled);
+//! ```
 //!
-//!     // Use in your test...
-//!     assert_eq!(custom_test_config.http.bind_address.ip().to_string(), "127.0.0.1");
-//!     assert!(!custom_test_config.rate_limit.enabled);
+//! ### Configuration Validation
+//!
+//! The `validate()` method checks for logical inconsistencies and security
+//! issues. It's called automatically by `load()` and `load_default()`.
+//!
+//! ```rust
+//! use rusk::jsonrpc::config::{JsonRpcConfig, ConfigError};
+//!
+//! let mut insecure_config = JsonRpcConfig::builder()
+//!     .http_bind_address("0.0.0.0:8080".parse().unwrap()) // Public binding
+//!     .enable_rate_limiting(false) // But rate limiting disabled
+//!     .build();
+//!
+//! // Validation should fail due to the security violation
+//! match insecure_config.validate() {
+//!     Ok(_) => panic!("Validation should have failed!"),
+//!     Err(ConfigError::SecurityViolation(msg)) => {
+//!         println!("Validation failed as expected: {}", msg);
+//!         assert!(msg.contains("public interface without rate limiting"));
+//!     }
+//!     Err(e) => panic!("Unexpected validation error type: {}", e),
 //! }
+//!
+//! let mut valid_config = JsonRpcConfig::builder()
+//!     .http_bind_address("127.0.0.1:8081".parse().unwrap())
+//!     .enable_rate_limiting(true)
+//!     .default_rate_limit(100, 60)
+//!     .build();
+//!
+//! // This configuration should validate successfully
+//! assert!(valid_config.validate().is_ok());
+//! println!("Valid configuration passed validation.");
 //! ```
 //!
-//! ## Environment Variables
+//! ### Environment Variable Override Example
 //!
-//! All configuration options can be set via environment variables with the
-//! prefix `RUSK_JSONRPC_`. For example:
+//! ```rust,no_run
+//! // Set environment variables *before* loading the config.
+//! // This usually happens outside the Rust code (e.g., in the shell or a .env file).
+//! std::env::set_var("RUSK_JSONRPC_HTTP_BIND_ADDRESS", "127.0.0.1:9999");
+//! std::env::set_var("RUSK_JSONRPC_RATE_LIMIT_ENABLED", "false");
 //!
-//! - `RUSK_JSONRPC_HTTP_BIND_ADDRESS=0.0.0.0:8546`
-//! - `RUSK_JSONRPC_FEATURE_MAX_BLOCK_RANGE=500`
-//! - `RUSK_JSONRPC_RATE_LIMIT_ENABLED=true`
+//! use rusk::jsonrpc::config::JsonRpcConfig;
 //!
-//! **Note:** Complex list structures like `rate_limit.method_limits` cannot be
-//! fully overridden using flat environment variables. Use the configuration
-//! file for managing such lists. Simple fields within these structures (if
-//! applicable) might be individually overridable depending on the
-//! implementation.
+//! // Load defaults, which will pick up the environment variables
+//! let config = JsonRpcConfig::load_default().expect("Failed to load config");
 //!
-//! ## Security Features
+//! assert_eq!(config.http.bind_address.port(), 9999);
+//! assert!(!config.rate_limit.enabled);
 //!
-//! ### Security Validation
+//! println!("Config loaded with overrides: Port={}, Rate Limit Enabled={}",
+//!          config.http.bind_address.port(), config.rate_limit.enabled);
 //!
-//! The configuration module performs security validation to prevent insecure
-//! settings. This includes checks for:
-//!
-//! - Public network interfaces without rate limiting
-//! - Insecure CORS configurations
-//! - Excessive request body sizes
-//! - Overly permissive rate limits
-//!
-//! Security validations are automatically applied when loading configuration.
-//!
-//! ### Message Sanitization
-//!
-//! The JSON-RPC server provides comprehensive message sanitization capabilities
-//! to prevent sensitive information from being leaked in error messages and
-//! responses. This is configured through the `sanitization` section:
-//!
-//! ```toml
-//! # In default.config.toml
-//! [jsonrpc]
-//!   [jsonrpc.sanitization]
-//!   # Whether to enable message sanitization
-//!   enabled = true
-//!
-//!   # List of sensitive terms to redact in error messages
-//!   sensitive_terms = [
-//!       "password", ".wallet", ".key", "keys", "secret", "private", "credential",
-//!       "token", "api_key", "apikey", "auth", "passphrase"
-//!   ]
-//!
-//!   # Maximum message length before truncation
-//!   max_message_length = 200
-//!
-//!   # Redaction placeholder
-//!   redaction_marker = "[REDACTED]"
-//!
-//!   # Whether to sanitize file paths
-//!   sanitize_paths = true
+//! // Clean up environment variables (important in tests)
+//! std::env::remove_var("RUSK_JSONRPC_HTTP_BIND_ADDRESS");
+//! std::env::remove_var("RUSK_JSONRPC_RATE_LIMIT_ENABLED");
 //! ```
 //!
-//! When sanitization is enabled:
+//! ## Sanitization Configuration
 //!
-//! - Sensitive terms are automatically replaced with a redaction marker.
-//! - File paths can be sanitized to prevent local system information leakage.
-//! - Error messages are truncated to prevent verbose exposure of system
-//!   details.
-//! - Control characters and quotes are filtered from messages.
-//!
-//! You can customize sanitization settings programmatically:
+//! Control how sensitive information is redacted from logs and error messages.
 //!
 //! ```rust
 //! use rusk::jsonrpc::config::JsonRpcConfig;
 //!
 //! let config = JsonRpcConfig::builder()
 //!     .enable_sanitization(true)
-//!     .redaction_marker("[SENSITIVE]")
-//!     .max_message_length(150)
-//!     .add_sensitive_term("custom_secret")
+//!     .redaction_marker("[CONFIDENTIAL]")
+//!     .max_message_length(100)
+//!     .sanitize_paths(true)
+//!     .add_sensitive_terms(&["api_token", "user_password"])
 //!     .build();
+//!
+//! assert!(config.sanitization.enabled);
+//! assert_eq!(config.sanitization.redaction_marker, "[CONFIDENTIAL]");
+//! assert_eq!(config.sanitization.max_message_length, 100);
+//! assert!(config.sanitization.sanitize_paths);
+//! assert!(config.sanitization.sensitive_terms.contains(&"api_token".to_string()));
+//! println!("Sanitization configured: Marker='{}', Max Length={}",
+//!          config.sanitization.redaction_marker, config.sanitization.max_message_length);
 //! ```
 //!
-//! ### Environment Variable Configuration
-//!
-//! Sanitization settings can be configured via environment variables:
-//!
-//! - `RUSK_JSONRPC_SANITIZATION_ENABLED` - Enable/disable sanitization
-//! - `RUSK_JSONRPC_SANITIZATION_MAX_MESSAGE_LENGTH` - Message length limit
-//! - `RUSK_JSONRPC_SANITIZATION_REDACTION_MARKER` - Custom redaction marker
-//! - `RUSK_JSONRPC_SANITIZATION_SANITIZE_PATHS` - Enable/disable path
-//!   sanitization
-//! - `RUSK_JSONRPC_SANITIZATION_SENSITIVE_TERMS` - Comma-separated list of
-//!   terms
+//! For more details on specific fields, see the documentation for
+//! [`JsonRpcConfig`] and its nested structs like [`HttpServerConfig`],
+//! [`RateLimitConfig`], etc.
 
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -393,6 +243,17 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing::{debug, error, info, instrument, warn};
+
+/// Helper function to parse common boolean string representations from env
+/// vars. Case-insensitive, accepts "true", "1", "yes", "on" as true,
+/// and "false", "0", "no", "off" as false.
+fn parse_bool_env(value: &str) -> Option<bool> {
+    match value.to_lowercase().as_str() {
+        "true" | "1" | "yes" | "on" => Some(true),
+        "false" | "0" | "no" | "off" => Some(false),
+        _ => None, // Not a recognized boolean string
+    }
+}
 
 /// Errors that can occur when loading or validating configuration.
 #[derive(Error, Debug)]
@@ -1069,13 +930,19 @@ impl JsonRpcConfig {
 
         // --- CORS config ---
         if let Some(enabled_str) = get_env("CORS_ENABLED") {
-            let enabled = enabled_str.to_lowercase() == "true";
-            info!(
-                config_key = "http.cors.enabled",
-                value = enabled,
-                "Applying override"
-            );
-            self.http.cors.enabled = enabled;
+            match parse_bool_env(&enabled_str) {
+                Some(enabled) => {
+                    info!(
+                        config_key = "http.cors.enabled",
+                        value = enabled,
+                        "Applying override"
+                    );
+                    self.http.cors.enabled = enabled;
+                }
+                None => {
+                    warn!(key = "CORS_ENABLED", value = %enabled_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(origins_str) = get_env("CORS_ALLOWED_ORIGINS") {
             let origins = parse_env_string_array(&origins_str);
@@ -1093,13 +960,19 @@ impl JsonRpcConfig {
             self.http.cors.allowed_headers = headers;
         }
         if let Some(credentials_str) = get_env("CORS_ALLOW_CREDENTIALS") {
-            let credentials = credentials_str.to_lowercase() == "true";
-            info!(
-                config_key = "http.cors.allow_credentials",
-                value = credentials,
-                "Applying override"
-            );
-            self.http.cors.allow_credentials = credentials;
+            match parse_bool_env(&credentials_str) {
+                Some(credentials) => {
+                    info!(
+                        config_key = "http.cors.allow_credentials",
+                        value = credentials,
+                        "Applying override"
+                    );
+                    self.http.cors.allow_credentials = credentials;
+                }
+                None => {
+                    warn!(key = "CORS_ALLOW_CREDENTIALS", value = %credentials_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(max_age_str) = get_env("CORS_MAX_AGE_SECONDS") {
             match max_age_str.parse() {
@@ -1215,13 +1088,19 @@ impl JsonRpcConfig {
 
         // --- Rate limiting ---
         if let Some(enabled_str) = get_env("RATE_LIMIT_ENABLED") {
-            let enabled = enabled_str.to_lowercase() == "true";
-            info!(
-                config_key = "rate_limit.enabled",
-                value = enabled,
-                "Applying override"
-            );
-            self.rate_limit.enabled = enabled;
+            match parse_bool_env(&enabled_str) {
+                Some(enabled) => {
+                    info!(
+                        config_key = "rate_limit.enabled",
+                        value = enabled,
+                        "Applying override"
+                    );
+                    self.rate_limit.enabled = enabled;
+                }
+                None => {
+                    warn!(key = "RATE_LIMIT_ENABLED", value = %enabled_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(requests_str) = get_env("RATE_LIMIT_DEFAULT_REQUESTS") {
             match requests_str.parse() {
@@ -1265,51 +1144,81 @@ impl JsonRpcConfig {
 
         // --- Features ---
         if let Some(enabled_str) = get_env("FEATURE_ENABLE_WEBSOCKET") {
-            let enabled = enabled_str.to_lowercase() == "true";
-            info!(
-                config_key = "features.enable_websocket",
-                value = enabled,
-                "Applying override"
-            );
-            self.features.enable_websocket = enabled;
+            match parse_bool_env(&enabled_str) {
+                Some(enabled) => {
+                    info!(
+                        config_key = "features.enable_websocket",
+                        value = enabled,
+                        "Applying override"
+                    );
+                    self.features.enable_websocket = enabled;
+                }
+                None => {
+                    warn!(key = "FEATURE_ENABLE_WEBSOCKET", value = %enabled_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(enabled_str) = get_env("FEATURE_DETAILED_ERRORS") {
-            let enabled = enabled_str.to_lowercase() == "true";
-            info!(
-                config_key = "features.detailed_errors",
-                value = enabled,
-                "Applying override"
-            );
-            self.features.detailed_errors = enabled;
+            match parse_bool_env(&enabled_str) {
+                Some(enabled) => {
+                    info!(
+                        config_key = "features.detailed_errors",
+                        value = enabled,
+                        "Applying override"
+                    );
+                    self.features.detailed_errors = enabled;
+                }
+                None => {
+                    warn!(key = "FEATURE_DETAILED_ERRORS", value = %enabled_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(enabled_str) = get_env("FEATURE_METHOD_TIMING") {
-            let enabled = enabled_str.to_lowercase() == "true";
-            info!(
-                config_key = "features.method_timing",
-                value = enabled,
-                "Applying override"
-            );
-            self.features.method_timing = enabled;
+            match parse_bool_env(&enabled_str) {
+                Some(enabled) => {
+                    info!(
+                        config_key = "features.method_timing",
+                        value = enabled,
+                        "Applying override"
+                    );
+                    self.features.method_timing = enabled;
+                }
+                None => {
+                    warn!(key = "FEATURE_METHOD_TIMING", value = %enabled_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(enabled_str) = get_env("FEATURE_STRICT_VERSION_CHECKING") {
-            let enabled = enabled_str.to_lowercase() == "true";
-            info!(
-                config_key = "features.strict_version_checking",
-                value = enabled,
-                "Applying override"
-            );
-            self.features.strict_version_checking = enabled;
+            match parse_bool_env(&enabled_str) {
+                Some(enabled) => {
+                    info!(
+                        config_key = "features.strict_version_checking",
+                        value = enabled,
+                        "Applying override"
+                    );
+                    self.features.strict_version_checking = enabled;
+                }
+                None => {
+                    warn!(key = "FEATURE_STRICT_VERSION_CHECKING", value = %enabled_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(enabled_str) =
             get_env("FEATURE_STRICT_PARAMETER_VALIDATION")
         {
-            let enabled = enabled_str.to_lowercase() == "true";
-            info!(
-                config_key = "features.strict_parameter_validation",
-                value = enabled,
-                "Applying override"
-            );
-            self.features.strict_parameter_validation = enabled;
+            match parse_bool_env(&enabled_str) {
+                Some(enabled) => {
+                    info!(
+                        config_key = "features.strict_parameter_validation",
+                        value = enabled,
+                        "Applying override"
+                    );
+                    self.features.strict_parameter_validation = enabled;
+                }
+                None => {
+                    warn!(key = "FEATURE_STRICT_PARAMETER_VALIDATION", value = %enabled_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(range_str) = get_env("FEATURE_MAX_BLOCK_RANGE") {
             match range_str.parse() {
@@ -1346,13 +1255,19 @@ impl JsonRpcConfig {
 
         // --- Sanitization config ---
         if let Some(enabled_str) = get_env("SANITIZATION_ENABLED") {
-            let enabled = enabled_str.to_lowercase() == "true";
-            info!(
-                config_key = "sanitization.enabled",
-                value = enabled,
-                "Applying override"
-            );
-            self.sanitization.enabled = enabled;
+            match parse_bool_env(&enabled_str) {
+                Some(enabled) => {
+                    info!(
+                        config_key = "sanitization.enabled",
+                        value = enabled,
+                        "Applying override"
+                    );
+                    self.sanitization.enabled = enabled;
+                }
+                None => {
+                    warn!(key = "SANITIZATION_ENABLED", value = %enabled_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(max_length_str) = get_env("SANITIZATION_MAX_MESSAGE_LENGTH")
         {
@@ -1378,13 +1293,19 @@ impl JsonRpcConfig {
         }
         if let Some(sanitize_paths_str) = get_env("SANITIZATION_SANITIZE_PATHS")
         {
-            let sanitize_paths = sanitize_paths_str.to_lowercase() == "true";
-            info!(
-                config_key = "sanitization.sanitize_paths",
-                value = sanitize_paths,
-                "Applying override"
-            );
-            self.sanitization.sanitize_paths = sanitize_paths;
+            match parse_bool_env(&sanitize_paths_str) {
+                Some(sanitize_paths) => {
+                    info!(
+                        config_key = "sanitization.sanitize_paths",
+                        value = sanitize_paths,
+                        "Applying override"
+                    );
+                    self.sanitization.sanitize_paths = sanitize_paths;
+                }
+                None => {
+                    warn!(key = "SANITIZATION_SANITIZE_PATHS", value = %sanitize_paths_str, "Failed to parse boolean override, skipping")
+                }
+            }
         }
         if let Some(terms_str) = get_env("SANITIZATION_SENSITIVE_TERMS") {
             let terms = parse_env_string_array(&terms_str);
