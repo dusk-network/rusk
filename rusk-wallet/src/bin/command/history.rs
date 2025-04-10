@@ -158,17 +158,16 @@ pub(crate) async fn transaction_from_notes(
                     && th.height == decoded_note.block_height
             });
 
-            match outgoing_tx {
+            if let Some(th) = outgoing_tx {
                 // Outgoing txs found, this should be the change or any
                 // other output created by the tx result
                 // (like withdraw or unstake)
-                Some(th) => th.amount += note_amount,
-
+                th.amount += note_amount;
+            } else {
                 // No outgoing txs found, this note should either belong to a
                 // preconfigured genesis state or is the result of a
                 // moonlight to phoenix conversion, in which case, it will be
                 // handled in `moonlight_history`.
-                None => (),
             }
         }
     }

@@ -252,13 +252,9 @@ pub(crate) async fn load_wallet(
             }
         }
         // Use the latest binary format when creating a wallet
-        MainMenu::Create => Command::run_create(
-            false,
-            &None,
-            password,
-            wallet_path,
-            &Prompter,
-        )?,
+        MainMenu::Create => {
+            Command::run_create(false, &None, password, wallet_path, &Prompter)?
+        }
         MainMenu::Recover => {
             Command::run_restore_from_seed(wallet_path, &Prompter)?
         }
