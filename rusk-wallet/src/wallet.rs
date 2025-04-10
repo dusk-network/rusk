@@ -10,6 +10,7 @@ mod transaction;
 
 pub use address::{Address, Profile};
 pub use file::{SecureWalletFile, WalletPath};
+use phoenix_core::StealthAddress;
 
 use std::fmt::Debug;
 use std::fs;
