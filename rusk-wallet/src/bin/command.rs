@@ -532,12 +532,9 @@ impl Command {
                 let mut phoenix_history =
                     history::transaction_from_notes(settings, notes).await?;
 
-                if let Ok(mut moonlight_history) =
-                    history::moonlight_history(settings, address).await
-                {
-                    phoenix_history.append(&mut moonlight_history);
-                } else {
-                    tracing::error!("Cannot fetch archive history");
+                match history::moonlight_history(&wallet, settings, address, profile_idx).await {
+                    Ok(mut moonlight_history) => phoenix_history.append(&mut moonlight_history),
+                    Err(err) => tracing::error!("Failed to fetch archive history with error: {err}"),
                 }
 
                 Ok(RunResult::History(phoenix_history))
