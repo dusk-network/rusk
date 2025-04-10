@@ -14,7 +14,7 @@ use node_data::message::{
 };
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-use tracing::{debug, error, info, Instrument};
+use tracing::{debug, error, info, warn, Instrument};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
@@ -116,22 +116,39 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
                     {
                         Ok(_) => Vote::Valid(header.hash),
                         Err(err) => {
-                            let voting = err.must_vote();
-                            error!(event = "invalid_vst", ?err, voting);
-                            if !voting {
+                            if !err.must_vote() {
+                                warn!(
+                                    event = "Skipping Validation vote",
+                                    reason = %err
+                                );
                                 return;
                             }
+
+                            error!(
+                                event = "Candidate verification failed",
+                                reason = %err
+                            );
+
                             Vote::Invalid(header.hash)
                         }
                     }
                 }
             }
             Err(err) => {
-                let voting = err.must_vote();
-                error!(event = "invalid_header", ?err, ?header, voting);
-                if !voting {
+                if !err.must_vote() {
+                    warn!(
+                        event = "Skipping Validation vote",
+                        reason = %err
+                    );
                     return;
                 }
+
+                error!(
+                    event = "Candidate verification failed",
+                    reason = %err,
+                    ?header
+                );
+
                 Vote::Invalid(header.hash)
             }
         };

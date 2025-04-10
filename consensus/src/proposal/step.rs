@@ -12,11 +12,12 @@ use node_data::get_current_timestamp;
 use node_data::ledger::IterationsInfo;
 use node_data::message::Message;
 use tokio::sync::Mutex;
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 use crate::commons::Database;
 use crate::config;
 use crate::config::MINIMUM_BLOCK_TIME;
+use crate::errors::{OperationError, StateTransitionError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::operations::Operations;
@@ -111,14 +112,26 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     };
                 }
 
-                Err(e) => {
-                    error!(
-                      event = "Failed to generate candidate block",
-                      round = ctx.round_update.round,
-                      iteration = ctx.iteration,
-                      err = ?e,
-                    )
-                }
+                Err(err) => match err {
+                    OperationError::FailedEST(
+                        StateTransitionError::TipChanged,
+                    ) => {
+                        warn!(
+                          event = "Stopped block generation",
+                          round = ctx.round_update.round,
+                          iteration = ctx.iteration,
+                          %err,
+                        );
+                    }
+                    _ => {
+                        error!(
+                          event = "Failed to generate candidate block",
+                          round = ctx.round_update.round,
+                          iteration = ctx.iteration,
+                          %err,
+                        )
+                    }
+                },
             }
         }
 
