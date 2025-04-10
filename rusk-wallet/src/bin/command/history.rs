@@ -128,14 +128,28 @@ pub(crate) async fn transaction_from_notes(
 
             match ret.iter_mut().find(|th| &th.id == id) {
                 Some(tx) => tx.amount += note_amount,
-                None => ret.push(TransactionHistory {
-                    direction,
-                    height: decoded_note.block_height,
-                    amount: note_amount - inputs_amount,
-                    fee: *gas_spent * tx.gas_price(),
-                    tx: tx.clone(),
-                    id: id.clone(),
-                }),
+                None => {
+                    let fee = *gas_spent * tx.gas_price();
+                    let amount = note_amount - inputs_amount;
+                    let amount = if direction == TransactionDirection::Out {
+                        // The fee should not be included in the amount
+                        if amount > 0.0 {
+                            amount - fee as f64
+                        } else {
+                            amount + fee as f64
+                        }
+                    } else {
+                        amount
+                    };
+                    ret.push(TransactionHistory {
+                        direction,
+                        height: decoded_note.block_height,
+                        amount,
+                        fee,
+                        tx: tx.clone(),
+                        id: id.clone(),
+                    })
+                }
             }
         } else {
             let outgoing_tx = ret.iter_mut().find(|th| {
