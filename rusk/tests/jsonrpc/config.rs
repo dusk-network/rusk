@@ -475,6 +475,14 @@ fn test_to_file_method() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_nested_config_objects() -> Result<(), Box<dyn std::error::Error>> {
+    // --- UNSET relevant environment variables before loading ---
+    std::env::remove_var("RUSK_JSONRPC_CONFIG_PATH"); // Ensure it loads the provided file
+    std::env::remove_var("RUSK_JSONRPC_CORS_ENABLED");
+    std::env::remove_var("RUSK_JSONRPC_CORS_ALLOWED_ORIGINS");
+    std::env::remove_var("RUSK_JSONRPC_CORS_MAX_AGE_SECONDS");
+    std::env::remove_var("RUSK_JSONRPC_RATE_LIMIT_DEFAULT_REQUESTS");
+    std::env::remove_var("RUSK_JSONRPC_RATE_LIMIT_DEFAULT_WINDOW_SECS");
+
     let file = NamedTempFile::new()?;
     std::fs::write(
         file.path(),
