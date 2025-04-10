@@ -307,6 +307,98 @@ fn parse_hex(hex_str: &str) -> Result<Vec<u8>, String> {
     hex::decode(hex_str).map_err(|e| e.to_string())
 }
 
+async fn command_display<'a>(
+    wallet: &'a mut Wallet<WalletFile>,
+    address: &Address,
+    spendable: bool,
+) -> anyhow::Result<RunResult<'a>> {
+    let addr_idx = wallet.find_index(address)?;
+
+    match address {
+        Address::Public(_) => Ok(RunResult::MoonlightBalance(
+            wallet.get_moonlight_balance(addr_idx).await?,
+        )),
+        Address::Shielded(_) => {
+            let sync_result = wallet.sync().await;
+            if let Err(e) = sync_result {
+                // Sync error should be reported only if wallet is online
+                if wallet.is_online().await {
+                    tracing::error!("Unable to update the balance {e:?}");
+                }
+            }
+
+            let balance = wallet.get_phoenix_balance(addr_idx).await?;
+            Ok(RunResult::PhoenixBalance(balance, spendable))
+        }
+    }
+}
+
+fn command_profiles(
+    wallet: &mut Wallet<WalletFile>,
+    new: bool,
+) -> anyhow::Result<RunResult> {
+    if new {
+        if wallet.profiles().len() >= MAX_PROFILES {
+            println!(
+                "Cannot create more profiles, this wallet only supports up to {MAX_PROFILES} profiles."
+            );
+            println!("You have {} profiles already.", wallet.profiles().len());
+            std::process::exit(0);
+        }
+
+        let new_addr_idx = wallet.add_profile();
+        wallet.save()?;
+
+        Ok(RunResult::Profile((
+            new_addr_idx,
+            &wallet.profiles()[new_addr_idx as usize],
+        )))
+    } else {
+        let profiles = wallet.profiles();
+
+        Ok(RunResult::Profiles(profiles))
+    }
+}
+
+async fn command_transfer(
+    wallet: &mut Wallet<WalletFile>,
+    sender: Option<Address>,
+    rcvr: Address,
+    amt: Dusk,
+    gas_limit: u64,
+    gas_price: u64,
+    memo: Option<String>,
+) -> anyhow::Result<RunResult> {
+    let sender_idx = match sender {
+        Some(addr) => {
+            addr.same_transaction_model(&rcvr)?;
+            wallet.find_index(&addr)?
+        }
+        None => 0,
+    };
+
+    let gas = Gas::new(gas_limit).with_price(gas_price);
+
+    let memo = memo.filter(|m| !m.trim().is_empty());
+    let tx = match rcvr {
+        Address::Shielded(_) => {
+            wallet.sync().await?;
+            let rcvr_pk = rcvr.shielded_key()?;
+            wallet
+                .phoenix_transfer(sender_idx, rcvr_pk, memo, amt, gas)
+                .await?
+        }
+        Address::Public(_) => {
+            let rcvr_pk = rcvr.public_key()?;
+            wallet
+                .moonlight_transfer(sender_idx, rcvr_pk, memo, amt, gas)
+                .await?
+        }
+    };
+
+    Ok(RunResult::Tx(tx.hash()))
+}
+
 impl Command {
     /// Runs the command with the provided wallet
     pub async fn run<'a>(
@@ -317,52 +409,10 @@ impl Command {
         match self {
             Command::Balance { address, spendable } => {
                 let address = address.unwrap_or(wallet.default_address());
-                let addr_idx = wallet.find_index(&address)?;
-
-                match address {
-                    Address::Public(_) => Ok(RunResult::MoonlightBalance(
-                        wallet.get_moonlight_balance(addr_idx).await?,
-                    )),
-                    Address::Shielded(_) => {
-                        let sync_result = wallet.sync().await;
-                        if let Err(e) = sync_result {
-                            // Sync error should be reported only if wallet is
-                            // online
-                            if wallet.is_online().await {
-                                tracing::error!(
-                                    "Unable to update the balance {e:?}"
-                                );
-                            }
-                        }
-
-                        let balance =
-                            wallet.get_phoenix_balance(addr_idx).await?;
-                        Ok(RunResult::PhoenixBalance(balance, spendable))
-                    }
-                }
+                command_display(wallet, &address, spendable).await
             }
-            Command::Profiles { new } => {
-                if new {
-                    if wallet.profiles().len() >= MAX_PROFILES {
-                        println!(
-                            "Cannot create more profiles, this wallet only supports up to {MAX_PROFILES} profiles. You have {} profiles already.", wallet.profiles().len()
-                        );
-                        std::process::exit(0);
-                    }
+            Command::Profiles { new } => command_profiles(wallet, new),
 
-                    let new_addr_idx = wallet.add_profile();
-                    wallet.save()?;
-
-                    Ok(RunResult::Profile((
-                        new_addr_idx,
-                        &wallet.profiles()[new_addr_idx as usize],
-                    )))
-                } else {
-                    let profiles = wallet.profiles();
-
-                    Ok(RunResult::Profiles(profiles))
-                }
-            }
             Command::Transfer {
                 sender,
                 rcvr,
@@ -371,38 +421,10 @@ impl Command {
                 gas_price,
                 memo,
             } => {
-                let sender_idx = match sender {
-                    Some(addr) => {
-                        addr.same_transaction_model(&rcvr)?;
-                        wallet.find_index(&addr)?
-                    }
-                    None => 0,
-                };
-
-                let gas = Gas::new(gas_limit).with_price(gas_price);
-
-                let memo = memo.filter(|m| !m.trim().is_empty());
-                let tx = match rcvr {
-                    Address::Shielded(_) => {
-                        wallet.sync().await?;
-                        let rcvr_pk = rcvr.shielded_key()?;
-                        wallet
-                            .phoenix_transfer(
-                                sender_idx, rcvr_pk, memo, amt, gas,
-                            )
-                            .await?
-                    }
-                    Address::Public(_) => {
-                        let rcvr_pk = rcvr.public_key()?;
-                        wallet
-                            .moonlight_transfer(
-                                sender_idx, rcvr_pk, memo, amt, gas,
-                            )
-                            .await?
-                    }
-                };
-
-                Ok(RunResult::Tx(tx.hash()))
+                command_transfer(
+                    wallet, sender, rcvr, amt, gas_limit, gas_price, memo,
+                )
+                .await
             }
             Command::Stake {
                 address,
