@@ -35,38 +35,50 @@
 //! // Example: Setting up Axum router with AppState
 //! use axum::{routing::get, Router, extract::State};
 //! use std::sync::Arc;
-//! use dusk_network::jsonrpc::infrastructure::state::{AppState, SubscriptionManager};
-//! use dusk_network::jsonrpc::config::JsonRpcConfig;
-//! use dusk_network::jsonrpc::infrastructure::db::DatabaseAdapter; // Assuming a mock or real impl
-//! use dusk_network::jsonrpc::infrastructure::metrics::MetricsCollector;
-//! use dusk_network::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
+//! use rusk::jsonrpc::infrastructure::state::{AppState, SubscriptionManager};
+//! use rusk::jsonrpc::config::JsonRpcConfig;
+//! use rusk::jsonrpc::infrastructure::db::{DatabaseAdapter, BlockData};
+//! use rusk::jsonrpc::infrastructure::metrics::MetricsCollector;
+//! use rusk::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
+//! use rusk::jsonrpc::infrastructure::error::DbError;
 //!
 //! // Assume these are initialized appropriately
 //! let config = JsonRpcConfig::default();
-//! struct MockDb;
-//! impl DatabaseAdapter for MockDb { /* ... */ }
-//! let db_adapter: Arc<dyn DatabaseAdapter> = Arc::new(MockDb);
+//!
+//! #[derive(Debug, Clone)]
+//! struct MockDbAdapter;
+//!
+//! #[async_trait::async_trait]
+//! impl DatabaseAdapter for MockDbAdapter {
+//!     async fn get_block_by_height(&self, height: u64) -> Result<Option<BlockData>, DbError> {
+//!         unimplemented!()
+//!     }
+//! }
+//!
+//! let db_adapter: Arc<dyn DatabaseAdapter> = Arc::new(MockDbAdapter);
 //! let subscription_manager = SubscriptionManager::default();
-//! let metrics_collector = MetricsCollector::default(); // Assuming default impl
-//! let manual_rate_limiters = ManualRateLimiters::default(); // Assuming default impl
+//! let metrics_collector = MetricsCollector::default();
+//! let rate_limit_config = Arc::new(config.rate_limit.clone());
+//! let manual_rate_limiters = ManualRateLimiters::new(rate_limit_config)
+//!     .expect("Failed to create manual rate limiters");
 //!
 //! let app_state = AppState::new(
-//!     config,
-//!     db_adapter,
+//!     config.clone(),
+//!     Arc::clone(&db_adapter),
 //!     subscription_manager,
 //!     metrics_collector,
 //!     manual_rate_limiters,
 //! );
 //!
 //! // Create the Axum router and provide the state
-//! let app = Router::new()
+//! let app: Router<AppState> = Router::new()
 //!     .route("/health", get(health_handler))
 //!     // Add other routes...
 //!     .with_state(app_state); // Pass AppState to the router
 //!
 //! // Example handler accessing the state
 //! async fn health_handler(State(state): State<AppState>) -> &'static str {
-//!     println!("Current config enable_http: {}", state.config().enable_http);
+//!     println!("Current config bind_address: {}", state.config().http.bind_address);
 //!     // Access other state components via state.db_adapter(), state.metrics_collector(), etc.
 //!     "OK"
 //! }
@@ -130,29 +142,36 @@ pub struct SubscriptionManager {
 /// ```rust
 /// use std::sync::Arc;
 /// use parking_lot::RwLock;
-/// use dusk_network::jsonrpc::infrastructure::state::{AppState, SubscriptionManager};
-/// use dusk_network::jsonrpc::config::JsonRpcConfig;
-/// use dusk_network::jsonrpc::infrastructure::db::DatabaseAdapter; // Assuming trait is in scope
-/// use dusk_network::jsonrpc::infrastructure::metrics::MetricsCollector;
-/// use dusk_network::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
+/// use rusk::jsonrpc::infrastructure::state::{AppState, SubscriptionManager};
+/// use rusk::jsonrpc::config::JsonRpcConfig;
+/// use rusk::jsonrpc::infrastructure::db::{DatabaseAdapter, BlockData};
+/// use rusk::jsonrpc::infrastructure::metrics::MetricsCollector;
+/// use rusk::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
+/// use rusk::jsonrpc::infrastructure::error::DbError;
 ///
 /// // Define a mock database adapter for the example
-/// #[derive(Debug)]
+/// #[derive(Debug, Clone)]
 /// struct MockDbAdapter;
+///
+/// #[async_trait::async_trait]
 /// impl DatabaseAdapter for MockDbAdapter {
-///     // Implement trait methods...
+///     async fn get_block_by_height(&self, height: u64) -> Result<Option<BlockData>, DbError> {
+///         unimplemented!()
+///     }
 /// }
 ///
 /// // Initialize components
 /// let config = JsonRpcConfig::default();
 /// let db_adapter: Arc<dyn DatabaseAdapter> = Arc::new(MockDbAdapter);
 /// let subscription_manager = SubscriptionManager::default();
-/// let metrics_collector = MetricsCollector::default(); // Assuming Default impl
-/// let manual_rate_limiters = ManualRateLimiters::default(); // Assuming Default impl
+/// let metrics_collector = MetricsCollector::default();
+/// let rate_limit_config = Arc::new(config.rate_limit.clone());
+/// let manual_rate_limiters = ManualRateLimiters::new(rate_limit_config)
+///     .expect("Failed to create manual rate limiters");
 ///
 /// // Create the AppState
 /// let state = AppState::new(
-///     config,
+///     config.clone(),
 ///     Arc::clone(&db_adapter), // Clone Arc for ownership transfer
 ///     subscription_manager,
 ///     metrics_collector,
@@ -163,7 +182,7 @@ pub struct SubscriptionManager {
 /// let state_clone = state.clone();
 ///
 /// // Access components
-/// println!("Config HTTP enabled: {}", state.config().enable_http);
+/// println!("Config HTTP bind_address: {}", state.config().http.bind_address);
 /// let _db = state.db_adapter(); // Access the trait object
 /// let _subs_lock = state.subscription_manager().read(); // Acquire read lock
 /// ```
