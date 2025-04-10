@@ -338,9 +338,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         let db = self.db.read().await;
         let (executed_txs, discarded_txs, verification_output) = db
             .view(|view| {
-                let txs = view.mempool_txs_sorted_by_fee().map_err(|err| {
-                    anyhow::anyhow!("failed to get mempool txs: {}", err)
-                })?;
+                let txs = view.mempool_txs_sorted_by_fee();
                 let ret = vm.execute_state_transition(&params, txs).map_err(
                     |err| anyhow::anyhow!("failed to call EST {}", err),
                 )?;
