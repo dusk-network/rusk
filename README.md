@@ -21,7 +21,7 @@
 <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/dusk-network/rusk?style=social"></a>
 &nbsp;
 <a href="https://discord.gg/dusk-official">
-<img src="https://img.shields.io/discord/847466263064346624?label=discord&style=flat-square&color=5a66f6" alt="Discord"></a>
+<img src="https://img.shields.io/badge/discord-join%20chat-green" alt="Discord"></a>
 &nbsp;
 <a href="https://x.com/DuskFoundation/">
 <img alt="X (formerly Twitter) Follow" src="https://img.shields.io/twitter/follow/DuskFoundation"></a>
