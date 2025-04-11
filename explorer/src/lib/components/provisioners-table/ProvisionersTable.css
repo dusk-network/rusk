@@ -6,3 +6,9 @@
 .provisioners-table__slash-data-label {
   font-weight: 500;
 }
+
+.provisioners-table__staking-address-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--default-gap);
+}

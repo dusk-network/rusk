@@ -67,7 +67,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The ID of the transaction"
@@ -94,6 +94,32 @@ exports[`Transaction Details > should render the Transaction details page and qu
           >
             4877687c2dbf154248d3ddee9...056f82a46819da041d4ac0e04
           </a>
+           
+          <div
+            class="dusk-copy-button"
+          >
+            <button
+              aria-label="Copy Address"
+              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="Copy to clipboard"
+              type="button"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                />
+              </svg>
+              
+               
+              
+            </button>
+          </div>
+           
         </dd>
         <dt
           class="details-list__term"
@@ -102,7 +128,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The block height this transaction belongs to"
@@ -138,7 +164,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The transaction status"
@@ -172,7 +198,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The date and time the transaction was created"
@@ -209,7 +235,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The transaction type"
@@ -265,7 +291,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The fee paid for the transaction"
@@ -299,7 +325,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The transaction gas price"
@@ -333,7 +359,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The transaction gas limit"
@@ -363,7 +389,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The amount of gas spent generating the transaction"
@@ -394,7 +420,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="Transaction reference and additional notes"
@@ -440,7 +466,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
             class="details-list__term-layout"
           >
             <svg
-              class="dusk-icon dusk-icon--size--normal detail-list__help"
+              class="dusk-icon dusk-icon--size--default detail-list__help"
               data-tooltip-id="main-tooltip"
               data-tooltip-place="top"
               data-tooltip-text="The transaction payload"

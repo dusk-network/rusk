@@ -13,7 +13,7 @@
     TransactionStatus,
     TransactionType,
   } from "$lib/components";
-  import { RelativeTime } from "$lib/dusk/components";
+  import { CopyButton, RelativeTime } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
   import { makeClassName, middleEllipsis } from "$lib/dusk/string";
@@ -54,11 +54,18 @@
     {#each data as transaction (transaction)}
       <TableRow>
         <TableCell>
-          <AppAnchor
-            className="transaction__link"
-            href={`/transactions/transaction?id=${transaction.txid}`}
-            >{middleEllipsis(transaction.txid, HASH_CHARS_LENGTH)}</AppAnchor
-          >
+          <div class="transaction__transaction-id-container">
+            <AppAnchor
+              className="transaction__link"
+              href={`/transactions/transaction?id=${transaction.txid}`}
+              >{middleEllipsis(transaction.txid, HASH_CHARS_LENGTH)}</AppAnchor
+            >
+            <CopyButton
+              name="Transaction's ID"
+              rawValue={transaction.txid}
+              variant="secondary"
+            />
+          </div>
           <RelativeTime className="transaction__time" date={transaction.date} />
         </TableCell>
         {#if mode === "full"}

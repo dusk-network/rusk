@@ -123,7 +123,7 @@
     type="submit"
     {icon}
     text={buttonText}
-    size="normal"
+    size="default"
     variant="primary"
   />
 </div>

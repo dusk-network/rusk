@@ -5,6 +5,7 @@
   import { AppAnchorButton, DataCard, ListItem } from "$lib/components";
   import {
     Card,
+    CopyButton,
     ProgressBar,
     RelativeTime,
     Switch,
@@ -95,8 +96,9 @@
         >{middleEllipsis(
           data.header.hash,
           calculateAdaptiveCharCount(screenWidth, 320, 1920, 14, 66)
-        )}</svelte:fragment
-      >
+        )}
+        <CopyButton rawValue={data.header.hash} name="Block hash" />
+      </svelte:fragment>
     </ListItem>
 
     <!-- TIMESTAMP -->

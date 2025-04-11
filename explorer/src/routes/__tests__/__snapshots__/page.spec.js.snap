@@ -23,7 +23,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -58,7 +58,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -102,7 +102,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -140,7 +140,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -179,7 +179,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -213,7 +213,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -252,7 +252,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -286,7 +286,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -325,7 +325,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -358,7 +358,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -407,7 +407,7 @@ exports[`home page > should render the home page, start polling for the latest c
         </h1>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           type="button"
         >
           <span
@@ -446,7 +446,7 @@ exports[`home page > should render the home page, start polling for the latest c
         </h1>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           type="button"
         >
           <span
@@ -1447,7 +1447,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1481,7 +1481,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1524,7 +1524,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1562,7 +1562,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1601,7 +1601,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1635,7 +1635,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1674,7 +1674,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1708,7 +1708,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1747,7 +1747,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1780,7 +1780,7 @@ exports[`home page > should render the home page, start polling for the latest c
               class="statistics-panel__statistics-item-value-container"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal"
+                class="dusk-icon dusk-icon--size--default"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -1829,7 +1829,7 @@ exports[`home page > should render the home page, start polling for the latest c
         </h1>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           type="button"
         >
           <span
@@ -2813,7 +2813,7 @@ exports[`home page > should render the home page, start polling for the latest c
         </h1>
          
         <button
-          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
           type="button"
         >
           <span
@@ -2880,12 +2880,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=4a4593a447ae768a20a28c534afd815f1f72965a7442eff71e62833047514552"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    4a4593a447...3047514552
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=4a4593a447ae768a20a28c534afd815f1f72965a7442eff71e62833047514552"
+                    >
+                      4a4593a447...3047514552
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -2955,12 +2984,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=47ae464b9cf13bbf6e7307ecd0cc1a978094d7571bc6698c9bc5fe3e5facba66"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    47ae464b9c...3e5facba66
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=47ae464b9cf13bbf6e7307ecd0cc1a978094d7571bc6698c9bc5fe3e5facba66"
+                    >
+                      47ae464b9c...3e5facba66
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3030,12 +3088,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=225dae3745d75fa7bbae7e0294cb9626ff01bb4de697c0be31a3fc176b36ea41"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    225dae3745...176b36ea41
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=225dae3745d75fa7bbae7e0294cb9626ff01bb4de697c0be31a3fc176b36ea41"
+                    >
+                      225dae3745...176b36ea41
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3105,12 +3192,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=03bae6e2e96709ebf41da7ca72353efca792723355332f467c0f32b3849de702"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    03bae6e2e9...b3849de702
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=03bae6e2e96709ebf41da7ca72353efca792723355332f467c0f32b3849de702"
+                    >
+                      03bae6e2e9...b3849de702
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3180,12 +3296,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=070280c69500df7d1b40942981a3b599ccf9f71ba62f96d63e322994efca2a0e"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    070280c695...94efca2a0e
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=070280c69500df7d1b40942981a3b599ccf9f71ba62f96d63e322994efca2a0e"
+                    >
+                      070280c695...94efca2a0e
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3255,12 +3400,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=534f753d5a420fddc21c84d76ff26b87cc48ea75b450c082759d155153259c00"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    534f753d5a...5153259c00
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=534f753d5a420fddc21c84d76ff26b87cc48ea75b450c082759d155153259c00"
+                    >
+                      534f753d5a...5153259c00
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3330,12 +3504,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=c6f13af20c23b8bc55d22a416a191e3a6ba47128b4d7dc3ac6fce5fc68ebb102"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    c6f13af20c...fc68ebb102
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=c6f13af20c23b8bc55d22a416a191e3a6ba47128b4d7dc3ac6fce5fc68ebb102"
+                    >
+                      c6f13af20c...fc68ebb102
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3405,12 +3608,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=31c7dce26a5a6ef1392f53630b8e2714981f10eaeea2685c5a37dbbf7bcb4c04"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    31c7dce26a...bf7bcb4c04
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=31c7dce26a5a6ef1392f53630b8e2714981f10eaeea2685c5a37dbbf7bcb4c04"
+                    >
+                      31c7dce26a...bf7bcb4c04
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3480,12 +3712,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=cbac233a76cde9fdd129277e7368a2fdd99a5f390c2472e7f316151f4b53666c"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    cbac233a76...1f4b53666c
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=cbac233a76cde9fdd129277e7368a2fdd99a5f390c2472e7f316151f4b53666c"
+                    >
+                      cbac233a76...1f4b53666c
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3555,12 +3816,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=a9abf02f549d21a89390eb18f5e91eeff95c21a4c6740dc30e113f2314152b5d"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    a9abf02f54...2314152b5d
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=a9abf02f549d21a89390eb18f5e91eeff95c21a4c6740dc30e113f2314152b5d"
+                    >
+                      a9abf02f54...2314152b5d
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3630,12 +3920,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=a7171542640d6b918928927ee814c147ec2c07c5f7990fe82796520084798b6f"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    a717154264...0084798b6f
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=a7171542640d6b918928927ee814c147ec2c07c5f7990fe82796520084798b6f"
+                    >
+                      a717154264...0084798b6f
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3705,12 +4024,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=a171e5d05bd1e6478a4bcc7db4afd9d2e6430e5c3f94d49ffb71934776765465"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    a171e5d05b...4776765465
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=a171e5d05bd1e6478a4bcc7db4afd9d2e6430e5c3f94d49ffb71934776765465"
+                    >
+                      a171e5d05b...4776765465
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3780,12 +4128,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=8fff9d4eb4818bfd66cfaf41b01842f4fd75b0c50605e40fa8b1b1393ee0ac57"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    8fff9d4eb4...393ee0ac57
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=8fff9d4eb4818bfd66cfaf41b01842f4fd75b0c50605e40fa8b1b1393ee0ac57"
+                    >
+                      8fff9d4eb4...393ee0ac57
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3855,12 +4232,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=88c5c5ebedb181bed0927f41b55835b3801d505774efca243ae084caa9175e04"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    88c5c5ebed...caa9175e04
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=88c5c5ebedb181bed0927f41b55835b3801d505774efca243ae084caa9175e04"
+                    >
+                      88c5c5ebed...caa9175e04
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -3930,12 +4336,41 @@ exports[`home page > should render the home page, start polling for the latest c
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=65d9ef520afbe16722f3de439695d31ab3ae807d81ef8e3ebd0fe1f805833c2b"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    65d9ef520a...f805833c2b
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=65d9ef520afbe16722f3de439695d31ab3ae807d81ef8e3ebd0fe1f805833c2b"
+                    >
+                      65d9ef520a...f805833c2b
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"

@@ -2,7 +2,7 @@
 
 <script>
   import { onMount } from "svelte";
-  import { Card, RelativeTime, Switch } from "$lib/dusk/components";
+  import { Card, CopyButton, RelativeTime, Switch } from "$lib/dusk/components";
   import { createValueFormatter } from "$lib/dusk/value";
   import {
     createCurrencyFormatter,
@@ -104,8 +104,9 @@
               maxCharCount
             )
           )}</AppAnchor
-        ></svelte:fragment
-      >
+        >
+        <CopyButton rawValue={data.txid} name="Transaction ID" />
+      </svelte:fragment>
     </ListItem>
 
     <!-- BLOCK HEIGHT -->
@@ -137,8 +138,9 @@
                 maxCharCount
               )
             )}</AppAnchor
-          ></svelte:fragment
-        >
+          >
+          <CopyButton rawValue={jsonPayload.sender} name="Sender's address" />
+        </svelte:fragment>
       </ListItem>
       <ListItem tooltipText="The receiver of the transaction">
         <svelte:fragment slot="term">To</svelte:fragment>
@@ -156,8 +158,12 @@
                 maxCharCount
               )
             )}</AppAnchor
-          ></svelte:fragment
-        >
+          >
+          <CopyButton
+            rawValue={jsonPayload.receiver}
+            name="Receiver's address"
+          />
+        </svelte:fragment>
       </ListItem>
     {/if}
 

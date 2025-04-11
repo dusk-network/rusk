@@ -10,7 +10,7 @@
 {#if isStaleData}
   <Icon
     path={mdiAlertOutline}
-    size="normal"
+    size="default"
     data-tooltip-id="main-tooltip"
     data-tooltip-text={tooltipText}
     data-tooltip-place="top"

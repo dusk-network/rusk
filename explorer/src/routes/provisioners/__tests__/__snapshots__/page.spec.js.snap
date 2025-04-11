@@ -16,7 +16,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
         type="button"
       >
         <span
@@ -44,7 +44,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -70,6 +70,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -79,7 +104,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -116,7 +141,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -148,7 +173,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -180,7 +205,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -212,7 +237,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -243,7 +268,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -274,7 +299,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -310,7 +335,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -336,6 +361,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               m9dVuRgr3CQX5P5Fxh2t68QRh...mZ9qF734nJJhb2f94r33pFQyz
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -345,7 +395,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -382,7 +432,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -414,7 +464,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -446,7 +496,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -478,7 +528,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -509,7 +559,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -540,7 +590,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -576,7 +626,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -602,6 +652,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mHGvQ9XdjzuGyixBGrMeeC7Ed...x7H5V95Q3hPxdxHiTfxTvgn7f
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -611,7 +686,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -648,7 +723,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -680,7 +755,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -712,7 +787,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -744,7 +819,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -775,7 +850,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -806,7 +881,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -842,7 +917,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -868,6 +943,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mLx5HUo5PhsobwgMJhzL9j8TY...eXVk4jmfr3CEHqvBrRgEzoka8
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -877,7 +977,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -914,7 +1014,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -946,7 +1046,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -978,7 +1078,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -1010,7 +1110,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -1041,7 +1141,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -1072,7 +1172,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -1108,7 +1208,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -1134,6 +1234,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mTgXDqkyVacn7zCgoJfk7rKMV...nRE4uXaAhpCPPSjgAseybAsfU
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -1143,7 +1268,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -1180,7 +1305,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -1212,7 +1337,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -1244,7 +1369,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -1276,7 +1401,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -1307,7 +1432,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -1338,7 +1463,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -1374,7 +1499,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -1400,6 +1525,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mUJHMDEBiTUVJU5U76Krb5wwM...LyLvCCdgUnQ74FDFHNxRNhoAA
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -1409,7 +1559,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -1446,7 +1596,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -1478,7 +1628,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -1510,7 +1660,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -1542,7 +1692,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -1573,7 +1723,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -1604,7 +1754,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -1640,7 +1790,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -1666,6 +1816,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mUUpjnXow2LHwm8a65cJsckTe...xrsre7jNbLdDocqSfzQcywzaW
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -1675,7 +1850,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -1712,7 +1887,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -1744,7 +1919,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -1776,7 +1951,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -1808,7 +1983,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -1839,7 +2014,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -1870,7 +2045,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -1906,7 +2081,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -1932,6 +2107,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mWvq9EWD9b8gQw5uD4GnYaV8W...fsBMoDjbYzTTUxooU7BY2oEDe
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -1941,7 +2141,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -1978,7 +2178,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -2010,7 +2210,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -2042,7 +2242,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -2074,7 +2274,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -2105,7 +2305,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -2136,7 +2336,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -2172,7 +2372,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -2198,6 +2398,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mXKJ97xTtrSPzxWHBKPurUpeh...eUPuXjqaC9dp6H7JgkCK2o7x4
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -2207,7 +2432,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -2244,7 +2469,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -2276,7 +2501,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -2308,7 +2533,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -2340,7 +2565,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -2371,7 +2596,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -2402,7 +2627,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -2438,7 +2663,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -2464,6 +2689,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mdXsA3Ee1YDt1aTcvUg7AKpzT...epuR9FPWCcJQfDwK8VZPimZ2J
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -2473,7 +2723,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -2510,7 +2760,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -2542,7 +2792,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -2574,7 +2824,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -2606,7 +2856,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -2637,7 +2887,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -2668,7 +2918,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -2704,7 +2954,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -2730,6 +2980,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mdca2ea2KpRZaW6s6NkYAY29w...BPg8MmRfxyBCUVRji7SxM2zBD
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -2739,7 +3014,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -2776,7 +3051,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -2808,7 +3083,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -2840,7 +3115,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -2872,7 +3147,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -2903,7 +3178,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -2934,7 +3209,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -2970,7 +3245,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -2996,6 +3271,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mgmcqkk1VFfsa1ko7ydBjhVuM...EWDB1wsvV5avoC2xddxLvEDVP
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -3005,7 +3305,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -3042,7 +3342,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -3074,7 +3374,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -3106,7 +3406,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -3138,7 +3438,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -3169,7 +3469,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -3200,7 +3500,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -3236,7 +3536,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -3262,6 +3562,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mvft6AXjR1mDtg1Qo3GzGBKZA...CeDJ9pKfJLdjayAfrxEyudvx2
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -3271,7 +3596,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -3308,7 +3633,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -3340,7 +3665,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -3372,7 +3697,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -3404,7 +3729,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -3435,7 +3760,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -3466,7 +3791,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -3502,7 +3827,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -3528,6 +3853,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               mvsVWvCaiHtugFDx1VmDCX5Ze...eWVgrE1CfbGCaYvcdeSzHCUUb
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -3537,7 +3887,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -3574,7 +3924,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -3606,7 +3956,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -3638,7 +3988,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -3670,7 +4020,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -3701,7 +4051,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -3732,7 +4082,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -3768,7 +4118,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
@@ -3794,6 +4144,31 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             >
               n2DPucZgNznPCfhRfAS8aHQUk...bDNKwS6GhaRRR9f95PUxRwtD1
             </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -3803,7 +4178,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The provisioner's owner"
@@ -3840,7 +4215,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are being utilized in the consensus process"
@@ -3872,7 +4247,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
@@ -3904,7 +4279,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
@@ -3936,7 +4311,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
@@ -3967,7 +4342,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Hard slashes"
@@ -3998,7 +4373,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The accumulated reward"
@@ -4060,7 +4435,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
         disabled=""
         type="button"
       >
@@ -4115,7 +4490,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
         type="button"
       >
         <span
@@ -4188,7 +4563,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                m6dy2gz3jC...tW82FWtnpf
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  m6dy2gz3jC...tW82FWtnpf
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -4290,7 +4694,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                m9dVuRgr3C...94r33pFQyz
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  m9dVuRgr3C...94r33pFQyz
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -4392,7 +4825,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mHGvQ9Xdjz...iTfxTvgn7f
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mHGvQ9Xdjz...iTfxTvgn7f
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -4494,7 +4956,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mLx5HUo5Ph...BrRgEzoka8
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mLx5HUo5Ph...BrRgEzoka8
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -4596,7 +5087,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mTgXDqkyVa...gAseybAsfU
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mTgXDqkyVa...gAseybAsfU
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -4698,7 +5218,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mUJHMDEBiT...FHNxRNhoAA
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mUJHMDEBiT...FHNxRNhoAA
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -4800,7 +5349,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mUUpjnXow2...SfzQcywzaW
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mUUpjnXow2...SfzQcywzaW
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -4902,7 +5480,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mWvq9EWD9b...oU7BY2oEDe
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mWvq9EWD9b...oU7BY2oEDe
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -5004,7 +5611,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mXKJ97xTtr...JgkCK2o7x4
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mXKJ97xTtr...JgkCK2o7x4
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -5106,7 +5742,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mdXsA3Ee1Y...K8VZPimZ2J
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mdXsA3Ee1Y...K8VZPimZ2J
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -5208,7 +5873,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mdca2ea2Kp...ji7SxM2zBD
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mdca2ea2Kp...ji7SxM2zBD
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -5310,7 +6004,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mgmcqkk1VF...xddxLvEDVP
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mgmcqkk1VF...xddxLvEDVP
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -5412,7 +6135,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mvft6AXjR1...frxEyudvx2
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mvft6AXjR1...frxEyudvx2
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -5514,7 +6266,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                mvsVWvCaiH...cdeSzHCUUb
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  mvsVWvCaiH...cdeSzHCUUb
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
@@ -5616,7 +6397,36 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                n2DPucZgNz...95PUxRwtD1
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  n2DPucZgNz...95PUxRwtD1
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
               </td>
               
                
