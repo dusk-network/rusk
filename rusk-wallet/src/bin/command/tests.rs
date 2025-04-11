@@ -46,6 +46,11 @@ async fn test_non_empty_history() {
     )
     .await
     .unwrap();
+    // Need to wait for each transaction to be included in a block before moving
+    // to the next to ensure that the history ends up in the same order as the
+    // transactions made.
+    gql.wait_for(&rcv_moonlight).await.unwrap();
+
     let rcv_phoenix =
         rcv_phoenix_from_faucet(phoenix_addr.clone(), 4_000_000_000, gas_price)
             .await
@@ -56,6 +61,7 @@ async fn test_non_empty_history() {
     )
     .await
     .unwrap();
+    gql.wait_for(&rcv_phoenix).await.unwrap();
 
     let moonlight_trans_to_other_wallet = transfer_moonlight(
         &mut wallet,
@@ -66,6 +72,10 @@ async fn test_non_empty_history() {
     )
     .await
     .unwrap();
+    gql.wait_for(&moonlight_trans_to_other_wallet)
+        .await
+        .unwrap();
+
     let phoenix_trans_to_other_wallet = transfer_phoenix(
         &mut wallet,
         other_wallet.default_shielded_account(),
@@ -75,10 +85,6 @@ async fn test_non_empty_history() {
     )
     .await
     .unwrap();
-    // Need to wait before more transactions to avoid reusing nonces.
-    gql.wait_for(&moonlight_trans_to_other_wallet)
-        .await
-        .unwrap();
     gql.wait_for(&phoenix_trans_to_other_wallet).await.unwrap();
 
     let moonlight_to_phoenix = convert_moonlight_to_phoenix(
@@ -89,6 +95,8 @@ async fn test_non_empty_history() {
     )
     .await
     .unwrap();
+    gql.wait_for(&moonlight_to_phoenix).await.unwrap();
+
     let phoenix_to_moonlight = convert_phoenix_to_moonlight(
         &mut wallet,
         &settings,
@@ -97,6 +105,7 @@ async fn test_non_empty_history() {
     )
     .await
     .unwrap();
+    gql.wait_for(&phoenix_to_moonlight).await.unwrap();
 
     txs_info.extend(
         wait_for_tx_blocks_to_finalize(
@@ -136,18 +145,18 @@ async fn test_non_empty_history() {
                 amount: 4_000_000_000.0,
                 fee: txs_info[&rcv_phoenix].gas_spent * gas_price,
             },
-            // Send 3000 to other wallet
-            StrippedTxHistoryItem {
-                direction: TransactionDirection::Out,
-                amount: -3_000.0,
-                fee: txs_info[&phoenix_trans_to_other_wallet].gas_spent
-                    * gas_price,
-            },
             // Send 4000 to other wallet
             StrippedTxHistoryItem {
                 direction: TransactionDirection::Out,
                 amount: -4_000.0,
                 fee: txs_info[&moonlight_trans_to_other_wallet].gas_spent
+                    * gas_price,
+            },
+            // Send 3000 to other wallet
+            StrippedTxHistoryItem {
+                direction: TransactionDirection::Out,
+                amount: -3_000.0,
+                fee: txs_info[&phoenix_trans_to_other_wallet].gas_spent
                     * gas_price,
             },
             // Receive converted 2500 from moonlight to phoenix
