@@ -71,7 +71,7 @@ describe("Dashboard Layout", () => {
         "https://api.coingecko.com/api/v3/coins/dusk-network?community_data=false&developer_data=false&localization=false&market_data=true&sparkline=false&tickers=false"
       );
 
-      expect(result.currentPrice).resolves.toStrictEqual(
+      await expect(result.currentPrice).resolves.toStrictEqual(
         apiMarketData.market_data.current_price
       );
     });
@@ -100,8 +100,8 @@ describe("Dashboard Layout", () => {
         2,
         "https://api.coingecko.com/api/v3/coins/dusk-network?community_data=false&developer_data=false&localization=false&market_data=true&sparkline=false&tickers=false"
       );
-      expect(result1.currentPrice).resolves.toStrictEqual({});
-      expect(result2.currentPrice).resolves.toStrictEqual({});
+      await expect(result1.currentPrice).resolves.toStrictEqual({});
+      await expect(result2.currentPrice).resolves.toStrictEqual({});
     });
 
     it('should return a promise that resolves with an empty object if the fetch Response status is not "ok"', async () => {
@@ -114,7 +114,7 @@ describe("Dashboard Layout", () => {
         "https://api.coingecko.com/api/v3/coins/dusk-network?community_data=false&developer_data=false&localization=false&market_data=true&sparkline=false&tickers=false"
       );
 
-      expect(result.currentPrice).resolves.toStrictEqual({});
+      await expect(result.currentPrice).resolves.toStrictEqual({});
     });
 
     it("should return a promise that resolves with an empty object if the fetch fails or the Response contains invalid JSON", async () => {
@@ -134,8 +134,8 @@ describe("Dashboard Layout", () => {
         2,
         "https://api.coingecko.com/api/v3/coins/dusk-network?community_data=false&developer_data=false&localization=false&market_data=true&sparkline=false&tickers=false"
       );
-      expect(result1.currentPrice).resolves.toStrictEqual({});
-      expect(result2.currentPrice).resolves.toStrictEqual({});
+      await expect(result1.currentPrice).resolves.toStrictEqual({});
+      await expect(result2.currentPrice).resolves.toStrictEqual({});
     });
 
     /* eslint-enable no-extra-parens */

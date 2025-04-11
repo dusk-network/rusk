@@ -44,7 +44,7 @@
       value={optionValue}
     />
     <label class="dusk-exclusive-choice__label" for={id}
-      >{isStringOption ? option : option.label ?? optionValue}</label
+      >{isStringOption ? option : (option.label ?? optionValue)}</label
     >
   {/each}
 </div>

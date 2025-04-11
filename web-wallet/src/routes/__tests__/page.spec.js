@@ -17,7 +17,7 @@ describe("Main +page.js", () => {
 
   it("should redirect the user to the setup page", async () => {
     // @ts-ignore
-    expect(async () => await load()).rejects.toThrow();
+    await expect(async () => await load()).rejects.toThrow();
 
     expect(redirectSpy).toHaveBeenCalledTimes(1);
     expect(redirectSpy).toHaveBeenCalledWith(301, "/setup");
