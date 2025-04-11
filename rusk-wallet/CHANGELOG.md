@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix transaction history deserialization [#3598]
 - Fix contract init parsing [#3602]
 - Fix contract call non-interactive parsing [#3602]
+- Fix transaction history bugs [#3600]
 
 ## [0.1.0] - 2025-01-20
 
@@ -58,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- Issues -->
+[#3600]: https://github.com/dusk-network/rusk/issues/3600
 [#3602]: https://github.com/dusk-network/rusk/issues/3602
 [#3598]: https://github.com/dusk-network/rusk/issues/3598
 [#3593]: https://github.com/dusk-network/rusk/issues/3593

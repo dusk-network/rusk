@@ -10,7 +10,9 @@ install: build
 clippy: 
 	cargo clippy --all-features --release -- -D warnings
 
-test: build ## Run wallet tests
-	cargo test --release
+test: ## Run wallet tests
+	@rm -f /tmp/example.state
+	$(MAKE) -C .. prepare-dev
+	@../scripts/run-rusk-wallet-tests.sh
 
 .PHONY: build clippy test help 

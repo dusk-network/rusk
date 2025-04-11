@@ -8,20 +8,23 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
+use dusk_core::transfer::withdraw::WithdrawReceiver;
 use dusk_core::transfer::Transaction;
 use dusk_core::{dusk, from_dusk};
-use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
+use rusk_wallet::{BlockData, BlockTransaction, DecodedNote, GraphQL, Wallet};
 
 use crate::io::{self};
 use crate::settings::Settings;
+use crate::WalletFile;
 
+#[derive(Debug, PartialEq)]
 pub struct TransactionHistory {
-    direction: TransactionDirection,
-    height: u64,
-    amount: f64,
-    fee: u64,
-    pub tx: Transaction,
-    id: String,
+    pub(crate) direction: TransactionDirection,
+    pub(crate) height: u64,
+    pub(crate) amount: f64,
+    pub(crate) fee: u64,
+    pub(crate) tx: Transaction,
+    pub(crate) id: String,
 }
 
 impl TransactionHistory {
@@ -126,14 +129,28 @@ pub(crate) async fn transaction_from_notes(
 
             match ret.iter_mut().find(|th| &th.id == id) {
                 Some(tx) => tx.amount += note_amount,
-                None => ret.push(TransactionHistory {
-                    direction,
-                    height: decoded_note.block_height,
-                    amount: note_amount - inputs_amount,
-                    fee: *gas_spent * tx.gas_price(),
-                    tx: tx.clone(),
-                    id: id.clone(),
-                }),
+                None => {
+                    let fee = *gas_spent * tx.gas_price();
+                    let amount = note_amount - inputs_amount;
+                    let amount = if direction == TransactionDirection::Out {
+                        // The fee should not be included in the amount
+                        if amount > 0.0 {
+                            amount - fee as f64
+                        } else {
+                            amount + fee as f64
+                        }
+                    } else {
+                        amount
+                    };
+                    ret.push(TransactionHistory {
+                        direction,
+                        height: decoded_note.block_height,
+                        amount,
+                        fee,
+                        tx: tx.clone(),
+                        id: id.clone(),
+                    })
+                }
             }
         } else {
             let outgoing_tx = ret.iter_mut().find(|th| {
@@ -141,25 +158,28 @@ pub(crate) async fn transaction_from_notes(
                     && th.height == decoded_note.block_height
             });
 
-            match outgoing_tx {
+            if let Some(th) = outgoing_tx {
                 // Outgoing txs found, this should be the change or any
                 // other output created by the tx result
                 // (like withdraw or unstake)
-                Some(th) => th.amount += note_amount,
-
-                // No outgoing txs found, this note should belong to a
-                // preconfigured genesis state
-                None => println!("??? val {}", note_amount),
+                th.amount += note_amount;
+            } else {
+                // No outgoing txs found, this note should either belong to a
+                // preconfigured genesis state or is the result of a
+                // moonlight to phoenix conversion, in which case, it will be
+                // handled in `moonlight_history`.
             }
         }
     }
-    ret.sort_by(|a, b| a.height.cmp(&b.height));
+
     Ok(ret)
 }
 
 pub(crate) async fn moonlight_history(
+    wallet: &Wallet<WalletFile>,
     settings: &Settings,
     address: rusk_wallet::Address,
+    profile_idx: u8,
 ) -> anyhow::Result<Vec<TransactionHistory>> {
     let gql =
         GraphQL::new(settings.state.to_string(), io::status::interactive)?;
@@ -168,6 +188,9 @@ pub(crate) async fn moonlight_history(
         .moonlight_history(address.clone())
         .await?
         .full_moonlight_history;
+    let Some(history) = history else {
+        return Ok(vec![]);
+    };
 
     let mut collected_history = Vec::new();
 
@@ -176,39 +199,81 @@ pub(crate) async fn moonlight_history(
         let events = history_item.events;
         let height = history_item.block_height;
         let tx = gql.moonlight_tx(&id).await?;
+        let mut amount = 0.0;
+        let mut direction = None;
+        let mut fee = 0;
 
         for event in events {
-            let data = event.data;
-            let gas_spent = data.gas_spent;
-            let mut amount = data.value;
-            let sender = data.sender;
+            match event.data {
+                BlockData::MoonlightTransactionEvent(event) => {
+                    fee = event.gas_spent * tx.gas_price();
+                    let sender = event.sender;
+                    let (event_direction, event_amount) = match sender
+                        == address.to_string()
+                    {
+                        true => {
+                            (TransactionDirection::Out, -(event.value as f64))
+                        }
+                        false => (TransactionDirection::In, event.value as f64),
+                    };
+                    amount += event_amount;
+                    direction = Some(event_direction);
+                }
+                BlockData::ConvertEvent(event) => {
+                    let (event_direction, event_amount) = match event.sender
+                        == Some(address.to_string())
+                    {
+                        true => {
+                            (TransactionDirection::Out, -(event.value as f64))
+                        }
+                        false => (TransactionDirection::In, event.value as f64),
+                    };
+                    direction = Some(event_direction);
+                    amount += event_amount;
 
-            let direction: TransactionDirection =
-                match sender == address.to_string() {
-                    true => {
-                        amount = -amount;
-
-                        TransactionDirection::Out
+                    if let WithdrawReceiver::Phoenix(note_address) =
+                        event.receiver
+                    {
+                        if wallet.owns_note(&note_address, profile_idx) {
+                            // Need to push this here because
+                            // `transaction_from_notes` does
+                            // not include this entry in a moonlight to phoenix
+                            // conversion.
+                            collected_history.push(TransactionHistory {
+                                direction: TransactionDirection::In,
+                                height,
+                                amount: event.value as f64,
+                                tx: tx.clone(),
+                                id: id.clone(),
+                                // Leaving 0 here instead of the actual fee of
+                                // the tx
+                                // is okay because it won't be displayed anyways
+                                fee: 0,
+                            });
+                        }
                     }
-                    false => TransactionDirection::In,
-                };
-
-            collected_history.push(TransactionHistory {
-                direction,
-                height,
-                amount,
-                fee: gas_spent * tx.gas_price(),
-                tx: tx.clone(),
-                id: id.clone(),
-            })
+                }
+                BlockData::PhoenixTransactionEvent(_) => {
+                    // This case has already been handled in
+                    // `transaction_from_notes`
+                }
+            }
         }
+        collected_history.push(TransactionHistory {
+            direction: direction.expect("should be determined"),
+            height,
+            amount,
+            tx: tx.clone(),
+            id: id.clone(),
+            fee,
+        });
     }
 
     Ok(collected_history)
 }
 
 #[derive(PartialEq, Debug)]
-enum TransactionDirection {
+pub(crate) enum TransactionDirection {
     In,
     Out,
 }
