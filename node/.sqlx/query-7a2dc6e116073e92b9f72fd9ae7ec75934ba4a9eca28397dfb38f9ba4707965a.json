@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT MAX(id) as last_id FROM active_accounts",
+  "describe": {
+    "columns": [
+      {
+        "name": "last_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "7a2dc6e116073e92b9f72fd9ae7ec75934ba4a9eca28397dfb38f9ba4707965a"
+}

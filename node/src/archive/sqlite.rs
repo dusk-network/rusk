@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashSet;
 use std::path::Path;
 
 use anyhow::Result;
@@ -220,6 +221,18 @@ impl Archive {
             Ok(None)
         }
     }
+
+    pub async fn fetch_active_accounts(&self) -> Result<u64> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        let last_account =
+            sqlx::query!(r#"SELECT MAX(id) as last_id FROM active_accounts"#)
+                .fetch_one(&mut *conn)
+                .await?;
+        let last_account_id = last_account.last_id.unwrap_or(0) as u64;
+
+        Ok(last_account_id)
+    }
 }
 
 /// Mutating methods for the SQLite Archive
@@ -265,7 +278,6 @@ impl Archive {
             block_height
         );
 
-        // Commit the transaction
         tx.commit().await?;
 
         Ok(())
@@ -354,7 +366,6 @@ impl Archive {
             }
         }
 
-        // Commit the transaction
         tx.commit().await?;
         let current_block_height: i64 = current_block_height as i64;
         info!(
@@ -366,7 +377,9 @@ impl Archive {
         );
 
         // Get the MoonlightTxEvents and load it into the moonlight db
-        self.tl_moonlight(grouped_events)?;
+        let active_accounts = self.tl_moonlight(grouped_events)?;
+
+        self.update_active_accounts(active_accounts).await?;
 
         self.last_finalized_block_height = finalized_block_height as u64;
 
@@ -417,6 +430,40 @@ impl Archive {
             );
             Ok(false)
         }
+    }
+
+    /// Insert the active accounts into the active accounts table, skipping
+    /// already existing ones
+    async fn update_active_accounts(
+        &self,
+        active_accounts: HashSet<String>,
+    ) -> Result<u64> {
+        let mut tx = self.sqlite_archive.begin().await?;
+
+        for account in active_accounts {
+            sqlx::query!(
+                r#"INSERT OR IGNORE INTO active_accounts (public_key) VALUES (?)"#,
+                account
+            )
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        let last_account =
+            sqlx::query!(r#"SELECT MAX(id) as last_id FROM active_accounts"#)
+                .fetch_one(&mut *tx)
+                .await?;
+
+        let last_account_id = last_account.last_id.unwrap_or(0) as u64;
+
+        tx.commit().await?;
+
+        info!(
+            "Updated active accounts in the archive. Last account ID: {}",
+            last_account_id
+        );
+
+        Ok(last_account_id)
     }
 }
 
