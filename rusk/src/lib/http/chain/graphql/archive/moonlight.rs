@@ -19,6 +19,8 @@ pub async fn full_moonlight_history(
     ctx: &Context<'_>,
     address: String,
     ordering: Option<String>,
+    from_block: Option<u64>,
+    to_block: Option<u64>,
 ) -> OptResult<MoonlightTransfers> {
     let (_, archive) = ctx.data::<DBContext>()?;
     let v = bs58::decode(address).into_vec()?;
@@ -36,7 +38,9 @@ pub async fn full_moonlight_history(
         _ => None,
     };
 
-    if let Some(moonlight_events) = archive.full_moonlight_history(pk, ord)? {
+    if let Some(moonlight_events) =
+        archive.full_moonlight_history(pk, ord, from_block, to_block)?
+    {
         Ok(Some(MoonlightTransfers(moonlight_events)))
     } else {
         Ok(None)
