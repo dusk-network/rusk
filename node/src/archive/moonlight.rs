@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use core::result::Result as CoreResult;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -156,14 +156,19 @@ impl Archive {
 
     /// Transform & Load moonlight related events into the moonlight database.
     ///
+    ///
     /// # Arguments
     ///
     /// * `grouped_events` - List of ContractTxEvent grouped by TxIdentifier
     ///   from a finalized block.
+    ///
+    /// # Returns
+    ///
+    /// * `active_accounts` - List of active accounts from the transactions
     pub(super) fn tl_moonlight(
         &self,
         grouped_events: BTreeMap<EventIdentifier, Vec<ContractEvent>>,
-    ) -> Result<()> {
+    ) -> Result<HashSet<String>> {
         debug!("Loading transaction events into the moonlight db");
 
         let transformer::TransormerResult {
@@ -180,13 +185,19 @@ impl Archive {
         let address_outflow_mappings =
             util::check_duplicates(address_outflow_mappings);
 
+        let mut active_accounts = HashSet::with_capacity(
+            address_inflow_mappings.len() + address_outflow_mappings.len(),
+        );
+
         for mapping in address_inflow_mappings {
             let (pk, tx_hash) = mapping;
+            active_accounts.insert(bs58::encode(pk.to_bytes()).into_string());
             self.update_inflow_address_tx(pk, tx_hash)?;
         }
 
         for mapping in address_outflow_mappings {
             let (pk, tx_hash) = mapping;
+            active_accounts.insert(bs58::encode(pk.to_bytes()).into_string());
             self.update_outflow_address_tx(pk, tx_hash)?;
         }
 
@@ -201,7 +212,7 @@ impl Archive {
             self.update_memo_tx(memo, tx_hash)?;
         }
 
-        Ok(())
+        Ok(active_accounts)
     }
 
     /// Insert or update an AccountPublicKey to MoonlightTx mapping for inflows.
@@ -476,6 +487,10 @@ impl Archive {
             .ok_or(anyhow!("Column family not found"))
     }
 
+    /// Append a new moonlight transaction to the existing list of
+    /// moonlight transactions for a given key.
+    ///
+    /// If the key does not exist, it will be created.
     fn append_moonlight_tx(
         &self,
         cf: &ColumnFamily,

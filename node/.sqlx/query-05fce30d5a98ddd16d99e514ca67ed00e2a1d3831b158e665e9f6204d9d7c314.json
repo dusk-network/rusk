@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO active_accounts (public_key) VALUES (?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "05fce30d5a98ddd16d99e514ca67ed00e2a1d3831b158e665e9f6204d9d7c314"
+}
