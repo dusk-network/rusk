@@ -157,9 +157,11 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     ) {
         // Sign and construct validation message
         let validation = self::build_validation_payload(vote, ru, iteration);
-        let vote = validation.vote;
         let msg = Message::from(validation);
 
+        // Send vote to peers and to local node
+        //
+        // In Emergency Mode, only Valid votes are broadcasted
         if vote.is_valid() || !is_emergency_iter(iteration) {
             info!(
               event = "Cast vote",
