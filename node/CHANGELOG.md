@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add transaction serialization check
 - Add max transaction size check
+- Add from_block & to_block params to `full_moonlight_history` in archive [#3613]
 
 ## [1.2.0] - 2025-03-20
 
@@ -48,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-node` release
 
 <!-- Issues -->
+[#3613]: https://github.com/dusk-network/rusk/issues/3613
 [#3491]: https://github.com/dusk-network/rusk/issues/3491
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3407]: https://github.com/dusk-network/rusk/issues/3407

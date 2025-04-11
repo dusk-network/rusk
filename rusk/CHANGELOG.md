@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add transaction serialization check
 - Add max transaction size check
 - Add `/on/driver:<contract>/<method>:<target>` endpoint
+- Add from_block & to_block params to `full_moonlight_history` in gql [#3613]
 
 ### Changed
 
@@ -369,6 +370,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3613]: https://github.com/dusk-network/rusk/issues/3613
 [#3512]: https://github.com/dusk-network/rusk/issues/3512
 [#3507]: https://github.com/dusk-network/rusk/issues/3507
 [#3494]: https://github.com/dusk-network/rusk/issues/3494

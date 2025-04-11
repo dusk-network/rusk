@@ -184,8 +184,10 @@ impl Query {
         ctx: &Context<'_>,
         address: String,
         ord: Option<String>,
+        from_block: Option<u64>,
+        to_block: Option<u64>,
     ) -> OptResult<MoonlightTransfers> {
-        full_moonlight_history(ctx, address, ord).await
+        full_moonlight_history(ctx, address, ord, from_block, to_block).await
     }
 
     /// Retrieves raw events from transactions where at least one event within a
