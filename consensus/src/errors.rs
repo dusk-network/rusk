@@ -69,18 +69,20 @@ impl From<BlsSigError> for ConsensusError {
 
 #[derive(Debug, Error)]
 pub enum OperationError {
-    #[error("failed to call VST {0}")]
-    InvalidVST(VstError),
-    #[error("failed to call EST {0}")]
-    InvalidEST(anyhow::Error),
-    #[error("failed to verify header {0}")]
+    #[error("VST failed: {0}")]
+    FailedVST(StateTransitionError),
+    #[error("EST failed: {0}")]
+    FailedEST(StateTransitionError),
+    #[error("Invalid header: {0}")]
     InvalidHeader(HeaderError),
-    #[error("Unable to update metrics {0}")]
+    #[error("Unable to update metrics: {0}")]
     MetricsUpdate(anyhow::Error),
-    #[error("Invalid Iteration Info {0}")]
+    #[error("Invalid Iteration Info: {0}")]
     InvalidIterationInfo(io::Error),
-    #[error("Invalid Faults {0}")]
+    #[error("Invalid Faults: {0}")]
     InvalidFaults(InvalidFault),
+    #[error("Block creation failed: {0}")]
+    BlockCreation(String),
 }
 
 #[derive(Debug, Error)]
@@ -109,6 +111,19 @@ pub enum HeaderError {
     #[error("Invalid Failed Iterations: {0}")]
     InvalidFailedIterations(FailedIterationError),
 
+    #[error(
+        "mismatch, event_bloom: {}, candidate_event_bloom: {}",
+        hex::encode(.0.as_ref()),
+        hex::encode(.1.as_ref())
+    )]
+    EventBloomMismatch(Box<[u8; 256]>, Box<[u8; 256]>),
+    #[error(
+        "mismatch, state_hash: {}, candidate_state_hash: {}",
+        hex::encode(.0),
+        hex::encode(.1)
+    )]
+    StateRootMismatch([u8; 32], [u8; 32]),
+
     #[error("Generic error in header verification: {0}")]
     Generic(&'static str),
 
@@ -117,32 +132,22 @@ pub enum HeaderError {
 }
 
 #[derive(Debug, Error)]
-pub enum VstError {
-    #[error(
-        "mismatch, event_bloom: {}, candidate_event_bloom: {}",
-        hex::encode(.0.as_ref()),
-        hex::encode(.1.as_ref())
-    )]
-    MismatchEventBloom(Box<[u8; 256]>, Box<[u8; 256]>),
-    #[error(
-        "mismatch, state_hash: {}, candidate_state_hash: {}",
-        hex::encode(.0),
-        hex::encode(.1)
-    )]
-    MismatchStateHash([u8; 32], [u8; 32]),
-    #[error("Chain tip different from the expected one")]
+pub enum StateTransitionError {
+    #[error("Chain tip updated during operation")]
     TipChanged,
     #[error("Invalid slash from block: {0}")]
     InvalidSlash(io::Error),
     #[error("Invalid generator: {0:?}")]
     InvalidGenerator(dusk_bytes::Error),
-    #[error("Generic error in vst: {0}")]
-    Generic(String),
+    #[error("Execution failed: {0}")]
+    ExecutionError(String),
+    #[error("Verification failed: {0}")]
+    VerificationError(String),
 }
 
-impl VstError {
+impl OperationError {
     pub fn must_vote(&self) -> bool {
-        !matches!(self, Self::TipChanged)
+        !matches!(self, Self::FailedVST(StateTransitionError::TipChanged))
     }
 }
 
@@ -162,6 +167,8 @@ impl HeaderError {
             HeaderError::InvalidSeed(_) => true,
             HeaderError::InvalidAttestation(_) => true,
             HeaderError::InvalidFailedIterations(_) => true,
+            HeaderError::EventBloomMismatch(_, _) => true,
+            HeaderError::StateRootMismatch(_, _) => true,
 
             HeaderError::Generic(..) => false,
         }

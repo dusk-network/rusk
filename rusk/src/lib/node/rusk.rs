@@ -31,7 +31,7 @@ use dusk_vm::{
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
+use node_data::ledger::{to_str, Hash, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
@@ -41,8 +41,7 @@ use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::http::RuesEvent;
 use crate::node::{coinbase_value, Rusk, RuskTip};
-use crate::Error::InvalidCreditsCount;
-use crate::{Error, Result, DUSK_CONSENSUS_KEY};
+use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
 
 impl Rusk {
     pub fn new<P: AsRef<Path>>(
@@ -109,6 +108,14 @@ impl Rusk {
         let prev_state_root = params.prev_state_root;
 
         let voters = &params.voters_pubkey[..];
+
+        info!(
+            event = "Start EST",
+            height = block_height,
+            prev_state = to_str(&prev_state_root),
+            gas_limit = block_gas_limit,
+            ?to_slash
+        );
 
         let mut session =
             self.new_block_session(block_height, prev_state_root)?;
@@ -264,6 +271,15 @@ impl Rusk {
         slashing: Vec<Slash>,
         voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
+        info!(
+            event = "Start VST",
+            block_hash = to_str(&block_hash),
+            height = block_height,
+            prev_state = to_str(&prev_commit),
+            gas_limit = block_gas_limit,
+            to_slash = ?slashing
+        );
+
         let session = self.new_block_session(block_height, prev_commit)?;
         let execution_config = self.vm_config.to_execution_config(block_height);
 
@@ -329,7 +345,7 @@ impl Rusk {
             if expected_verification != verification_output {
                 // Drop the session if the resulting is inconsistent
                 // with the callers one.
-                return Err(Error::InconsistentState(Box::new(
+                return Err(RuskError::InconsistentState(Box::new(
                     verification_output,
                 )));
             }
@@ -365,7 +381,7 @@ impl Rusk {
 
         let commits = self.vm.commits();
         if !commits.contains(&state_hash) {
-            return Err(Error::CommitNotFound(state_hash));
+            return Err(RuskError::CommitNotFound(state_hash));
         }
 
         tip.current = state_hash;
@@ -469,7 +485,7 @@ impl Rusk {
     ) -> Result<Session> {
         let mut session = self._session(block_height, None)?;
         if session.root() != commit {
-            return Err(Error::TipChanged);
+            return Err(RuskError::TipChanged);
         }
         let _: CallReceipt<()> = session
             .call(STAKE_CONTRACT, "before_state_transition", &(), u64::MAX)
@@ -598,7 +614,7 @@ fn accept(
         dusk_spent += gas_spent * tx.gas_price();
         block_gas_left = block_gas_left
             .checked_sub(gas_spent)
-            .ok_or(Error::OutOfGas)?;
+            .ok_or(RuskError::OutOfGas)?;
 
         spent_txs.push(SpentTransaction {
             inner: unspent_tx.clone(),
@@ -659,7 +675,7 @@ fn reward_slash_and_update_root(
         .sum::<u64>();
 
     if !voters.is_empty() && credits == 0 && block_height > 1 {
-        return Err(InvalidCreditsCount(block_height, 0));
+        return Err(RuskError::InvalidCreditsCount(block_height, 0));
     }
 
     let generator_extra_reward =
