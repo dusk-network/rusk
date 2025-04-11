@@ -147,7 +147,11 @@ pub enum StateTransitionError {
 
 impl OperationError {
     pub fn must_vote(&self) -> bool {
-        !matches!(self, Self::FailedVST(StateTransitionError::TipChanged))
+        match self {
+            Self::InvalidHeader(e) => e.must_vote(),
+            Self::FailedVST(StateTransitionError::TipChanged) => false,
+            _ => true,
+        }
     }
 }
 
@@ -222,5 +226,11 @@ impl From<io::Error> for OperationError {
 impl From<InvalidFault> for OperationError {
     fn from(value: InvalidFault) -> Self {
         Self::InvalidFaults(value)
+    }
+}
+
+impl From<HeaderError> for OperationError {
+    fn from(value: HeaderError) -> Self {
+        Self::InvalidHeader(value)
     }
 }

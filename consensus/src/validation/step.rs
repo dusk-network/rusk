@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block};
+use node_data::ledger::{to_str, Block, Header};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
     AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
@@ -21,7 +21,7 @@ use crate::config::is_emergency_iter;
 use crate::errors::{HeaderError, OperationError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::StepOutcome;
-use crate::operations::{Operations, Voter};
+use crate::operations::{Operations, StateRoot, VerificationOutput};
 use crate::validation::handler;
 
 pub struct ValidationStep<T, D: Database> {
@@ -84,56 +84,20 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
             .await;
             return;
         }
-        let candidate = candidate.expect("Candidate to be already checked");
+
+        let candidate = candidate.expect("Candidate has already been checked");
         let header = candidate.header();
+        let candidate_hash = header.hash;
 
-        // Verify candidate header
-        let vote = match executor
-            .verify_candidate_header(header, &expected_generator)
-            .await
+        let vote = match Self::verify_candidate(
+            candidate,
+            ru.state_root(),
+            executor,
+            expected_generator,
+        )
+        .await
         {
-            Ok((_, voters, _)) => {
-                // Call Verify State Transition to make sure transactions set is
-                // valid
-
-                if let Err(err) = executor
-                    .verify_faults(header.height, candidate.faults())
-                    .await
-                {
-                    error!(
-                        event = "Candidate verification failed",
-                        reason = %err
-                    );
-                    Vote::Invalid(header.hash)
-                } else {
-                    match Self::call_vst(
-                        ru.state_root(),
-                        candidate,
-                        &voters,
-                        &executor,
-                    )
-                    .await
-                    {
-                        Ok(_) => Vote::Valid(header.hash),
-                        Err(err) => {
-                            if !err.must_vote() {
-                                warn!(
-                                    event = "Skipping Validation vote",
-                                    reason = %err
-                                );
-                                return;
-                            }
-
-                            error!(
-                                event = "Candidate verification failed",
-                                reason = %err
-                            );
-
-                            Vote::Invalid(header.hash)
-                        }
-                    }
-                }
-            }
+            Ok(_) => Vote::Valid(candidate_hash),
             Err(err) => {
                 if !err.must_vote() {
                     warn!(
@@ -145,15 +109,43 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
 
                 error!(
                     event = "Candidate verification failed",
-                    reason = %err,
-                    ?header
+                    reason = %err
                 );
 
-                Vote::Invalid(header.hash)
+                Vote::Invalid(candidate_hash)
             }
         };
 
         Self::cast_vote(vote, ru, iteration, outbound, inbound).await;
+    }
+
+    async fn verify_candidate(
+        candidate: &Block,
+        state_root: StateRoot,
+        executor: Arc<T>,
+        expected_generator: PublicKeyBytes,
+    ) -> Result<(), OperationError> {
+        let header = candidate.header();
+
+        // Verify faults
+        executor
+            .verify_faults(header.height, candidate.faults())
+            .await?;
+
+        // Verify candidate header
+        let (_, voters, _) = executor
+            .verify_candidate_header(header, &expected_generator)
+            .await?;
+
+        // Verify state transition
+        let vst_result = executor
+            .verify_state_transition(state_root, candidate, &voters)
+            .await?;
+
+        // Verify header against state transition output
+        Self::check_header_vst(header, &vst_result)?;
+
+        Ok(())
     }
 
     async fn cast_vote(
@@ -184,32 +176,22 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         }
     }
 
-    async fn call_vst(
-        prev_commit: [u8; 32],
-        candidate: &Block,
-        voters: &[Voter],
-        executor: &Arc<T>,
-    ) -> Result<(), OperationError> {
-        let output = executor
-            .verify_state_transition(prev_commit, candidate, voters)
-            .await?;
-
+    fn check_header_vst(
+        header: &Header,
+        vst_result: &VerificationOutput,
+    ) -> Result<(), HeaderError> {
         // Check the header against `event_bloom` and `state_root` from VST
-        if output.event_bloom != candidate.header().event_bloom {
-            return Err(OperationError::InvalidHeader(
-                HeaderError::EventBloomMismatch(
-                    Box::new(output.event_bloom),
-                    Box::new(candidate.header().event_bloom),
-                ),
+        if vst_result.event_bloom != header.event_bloom {
+            return Err(HeaderError::EventBloomMismatch(
+                Box::new(vst_result.event_bloom),
+                Box::new(header.event_bloom),
             ));
         }
 
-        if output.state_root != candidate.header().state_hash {
-            return Err(OperationError::InvalidHeader(
-                HeaderError::StateRootMismatch(
-                    output.state_root,
-                    candidate.header().state_hash,
-                ),
+        if vst_result.state_root != header.state_hash {
+            return Err(HeaderError::StateRootMismatch(
+                vst_result.state_root,
+                header.state_hash,
             ));
         }
 
