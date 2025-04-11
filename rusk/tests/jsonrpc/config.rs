@@ -530,6 +530,9 @@ fn test_to_file_method() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_nested_config_objects() -> Result<(), Box<dyn std::error::Error>> {
+    // Acquire lock at the beginning and hold it
+    let _lock = ENV_MUTEX.lock().expect("Mutex should not be poisoned");
+
     // --- UNSET relevant environment variables before loading ---
     std::env::remove_var("RUSK_JSONRPC_CONFIG_PATH"); // Ensure it loads the provided file
     std::env::remove_var("RUSK_JSONRPC_CORS_ENABLED");
