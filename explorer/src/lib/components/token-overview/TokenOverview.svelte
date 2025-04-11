@@ -38,14 +38,14 @@
   </div>
   <hr class="token-overview-panel__separator" />
   <div class="token-overview-panel__details">
-    <OverviewPanelDetailsItem
-      title="{data.totalCurrentSupply} {data.ticker}"
-      subtitle="Current Total Supply"
-    />
-    <OverviewPanelDetailsItem
-      title={data.maxCirculatingSupply}
-      subtitle="Max Circulating Supply"
-    />
-    <OverviewPanelDetailsItem title="${data.price}" subtitle="Price" />
+    <OverviewPanelDetailsItem subtitle="Current Total Supply"
+      ><p>{data.totalCurrentSupply} {data.ticker}</p></OverviewPanelDetailsItem
+    >
+    <OverviewPanelDetailsItem subtitle="Max Circulating Supply"
+      ><p>{data.maxCirculatingSupply}</p></OverviewPanelDetailsItem
+    >
+    <OverviewPanelDetailsItem subtitle="Price"
+      ><p>${data.price}</p></OverviewPanelDetailsItem
+    >
   </div>
 </section>

@@ -14,6 +14,8 @@ and this project adheres to
 
 ### Changed
 
+- Change balance appearance (Account overview page) [#3612]
+
 ### Removed
 
 ### Fixed
@@ -27,7 +29,7 @@ and this project adheres to
 
 ### Changed
 
-- Changed provisioner rewards column to be more readable [#3581]
+- Change provisioner rewards column to be more readable [#3581]
 
 ### Fixed
 
@@ -192,6 +194,7 @@ and this project adheres to
 [#3579]: https://github.com/dusk-network/rusk/issues/3579
 [#3581]: https://github.com/dusk-network/rusk/pull/3581
 [#3591]: https://github.com/dusk-network/rusk/issues/3591
+[#3612]: https://github.com/dusk-network/rusk/issues/3612
 
 <!-- VERSIONS -->
 

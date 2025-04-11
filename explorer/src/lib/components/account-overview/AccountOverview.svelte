@@ -17,6 +17,7 @@
   let screenWidth = window.innerWidth;
 
   const formatter = createValueFormatter("en");
+  const fixedNumberFormatter = createValueFormatter("en", 2, 2);
 
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -52,13 +53,31 @@
   </p>
   <hr class="account-overview-panel__separator" />
   <div class="account-overview-panel__details">
-    <OverviewPanelDetailsItem
-      title={errorFetchingAccountStatus
-        ? "N/A"
-        : accountBalance !== undefined
-          ? `${formatter(luxToDusk(accountBalance))} DUSK`
-          : "Loading..."}
-      subtitle="Current Balance"
-    />
+    <OverviewPanelDetailsItem subtitle="Current Balance">
+      {#if errorFetchingAccountStatus}
+        <p>N/A</p>
+      {:else if accountBalance !== undefined}
+        {@const formatted = fixedNumberFormatter(luxToDusk(accountBalance))}
+        {@const parts = formatted.split(".")}
+        <p
+          class="account-overview-panel__balance"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-place="right"
+          data-tooltip-type="info"
+          data-tooltip-text="{formatter(luxToDusk(accountBalance))} DUSK"
+        >
+          {parts[0]}.<span class="decimal-shadow">{parts[1]}</span> DUSK
+        </p>
+      {:else}
+        <p>Loading...</p>
+      {/if}
+    </OverviewPanelDetailsItem>
   </div>
 </section>
+
+<style lang="postcss">
+  :global(.account-overview-panel__balance) {
+    max-width: fit-content;
+    cursor: help;
+  }
+</style>
