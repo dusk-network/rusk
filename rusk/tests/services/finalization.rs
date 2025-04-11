@@ -15,19 +15,19 @@ const BLOCK_GAS_LIMIT: u64 = 24_000_000;
 const BLOCKS_NUM: u64 = 10;
 
 // Creates the Rusk initial state for the tests below
-fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot =
         toml::from_str(include_str!("../config/multi_transfer.toml"))
             .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn finalization() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp)?;
+    let rusk = initial_state(&tmp).await?;
 
     let roots = empty_blocks(&rusk, BLOCKS_NUM, false);
     rusk.revert_to_base_root().expect("revert to work");
@@ -48,7 +48,7 @@ fn empty_blocks(rusk: &Rusk, blocks: u64, finalize: bool) -> Vec<[u8; 32]> {
 
     for height in 0..blocks {
         let (_, root) = generator_procedure2(
-            &rusk,
+            rusk,
             &[],
             height,
             BLOCK_GAS_LIMIT,

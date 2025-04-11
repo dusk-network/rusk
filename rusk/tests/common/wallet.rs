@@ -27,6 +27,7 @@ use rusk::{Error, Result, Rusk};
 use test_wallet::{self as wallet, Store};
 use tracing::info;
 
+#[allow(unused_imports)]
 pub use test_wallet::Wallet;
 
 #[derive(Debug, Clone)]

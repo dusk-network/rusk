@@ -8,6 +8,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
+#[cfg(feature = "archive")]
+use node::archive::Archive;
+
 use dusk_core::transfer::data::{
     ContractBytecode, ContractCall, ContractDeploy, TransactionData,
 };
@@ -45,7 +48,7 @@ const OWNER: [u8; 32] = [1; 32];
 const DEPLOYER_INDEX: u8 = 0;
 const SENDER_INDEX: u8 = 1;
 
-fn initial_state<P: AsRef<Path>>(
+async fn initial_state<P: AsRef<Path>>(
     dir: P,
     owner: impl AsRef<[u8]>,
 ) -> Result<Rusk> {
@@ -62,6 +65,12 @@ fn initial_state<P: AsRef<Path>>(
 
     let (sender, _) = broadcast::channel(10);
 
+    #[cfg(feature = "archive")]
+    let archive_dir =
+        tempdir().expect("Should be able to create temporary directory");
+    #[cfg(feature = "archive")]
+    let archive = Archive::create_or_open(archive_dir.path()).await;
+
     let rusk = Rusk::new(
         dir,
         CHAIN_ID,
@@ -69,6 +78,8 @@ fn initial_state<P: AsRef<Path>>(
         DEFAULT_MIN_GAS_LIMIT,
         u64::MAX,
         sender,
+        #[cfg(feature = "archive")]
+        archive,
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)
@@ -107,7 +118,7 @@ fn submit_transactions(
     let bytecode = include_bytes!(
         "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
     );
-    let contract_id = gen_contract_id(&bytecode, 0u64, OWNER);
+    let contract_id = gen_contract_id(bytecode, 0u64, OWNER);
 
     let init_args = Some(vec![BOB_INIT_VALUE]);
 
@@ -158,12 +169,11 @@ fn submit_transactions(
         Some(expected),
     )
     .expect("generator procedure should succeed");
-
     assert_eq!(spent_transactions.len(), 2);
     spent_transactions
         .get(1)
-        .map(|t| t.clone())
         .expect("There should be one spent transaction")
+        .clone()
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -171,7 +181,7 @@ pub async fn calling_init_via_tx_fails() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp, OWNER)?;
+    let rusk = initial_state(&tmp, OWNER).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 

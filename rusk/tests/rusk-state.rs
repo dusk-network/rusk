@@ -40,12 +40,12 @@ const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 // Creates the Rusk initial state for the tests below
-fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("./config/rusk-state.toml"))
         .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 
 fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
@@ -107,13 +107,13 @@ where
     })
 }
 
-#[test]
-pub fn rusk_state_accepted() -> Result<()> {
+#[tokio::test]
+pub async fn rusk_state_accepted() -> Result<()> {
     // Setup the logger
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp)?;
+    let rusk = initial_state(&tmp).await?;
 
     push_note(&rusk, |_tip, _vm| {});
 
@@ -137,13 +137,13 @@ pub fn rusk_state_accepted() -> Result<()> {
     Ok(())
 }
 
-#[test]
-pub fn rusk_state_finalized() -> Result<()> {
+#[tokio::test]
+pub async fn rusk_state_finalized() -> Result<()> {
     // Setup the logger
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp)?;
+    let rusk = initial_state(&tmp).await?;
 
     push_note(&rusk, |mut tip, _vm| {
         tip.base = tip.current;
@@ -187,7 +187,7 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Cannot deserialize config");
 
     let vm_config = RuskVmConfig::new().with_block_gas_limit(100_000_000_000);
-    let rusk = new_state(&tmp, &snapshot, vm_config)?;
+    let rusk = new_state(&tmp, &snapshot, vm_config).await?;
 
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
@@ -225,8 +225,8 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
         });
 
         let tx = task.await.expect("Joining should succeed");
-        txs_file.write(hex::encode(tx.to_var_bytes()).as_bytes())?;
-        txs_file.write(b"\n")?;
+        txs_file.write_all(hex::encode(tx.to_var_bytes()).as_bytes())?;
+        txs_file.write_all(b"\n")?;
     }
 
     Ok(())
@@ -250,7 +250,7 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Cannot deserialize config");
 
     let vm_config = RuskVmConfig::new().with_block_gas_limit(100_000_000_000);
-    let rusk = new_state(&tmp, &snapshot, vm_config)?;
+    let rusk = new_state(&tmp, &snapshot, vm_config).await?;
 
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
@@ -286,8 +286,8 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
         });
 
         let tx = task.await.expect("Joining should succeed");
-        txs_file.write(hex::encode(tx.to_var_bytes()).as_bytes())?;
-        txs_file.write(b"\n")?;
+        txs_file.write_all(hex::encode(tx.to_var_bytes()).as_bytes())?;
+        txs_file.write_all(b"\n")?;
     }
 
     Ok(())

@@ -36,21 +36,21 @@ const GAS_PRICE: u64 = 1;
 const DEPOSIT: u64 = 0;
 
 // Creates the Rusk initial state for the tests below
-fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/stake.toml"))
         .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 
 // Creates the Rusk initial state for the tests below
-fn slash_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+async fn slash_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/slash.toml"))
         .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config)
+    new_state(dir, &snapshot, vm_config).await
 }
 
 /// Stakes an amount Dusk and produces a block with this single transaction,
@@ -150,7 +150,7 @@ pub async fn stake() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp)?;
+    let rusk = stake_state(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -240,7 +240,7 @@ pub async fn reward() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp)?;
+    let rusk = stake_state(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -277,7 +277,7 @@ pub async fn slash() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = slash_state(&tmp)?;
+    let rusk = slash_state(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -330,7 +330,7 @@ pub async fn slash() -> Result<()> {
     .expect("to work");
 
     let last_changes = rusk.last_provisioners_change(None).unwrap();
-    let (_, prev) = last_changes.first().expect("Something changed").clone();
+    let (_, prev) = last_changes.first().expect("Something changed");
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, dusk(3.0));
     assert_eq!(
@@ -369,7 +369,7 @@ pub async fn slash() -> Result<()> {
     .expect("to work");
 
     let last_changes = rusk.last_provisioners_change(None).unwrap();
-    let (_, prev) = last_changes.first().expect("Something changed").clone();
+    let (_, prev) = last_changes.first().expect("Something changed");
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, dusk(3.0));
     assert_eq!(
@@ -419,7 +419,7 @@ pub async fn slash() -> Result<()> {
     .expect("to work");
 
     let last_changes = rusk.last_provisioners_change(None).unwrap();
-    let (_, prev) = last_changes.first().expect("Something changed").clone();
+    let (_, prev) = last_changes.first().expect("Something changed");
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, dusk(3.0));
     assert_eq!(
@@ -461,7 +461,7 @@ pub async fn slash() -> Result<()> {
 
     //Ensure we still have previous changes, because generator procedure failed
     let last_changes = rusk.last_provisioners_change(None).unwrap();
-    let (_, prev) = last_changes.first().expect("Something changed").clone();
+    let (_, prev) = last_changes.first().expect("Something changed");
     let prev = prev.expect("to have something");
     assert_eq!(prev.reward, dusk(3.0));
     assert_eq!(

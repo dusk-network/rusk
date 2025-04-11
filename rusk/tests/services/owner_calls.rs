@@ -44,7 +44,7 @@ const GUARDED_METHOD: &str = "owner_reset";
 
 const CHAIN_ID: u8 = 0xFA;
 
-fn initial_state<P: AsRef<Path>>(
+async fn initial_state<P: AsRef<Path>>(
     dir: P,
     owner: impl AsRef<[u8]>,
 ) -> Result<Rusk> {
@@ -66,7 +66,7 @@ fn initial_state<P: AsRef<Path>>(
                 ContractData::builder()
                     .owner(owner.as_ref())
                     .init_arg(&BOB_INIT_VALUE)
-                    .contract_id(gen_contract_id(&bob_bytecode, 0u64, owner)),
+                    .contract_id(gen_contract_id(bob_bytecode, 0u64, owner)),
                 POINT_LIMIT,
             )
             .expect("Deploying the bob contract should succeed");
@@ -77,6 +77,13 @@ fn initial_state<P: AsRef<Path>>(
 
     let (sender, _) = broadcast::channel(10);
 
+    #[cfg(feature = "archive")]
+    let archive_dir =
+        tempdir().expect("Should be able to create temporary directory");
+    #[cfg(feature = "archive")]
+    let archive =
+        node::archive::Archive::create_or_open(archive_dir.path()).await;
+
     let rusk = Rusk::new(
         dir,
         CHAIN_ID,
@@ -84,6 +91,8 @@ fn initial_state<P: AsRef<Path>>(
         DEFAULT_MIN_GAS_LIMIT,
         u64::MAX,
         sender,
+        #[cfg(feature = "archive")]
+        archive,
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)
@@ -100,10 +109,11 @@ struct Fixture {
 }
 
 impl Fixture {
-    fn build(owner: impl AsRef<[u8]>) -> Self {
+    async fn build(owner: impl AsRef<[u8]>) -> Self {
         let tmp =
             tempdir().expect("Should be able to create temporary directory");
         let rusk = initial_state(&tmp, owner.as_ref())
+            .await
             .expect("Initializing should succeed");
 
         let cache = Arc::new(RwLock::new(HashMap::new()));
@@ -127,6 +137,7 @@ impl Fixture {
         let contract_id = gen_contract_id(&bob_bytecode, 0u64, owner.as_ref());
 
         let path = tmp.into_path();
+
         Self {
             rusk,
             wallet,
@@ -244,7 +255,7 @@ pub async fn non_bls_owner_guarded_call() -> Result<(), Error> {
     const VALUE: u8 = 244;
     let rng = &mut StdRng::seed_from_u64(0xcafe);
     let sk = BlsSecretKey::random(rng);
-    let mut f = Fixture::build(NON_BLS_OWNER);
+    let mut f = Fixture::build(NON_BLS_OWNER).await;
     f.assert_bob_contract_is_deployed();
     f.set_session();
 
@@ -271,7 +282,7 @@ pub async fn bls_owner_guarded_call() -> Result<(), Error> {
     let pk = BlsPublicKey::from(&sk);
     let owner = pk.to_bytes();
 
-    let mut f = Fixture::build(&owner);
+    let mut f = Fixture::build(&owner).await;
     f.assert_bob_contract_is_deployed();
     f.set_session();
 
