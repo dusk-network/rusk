@@ -45,7 +45,7 @@
   className={classes}
   {href}
   on:click
-  tabindex={disabled ? "-1" : $$restProps.tabindex ?? undefined}
+  tabindex={disabled ? "-1" : ($$restProps.tabindex ?? undefined)}
 >
   {#if icon?.position === "after"}
     {#if text}

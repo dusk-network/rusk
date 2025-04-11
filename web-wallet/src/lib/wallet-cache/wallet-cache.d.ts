@@ -4,19 +4,13 @@
  * block hash.
  */
 type NotesSyncInfo = {
-  block: {
-    hash: string;
-    height: bigint;
-  };
+  block: { hash: string; height: bigint };
   bookmark: bigint;
 };
 
 type WalletCacheBalanceInfo = {
   address: string;
-  balance: {
-    shielded: AddressBalance;
-    unshielded: AccountBalance;
-  };
+  balance: { shielded: AddressBalance; unshielded: AccountBalance };
 };
 
 type WalletCacheCriteria =
@@ -75,17 +69,12 @@ type WalletCacheHistoryEntry = {
 
 type WalletCacheNotesMap = Map<string, Map<Uint8Array, Uint8Array>>;
 
-type WalletCachePendingNoteInfo = {
-  nullifier: Uint8Array;
-  txId: string;
-};
+type WalletCachePendingNoteInfo = { nullifier: Uint8Array; txId: string };
 
 type WalletCacheDbPendingNoteInfo = Omit<
   WalletCachePendingNoteInfo,
   "nullifier"
-> & {
-  nullifier: ArrayBuffer;
-};
+> & { nullifier: ArrayBuffer };
 
 type WalletCacheSyncInfo = NotesSyncInfo & { lastFinalizedBlockHeight: bigint };
 

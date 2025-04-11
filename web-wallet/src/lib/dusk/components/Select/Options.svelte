@@ -15,6 +15,6 @@
     disabled={isString(option) ? false : option.disabled}
     value={isString(option) ? option : option.value}
   >
-    {isString(option) ? option : option.label ?? option.value}
+    {isString(option) ? option : (option.label ?? option.value)}
   </option>
 {/each}

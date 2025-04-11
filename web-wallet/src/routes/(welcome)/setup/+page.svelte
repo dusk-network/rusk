@@ -1,6 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
+  // eslint-disable-next-line import/no-unresolved
   import "css-doodle";
   import Animation from "./Animation.svelte";
   import { AppAnchorButton } from "$lib/components";
