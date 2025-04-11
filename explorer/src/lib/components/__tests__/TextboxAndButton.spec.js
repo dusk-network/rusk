@@ -12,7 +12,7 @@ describe("TextField", () => {
     icon: {
       path: mdiMagnify,
       position: "after",
-      size: "normal",
+      size: "default",
     },
     placeholder: "Search",
   };

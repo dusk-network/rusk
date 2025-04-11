@@ -45,7 +45,7 @@ describe("Transactions Card", () => {
       props: { ...baseProps, loading },
     });
 
-    expect(getByRole("button")).toBeDisabled();
+    expect(getByRole("button", { name: "Show More" })).toBeDisabled();
 
     expect(container.firstChild).toMatchSnapshot();
   });
@@ -59,7 +59,7 @@ describe("Transactions Card", () => {
       props: { ...baseProps, loading, txns },
     });
 
-    expect(getByRole("button")).toBeDisabled();
+    expect(getByRole("button", { name: "Show More" })).toBeDisabled();
 
     expect(container.firstChild).toMatchSnapshot();
   });

@@ -107,7 +107,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
@@ -130,11 +130,11 @@ exports[`Block Details > should render the Block Details page and query the nece
           >
             <a
               aria-disabled="false"
-              class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button block-details__list-anchor"
+              class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default dusk-icon-button block-details__list-anchor"
               href="/some-base-path/blocks/block?id=07b74b35c2c7cf8f41426cd0870bafa1a2c7adee3fdd876643548096186fc4cb"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -152,11 +152,11 @@ exports[`Block Details > should render the Block Details page and query the nece
              
             <a
               aria-disabled="false"
-              class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button block-details__list-anchor"
+              class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default dusk-icon-button block-details__list-anchor"
               href="/some-base-path/blocks/block?id=6011556208a85e6001bd01ccbf936486b91318a7f6cbcf7ab810adf6fae34204"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -178,7 +178,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The hash for the header of the block"
@@ -200,6 +200,32 @@ exports[`Block Details > should render the Block Details page and query the nece
             class="details-list__definition"
           >
             bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
+             
           </dd>
           <dt
             class="details-list__term"
@@ -208,7 +234,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The date and time the block was created"
@@ -245,7 +271,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The number of transactions included in the block"
@@ -275,7 +301,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The total fees paid for the transactions in the block"
@@ -306,7 +332,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The reward allocated to the block generator can fluctuate between 70-80% of the total reward and the flexible 10% can end up being burnt if there's no unanimous vote on a block"
@@ -337,7 +363,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block gas limit"
@@ -367,7 +393,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The amount of gas used generating the block"
@@ -409,7 +435,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The average gas price for the transactions within the block"
@@ -439,7 +465,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The state root hash"
@@ -474,7 +500,7 @@ exports[`Block Details > should render the Block Details page and query the nece
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block header information"
@@ -598,12 +624,41 @@ exports[`Block Details > should render the Block Details page and query the nece
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=3a3f6f90a1012ae751b4448bcb8e98def0ba2b18170239bd69fcf8e2e37f0602"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    3a3f6f90a1...e2e37f0602
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=3a3f6f90a1012ae751b4448bcb8e98def0ba2b18170239bd69fcf8e2e37f0602"
+                    >
+                      3a3f6f90a1...e2e37f0602
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -694,12 +749,41 @@ exports[`Block Details > should render the Block Details page and query the nece
                 <td
                   class="table__data-cell align-left"
                 >
-                  <a
-                    class="dusk-anchor dusk-anchor--on-surface transaction__link"
-                    href="/some-base-path/transactions/transaction?id=07bfabea1d94c16f2dc3697fa642f6cecea6e81bf76b9644efbb6e2723b76d00"
+                  <div
+                    class="transaction__transaction-id-container"
                   >
-                    07bfabea1d...2723b76d00
-                  </a>
+                    <a
+                      class="dusk-anchor dusk-anchor--on-surface transaction__link"
+                      href="/some-base-path/transactions/transaction?id=07bfabea1d94c16f2dc3697fa642f6cecea6e81bf76b9644efbb6e2723b76d00"
+                    >
+                      07bfabea1d...2723b76d00
+                    </a>
+                     
+                    <div
+                      class="dusk-copy-button"
+                    >
+                      <button
+                        aria-label="Copy Address"
+                        class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                        data-tooltip-id="main-tooltip"
+                        data-tooltip-text="Copy to clipboard"
+                        type="button"
+                      >
+                        <svg
+                          class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                          role="graphics-symbol"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                          />
+                        </svg>
+                        
+                         
+                        
+                      </button>
+                    </div>
+                  </div>
                    
                   <time
                     class="dusk-relative-time transaction__time"
@@ -832,7 +916,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The height of the block indicates the length of the block chain and is increased with each additional block"
@@ -855,11 +939,11 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           >
             <a
               aria-disabled="false"
-              class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button block-details__list-anchor"
+              class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default dusk-icon-button block-details__list-anchor"
               href="/some-base-path/blocks/block?id=07b74b35c2c7cf8f41426cd0870bafa1a2c7adee3fdd876643548096186fc4cb"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -877,11 +961,11 @@ exports[`Block Details > should render the Transaction section of the Block Deta
              
             <a
               aria-disabled="false"
-              class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button block-details__list-anchor"
+              class="dusk-anchor dusk-anchor--on-surface dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--default dusk-icon-button block-details__list-anchor"
               href="/some-base-path/blocks/block?id=6011556208a85e6001bd01ccbf936486b91318a7f6cbcf7ab810adf6fae34204"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+                class="dusk-icon dusk-icon--size--default dusk-anchor-button__icon"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
               >
@@ -903,7 +987,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The hash for the header of the block"
@@ -925,6 +1009,32 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             class="details-list__definition"
           >
             bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
+             
           </dd>
           <dt
             class="details-list__term"
@@ -933,7 +1043,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The date and time the block was created"
@@ -970,7 +1080,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The number of transactions included in the block"
@@ -1000,7 +1110,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The total fees paid for the transactions in the block"
@@ -1031,7 +1141,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The reward allocated to the block generator can fluctuate between 70-80% of the total reward and the flexible 10% can end up being burnt if there's no unanimous vote on a block"
@@ -1062,7 +1172,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block gas limit"
@@ -1092,7 +1202,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The amount of gas used generating the block"
@@ -1134,7 +1244,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The average gas price for the transactions within the block"
@@ -1164,7 +1274,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The state root hash"
@@ -1199,7 +1309,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The block header information"
@@ -1275,7 +1385,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The ID of the transaction"
@@ -1302,6 +1412,31 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             >
               3a3f6f90a1012ae751b4448bc...8170239bd69fcf8e2e37f0602
             </a>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -1311,7 +1446,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Time elapsed since the transaction was created"
@@ -1349,7 +1484,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction gas price in lux"
@@ -1380,7 +1515,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction gas limit in lux"
@@ -1411,7 +1546,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction fee amount"
@@ -1443,7 +1578,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction status"
@@ -1478,7 +1613,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction type"
@@ -1539,7 +1674,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The ID of the transaction"
@@ -1566,6 +1701,31 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             >
               07bfabea1d94c16f2dc3697fa...bf76b9644efbb6e2723b76d00
             </a>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
           </dd>
            
           <dt
@@ -1575,7 +1735,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="Time elapsed since the transaction was created"
@@ -1613,7 +1773,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction gas price in lux"
@@ -1644,7 +1804,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction gas limit in lux"
@@ -1675,7 +1835,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction fee amount"
@@ -1707,7 +1867,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction status"
@@ -1742,7 +1902,7 @@ exports[`Block Details > should render the Transaction section of the Block Deta
               class="details-list__term-layout"
             >
               <svg
-                class="dusk-icon dusk-icon--size--normal detail-list__help"
+                class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
                 data-tooltip-text="The transaction type"

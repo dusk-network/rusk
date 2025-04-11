@@ -9,7 +9,7 @@
   export let className = undefined;
 
   /** @type {IconSize} */
-  export let size = "normal";
+  export let size = "default";
 
   /** @type {Boolean} */
   export let isInStack = false;

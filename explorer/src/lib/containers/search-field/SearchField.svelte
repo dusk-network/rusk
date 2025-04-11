@@ -68,7 +68,7 @@
     icon={{
       path: mdiMagnify,
       position: "after",
-      size: "normal",
+      size: "default",
     }}
   />
 </form>

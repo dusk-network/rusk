@@ -181,7 +181,7 @@
         {#each statistic as item (`${item.title}`)}
           <div class="statistics-panel__statistics-item" {...item.attributes}>
             <div class="statistics-panel__statistics-item-value-container">
-              <Icon path={item.icon} size="normal" />
+              <Icon path={item.icon} size="default" />
               <div
                 class="statistics-panel__statistics-item-value"
                 class:approximate={item.approximate}

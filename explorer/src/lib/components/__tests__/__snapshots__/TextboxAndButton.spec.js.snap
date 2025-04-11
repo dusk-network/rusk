@@ -14,12 +14,12 @@ exports[`TextField > renders the component with default values 1`] = `
   
    
   <button
-    class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--normal dusk-icon-button"
+    class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--default dusk-icon-button"
     type="submit"
   >
      
     <svg
-      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      class="dusk-icon dusk-icon--size--default dusk-button__icon"
       role="graphics-symbol"
       viewBox="0 0 24 24"
     >
@@ -46,12 +46,12 @@ exports[`TextField > updates input value on change 1`] = `
   
    
   <button
-    class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--normal dusk-icon-button"
+    class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--default dusk-icon-button"
     type="submit"
   >
      
     <svg
-      class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+      class="dusk-icon dusk-icon--size--default dusk-button__icon"
       role="graphics-symbol"
       viewBox="0 0 24 24"
     >

@@ -1,7 +1,7 @@
 <script>
   import { onMount } from "svelte";
 
-  import { Tooltip } from "$lib/dusk/components";
+  import { Toast, Tooltip } from "$lib/dusk/components";
   import { Footer, Navbar } from "$lib/components";
   import { appStore } from "$lib/stores";
   import { duskAPI } from "$lib/services";
@@ -40,3 +40,4 @@
 </footer>
 
 <Tooltip defaultDelayShow={hasTouchSupport ? 0 : undefined} id="main-tooltip" />
+<Toast />
