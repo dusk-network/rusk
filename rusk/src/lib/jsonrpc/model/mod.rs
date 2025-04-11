@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![feature(lazy_cell)]
-mod common;
-mod jsonrpc;
-mod services;
-
-extern crate alloc;
+pub mod block;
+pub mod contract;
+pub mod network;
+pub mod prover;
+pub mod subscription;
+pub mod transaction;

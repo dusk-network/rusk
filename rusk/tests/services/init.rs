@@ -50,7 +50,7 @@ const SENDER_INDEX: u8 = 1;
 
 async fn initial_state<P: AsRef<Path>>(
     dir: P,
-    owner: impl AsRef<[u8]>,
+    _owner: impl AsRef<[u8]>,
 ) -> Result<Rusk> {
     let dir = dir.as_ref();
 
