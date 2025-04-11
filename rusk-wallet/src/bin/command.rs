@@ -6,7 +6,7 @@
 
 mod history;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "e2e-test"))]
 mod tests;
 
 use aes_gcm::AeadCore;
