@@ -159,7 +159,14 @@ pub fn accept_benchmark(c: &mut Criterion) {
         .expect("Cannot deserialize config");
 
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-    let rusk = new_state(&tmp, &snapshot, vm_config)
+
+    // Create a Tokio runtime for the async setup
+    let runtime =
+        tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+
+    // Run the async new_state within block_on
+    let rusk = runtime
+        .block_on(new_state(&tmp, &snapshot, vm_config))
         .expect("Creating state should work");
 
     let phoenix_txs = load_phoenix_txs();
