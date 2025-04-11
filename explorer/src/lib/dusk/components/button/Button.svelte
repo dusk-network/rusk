@@ -17,7 +17,7 @@
   export let icon = undefined;
 
   /** @type {ButtonSize} */
-  export let size = "normal";
+  export let size = "default";
 
   /** @type {ButtonVariant} */
   export let variant = "primary";
@@ -55,13 +55,13 @@
     <Icon
       className="dusk-button__icon"
       path={icon.path}
-      size={icon.size ?? "normal"}
+      size={icon.size ?? "default"}
     />
   {:else if icon}
     <Icon
       className="dusk-button__icon"
       path={icon.path}
-      size={icon.size ?? "normal"}
+      size={icon.size ?? "default"}
     />
     {#if text}
       <span class="dusk-button__text">{text}</span>

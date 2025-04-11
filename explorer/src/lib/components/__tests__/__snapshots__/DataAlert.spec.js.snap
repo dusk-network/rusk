@@ -28,7 +28,7 @@ exports[`DataAlert > should render the \`DataAlert\` in the error state 1`] = `
   </header>
    
   <button
-    class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+    class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default"
     type="button"
   >
     <span

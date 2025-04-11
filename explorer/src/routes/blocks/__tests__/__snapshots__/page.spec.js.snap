@@ -16,7 +16,7 @@ exports[`Blocks page > should render the Blocks page with the mobile layout 1`] 
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
         type="button"
       >
         <span
@@ -1964,7 +1964,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
         disabled=""
         type="button"
       >
@@ -2008,7 +2008,7 @@ exports[`Blocks page > should render the Blocks page, start polling for blocks a
       </h1>
        
       <button
-        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+        class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
         type="button"
       >
         <span

@@ -2,7 +2,7 @@ type BadgeVariant = "neutral" | "success" | "warning" | "error" | "alt";
 
 type BannerVariant = "info" | "warning" | "error";
 
-type ButtonSize = "normal" | "small";
+type ButtonSize = "default" | "small";
 
 type ButtonVariant = "primary" | "secondary" | "tertiary";
 
@@ -14,7 +14,7 @@ type IconProp = {
   size?: IconSize;
 };
 
-type IconSize = "small" | "normal" | "large";
+type IconSize = "small" | "default" | "large";
 
 type NavListProp = NavListItem[];
 
@@ -41,3 +41,10 @@ type TextboxTypes =
   | "url";
 
 type TooltipType = "error" | "info" | "success" | "warning";
+
+type ToastItem = {
+  icon?: string;
+  id: string;
+  message: string;
+  type: TooltipType;
+};

@@ -29,7 +29,7 @@
       icon={{
         path: mdiClose,
         position: "after",
-        size: "normal",
+        size: "default",
       }}
       variant="tertiary"
     />

@@ -15,7 +15,7 @@ exports[`Blocks Card > should disable the \`Show More\` button if there is no mo
     </h1>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
       disabled=""
       type="button"
     >
@@ -701,7 +701,7 @@ exports[`Blocks Card > should disable the \`Show More\` button is the card is in
     </h1>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
       disabled=""
       type="button"
     >
@@ -770,7 +770,7 @@ exports[`Blocks Card > should hide the \`Show More\` button if an error has occu
     </header>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default"
       type="button"
     >
       <span
@@ -800,7 +800,7 @@ exports[`Blocks Card > should render the \`BlocksCard\` component 1`] = `
     </h1>
      
     <button
-      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
       type="button"
     >
       <span

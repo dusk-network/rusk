@@ -53,9 +53,9 @@
   padding: var(--control-small-padding);
 }
 
-.dusk-button--size--normal,
-.dusk-anchor-button--size--normal,
-.dusk-anchor-button--size--normal:visited {
+.dusk-button--size--default,
+.dusk-anchor-button--size--default,
+.dusk-anchor-button--size--default:visited {
   font-size: var(--control-font-size);
   gap: calc(var(--control-font-size) / 2);
   padding: var(--control-padding);
