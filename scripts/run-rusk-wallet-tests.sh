@@ -18,7 +18,7 @@ PROVER_PID=$!
 
 # Run tests
 EXIT_STATUS=0
-cargo test -p rusk-wallet --release || EXIT_STATUS=$?
+cargo test -p rusk-wallet --release --features e2e-test || EXIT_STATUS=$?
 
 # Stop nodes
 kill "$NODE_PID" "$PROVER_PID" || true
