@@ -35,6 +35,7 @@ module.exports = {
           $app: "node_modules/@sveltejs/kit/src/runtime/app",
           $config: "./src/config",
           $lib: "./src/lib",
+          "@dusk/w3sper": "node_modules/@dusk/w3sper/src/mod.js",
           "@sveltejs/kit": "node_modules/@sveltejs/kit/src/exports/index.js",
           "@testing-library/svelte":
             "node_modules/@testing-library/svelte/src/index.js",

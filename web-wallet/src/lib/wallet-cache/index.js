@@ -14,7 +14,7 @@ import {
 /** @type {(buffer: ArrayBuffer) => Uint8Array} */
 const bufferToUint8Array = (buffer) => new Uint8Array(buffer);
 
-/** @type {(profiles: Array<import("$lib/vendor/w3sper.js/src/mod").Profile>) => string[]} */
+/** @type {(profiles: Array<Profile>) => string[]} */
 const getAddressesFrom = mapWith(compose(String, getKey("address")));
 
 const nullifiersToString = mapWith(String);
@@ -334,7 +334,11 @@ class WalletCache {
   }
 
   /**
-   * @param {Uint8Array[]} nullifiers
+   * Added the `ArrayBuffer[]` as a possibility as
+   * w3sper in some cases doesn't return a `Uint8Array[]`.
+   * IndexedDB will write ArrayBuffers in the database anyway.
+   *
+   * @param {Uint8Array[] | ArrayBuffer[]} nullifiers
    * @returns {Promise<void>}
    */
   async spendNotes(nullifiers) {
@@ -378,7 +382,7 @@ class WalletCache {
 
   /**
    * @param {Array<Map<Uint8Array, Uint8Array>>} syncerNotes
-   * @param {Array<import("$lib/vendor/w3sper.js/src/mod").Profile>} profiles
+   * @param {Array<Profile>} profiles
    * @returns {WalletCacheNote[]}
    */
   toCacheNotes(syncerNotes, profiles) {

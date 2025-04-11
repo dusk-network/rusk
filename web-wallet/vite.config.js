@@ -9,6 +9,7 @@ import { defineConfig, loadEnv } from "vite";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { execSync } from "child_process";
+import { resolve } from "path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
@@ -72,8 +73,20 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
-      /** @see https://github.com/vitest-dev/vitest/issues/2834 */
-      alias: [{ find: /^svelte$/, replacement: "svelte/internal" }],
+      alias: [
+        /** @see https://github.com/vitest-dev/vitest/issues/2834 */
+        { find: /^svelte$/, replacement: "svelte/internal" },
+
+        // Aliases to mock private w3sper's modules
+        {
+          find: /.+\/protocol-driver\/mod\.js$/,
+          replacement: resolve("./src/lib/__mocks__/ProtocolDriver.js"),
+        },
+        {
+          find: /.*\/components\/transactions\.js$/,
+          replacement: resolve("./src/lib/__mocks__/Transactions.js"),
+        },
+      ],
       coverage: {
         all: true,
         exclude: [
@@ -102,6 +115,12 @@ export default defineConfig(({ mode }) => {
       },
       environment: "jsdom",
       include: ["src/**/*.{test,spec}.{js,ts}"],
+      server: {
+        deps: {
+          // we inline w3sper to be able to use aliases
+          inline: ["@dusk/w3sper"],
+        },
+      },
       setupFiles: ["./vite-setup.js"],
     },
   };
