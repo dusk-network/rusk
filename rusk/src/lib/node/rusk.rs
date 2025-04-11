@@ -9,7 +9,7 @@ use std::sync::{mpsc, Arc};
 use std::time::Instant;
 use std::{fs, io};
 
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
     validation_quorum, MAX_NUMBER_OF_TRANSACTIONS,
@@ -31,7 +31,7 @@ use dusk_vm::{
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::{Hash, Slash, SpentTransaction, Transaction};
+use node_data::ledger::{Header, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
@@ -252,26 +252,22 @@ impl Rusk {
     }
 
     /// Verify the given transactions are ok.
-    #[allow(clippy::too_many_arguments)]
     pub fn verify_transactions(
         &self,
         prev_commit: [u8; 32],
-        block_height: u64,
-        block_hash: Hash,
-        block_gas_limit: u64,
+        header: &Header,
         generator: &BlsPublicKey,
         txs: &[Transaction],
         slashing: Vec<Slash>,
         voters: &[Voter],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
+        let block_height = header.height;
         let session = self.new_block_session(block_height, prev_commit)?;
         let execution_config = self.vm_config.to_execution_config(block_height);
 
         accept(
             session,
-            block_height,
-            block_hash,
-            block_gas_limit,
+            header,
             generator,
             txs,
             slashing,
@@ -292,15 +288,11 @@ impl Rusk {
     /// - VerificationOutput - The verification output.
     /// - Vec<ContractTxEvent> - All contract events that were emitted from the
     ///   given transactions.
-    #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
         &self,
         prev_commit: [u8; 32],
-        block_height: u64,
-        block_gas_limit: u64,
-        block_hash: Hash,
-        generator: BlsPublicKey,
-        txs: Vec<Transaction>,
+        header: &Header,
+        txs: &[Transaction],
         consistency_check: Option<VerificationOutput>,
         slashing: Vec<Slash>,
         voters: &[Voter],
@@ -309,17 +301,20 @@ impl Rusk {
         VerificationOutput,
         Vec<ContractTxEvent>,
     )> {
+        let generator = header.generator_bls_pubkey.inner();
+        let generator = BlsPublicKey::from_slice(generator).map_err(|e| {
+            Error::Other(anyhow::anyhow!("Error in from_slice {e:?}").into())
+        })?;
+        let block_height = header.height;
         let session = self.new_block_session(block_height, prev_commit)?;
 
         let execution_config = self.vm_config.to_execution_config(block_height);
 
         let (spent_txs, verification_output, session, events) = accept(
             session,
-            block_height,
-            block_hash,
-            block_gas_limit,
+            header,
             &generator,
-            &txs[..],
+            txs,
             slashing,
             voters,
             &execution_config,
@@ -548,12 +543,9 @@ impl Rusk {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn accept(
     session: Session,
-    block_height: u64,
-    block_hash: Hash,
-    block_gas_limit: u64,
+    header: &Header,
     generator: &BlsPublicKey,
     txs: &[Transaction],
     slashing: Vec<Slash>,
@@ -567,7 +559,8 @@ fn accept(
 )> {
     let mut session = session;
 
-    let mut block_gas_left = block_gas_limit;
+    let mut block_gas_left = header.gas_limit;
+    let block_height = header.height;
 
     let mut spent_txs = Vec::with_capacity(txs.len());
     let mut dusk_spent = 0;
@@ -620,13 +613,11 @@ fn accept(
 
     event_bloom.add_events(&coinbase_events);
 
-    let coinbase_events: Vec<_> = coinbase_events
-        .into_iter()
-        .map(|event| ContractTxEvent {
+    let coinbase_events =
+        coinbase_events.into_iter().map(|event| ContractTxEvent {
             event: event.into(),
-            origin: block_hash,
-        })
-        .collect();
+            origin: header.hash,
+        });
     events.extend(coinbase_events);
 
     let state_root = session.root();
