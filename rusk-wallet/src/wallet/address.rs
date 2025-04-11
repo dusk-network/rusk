@@ -9,8 +9,9 @@ use std::hash::Hasher;
 use std::str::FromStr;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
 
-use super::*;
 use crate::Error;
 
 /// Address to perform a transaction with.
@@ -26,10 +27,13 @@ pub enum Address {
 
 impl Address {
     /// Check if the `other` Address uses the same transaction model
+    ///
+    /// # Errors
+    /// If the other address is not the same type as `Self`.
     pub fn same_transaction_model(&self, other: &Address) -> Result<(), Error> {
         match (self, other) {
-            (Address::Shielded(_), Address::Shielded(_)) => Ok(()),
-            (Address::Public(_), Address::Public(_)) => Ok(()),
+            (Address::Shielded(_), Address::Shielded(_))
+            | (Address::Public(_), Address::Public(_)) => Ok(()),
             _ => Err(Error::DifferentTransactionModels),
         }
     }
@@ -66,6 +70,7 @@ impl Address {
     }
 
     /// A trimmed version of the address to display as preview
+    #[must_use]
     pub fn preview(&self) -> String {
         let addr_key_str = String::from(self);
         format!(
@@ -164,6 +169,7 @@ pub struct Profile {
 
 impl Profile {
     /// Format the shielded account into a string.
+    #[must_use]
     pub fn shielded_account_string(&self) -> String {
         format!(
             "{} - {}",
@@ -173,6 +179,7 @@ impl Profile {
     }
 
     /// Format the public account into a string.
+    #[must_use]
     pub fn public_account_string(&self) -> String {
         format!(
             "{} - {}",
@@ -182,6 +189,7 @@ impl Profile {
     }
 
     /// Format the staking account into a string.
+    #[must_use]
     pub fn staking_account_string(&self) -> String {
         format!(
             "{} - {}",
@@ -191,6 +199,7 @@ impl Profile {
     }
 
     /// Format the shortened shielded account into a string.
+    #[must_use]
     pub fn shielded_account_preview(&self) -> String {
         format!(
             "{} - {}",
@@ -200,6 +209,7 @@ impl Profile {
     }
 
     /// Format the shortened public account into a string.
+    #[must_use]
     pub fn public_account_preview(&self) -> String {
         format!(
             "{} - {}",
@@ -209,6 +219,7 @@ impl Profile {
     }
 
     /// Format the shortened staking account into a string.
+    #[must_use]
     pub fn staking_account_preview(&self) -> String {
         format!(
             "{} - {}",
@@ -218,6 +229,7 @@ impl Profile {
     }
 
     /// Format the profile's index.
+    #[must_use]
     pub fn index_string(profile_idx: u8) -> String {
         let mut index_string = format!("Profile {:2}", profile_idx + 1);
         if profile_idx == 0 {

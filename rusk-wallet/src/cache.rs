@@ -9,9 +9,12 @@ use std::path::Path;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::transfer::phoenix::NoteLeaf;
+use dusk_core::{
+    transfer::phoenix::Note, transfer::phoenix::PublicKey as PhoenixPublicKey,
+    BlsScalar,
+};
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 
-use super::*;
 use crate::clients::TREE_LEAF;
 use crate::error::Error;
 

@@ -11,7 +11,7 @@ use std::fmt::Display;
 use bip39::{Language, Mnemonic, MnemonicType};
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
-use rusk_wallet::dat::{DatFileVersion, LATEST_VERSION};
+use rusk_wallet::dat::{FileVersion as DatFileVersion, LATEST_VERSION};
 use rusk_wallet::{
     Address, Error, Profile, Wallet, WalletPath, IV_SIZE, MAX_PROFILES,
     SALT_SIZE,

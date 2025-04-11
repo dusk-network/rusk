@@ -192,22 +192,23 @@ impl From<block_modes::InvalidKeyIvLength> for Error {
 
 impl From<dusk_core::Error> for Error {
     fn from(e: dusk_core::Error) -> Self {
-        use dusk_core::Error::*;
-
         match e {
-            InsufficientBalance => Self::NotEnoughBalance,
-            Replay => Self::Transaction("Replay".to_string()),
-            PhoenixOwnership => Self::AddressNotOwned,
-            PhoenixCircuit(s) | PhoenixProver(s) => Self::ProverError(s),
-            InvalidData => Self::Bytes(dusk_bytes::Error::InvalidData),
-            BadLength(found, expected) => {
+            dusk_core::Error::InsufficientBalance => Self::NotEnoughBalance,
+            dusk_core::Error::Replay => Self::Transaction("Replay".to_string()),
+            dusk_core::Error::PhoenixOwnership => Self::AddressNotOwned,
+            dusk_core::Error::PhoenixCircuit(s)
+            | dusk_core::Error::PhoenixProver(s) => Self::ProverError(s),
+            dusk_core::Error::InvalidData => {
+                Self::Bytes(dusk_bytes::Error::InvalidData)
+            }
+            dusk_core::Error::BadLength(found, expected) => {
                 Self::Bytes(dusk_bytes::Error::BadLength { found, expected })
             }
-            InvalidChar(ch, index) => {
+            dusk_core::Error::InvalidChar(ch, index) => {
                 Self::Bytes(dusk_bytes::Error::InvalidChar { ch, index })
             }
-            Rkyv(_) => Self::Rkyv,
-            MemoTooLarge(m) => Self::MemoTooLarge(m),
+            dusk_core::Error::Rkyv(_) => Self::Rkyv,
+            dusk_core::Error::MemoTooLarge(m) => Self::MemoTooLarge(m),
         }
     }
 }

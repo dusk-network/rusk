@@ -11,13 +11,16 @@ use std::sync::{Arc, Mutex};
 
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::stake::{StakeFundOwner, StakeKeys};
+use dusk_core::stake::{StakeData, StakeFundOwner, StakeKeys};
 use dusk_core::transfer::moonlight::AccountData;
-use dusk_core::transfer::phoenix::{Note, NoteLeaf, Prove};
+use dusk_core::transfer::phoenix::{
+    ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
+    PublicKey as PhoenixPublicKey,
+};
 use dusk_core::transfer::Transaction;
+use dusk_core::BlsScalar;
 use dusk_core::Error as ExecutionCoreError;
 use flume::Receiver;
-use rues::RuesHttpClient;
 use tokio::task::JoinHandle;
 use tokio::time::{sleep, Duration};
 use wallet_core::keys::{
@@ -28,9 +31,9 @@ use zeroize::Zeroize;
 
 use self::sync::sync_db;
 use super::cache::Cache;
-use super::*;
+use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
-use crate::{Error, MAX_PROFILES};
+use crate::{Address, Error, MAX_PROFILES};
 
 const TRANSFER_CONTRACT: &str =
     "0100000000000000000000000000000000000000000000000000000000000000";
@@ -80,6 +83,9 @@ impl State {
     ) -> Result<Self, Error> {
         let cfs = (0..MAX_PROFILES)
             .flat_map(|i| {
+                // we know that `i < MAX_PROFILES <= u8::MAX`, so casting to u8
+                // is safe here
+                #[allow(clippy::cast_possible_truncation)]
                 let pk: PhoenixPublicKey =
                     derive_phoenix_pk(store.get_seed(), i as u8);
 
@@ -123,7 +129,7 @@ impl State {
         }
     }
 
-    pub async fn register_sync(&mut self) -> Result<(), Error> {
+    pub fn register_sync(&mut self) {
         let (sync_tx, sync_rx) = flume::unbounded::<String>();
 
         self.sync_rx = Some(sync_rx);
@@ -140,7 +146,7 @@ impl State {
                 let _ = sync_tx.send("Syncing..".to_string());
 
                 let _ = match sync_db(&client, &cache, &store, status).await {
-                    Ok(_) => sync_tx.send("Syncing Complete".to_string()),
+                    Ok(()) => sync_tx.send("Syncing Complete".to_string()),
                     Err(e) => sync_tx.send(format!("Error during sync:.. {e}")),
                 };
 
@@ -149,8 +155,6 @@ impl State {
         });
 
         self.sync_join_handle = Some(handle);
-
-        Ok(())
     }
 
     pub async fn sync(&self) -> Result<(), Error> {
@@ -207,7 +211,7 @@ impl State {
         Ok(tx)
     }
 
-    /// Selects up to MAX_INPUT_NOTES unspent input notes from the cache. The
+    /// Selects up to `MAX_INPUT_NOTES` unspent input notes from the cache. The
     /// value of the input notes need to cover the cost of the transaction.
     pub(crate) async fn tx_input_notes(
         &self,
@@ -237,7 +241,7 @@ impl State {
 
         // construct the transaction input
         let mut tx_input = Vec::<(Note, NoteOpening, BlsScalar)>::new();
-        for (nullifier, note_leaf) in tx_input_notes.iter() {
+        for (nullifier, note_leaf) in &tx_input_notes {
             // fetch the openings for the input-notes
             let opening = self.fetch_opening(note_leaf.as_ref()).await?;
 

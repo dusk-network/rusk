@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+// allow variable names like `stake_sk` and `stake_pk`.
+#![allow(clippy::similar_names)]
+
 use std::fmt::Debug;
 
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
@@ -20,8 +23,7 @@ use wallet_core::transaction::{
 };
 use zeroize::Zeroize;
 
-use super::file::SecureWalletFile;
-use super::{Address, Wallet};
+use super::{Address, SecureWalletFile, Wallet};
 use crate::clients::Prover;
 use crate::currency::Dusk;
 use crate::gas::Gas;
@@ -29,6 +31,11 @@ use crate::Error;
 
 impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Transfers funds between shielded accounts.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network,
+    /// if the `sender_idx` doesn't exist within the wallet, if the transfer
+    /// amount is 0 or the specified gas is not enough..
     pub async fn phoenix_transfer(
         &self,
         sender_idx: u8,
@@ -89,6 +96,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Transfers funds between public accounts.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network,
+    /// if the `sender_idx` doesn't exist within the wallet, if the transfer
+    /// amount is 0 or the specified gas is not enough..
     pub async fn moonlight_transfer(
         &self,
         sender_idx: u8,
@@ -132,6 +144,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Executes a generic contract call, paying gas with a shielded account.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if the `sender_idx` doesn't exist within the wallet.
     pub async fn phoenix_execute(
         &self,
         sender_idx: u8,
@@ -188,6 +204,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Executes a generic contract call, paying gas from a public account.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if the `sender_idx` doesn't exist within the wallet.
     #[allow(clippy::too_many_arguments)]
     pub async fn moonlight_execute(
         &self,
@@ -234,6 +254,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Stakes Dusk using shielded notes.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network,
+    /// if the `profile_idx` doesn't exist within the wallet, the stake-amount
+    /// is 0 or the gas is insufficient.
     pub async fn phoenix_stake(
         &self,
         profile_idx: u8,
@@ -308,6 +333,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Stakes Dusk using a public account.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network,
+    /// if the `profile_idx` doesn't exist within the wallet, the stake-amount
+    /// is 0 or the gas is insufficient.
     pub async fn moonlight_stake(
         &self,
         profile_idx: u8,
@@ -366,6 +396,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Unstakes Dusk into shielded notes.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network,
+    /// if the `profile_idx` doesn't exist within the wallet or there is no
+    /// stake for the given profile.
     pub async fn phoenix_unstake(
         &self,
         profile_idx: u8,
@@ -422,6 +457,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Unstakes Dusk onto a public account.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network,
+    /// if the `profile_idx` doesn't exist within the wallet or there is no
+    /// stake for the given profile.
     pub async fn moonlight_unstake(
         &self,
         profile_idx: u8,
@@ -469,6 +509,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Withdraws accumulated staking to a shielded account.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if the `sender_idx` doesn't exist within the wallet.
     pub async fn phoenix_stake_withdraw(
         &self,
         sender_idx: u8,
@@ -492,7 +536,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .fetch_stake(&stake_pk)
             .await?
             .map(|s| s.reward)
-            .unwrap_or(0);
+            .unwrap_or_default();
 
         let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
@@ -520,6 +564,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Withdraws accumulated staking reward to a public account.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if the `sender_idx` doesn't exist within the wallet.
     pub async fn moonlight_stake_withdraw(
         &self,
         sender_idx: u8,
@@ -560,6 +608,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Converts Dusk from a shielded account to a public account.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if the `profile_idx` doesn't exist within the wallet.
     pub async fn phoenix_to_moonlight(
         &self,
         profile_idx: u8,
@@ -598,6 +650,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Converts Dusk from a public account to a shielded account.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if the `profile_idx` doesn't exist within the wallet.
     pub async fn moonlight_to_phoenix(
         &self,
         profile_idx: u8,
@@ -633,6 +689,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Deploys a contract using shielded notes to pay gas.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if the `sender_idx` doesn't exist within the wallet.
     pub async fn phoenix_deploy(
         &self,
         sender_idx: u8,
@@ -675,6 +735,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Deploys a contract using a public account to pay gas.
+    ///
+    /// # Errors
+    /// This method will error if the wallet is not connected to the network or
+    /// if the `sender_idx` doesn't exist within the wallet.
     pub async fn moonlight_deploy(
         &self,
         sender_idx: u8,
@@ -709,6 +773,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Finds the index of the stake owner account.
+    ///
+    /// # Errors
+    /// This method will error if the given `stake_pk` cannot be found in the
+    /// wallet.
     pub async fn find_stake_owner_idx(
         &self,
         stake_pk: &BlsPublicKey,
@@ -717,6 +785,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     }
 
     /// Finds the address of the stake owner account.
+    ///
+    /// # Errors
+    /// This method will error if the stake-owner cannot be fetched or if the
+    /// stake-owner of the provided `stake_pk` is a contract.
     pub async fn find_stake_owner_account(
         &self,
         stake_pk: &BlsPublicKey,

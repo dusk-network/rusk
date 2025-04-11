@@ -13,6 +13,7 @@
 //! through the network of their choice, stake and withdraw rewards, etc.
 
 #![deny(missing_docs)]
+#![deny(clippy::pedantic)]
 
 mod cache;
 mod clients;
@@ -29,17 +30,10 @@ pub mod gas;
 
 pub use error::Error;
 pub use gql::{BlockTransaction, GraphQL};
-pub use rues::RuesHttpClient;
+pub use rues::HttpClient as RuesHttpClient;
 pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
 };
-
-use dusk_core::stake::StakeData;
-use dusk_core::transfer::phoenix::{
-    ArchivedNoteLeaf, Note, NoteOpening, PublicKey as PhoenixPublicKey,
-    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
-};
-use dusk_core::{dusk, from_dusk, BlsScalar};
 
 use currency::Dusk;
 
@@ -62,8 +56,9 @@ pub const PBKDF2_ROUNDS: u32 = 10_000;
 
 const DEFAULT_MAX_PROFILES: usize = 2;
 
-// PANIC: the function is const and will panic during compilation if the value
-// is invalid
+// # Panics
+// The function is const and will panic during compilation if the value is
+// invalid or larger that 255.
 const fn get_max_profiles() -> usize {
     match option_env!("WALLET_MAX_PROFILES") {
         Some(v) => match konst::primitive::parse_usize(v) {

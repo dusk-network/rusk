@@ -15,9 +15,9 @@ use crate::crypto::{decrypt_aes_cbc, decrypt_aes_gcm};
 use crate::{Error, WalletPath, IV_SIZE, SALT_SIZE};
 
 /// Binary prefix for old Dusk wallet files
-pub const OLD_MAGIC: u32 = 0x1d0c15;
+pub const OLD_MAGIC: u32 = 0x1d_0c15;
 /// Binary prefix for new binary file format
-pub const MAGIC: u32 = 0x72736b;
+pub const MAGIC: u32 = 0x72_736b;
 /// The latest version of the rusk binary format for wallet dat file
 pub const LATEST_VERSION: Version = (0, 0, 2, 0, false);
 /// The type info of the dat file we'll save
@@ -34,7 +34,7 @@ const FILE_HEADER_SIZE: usize = 12;
 
 /// Versions of the potential wallet DAT files we read
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum DatFileVersion {
+pub enum FileVersion {
     /// Legacy the oldest format
     Legacy,
     /// Preciding legacy, we have the old one
@@ -43,9 +43,10 @@ pub enum DatFileVersion {
     RuskBinaryFileFormat(Version),
 }
 
-impl DatFileVersion {
+impl FileVersion {
     /// Checks if the file version is older than the latest Rust Binary file
     /// format
+    #[must_use]
     pub fn is_old(&self) -> bool {
         match self {
             Self::Legacy | Self::OldWalletCli(_) => true,
@@ -55,17 +56,17 @@ impl DatFileVersion {
 }
 
 fn read_salt_and_iv(
-    version: DatFileVersion,
+    version: FileVersion,
     bytes: &[u8],
 ) -> Result<Option<(Salt, Iv)>, Error> {
     match version {
-        DatFileVersion::Legacy | DatFileVersion::OldWalletCli(_) => Ok(None),
-        DatFileVersion::RuskBinaryFileFormat(version)
+        FileVersion::Legacy | FileVersion::OldWalletCli(_) => Ok(None),
+        FileVersion::RuskBinaryFileFormat(version)
             if version_without_pre_higher(version) < (0, 0, 2, 0) =>
         {
             Ok(None)
         }
-        DatFileVersion::RuskBinaryFileFormat(_) => {
+        FileVersion::RuskBinaryFileFormat(_) => {
             if let (Some(salt_bytes), Some(iv_bytes)) = (
                 bytes.get(FILE_HEADER_SIZE..FILE_HEADER_SIZE + SALT_SIZE),
                 bytes.get(
@@ -89,13 +90,13 @@ fn read_salt_and_iv(
 
 /// Make sense of the payload and return it
 pub(crate) fn get_seed_and_address(
-    file: DatFileVersion,
+    file: FileVersion,
     mut bytes: Vec<u8>,
     aes_key: &[u8],
     iv: Option<&[u8; IV_SIZE]>,
 ) -> Result<(Seed, u8), Error> {
     match file {
-        DatFileVersion::Legacy => {
+        FileVersion::Legacy => {
             if bytes[1] == 0 && bytes[2] == 0 {
                 bytes.drain(..3);
             }
@@ -109,7 +110,7 @@ pub(crate) fn get_seed_and_address(
 
             Ok((seed, 1))
         }
-        DatFileVersion::OldWalletCli((major, minor, _, _, _)) => {
+        FileVersion::OldWalletCli((major, minor, _, _, _)) => {
             bytes.drain(..5);
 
             let result: Result<(Seed, u8), Error> = match (major, minor) {
@@ -140,7 +141,7 @@ pub(crate) fn get_seed_and_address(
 
             result
         }
-        DatFileVersion::RuskBinaryFileFormat(version) => {
+        FileVersion::RuskBinaryFileFormat(version) => {
             const OLD_PAYLOAD_SIZE: usize = 96;
             const PAYLOAD_SIZE: usize = 81;
 
@@ -179,25 +180,25 @@ pub(crate) fn get_seed_and_address(
     }
 }
 
-/// From the first 12 bytes of the file (header), we check version
+/// From the first 12 bytes of the file [header], we check version
 ///
-/// https://github.com/dusk-network/rusk/wiki/Binary-File-Format/#header
+/// [header]: https://github.com/dusk-network/rusk/wiki/Binary-File-Format/#header
 pub(crate) fn check_version(
     bytes: Option<&[u8]>,
-) -> Result<DatFileVersion, Error> {
+) -> Result<FileVersion, Error> {
     match bytes {
         Some(bytes) => {
             let header_bytes: [u8; 4] = bytes[0..4]
                 .try_into()
                 .map_err(|_| Error::WalletFileCorrupted)?;
 
-            let magic = u32::from_le_bytes(header_bytes) & 0x00ffffff;
+            let magic = u32::from_le_bytes(header_bytes) & 0x00ff_ffff;
 
             if magic == OLD_MAGIC {
                 // check for version information
                 let (major, minor) = (bytes[3], bytes[4]);
 
-                Ok(DatFileVersion::OldWalletCli((major, minor, 0, 0, false)))
+                Ok(FileVersion::OldWalletCli((major, minor, 0, 0, false)))
             } else {
                 let header_bytes = bytes[0..8]
                     .try_into()
@@ -205,20 +206,20 @@ pub(crate) fn check_version(
 
                 let number = u64::from_be_bytes(header_bytes);
 
-                let magic_num = (number & 0xFFFFFF00000000) >> 32;
+                let magic_num = (number & 0xff_ffff_0000_0000) >> 32;
 
                 if (magic_num as u32) != MAGIC {
-                    return Ok(DatFileVersion::Legacy);
+                    return Ok(FileVersion::Legacy);
                 }
 
-                let file_type = (number & 0x000000FFFF0000) >> 16;
-                let reserved = number & 0x0000000000FFFF;
+                let file_type = (number & 0x00_0000_ffff_0000) >> 16;
+                let reserved = number & 0x00_0000_0000_ffff;
 
-                if file_type != FILE_TYPE as u64 {
+                if file_type != u64::from(FILE_TYPE) {
                     return Err(Error::WalletFileCorrupted);
                 };
 
-                if reserved != RESERVED as u64 {
+                if reserved != u64::from(RESERVED) {
                     return Err(Error::WalletFileCorrupted);
                 };
 
@@ -228,15 +229,15 @@ pub(crate) fn check_version(
 
                 let version = u32::from_be_bytes(version_bytes);
 
-                let major = (version & 0xff000000) >> 24;
-                let minor = (version & 0x00ff0000) >> 16;
-                let patch = (version & 0x0000ff00) >> 8;
-                let pre = (version & 0x000000f0) >> 4;
-                let higher = version & 0x0000000f;
+                let major = (version & 0xff00_0000) >> 24;
+                let minor = (version & 0x00ff_0000) >> 16;
+                let patch = (version & 0x0000_ff00) >> 8;
+                let pre = (version & 0x0000_00f0) >> 4;
+                let higher = version & 0x000_0000f;
 
                 let pre_higher = matches!(higher, 1);
 
-                Ok(DatFileVersion::RuskBinaryFileFormat((
+                Ok(FileVersion::RuskBinaryFileFormat((
                     major as u8,
                     minor as u8,
                     patch as u8,
@@ -251,7 +252,10 @@ pub(crate) fn check_version(
 
 /// Read the first 12 bytes of the dat file and get the file version from
 /// there
-pub fn read_file_version(file: &WalletPath) -> Result<DatFileVersion, Error> {
+///
+/// # Errors
+/// This function will error if the file is missing or invalid.
+pub fn read_file_version(file: &WalletPath) -> Result<FileVersion, Error> {
     let path = &file.wallet;
 
     // make sure file exists
@@ -270,9 +274,12 @@ pub fn read_file_version(file: &WalletPath) -> Result<DatFileVersion, Error> {
 
 /// Read the file version of the dat file from the header and, if present,
 /// the salt and IV.
+///
+/// # Errors
+/// This function will error if the wallet-file is corrupted.
 pub fn read_file_version_and_salt_iv(
     file: &WalletPath,
-) -> Result<(DatFileVersion, Option<(Salt, Iv)>), Error> {
+) -> Result<(FileVersion, Option<(Salt, Iv)>), Error> {
     let path = &file.wallet;
 
     if !path.is_file() {
@@ -294,6 +301,7 @@ pub(crate) fn version_bytes(version: Version) -> [u8; 4] {
 }
 
 /// Returns the given version with its last item, pre-higher, removed
+#[must_use]
 pub fn version_without_pre_higher(version: Version) -> (u8, u8, u8, u8) {
     (version.0, version.1, version.2, version.3)
 }
@@ -322,22 +330,22 @@ mod tests {
 
         assert_eq!(
             check_version(Some(&old_wallet_file)).unwrap(),
-            DatFileVersion::OldWalletCli((2, 0, 0, 0, false))
+            FileVersion::OldWalletCli((2, 0, 0, 0, false))
         );
 
         assert_eq!(
             check_version(Some(&legacy_file)).unwrap(),
-            DatFileVersion::Legacy
+            FileVersion::Legacy
         );
 
         assert_eq!(
             check_version(Some(&rusk_bin_file_1)).unwrap(),
-            DatFileVersion::RuskBinaryFileFormat((0, 0, 1, 0, false))
+            FileVersion::RuskBinaryFileFormat((0, 0, 1, 0, false))
         );
 
         assert_eq!(
             check_version(Some(&rusk_bin_file_2)).unwrap(),
-            DatFileVersion::RuskBinaryFileFormat((0, 0, 2, 0, false))
+            FileVersion::RuskBinaryFileFormat((0, 0, 2, 0, false))
         );
     }
 }
