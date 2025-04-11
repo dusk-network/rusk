@@ -34,25 +34,20 @@
   </p>
   <hr class="account-overview-panel__separator" />
   <div class="account-overview-panel__details">
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.balance))} DUSK`}
-      subtitle="Current Balance"
-    />
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.staked_balance))} DUSK`}
-      subtitle="Staked Balance"
-    />
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.active_stake))} DUSK`}
-      subtitle="Active Balance"
-    />
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.inactive_stake))} DUSK`}
-      subtitle="Inactive Stake"
-    />
-    <OverviewPanelDetailsItem
-      title={`${formatter(luxToDusk(data.inactive_stake))} DUSK`}
-      subtitle="Rewards"
-    />
+    <OverviewPanelDetailsItem subtitle="Current Balance">
+      <p>{`${formatter(luxToDusk(data.balance))} DUSK`}</p>
+    </OverviewPanelDetailsItem>
+    <OverviewPanelDetailsItem subtitle="Staked Balance">
+      <p>{`${formatter(luxToDusk(data.staked_balance))} DUSK`}</p>
+    </OverviewPanelDetailsItem>
+    <OverviewPanelDetailsItem subtitle="Active Balance">
+      <p>{`${formatter(luxToDusk(data.active_stake))} DUSK`}</p>
+    </OverviewPanelDetailsItem>
+    <OverviewPanelDetailsItem subtitle="Inactive Stake">
+      <p>{`${formatter(luxToDusk(data.inactive_stake))} DUSK`}</p>
+    </OverviewPanelDetailsItem>
+    <OverviewPanelDetailsItem subtitle="Rewards">
+      <p>{`${formatter(luxToDusk(data.inactive_stake))} DUSK`}</p>
+    </OverviewPanelDetailsItem>
   </div>
 </section>
