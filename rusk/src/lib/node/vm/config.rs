@@ -58,10 +58,6 @@ impl Default for Config {
     }
 }
 
-pub(crate) mod feature {
-    pub const FEATURE_ABI_PUBLIC_SENDER: &str = "ABI_PUBLIC_SENDER";
-}
-
 impl Config {
     pub fn new() -> Self {
         Self {
@@ -118,16 +114,11 @@ impl Config {
     }
 
     /// Create a new `Config` with the given parameters.
-    pub fn to_execution_config(&self, block_height: u64) -> ExecutionConfig {
-        let with_public_sender: bool = self
-            .feature(feature::FEATURE_ABI_PUBLIC_SENDER)
-            .map(|activation| block_height >= activation)
-            .unwrap_or_default();
+    pub fn to_execution_config(&self, _block_height: u64) -> ExecutionConfig {
         ExecutionConfig {
             gas_per_deploy_byte: self.gas_per_deploy_byte,
             min_deploy_points: self.min_deploy_points,
             min_deploy_gas_price: self.min_deployment_gas_price,
-            with_public_sender,
         }
     }
 
