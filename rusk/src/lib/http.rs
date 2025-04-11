@@ -742,6 +742,10 @@ mod tests {
 
     #[tokio::test]
     async fn https_query() {
+        let provider =
+            tokio_rustls::rustls::crypto::aws_lc_rs::default_provider();
+        let _ = provider.install_default();
+
         let cert_path = "tests/assets/cert.pem";
         let key_path = "tests/assets/key.pem";
 
