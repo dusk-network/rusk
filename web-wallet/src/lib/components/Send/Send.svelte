@@ -489,9 +489,9 @@
   }
 
   :global(
-      .dusk-textbox.operation__send-address,
-      .dusk-textbox.operation__send-memo
-    ) {
+    .dusk-textbox.operation__send-address,
+    .dusk-textbox.operation__send-memo
+  ) {
     resize: vertical;
     min-height: 5em;
     max-height: 10em;

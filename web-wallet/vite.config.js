@@ -5,8 +5,8 @@ import { coverageConfigDefaults } from "vitest/config";
 
 /* eslint-enable import/no-unresolved */
 
+import { default as basicSsl } from "@vitejs/plugin-basic-ssl";
 import { defineConfig, loadEnv } from "vite";
-import basicSsl from "@vitejs/plugin-basic-ssl";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { execSync } from "child_process";
 import { resolve } from "path";
@@ -21,10 +21,7 @@ export default defineConfig(({ mode }) => {
   const APP_BUILD_INFO = `${buildHash.toString() || "unknown"} ${buildDate}`;
   const commonPlugins = [
     sveltekit(),
-    nodePolyfills({
-      globals: { Buffer: true },
-      include: ["buffer"],
-    }),
+    nodePolyfills({ globals: { Buffer: true }, include: ["buffer"] }),
   ];
 
   // needed to use %sveltekit.env.PUBLIC_APP_VERSION% in app.html
@@ -32,9 +29,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     define: {
-      CONFIG: {
-        LOCAL_STORAGE_APP_KEY: process.env.npm_package_name,
-      },
+      CONFIG: { LOCAL_STORAGE_APP_KEY: process.env.npm_package_name },
       "import.meta.env.APP_BUILD_INFO": JSON.stringify(APP_BUILD_INFO),
       "import.meta.env.APP_VERSION": JSON.stringify(APP_VERSION),
       "process.env": {
@@ -59,17 +54,12 @@ export default defineConfig(({ mode }) => {
       mode === "development" ? [basicSsl(), ...commonPlugins] : commonPlugins,
     server: {
       proxy: {
-        "/on": {
-          target: "ws://localhost:8080/",
-          ws: true,
-        },
+        "/on": { target: "ws://localhost:8080/", ws: true },
         "/rusk": {
           rewrite: (path) => path.replace(/^\/rusk/, ""),
           target: "http://localhost:8080/",
         },
-        "/static/drivers": {
-          target: "http://localhost:8080/",
-        },
+        "/static/drivers": { target: "http://localhost:8080/" },
       },
     },
     test: {

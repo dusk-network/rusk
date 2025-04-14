@@ -42,10 +42,7 @@ describe("fillCacheDatabase", () => {
 
   it("should fill the database tables with mock data", async () => {
     const expectedPendingNotesInfo = sortByNullifier(cachePendingNotesInfo).map(
-      (v) => ({
-        ...v,
-        nullifier: v.nullifier.buffer,
-      })
+      (v) => ({ ...v, nullifier: v.nullifier.buffer })
     );
     const expectedSpentNotes = sortByNullifier(cacheSpentNotes).map(toDbNote);
     const expectedUnspentNotes =
