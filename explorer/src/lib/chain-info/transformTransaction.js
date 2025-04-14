@@ -12,7 +12,7 @@ const transformTransaction = (tx) => ({
   gasprice: tx.tx.gasPrice,
   gasspent: tx.gasSpent,
   memo: tx.tx.memo ?? "",
-  method: tx.tx.isDeploy ? "deploy" : tx.tx.callData?.fnName ?? "transfer",
+  method: tx.tx.isDeploy ? "deploy" : (tx.tx.callData?.fnName ?? "transfer"),
   success: tx.err === null,
   to: undefined,
   txerror: tx.err ?? "",
