@@ -1944,6 +1944,7 @@ dependencies = [
  "criterion",
  "dashmap",
  "dirs",
+ "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "dusk-consensus",
  "dusk-core",

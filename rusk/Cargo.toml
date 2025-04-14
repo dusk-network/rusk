@@ -48,6 +48,7 @@ blake3 = { workspace = true }
 dusk-transfer-contract-dd = { workspace = true }
 dusk-stake-contract-dd = { workspace = true }
 dusk-data-driver = { workspace = true }
+dusk-bls12_381 = { workspace = true }
 
 dusk-bytes = { workspace = true }
 kadcast = { workspace = true }
@@ -135,6 +136,7 @@ archive = ["chain", "node/archive", "dusk-core/serde"]
 network-trace = ["node/network-trace"]
 http-wasm = []
 dynamic-verifier = []
+jsonrpc-server = ["testwallet", "chain", "archive"]
 
 [[bench]]
 name = "block_ingestion"
