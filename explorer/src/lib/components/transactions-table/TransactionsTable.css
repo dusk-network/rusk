@@ -1,3 +1,9 @@
+.transaction__transaction-id-container {
+  display: flex;
+  align-items: center;
+  gap: var(--default-gap);
+}
+
 .transaction__fee-price-label,
 .transaction__fee-limit-label {
   font-weight: 500;

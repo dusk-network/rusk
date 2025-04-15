@@ -20,7 +20,7 @@ exports[`Navbar > renders the Navbar component 1`] = `
     aria-controls="dusk-navbar-menu"
     aria-expanded="false"
     aria-label="Toggle Menu"
-    class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--normal dusk-icon-button dusk-navbar__toggle"
+    class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-navbar__toggle"
     type="button"
   >
     <svg
@@ -105,12 +105,12 @@ exports[`Navbar > renders the Navbar component 1`] = `
           
            
           <button
-            class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--normal dusk-icon-button"
+            class="dusk-button dusk-button--type--submit dusk-button--variant--primary dusk-button--size--default dusk-icon-button"
             type="submit"
           >
              
             <svg
-              class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+              class="dusk-icon dusk-icon--size--default dusk-button__icon"
               role="graphics-symbol"
               viewBox="0 0 24 24"
             >

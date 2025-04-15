@@ -2,7 +2,7 @@
 
 exports[`StaleDataNotice > renders the Stale Data notice if data is stale 1`] = `
 <svg
-  class="dusk-icon dusk-icon--size--normal"
+  class="dusk-icon dusk-icon--size--default"
   data-tooltip-id="main-tooltip"
   data-tooltip-place="top"
   data-tooltip-text="Stale Data 

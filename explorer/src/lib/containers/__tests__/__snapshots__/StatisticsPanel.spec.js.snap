@@ -17,7 +17,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -52,7 +52,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -96,7 +96,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -134,7 +134,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -173,7 +173,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -207,7 +207,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -246,7 +246,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -280,7 +280,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -319,7 +319,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -352,7 +352,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -401,7 +401,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -435,7 +435,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -478,7 +478,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -515,7 +515,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -553,7 +553,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -586,7 +586,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -624,7 +624,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -657,7 +657,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -695,7 +695,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >
@@ -728,7 +728,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           class="statistics-panel__statistics-item-value-container"
         >
           <svg
-            class="dusk-icon dusk-icon--size--normal"
+            class="dusk-icon dusk-icon--size--default"
             role="graphics-symbol"
             viewBox="0 0 24 24"
           >

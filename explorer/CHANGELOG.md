@@ -11,6 +11,7 @@ and this project adheres to
 ### Added
 
 - Add Tokens page [#3415]
+- Add copy buttons to appropriate fields [#3620]
 
 ### Changed
 
@@ -197,6 +198,7 @@ and this project adheres to
 [#3581]: https://github.com/dusk-network/rusk/pull/3581
 [#3591]: https://github.com/dusk-network/rusk/issues/3591
 [#3612]: https://github.com/dusk-network/rusk/issues/3612
+[#3620]: https://github.com/dusk-network/rusk/issues/3620
 
 <!-- VERSIONS -->
 

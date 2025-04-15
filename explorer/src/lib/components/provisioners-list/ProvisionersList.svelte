@@ -4,7 +4,7 @@
   import { onMount } from "svelte";
   import { ownPairs } from "lamb";
 
-  import { Badge } from "$lib/dusk/components";
+  import { Badge, CopyButton } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { createValueFormatter } from "$lib/dusk/value";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
@@ -51,9 +51,13 @@
   <ListItem tooltipText={displayTooltips ? "The staking address used" : ""}>
     <svelte:fragment slot="term">Staking address</svelte:fragment>
     <svelte:fragment slot="definition"
-      ><span class="provisioners-list__staking-address">{provisionerKey}</span
-      ></svelte:fragment
-    >
+      ><span class="provisioners-list__staking-address">{provisionerKey}</span>
+      <CopyButton
+        name="Provisioner's staking address"
+        rawValue={provisionerKey}
+        variant="secondary"
+      />
+    </svelte:fragment>
   </ListItem>
 
   <!-- OWNER -->

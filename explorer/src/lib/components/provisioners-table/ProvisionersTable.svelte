@@ -10,7 +10,7 @@
     TableHead,
     TableRow,
   } from "$lib/components/table";
-  import { Badge } from "$lib/dusk/components";
+  import { Badge, CopyButton } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
   import { makeClassName, middleEllipsis } from "$lib/dusk/string";
   import { createValueFormatter } from "$lib/dusk/value";
@@ -46,9 +46,16 @@
     {#each data as provisioner (provisioner)}
       {@const [ownerType, ownerValue] = ownPairs(provisioner.owner)[0]}
       <TableRow>
-        <TableCell
-          >{middleEllipsis(provisioner.key, HASH_CHARS_LENGTH)}</TableCell
-        >
+        <TableCell>
+          <div class="provisioners-table__staking-address-wrapper">
+            {middleEllipsis(provisioner.key, HASH_CHARS_LENGTH)}
+            <CopyButton
+              name="Provisioner's staking address"
+              rawValue={provisioner.key}
+              variant="secondary"
+            />
+          </div>
+        </TableCell>
         <TableCell>
           <Badge
             data-tooltip-id="provisioners-tooltip"

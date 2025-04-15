@@ -8,7 +8,7 @@ exports[`List Item > renders the List Item component 1`] = `
     class="details-list__term-layout"
   >
     <svg
-      class="dusk-icon dusk-icon--size--normal detail-list__help"
+      class="dusk-icon dusk-icon--size--default detail-list__help"
       data-tooltip-id="main-tooltip"
       data-tooltip-place="top"
       data-tooltip-text="Tooltip text"

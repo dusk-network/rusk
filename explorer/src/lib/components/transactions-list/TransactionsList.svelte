@@ -2,7 +2,7 @@
 
 <script>
   import { onMount } from "svelte";
-  import { RelativeTime } from "$lib/dusk/components";
+  import { CopyButton, RelativeTime } from "$lib/dusk/components";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
   import { createValueFormatter } from "$lib/dusk/value";
   import { luxToDusk } from "$lib/dusk/currency";
@@ -70,6 +70,11 @@
           )
         )}</AppAnchor
       >
+      <CopyButton
+        name="Transaction's ID"
+        rawValue={data.txid}
+        variant="secondary"
+      />
     </svelte:fragment>
   </ListItem>
 
