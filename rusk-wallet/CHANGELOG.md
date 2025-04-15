@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add deploy contract output (display the new contractId)
+- Add pagination for transaction history to not pollute the stdout [#3292]
 
 ### Changed
 
@@ -17,11 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change key derivation to PBKDF2 and wallet encryption to AES-GCM [#3391]
 - Change default deploy gas limit to be accepted by std mempool
 
-### Add
-
-- Add pagenation for transaction history to not pollute the stdout [#3292]
-
-### Fix
+### Fixed
 
 - Fix wrong lower limit for stake operation when performing topup [#3394]
 - Fix `is_synced()` method in the wallet to avoid overflow [#3593]
