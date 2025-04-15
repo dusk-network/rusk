@@ -59,7 +59,7 @@ const marketDataStore = derived(
     const hasNewData = $pollingDataStore.data && isDataChanged;
     const newStore = {
       data: $pollingDataStore.data ?? current.data,
-      error: hasNewData ? null : $pollingDataStore.error ?? current.error,
+      error: hasNewData ? null : ($pollingDataStore.error ?? current.error),
       isLoading: $pollingDataStore.isLoading,
       lastUpdate: hasNewData
         ? new Date()
