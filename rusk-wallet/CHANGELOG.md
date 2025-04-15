@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add deploy contract output (display the new contractId)
 - Add optional deposit to ContractCall [#3650]
-- Add pagenation for transaction history to not pollute the stdout [#3292]
+- Add pagination for transaction history to not pollute the stdout [#3292]
 
 ### Changed
 
