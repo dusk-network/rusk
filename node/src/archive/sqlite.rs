@@ -434,7 +434,9 @@ impl Archive {
 
     /// Insert the active accounts into the active accounts table, skipping
     /// already existing ones
-    async fn update_active_accounts(
+    ///
+    /// TODO: This function should not be public.
+    pub async fn update_active_accounts(
         &self,
         active_accounts: HashSet<String>,
     ) -> Result<u64> {

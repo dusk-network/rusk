@@ -425,6 +425,31 @@ impl Rusk {
         }))
     }
 
+    /// Return the active moonlight accounts
+    pub fn moonlight_accounts(
+        &self,
+        base_commit: Option<[u8; 32]>,
+    ) -> Result<impl Iterator<Item = (AccountData, BlsPublicKey)>> {
+        let (sender, receiver) = mpsc::channel();
+        let sync_range = (0u64, u64::MAX);
+        self.feeder_query(
+            TRANSFER_CONTRACT,
+            "sync_accounts",
+            &sync_range,
+            sender,
+            base_commit,
+        )?;
+
+        Ok(receiver.into_iter().map(|bytes| {
+            let from_bytes = rkyv::from_bytes::<(AccountData, [u8; 193])>(&bytes).expect(
+                "The contract should only return (AccountData, [u8; 193]) tuples",
+            );
+            unsafe {
+            (from_bytes.0, BlsPublicKey::from_slice_unchecked(&from_bytes.1))
+            }
+        }))
+    }
+
     /// Returns an account's information.
     pub fn account(&self, pk: &BlsPublicKey) -> Result<AccountData> {
         self.query(TRANSFER_CONTRACT, "account", pk)

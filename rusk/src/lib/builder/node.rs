@@ -19,10 +19,10 @@ use node::network::Kadcast;
 use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
 
-#[cfg(feature = "archive")]
-use node::archive::Archive;
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
+#[cfg(feature = "archive")]
+use {dusk_bytes::Serializable, node::archive::Archive, tracing::debug};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
 use crate::node::{ChainEventStreamer, RuskNode, RuskVmConfig, Services};
@@ -297,6 +297,26 @@ impl RuskNodeBuilder {
         }
 
         node.inner().initialize(&mut service_list).await?;
+
+        #[cfg(feature = "archive")]
+        {
+            if archive.fetch_active_accounts().await? == 0 {
+                let base_commit = None;
+                let accounts = rusk.moonlight_accounts(base_commit);
+
+                let accounts = accounts
+                    .map_err(|e| {
+                        anyhow::anyhow!("Cannot get moonlight accounts: {e}")
+                    })?
+                    .map(|(_, pk)| bs58::encode(pk.to_bytes()).into_string())
+                    .collect::<std::collections::HashSet<_>>();
+
+                debug!("Found {} Moonlight accounts", accounts.len());
+
+                archive.update_active_accounts(accounts).await?;
+            }
+        }
+
         node.inner().spawn_all(service_list).await?;
 
         Ok(())
