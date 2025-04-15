@@ -416,7 +416,9 @@ pub(crate) fn tx_history_list(
     let history_str: Vec<String> =
         history.iter().map(|history| history.to_string()).collect();
 
-    Select::new(header.as_str(), history_str).prompt()?;
+    Select::new(header.as_str(), history_str)
+        .with_help_message("↑↓ to move, type to filter")
+        .prompt()?;
 
     Ok(())
 }
