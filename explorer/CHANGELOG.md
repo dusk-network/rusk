@@ -16,6 +16,7 @@ and this project adheres to
 ### Changed
 
 - Change balance appearance (Account overview page) [#3612]
+- Change transaction API requests to execute in parallel for improved performance [#3655]
 
 ### Removed
 
@@ -199,6 +200,7 @@ and this project adheres to
 [#3591]: https://github.com/dusk-network/rusk/issues/3591
 [#3612]: https://github.com/dusk-network/rusk/issues/3612
 [#3620]: https://github.com/dusk-network/rusk/issues/3620
+[#3655]: https://github.com/dusk-network/rusk/issues/3655
 
 <!-- VERSIONS -->
 
