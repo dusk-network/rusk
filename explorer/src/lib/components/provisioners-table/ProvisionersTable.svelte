@@ -38,8 +38,8 @@
       <TableCell type="th">Staking Address</TableCell>
       <TableCell type="th">Owner</TableCell>
       <TableCell type="th">Stake</TableCell>
+      <TableCell type="th">Accumulated Reward</TableCell>
       <TableCell type="th">Slashes</TableCell>
-      <TableCell type="th" align="right">Accumulated Reward</TableCell>
     </TableRow>
   </TableHead>
   <TableBody>
@@ -75,17 +75,10 @@
           <b class="provisioners-table__stake-data-label">Maturity At: </b>
           #{numberFormatter(provisioner.eligibility)}
         </TableCell>
-        <TableCell>
-          <b class="provisioners-table__slash-data-label">Soft:</b>
-          {numberFormatter(provisioner.faults)}
-          <br />
-          <b class="provisioners-table__slash-data-label">Hard:</b>
-          {numberFormatter(provisioner.hard_faults)}
-        </TableCell>
         {@const parts = fixedNumberFormatter(
           luxToDusk(provisioner.reward)
         ).split(".")}
-        <TableCell align="right">
+        <TableCell>
           <span
             data-tooltip-id="main-tooltip"
             data-tooltip-place="top"
@@ -96,6 +89,13 @@
           >
             {parts[0]}.<span class="decimal-shadow">{parts[1]}</span>
           </span>
+        </TableCell>
+        <TableCell>
+          <b class="provisioners-table__slash-data-label">Soft:</b>
+          {numberFormatter(provisioner.faults)}
+          <br />
+          <b class="provisioners-table__slash-data-label">Hard:</b>
+          {numberFormatter(provisioner.hard_faults)}
         </TableCell>
       </TableRow>
     {/each}

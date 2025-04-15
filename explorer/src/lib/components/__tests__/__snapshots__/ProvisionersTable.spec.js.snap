@@ -37,14 +37,14 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <th
           class="table__header-cell align-left"
         >
-          Slashes
+          Accumulated Reward
         </th>
         
          
         <th
-          class="table__header-cell align-right"
+          class="table__header-cell align-left"
         >
-          Accumulated Reward
+          Slashes
         </th>
         
       </tr>
@@ -143,6 +143,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="7,121.257296087 DUSK"
+            data-tooltip-type="info"
+          >
+            7,121
+            .
+            <span
+              class="decimal-shadow"
+            >
+              26
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -160,26 +180,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="7,121.257296087 DUSK"
-            data-tooltip-type="info"
-          >
-            7,121
-            .
-            <span
-              class="decimal-shadow"
-            >
-              26
-            </span>
-          </span>
         </td>
         
          
@@ -274,6 +274,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="6,923.840604194 DUSK"
+            data-tooltip-type="info"
+          >
+            6,923
+            .
+            <span
+              class="decimal-shadow"
+            >
+              84
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -291,26 +311,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="6,923.840604194 DUSK"
-            data-tooltip-type="info"
-          >
-            6,923
-            .
-            <span
-              class="decimal-shadow"
-            >
-              84
-            </span>
-          </span>
         </td>
         
          
@@ -405,6 +405,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="89.505343279 DUSK"
+            data-tooltip-type="info"
+          >
+            89
+            .
+            <span
+              class="decimal-shadow"
+            >
+              51
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -422,26 +442,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="89.505343279 DUSK"
-            data-tooltip-type="info"
-          >
-            89
-            .
-            <span
-              class="decimal-shadow"
-            >
-              51
-            </span>
-          </span>
         </td>
         
          
@@ -536,6 +536,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="29.633646022 DUSK"
+            data-tooltip-type="info"
+          >
+            29
+            .
+            <span
+              class="decimal-shadow"
+            >
+              63
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -553,26 +573,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="29.633646022 DUSK"
-            data-tooltip-type="info"
-          >
-            29
-            .
-            <span
-              class="decimal-shadow"
-            >
-              63
-            </span>
-          </span>
         </td>
         
          
@@ -667,6 +667,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="7,518.756679536 DUSK"
+            data-tooltip-type="info"
+          >
+            7,518
+            .
+            <span
+              class="decimal-shadow"
+            >
+              76
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -684,26 +704,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="7,518.756679536 DUSK"
-            data-tooltip-type="info"
-          >
-            7,518
-            .
-            <span
-              class="decimal-shadow"
-            >
-              76
-            </span>
-          </span>
         </td>
         
          
@@ -798,6 +798,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="73.800637305 DUSK"
+            data-tooltip-type="info"
+          >
+            73
+            .
+            <span
+              class="decimal-shadow"
+            >
+              80
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -815,26 +835,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="73.800637305 DUSK"
-            data-tooltip-type="info"
-          >
-            73
-            .
-            <span
-              class="decimal-shadow"
-            >
-              80
-            </span>
-          </span>
         </td>
         
          
@@ -929,6 +929,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="7,653.541671166 DUSK"
+            data-tooltip-type="info"
+          >
+            7,653
+            .
+            <span
+              class="decimal-shadow"
+            >
+              54
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -946,26 +966,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="7,653.541671166 DUSK"
-            data-tooltip-type="info"
-          >
-            7,653
-            .
-            <span
-              class="decimal-shadow"
-            >
-              54
-            </span>
-          </span>
         </td>
         
          
@@ -1060,6 +1060,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="1.613840782 DUSK"
+            data-tooltip-type="info"
+          >
+            1
+            .
+            <span
+              class="decimal-shadow"
+            >
+              61
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -1077,26 +1097,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="1.613840782 DUSK"
-            data-tooltip-type="info"
-          >
-            1
-            .
-            <span
-              class="decimal-shadow"
-            >
-              61
-            </span>
-          </span>
         </td>
         
          
@@ -1191,6 +1191,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="7,512.060104659 DUSK"
+            data-tooltip-type="info"
+          >
+            7,512
+            .
+            <span
+              class="decimal-shadow"
+            >
+              06
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -1208,26 +1228,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="7,512.060104659 DUSK"
-            data-tooltip-type="info"
-          >
-            7,512
-            .
-            <span
-              class="decimal-shadow"
-            >
-              06
-            </span>
-          </span>
         </td>
         
          
@@ -1322,6 +1322,26 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
         <td
           class="table__data-cell align-left"
         >
+          <span
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="7,973.118109253 DUSK"
+            data-tooltip-type="info"
+          >
+            7,973
+            .
+            <span
+              class="decimal-shadow"
+            >
+              12
+            </span>
+          </span>
+        </td>
+        
+         
+        <td
+          class="table__data-cell align-left"
+        >
           <b
             class="provisioners-table__slash-data-label"
           >
@@ -1339,26 +1359,6 @@ exports[`Provisioners Table > should render the \`ProvisionersTable\` component 
           </b>
            
           0
-        </td>
-        
-         
-        <td
-          class="table__data-cell align-right"
-        >
-          <span
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="7,973.118109253 DUSK"
-            data-tooltip-type="info"
-          >
-            7,973
-            .
-            <span
-              class="decimal-shadow"
-            >
-              12
-            </span>
-          </span>
         </td>
         
          
