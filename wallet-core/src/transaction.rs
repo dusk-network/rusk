@@ -31,6 +31,8 @@ use ff::Field;
 use rand::{CryptoRng, RngCore};
 use zeroize::Zeroize;
 
+use crate::{keys, Seed};
+
 /// An unproven-transaction is nearly identical to a [`PhoenixTransaction`] with
 /// the only difference being that it carries a serialized [`TxCircuitVec`]
 /// instead of the proof bytes.
@@ -874,4 +876,50 @@ fn withdraw_to_moonlight<R: RngCore + CryptoRng>(
         WithdrawReceiver::Moonlight(BlsPublicKey::from(receiver_sk)),
         gas_payment_token,
     )
+}
+
+/// Creates a Moonlight transfer [`Transaction`], for transferring funds
+/// from a legacy Moonlight account to the corresponding EIP-2333 derived
+/// account based on the same seed.
+///
+/// # Errors
+/// The creation of this transaction doesn't error, but still returns a result
+/// for the sake of API consistency.
+pub fn legacy_to_eip_migration(
+    seed: &Seed,
+    index: u8,
+    transfer_value: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    moonlight_nonce: u64,
+    chain_id: u8,
+) -> Result<Transaction, Error> {
+    // secret key based on the legacy method
+    let mut legacy_moonlight_sender_sk =
+        keys::legacy::derive_bls_sk(seed, index);
+    // public key based on the new EIP-2333 method to send the funds to
+    let mut eip_master_sk = keys::eip2333::derive_master_sk(seed)
+        .expect("Expect seed to be larger than 32 bytes");
+    let (mut _s, eip_2333_moonlight_receiver_pk) =
+        keys::eip2334::derive_bls_key_pair(&eip_master_sk, index as u64);
+    _s.zeroize();
+    eip_master_sk.zeroize();
+
+    let deposit = 0;
+
+    let tx = moonlight(
+        &legacy_moonlight_sender_sk,
+        Some(eip_2333_moonlight_receiver_pk),
+        transfer_value,
+        deposit,
+        gas_limit,
+        gas_price,
+        moonlight_nonce,
+        chain_id,
+        None::<TransactionData>,
+    );
+
+    legacy_moonlight_sender_sk.zeroize();
+
+    tx
 }
