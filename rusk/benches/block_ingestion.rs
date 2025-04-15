@@ -19,7 +19,7 @@ use criterion::{
 };
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node_data::bls::PublicKey;
-use node_data::ledger::Transaction;
+use node_data::ledger::{Header, Transaction};
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
@@ -116,7 +116,7 @@ fn bench_accept(
     const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
     const BLOCK_HASH: [u8; 32] = [0u8; 32];
 
-    let generator = PublicKey::new(*DUSK_CONSENSUS_KEY).into_inner();
+    let generator = *PublicKey::new(*DUSK_CONSENSUS_KEY).bytes();
 
     let txs = Arc::new(txs);
     let prev_root = rusk.state_root();
@@ -124,6 +124,13 @@ fn bench_accept(
     for n_txs in N_TXS {
         let rusk = rusk.clone();
         let txs = txs.clone();
+        let header = Header {
+            height: BLOCK_HEIGHT,
+            gas_limit: BLOCK_GAS_LIMIT,
+            hash: BLOCK_HASH,
+            generator_bls_pubkey: generator,
+            ..Default::default()
+        };
 
         group.bench_with_input(
             BenchmarkId::new(name, format!("{} TXs", n_txs)),
@@ -134,11 +141,8 @@ fn bench_accept(
 
                     rusk.accept_transactions(
                         prev_root,
-                        BLOCK_HEIGHT,
-                        BLOCK_GAS_LIMIT,
-                        BLOCK_HASH,
-                        generator,
-                        txs,
+                        &header,
+                        &txs,
                         None,
                         vec![],
                         &[],

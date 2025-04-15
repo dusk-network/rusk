@@ -339,7 +339,6 @@ where
     }
 
     /// Executes a generic contract call, paying gas from a public account.
-    #[allow(clippy::too_many_arguments)]
     pub fn moonlight_execute(
         &self,
         sender_idx: u8,
@@ -382,7 +381,6 @@ where
 
     /// Execute a generic contract call or deployment, using Phoenix notes to
     /// pay for gas.
-    #[allow(clippy::too_many_arguments)]
     pub fn phoenix_execute<Rng: RngCore + CryptoRng>(
         &self,
         rng: &mut Rng,
@@ -432,7 +430,6 @@ where
     }
 
     /// Transfer Dusk in the form of Phoenix notes from one key to another.
-    #[allow(clippy::too_many_arguments)]
     pub fn phoenix_transfer<Rng: RngCore + CryptoRng>(
         &self,
         rng: &mut Rng,
@@ -483,7 +480,6 @@ where
     }
 
     /// Stakes an amount of Dusk using Phoenix notes.
-    #[allow(clippy::too_many_arguments)]
     pub fn phoenix_stake<Rng: RngCore + CryptoRng>(
         &self,
         rng: &mut Rng,
@@ -797,7 +793,6 @@ where
     }
 
     /// Stakes an amount of Dusk using a Moonlight account.
-    #[allow(clippy::too_many_arguments)]
     pub fn moonlight_stake(
         &self,
         sender_index: u8,

@@ -54,8 +54,8 @@ impl VMExecution for Rusk {
         voters: &[Voter],
     ) -> Result<VerificationOutput, VstError> {
         info!("Received verify_state_transition request");
-        let generator = blk.header().generator_bls_pubkey;
-        let generator = BlsPublicKey::from_slice(&generator.0)
+        let generator = blk.header().generator_bls_pubkey.inner();
+        let generator = BlsPublicKey::from_slice(generator)
             .map_err(VstError::InvalidGenerator)?;
 
         let slashing =
@@ -64,9 +64,7 @@ impl VMExecution for Rusk {
         let (_, verification_output) = self
             .verify_transactions(
                 prev_commit,
-                blk.header().height,
-                blk.header().hash,
-                blk.header().gas_limit,
+                blk.header(),
                 &generator,
                 blk.txs(),
                 slashing,
@@ -94,24 +92,19 @@ impl VMExecution for Rusk {
         Vec<ContractTxEvent>,
     )> {
         debug!("Received accept request");
-        let generator = blk.header().generator_bls_pubkey;
-        let generator = BlsPublicKey::from_slice(&generator.0)
-            .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let slashing = Slash::from_block(blk)?;
+        let expected = VerificationOutput {
+            event_bloom: blk.header().event_bloom,
+            state_root: blk.header().state_hash,
+        };
 
         let (txs, verification_output, contract_events) = self
             .accept_transactions(
                 prev_root,
-                blk.header().height,
-                blk.header().gas_limit,
-                blk.header().hash,
-                generator,
-                blk.txs().clone(),
-                Some(VerificationOutput {
-                    state_root: blk.header().state_hash,
-                    event_bloom: blk.header().event_bloom,
-                }),
+                blk.header(),
+                blk.txs(),
+                Some(expected),
                 slashing,
                 voters,
             )
