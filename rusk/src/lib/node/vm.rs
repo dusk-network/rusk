@@ -15,10 +15,9 @@ use dusk_bytes::DeserializableSlice;
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
-use dusk_core::{
-    signatures::bls::PublicKey as BlsPublicKey, stake::StakeData,
-    transfer::Transaction as ProtocolTransaction,
-};
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::StakeData;
+use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
