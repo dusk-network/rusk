@@ -27,7 +27,7 @@
 }
 
 .search-notification__content-query {
-  font-family: "Soehne Mono";
+  font-family: var(--mono-font-family);
   font-weight: 500;
   word-break: break-word;
 }

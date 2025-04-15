@@ -8,7 +8,7 @@
   border-collapse: collapse;
   border-style: hidden;
   text-transform: uppercase;
-  font-family: "Soehne Mono", sans-serif;
+  font-family: var(--mono-font-family);
 }
 
 .table__header-cell {
