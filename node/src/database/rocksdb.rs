@@ -973,26 +973,26 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
     fn mempool_txs_sorted_by_fee(
         &self,
-    ) -> Result<Box<dyn Iterator<Item = Transaction> + '_>> {
+    ) -> Box<dyn Iterator<Item = Transaction> + '_> {
         let iter = MemPoolIterator::new(&self.inner, self.fees_cf, self);
 
-        Ok(Box::new(iter))
+        Box::new(iter)
     }
 
     fn mempool_txs_ids_sorted_by_fee(
         &self,
-    ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>> {
+    ) -> Box<dyn Iterator<Item = (u64, [u8; 32])> + '_> {
         let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf, true);
 
-        Ok(Box::new(iter))
+        Box::new(iter)
     }
 
     fn mempool_txs_ids_sorted_by_low_fee(
         &self,
-    ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>> {
+    ) -> Box<dyn Iterator<Item = (u64, [u8; 32])> + '_> {
         let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf, false);
 
-        Ok(Box::new(iter))
+        Box::new(iter)
     }
 
     /// Get all expired transactions hashes.
@@ -1494,9 +1494,7 @@ mod tests {
             .unwrap();
 
             db.view(|txn| {
-                let txs = txn
-                    .mempool_txs_sorted_by_fee()
-                    .expect("iter should return");
+                let txs = txn.mempool_txs_sorted_by_fee();
 
                 let mut last_fee = u64::MAX;
                 for t in txs {
@@ -1575,7 +1573,6 @@ mod tests {
             db.view(|txn| {
                 let txs = txn
                     .mempool_txs_sorted_by_fee()
-                    .expect("should return all txs")
                     .map(|t| t.gas_price())
                     .sum::<u64>();
 

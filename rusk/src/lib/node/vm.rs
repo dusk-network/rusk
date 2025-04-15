@@ -7,7 +7,7 @@
 mod config;
 mod query;
 
-use dusk_consensus::errors::VstError;
+use dusk_consensus::errors::StateTransitionError;
 use node_data::events::contract::ContractTxEvent;
 use tracing::{debug, info};
 
@@ -32,16 +32,17 @@ impl VMExecution for Rusk {
         &self,
         params: &CallParams,
         txs: I,
-    ) -> anyhow::Result<(
-        Vec<SpentTransaction>,
-        Vec<Transaction>,
-        VerificationOutput,
-    )> {
-        info!("Received execute_state_transition request");
-
+    ) -> Result<
+        (Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput),
+        StateTransitionError,
+    > {
         let (txs, discarded_txs, verification_output) =
-            self.execute_transactions(params, txs).map_err(|inner| {
-                anyhow::anyhow!("Cannot execute txs: {inner}!!")
+            self.execute_transactions(params, txs).map_err(|err| {
+                if let crate::Error::TipChanged = err {
+                    StateTransitionError::TipChanged
+                } else {
+                    StateTransitionError::ExecutionError(format!("{err}"))
+                }
             })?;
 
         Ok((txs, discarded_txs, verification_output))
@@ -52,14 +53,13 @@ impl VMExecution for Rusk {
         prev_commit: [u8; 32],
         blk: &Block,
         voters: &[Voter],
-    ) -> Result<VerificationOutput, VstError> {
-        info!("Received verify_state_transition request");
+    ) -> Result<VerificationOutput, StateTransitionError> {
         let generator = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator.0)
-            .map_err(VstError::InvalidGenerator)?;
+            .map_err(StateTransitionError::InvalidGenerator)?;
 
-        let slashing =
-            Slash::from_block(blk).map_err(VstError::InvalidSlash)?;
+        let slashing = Slash::from_block(blk)
+            .map_err(StateTransitionError::InvalidSlash)?;
 
         let (_, verification_output) = self
             .verify_transactions(
@@ -74,9 +74,9 @@ impl VMExecution for Rusk {
             )
             .map_err(|inner| {
                 if let crate::Error::TipChanged = inner {
-                    VstError::TipChanged
+                    StateTransitionError::TipChanged
                 } else {
-                    VstError::Generic(format!("Cannot verify txs: {inner}!!"))
+                    StateTransitionError::VerificationError(format!("{inner}"))
                 }
             })?;
 

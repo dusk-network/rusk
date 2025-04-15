@@ -177,17 +177,17 @@ pub trait Mempool {
     /// Get an iterator over the mempool transactions sorted by gas price
     fn mempool_txs_sorted_by_fee(
         &self,
-    ) -> Result<Box<dyn Iterator<Item = Transaction> + '_>>;
+    ) -> Box<dyn Iterator<Item = Transaction> + '_>;
 
     /// Get an iterator over the mempool transactions hash by gas price
     fn mempool_txs_ids_sorted_by_fee(
         &self,
-    ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>>;
+    ) -> Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>;
 
     /// Get an iterator over the mempool transactions hash by gas price (asc)
     fn mempool_txs_ids_sorted_by_low_fee(
         &self,
-    ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>>;
+    ) -> Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>;
 
     /// Get all transactions hashes.
     fn mempool_txs_ids(&self) -> Result<Vec<[u8; 32]>>;

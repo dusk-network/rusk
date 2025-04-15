@@ -276,7 +276,7 @@ impl MempoolSrv {
             if txs_count >= max_mempool_txn_count {
                 // Get the lowest fee transaction to delete
                 let (lowest_price, to_delete) = view
-                    .mempool_txs_ids_sorted_by_low_fee()?
+                    .mempool_txs_ids_sorted_by_low_fee()
                     .next()
                     .ok_or(anyhow::anyhow!("Cannot get lowest fee tx"))?;
 
