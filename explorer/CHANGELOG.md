@@ -16,7 +16,8 @@ and this project adheres to
 ### Changed
 
 - Change balance appearance (Account overview page) [#3612]
-- Change transaction API requests to execute in parallel for improved performance [#3655]
+- Change transaction API requests to execute in parallel [#3655]
+- Change Addresses and IDs to monospaced font [#3640]
 
 ### Removed
 
@@ -201,6 +202,7 @@ and this project adheres to
 [#3612]: https://github.com/dusk-network/rusk/issues/3612
 [#3620]: https://github.com/dusk-network/rusk/issues/3620
 [#3655]: https://github.com/dusk-network/rusk/issues/3655
+[#3640]: https://github.com/dusk-network/rusk/issues/3640
 
 <!-- VERSIONS -->
 

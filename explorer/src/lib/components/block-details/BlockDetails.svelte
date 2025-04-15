@@ -92,13 +92,13 @@
     <!-- BLOCK HASH -->
     <ListItem tooltipText="The hash for the header of the block">
       <svelte:fragment slot="term">hash</svelte:fragment>
-      <svelte:fragment slot="definition"
+      <span class="block-details__hash" slot="definition"
         >{middleEllipsis(
           data.header.hash,
           calculateAdaptiveCharCount(screenWidth, 320, 1920, 14, 66)
         )}
         <CopyButton rawValue={data.header.hash} name="Block hash" />
-      </svelte:fragment>
+      </span>
     </ListItem>
 
     <!-- TIMESTAMP -->
@@ -182,12 +182,13 @@
     <!-- STATE ROOT HASH -->
     <ListItem tooltipText="The state root hash">
       <svelte:fragment slot="term">state root hash</svelte:fragment>
-      <span class="block-details__state-hash" slot="definition"
+      <span class="block-details__hash" slot="definition"
         >{middleEllipsis(
           data.header.statehash,
           calculateAdaptiveCharCount(screenWidth, 320, 1920, 14, 66)
-        )}</span
-      >
+        )}
+        <CopyButton rawValue={data.header.statehash} name="State root hash" />
+      </span>
     </ListItem>
 
     <!-- HEADER -->

@@ -14,8 +14,11 @@
   width: 12.5rem;
 }
 
-.block-details__state-hash {
-  padding-top: 0.625rem;
+.block-details__hash {
+  font-family: var(--mono-font-family);
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
 }
 
 .block-details__payload {

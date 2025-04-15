@@ -199,33 +199,38 @@ exports[`Block Details > should render the Block Details page and query the nece
           <dd
             class="details-list__definition"
           >
-            bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
-             
-            <div
-              class="dusk-copy-button"
+            <span
+              class="block-details__hash"
+              slot="definition"
             >
-              <button
-                aria-label="Copy Address"
-                class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-text="Copy to clipboard"
-                type="button"
+              bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
+               
+              <div
+                class="dusk-copy-button"
               >
-                <svg
-                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                  role="graphics-symbol"
-                  viewBox="0 0 24 24"
+                <button
+                  aria-label="Copy Address"
+                  class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-text="Copy to clipboard"
+                  type="button"
                 >
-                  <path
-                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                  />
-                </svg>
-                
-                 
-                
-              </button>
-            </div>
-             
+                  <svg
+                    class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                    role="graphics-symbol"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                    />
+                  </svg>
+                  
+                   
+                  
+                </button>
+              </div>
+               
+            </span>
           </dd>
           <dt
             class="details-list__term"
@@ -487,10 +492,36 @@ exports[`Block Details > should render the Block Details page and query the nece
             class="details-list__definition"
           >
             <span
-              class="block-details__state-hash"
+              class="block-details__hash"
               slot="definition"
             >
               20bb0a677b93f084afadfd34bec3ac3feee33a020b81d9549afa2268e8543acb
+               
+              <div
+                class="dusk-copy-button"
+              >
+                <button
+                  aria-label="Copy Address"
+                  class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-text="Copy to clipboard"
+                  type="button"
+                >
+                  <svg
+                    class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                    role="graphics-symbol"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                    />
+                  </svg>
+                  
+                   
+                  
+                </button>
+              </div>
+               
             </span>
           </dd>
           <dt
@@ -1008,33 +1039,38 @@ exports[`Block Details > should render the Transaction section of the Block Deta
           <dd
             class="details-list__definition"
           >
-            bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
-             
-            <div
-              class="dusk-copy-button"
+            <span
+              class="block-details__hash"
+              slot="definition"
             >
-              <button
-                aria-label="Copy Address"
-                class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-text="Copy to clipboard"
-                type="button"
+              bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f
+               
+              <div
+                class="dusk-copy-button"
               >
-                <svg
-                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                  role="graphics-symbol"
-                  viewBox="0 0 24 24"
+                <button
+                  aria-label="Copy Address"
+                  class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-text="Copy to clipboard"
+                  type="button"
                 >
-                  <path
-                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                  />
-                </svg>
-                
-                 
-                
-              </button>
-            </div>
-             
+                  <svg
+                    class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                    role="graphics-symbol"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                    />
+                  </svg>
+                  
+                   
+                  
+                </button>
+              </div>
+               
+            </span>
           </dd>
           <dt
             class="details-list__term"
@@ -1296,10 +1332,36 @@ exports[`Block Details > should render the Transaction section of the Block Deta
             class="details-list__definition"
           >
             <span
-              class="block-details__state-hash"
+              class="block-details__hash"
               slot="definition"
             >
               20bb0a677b93f084afadfd34bec3ac3feee33a020b81d9549afa2268e8543acb
+               
+              <div
+                class="dusk-copy-button"
+              >
+                <button
+                  aria-label="Copy Address"
+                  class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-text="Copy to clipboard"
+                  type="button"
+                >
+                  <svg
+                    class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                    role="graphics-symbol"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                    />
+                  </svg>
+                  
+                   
+                  
+                </button>
+              </div>
+               
             </span>
           </dd>
           <dt
