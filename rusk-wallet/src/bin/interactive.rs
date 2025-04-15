@@ -113,7 +113,11 @@ pub(crate) async fn run_loop(
                                 }
                             }
                             RunResult::History(ref history) => {
-                                let _ = crate::prompt::tx_history_list(history);
+                                if let Err(err) =
+                                    crate::prompt::tx_history_list(&history)
+                                {
+                                    println!("Failed to output transaction history with error {err}");
+                                }
 
                                 println!();
                             }
