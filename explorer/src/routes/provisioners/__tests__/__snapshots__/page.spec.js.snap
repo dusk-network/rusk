@@ -240,6 +240,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            7,121.257296087
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -290,38 +322,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            7,121.257296087
-             DUSK
           </dd>
         </dl>
         
@@ -531,6 +531,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            6,923.840604194
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -581,38 +613,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            6,923.840604194
-             DUSK
           </dd>
         </dl>
         
@@ -822,6 +822,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            89.505343279
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -872,38 +904,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            89.505343279
-             DUSK
           </dd>
         </dl>
         
@@ -1113,6 +1113,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            29.633646022
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -1163,38 +1195,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            29.633646022
-             DUSK
           </dd>
         </dl>
         
@@ -1404,6 +1404,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            7,518.756679536
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -1454,38 +1486,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            7,518.756679536
-             DUSK
           </dd>
         </dl>
         
@@ -1695,6 +1695,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            73.800637305
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -1745,38 +1777,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            73.800637305
-             DUSK
           </dd>
         </dl>
         
@@ -1986,6 +1986,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            7,653.541671166
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -2036,38 +2068,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            7,653.541671166
-             DUSK
           </dd>
         </dl>
         
@@ -2277,6 +2277,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1.613840782
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -2327,38 +2359,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            1.613840782
-             DUSK
           </dd>
         </dl>
         
@@ -2568,6 +2568,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            7,512.060104659
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -2618,38 +2650,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            7,512.060104659
-             DUSK
           </dd>
         </dl>
         
@@ -2859,6 +2859,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            7,973.118109253
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -2909,38 +2941,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            7,973.118109253
-             DUSK
           </dd>
         </dl>
         
@@ -3150,6 +3150,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            7,091.398997002
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -3200,38 +3232,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            7,091.398997002
-             DUSK
           </dd>
         </dl>
         
@@ -3441,6 +3441,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            7,373.189839389
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -3491,38 +3523,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            7,373.189839389
-             DUSK
           </dd>
         </dl>
         
@@ -3732,6 +3732,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            104,743.439448879
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -3782,38 +3814,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            104,743.439448879
-             DUSK
           </dd>
         </dl>
         
@@ -4023,6 +4023,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            75.58825915
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -4073,38 +4105,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            75.58825915
-             DUSK
           </dd>
         </dl>
         
@@ -4314,6 +4314,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            7,127.318018509
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="Soft slashes"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -4364,38 +4396,6 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            7,127.318018509
-             DUSK
           </dd>
         </dl>
       </div>
@@ -4540,14 +4540,14 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <th
                 class="table__header-cell align-left"
               >
-                Slashes
+                Accumulated Reward
               </th>
               
                
               <th
-                class="table__header-cell align-right"
+                class="table__header-cell align-left"
               >
-                Accumulated Reward
+                Slashes
               </th>
               
             </tr>
@@ -4646,6 +4646,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="7,121.257296087 DUSK"
+                  data-tooltip-type="info"
+                >
+                  7,121
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    26
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -4663,26 +4683,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="7,121.257296087 DUSK"
-                  data-tooltip-type="info"
-                >
-                  7,121
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    26
-                  </span>
-                </span>
               </td>
               
                
@@ -4777,6 +4777,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="6,923.840604194 DUSK"
+                  data-tooltip-type="info"
+                >
+                  6,923
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    84
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -4794,26 +4814,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="6,923.840604194 DUSK"
-                  data-tooltip-type="info"
-                >
-                  6,923
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    84
-                  </span>
-                </span>
               </td>
               
                
@@ -4908,6 +4908,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="89.505343279 DUSK"
+                  data-tooltip-type="info"
+                >
+                  89
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    51
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -4925,26 +4945,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="89.505343279 DUSK"
-                  data-tooltip-type="info"
-                >
-                  89
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    51
-                  </span>
-                </span>
               </td>
               
                
@@ -5039,6 +5039,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="29.633646022 DUSK"
+                  data-tooltip-type="info"
+                >
+                  29
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    63
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -5056,26 +5076,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="29.633646022 DUSK"
-                  data-tooltip-type="info"
-                >
-                  29
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    63
-                  </span>
-                </span>
               </td>
               
                
@@ -5170,6 +5170,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="7,518.756679536 DUSK"
+                  data-tooltip-type="info"
+                >
+                  7,518
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    76
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -5187,26 +5207,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="7,518.756679536 DUSK"
-                  data-tooltip-type="info"
-                >
-                  7,518
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    76
-                  </span>
-                </span>
               </td>
               
                
@@ -5301,6 +5301,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="73.800637305 DUSK"
+                  data-tooltip-type="info"
+                >
+                  73
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    80
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -5318,26 +5338,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="73.800637305 DUSK"
-                  data-tooltip-type="info"
-                >
-                  73
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    80
-                  </span>
-                </span>
               </td>
               
                
@@ -5432,6 +5432,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="7,653.541671166 DUSK"
+                  data-tooltip-type="info"
+                >
+                  7,653
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    54
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -5449,26 +5469,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="7,653.541671166 DUSK"
-                  data-tooltip-type="info"
-                >
-                  7,653
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    54
-                  </span>
-                </span>
               </td>
               
                
@@ -5563,6 +5563,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="1.613840782 DUSK"
+                  data-tooltip-type="info"
+                >
+                  1
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    61
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -5580,26 +5600,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="1.613840782 DUSK"
-                  data-tooltip-type="info"
-                >
-                  1
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    61
-                  </span>
-                </span>
               </td>
               
                
@@ -5694,6 +5694,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="7,512.060104659 DUSK"
+                  data-tooltip-type="info"
+                >
+                  7,512
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    06
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -5711,26 +5731,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="7,512.060104659 DUSK"
-                  data-tooltip-type="info"
-                >
-                  7,512
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    06
-                  </span>
-                </span>
               </td>
               
                
@@ -5825,6 +5825,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="7,973.118109253 DUSK"
+                  data-tooltip-type="info"
+                >
+                  7,973
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    12
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -5842,26 +5862,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="7,973.118109253 DUSK"
-                  data-tooltip-type="info"
-                >
-                  7,973
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    12
-                  </span>
-                </span>
               </td>
               
                
@@ -5956,6 +5956,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="7,091.398997002 DUSK"
+                  data-tooltip-type="info"
+                >
+                  7,091
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    40
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -5973,26 +5993,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="7,091.398997002 DUSK"
-                  data-tooltip-type="info"
-                >
-                  7,091
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    40
-                  </span>
-                </span>
               </td>
               
                
@@ -6087,6 +6087,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="7,373.189839389 DUSK"
+                  data-tooltip-type="info"
+                >
+                  7,373
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    19
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -6104,26 +6124,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="7,373.189839389 DUSK"
-                  data-tooltip-type="info"
-                >
-                  7,373
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    19
-                  </span>
-                </span>
               </td>
               
                
@@ -6218,6 +6218,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="104,743.439448879 DUSK"
+                  data-tooltip-type="info"
+                >
+                  104,743
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    44
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -6235,26 +6255,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="104,743.439448879 DUSK"
-                  data-tooltip-type="info"
-                >
-                  104,743
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    44
-                  </span>
-                </span>
               </td>
               
                
@@ -6349,6 +6349,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="75.58825915 DUSK"
+                  data-tooltip-type="info"
+                >
+                  75
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    59
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -6366,26 +6386,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="75.58825915 DUSK"
-                  data-tooltip-type="info"
-                >
-                  75
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    59
-                  </span>
-                </span>
               </td>
               
                
@@ -6480,6 +6480,26 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="7,127.318018509 DUSK"
+                  data-tooltip-type="info"
+                >
+                  7,127
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    32
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
                 <b
                   class="provisioners-table__slash-data-label"
                 >
@@ -6497,26 +6517,6 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 </b>
                  
                 0
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-right"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="7,127.318018509 DUSK"
-                  data-tooltip-type="info"
-                >
-                  7,127
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    32
-                  </span>
-                </span>
               </td>
               
                

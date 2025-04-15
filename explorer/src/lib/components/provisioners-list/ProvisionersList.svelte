@@ -110,6 +110,14 @@
     >
   </ListItem>
 
+  <!-- REWARD -->
+  <ListItem tooltipText={displayTooltips ? "The accumulated reward" : ""}>
+    <svelte:fragment slot="term">accumulated reward</svelte:fragment>
+    <svelte:fragment slot="definition">
+      {formatter(luxToDusk(data.reward))} DUSK
+    </svelte:fragment>
+  </ListItem>
+
   <!-- SLASHES -->
   <ListItem tooltipText={displayTooltips ? "Soft slashes" : ""}>
     <svelte:fragment slot="term">Soft Slashes</svelte:fragment>
@@ -123,14 +131,6 @@
     <svelte:fragment slot="term">Hard Slashes</svelte:fragment>
     <svelte:fragment slot="definition">
       {formatter(data.hard_faults)}
-    </svelte:fragment>
-  </ListItem>
-
-  <!-- REWARD -->
-  <ListItem tooltipText={displayTooltips ? "The accumulated reward" : ""}>
-    <svelte:fragment slot="term">accumulated reward</svelte:fragment>
-    <svelte:fragment slot="definition">
-      {formatter(luxToDusk(data.reward))} DUSK
     </svelte:fragment>
   </ListItem>
 </DetailList>

@@ -134,6 +134,24 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="details-list__term-layout"
     >
        
+      accumulated reward
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    7,121.257296087
+     DUSK
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
       Soft Slashes
     </div>
   </dt>
@@ -159,24 +177,6 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
     class="details-list__definition details-list__definition--table"
   >
     0
-  </dd>
-   
-  <dt
-    class="details-list__term details-list__term--table"
-  >
-    <div
-      class="details-list__term-layout"
-    >
-       
-      accumulated reward
-    </div>
-  </dt>
-   
-  <dd
-    class="details-list__definition details-list__definition--table"
-  >
-    7,121.257296087
-     DUSK
   </dd>
 </dl>
 `;
