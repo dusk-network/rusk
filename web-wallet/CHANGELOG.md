@@ -589,6 +589,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[1.4.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.2.0
 [1.1.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.1.0
