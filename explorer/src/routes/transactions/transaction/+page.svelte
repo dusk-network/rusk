@@ -9,10 +9,9 @@
 
   const dataStore = createDataStore(duskAPI.getTransaction);
   const payloadStore = createDataStore(duskAPI.getTransactionDetails);
-  const getTransaction = () => {
+  const getTransaction = async () => {
     const id = $page.url.searchParams.get("id");
-    dataStore.getData(id);
-    payloadStore.getData(id);
+    await Promise.allSettled([dataStore.getData(id), payloadStore.getData(id)]);
   };
 
   onMount(getTransaction);
