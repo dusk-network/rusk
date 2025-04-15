@@ -411,12 +411,14 @@ pub(crate) fn request_address(
 
 pub(crate) fn tx_history_list(
     history: &[TransactionHistory],
-) -> anyhow::Result<String> {
+) -> anyhow::Result<()> {
     let header = TransactionHistory::header();
     let history_str: Vec<String> =
         history.iter().map(|history| history.to_string()).collect();
 
-    Ok(Select::new(header.as_str(), history_str).prompt()?)
+    Select::new(header.as_str(), history_str).prompt()?;
+
+    Ok(())
 }
 
 /// Request contract WASM file location
