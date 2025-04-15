@@ -9,25 +9,24 @@ mod history;
 #[cfg(all(test, feature = "e2e-test"))]
 mod tests;
 
+use std::fmt;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
+
 use aes_gcm::AeadCore;
 use aes_gcm::Aes256Gcm;
 use bip39::{Language, Mnemonic, MnemonicType};
-pub use history::TransactionHistory;
-use rand::rngs::OsRng;
-use rand::RngCore;
-use rusk_wallet::dat::{self, LATEST_VERSION};
-use std::io::Write;
-
-use std::fmt;
-use std::fs::File;
-use std::path::PathBuf;
-
 use clap::Subcommand;
 use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::data::ContractCall;
 use dusk_core::BlsScalar;
+pub use history::TransactionHistory;
+use rand::rngs::OsRng;
+use rand::RngCore;
 use rusk_wallet::currency::{Dusk, Lux};
+use rusk_wallet::dat::{self, LATEST_VERSION};
 use rusk_wallet::gas::{
     Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
     DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
