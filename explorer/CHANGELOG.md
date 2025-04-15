@@ -35,6 +35,7 @@ and this project adheres to
 
 - Fix current balance showing "Loading..." for empty accounts [#3576]
 - Fix Account page does not reload content on key change [#3591]
+- Fix badge widths to maintain consistent sizing [#3483]
 
 ## [1.1.1] - 2025-03-17
 
@@ -187,6 +188,7 @@ and this project adheres to
 [#3425]: https://github.com/dusk-network/rusk/issues/3425
 [#3415]: https://github.com/dusk-network/rusk/issues/3415
 [#3454]: https://github.com/dusk-network/rusk/issues/3454
+[#3483]: https://github.com/dusk-network/rusk/issues/3483
 [#3545]: https://github.com/dusk-network/rusk/issues/3454
 [#3564]: https://github.com/dusk-network/rusk/issues/3564
 [#3564]: https://github.com/dusk-network/rusk/issues/3576
