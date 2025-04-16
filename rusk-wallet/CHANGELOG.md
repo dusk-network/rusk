@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add deploy contract output (display the new contractId)
+- Add pagination for transaction history to not pollute the stdout [#3292]
 
 ### Changed
 
@@ -82,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2396]: https://github.com/dusk-network/rusk/issues/2396
 [#2340]: https://github.com/dusk-network/rusk/issues/2340
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
+[#3292]: https://github.com/dusk-network/rusk/issues/3292
 [#3394]: https://github.com/dusk-network/rusk/issues/3394
 
 <!-- Releases -->

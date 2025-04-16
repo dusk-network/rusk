@@ -33,6 +33,8 @@ use rusk_wallet::{
 use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
 
+use crate::command::TransactionHistory;
+
 pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
     let pwd = Password::new(msg)
         .with_display_toggle_enabled()
@@ -405,6 +407,20 @@ pub(crate) fn request_address(
     )
     .with_starting_cursor(current_idx as usize)
     .prompt()?)
+}
+
+pub(crate) fn tx_history_list(
+    history: &[TransactionHistory],
+) -> anyhow::Result<()> {
+    let header = TransactionHistory::header();
+    let history_str: Vec<String> =
+        history.iter().map(|history| history.to_string()).collect();
+
+    Select::new(header.as_str(), history_str)
+        .with_help_message("↑↓ to move, type to filter")
+        .prompt()?;
+
+    Ok(())
 }
 
 /// Request contract WASM file location
