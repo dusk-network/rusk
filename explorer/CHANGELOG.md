@@ -24,6 +24,8 @@ and this project adheres to
 
 ### Fixed
 
+- Fix overview pane spacing (Account page) [#3639]
+
 ## [1.2.0] - 2025-04-07
 
 ### Added
@@ -202,6 +204,7 @@ and this project adheres to
 [#3591]: https://github.com/dusk-network/rusk/issues/3591
 [#3612]: https://github.com/dusk-network/rusk/issues/3612
 [#3620]: https://github.com/dusk-network/rusk/issues/3620
+[#3639]: https://github.com/dusk-network/rusk/issues/3639
 [#3640]: https://github.com/dusk-network/rusk/issues/3640
 [#3641]: https://github.com/dusk-network/rusk/issues/3641
 [#3655]: https://github.com/dusk-network/rusk/issues/3655

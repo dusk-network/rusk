@@ -79,5 +79,7 @@
   :global(.account-overview-panel__balance) {
     max-width: fit-content;
     cursor: help;
+    letter-spacing: 8%;
+    line-height: 120%;
   }
 </style>
