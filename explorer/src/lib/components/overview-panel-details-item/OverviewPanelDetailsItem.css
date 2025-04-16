@@ -4,7 +4,6 @@
   flex-direction: column;
   justify-content: flex-start;
   min-width: max-content;
-  margin: 0 1rem;
 }
 
 .overview-panel__details-item-title {
