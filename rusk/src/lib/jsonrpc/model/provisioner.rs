@@ -32,8 +32,9 @@ pub struct ProvisionerInfo {
     /// Locked stake amount in Dusk atomic units, as a numeric string.
     #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub locked_amount: u64,
-    /// Current eligibility score/epoch, as a numeric string.
-    /// TODO: Verify exact meaning (epoch? round? block height?).
+    /// Current eligibility, as a numeric string. It representshe amount of
+    /// stakes participating in consensus. It is called "active" in the
+    /// explorer.
     #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub eligibility: u64,
     /// Accumulated rewards in Dusk atomic units, as a numeric string.
