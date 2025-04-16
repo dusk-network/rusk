@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 //! Defines data structures representing transaction-related information for the
-//! JSON-RPC API, based on the specifications.
+//! JSON-RPC API
 
 use hex;
 use serde::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ use std::convert::From;
 
 // NOTE: Field types (String vs specific types) are chosen for direct mapping
 // from the spec. Adjustments for internal representation vs. final JSON
-// stringification (e.g., u64 -> String) might happen at the serialization
+// stringification (e.g., u64 -> String) will happen at the serialization
 // layer.
 
 /// Represents a contract event as defined in the JSON-RPC specification.
@@ -28,7 +28,7 @@ pub struct ContractEvent {
 }
 
 /// Represents a group of events related to a single transaction, specifically
-/// for Moonlight operations, as defined in the JSON-RPC specification.
+/// for Moonlight operations
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct MoonlightEventGroup {
     /// Events associated with the transaction.
@@ -36,7 +36,9 @@ pub struct MoonlightEventGroup {
     /// Transaction hash as hex string (origin hash internally).
     pub tx_hash: String,
     /// Block height where the transaction was included.
-    pub block_height: u64, // Use u64 internally, serialize as String if needed
+    #[serde(with = "super::serde_helper::u64_to_string")]
+    // Serialize as string
+    pub block_height: u64,
 }
 
 // --- Base Transaction and Status Types ---
@@ -111,14 +113,14 @@ pub struct TransactionStatus {
 /// Data specific to a Moonlight transaction.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct MoonlightTransactionData {
-    /// Sender's BLS public key as base58 string.
+    /// Base58-encoded BLS public key of the sender.
     pub sender: String,
-    /// Receiver's BLS public key as base58 string.
+    /// Base58-encoded BLS public key of the receiver.
     pub receiver: String,
-    /// Amount in Dusk atomic units as numeric string.
+    /// Amount in Dusk atomic units as a numeric string.
     #[serde(with = "super::serde_helper::u64_to_string")]
     pub value: u64,
-    /// Transaction nonce as numeric string.
+    /// Transaction nonce as a numeric string.
     #[serde(with = "super::serde_helper::u64_to_string")]
     pub nonce: u64,
     /// Optional hex-encoded memo.
@@ -158,10 +160,25 @@ pub struct TransactionResponse {
     pub transaction_data: TransactionDataType,
 }
 
-// --- Conversion Implementations ---
+/// Represents the result of a simulated transaction execution.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SimulationResult {
+    /// Whether the simulation was successful.
+    pub success: bool,
+    /// Estimated gas usage as a numeric string, present only on success.
+    #[serde(
+        with = "crate::jsonrpc::model::serde_helper::opt_u64_to_string",
+        default
+    )] // default needed for Option
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas_estimate: Option<u64>,
+    /// Error message if the simulation failed, present only on failure.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
 
-// NOTE: These implementations introduce a dependency on `node` and `node-data`
-// crates within the `model` module.
+// --- Conversion Implementations ---
 
 #[cfg(feature = "archive")]
 impl From<node_data::events::contract::ContractEvent> for ContractEvent {
