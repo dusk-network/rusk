@@ -14,11 +14,15 @@ and this project adheres to
 
 ### Changed
 
-- Change address to use mono font family (Account page) [#3667]
-
 ### Removed
 
 ### Fixed
+
+## [1.3.1] - 2025-04-16
+
+### Changed
+
+- Change address to use mono font family (Account page) [#3667]
 
 ## [1.3.0] - 2025-04-16
 
@@ -224,6 +228,7 @@ and this project adheres to
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.3.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.1
 [1.3.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.2.0
 [1.1.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.1.1
