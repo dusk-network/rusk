@@ -21,6 +21,7 @@
 
 .account-overview-panel__address {
   font-weight: 500;
+  font-family: var(--mono-font-family);
 }
 
 .account-overview-panel__separator {

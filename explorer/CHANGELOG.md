@@ -14,6 +14,8 @@ and this project adheres to
 
 ### Changed
 
+- Change address to use mono font family (Account page) [#3667]
+
 ### Removed
 
 ### Fixed
@@ -217,6 +219,7 @@ and this project adheres to
 [#3640]: https://github.com/dusk-network/rusk/issues/3640
 [#3641]: https://github.com/dusk-network/rusk/issues/3641
 [#3655]: https://github.com/dusk-network/rusk/issues/3655
+[#3667]: https://github.com/dusk-network/rusk/issues/3667
 
 <!-- VERSIONS -->
 
