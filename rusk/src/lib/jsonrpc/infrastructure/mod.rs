@@ -19,10 +19,13 @@
 //! mocking) and provides flexibility for future changes in either the core
 //! database or the JSON-RPC API requirements.
 
+pub mod archive;
 pub mod client_info;
 pub mod db;
 pub mod error;
 pub mod manual_limiter;
 pub mod metrics;
+pub mod network;
 pub mod state;
 pub mod subscription;
+pub mod vm;
