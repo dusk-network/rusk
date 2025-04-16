@@ -11,6 +11,17 @@ and this project adheres to
 ### Added
 
 - Add Tokens page [#3415]
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## [1.3.0] - 2025-04-16
+
+### Added
+
 - Add copy buttons to appropriate fields [#3620]
 
 ### Changed
@@ -19,8 +30,6 @@ and this project adheres to
 - Change transaction API requests to execute in parallel [#3655]
 - Change Addresses and IDs to monospaced font [#3640]
 - Change data arrangement for improved information hierarchy (Provisioners page) [#3641]
-
-### Removed
 
 ### Fixed
 
@@ -212,6 +221,7 @@ and this project adheres to
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.3.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.2.0
 [1.1.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.1.1
 [1.1.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.1.0
