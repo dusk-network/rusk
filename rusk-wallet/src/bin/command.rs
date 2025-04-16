@@ -231,6 +231,10 @@ pub(crate) enum Command {
         /// Price you're going to pay for each gas unit (in LUX)
         #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
         gas_price: Lux,
+
+        /// Amount of DUSK to deposit to the contract
+        #[arg(long, default_value_t = Dusk::MIN)]
+        deposit: Dusk,
     },
 
     /// Deploy a contract
@@ -568,6 +572,7 @@ impl Command {
                 fn_args,
                 gas_limit,
                 gas_price,
+                deposit,
             } => {
                 let gas = Gas::new(gas_limit).with_price(gas_price);
 
@@ -587,7 +592,7 @@ impl Command {
                         wallet
                             .phoenix_execute(
                                 addr_idx,
-                                Dusk::from(0),
+                                deposit,
                                 gas,
                                 call.into(),
                             )
@@ -598,7 +603,7 @@ impl Command {
                             .moonlight_execute(
                                 addr_idx,
                                 Dusk::from(0),
-                                Dusk::from(0),
+                                deposit,
                                 gas,
                                 call.into(),
                             )

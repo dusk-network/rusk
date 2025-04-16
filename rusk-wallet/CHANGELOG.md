@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add deploy contract output (display the new contractId)
+- Add optional deposit to ContractCall [#3650]
 
 ### Changed
 
@@ -58,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- Issues -->
+[#3650]: https://github.com/dusk-network/rusk/issues/3650
 [#3602]: https://github.com/dusk-network/rusk/issues/3602
 [#3598]: https://github.com/dusk-network/rusk/issues/3598
 [#3593]: https://github.com/dusk-network/rusk/issues/3593

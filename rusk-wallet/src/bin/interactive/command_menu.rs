@@ -339,6 +339,9 @@ pub(crate) async fn online(
                 fn_args: prompt::request_bytes(
                     "arguments of calling function",
                 )?,
+                deposit: prompt::request_optional_token_amt(
+                    "deposit", balance,
+                )?,
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,
