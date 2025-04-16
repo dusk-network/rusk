@@ -28,7 +28,7 @@ pub mod dat;
 pub mod gas;
 
 pub use error::Error;
-pub use gql::{BlockTransaction, GraphQL};
+pub use gql::{BlockData, BlockTransaction, GraphQL};
 pub use rues::RuesHttpClient;
 pub use wallet::{
     Address, DecodedNote, Profile, SecureWalletFile, Wallet, WalletPath,
