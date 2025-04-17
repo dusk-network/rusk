@@ -1,6 +1,6 @@
 [package]
 name = "dusk-data-driver"
-version = "0.0.1-alpha.1"
+version = "0.1.0"
 edition = "2021"
 
 description = "Data driver contract interface to support json serialization"
