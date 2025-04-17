@@ -5,10 +5,22 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use futures::StreamExt;
-use rues::CONTRACTS_TARGET;
 
-use super::*;
+use dusk_bytes::Serializable;
+use dusk_core::transfer::phoenix::{
+    NoteLeaf, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
+    ViewKey as PhoenixViewKey,
+};
+use dusk_core::BlsScalar;
+use wallet_core::keys::{
+    derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
+};
+use zeroize::Zeroize;
+
+use super::{LocalStore, MAX_PROFILES, TREE_LEAF};
+
 use crate::clients::{Cache, TRANSFER_CONTRACT};
+use crate::rues::{HttpClient as RuesHttpClient, CONTRACTS_TARGET};
 use crate::Error;
 
 pub(crate) async fn sync_db(
@@ -22,6 +34,9 @@ pub(crate) async fn sync_db(
     let keys: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> = (0
         ..MAX_PROFILES)
         .map(|i| {
+            // we know that `i < MAX_PROFILES <= u8::MAX`, so casting to u8 is
+            // safe here
+            #[allow(clippy::cast_possible_truncation)]
             let i = i as u8;
             (
                 derive_phoenix_sk(seed, i),
@@ -80,9 +95,9 @@ pub(crate) async fn sync_db(
         buffer = leaf_chunk.remainder().to_vec();
     }
 
-    for (sk, vk, pk) in keys.iter() {
+    for (sk, vk, pk) in &keys {
         let pk_bs58 = bs58::encode(pk.to_bytes()).into_string();
-        for (block_height, note) in note_data.iter() {
+        for (block_height, note) in &note_data {
             if vk.owns(note.stealth_address()) {
                 let nullifier = note.gen_nullifier(sk);
                 let spent =
@@ -93,10 +108,11 @@ pub(crate) async fn sync_db(
 
                 let note = (note.clone(), nullifier);
 
-                match spent {
-                    true => cache.insert_spent(&pk_bs58, *block_height, note),
-                    false => cache.insert(&pk_bs58, *block_height, note),
-                }?;
+                if spent {
+                    cache.insert_spent(&pk_bs58, *block_height, note)?;
+                } else {
+                    cache.insert(&pk_bs58, *block_height, note)?;
+                }
             }
         }
     }

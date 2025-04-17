@@ -47,6 +47,7 @@ pub struct Gas {
 
 impl Gas {
     /// Default gas price and limit
+    #[must_use]
     pub fn new(limit: u64) -> Self {
         Gas {
             price: DEFAULT_PRICE,
@@ -55,6 +56,7 @@ impl Gas {
     }
 
     /// Returns `true` if the gas is equal or greater than the minimum limit
+    #[must_use]
     pub fn is_enough(&self) -> bool {
         self.limit >= MIN_LIMIT
     }
@@ -68,6 +70,7 @@ impl Gas {
     }
 
     /// Set the price and return the Gas
+    #[must_use]
     pub fn with_price<T>(mut self, price: T) -> Self
     where
         T: Into<Lux>,

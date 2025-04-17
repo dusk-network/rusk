@@ -19,13 +19,17 @@ pub const CONTRACTS_TARGET: &str = "contracts";
 
 #[derive(Clone)]
 /// Rusk HTTP Binary Client
-pub struct RuesHttpClient {
+pub struct HttpClient {
     client: reqwest::Client,
     uri: String,
 }
 
-impl RuesHttpClient {
+impl HttpClient {
     /// Create a new HTTP Client
+    ///
+    /// # Errors
+    /// This method errors if a TLS backend cannot be initialized, or the
+    /// resolver cannot load the system configuration.
     pub fn new<S: Into<String>>(uri: S) -> Result<Self, Error> {
         let client = reqwest::ClientBuilder::new()
             .connect_timeout(Duration::from_secs(30))
@@ -41,6 +45,11 @@ impl RuesHttpClient {
     }
 
     /// Utility for querying the rusk VM
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the rues request,
+    /// if the response body is not in JSON format or if the value cannot be
+    /// serialized using rkyv.
     pub async fn contract_query<I, C, const N: usize>(
         &self,
         contract: C,
@@ -62,15 +71,22 @@ impl RuesHttpClient {
     }
 
     /// Check rusk connection
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the request.
     pub async fn check_connection(&self) -> Result<(), reqwest::Error> {
         self.client.post(&self.uri).send().await?;
 
         Ok(())
     }
 
-    /// Send a RuskRequest to a specific target.
+    /// Send a `RuskRequest` to a specific target.
     ///
     /// The response is interpreted as Binary
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the request,
+    /// or if the response body is not in JSON format.
     pub async fn call<E>(
         &self,
         target: &str,
@@ -87,7 +103,11 @@ impl RuesHttpClient {
         Ok(data.to_vec())
     }
 
-    /// Send a RuskRequest to a specific target without parsing the response
+    /// Send a `RuskRequest` to a specific target without parsing the response
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the rues request,
+    /// or if the response body is not in JSON format.
     pub async fn call_raw<E>(
         &self,
         target: &str,
