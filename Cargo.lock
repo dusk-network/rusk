@@ -1621,6 +1621,26 @@ dependencies = [
 [[package]]
 name = "dusk-consensus"
 version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fdea944555f6eeca4c36545a2ccc56d055db159ace763404e78e35e56e507bb0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "dusk-bytes",
+ "dusk-core 1.3.0",
+ "dusk-merkle",
+ "dusk-node-data 1.3.0",
+ "hex",
+ "num-bigint",
+ "sha3",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "dusk-consensus"
+version = "1.3.1-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1748,7 +1768,7 @@ dependencies = [
  "bs58",
  "criterion",
  "dusk-bytes",
- "dusk-consensus",
+ "dusk-consensus 1.3.0",
  "dusk-core 1.3.0",
  "dusk-node-data 1.3.0",
  "dusk-wallet-core",
@@ -1878,7 +1898,7 @@ dependencies = [
  "criterion",
  "dirs",
  "dusk-bytes",
- "dusk-consensus",
+ "dusk-consensus 1.3.0",
  "dusk-core 1.3.0",
  "dusk-data-driver",
  "dusk-node",
