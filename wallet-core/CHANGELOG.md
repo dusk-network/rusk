@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added support for EIP2333 BLS key derivation [#3476]
 
+### Changed
+
+- Changed `dusk-core` version to `1.3.0`
+
 ## [1.1.0] - 2025-02-14
 
 ### Changed
