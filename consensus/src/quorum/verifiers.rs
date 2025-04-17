@@ -25,126 +25,78 @@ use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
 
 pub async fn verify_step_votes(
-    header: &ConsensusHeader,
+    ch: &ConsensusHeader,
     vote: &Vote,
     sv: &StepVotes,
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     step: StepName,
 ) -> Result<Vec<Voter>, StepSigError> {
-    let round = header.round;
-    let iteration = header.iteration;
-
-    let mut exclusion_list = vec![];
-    let generator = committees_set
-        .read()
-        .await
-        .provisioners()
-        .get_generator(iteration, seed, round);
-
-    exclusion_list.push(generator);
-
-    if exclude_next_generator(iteration) {
-        let next_generator = committees_set
-            .read()
-            .await
-            .provisioners()
-            .get_generator(iteration + 1, seed, round);
-
-        exclusion_list.push(next_generator);
+    // When verifying a NoQuorum Attestation, the Validation StepVotes should be
+    // empty. To be on the safe side, we simply skip verification, instead of
+    // failing verification
+    if step == StepName::Validation && *vote == Vote::NoQuorum {
+        return Ok(vec![]);
     }
 
-    let cfg =
-        sortition::Config::new(seed, round, iteration, step, exclusion_list);
+    let committee = get_step_committee(ch, committees_set, seed, step).await;
 
-    if committees_set.read().await.get(&cfg).is_none() {
-        let _ = committees_set.write().await.get_or_create(&cfg);
-    }
-
-    let set = committees_set.read().await;
-    let committee = set.get(&cfg).expect("committee to be created");
-
+    // Verify the aggregated signature is valid and reach the quorum threshold
     let voters =
-        verify_votes(header, step, vote, sv, committee)
-        .map_err(|e|
-            {
-                error!( "invalid {:?}, vote = {:?}, round = {}, iter = {}, seed = {}, sv = {:?}, err = {}",
-                    step,
-                    vote,
-                    header.round,
-                    header.iteration,
-                    to_str(seed.inner()),
-                    sv,
-                    e
-                );
-                e
-            }
-        )?;
+        verify_quorum_votes(ch, step, vote, sv, &committee).map_err(|e| {
+            error!(
+                event = "Invalid StepVotes",
+                reason = %e,
+                ?vote,
+                round = ch.round,
+                iter = ch.iteration,
+                ?step,
+                seed = to_str(seed.inner()),
+                ?sv
+            );
+
+            e
+        })?;
 
     Ok(voters)
 }
 
-pub struct QuorumResult {
-    pub total: usize,
-    pub target_quorum: usize,
-}
-
-impl QuorumResult {
-    pub fn quorum_reached(&self) -> bool {
-        self.total >= self.target_quorum
-    }
-}
-
-pub fn verify_votes(
+pub fn verify_quorum_votes(
     header: &ConsensusHeader,
     step: StepName,
     vote: &Vote,
-    step_votes: &StepVotes,
+    sv: &StepVotes,
     committee: &Committee,
 ) -> Result<Vec<Voter>, StepSigError> {
-    let bitset = step_votes.bitset;
-    let signature = step_votes.aggregate_signature().inner();
+    let bitset = sv.bitset;
+    let signature = sv.aggregate_signature().inner();
     let sub_committee = committee.intersect(bitset);
 
-    let total = committee.total_occurrences(&sub_committee);
-    let target_quorum = match vote {
+    let total_credits = committee.total_occurrences(&sub_committee);
+    let quorum_threshold = match vote {
         Vote::Valid(_) => committee.super_majority_quorum(),
         _ => committee.majority_quorum(),
     };
 
-    let quorum_result = QuorumResult {
-        total,
-        target_quorum,
-    };
-
-    let skip_quorum = step == StepName::Validation && vote == &Vote::NoQuorum;
-
-    if !skip_quorum && !quorum_result.quorum_reached() {
-        tracing::error!(
-            desc = "vote_set_too_small",
+    // Check credits reach the quorum
+    if total_credits < quorum_threshold {
+        error!(
+            event = "Invalid quorum",
+            reason = "Credits below the quorum threhsold",
+            total_credits,
+            quorum_threshold,
             committee = format!("{committee}"),
             sub_committee = format!("{:#?}", sub_committee),
             bitset,
-            target_quorum,
-            total,
             ?vote
         );
         return Err(StepSigError::VoteSetTooSmall);
     }
 
-    // If bitset=0 this means that we are checking for failed iteration
-    // attestations. If a winning attestation is checked with bitset=0 it will
-    // fail to pass the quorum and results in VoteSetTooSmall.
-    // FIXME: Anyway this should be handled properly, maybe with a different
-    // function
-    if bitset > 0 {
-        // aggregate public keys
-        let apk = sub_committee.aggregate_pks()?;
+    // Verify aggregated signature
+    let apk = sub_committee.aggregate_pks()?;
+    verify_step_signature(header, step, vote, apk, signature)?;
 
-        // verify signatures
-        verify_step_signature(header, step, vote, apk, signature)?;
-    }
-    // Verification done
     Ok(sub_committee.to_voters())
 }
 
