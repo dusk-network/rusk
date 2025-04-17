@@ -1950,7 +1950,7 @@ dependencies = [
  "dusk-node 1.3.0",
  "dusk-node-data 1.3.0",
  "dusk-stake-contract-dd",
- "dusk-transfer-contract-dd",
+ "dusk-transfer-contract-dd 0.1.0",
  "dusk-vm 1.3.0",
  "dusk-wallet-core 1.3.0",
  "ff",
@@ -2010,6 +2010,18 @@ dependencies = [
 [[package]]
 name = "dusk-transfer-contract-dd"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "306dcec4456faf19853836bd81e29eb4276d6037a0b34106c9d88de40620dfe1"
+dependencies = [
+ "dlmalloc",
+ "dusk-core 1.3.0",
+ "dusk-data-driver 0.1.0",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "dusk-transfer-contract-dd"
+version = "0.1.1-alpha.1"
 dependencies = [
  "dlmalloc",
  "dusk-core 1.3.0",

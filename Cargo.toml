@@ -55,7 +55,8 @@ wallet-core = { version = "1.3.0", package = "dusk-wallet-core" }
 
 dusk-data-driver = { version = "0.1.0" }
 # dusk-data-driver = { version = "0.1.1-alpha.1", path = "./data-drivers/data-driver" }
-dusk-transfer-contract-dd = { version = "0.1.0", path = "./data-drivers/transfer-contract" }
+dusk-transfer-contract-dd = { version = "0.1.0" }
+# dusk-transfer-contract-dd = { version = "0.1.1-alpha.1", path = "./data-drivers/transfer-contract" }
 dusk-stake-contract-dd = { version = "0.0.1-alpha.1", path = "./data-drivers/stake-contract" }
 
 # Dusk dependencies outside the workspace
