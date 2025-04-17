@@ -28,9 +28,6 @@ use crate::archive::{Archive, ArchiveOptions};
 /// Subfolder containing the moonlight database.
 const MOONLIGHT_DB_FOLDER_NAME: &str = "moonlight.db";
 
-/// Default max count for moonlight transfers returned.
-const DEFAULT_MAX_COUNT: usize = 1000;
-
 // Column family names.
 
 /// Moonlight TxHash to MoonlightTxEvents mapping
@@ -397,7 +394,6 @@ impl Archive {
         max_count: Option<usize>,
         page_count: Option<usize>,
     ) -> Result<Option<Vec<EventIdentifier>>> {
-        let max_count = max_count.unwrap_or(DEFAULT_MAX_COUNT);
         // None and Page 1 = 0, Page 2 = 1, Page 3 = 2, ...
         let page_count = page_count.map(|p| p - 1).unwrap_or(0);
 
@@ -685,7 +681,7 @@ mod util {
         moonlight_tx: Option<Vec<EventIdentifier>>,
         from_block: Option<u64>,
         to_block: Option<u64>,
-        max_count: usize,
+        max_count: Option<usize>,
         page_count: usize,
     ) -> Option<Vec<EventIdentifier>> {
         if let Some(mut moonlight_tx) = moonlight_tx {
@@ -708,12 +704,22 @@ mod util {
                 lower_bound_idx = 0;
             }
 
-            // Skip to lower bound and take max_count * page_count
-            let limited = moonlight_tx
-                .into_iter()
-                .skip(lower_bound_idx + (page_count * max_count))
-                .take(max_count)
-                .collect::<Vec<EventIdentifier>>();
+            // Skip to lower bound and handle max_count if provided
+            let limited = if let Some(max_count) = max_count {
+                moonlight_tx
+                    .into_iter()
+                    .skip(lower_bound_idx + (page_count * max_count))
+                    .take(max_count)
+                    .collect::<Vec<EventIdentifier>>()
+            } else {
+                // if max_count is not provided, return all tx starting from the
+                // lower bound (from block) and ignore pagination as it makes no
+                // sense
+                moonlight_tx
+                    .into_iter()
+                    .skip(lower_bound_idx)
+                    .collect::<Vec<EventIdentifier>>()
+            };
 
             if limited.is_empty() {
                 None
@@ -1057,7 +1063,7 @@ mod tests {
 
         let pk = AccountPublicKey::default();
         assert!(archive
-            .full_moonlight_history(pk, None, None, None, None)
+            .full_moonlight_history(pk, None, None, None)
             .unwrap()
             .is_none());
 
@@ -1085,7 +1091,7 @@ mod tests {
         assert_eq!(fetched_moonlight_tx.len(), 6);
 
         let fetched_events = archive
-            .full_moonlight_history(pk, None, None, None, None)
+            .full_moonlight_history(pk, None, None, None)
             .unwrap()
             .unwrap();
         assert_eq!(fetched_events.len(), 6);
@@ -1146,7 +1152,7 @@ mod tests {
         let archive = Archive::create_or_open(path).await;
         let pk = AccountPublicKey::default();
         assert!(archive
-            .full_moonlight_history(pk, None, None, None, None)
+            .full_moonlight_history(pk, None, None, None)
             .unwrap()
             .is_none());
 
@@ -1484,7 +1490,7 @@ mod tests {
 
         let pk = AccountPublicKey::default();
         assert!(archive
-            .full_moonlight_history(pk, None, None, None, None)
+            .full_moonlight_history(pk, None, None, None)
             .unwrap()
             .is_none());
 
@@ -1512,7 +1518,7 @@ mod tests {
         assert_eq!(fetched_moonlight_tx.len(), 6);
 
         let mut fetched_events = archive
-            .full_moonlight_history(pk, None, None, None, None)
+            .full_moonlight_history(pk, None, None, None)
             .unwrap()
             .unwrap();
         assert_eq!(fetched_events.len(), 6);
@@ -1521,7 +1527,6 @@ mod tests {
             .full_moonlight_history(
                 pk,
                 Some(super::Order::Descending),
-                None,
                 None,
                 None,
             )
