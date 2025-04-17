@@ -1,7 +1,11 @@
 [package]
 name = "dusk-stake-contract-dd"
-version = "0.0.1-alpha.1"
+version = "0.1.0"
 edition = "2021"
+
+description = "Data driver for Dusk Stake Contract"
+license = "MPL-2.0"
+repository = "https://github.com/dusk-network/rusk"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
