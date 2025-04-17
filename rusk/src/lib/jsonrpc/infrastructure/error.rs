@@ -147,4 +147,33 @@ pub enum Error {
         #[from]
         crate::jsonrpc::infrastructure::subscription::error::SubscriptionError,
     ),
+
+    /// An unknown error occurred.
+    #[error("Unknown error: {0}")]
+    Unknown(String),
+}
+
+/// Errors related to direct VM contract interaction.
+#[derive(Debug, thiserror::Error, PartialEq, Eq, Clone)]
+pub enum VmCallerError {
+    /// Failed to interact with the VM session (e.g., get session, call
+    /// method).
+    #[error("VM session error: {0}")]
+    SessionError(String),
+
+    /// Failed to serialize arguments for a contract call.
+    #[error("Argument serialization failed: {0}")]
+    SerializationError(String),
+
+    /// Failed to deserialize the result from a contract call.
+    #[error("Result deserialization failed: {0}")]
+    DeserializationError(String),
+
+    /// The requested contract method returned an error.
+    #[error("Contract execution error: {0}")]
+    ContractError(String),
+
+    /// An internal error occurred (e.g., task join error).
+    #[error("Internal VM caller error: {0}")]
+    InternalError(String),
 }
