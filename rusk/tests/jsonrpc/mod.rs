@@ -4,9 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![feature(lazy_cell)]
-mod common;
-mod jsonrpc;
-mod services;
+pub mod config;
+pub mod error;
+pub mod manual_limiter;
+pub mod metrics;
+pub mod state;
+pub mod subscription;
 
-extern crate alloc;
+pub(crate) mod utils;
