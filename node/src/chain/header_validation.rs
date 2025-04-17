@@ -26,7 +26,7 @@ use dusk_core::signatures::bls::{
 use dusk_core::stake::EPOCH;
 use hex;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
+use node_data::ledger::{Fault, InvalidFault, Seed};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger, StepName};
@@ -420,8 +420,8 @@ pub async fn verify_faults<DB: database::DB>(
 pub async fn verify_att(
     att: &ledger::Attestation,
     consensus_header: ConsensusHeader,
-    curr_seed: Signature,
-    curr_eligible_provisioners: &Provisioners,
+    seed: Seed,
+    eligible_provisioners: &Provisioners,
     expected_result: Option<RatificationResult>,
 ) -> Result<Vec<Voter>, AttestationError> {
     // Check expected result
@@ -452,28 +452,28 @@ pub async fn verify_att(
         }
     }
 
-    let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
+    let committee_set = RwLock::new(CommitteeSet::new(eligible_provisioners));
     let vote = att.result.vote();
 
-    // Verify validation
+    // Verify Validation votes
     let validation_voters = verifiers::verify_step_votes(
         &consensus_header,
         vote,
         &att.validation,
-        &committee,
-        curr_seed,
+        &committee_set,
+        seed,
         StepName::Validation,
     )
     .await
     .map_err(|s| AttestationError::InvalidVotes(StepName::Validation, s))?;
 
-    // Verify ratification
+    // Verify Ratification votes
     let ratification_voters = verifiers::verify_step_votes(
         &consensus_header,
         vote,
         &att.ratification,
-        &committee,
-        curr_seed,
+        &committee_set,
+        seed,
         StepName::Ratification,
     )
     .await
