@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade piecrust to `0.28.1`
+- Upgrade `dusk-vm` to `1.3.0`
+- Upgrade `dusk-core` to `1.3.0`
+
 ## [1.0.3] - 2025-02-14
 
 ### Changed
