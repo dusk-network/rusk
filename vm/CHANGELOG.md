@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-04-17
+
+### Changed
+
+- Change piecrust version requirement to `0.28.1`
+
 ## [1.2.0] - 2025-03-20
 
 ### Changed
@@ -43,7 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3437]: https://github.com/dusk-network/rusk/issues/3437
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.2.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.3.0...HEAD
+[1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.2.0...dusk-vm-1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.1.0...dusk-vm-1.2.0
 [1.1.0]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.0.0...dusk-vm-1.1.0
 [1.0.0]: https://github.com/dusk-network/rusk/compare/dusk-vm-0.1.0...dusk-vm-1.0.0

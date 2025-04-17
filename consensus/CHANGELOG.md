@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-04-17
+
 ### Fixed
 
 - Fix invalid Quorum message with NoQuorum result [#3543]
@@ -32,7 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Issues -->
 [#3543]: https://github.com/dusk-network/rusk/issues/3543
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.2.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.3.0...HEAD
+[1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.2.0...dusk-consensus-1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.0.1...dusk-consensus-1.2.0
 [1.0.1]: https://github.com/dusk-network/rusk/compare/consensus-1.0.0...dusk-consensus-1.0.1
 [0.1.0]: https://github.com/dusk-network/rusk/tree/consensus-1.0.0

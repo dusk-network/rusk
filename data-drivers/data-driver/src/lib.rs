@@ -135,7 +135,7 @@ pub trait ConvertibleContract: Send {
     ///   `"0.10.1"`).
     #[must_use]
     fn get_version(&self) -> &'static str {
-        "1.0.0"
+        "0.1.0"
     }
 }
 
