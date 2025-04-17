@@ -474,16 +474,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             .current()
                             .clone();
 
-                        let res = verify_att(
+                        match verify_att(
                             &qmsg.att,
                             qmsg.header,
                             cur_seed,
                             &cur_provisioners,
                             None,
                         )
-                        .await;
-
-                        match res {
+                        .await
+                        {
                             Ok(_) => {
                                 // Reroute to Consensus
                                 //
