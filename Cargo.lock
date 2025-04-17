@@ -1858,7 +1858,7 @@ dependencies = [
  "dusk-node-data",
  "dusk-stake-contract-dd",
  "dusk-transfer-contract-dd",
- "dusk-vm",
+ "dusk-vm 1.3.0",
  "dusk-wallet-core",
  "ff",
  "futures",
@@ -1927,6 +1927,22 @@ dependencies = [
 [[package]]
 name = "dusk-vm"
 version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8382d22f5367a81f6b03372d48237d01dd69facb0fab63740880e43f8c61f145"
+dependencies = [
+ "blake2b_simd",
+ "blake3",
+ "dusk-bytes",
+ "dusk-core 1.3.0",
+ "dusk-poseidon",
+ "lru",
+ "piecrust",
+ "rkyv",
+]
+
+[[package]]
+name = "dusk-vm"
+version = "1.3.1-alpha.1"
 dependencies = [
  "blake2b_simd",
  "blake3",
@@ -4455,7 +4471,7 @@ dependencies = [
  "dusk-bytes",
  "dusk-core 1.3.0",
  "dusk-plonk",
- "dusk-vm",
+ "dusk-vm 1.3.0",
  "ff",
  "flate2",
  "hex",
@@ -5148,7 +5164,7 @@ dependencies = [
  "criterion",
  "dusk-bytes",
  "dusk-core 1.3.0",
- "dusk-vm",
+ "dusk-vm 1.3.0",
  "dusk-wallet-core",
  "ff",
  "rand 0.8.5",
@@ -5631,7 +5647,7 @@ version = "0.10.1"
 dependencies = [
  "dusk-bytes",
  "dusk-core 1.3.0",
- "dusk-vm",
+ "dusk-vm 1.3.0",
  "ff",
  "rand 0.8.5",
  "ringbuffer",
