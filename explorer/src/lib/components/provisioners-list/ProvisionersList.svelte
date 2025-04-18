@@ -54,7 +54,7 @@
       ><span class="provisioners-list__staking-address">{provisionerKey}</span>
       <CopyButton
         name="Provisioner's staking address"
-        rawValue={provisionerKey}
+        rawValue={data.key}
         variant="secondary"
       />
     </svelte:fragment>
