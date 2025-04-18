@@ -76,10 +76,15 @@
 </section>
 
 <style lang="postcss">
-  :global(.account-overview-panel__balance) {
-    max-width: fit-content;
-    cursor: help;
-    letter-spacing: 8%;
-    line-height: 120%;
+  :global {
+    .account-overview-panel__details {
+      letter-spacing: 8%;
+      line-height: 120%;
+    }
+
+    .account-overview-panel__balance {
+      max-width: fit-content;
+      cursor: help;
+    }
   }
 </style>
