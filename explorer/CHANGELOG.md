@@ -19,6 +19,7 @@ and this project adheres to
 ### Fixed
 
 - Fix truncated provisioners addresses when copied while on mobile view [#3675]
+- Fix line height and letter spacing not being applied to the account balance's container [#3676]
 
 ## [1.3.1] - 2025-04-16
 
@@ -227,6 +228,7 @@ and this project adheres to
 [#3655]: https://github.com/dusk-network/rusk/issues/3655
 [#3667]: https://github.com/dusk-network/rusk/issues/3667
 [#3675]: https://github.com/dusk-network/rusk/issues/3675
+[#3676]: https://github.com/dusk-network/rusk/issues/3676
 
 <!-- VERSIONS -->
 
