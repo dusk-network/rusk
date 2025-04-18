@@ -18,6 +18,8 @@ and this project adheres to
 
 ### Fixed
 
+- Fix truncated provisioners addresses when copied while on mobile view [#3675]
+
 ## [1.3.1] - 2025-04-16
 
 ### Changed
@@ -224,6 +226,7 @@ and this project adheres to
 [#3641]: https://github.com/dusk-network/rusk/issues/3641
 [#3655]: https://github.com/dusk-network/rusk/issues/3655
 [#3667]: https://github.com/dusk-network/rusk/issues/3667
+[#3675]: https://github.com/dusk-network/rusk/issues/3675
 
 <!-- VERSIONS -->
 
