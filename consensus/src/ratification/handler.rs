@@ -23,7 +23,7 @@ use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
 use crate::msg_handler::{MsgHandler, StepOutcome};
-use crate::quorum::verifiers::verify_votes;
+use crate::quorum::verifiers::verify_quorum_votes;
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 
@@ -344,7 +344,7 @@ impl RatificationHandler {
                 error!("could not get validation committee");
                 ConsensusError::CommitteeNotGenerated
             })?;
-        verify_votes(
+        verify_quorum_votes(
             header,
             StepName::Validation,
             result.vote(),
