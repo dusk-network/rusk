@@ -572,7 +572,7 @@ mod tests {
     #[test]
     fn test_path_derivation() {
         let mnemonic = Mnemonic::from_phrase(
-          "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about", 
+          "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
           Language::English
         ).unwrap();
 
