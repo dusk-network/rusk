@@ -58,7 +58,7 @@
 //!  - `HKDF-Extract`: defined in RFC5869, instantiated with SHA256
 //!  - `HKDF-Expand`: defined in RFC5869, instantiated with SHA256
 
-use crate::Seed;
+use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
 use dusk_core::BlsScalar;
 
 use hkdf::Hkdf;
@@ -351,7 +351,7 @@ fn hkdf_mod_r(ikm: &[u8], key_info: &[u8]) -> BlsScalar {
 /// # Panics
 /// Panics if `parent_sk_to_lamport_pk` or `hkdf_mod_r` fail.
 #[must_use]
-fn derive_child_sk(parent_sk: &BlsScalar, index: u32) -> BlsScalar {
+fn derive_child_sk(parent_sk: &BlsScalar, index: u32) -> BlsSecretKey {
     // NOTE: `parent_sk` is in little-endian encoding but it's converted to
     // big-endian encoding by `parent_sk_to_lamport_pk`
 
@@ -359,7 +359,7 @@ fn derive_child_sk(parent_sk: &BlsScalar, index: u32) -> BlsScalar {
     let lamport_pk = parent_sk_to_lamport_pk(parent_sk, index);
 
     // SK = HKDF_mod_r(compressed_lamport_PK)
-    hkdf_mod_r(lamport_pk.as_ref(), b"")
+    BlsSecretKey::from(hkdf_mod_r(lamport_pk.as_ref(), b""))
 }
 
 /// Derives the master BLS secret key from a given seed using an HKDF-based
@@ -394,7 +394,7 @@ fn derive_child_sk(parent_sk: &BlsScalar, index: u32) -> BlsScalar {
 ///
 /// # Panics
 /// Panics if `hkdf_mod_r`fails.
-fn derive_master_sk(seed: &[u8]) -> Result<BlsScalar, String> {
+pub fn derive_master_sk(seed: &[u8]) -> Result<BlsSecretKey, String> {
     if seed.len() < 32 {
         return Err(
             "seed must be greater than or equal to 32 bytes".to_string()
@@ -402,7 +402,7 @@ fn derive_master_sk(seed: &[u8]) -> Result<BlsScalar, String> {
     }
 
     // SK = HKDF_mod_r(seed)
-    Ok(hkdf_mod_r(seed, b""))
+    Ok(BlsSecretKey::from(hkdf_mod_r(seed, b"")))
 }
 
 /// Parses a derivation path string and returns a vector of child index values.
@@ -446,16 +446,16 @@ fn get_path_indexes(path_str: &str) -> Result<Vec<u32>, String> {
     Ok(ret)
 }
 
-/// Derives a BLS secret key using the EIP-2333 specification from a given seed
-/// and derivation path.
+/// Derives a BLS secret key using the EIP-2333 specification from a given
+/// master secret key and derivation path.
 ///
-/// This function first derives the master secret key from the provided seed. It
+/// This function expects a master secret key derived from a seed. It
 /// then parses the derivation path to extract the sequence of child indexes and
 /// iteratively derives the corresponding child keys. The final derived BLS
 /// secret key is returned.
 ///
 /// # Arguments
-/// * `seed` - A reference to a `Seed` used to derive the master secret key.
+/// * `master_sk` - A reference to a `BlsSecretKey` used to derive child keys.
 /// * `path` - A string slice representing the derivation path (e.g.,
 ///   `"m/0/1/2"`).
 ///
@@ -469,17 +469,17 @@ fn get_path_indexes(path_str: &str) -> Result<Vec<u32>, String> {
 ///
 /// # Panics
 /// This function panics if any of the called functions panic.
-pub fn derive_bls_sk(seed: &Seed, path: &str) -> Result<BlsScalar, String> {
-    // Derive master key
-    let master_key: BlsScalar = derive_master_sk(seed)?;
-
+pub fn derive_bls_sk(
+    master_sk: &BlsSecretKey,
+    path: &str,
+) -> Result<BlsSecretKey, String> {
     // Parse nodes indexes from path
     let path_indexes: Vec<u32> = get_path_indexes(path)?;
-    let mut node_sk = master_key;
+    let mut node_sk = master_sk.clone();
 
     // Derive path keys
     for index in &path_indexes {
-        node_sk = derive_child_sk(&node_sk, *index);
+        node_sk = derive_child_sk(node_sk.as_ref(), *index);
     }
 
     Ok(node_sk)
@@ -489,6 +489,7 @@ pub fn derive_bls_sk(seed: &Seed, path: &str) -> Result<BlsScalar, String> {
 mod tests {
     use super::*;
     use bip39::{Language, Mnemonic, Seed};
+    use dusk_bytes::Serializable;
     use hex::decode;
     use num_bigint::BigUint;
 
@@ -534,7 +535,7 @@ mod tests {
         for t in test_cases.iter() {
             let seed = decode(t.seed).unwrap();
 
-            let master_sk = BlsScalar::from_bytes(
+            let master_sk = BlsSecretKey::from_bytes(
                 &t.master_sk
                     .parse::<BigUint>()
                     .unwrap()
@@ -546,7 +547,7 @@ mod tests {
 
             let child_index = u32::from_str_radix(t.child_index, 10).unwrap();
 
-            let child_sk = BlsScalar::from_bytes(
+            let child_sk = BlsSecretKey::from_bytes(
                 &t.child_sk
                     .parse::<BigUint>()
                     .unwrap()
@@ -560,7 +561,7 @@ mod tests {
                 derive_master_sk(&seed).expect("Master SK derivation failed");
             assert_eq!(derived_master_sk, master_sk);
 
-            let derived_sk = derive_child_sk(&master_sk, child_index);
+            let derived_sk = derive_child_sk(master_sk.as_ref(), child_index);
             assert_eq!(derived_sk, child_sk);
         }
     }
@@ -572,12 +573,12 @@ mod tests {
     #[test]
     fn test_path_derivation() {
         let mnemonic = Mnemonic::from_phrase(
-          "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about", 
+          "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
           Language::English
         ).unwrap();
 
         let seed = Seed::new(&mnemonic, "TREZOR");
-        let seed_bytes = seed.as_bytes().try_into().unwrap();
+        let seed_bytes = seed.as_bytes();
 
         // Test Cases Set
         // Format: (path, expected_derived_key)
@@ -593,9 +594,12 @@ mod tests {
             let path = test.0;
             let child_key = test.1;
 
-            let derived_key = derive_bls_sk(seed_bytes, path).unwrap();
+            let master_sk = derive_master_sk(&seed_bytes)
+                .expect("Master SK derivation failed");
 
-            let expected_key = BlsScalar::from_bytes(
+            let derived_key = derive_bls_sk(&master_sk, path).unwrap();
+
+            let expected_key = BlsSecretKey::from_bytes(
                 &(child_key)
                     .parse::<BigUint>()
                     .unwrap()
@@ -631,8 +635,12 @@ mod tests {
             let path = test_case.0;
             let expected_result = test_case.1;
 
+            // Get master_sk
+            let master_sk =
+                derive_master_sk(seed).expect("Master SK derivation failed");
+
             // Transform panics in Result
-            let result = derive_bls_sk(seed, path);
+            let result = derive_bls_sk(&master_sk, path);
 
             assert_eq!(result.is_ok(), expected_result);
         }
