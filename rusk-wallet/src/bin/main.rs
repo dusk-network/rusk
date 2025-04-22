@@ -4,10 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-// This feature has been stabilized since 1.76.0.
-// It can just be removed when the toolchain is updated.
-#![feature(result_option_inspect)]
-
 mod command;
 mod config;
 mod interactive;

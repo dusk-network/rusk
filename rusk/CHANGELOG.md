@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add support for `TransactionData::Blob`
 
+### Changed
+
+- Update rust toolchain to nightly 2024-07-30 (1.82.0) [#3470]
+
 ## [1.3.0] - 2025-04-17
 
 ### Added
@@ -378,6 +382,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Issues -->
 [#3613]: https://github.com/dusk-network/rusk/issues/3613
 [#3512]: https://github.com/dusk-network/rusk/issues/3512
+[#3470]: https://github.com/dusk-network/rusk/issues/3470
 [#3507]: https://github.com/dusk-network/rusk/issues/3507
 [#3494]: https://github.com/dusk-network/rusk/issues/3494
 [#3481]: https://github.com/dusk-network/rusk/issues/3481
