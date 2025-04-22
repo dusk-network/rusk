@@ -94,14 +94,14 @@ impl RuskNode {
     }
 }
 
-/// Calculates the value that the coinbase notes should contain.
+/// Calculates reward amounts based on the emission and fees amount.
 ///
 /// 10% of the reward value goes to the Dusk address (rounded down).
 /// 70% of the reward value is considered fixed reward for Block Generator.
 /// 10% of the reward value is considered extra reward for Block Generator.
 /// 10% of the reward value goes to the all validators/voters of previous block
 /// (rounded down).
-const fn coinbase_value(
+const fn get_block_rewards(
     block_height: u64,
     dusk_spent: u64,
 ) -> (Dusk, Dusk, Dusk, Dusk) {

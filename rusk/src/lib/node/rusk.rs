@@ -40,7 +40,7 @@ use tracing::info;
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::http::RuesEvent;
-use crate::node::{coinbase_value, Rusk, RuskTip};
+use crate::node::{get_block_rewards, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
 
 impl Rusk {
@@ -692,7 +692,7 @@ fn reward_slash_and_update_root(
     voters: &[Voter],
 ) -> Result<Vec<Event>> {
     let (dusk_value, generator_reward, generator_extra_reward, voters_reward) =
-        coinbase_value(block_height, dusk_spent);
+        get_block_rewards(block_height, dusk_spent);
 
     let credits = voters
         .iter()
