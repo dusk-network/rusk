@@ -105,7 +105,7 @@ fn serde_reward() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(42);
     let account = AccountPublicKey::from(&AccountSecretKey::random(&mut rng));
     let mut events = vec![];
-    for reason in [GeneratorExtra, GeneratorFixed, Voter, Other] {
+    for reason in [GeneratorExtra, GeneratorFixed, Voter, DuskFund] {
         events.push(Reward {
             account,
             value: rng.next_u64(),

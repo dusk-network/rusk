@@ -718,6 +718,6 @@ pub enum RewardReason {
     GeneratorExtra,
     /// Amount awarded to a voter.
     Voter,
-    /// Amount awarded for another reason, such as rewarding Dusk.
-    Other,
+    /// Amount awarded to Dusk for R&D.
+    DuskFund,
 }
