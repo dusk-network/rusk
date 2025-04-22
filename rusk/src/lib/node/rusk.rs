@@ -769,7 +769,7 @@ fn reward(
     rewards.push(Reward {
         account: *DUSK_CONSENSUS_KEY,
         value: dusk_reward,
-        reason: RewardReason::Other,
+        reason: RewardReason::DuskFund,
     });
 
     if generator_extra_reward != 0 {
