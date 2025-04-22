@@ -102,7 +102,7 @@ fn stake_withdraw_unstake() {
     let rewards = vec![Reward {
         account: stake_pk,
         value: REWARD_AMOUNT,
-        reason: RewardReason::Other,
+        reason: RewardReason::DuskFund,
     }];
 
     let receipt = session

@@ -77,7 +77,7 @@ fn reward_slash() -> Result<(), VMError> {
     let rewards = vec![Reward {
         account: stake_pk,
         value: reward_amount,
-        reason: RewardReason::Other,
+        reason: RewardReason::DuskFund,
     }];
 
     let receipt =
@@ -220,7 +220,7 @@ fn stake_hard_slash() -> Result<(), VMError> {
     let rewards = vec![Reward {
         account: stake_pk,
         value: reward_amount,
-        reason: RewardReason::Other,
+        reason: RewardReason::DuskFund,
     }];
 
     let receipt =

@@ -442,7 +442,7 @@ fn add_reward(
     let rewards = vec![Reward {
         account: *stake_pk,
         value: reward,
-        reason: RewardReason::Other,
+        reason: RewardReason::DuskFund,
     }];
 
     let receipt =
