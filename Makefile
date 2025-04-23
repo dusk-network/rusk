@@ -97,7 +97,7 @@ rusk-wallet: ## build the rusk wallet binary
 web-wallet: ## build the static files of the web wallet
 	$(MAKE) -C ./web-wallet all 
 
-COMPILER_VERSION=v0.2.0
+COMPILER_VERSION=v0.3.0-rc
 setup-compiler: ## Setup the Dusk Contract Compiler
 	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
 
