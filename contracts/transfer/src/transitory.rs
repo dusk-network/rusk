@@ -32,6 +32,7 @@ pub enum Deposit {
         target: ContractId,
         value: u64,
     },
+    #[allow(dead_code)]
     /// There is a deposit and it has already been picked up.
     Taken {
         sender: Option<AccountPublicKey>,
