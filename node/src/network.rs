@@ -381,6 +381,10 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         &self.public_addr
     }
 
+    async fn alive_nodes(&self, amount: usize) -> Vec<SocketAddr> {
+        self.peer.alive_nodes(amount).await
+    }
+
     async fn alive_nodes_count(&self) -> usize {
         // TODO: This call should be replaced with no-copy Kadcast API
         self.peer.alive_nodes(u16::MAX as usize).await.len()
