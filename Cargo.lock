@@ -1981,7 +1981,7 @@ dependencies = [
  "reqwest",
  "rkyv",
  "rocksdb",
- "rusk-profile 1.0.1",
+ "rusk-profile",
  "rusk-prover",
  "rusk-recovery",
  "rustc_tools_util",
