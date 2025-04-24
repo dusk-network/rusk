@@ -91,9 +91,13 @@ pub trait Network: Send + Sync + 'static {
     /// Returns public address in Kadcast
     fn public_addr(&self) -> &SocketAddr;
 
-    /// Retrieves number of alive nodes
+    /// Retrieves a list of currently alive peers up to the given `amount`.
+    async fn alive_nodes(&self, amount: usize) -> Vec<SocketAddr>;
+
+    /// Retrieves number of alive peers.
     async fn alive_nodes_count(&self) -> usize;
 
+    /// Waits until at least `amount` peers are alive or until timeout.
     async fn wait_for_alive_nodes(&self, amount: usize, timeout: Duration) {
         let start = Instant::now();
         while self.alive_nodes_count().await < amount {
