@@ -13,7 +13,7 @@ use aes::Aes256;
 use aes_gcm::aead::Aead;
 use aes_gcm::{AeadCore, Aes256Gcm, Key, KeyInit};
 use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, BlockModeError, Cbc, InvalidKeyIvLength};
+use block_modes::{BlockMode, BlockModeError, Cbc};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
@@ -353,9 +353,6 @@ fn hash_sha256(pwd: &str) -> Vec<u8> {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ConsensusKeysError {
-    #[error("Consensus keys file corrupted")]
-    InvalidKeyIvLength(#[from] InvalidKeyIvLength),
-
     #[error(transparent)]
     Json(#[from] serde_json::Error),
 
