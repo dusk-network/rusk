@@ -12,37 +12,34 @@
 //! transaction simulation, preverification, and querying VM state (e.g.,
 //! provisioners, state root, gas limits).
 //!
-//! The primary implementation, [`RuskVmAdapter`], wraps the actual
-//! `node::vm::VMExecution` implementation (feature-gated behind `chain`). This
-//! adapter pattern isolates the JSON-RPC layer from the core VM logic,
+//! The primary implementation, [`RuskVmAdapter`], wraps the main Rusk node
+//! logic (`node::Rusk`), which orchestrates VM interactions. This
+//! adapter pattern isolates the JSON-RPC layer from the core node logic,
 //! enhancing testability (e.g., using `MockVmAdapter` from test utilities)
 //! and maintainability.
 //!
 //! Errors related to VM operations are defined in [`VmError`].
+//!
+//! For a detailed method comparison vs. the legacy HTTP server, see:
+//! [`VM Adapter Methods Comparison`](../../../../docs/vm_adapter_methods.md)
+
+use crate::node::Rusk as NodeRusk;
+use crate::node::RuskVmConfig;
+use async_trait::async_trait;
+use dusk_consensus::user::provisioners::Provisioners;
+use dusk_consensus::user::stake::Stake;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use node::vm::PreverificationResult;
+use node_data::ledger::Transaction;
+use node_data::Serializable;
+use std::fmt::{self, Debug};
+use std::sync::Arc;
 
 use crate::jsonrpc::infrastructure::error::VmError;
-use crate::jsonrpc::model::{
-    provisioner::{ProvisionerInfo, StakeInfo},
-    transaction::SimulationResult,
-};
-use async_trait::async_trait;
-use node::vm::PreverificationResult;
-use std::fmt::{self, Debug};
+use crate::jsonrpc::model::transaction::SimulationResult;
 
-// Imports specific to RuskVmAdapter (require 'chain' feature)
-#[cfg(feature = "chain")]
-use {
-    crate::jsonrpc::model::provisioner::StakeOwnerInfo,
-    dusk_bytes::DeserializableSlice,
-    dusk_consensus::user::{provisioners::Provisioners, stake::Stake},
-    hex,
-    node::vm::VMExecution,
-    node_data::ledger::Transaction,
-    node_data::Serializable, // For Transaction::read
-    std::sync::Arc,
-    tokio::sync::RwLock,
-    tokio::task,
-};
+use dusk_vm::execute;
+use node::vm::VMExecution;
 
 /// Trait defining the interface for VM operations needed by the JSON-RPC
 /// service.
@@ -95,39 +92,6 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
         tx_bytes: Vec<u8>,
     ) -> Result<PreverificationResult, VmError>;
 
-    /// Retrieves the current set of active provisioners known by the VM.
-    ///
-    /// Corresponds to `node::vm::VMExecution::get_provisioners`.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Vec<ProvisionerInfo>)` - A list containing information about each
-    ///   active provisioner.
-    /// * `Err(VmError)` - If retrieving the provisioner set failed.
-    async fn get_provisioners(&self) -> Result<Vec<ProvisionerInfo>, VmError>;
-
-    /// Retrieves detailed staking information for a specific provisioner.
-    ///
-    /// Corresponds to `node::vm::VMExecution::get_provisioner` (or similar
-    /// logic).
-    ///
-    /// # Arguments
-    ///
-    /// * `public_key_bls_hex` - The hex-encoded BLS public key of the
-    ///   provisioner.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Some(StakeInfo))` - Contains detailed staking information if the
-    ///   provisioner is found.
-    /// * `Ok(None)` - If no provisioner with the given public key is found.
-    /// * `Err(VmError)` - If querying the stake information failed (e.g.,
-    ///   invalid public key format, internal VM error).
-    async fn get_stake_info(
-        &self,
-        public_key_bls_hex: &str,
-    ) -> Result<Option<StakeInfo>, VmError>;
-
     /// Retrieves the current state root hash from the VM.
     ///
     /// Corresponds to `node::vm::VMExecution::get_state_root`.
@@ -147,99 +111,141 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     /// * `Ok(u64)` - The block gas limit.
     /// * `Err(VmError)` - If retrieving the gas limit failed.
     async fn get_block_gas_limit(&self) -> Result<u64, VmError>;
+
+    /// Retrieves the current set of provisioners from the VM state.
+    ///
+    /// Corresponds to `node::vm::VMExecution::get_provisioners`.
+    /// Requires the current state root internally.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Provisioners)` - The provisioner set information.
+    /// * `Err(VmError)` - If retrieving the provisioners failed.
+    async fn get_provisioners(&self) -> Result<Provisioners, VmError>;
+
+    /// Retrieves stake information for a single provisioner by their BLS public
+    /// key.
+    ///
+    /// Corresponds to `node::vm::VMExecution::get_provisioner`.
+    ///
+    /// # Arguments
+    ///
+    /// * `pk` - The BLS public key of the provisioner.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Stake>)` - The stake information if the provisioner exists,
+    ///   otherwise `None`.
+    /// * `Err(VmError)` - If the query failed.
+    async fn get_stake_info_by_pk(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<Option<Stake>, VmError>;
+
+    /// Retrieves the stake data for a specific provisioner by their public key.
+    async fn get_stake_data_by_pk(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<Option<Stake>, VmError>;
+
+    /// Retrieves a list of all provisioners and their corresponding stake data.
+    async fn get_all_stake_data(
+        &self,
+    ) -> Result<Vec<(BlsPublicKey, Stake)>, VmError>;
+
+    /// Executes a read-only query on a contract at a specific state commit.
+    ///
+    /// # Arguments
+    /// * `contract_id` - The ID of the contract to query.
+    /// * `method` - The name of the contract method to call.
+    /// * `base_commit` - The state commit hash to execute the query against.
+    /// * `args_bytes` - The serialized arguments for the contract method.
+    ///
+    /// # Returns
+    /// * `Ok(Vec<u8>)` - The serialized result bytes from the contract query.
+    /// * `Err(VmError)` - If the query failed.
+    async fn query_contract_raw(
+        &self,
+        contract_id: dusk_core::abi::ContractId,
+        method: String,
+        base_commit: [u8; 32],
+        args_bytes: Vec<u8>,
+    ) -> Result<Vec<u8>, VmError>;
+
+    /// Retrieves the VM configuration settings.
+    async fn get_vm_config(&self) -> Result<RuskVmConfig, VmError>;
 }
 
 /// Real implementation of the `VmAdapter` for the Rusk node.
 ///
-/// This struct wraps an `Arc<RwLock<VM>>` where `VM` implements
-/// `node::vm::VMExecution`, allowing interaction with the actual VM component.
+/// This struct wraps an `Arc<NodeRusk>` allowing interaction with the main Rusk
+/// node logic.
 #[cfg(feature = "chain")]
-pub struct RuskVmAdapter<VM: VMExecution> {
-    /// Shared, thread-safe access to the VM client.
-    vm_client: Arc<RwLock<VM>>,
+#[derive(Clone)]
+pub struct RuskVmAdapter {
+    /// Shared access to the main Rusk node instance.
+    node_rusk: Arc<NodeRusk>,
 }
 
 #[cfg(feature = "chain")]
-impl<VM: VMExecution> RuskVmAdapter<VM> {
+impl RuskVmAdapter {
     /// Creates a new `RuskVmAdapter`.
     ///
     /// # Arguments
     ///
-    /// * `vm_client` - An `Arc<RwLock<VM>>` pointing to the node's VM
-    ///   component.
-    pub fn new(vm_client: Arc<RwLock<VM>>) -> Self {
-        Self { vm_client }
-    }
-
-    // Helper function to convert PublicKey and Stake into
-    // ProvisionerInfo/StakeInfo
-    //
-    // TODO: This conversion is incomplete as
-    // `consensus::user::stake::Stake` only contains `value` and
-    // `eligibility`. Missing fields (locked_amount, reward, faults,
-    // hard_faults, owner) are defaulted. The `VMExecution` trait
-    // needs modification to return richer stake info (like StakeData)
-    // to fully populate this model.
-    fn stake_to_info(
-        pk: &node_data::bls::PublicKey,
-        stake: &Stake,
-    ) -> ProvisionerInfo {
-        ProvisionerInfo {
-            public_key: pk.to_base58(),
-            amount: stake.value(),
-            eligibility: stake.eligible_since, /* TODO: Confirm if this
-                                                * mapping is correct for the
-                                                * model's definition of
-                                                * eligibility */
-            // Defaulted / Missing fields:
-            locked_amount: 0, /* Not available in
-                               * `consensus::user::stake::Stake` */
-            reward: 0,      // Not available
-            faults: 0,      // Not available
-            hard_faults: 0, // Not available
-            owner: StakeOwnerInfo::Account(String::new()), /* Placeholder -
-                             * owner type/
-                             * address not
-                             * available */
-        }
+    /// * `node_rusk` - An `Arc<NodeRusk>` pointing to the main Rusk node
+    ///   instance.
+    pub fn new(node_rusk: Arc<NodeRusk>) -> Self {
+        Self { node_rusk }
     }
 }
 
-// Manual Debug implementation to avoid requiring VM: Debug and potentially
-// leaking sensitive info.
+// Manual Debug implementation to prevent leaking sensitive info
 #[cfg(feature = "chain")]
-impl<VM: VMExecution> fmt::Debug for RuskVmAdapter<VM> {
+impl fmt::Debug for RuskVmAdapter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("RuskVmAdapter")
-            .field("vm_client", &"Arc<RwLock<VM: VMExecution>>")
+            .field("node_rusk", &"Arc<node::Rusk>") // Updated field name
             .finish_non_exhaustive()
     }
 }
 
 #[cfg(feature = "chain")]
 #[async_trait]
-impl<VM: VMExecution> VmAdapter for RuskVmAdapter<VM> {
+impl VmAdapter for RuskVmAdapter {
+    /// In our JSON-RPC VM adapter, `simulate_transaction` provides
+    /// a pure VM preview — gas estimates, return values, and logs — without
+    /// touching on-disk state or invoking consensus/mempool logic.
+    ///
+    /// We use a fixed, dummy block height of 0 (with the current in-memory
+    /// state root) to achieve:
+    /// 1. **Isolation from consensus state**: we don’t read from the database,
+    ///    aren’t blocked on loading the tip, and never mutate or commit any
+    ///    on-chain state. Simulation becomes a self-contained VM execution that
+    ///    can be run entirely in memory.
+    /// 2. **Determinism & reproducibility**: height-dependent features (e.g.
+    ///    activating “public sender” once you cross a certain block) won’t
+    ///    accidentally flip on or off mid-chain. At height 0 everything is in
+    ///    its “genesis” configuration, so you get consistent results every
+    ///    time.
+    /// 3. **Simplicity & performance**: no extra I/O or expensive DB lookups,
+    ///    no need to spawn an async block to fetch the tip, and no risk of
+    ///    races. The code lives entirely in our VM API, wrapped in one
+    ///    `spawn_blocking` call, which is much lighter than forking off a full
+    ///    block session against the live node state.
+    /// 4. **Testability**: simulations run entirely in memory, requiring no
+    ///    full consensus node or populated chain data. If you wanted the
+    ///    simulation to more closely mirror an on-chain “dry-run” (with real
+    ///    tip height, mempool gas checks, feature flags, etc.), you’d have to
+    ///    pull in the DB, load the tip, guard the gas limit, and potentially
+    ///    risk side-effects or slower performance. By using a dummy height we
+    ///    strike a clean, efficient balance: clients get a fast,
+    ///    side-effect-free VM preview.
     async fn simulate_transaction(
         &self,
-        _tx_bytes: Vec<u8>,
-    ) -> Result<SimulationResult, VmError> {
-        // TODO: Implement simulation. This likely involves:
-        // 1. Getting a temporary VM session/state.
-        // 2. Deserializing tx_bytes into a `Transaction`.
-        // 3. Calling `dusk_vm::execute` or a similar function on the session.
-        // 4. Mapping the `CallReceipt` (gas_spent, data: Result<...>) to
-        //    `SimulationResult`.
-        // This might require `spawn_blocking` if VM execution is CPU-intensive.
-        // Returning placeholder for now.
-        Err(VmError::InternalError(
-            "simulate_transaction not yet implemented".to_string(),
-        ))
-    }
-
-    async fn preverify_transaction(
-        &self,
         tx_bytes: Vec<u8>,
-    ) -> Result<PreverificationResult, VmError> {
+    ) -> Result<SimulationResult, VmError> {
+        // Deserialize transaction for VM execution
         let tx = Transaction::read(&mut tx_bytes.as_slice()).map_err(|e| {
             VmError::QueryFailed(format!(
                 "Failed to deserialize transaction: {}",
@@ -247,111 +253,179 @@ impl<VM: VMExecution> VmAdapter for RuskVmAdapter<VM> {
             ))
         })?;
 
-        // VM calls are potentially CPU-intensive, use spawn_blocking
-        let client = self.vm_client.clone();
-        let result = task::spawn_blocking(move || {
-            let guard = client.blocking_read(); // Use blocking read inside blocking task
-            guard.preverify(&tx)
+        // Clone node for blocking call
+        let node = Arc::clone(&self.node_rusk);
+
+        // Use current state root as base commit
+        let base_commit = node.state_root();
+
+        // Perform execution in blocking thread to avoid blocking the async
+        // runtime
+        let result = tokio::task::spawn_blocking(move || {
+            // Initialize a VM session for simulation with dummy height (0)
+            let mut session = node
+                .new_block_session(0, base_commit)
+                .map_err(|e| VmError::ExecutionFailed(e.to_string()))?;
+            // Build execution config from VM settings (dummy height)
+            let config = node.vm_config.to_execution_config(0);
+            // Execute transaction using the underlying protocol transaction
+            let receipt = execute(&mut session, &tx.inner, &config);
+            // Map to SimulationResult
+            let sim = match receipt {
+                Ok(receipt) => SimulationResult {
+                    success: true,
+                    gas_estimate: Some(receipt.gas_spent),
+                    error: None,
+                },
+                Err(err) => SimulationResult {
+                    success: false,
+                    gas_estimate: None,
+                    error: Some(format!("{:?}", err)),
+                },
+            };
+            Ok(sim)
         })
         .await
-        .map_err(|e| VmError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(|e| {
-            VmError::InternalError(format!("VM preverify error: {}", e))
-        })?; // Explicitly map anyhow::Error
+        .map_err(|e| VmError::InternalError(e.to_string()))?;
 
-        Ok(result)
+        result
     }
 
-    async fn get_provisioners(&self) -> Result<Vec<ProvisionerInfo>, VmError> {
-        // VM calls are potentially CPU-intensive, use spawn_blocking
-        let client = self.vm_client.clone();
-        let provisioners_map: Provisioners = task::spawn_blocking(move || {
-            // Need the current state root for get_provisioners
-            let guard = client.blocking_read();
-            let state_root = guard.get_state_root()?; // Use blocking read
-            guard.get_provisioners(state_root)
-        })
-        .await
-        .map_err(|e| VmError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(|e| {
-            VmError::InternalError(format!("VM get_provisioners error: {}", e))
-        })?; // Explicitly map anyhow::Error
-
-        // Convert the BTreeMap from Provisioners into Vec<ProvisionerInfo>
-        let info_vec = provisioners_map
-            .iter()
-            .map(|(pk, stake)| Self::stake_to_info(pk, stake))
-            .collect();
-
-        Ok(info_vec)
-    }
-
-    async fn get_stake_info(
+    async fn preverify_transaction(
         &self,
-        public_key_bls_hex: &str,
-    ) -> Result<Option<StakeInfo>, VmError> {
-        // Decode hex public key
-        let pk_bytes = hex::decode(public_key_bls_hex).map_err(|e| {
-            VmError::QueryFailed(format!("Invalid hex public key: {}", e))
+        tx_bytes: Vec<u8>,
+    ) -> Result<PreverificationResult, VmError> {
+        // Deserialize transaction
+        let tx = Transaction::read(&mut tx_bytes.as_slice()).map_err(|e| {
+            VmError::QueryFailed(format!(
+                "Failed to deserialize transaction: {}",
+                e
+            ))
         })?;
-        let bls_pk =
-            dusk_core::signatures::bls::PublicKey::from_slice(&pk_bytes)
-                .map_err(|e| {
-                    VmError::QueryFailed(format!(
-                        "Invalid BLS public key: {:?}",
-                        e
-                    )) // Use debug format {:?}
-                })?;
-        let node_pk = node_data::bls::PublicKey::new(bls_pk);
 
-        // VM calls are potentially CPU-intensive, use spawn_blocking
-        let client = self.vm_client.clone();
-        let stake_option: Option<Stake> = task::spawn_blocking(move || {
-            let guard = client.blocking_read(); // Use blocking read
-            guard.get_provisioner(&bls_pk)
+        // Clone node for blocking preverification call
+        let node = Arc::clone(&self.node_rusk);
+
+        let result = tokio::task::spawn_blocking(move || {
+            node.preverify(&tx)
+                .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
-        .map_err(|e| VmError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(|e| {
-            VmError::InternalError(format!("VM get_provisioner error: {}", e))
-        })?; // Explicitly map anyhow::Error
+        .map_err(|e| VmError::InternalError(e.to_string()))?;
 
-        // Convert Option<Stake> to Option<StakeInfo>
-        let info_option =
-            stake_option.map(|stake| Self::stake_to_info(&node_pk, &stake));
-
-        Ok(info_option)
+        result
     }
 
     async fn get_state_root(&self) -> Result<[u8; 32], VmError> {
-        // VM calls are potentially CPU-intensive, use spawn_blocking
-        let client = self.vm_client.clone();
-        let root = task::spawn_blocking(move || {
-            let guard = client.blocking_read(); // Use blocking read
-            guard.get_state_root()
-        })
-        .await
-        .map_err(|e| VmError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(|e| {
-            VmError::InternalError(format!("VM get_state_root error: {}", e))
-        })?; // Explicitly map anyhow::Error
-        Ok(root)
+        Ok(self.node_rusk.state_root())
     }
 
     async fn get_block_gas_limit(&self) -> Result<u64, VmError> {
-        // This is likely just reading a config value, probably not blocking.
-        // However, keeping consistent with spawn_blocking for VM interactions.
-        let client = self.vm_client.clone();
-        let limit = task::spawn_blocking(move || {
-            let guard = client.blocking_read(); // Use blocking read
-            guard.get_block_gas_limit()
+        Ok(self.node_rusk.vm_config.block_gas_limit)
+    }
+
+    async fn get_provisioners(&self) -> Result<Provisioners, VmError> {
+        // Use current state root
+        let base_commit = self.node_rusk.state_root();
+        // Clone node for blocking provisioners query
+        let node = Arc::clone(&self.node_rusk);
+
+        let result = tokio::task::spawn_blocking(move || {
+            node.get_provisioners(base_commit)
+                .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
-        .map_err(|e| {
-            VmError::InternalError(format!("Task join error: {}", e))
-        })?;
-        // ^ Note: No inner error mapping needed as get_block_gas_limit returns
-        // u64 directly.
-        Ok(limit)
+        .map_err(|e| VmError::InternalError(e.to_string()))?;
+
+        result
+    }
+
+    async fn get_stake_info_by_pk(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<Option<Stake>, VmError> {
+        let key = pk.clone();
+        // Clone node for blocking provisioner lookup
+        let node = Arc::clone(&self.node_rusk);
+
+        let result = tokio::task::spawn_blocking(move || {
+            node.get_provisioner(&key)
+                .map_err(|e| VmError::QueryFailed(e.to_string()))
+        })
+        .await
+        .map_err(|e| VmError::InternalError(e.to_string()))?;
+
+        result
+    }
+
+    /// Retrieves the stake data for a specific provisioner by their public key.
+    async fn get_stake_data_by_pk(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<Option<Stake>, VmError> {
+        // Same underlying logic as get_stake_info_by_pk
+        self.get_stake_info_by_pk(pk).await
+    }
+
+    /// Retrieves a list of all provisioners and their corresponding stake data.
+    async fn get_all_stake_data(
+        &self,
+    ) -> Result<Vec<(BlsPublicKey, Stake)>, VmError> {
+        // Retrieve full provisioners map
+        let provisioners = self.get_provisioners().await?;
+        // Collect all provisioners and their stake
+        let data = provisioners
+            .iter()
+            .map(|(pk, stake)| (pk.inner().clone(), stake.clone()))
+            .collect();
+        Ok(data)
+    }
+
+    /// Executes a read-only query on a contract at a specific state commit.
+    ///
+    /// # Arguments
+    /// * `contract_id` - The ID of the contract to query.
+    /// * `method` - The name of the contract method to call.
+    /// * `base_commit` - The state commit hash to execute the query against.
+    /// * `args_bytes` - The serialized arguments for the contract method.
+    ///
+    /// # Returns
+    /// * `Ok(Vec<u8>)` - The serialized result bytes from the contract query.
+    /// * `Err(VmError)` - If the query failed.
+    async fn query_contract_raw(
+        &self,
+        contract_id: dusk_core::abi::ContractId,
+        method: String,
+        base_commit: [u8; 32],
+        args_bytes: Vec<u8>,
+    ) -> Result<Vec<u8>, VmError> {
+        // Clone the node for the blocking call
+        let node = Arc::clone(&self.node_rusk);
+
+        let result = tokio::task::spawn_blocking(move || {
+            // Create a session at the specified base commit
+            let mut session = node
+                .query_session(Some(base_commit))
+                .map_err(|e| VmError::QueryFailed(e.to_string()))?;
+            // Perform a raw contract call with the full block gas limit
+            let receipt = session
+                .call_raw(
+                    contract_id,
+                    method.as_ref(),
+                    args_bytes,
+                    node.vm_config.block_gas_limit,
+                )
+                .map_err(|e| VmError::QueryFailed(e.to_string()))?;
+            Ok(receipt.data)
+        })
+        .await
+        .map_err(|e| VmError::InternalError(e.to_string()))?;
+
+        result
+    }
+
+    /// Retrieves the VM configuration settings.
+    async fn get_vm_config(&self) -> Result<RuskVmConfig, VmError> {
+        Ok(self.node_rusk.vm_config.clone())
     }
 }
