@@ -19,6 +19,10 @@
 //! [`MockNetworkAdapter`] found in test utilities) and maintainability.
 //!
 //! Errors specific to network operations are defined in [`NetworkError`].
+//!
+//! For detailed adapter method comparisons vs. the legacy HTTP server, see:
+//! [`Network Adapter Methods
+//! Comparison`](../../../../docs/network_adapter_methods.md)
 
 use crate::jsonrpc::infrastructure::error::NetworkError;
 use async_trait::async_trait;
@@ -32,7 +36,6 @@ use std::fmt;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::warn;
 
 /// Trait defining the interface for network operations needed by the JSON-RPC
 /// service.
@@ -189,7 +192,6 @@ impl<N: Network> NetworkAdapter for RuskNetworkAdapter<N> {
         let message = Message::from(tx); // Use From<ledger::Transaction>
 
         let client = self.network_client.read().await;
-        // Directly await the async broadcast call
         client
             .broadcast(&message)
             .await
@@ -198,7 +200,6 @@ impl<N: Network> NetworkAdapter for RuskNetworkAdapter<N> {
 
     async fn get_network_info(&self) -> Result<String, NetworkError> {
         let client = self.network_client.read().await;
-        // Assuming get_info is relatively quick
         client
             .get_info()
             .map_err(|e| NetworkError::QueryFailed(e.to_string()))
@@ -206,28 +207,21 @@ impl<N: Network> NetworkAdapter for RuskNetworkAdapter<N> {
 
     async fn get_public_address(&self) -> Result<SocketAddr, NetworkError> {
         let client = self.network_client.read().await;
-        // Accessing public_addr should be fast
         Ok(*client.public_addr())
     }
 
     async fn get_alive_peers(
         &self,
-        _max_peers: usize,
+        max_peers: usize,
     ) -> Result<Vec<SocketAddr>, NetworkError> {
-        // The `node::Network` trait doesn't have a direct `get_alive_peers`
-        // method. Kadcast has `alive_nodes`, but it's not part of the
-        // trait. We might need to add this to the trait or use a
-        // workaround. For now, returning an empty Vec and marking as
-        // TODO. TODO: Implement retrieval of alive peers. Requires
-        // potentially modifying node::Network trait or using specific
-        // Kadcast features.
-        warn!("get_alive_peers not fully implemented for RuskNetworkAdapter, returning empty list.");
-        Ok(Vec::new()) // Placeholder
+        // Retrieve the alive nodes from the underlying Kadcast implementation
+        let client = self.network_client.read().await;
+        let peers = client.alive_nodes(max_peers).await;
+        Ok(peers)
     }
 
     async fn get_alive_peers_count(&self) -> Result<usize, NetworkError> {
         let client = self.network_client.read().await;
-        // alive_nodes_count is async, but likely fast enough
         Ok(client.alive_nodes_count().await)
     }
 
@@ -238,7 +232,6 @@ impl<N: Network> NetworkAdapter for RuskNetworkAdapter<N> {
         hops: u16,
     ) -> Result<(), NetworkError> {
         let client = self.network_client.read().await;
-        // Directly await the async flood_request call
         client
             .flood_request(&inv, ttl_seconds, hops)
             .await
