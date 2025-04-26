@@ -221,6 +221,24 @@ impl Fault {
         }
     }
 
+    /// Returns the header and signer info for the first fault item.
+    pub fn item1(&self) -> (&ConsensusHeader, &SignInfo) {
+        match self {
+            Fault::DoubleCandidate(a, _) => (&a.header, &a.sig),
+            Fault::DoubleRatificationVote(a, _) => (&a.header, &a.sig),
+            Fault::DoubleValidationVote(a, _) => (&a.header, &a.sig),
+        }
+    }
+
+    /// Returns the header and signer info for the second fault item.
+    pub fn item2(&self) -> (&ConsensusHeader, &SignInfo) {
+        match self {
+            Fault::DoubleCandidate(_, b) => (&b.header, &b.sig),
+            Fault::DoubleRatificationVote(_, b) => (&b.header, &b.sig),
+            Fault::DoubleValidationVote(_, b) => (&b.header, &b.sig),
+        }
+    }
+
     fn verify_signature(
         sign_info: &SignInfo,
         msg: &[u8],
