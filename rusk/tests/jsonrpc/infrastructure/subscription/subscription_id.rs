@@ -64,7 +64,7 @@ fn subscription_id_serde() {
     let sub_id = SubscriptionId::new();
     let serialized = serde_json::to_string(&sub_id).unwrap();
     // Expected format is just the UUID string because of #[serde(transparent)]
-    let expected_json = format!("\"{}\"", sub_id.to_string());
+    let expected_json = format!("\"{}\"", sub_id);
     assert_eq!(serialized, expected_json);
 
     let deserialized: SubscriptionId =
@@ -99,7 +99,7 @@ fn subscription_id_debug() {
     let sub_id = SubscriptionId::new();
     let debug_str = format!("{:?}", sub_id);
     assert!(debug_str.starts_with("SubscriptionId("));
-    assert!(debug_str.ends_with(")"));
+    assert!(debug_str.ends_with(')'));
     assert!(debug_str.contains(&sub_id.to_string()));
 }
 
