@@ -29,8 +29,7 @@ fn create_config_error() -> config::ConfigError {
 // Helper function to create a dummy SerdeJsonError
 fn create_serde_error() -> serde_json::Error {
     serde_json::from_str::<serde_json::Value>("{invalid json")
-        .err()
-        .expect("Parsing invalid JSON should fail")
+        .expect_err("Parsing invalid JSON should fail")
 }
 
 #[test]
@@ -109,7 +108,7 @@ impl From<MockInfrastructureError> for InfrastructureError {
     fn from(e: MockInfrastructureError) -> Self {
         match e {
             MockInfrastructureError::DbConnection => {
-                InfrastructureError::Database(DbError::Connection(
+                InfrastructureError::Database(DbError::InitializationFailed(
                     "mock connection error".to_string(),
                 ))
             }
@@ -359,10 +358,10 @@ fn test_infrastructure_and_service_error_display() {
     use rusk::jsonrpc::infrastructure::subscription::error::SubscriptionError;
     use rusk::jsonrpc::service::error::Error as ServiceError;
     test_display_impl(
-        InfrastructureError::Database(DbError::Connection(
+        InfrastructureError::Database(DbError::InitializationFailed(
             "timeout".to_string(),
         )),
-        "Database error: Database connection failed: timeout",
+        "Database error: Database component initialization/connection failed: timeout",
     );
     test_display_impl(
         InfrastructureError::State(StateError::Inconsistent(
