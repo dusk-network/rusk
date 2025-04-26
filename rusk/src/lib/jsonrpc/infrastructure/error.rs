@@ -111,6 +111,21 @@ pub enum VmError {
     ExecutionFailed(String),
 }
 
+/// Errors related to converting internal data structures to JSON-RPC models.
+#[derive(Error, Debug, PartialEq, Eq, Clone)]
+pub enum ConversionError {
+    /// Error encoding/decoding Base58 strings.
+    #[error("Base58 encoding/decoding error: {0}")]
+    Base58Encoding(String),
+    /// Error during conversion of a `node_data::ledger::Fault` item.
+    #[error("Fault item conversion failed: {0}")]
+    FaultItemConversion(String),
+    /// Encountered an unexpected or unmappable internal Fault type during
+    /// conversion.
+    #[error("Invalid internal Fault type for conversion: {0}")]
+    InvalidFaultType(String),
+}
+
 /// Consolidated error enum for the infrastructure layer.
 ///
 /// This enum wraps specific infrastructure errors, allowing functions within
@@ -141,6 +156,10 @@ pub enum Error {
     #[error("VM error: {0}")]
     Vm(#[from] VmError),
 
+    /// A data conversion error occurred.
+    #[error("Data conversion error: {0}")]
+    Conversion(#[from] ConversionError),
+
     /// A subscription management error occurred.
     #[error("Subscription error: {0}")]
     Subscription(
@@ -151,29 +170,4 @@ pub enum Error {
     /// An unknown error occurred.
     #[error("Unknown error: {0}")]
     Unknown(String),
-}
-
-/// Errors related to direct VM contract interaction.
-#[derive(Debug, thiserror::Error, PartialEq, Eq, Clone)]
-pub enum VmCallerError {
-    /// Failed to interact with the VM session (e.g., get session, call
-    /// method).
-    #[error("VM session error: {0}")]
-    SessionError(String),
-
-    /// Failed to serialize arguments for a contract call.
-    #[error("Argument serialization failed: {0}")]
-    SerializationError(String),
-
-    /// Failed to deserialize the result from a contract call.
-    #[error("Result deserialization failed: {0}")]
-    DeserializationError(String),
-
-    /// The requested contract method returned an error.
-    #[error("Contract execution error: {0}")]
-    ContractError(String),
-
-    /// An internal error occurred (e.g., task join error).
-    #[error("Internal VM caller error: {0}")]
-    InternalError(String),
 }
