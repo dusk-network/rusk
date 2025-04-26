@@ -91,7 +91,7 @@ fn session_id_debug() {
     let session_id = SessionId::from_str(id_str).unwrap();
     let debug_str = format!("{:?}", session_id);
     assert!(debug_str.starts_with("SessionId("));
-    assert!(debug_str.ends_with(")"));
+    assert!(debug_str.ends_with(')'));
     assert!(debug_str.contains(id_str));
 }
 
