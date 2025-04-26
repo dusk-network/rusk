@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod config;
-pub mod error;
-pub mod infrastructure;
-mod model;
-
-pub mod utils;
+pub mod archive;
+mod db;
+pub mod manual_limiter;
+pub mod metrics;
+pub mod state;
+pub mod subscription;
