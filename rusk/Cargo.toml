@@ -91,6 +91,8 @@ futures = { workspace = true, optional = true }
 
 ## JSON-RPC server dependencies
 axum = { workspace = true, features = ["json", "macros"] }
+axum-server = { workspace = true, features = ["tls-rustls"] }
+rustls = { workspace = true }
 http = { workspace = true }
 governor = { workspace = true }
 lazy_static = { workspace = true }
@@ -122,6 +124,8 @@ rusk-prover = { workspace = true, features = ["no_random", "debug"] }
 criterion = { workspace = true }
 futures = { workspace = true }
 assert_matches = { workspace = true }
+rcgen = "0.13"
+tempfile = { workspace = true }
 
 [build-dependencies]
 rustc_tools_util = { workspace = true }
