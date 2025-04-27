@@ -143,15 +143,37 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     ) -> Result<Option<Stake>, VmError>;
 
     /// Retrieves the stake data for a specific provisioner by their public key.
+    ///
+    /// # Default Method
+    ///
+    /// This method has a default implementation that uses
+    /// [`get_stake_info_by_pk`](VmAdapter::get_stake_info_by_pk).
     async fn get_stake_data_by_pk(
         &self,
         pk: &BlsPublicKey,
-    ) -> Result<Option<Stake>, VmError>;
+    ) -> Result<Option<Stake>, VmError> {
+        // Same underlying logic as get_stake_info_by_pk
+        self.get_stake_info_by_pk(pk).await
+    }
 
     /// Retrieves a list of all provisioners and their corresponding stake data.
+    ///
+    /// # Default Method
+    ///
+    /// This method has a default implementation that uses
+    /// [`get_provisioners`](VmAdapter::get_provisioners).
     async fn get_all_stake_data(
         &self,
-    ) -> Result<Vec<(BlsPublicKey, Stake)>, VmError>;
+    ) -> Result<Vec<(BlsPublicKey, Stake)>, VmError> {
+        // Retrieve full provisioners map
+        let provisioners = self.get_provisioners().await?;
+        // Collect all provisioners and their stake
+        let data = provisioners
+            .iter()
+            .map(|(pk, stake)| (*pk.inner(), stake.clone()))
+            .collect();
+        Ok(data)
+    }
 
     /// Executes a read-only query on a contract at a specific state commit.
     ///
@@ -219,14 +241,14 @@ impl VmAdapter for RuskVmAdapter {
     ///
     /// We use a fixed, dummy block height of 0 (with the current in-memory
     /// state root) to achieve:
-    /// 1. **Isolation from consensus state**: we don’t read from the database,
-    ///    aren’t blocked on loading the tip, and never mutate or commit any
+    /// 1. **Isolation from consensus state**: we don't read from the database,
+    ///    aren't blocked on loading the tip, and never mutate or commit any
     ///    on-chain state. Simulation becomes a self-contained VM execution that
     ///    can be run entirely in memory.
     /// 2. **Determinism & reproducibility**: height-dependent features (e.g.
-    ///    activating “public sender” once you cross a certain block) won’t
+    ///    activating "public sender" once you cross a certain block) won't
     ///    accidentally flip on or off mid-chain. At height 0 everything is in
-    ///    its “genesis” configuration, so you get consistent results every
+    ///    its "genesis" configuration, so you get consistent results every
     ///    time.
     /// 3. **Simplicity & performance**: no extra I/O or expensive DB lookups,
     ///    no need to spawn an async block to fetch the tip, and no risk of
@@ -235,8 +257,8 @@ impl VmAdapter for RuskVmAdapter {
     ///    block session against the live node state.
     /// 4. **Testability**: simulations run entirely in memory, requiring no
     ///    full consensus node or populated chain data. If you wanted the
-    ///    simulation to more closely mirror an on-chain “dry-run” (with real
-    ///    tip height, mempool gas checks, feature flags, etc.), you’d have to
+    ///    simulation to more closely mirror an on-chain "dry-run" (with real
+    ///    tip height, mempool gas checks, feature flags, etc.), you'd have to
     ///    pull in the DB, load the tip, guard the gas limit, and potentially
     ///    risk side-effects or slower performance. By using a dummy height we
     ///    strike a clean, efficient balance: clients get a fast,
@@ -304,14 +326,12 @@ impl VmAdapter for RuskVmAdapter {
         // Clone node for blocking preverification call
         let node = Arc::clone(&self.node_rusk);
 
-        let result = tokio::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             node.preverify(&tx)
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
-        .map_err(|e| VmError::InternalError(e.to_string()))?;
-
-        result
+        .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
     async fn get_state_root(&self) -> Result<[u8; 32], VmError> {
@@ -352,29 +372,6 @@ impl VmAdapter for RuskVmAdapter {
         .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
-    /// Retrieves the stake data for a specific provisioner by their public key.
-    async fn get_stake_data_by_pk(
-        &self,
-        pk: &BlsPublicKey,
-    ) -> Result<Option<Stake>, VmError> {
-        // Same underlying logic as get_stake_info_by_pk
-        self.get_stake_info_by_pk(pk).await
-    }
-
-    /// Retrieves a list of all provisioners and their corresponding stake data.
-    async fn get_all_stake_data(
-        &self,
-    ) -> Result<Vec<(BlsPublicKey, Stake)>, VmError> {
-        // Retrieve full provisioners map
-        let provisioners = self.get_provisioners().await?;
-        // Collect all provisioners and their stake
-        let data = provisioners
-            .iter()
-            .map(|(pk, stake)| (pk.inner().clone(), stake.clone()))
-            .collect();
-        Ok(data)
-    }
-
     /// Executes a read-only query on a contract at a specific state commit.
     ///
     /// # Arguments
@@ -396,7 +393,7 @@ impl VmAdapter for RuskVmAdapter {
         // Clone the node for the blocking call
         let node = Arc::clone(&self.node_rusk);
 
-        let result = tokio::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             // Create a session at the specified base commit
             let mut session = node
                 .query_session(Some(base_commit))
@@ -413,9 +410,7 @@ impl VmAdapter for RuskVmAdapter {
             Ok(receipt.data)
         })
         .await
-        .map_err(|e| VmError::InternalError(e.to_string()))?;
-
-        result
+        .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
     /// Retrieves the VM configuration settings.
