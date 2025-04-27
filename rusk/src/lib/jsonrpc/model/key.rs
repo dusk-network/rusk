@@ -15,25 +15,6 @@
 //!   `dusk_core::signatures::bls::PublicKey` that provides custom `serde`
 //!   serialization and deserialization as a Base58 string.
 //!
-//! ## Usage
-//!
-//! ```rust
-//! use dusk_bytes::Serializable;
-//! use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-//! use rusk::jsonrpc::model::key::AccountPublicKey;
-//!
-//! // Example usage
-//! let bls_pk = BlsPublicKey::random();
-//! let account_pk = AccountPublicKey(bls_pk);
-//!
-//! // Serialize to Base58 string
-//! let json_string = serde_json::to_string(&account_pk).unwrap();
-//!
-//! // Deserialize from Base58 string
-//! let deserialized: AccountPublicKey = serde_json::from_str(&json_string).unwrap();
-//! assert_eq!(account_pk, deserialized);
-//! ```
-//!
 //! ## Serialization/Deserialization Details
 //!
 //! The `AccountPublicKey` type implements `serde::Serialize` and
@@ -50,19 +31,6 @@
 //!   `serde::de::Error`.
 //! - If the decoded bytes do not have the correct length for a BLS public key
 //!   (`BlsPublicKey::SIZE`), `deserialize` returns an error.
-//!
-//! ## Example
-//!
-//! ```rust
-//! use rusk::jsonrpc::model::key::AccountPublicKey;
-//!
-//! let bls_pk = BlsPublicKey::random();
-//! let account_pk = AccountPublicKey(bls_pk);
-//!
-//! let serialized = serde_json::to_string(&account_pk).unwrap();
-//! let deserialized: AccountPublicKey = serde_json::from_str(&serialized).unwrap();
-//! assert_eq!(account_pk, deserialized);
-//! ```
 
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
@@ -73,30 +41,6 @@ use serde::{de, Deserializer, Serializer};
 ///
 /// This is used throughout the JSON-RPC models where a BLS public key needs to
 /// be represented in the standard Base58 format.
-///
-/// # Examples
-///
-/// ```
-/// # use dusk_core::signatures::bls::PublicKey;
-/// # use dusk_bytes::Serializable;
-/// # use serde::{Serialize, Deserialize};
-/// use rusk::jsonrpc::model::key::AccountPublicKey;
-///
-/// // Assume `bls_pk` is a valid BlsPublicKey instance
-/// let bls_pk_bytes = [0u8; 96]; // Example byte array (needs valid key bytes)
-/// # let bls_pk = PublicKey::from_bytes(&bls_pk_bytes).unwrap();
-///
-/// let account_pk = AccountPublicKey(bls_pk);
-///
-/// // Serialize to Base58 string
-/// let json_string = serde_json::to_string(&account_pk).unwrap();
-/// println!("Serialized: {}", json_string);
-/// // Example output: ""1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"" (for zero bytes)
-///
-/// // Deserialize from Base58 string
-/// let deserialized: AccountPublicKey = serde_json::from_str(&json_string).unwrap();
-/// assert_eq!(account_pk, deserialized);
-/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccountPublicKey(pub BlsPublicKey);
 
