@@ -786,6 +786,25 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         }
     }
 
+    /// (Default) Suggests gas price statistics based on mempool fees.
+    ///
+    /// This method simply delegates to [`get_gas_price`](Self::get_gas_price).
+    ///
+    /// # Arguments
+    ///
+    /// * `max_transactions`: Maximum number of transactions to consider.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::gas::GasPriceStats)` if found.
+    /// * `Err(DbError)` if a database error occurs.
+    async fn suggest_transaction_fee(
+        &self,
+        max_transactions: Option<usize>,
+    ) -> Result<model::gas::GasPriceStats, DbError> {
+        self.get_gas_price(max_transactions).await
+    }
+
     // --- Passthrough Default Implementations ---
     // These call other default or required methods without much extra logic.
 
@@ -1148,6 +1167,167 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     async fn get_mempool_transactions_count(&self) -> Result<u64, DbError> {
         let info = self.get_mempool_info().await?;
         Ok(info.count)
+    }
+
+    /// (Default) Retrieves the `count` most recent block summaries.
+    ///
+    /// # Arguments
+    ///
+    /// * `count`: The number of latest blocks to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<model::block::Block>)` containing the block summaries.
+    /// * `Err(DbError)` if fetching the latest block height or the block range
+    ///   fails.
+    async fn get_latest_blocks(
+        &self,
+        count: u64,
+    ) -> Result<Vec<model::block::Block>, DbError> {
+        if count == 0 {
+            return Ok(Vec::new());
+        }
+        let latest_height = self.get_block_height().await?;
+        let start_height = latest_height.saturating_sub(count - 1);
+        self.get_blocks_range(start_height, latest_height).await
+    }
+
+    /// (Default) Retrieves the total number of blocks in the chain.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` containing the block count (latest height + 1).
+    /// * `Err(DbError)` if fetching the latest block height fails.
+    async fn get_blocks_count(&self) -> Result<u64, DbError> {
+        let latest_height = self.get_block_height().await?;
+        Ok(latest_height + 1)
+    }
+
+    /// (Default) Retrieves a pair of consecutive block summaries by the height
+    /// of the first block.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: The height of the first block in the pair.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some((Block, Block)))` if both blocks at `height` and `height + 1`
+    ///   are found.
+    /// * `Ok(None)` if either block in the pair is not found.
+    /// * `Err(DbError)` if a database error occurs during lookup.
+    async fn get_block_pair(
+        &self,
+        height: u64,
+    ) -> Result<Option<(model::block::Block, model::block::Block)>, DbError>
+    {
+        let block1_fut = self.get_block_by_height(height);
+        let block2_fut = self.get_block_by_height(height.saturating_add(1));
+
+        let (block1_opt, block2_opt) = try_join!(block1_fut, block2_fut)?;
+
+        match (block1_opt, block2_opt) {
+            (Some(b1), Some(b2)) => Ok(Some((b1, b2))),
+            _ => Ok(None),
+        }
+    }
+
+    /// (Default) Retrieves a specific range of transactions from a block
+    /// identified by its hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_hash_hex`: The hex-encoded hash of the block.
+    /// * `start_index`: The starting index (0-based) of the transaction range.
+    /// * `count`: The maximum number of transactions to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<TransactionResponse>>)`: Contains the transactions in
+    ///   the specified range if the block and range are valid. Returns `None`
+    ///   if the block itself is not found.
+    /// * `Err(DbError)`: If a database error occurs.
+    async fn get_block_transaction_range_by_hash(
+        &self,
+        block_hash_hex: &str,
+        start_index: usize,
+        count: usize,
+    ) -> Result<Option<Vec<model::transaction::TransactionResponse>>, DbError>
+    {
+        if let Some(all_txs) =
+            self.get_block_transactions_by_hash(block_hash_hex).await?
+        {
+            let range_txs: Vec<_> =
+                all_txs.into_iter().skip(start_index).take(count).collect();
+            Ok(Some(range_txs))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// (Default) Retrieves the last `count` transactions from a block
+    /// identified by its height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: The height of the block.
+    /// * `count`: The maximum number of last transactions to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<TransactionResponse>>)`: Contains the last `count`
+    ///   transactions if the block is found. Returns `None` if the block itself
+    ///   is not found.
+    /// * `Err(DbError)`: If a database error occurs.
+    async fn get_last_block_transactions_by_height(
+        &self,
+        height: u64,
+        count: usize,
+    ) -> Result<Option<Vec<model::transaction::TransactionResponse>>, DbError>
+    {
+        if let Some(all_txs) =
+            self.get_block_transactions_by_height(height).await?
+        {
+            let start_index = all_txs.len().saturating_sub(count);
+            let last_txs: Vec<_> =
+                all_txs.into_iter().skip(start_index).collect();
+            Ok(Some(last_txs))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// (Default) Retrieves a specific range of transactions from a block
+    /// identified by its height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: The height of the block.
+    /// * `start_index`: The starting index (0-based) of the transaction range.
+    /// * `count`: The maximum number of transactions to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<TransactionResponse>>)`: Contains the transactions in
+    ///   the specified range if the block and range are valid. Returns `None`
+    ///   if the block itself is not found.
+    /// * `Err(DbError)`: If a database error occurs.
+    async fn get_block_transaction_range_by_height(
+        &self,
+        height: u64,
+        start_index: usize,
+        count: usize,
+    ) -> Result<Option<Vec<model::transaction::TransactionResponse>>, DbError>
+    {
+        if let Some(all_txs) =
+            self.get_block_transactions_by_height(height).await?
+        {
+            let range_txs: Vec<_> =
+                all_txs.into_iter().skip(start_index).take(count).collect();
+            Ok(Some(range_txs))
+        } else {
+            Ok(None)
+        }
     }
 }
 
