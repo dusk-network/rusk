@@ -10,3 +10,4 @@ pub mod manual_limiter;
 pub mod metrics;
 pub mod state;
 pub mod subscription;
+pub mod vm;
