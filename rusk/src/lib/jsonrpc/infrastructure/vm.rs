@@ -261,7 +261,7 @@ impl VmAdapter for RuskVmAdapter {
 
         // Perform execution in blocking thread to avoid blocking the async
         // runtime
-        let result = tokio::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             // Initialize a VM session for simulation with dummy height (0)
             let mut session = node
                 .new_block_session(0, base_commit)
@@ -286,9 +286,7 @@ impl VmAdapter for RuskVmAdapter {
             Ok(sim)
         })
         .await
-        .map_err(|e| VmError::InternalError(e.to_string()))?;
-
-        result
+        .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
     async fn preverify_transaction(
@@ -330,32 +328,28 @@ impl VmAdapter for RuskVmAdapter {
         // Clone node for blocking provisioners query
         let node = Arc::clone(&self.node_rusk);
 
-        let result = tokio::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             node.get_provisioners(base_commit)
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
-        .map_err(|e| VmError::InternalError(e.to_string()))?;
-
-        result
+        .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
     async fn get_stake_info_by_pk(
         &self,
         pk: &BlsPublicKey,
     ) -> Result<Option<Stake>, VmError> {
-        let key = pk.clone();
+        let key = *pk;
         // Clone node for blocking provisioner lookup
         let node = Arc::clone(&self.node_rusk);
 
-        let result = tokio::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             node.get_provisioner(&key)
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
-        .map_err(|e| VmError::InternalError(e.to_string()))?;
-
-        result
+        .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
     /// Retrieves the stake data for a specific provisioner by their public key.
