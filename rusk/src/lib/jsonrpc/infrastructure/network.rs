@@ -55,6 +55,8 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
     ///
     /// Corresponds to the `node::Network::broadcast` functionality.
     ///
+    /// # Required Method
+    ///
     /// # Arguments
     ///
     /// * `tx_bytes` - The serialized transaction bytes to be broadcast.
@@ -73,6 +75,8 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
     ///
     /// Corresponds to the `node::Network::get_info` functionality.
     ///
+    /// # Required Method
+    ///
     /// # Returns
     ///
     /// * `Ok(String)` - A string containing network information (format
@@ -84,6 +88,8 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
     ///
     /// Corresponds to the `node::Network::public_addr` functionality.
     ///
+    /// # Required Method
+    ///
     /// # Returns
     ///
     /// * `Ok(SocketAddr)` - The public socket address of the node.
@@ -94,6 +100,8 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
     ///
     /// Corresponds to the underlying logic for retrieving alive nodes (e.g.,
     /// iterating through a peer list).
+    ///
+    /// # Required Method
     ///
     /// # Arguments
     ///
@@ -113,6 +121,8 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
     ///
     /// Corresponds to the `node::Network::alive_nodes_count` functionality.
     ///
+    /// # Required Method
+    ///
     /// # Returns
     ///
     /// * `Ok(usize)` - The number of alive peers.
@@ -122,6 +132,8 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
     /// Floods an inventory message (`Inv`) across the network.
     ///
     /// Corresponds to the `node::Network::flood_request` functionality.
+    ///
+    /// # Required Method
     ///
     /// # Arguments
     ///
@@ -146,11 +158,26 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
     /// Corresponds to the `node::Network::alive_nodes_count` functionality,
     /// wrapped in the `PeersMetrics` model.
     ///
+    /// # Default Method
+    ///
+    /// This method has a default implementation that uses
+    /// [`get_alive_peers_count`](NetworkAdapter::get_alive_peers_count).
+    ///
     /// # Returns
     ///
     /// * `Ok(PeersMetrics)` - Metrics containing the peer count.
     /// * `Err(NetworkError)` - If retrieving the peer count failed.
-    async fn get_peers_metrics(&self) -> Result<PeersMetrics, NetworkError>;
+    async fn get_peers_metrics(&self) -> Result<PeersMetrics, NetworkError> {
+        let count = self.get_alive_peers_count().await?;
+        // Convert usize to u32, handling potential overflow (though unlikely
+        // for peer count)
+        let peer_count = count.try_into().map_err(|_| {
+            NetworkError::InternalError(
+                "Peer count overflowed u32 capacity".to_string(),
+            )
+        })?;
+        Ok(PeersMetrics { peer_count })
+    }
 }
 
 // RuskNetworkAdapter implementation (requires 'chain' feature)
@@ -250,18 +277,5 @@ impl<N: Network> NetworkAdapter for RuskNetworkAdapter<N> {
             .flood_request(&inv, ttl_seconds, hops)
             .await
             .map_err(|e| NetworkError::QueryFailed(e.to_string()))
-    }
-
-    async fn get_peers_metrics(&self) -> Result<PeersMetrics, NetworkError> {
-        let client = self.network_client.read().await;
-        let count = client.alive_nodes_count().await;
-        // Convert usize to u32, handling potential overflow (though unlikely
-        // for peer count)
-        let peer_count = count.try_into().map_err(|_| {
-            NetworkError::InternalError(
-                "Peer count overflowed u32 capacity".to_string(),
-            )
-        })?;
-        Ok(PeersMetrics { peer_count })
     }
 }
