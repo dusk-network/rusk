@@ -6,10 +6,12 @@
 
 //! Utility functions for JSON-RPC integration tests.
 
-use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::stake::StakeData;
+use dusk_core::stake::StakeKeys;
+use dusk_core::transfer::moonlight::AccountData;
 
 use node_data::ledger::{self as node_ledger};
 use node_data::message::{payload as node_payload, ConsensusHeader};
@@ -570,15 +572,12 @@ impl NetworkAdapter for MockNetworkAdapter {
 // --- Mock VM Adapter ---
 
 /// Mock implementation of `VmAdapter` for testing.
-// Cannot derive Debug/Clone due to PreverificationResult
 #[derive(Default)]
 pub struct MockVmAdapter {
     /// Force an error on all method calls if Some.
     pub force_error: Option<VmError>,
     /// Predefined simulation result.
     pub simulation_result: Option<SimulationResult>,
-    /// Predefined preverification result.
-    pub preverification_result: Option<node::vm::PreverificationResult>,
     /// Predefined list of provisioners.
     pub provisioners: Vec<ProvisionerInfo>,
     /// Predefined stake info map (BLS pubkey hex -> StakeInfo).
@@ -587,6 +586,11 @@ pub struct MockVmAdapter {
     pub state_root: Option<[u8; 32]>,
     /// Predefined block gas limit.
     pub block_gas_limit: Option<u64>,
+    /// Predefined chain ID.
+    pub chain_id: Option<u8>,
+    /// Predefined AccountData map for get_account_data. Use Vec as
+    /// BlsPublicKey doesn't impl Ord or Hash.
+    pub account_data: Option<Vec<(BlsPublicKey, AccountData)>>,
 }
 
 // Manual implementation of Debug
@@ -595,19 +599,12 @@ impl std::fmt::Debug for MockVmAdapter {
         f.debug_struct("MockVmAdapter")
             .field("force_error", &self.force_error)
             .field("simulation_result", &self.simulation_result)
-            // Format PreverificationResult as placeholder since it doesn't impl
-            // Debug
-            .field(
-                "preverification_result",
-                &self
-                    .preverification_result
-                    .as_ref()
-                    .map(|_| "<PreverificationResult>"),
-            )
             .field("provisioners", &self.provisioners)
             .field("stakes", &self.stakes)
             .field("state_root", &self.state_root)
             .field("block_gas_limit", &self.block_gas_limit)
+            .field("chain_id", &self.chain_id)
+            .field("account_data", &self.account_data)
             .finish()
     }
 }
@@ -618,12 +615,12 @@ impl Clone for MockVmAdapter {
         Self {
             force_error: self.force_error.clone(),
             simulation_result: self.simulation_result.clone(),
-            // Cannot clone PreverificationResult, so set to None
-            preverification_result: None,
             provisioners: self.provisioners.clone(),
             stakes: self.stakes.clone(),
             state_root: self.state_root,
             block_gas_limit: self.block_gas_limit,
+            chain_id: self.chain_id,
+            account_data: self.account_data.clone(),
         }
     }
 }
@@ -645,24 +642,48 @@ impl VmAdapter for MockVmAdapter {
     async fn preverify_transaction(
         &self,
         _tx_bytes: Vec<u8>,
-    ) -> Result<node::vm::PreverificationResult, VmError> {
+    ) -> Result<::node::vm::PreverificationResult, VmError> {
         if let Some(err) = &self.force_error {
             return Err(err.clone());
         }
-        // Match on a reference to avoid moving the Option content.
-        // Since PreverificationResult is not Clone, we return Valid
-        // if Some, regardless of the variant stored in the mock.
-        match &self.preverification_result {
-            Some(_) => Ok(node::vm::PreverificationResult::Valid),
-            None => Ok(node::vm::PreverificationResult::Valid),
+        Ok(::node::vm::PreverificationResult::Valid)
+    }
+
+    async fn get_chain_id(&self) -> Result<u8, VmError> {
+        if let Some(err) = &self.force_error {
+            return Err(err.clone());
         }
+        Ok(self.chain_id.unwrap_or(0)) // Default mock value
+    }
+
+    async fn get_account_data(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<AccountData, VmError> {
+        if let Some(err) = &self.force_error {
+            return Err(err.clone());
+        }
+        // Iterate through Vec to find the key
+        if let Some(vec) = &self.account_data {
+            for (key, data) in vec {
+                if key == pk {
+                    // BlsPublicKey implements PartialEq
+                    return Ok(data.clone());
+                }
+            }
+        }
+        // Default if not found in vec or vec is None
+        Ok(AccountData {
+            balance: 0,
+            nonce: 0,
+        })
     }
 
     async fn get_state_root(&self) -> Result<[u8; 32], VmError> {
         if let Some(err) = &self.force_error {
             return Err(err.clone());
         }
-        Ok(self.state_root.unwrap_or_default())
+        Ok(self.state_root.unwrap_or([0u8; 32])) // Default mock value
     }
 
     async fn get_block_gas_limit(&self) -> Result<u64, VmError> {
@@ -672,9 +693,11 @@ impl VmAdapter for MockVmAdapter {
         Ok(self.block_gas_limit.unwrap_or(1_000_000_000)) // Default high limit
     }
 
-    async fn get_provisioners(&self) -> Result<Provisioners, VmError> {
-        // Return an empty Provisioners set for the mock
-        Ok(Provisioners::empty())
+    async fn get_provisioners(
+        &self,
+    ) -> Result<Vec<(StakeKeys, StakeData)>, VmError> {
+        // Return an empty Vec for the mock, matching the trait signature
+        Ok(Vec::new())
     }
 
     async fn get_stake_info_by_pk(
@@ -775,29 +798,27 @@ pub fn setup_mock_app_state() -> (
 /// Helper to setup a temporary archive
 #[cfg(feature = "archive")]
 pub(crate) async fn setup_test_archive(
-) -> (tempfile::TempDir, node::archive::Archive) {
-    use node::archive::Archive;
+) -> (tempfile::TempDir, ::node::archive::Archive) {
     use tempfile::tempdir;
 
     let temp_dir = tempdir().expect("Failed to create temp dir");
-    let archive = Archive::create_or_open(temp_dir.path()).await;
+    let archive =
+        ::node::archive::Archive::create_or_open(temp_dir.path()).await;
     (temp_dir, archive)
 }
 
 /// Helper to setup a temporary RocksDB database
 #[cfg(feature = "chain")]
 pub(crate) fn setup_test_db(
-) -> (tempfile::TempDir, node::database::rocksdb::Backend) {
-    // Needs imports within the function
-    use node::database::rocksdb::Backend;
-    use node::database::{DatabaseOptions, DB};
+) -> (tempfile::TempDir, ::node::database::rocksdb::Backend) {
     use tempfile::tempdir;
 
     let temp_dir = tempdir().expect("Failed to create temp dir for DB");
-    let db_opts = DatabaseOptions {
+    let db_opts = ::node::database::DatabaseOptions {
         create_if_missing: true, // Ensure DB is created
         ..Default::default()
     };
-    let db = Backend::create_or_open(temp_dir.path(), db_opts);
+    // Call create_or_open via the DB trait
+    let db = ::node::database::DB::create_or_open(temp_dir.path(), db_opts);
     (temp_dir, db)
 }
