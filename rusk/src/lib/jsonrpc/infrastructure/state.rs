@@ -57,9 +57,10 @@
 //! # use rusk::jsonrpc::infrastructure::vm::VmAdapter;
 //! # use dusk_consensus::user::{provisioners::Provisioners, stake::Stake};
 //! # use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+//! # use dusk_core::transfer::moonlight::AccountData;
+//! # use dusk_core::stake::{StakeData, StakeKeys};
 //! # use std::net::SocketAddr;
-//! # // Assume these are initialized appropriately
-//! # // --- Mock Implementations for Example --- (Keep mocks for other adapters)
+//! # // --- Mock Implementations for Example ---
 //! # #[derive(Debug, Clone)]
 //! # struct MockDbAdapter;
 //! # #[async_trait]
@@ -87,7 +88,7 @@
 //! # }
 //! # #[derive(Debug, Clone)] struct MockArchiveAdapter; #[async_trait] impl ArchiveAdapter for MockArchiveAdapter { async fn get_moonlight_txs_by_memo(&self, _m: &str) -> Result<Vec<MoonlightEventGroup>, ArchiveError> { Ok(vec![]) } async fn get_last_archived_block_height(&self) -> Result<u64, ArchiveError> { Ok(42) } }
 //! # #[derive(Debug, Clone)] struct MockNetworkAdapter; #[async_trait] impl NetworkAdapter for MockNetworkAdapter { async fn broadcast_transaction(&self, _tx: Vec<u8>) -> Result<(), NetworkError> { Ok(()) } async fn get_network_info(&self) -> Result<String, NetworkError> { Ok("MockNet".to_string()) } async fn get_public_address(&self) -> Result<std::net::SocketAddr, NetworkError> { Ok(([127,0,0,1], 8080).into()) } async fn get_alive_peers(&self, _max: usize) -> Result<Vec<std::net::SocketAddr>, NetworkError> { Ok(vec![]) } async fn get_alive_peers_count(&self) -> Result<usize, NetworkError> { Ok(0) } async fn flood_request(&self, _inv: node_data::message::payload::Inv, _ttl: Option<u64>, _hops: u16) -> Result<(), NetworkError> { Ok(()) }}
-//! # #[derive(Debug, Clone)] struct MockVmAdapter; #[async_trait] impl VmAdapter for MockVmAdapter { async fn simulate_transaction(&self, _tx: Vec<u8>) -> Result<rusk::jsonrpc::model::transaction::SimulationResult, VmError> { unimplemented!() } async fn preverify_transaction(&self, _tx: Vec<u8>) -> Result<node::vm::PreverificationResult, VmError> { Ok(node::vm::PreverificationResult::Valid) } async fn get_provisioners(&self) -> Result<Provisioners, VmError> { Ok(Provisioners::empty()) } async fn get_stake_info_by_pk(&self, _pk: &BlsPublicKey) -> Result<Option<Stake>, VmError> { Ok(None) } async fn get_state_root(&self) -> Result<[u8; 32], VmError> { Ok([0; 32]) } async fn get_block_gas_limit(&self) -> Result<u64, VmError> { Ok(1000000) } async fn query_contract_raw(&self, _contract_id: dusk_core::abi::ContractId, _method: String, _base_commit: [u8; 32], _args_bytes: Vec<u8>) -> Result<Vec<u8>, VmError> { Ok(vec![]) } async fn get_vm_config(&self) -> Result<rusk::node::RuskVmConfig, VmError> { unimplemented!() } }
+//! # #[derive(Debug, Clone)] struct MockVmAdapter; #[async_trait] impl VmAdapter for MockVmAdapter { async fn simulate_transaction(&self, _tx: Vec<u8>) -> Result<rusk::jsonrpc::model::transaction::SimulationResult, VmError> { unimplemented!() } async fn preverify_transaction(&self, _tx: Vec<u8>) -> Result<node::vm::PreverificationResult, VmError> { Ok(node::vm::PreverificationResult::Valid) } async fn get_provisioners(&self) -> Result<Vec<(StakeKeys, StakeData)>, VmError> { Ok(Vec::new()) } async fn get_stake_info_by_pk(&self, _pk: &BlsPublicKey) -> Result<Option<Stake>, VmError> { Ok(None) } async fn get_state_root(&self) -> Result<[u8; 32], VmError> { Ok([0; 32]) } async fn get_block_gas_limit(&self) -> Result<u64, VmError> { Ok(1000000) } async fn query_contract_raw(&self, _contract_id: dusk_core::abi::ContractId, _method: String, _base_commit: [u8; 32], _args_bytes: Vec<u8>) -> Result<Vec<u8>, VmError> { Ok(vec![]) } async fn get_vm_config(&self) -> Result<rusk::node::RuskVmConfig, VmError> { unimplemented!() } async fn get_chain_id(&self) -> Result<u8, VmError> { Ok(0) } async fn get_account_data(&self, _pk: &BlsPublicKey) -> Result<AccountData, VmError> { Ok(AccountData { balance: 0, nonce: 0 }) } }
 //! # // --- End Mock Implementations ---
 //! // Initialize components (using mocks for example)
 //! let config = JsonRpcConfig::default();
