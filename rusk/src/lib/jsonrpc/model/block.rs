@@ -78,7 +78,7 @@ use crate::jsonrpc::model::key::AccountPublicKey;
 ///
 /// // Typically obtained via `From<node_data::ledger::Header>`
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockHeader {
     /// Protocol version number.
     pub version: u32, // `node_data::block::Header::version` is u8
@@ -115,6 +115,25 @@ pub struct BlockHeader {
     /// block was proposed.
     pub sequence: u32, // `node_data::block::Header::iteration` is u8
 }
+
+// Manual implementation to ensure all fields are compared.
+// Manual implementation has solved the issue in tests.
+impl PartialEq for BlockHeader {
+    fn eq(&self, other: &Self) -> bool {
+        self.version == other.version
+            && self.height == other.height
+            && self.previous_hash == other.previous_hash
+            && self.timestamp == other.timestamp
+            && self.hash == other.hash
+            && self.state_hash == other.state_hash
+            && self.validator == other.validator
+            && self.transactions_root == other.transactions_root
+            && self.gas_limit == other.gas_limit
+            && self.seed == other.seed
+            && self.sequence == other.sequence
+    }
+}
+impl Eq for BlockHeader {}
 
 /// Represents the finality status of a block in the JSON-RPC API.
 ///
@@ -279,7 +298,7 @@ pub struct Block {
 ///     transactions,
 /// };
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CandidateBlock {
     /// The header containing metadata for this candidate block.
     pub header: BlockHeader,
@@ -288,6 +307,17 @@ pub struct CandidateBlock {
     /// The total number of transactions included in this candidate block.
     pub transactions_count: u64,
 }
+
+// Manual implementation to ensure all fields are compared.
+// Manual implementation has solved the issue in tests.
+impl PartialEq for CandidateBlock {
+    fn eq(&self, other: &Self) -> bool {
+        self.header == other.header
+            && self.transactions == other.transactions
+            && self.transactions_count == other.transactions_count
+    }
+}
+impl Eq for CandidateBlock {}
 
 /// Represents consensus fault information included within a finalized block.
 ///
