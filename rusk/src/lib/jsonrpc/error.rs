@@ -416,7 +416,6 @@ mod tests {
             redaction_marker: "[XXX]".to_string(),
             sanitize_paths: true,
             max_message_length: 30,
-            ..Default::default()
         };
         let message = "Invalid token found in /etc/secrets/api.token file!";
         // Input: "Invalid token found in /etc/secrets/api.token file!" (50
