@@ -32,6 +32,8 @@
 //! - If the decoded bytes do not have the correct length for a BLS public key
 //!   (`BlsPublicKey::SIZE`), `deserialize` returns an error.
 
+use crate::jsonrpc::infrastructure::error::ConversionError;
+use bs58;
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use serde::{de, Deserializer, Serializer};
@@ -98,5 +100,25 @@ impl<'de> serde::Deserialize<'de> for AccountPublicKey {
         })?;
 
         Ok(AccountPublicKey(pk))
+    }
+}
+
+impl AccountPublicKey {
+    /// Returns the inner BLS public key.
+    pub fn inner(&self) -> &BlsPublicKey {
+        &self.0
+    }
+
+    /// Converts the public key to its Base58 string representation.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(String)` with the Base58 encoded key, or
+    /// `Err(ConversionError)` if encoding fails (highly unlikely for valid
+    /// keys).
+    pub fn to_base58(&self) -> Result<String, ConversionError> {
+        // Use dusk_bytes::Serializable trait on the inner key
+        let bytes = self.0.to_bytes();
+        Ok(bs58::encode(bytes).into_string())
     }
 }
