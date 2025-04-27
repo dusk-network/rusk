@@ -47,7 +47,7 @@ use node_data::ledger::Fault as NodeFault;
 use node_data::message::ConsensusHeader as NodeConsensusHeader;
 use node_data::message::SignInfo as NodeSignInfo;
 
-use crate::jsonrpc::model::AccountPublicKey;
+use crate::jsonrpc::model::key::AccountPublicKey;
 
 // NOTE: Field types use appropriate Rust numerics internally, but
 // large u64 values are serialized as Strings via `serde_helper`.
@@ -492,7 +492,7 @@ impl<'a> From<&'a NodeSignInfo> for AccountPublicKey {
         // (dusk_core::signatures::bls::PublicKey). si.signer is of type
         // node_data::bls::PublicKey. We need the inner
         // dusk_core::signatures::bls::PublicKey.
-        AccountPublicKey(si.signer.inner().clone())
+        AccountPublicKey(*si.signer.inner())
     }
 }
 
