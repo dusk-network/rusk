@@ -18,6 +18,7 @@ use crate::jsonrpc::model::{self, gas::*};
 
 use async_trait::async_trait;
 use futures::future::{join_all, try_join_all};
+use futures::try_join;
 use hex;
 
 use node::database::rocksdb::{MD_HASH_KEY, MD_LAST_ITER};
@@ -683,20 +684,24 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// Implementation uses required `mempool_txs_count`,
     /// `mempool_txs_ids_sorted_by_fee`, `mempool_txs_ids_sorted_by_low_fee`.
+    ///
+    /// This implementation uses `try_join` to execute the three required
+    /// method calls concurrently.
     async fn get_mempool_info(
         &self,
     ) -> Result<model::mempool::MempoolInfo, DbError> {
-        let count = self.mempool_txs_count().await? as u64;
-        let max_fee = self
-            .mempool_txs_ids_sorted_by_fee()
-            .await?
-            .first()
-            .map(|(fee, _)| *fee);
-        let min_fee = self
-            .mempool_txs_ids_sorted_by_low_fee()
-            .await?
-            .first()
-            .map(|(fee, _)| *fee);
+        // Execute the three required method calls concurrently
+        let (count_res, fee_high_res, fee_low_res) = try_join!(
+            self.mempool_txs_count(),
+            self.mempool_txs_ids_sorted_by_fee(),
+            self.mempool_txs_ids_sorted_by_low_fee()
+        )?;
+
+        // Process the results
+        let count = count_res as u64;
+        let max_fee = fee_high_res.first().map(|(fee, _)| *fee);
+        let min_fee = fee_low_res.first().map(|(fee, _)| *fee);
+
         Ok(model::mempool::MempoolInfo {
             count,
             max_fee,
