@@ -11,6 +11,7 @@ use crate::jsonrpc::utils::{
     MockDbAdapter, MockNetworkAdapter, MockVmAdapter,
 };
 
+use node::database::rocksdb::MD_HASH_KEY;
 use rusk::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
 use rusk::jsonrpc::infrastructure::metrics::MetricsCollector;
 use rusk::jsonrpc::infrastructure::state::AppState;
@@ -96,12 +97,13 @@ async fn test_using_adapters_from_state() {
     let vm_mock = MockVmAdapter::default();
 
     // Configure mocks *before* creating AppState
+    let mock_hash_hex = hex::encode([100u8; 32]); // Use valid hex
     let mock_header = BlockHeader {
         version: 0,
         height: 100,
         timestamp: 1678886400000,
-        hash: "mock_hash_100".to_string(),
-        previous_hash: "mock_hash_99".to_string(),
+        hash: mock_hash_hex.clone(), // Use hex hash
+        previous_hash: hex::encode([99u8; 32]),
         transactions_root: "mock_tx_root".to_string(),
         state_hash: "mock_state_hash".to_string(),
         validator: "mock_validator_pubkey".to_string(),
@@ -110,7 +112,7 @@ async fn test_using_adapters_from_state() {
         sequence: 1,
     };
     let mock_block = Block {
-        header: mock_header,
+        header: mock_header.clone(),
         status: Some(BlockStatus::Final),
         transactions_count: 0,
         block_reward: Some(1000),
@@ -120,7 +122,18 @@ async fn test_using_adapters_from_state() {
 
     // Access fields on the concrete mock types BEFORE Arc::new()
     db_mock.blocks_by_height.insert(100, mock_block.clone());
+    db_mock
+        .blocks_by_hash
+        .insert(mock_header.hash.clone(), mock_block.clone()); // Key is hex hash
+    db_mock
+        .headers_by_hash
+        .insert(mock_header.hash.clone(), mock_header.clone()); // Key is hex hash
     db_mock.latest_height = 100;
+    db_mock.metadata.insert(
+        MD_HASH_KEY.to_vec(),
+        hex::decode(&mock_header.hash).expect("Hex decode should succeed"), // Decode hex hash
+    );
+
     archive_mock.last_height = 99;
 
     // Create Arcs for the configured mocks
