@@ -37,6 +37,9 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+// Import the model needed for the new method
+use crate::jsonrpc::model::network::PeersMetrics;
+
 /// Trait defining the interface for network operations needed by the JSON-RPC
 /// service.
 ///
@@ -137,6 +140,17 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
         ttl_seconds: Option<u64>,
         hops: u16,
     ) -> Result<(), NetworkError>;
+
+    /// Retrieves metrics about the node's connected peers.
+    ///
+    /// Corresponds to the `node::Network::alive_nodes_count` functionality,
+    /// wrapped in the `PeersMetrics` model.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(PeersMetrics)` - Metrics containing the peer count.
+    /// * `Err(NetworkError)` - If retrieving the peer count failed.
+    async fn get_peers_metrics(&self) -> Result<PeersMetrics, NetworkError>;
 }
 
 // RuskNetworkAdapter implementation (requires 'chain' feature)
@@ -236,5 +250,18 @@ impl<N: Network> NetworkAdapter for RuskNetworkAdapter<N> {
             .flood_request(&inv, ttl_seconds, hops)
             .await
             .map_err(|e| NetworkError::QueryFailed(e.to_string()))
+    }
+
+    async fn get_peers_metrics(&self) -> Result<PeersMetrics, NetworkError> {
+        let client = self.network_client.read().await;
+        let count = client.alive_nodes_count().await;
+        // Convert usize to u32, handling potential overflow (though unlikely
+        // for peer count)
+        let peer_count = count.try_into().map_err(|_| {
+            NetworkError::InternalError(
+                "Peer count overflowed u32 capacity".to_string(),
+            )
+        })?;
+        Ok(PeersMetrics { peer_count })
     }
 }
