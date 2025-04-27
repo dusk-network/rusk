@@ -31,6 +31,17 @@ pub enum DbError {
     InternalError(String),
 }
 
+// Convert underlying database errors (which use anyhow) into our specific
+// DbError.
+impl From<anyhow::Error> for DbError {
+    fn from(err: anyhow::Error) -> Self {
+        // We lose some context here, but treat all backend errors as
+        // InternalError. More specific mapping could be added if needed
+        // by inspecting the error chain.
+        DbError::InternalError(err.to_string())
+    }
+}
+
 /// Errors related to managing shared application state.
 #[derive(Error, Debug, PartialEq, Eq, Clone)]
 pub enum StateError {
