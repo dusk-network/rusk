@@ -440,7 +440,7 @@ pub struct MempoolTransaction {
 ///     transaction_data: data,
 ///     block_height: 12345,
 ///     block_hash: "block_hash_hex".to_string(),
-///     tx_index: 5,
+///     tx_index: Some(5),
 ///     gas_spent: 950,
 ///     timestamp: 1678886400, // Block timestamp (seconds)
 ///     error: None, // Or Some("Error message".to_string()) if failed
@@ -466,7 +466,9 @@ pub struct TransactionInfo {
     pub block_hash: String,
     /// Zero-based index of the transaction within the block's transaction
     /// list.
-    pub tx_index: u32,
+    /// `None` if the index was not requested or could not be determined.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_index: Option<u32>,
     /// Amount of gas consumed by the transaction during execution.
     /// Serialized as a numeric string.
     #[serde(with = "super::serde_helper::u64_to_string")]
