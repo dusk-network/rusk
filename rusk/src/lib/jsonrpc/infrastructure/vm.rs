@@ -26,17 +26,20 @@
 use crate::node::Rusk as NodeRusk;
 use crate::node::RuskVmConfig;
 use async_trait::async_trait;
-use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::transfer::moonlight::AccountData;
 use node::vm::PreverificationResult;
 use node_data::ledger::Transaction;
-use node_data::Serializable;
+use node_data::Serializable as NodeSerializable;
 use std::fmt::{self, Debug};
 use std::sync::Arc;
 
 use crate::jsonrpc::infrastructure::error::VmError;
+use crate::jsonrpc::model::provisioner::{ProvisionerInfo, StakeOwnerInfo};
 use crate::jsonrpc::model::transaction::SimulationResult;
+use dusk_bytes::Serializable;
+use dusk_core::stake::{StakeAmount, StakeData, StakeFundOwner, StakeKeys};
 
 use dusk_vm::execute;
 use node::vm::VMExecution;
@@ -92,7 +95,87 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
         tx_bytes: Vec<u8>,
     ) -> Result<PreverificationResult, VmError>;
 
+    /// Retrieves the current chain ID from the VM.
+    ///
+    /// # Required Method
+    ///
+    /// Corresponds to `node::Rusk::chain_id`.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u8)` - The chain ID.
+    /// * `Err(VmError)` - If retrieving the chain ID failed.
+    async fn get_chain_id(&self) -> Result<u8, VmError>;
+
+    /// Retrieves account data (balance and nonce) for a given public key.
+    ///
+    /// # Required Method
+    ///
+    /// Corresponds to `node::Rusk::account`.
+    ///
+    /// # Arguments
+    ///
+    /// * `pk` - The BLS public key of the account to query.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(AccountData)` - The account's balance and nonce.
+    /// * `Err(VmError)` - If the account query failed (e.g., account not found,
+    ///   internal error).
+    async fn get_account_data(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<AccountData, VmError>;
+
+    /// Retrieves the balance for a given account public key.
+    ///
+    /// # Default Method
+    ///
+    /// This method has a default implementation that uses
+    /// [`get_account_data`](VmAdapter::get_account_data).
+    /// Implementors of `VmAdapter` only need to provide `get_account_data`.
+    ///
+    /// # Arguments
+    ///
+    /// * `pk` - The BLS public key of the account to query.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` - The account's balance.
+    /// * `Err(VmError)` - If the underlying query failed.
+    async fn get_account_balance(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<u64, VmError> {
+        Ok(self.get_account_data(pk).await?.balance)
+    }
+
+    /// Retrieves the nonce for a given account public key.
+    ///
+    /// # Default Method
+    ///
+    /// This method has a default implementation that uses
+    /// [`get_account_data`](VmAdapter::get_account_data).
+    /// Implementors of `VmAdapter` only need to provide `get_account_data`.
+    ///
+    /// # Arguments
+    ///
+    /// * `pk` - The BLS public key of the account to query.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` - The account's nonce.
+    /// * `Err(VmError)` - If the underlying query failed.
+    async fn get_account_nonce(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<u64, VmError> {
+        Ok(self.get_account_data(pk).await?.nonce)
+    }
+
     /// Retrieves the current state root hash from the VM.
+    ///
+    /// # Required Method
     ///
     /// Corresponds to `node::vm::VMExecution::get_state_root`.
     ///
@@ -104,6 +187,8 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
 
     /// Retrieves the gas limit for a block from the VM.
     ///
+    /// # Required Method
+    ///
     /// Corresponds to `node::vm::VMExecution::get_block_gas_limit`.
     ///
     /// # Returns
@@ -112,19 +197,26 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     /// * `Err(VmError)` - If retrieving the gas limit failed.
     async fn get_block_gas_limit(&self) -> Result<u64, VmError>;
 
-    /// Retrieves the current set of provisioners from the VM state.
+    /// Retrieves the full details (StakeKeys, StakeData) for all current
+    /// provisioners from the VM state.
     ///
-    /// Corresponds to `node::vm::VMExecution::get_provisioners`.
+    /// # Required Method
+    /// Corresponds to `node::Rusk::provisioners`.
     /// Requires the current state root internally.
     ///
     /// # Returns
     ///
-    /// * `Ok(Provisioners)` - The provisioner set information.
+    /// * `Ok(Vec<(StakeKeys, StakeData)>)` - A vector containing tuples of
+    ///   stake keys and stake data for each provisioner.
     /// * `Err(VmError)` - If retrieving the provisioners failed.
-    async fn get_provisioners(&self) -> Result<Provisioners, VmError>;
+    async fn get_provisioners(
+        &self,
+    ) -> Result<Vec<(StakeKeys, StakeData)>, VmError>;
 
     /// Retrieves stake information for a single provisioner by their BLS public
     /// key.
+    ///
+    /// # Required Method
     ///
     /// Corresponds to `node::vm::VMExecution::get_provisioner`.
     ///
@@ -144,10 +236,7 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
 
     /// Retrieves the stake data for a specific provisioner by their public key.
     ///
-    /// # Default Method
-    ///
-    /// This method has a default implementation that uses
-    /// [`get_stake_info_by_pk`](VmAdapter::get_stake_info_by_pk).
+    /// # Default Method - Now potentially incorrect if get_stake_info_by_pk changes/is removed
     async fn get_stake_data_by_pk(
         &self,
         pk: &BlsPublicKey,
@@ -156,26 +245,45 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
         self.get_stake_info_by_pk(pk).await
     }
 
-    /// Retrieves a list of all provisioners and their corresponding stake data.
+    /// Retrieves a list of all provisioners and their corresponding simplified
+    /// stake data (`Stake`).
     ///
-    /// # Default Method
+    /// This default implementation calls `get_provisioners` and maps the
+    /// detailed `(StakeKeys, StakeData)` pairs into `(BlsPublicKey, Stake)`
+    /// pairs. If a provisioner has no stake amount (`StakeData.amount` is
+    /// `None`), a default `Stake::new(0, 0)` is used.
     ///
-    /// This method has a default implementation that uses
-    /// [`get_provisioners`](VmAdapter::get_provisioners).
+    /// # Returns
+    ///
+    /// * `Ok(Vec<(BlsPublicKey, Stake)>)` - A vector containing tuples of BLS
+    ///   public keys and their simplified stake information.
+    /// * `Err(VmError)` - If retrieving the provisioners failed.
     async fn get_all_stake_data(
         &self,
     ) -> Result<Vec<(BlsPublicKey, Stake)>, VmError> {
-        // Retrieve full provisioners map
-        let provisioners = self.get_provisioners().await?;
-        // Collect all provisioners and their stake
-        let data = provisioners
-            .iter()
-            .map(|(pk, stake)| (*pk.inner(), stake.clone()))
+        // Retrieve full provisioners details
+        let provisioners_details = self.get_provisioners().await?;
+
+        // Map the detailed data to the simplified (PublicKey, Stake) format
+        let data = provisioners_details
+            .into_iter()
+            .map(|(keys, data)| {
+                // Extract value and eligibility from StakeData.amount,
+                // defaulting to 0 if None.
+                let (value, eligibility) =
+                    data.amount.map_or((0, 0), |sa| (sa.value, sa.eligibility));
+                // Create the simplified Stake struct
+                let consensus_stake = Stake::new(value, eligibility);
+                (keys.account, consensus_stake) // Use the account key directly
+            })
             .collect();
+
         Ok(data)
     }
 
     /// Executes a read-only query on a contract at a specific state commit.
+    ///
+    /// # Required Method
     ///
     /// # Arguments
     /// * `contract_id` - The ID of the contract to query.
@@ -195,7 +303,63 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     ) -> Result<Vec<u8>, VmError>;
 
     /// Retrieves the VM configuration settings.
+    ///
+    /// # Required Method
     async fn get_vm_config(&self) -> Result<RuskVmConfig, VmError>;
+
+    /// Retrieves detailed information about a single provisioner by public key.
+    ///
+    /// This default implementation filters the results from `get_provisioners`.
+    async fn get_provisioner_info_by_pk(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<ProvisionerInfo, VmError> {
+        let all_details = self.get_provisioners().await?; // Call the refactored method
+
+        // Find the details for the requested public key
+        if let Some((keys, data)) =
+            all_details.into_iter().find(|(k, _)| k.account == *pk)
+        {
+            // Map the found StakeKeys and StakeData to the ProvisionerInfo
+            // model
+            let pk_b58 = bs58::encode(keys.account.to_bytes()).into_string();
+
+            // Extract amount details, providing defaults if None
+            let (amount, locked, eligibility) =
+                data.amount.map_or((0, 0, 0), |sa: StakeAmount| {
+                    (sa.value, sa.locked, sa.eligibility)
+                });
+
+            // Map StakeFundOwner to StakeOwnerInfo
+            let owner_info = match keys.owner {
+                StakeFundOwner::Account(owner_pk) => StakeOwnerInfo::Account(
+                    bs58::encode(owner_pk.to_bytes()).into_string(),
+                ),
+                StakeFundOwner::Contract(contract_id) => {
+                    StakeOwnerInfo::Contract(hex::encode(
+                        contract_id.to_bytes(),
+                    ))
+                }
+            };
+
+            Ok(ProvisionerInfo {
+                public_key: pk_b58,
+                amount,
+                locked_amount: locked,
+                eligibility,
+                reward: data.reward,
+                faults: data.faults,
+                hard_faults: data.hard_faults,
+                owner: owner_info,
+            })
+        } else {
+            // Provisioner not found in the list
+            Err(VmError::QueryFailed(format!(
+                "Provisioner details not found for public key: {}",
+                bs58::encode(pk.to_bytes()).into_string()
+            )))
+        }
+    }
 }
 
 /// Real implementation of the `VmAdapter` for the Rusk node.
@@ -334,55 +498,122 @@ impl VmAdapter for RuskVmAdapter {
         .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
-    async fn get_state_root(&self) -> Result<[u8; 32], VmError> {
-        Ok(self.node_rusk.state_root())
-    }
-
-    async fn get_block_gas_limit(&self) -> Result<u64, VmError> {
-        Ok(self.node_rusk.vm_config.block_gas_limit)
-    }
-
-    async fn get_provisioners(&self) -> Result<Provisioners, VmError> {
-        // Use current state root
-        let base_commit = self.node_rusk.state_root();
-        // Clone node for blocking provisioners query
+    /// Retrieves the current chain ID from the Rusk node.
+    ///
+    /// Spawns a blocking task to delegate the call to `node::Rusk::chain_id`.
+    async fn get_chain_id(&self) -> Result<u8, VmError> {
+        // Clone node for blocking call
         let node = Arc::clone(&self.node_rusk);
 
         tokio::task::spawn_blocking(move || {
-            node.get_provisioners(base_commit)
+            // Delegate to the underlying node::Rusk method
+            node.chain_id()
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
         .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
+    /// Retrieves account data (balance and nonce) for a given public key from
+    /// the Rusk node.
+    ///
+    /// Spawns a blocking task to delegate the call to `node::Rusk::account`.
+    async fn get_account_data(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<AccountData, VmError> {
+        // Clone required data for the blocking task
+        let node = Arc::clone(&self.node_rusk);
+        let key = *pk; // Copy pk so it can be moved
+
+        tokio::task::spawn_blocking(move || {
+            // Delegate to the underlying node::Rusk method
+            node.account(&key)
+                .map_err(|e| VmError::QueryFailed(e.to_string()))
+        })
+        .await
+        .map_err(|e| VmError::InternalError(e.to_string()))?
+    }
+
+    async fn get_state_root(&self) -> Result<[u8; 32], VmError> {
+        Ok(self.node_rusk.state_root())
+    }
+
+    /// Retrieves the gas limit for a block directly from the Rusk node's
+    /// config.
+    async fn get_block_gas_limit(&self) -> Result<u64, VmError> {
+        Ok(self.node_rusk.vm_config.block_gas_limit)
+    }
+
+    /// Retrieves the full details (StakeKeys, StakeData) for all current
+    /// provisioners from the Rusk node.
+    ///
+    /// Spawns a blocking task to delegate the call to
+    /// `node::Rusk::provisioners`.
+    async fn get_provisioners(
+        &self,
+    ) -> Result<Vec<(StakeKeys, StakeData)>, VmError> {
+        // Use current state root implicitly via node.provisioners(None)
+        // let base_commit = self.node_rusk.state_root(); // Not needed as None
+        // implies current
+        let node = Arc::clone(&self.node_rusk);
+
+        tokio::task::spawn_blocking(
+            move || -> Result<Vec<(StakeKeys, StakeData)>, String> {
+                // node.provisioners returns Result<impl Iterator>
+                let provisioner_iter =
+                    node.provisioners(None).map_err(|e| {
+                        format!("Failed to get provisioners iterator: {}", e)
+                    })?;
+
+                // Collect the results from the iterator.
+                // Assuming the iterator yields (StakeKeys, StakeData) directly
+                // based on expect() usage in NodeRusk::provisioners.
+                // If iterator yields Result, need to handle errors during
+                // collection.
+                let details: Vec<(StakeKeys, StakeData)> =
+                    provisioner_iter.collect();
+                Ok(details)
+            },
+        )
+        .await
+        .map_err(|e| VmError::InternalError(format!("Task join error: {}", e)))? // Handle JoinError
+        .map_err(VmError::QueryFailed) // Map inner String error to QueryFailed
+    }
+
+    /// Retrieves stake information for a single provisioner by their BLS public
+    /// key.
     async fn get_stake_info_by_pk(
         &self,
         pk: &BlsPublicKey,
     ) -> Result<Option<Stake>, VmError> {
         let key = *pk;
-        // Clone node for blocking provisioner lookup
         let node = Arc::clone(&self.node_rusk);
 
         tokio::task::spawn_blocking(move || {
-            node.get_provisioner(&key)
+            // NodeRusk::provisioner returns Result<Option<StakeData>>
+            // We need to map StakeData -> Stake for this method signature
+            node.provisioner(&key)
+                .map(|stake_data_option| {
+                    stake_data_option.map(|stake_data| {
+                        // Extract value and eligibility from StakeData to
+                        // create Stake
+                        let amount = stake_data.amount.unwrap_or_default();
+                        Stake::new(amount.value, amount.eligibility)
+                    })
+                })
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
-        .map_err(|e| VmError::InternalError(e.to_string()))?
+        .map_err(|e| VmError::InternalError(e.to_string()))? // Handle JoinError
+                                                             // first
+                                                             // The inner Result<Result<Option<Stake>, VmError>, JoinError> needs careful unwrapping
     }
 
-    /// Executes a read-only query on a contract at a specific state commit.
+    /// Executes a read-only query on a contract at a specific state commit
+    /// using the Rusk node's VM session.
     ///
-    /// # Arguments
-    /// * `contract_id` - The ID of the contract to query.
-    /// * `method` - The name of the contract method to call.
-    /// * `base_commit` - The state commit hash to execute the query against.
-    /// * `args_bytes` - The serialized arguments for the contract method.
-    ///
-    /// # Returns
-    /// * `Ok(Vec<u8>)` - The serialized result bytes from the contract query.
-    /// * `Err(VmError)` - If the query failed.
+    /// Spawns a blocking task to perform the query.
     async fn query_contract_raw(
         &self,
         contract_id: dusk_core::abi::ContractId,
@@ -413,7 +644,8 @@ impl VmAdapter for RuskVmAdapter {
         .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
-    /// Retrieves the VM configuration settings.
+    /// Retrieves the VM configuration settings directly from the Rusk node's
+    /// config.
     async fn get_vm_config(&self) -> Result<RuskVmConfig, VmError> {
         Ok(self.node_rusk.vm_config.clone())
     }
