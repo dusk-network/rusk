@@ -565,16 +565,6 @@ impl NetworkAdapter for MockNetworkAdapter {
         // Simple Ok for mock
         Ok(())
     }
-
-    async fn get_peers_metrics(
-        &self,
-    ) -> Result<model::network::PeersMetrics, NetworkError> {
-        if let Some(err) = &self.force_error {
-            return Err(err.clone());
-        }
-        // Basic mock: return default metrics (e.g., 0 peers)
-        Ok(model::network::PeersMetrics { peer_count: 0 })
-    }
 }
 
 // --- Mock VM Adapter ---
@@ -692,19 +682,6 @@ impl VmAdapter for MockVmAdapter {
         _pk: &BlsPublicKey,
     ) -> Result<Option<Stake>, VmError> {
         Ok(None) // Default mock implementation
-    }
-
-    async fn get_stake_data_by_pk(
-        &self,
-        _pk: &BlsPublicKey,
-    ) -> Result<Option<Stake>, VmError> {
-        Ok(None) // Default mock implementation
-    }
-
-    async fn get_all_stake_data(
-        &self,
-    ) -> Result<Vec<(BlsPublicKey, Stake)>, VmError> {
-        Ok(Vec::new()) // Default mock implementation
     }
 
     async fn query_contract_raw(
