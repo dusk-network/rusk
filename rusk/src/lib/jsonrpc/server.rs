@@ -28,6 +28,16 @@ use tokio::net::TcpListener;
 use tokio::signal;
 use tracing::{error, info};
 
+// Imports for Governor
+use std::num::NonZeroU32;
+use tower_governor::{
+    governor::GovernorConfigBuilder, key_extractor::PeerIpKeyExtractor,
+    GovernorLayer,
+};
+
+// Imports for CORS
+use tower_http::cors::{Any, CorsLayer};
+
 /// Loads TLS configuration from the specified certificate and key files.
 ///
 /// Reads the certificate chain and private key from the paths provided in
@@ -162,6 +172,18 @@ fn spawn_graceful_shutdown_handler(handle: Handle) {
 /// basic routes, TLS (if configured), graceful shutdown handling, and prepares
 /// for integrating the `jsonrpsee` service.
 ///
+/// ## Middleware
+///
+/// The server applies the following middleware layers:
+/// - **CORS:** A permissive CORS layer (`tower_http::cors::CorsLayer`) allowing
+///   requests from any origin, method, or header.
+/// - **Rate Limiting:** Global rate limiting per IP address using
+///   `tower_governor::GovernorLayer`, configured by
+///   `JsonRpcConfig.rate_limit.default_limit`. This is applied only if rate
+///   limiting is enabled in the config.
+/// - **State:** The shared `AppState` is added as an Axum state layer for
+///   access in handlers.
+///
 /// # Arguments
 ///
 /// * `app_state` - The shared application state containing configuration,
@@ -177,7 +199,7 @@ pub async fn run_server(app_state: Arc<AppState>) -> Result<(), Error> {
     let rustls_config = load_tls_config(&app_state.config().http).await?;
 
     // 2. Define Axum router
-    let router = Router::new()
+    let mut router = Router::new()
         // Basic health check endpoint
         .route("/health", get(|| async { "OK" }))
         // Placeholder for the main JSON-RPC endpoint
@@ -194,6 +216,71 @@ pub async fn run_server(app_state: Arc<AppState>) -> Result<(), Error> {
         )
         // Add the AppState extractor layer
         .with_state(app_state.clone());
+
+    // --- Add Governor Rate Limiting Middleware --- START ---
+    if app_state.config().rate_limit.enabled {
+        info!("Rate limiting enabled. Applying tower-governor middleware...");
+
+        let default_limit = &app_state.config().rate_limit.default_limit;
+        let requests = default_limit.requests as u32; // Governor uses u32
+        let window = default_limit.window;
+
+        // Ensure requests and window are non-zero to avoid governor panics
+        let requests_non_zero =
+            NonZeroU32::new(requests).unwrap_or_else(|| {
+                error!(
+                    requests,
+                    "Rate limit requests must be non-zero. Defaulting to 1."
+                );
+                NonZeroU32::new(1).unwrap()
+            });
+
+        if window == Duration::ZERO {
+            error!(window=?window, "Rate limit window must be non-zero. Panicking.");
+            panic!("Invalid rate limit configuration: window cannot be zero");
+        }
+
+        let governor_config = GovernorConfigBuilder::default()
+            .per(window) // Use per-window duration
+            .burst_size(requests_non_zero) // Set burst size
+            .key_extractor(PeerIpKeyExtractor) // Limit per IP
+            .finish()
+            .map_err(|e| {
+                Error::Internal(format!(
+                    "Failed to create Governor config: {}",
+                    e
+                ))
+            })?; // Handle potential config error
+
+        // Note: GovernorLayer requires the config to be 'static.
+        // Leaking or using Arc might be needed if config needs mutation,
+        // but here we build it once.
+        // Using Box::leak as shown in tower-governor examples for simplicity.
+        let governor_config_leaked = Box::leak(Box::new(governor_config));
+
+        router = router.layer(GovernorLayer {
+            config: governor_config_leaked,
+        });
+
+        info!("tower-governor middleware applied.");
+    } else {
+        info!("Rate limiting disabled globally. Skipping tower-governor middleware.");
+    }
+    // --- Add Governor Rate Limiting Middleware --- END ---
+
+    // --- Add CORS Middleware --- START ---
+    info!("Applying permissive CORS middleware...");
+    let cors_layer = CorsLayer::new()
+        // Allow requests from any origin
+        .allow_origin(Any)
+        // Allow common methods
+        .allow_methods(Any)
+        // Allow all headers
+        .allow_headers(Any);
+
+    router = router.layer(cors_layer);
+    info!("CORS middleware applied.");
+    // --- Add CORS Middleware --- END ---
 
     // 3. Prepare for binding and serving
     let bind_address = app_state.config().http.bind_address;

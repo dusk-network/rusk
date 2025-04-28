@@ -7,6 +7,7 @@
 pub mod config;
 pub mod error;
 pub mod infrastructure;
-mod model;
+pub mod model;
+pub mod server;
 
 pub mod utils;

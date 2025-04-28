@@ -738,7 +738,12 @@ impl VmAdapter for MockVmAdapter {
 /// limits.
 #[allow(dead_code)]
 pub(crate) fn create_test_app_state() -> AppState {
-    let config = JsonRpcConfig::test_config();
+    let mut config = JsonRpcConfig::test_config();
+    // Override the default bind address (which uses port 0) for testing
+    config.http.bind_address = "127.0.0.1:39999"
+        .parse()
+        .expect("Failed to parse test bind address");
+
     let db_mock = MockDbAdapter::default();
     let archive_mock = MockArchiveAdapter::default();
     let network_mock = MockNetworkAdapter::default();
