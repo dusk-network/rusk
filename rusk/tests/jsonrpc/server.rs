@@ -8,16 +8,15 @@
 
 // Use available helpers from utils.rs
 use super::utils::{
-    create_test_app_state, // Use this helper
-    MockArchiveAdapter,
-    MockDbAdapter,
-    MockNetworkAdapter,
-    MockVmAdapter,
+    create_test_app_state, create_test_app_state_with_addr, MockArchiveAdapter,
+    MockDbAdapter, MockNetworkAdapter, MockVmAdapter,
 };
 use assert_matches::assert_matches;
 use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair, SanType};
 use reqwest::StatusCode;
-use rusk::jsonrpc::config::{ConfigError, HttpServerConfig, JsonRpcConfig};
+use rusk::jsonrpc::config::{
+    ConfigError, HttpServerConfig, JsonRpcConfig, RateLimit,
+};
 use rusk::jsonrpc::error::Error;
 use rusk::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
 use rusk::jsonrpc::infrastructure::metrics::MetricsCollector;
@@ -97,27 +96,92 @@ fn create_custom_app_state(config: JsonRpcConfig) -> AppState {
 
 #[tokio::test]
 async fn test_server_starts_http() {
-    // 1. Setup: Use default test AppState, wrapped in Arc
-    let app_state = Arc::new(create_test_app_state()); // Wrap in Arc::new()
+    // 1. Setup: Use helper that ensures default port 8546
+    let app_state = Arc::new(create_test_app_state());
     let addr = app_state.config().http.bind_address;
+    assert_eq!(addr.port(), 8546, "Test assumes default HTTP port 8546");
 
     // 2. Action: Spawn server
-    let server_handle = tokio::spawn(run_server(app_state.clone()));
-    sleep(Duration::from_millis(200)).await; // Increased delay slightly
+    let mut server_task = tokio::spawn(run_server(app_state.clone()));
 
-    // 3. Assert: Check /health
+    // Give server a small amount of time to bind or fail early
+    sleep(Duration::from_millis(200)).await;
+
+    // 3. Assert: Try connecting while monitoring the server task
     let client = reqwest::Client::new();
-    let health_url = format!("http://{}/health", addr); // Use the default addr
-    let response = client.get(&health_url).send().await;
+    let health_url = format!("http://{}/health", addr);
 
-    assert!(response.is_ok(), "Request failed: {:?}", response.err());
-    if let Ok(resp) = response {
-        assert_eq!(resp.status(), StatusCode::OK);
-        assert_eq!(resp.text().await.unwrap(), "OK");
-    } // Only assert on Ok response
+    // Define the client request future separately
+    let client_request_future = async {
+        // Allow more time for the server to become fully responsive before
+        // sending
+        sleep(Duration::from_millis(1300)).await; // Total wait 1500ms
+        client.get(&health_url).send().await
+    };
 
-    // 4. Cleanup
-    server_handle.abort();
+    tokio::select! {
+        // Biased select ensures we check server_task first if both are ready
+        // (though unlikely here)
+        biased;
+
+        // Case 1: Server task finishes (or crashes) first
+        server_result = &mut server_task => {
+            panic!("Server task exited unexpectedly before client could connect: {:?}", server_result);
+        }
+
+        // Case 2: Client request completes first
+        client_response_result = client_request_future => {
+            match client_response_result {
+                Ok(response) => {
+                    // Client succeeded, check response
+                    assert_eq!(response.status(), StatusCode::OK, "Health check status mismatch");
+                    assert_eq!(response.text().await.unwrap(), "OK", "Health check body mismatch");
+                    println!("Health check successful.");
+                    // Now we know the server is up and running, proceed to cleanup
+                }
+                Err(e) => {
+                    // Client failed. The server might still be running or might have crashed
+                    // after the initial 200ms sleep but before the client sent the request.
+                    // Await the server task to see its fate.
+                    match server_task.await {
+                        Ok(Ok(())) => panic!(
+                            "Client request failed ({:?}), but server task completed successfully?", e
+                        ),
+                        Ok(Err(server_err)) => panic!(
+                            "Client request failed ({:?}). Server task failed: {:?}", e, server_err
+                        ),
+                        Err(join_err) => panic!(
+                            "Client request failed ({:?}). Server task panicked: {:?}", e, join_err
+                        ),
+                    }
+                }
+            }
+        }
+
+        // Case 3: Timeout (shouldn't happen with reasonable sleep times)
+        _ = sleep(Duration::from_secs(10)) => {
+            panic!("Test timed out waiting for client request or server exit.");
+        }
+    }
+
+    // 4. Cleanup (only reached if client request succeeded in the select!
+    //    block)
+    println!("Aborting server task after successful health check.");
+    server_task.abort();
+    // Optionally await the aborted handle to ensure cleanup and check for
+    // errors during shutdown
+    match server_task.await {
+        Ok(Ok(())) => println!("Server task finished ok after abort."), /* Expected if shutdown is graceful */
+        Ok(Err(e)) => {
+            eprintln!("Server task finished with error after abort: {}", e)
+        }
+        Err(e) if e.is_cancelled() => {
+            println!("Server task cancelled successfully.")
+        } // Expected
+        Err(e) => {
+            eprintln!("Server task panicked during abort/shutdown: {:?}", e)
+        }
+    }
 }
 
 #[tokio::test]
@@ -126,17 +190,30 @@ async fn test_server_starts_https() {
     let _ = ring::default_provider().install_default();
 
     // 1. Setup: Generate certs & Manually create AppState with TLS config
-    let (_dir_guard, http_config) =
+    let (_dir_guard, mut http_config) =
         generate_tls_certs().expect("Failed to generate certs");
-    let mut config = JsonRpcConfig::test_config(); // Start with test defaults
-    config.http = http_config; // Overwrite HTTP config with TLS settings
+    // Explicitly set a known port for the HTTPS test
+    let https_test_port = 39989;
+    http_config.bind_address =
+        format!("127.0.0.1:{}", https_test_port).parse().unwrap();
+
+    let config = JsonRpcConfig {
+        // Overwrite HTTP config with TLS settings
+        http: http_config,
+        ..JsonRpcConfig::default()
+    };
     let app_state = Arc::new(create_custom_app_state(config)); // Wrap in Arc
 
     let addr = app_state.config().http.bind_address; // Get the fixed TLS port
+    assert_eq!(
+        addr.port(),
+        https_test_port,
+        "Test assumes fixed HTTPS port"
+    );
 
     // 2. Action: Spawn server
     let server_handle = tokio::spawn(run_server(app_state.clone()));
-    sleep(Duration::from_millis(200)).await; // Increased delay slightly
+    sleep(Duration::from_millis(1500)).await;
 
     // 3. Assert: Check /health via HTTPS
     let client = reqwest::Client::builder()
@@ -260,4 +337,191 @@ async fn test_tls_config_partial_config_key_only() {
     // 2. Action & Assert: Run server directly and check validation error
     let result = run_server(app_state).await;
     assert_matches!(result, Err(Error::Config(ConfigError::Validation(msg))) if msg.contains("certificate path is missing"));
+}
+
+#[tokio::test]
+async fn test_cors_headers() {
+    // 1. Setup: Use a unique port for this test
+    let cors_test_port = 39997;
+    let cors_addr: std::net::SocketAddr =
+        format!("127.0.0.1:{}", cors_test_port).parse().unwrap();
+    let app_state = Arc::new(create_test_app_state_with_addr(Some(cors_addr)));
+
+    // Verify the port is set correctly in the config
+    assert_eq!(
+        app_state.config().http.bind_address,
+        cors_addr,
+        "Test CORS port mismatch"
+    );
+
+    // 2. Action: Spawn server
+    let mut server_task = tokio::spawn(run_server(app_state.clone()));
+
+    // Give server a small amount of time to bind or fail early
+    sleep(Duration::from_millis(200)).await;
+
+    // 3. Assert: Try connecting while monitoring the server task
+    let client = reqwest::Client::new();
+    // Use the specific cors_addr for the request URL
+    let health_url = format!("http://{}/health", cors_addr);
+
+    let client_request_future = async {
+        sleep(Duration::from_millis(1300)).await; // Total wait 1500ms
+        client
+            .get(&health_url)
+            .header("Origin", "http://example.com")
+            .send()
+            .await
+    };
+
+    tokio::select! {
+        biased;
+
+        server_result = &mut server_task => {
+            panic!("CORS Test: Server task exited unexpectedly: {:?}", server_result);
+        }
+
+        client_response_result = client_request_future => {
+            match client_response_result {
+                Ok(response) => {
+                    assert_eq!(response.status(), StatusCode::OK, "CORS Test: Health check status mismatch");
+                    // Check for permissive CORS headers
+                    assert_eq!(
+                        response
+                            .headers()
+                            .get("access-control-allow-origin")
+                            .expect("Missing access-control-allow-origin header"),
+                        "*"
+                    );
+                     println!("CORS Test: Health check and headers successful.");
+                }
+                Err(e) => {
+                    match server_task.await {
+                        Ok(Ok(())) => panic!(
+                            "CORS Test: Client request failed ({:?}), but server task completed successfully?", e
+                        ),
+                        Ok(Err(server_err)) => panic!(
+                            "CORS Test: Client request failed ({:?}). Server task failed: {:?}", e, server_err
+                        ),
+                        Err(join_err) => panic!(
+                            "CORS Test: Client request failed ({:?}). Server task panicked: {:?}", e, join_err
+                        ),
+                    }
+                }
+            }
+        }
+
+        _ = sleep(Duration::from_secs(10)) => {
+            panic!("CORS Test: Timed out waiting for client request or server exit.");
+        }
+    }
+
+    // 4. Cleanup
+    println!("CORS Test: Aborting server task.");
+    server_task.abort();
+    match server_task.await {
+        Ok(Ok(())) => {
+            println!("CORS Test: Server task finished ok after abort.")
+        }
+        Ok(Err(e)) => eprintln!(
+            "CORS Test: Server task finished with error after abort: {}",
+            e
+        ),
+        Err(e) if e.is_cancelled() => {
+            println!("CORS Test: Server task cancelled successfully.")
+        }
+        Err(e) => eprintln!(
+            "CORS Test: Server task panicked during abort/shutdown: {:?}",
+            e
+        ),
+    }
+}
+
+#[tokio::test]
+async fn test_rate_limiting() {
+    // 1. Setup: Configure a strict rate limit and a unique port
+    let rate_limit_test_port = 39998; // Keep existing unique port
+    let rate_limit_addr: std::net::SocketAddr =
+        format!("127.0.0.1:{}", rate_limit_test_port)
+            .parse()
+            .unwrap();
+
+    let mut config = JsonRpcConfig::default(); // Start with defaults
+    config.rate_limit.enabled = true;
+    config.rate_limit.default_limit = RateLimit {
+        requests: 2,                        // Allow only 2 requests...
+        window: Duration::from_millis(500), // ...within a 500ms window
+    };
+    config.http.bind_address = rate_limit_addr; // Set the unique address
+
+    let app_state = Arc::new(create_custom_app_state(config));
+    assert_eq!(
+        app_state.config().http.bind_address,
+        rate_limit_addr,
+        "Test rate limit port mismatch"
+    );
+
+    // 2. Action: Spawn server
+    let server_task = tokio::spawn(run_server(app_state.clone()));
+
+    // Give server time to start or fail
+    sleep(Duration::from_millis(1500)).await;
+
+    // Check if server task failed early
+    if server_task.is_finished() {
+        match server_task.await {
+            Ok(Err(e)) => {
+                panic!("Rate Limit Test: Server task failed early: {:?}", e)
+            }
+            Err(e) => {
+                panic!("Rate Limit Test: Server task panicked early: {:?}", e)
+            }
+            _ => panic!("Rate Limit Test: Server exited early unexpectedly"),
+        }
+    }
+
+    // 3. Assert: Perform rate limit checks
+    let client = reqwest::Client::new();
+    let health_url = format!("http://{}/health", rate_limit_addr);
+
+    // Send 2 requests - should succeed
+    let resp1 = client.get(&health_url).send().await.expect("Req 1 failed");
+    assert_eq!(resp1.status(), StatusCode::OK, "Req 1 status mismatch");
+    let resp2 = client.get(&health_url).send().await.expect("Req 2 failed");
+    assert_eq!(resp2.status(), StatusCode::OK, "Req 2 status mismatch");
+
+    // Send 3rd request - should be rate limited (429)
+    let resp3 = client.get(&health_url).send().await.expect("Req 3 failed");
+    assert_eq!(
+        resp3.status(),
+        StatusCode::TOO_MANY_REQUESTS,
+        "Req 3 should be rate limited"
+    );
+
+    // Wait for the window to reset
+    sleep(Duration::from_millis(600)).await; // Wait longer than window
+
+    // Send 4th request - should succeed again
+    let resp4 = client.get(&health_url).send().await.expect("Req 4 failed");
+    assert_eq!(resp4.status(), StatusCode::OK, "Req 4 status mismatch");
+
+    // 4. Cleanup
+    println!("Rate Limit Test: Aborting server task.");
+    server_task.abort();
+    match server_task.await {
+        Ok(Ok(())) => {
+            println!("Rate Limit Test: Server task finished ok after abort.")
+        }
+        Ok(Err(e)) => eprintln!(
+            "Rate Limit Test: Server task finished with error after abort: {}",
+            e
+        ),
+        Err(e) if e.is_cancelled() => {
+            println!("Rate Limit Test: Server task cancelled successfully.")
+        }
+        Err(e) => eprintln!(
+            "Rate Limit Test: Server task panicked during abort/shutdown: {:?}",
+            e
+        ),
+    }
 }

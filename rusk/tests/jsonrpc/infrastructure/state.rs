@@ -34,10 +34,21 @@ fn test_app_state_creation() {
     let app_state = create_test_app_state();
 
     // Verify basic properties using accessors
-    assert!(!app_state.config().rate_limit.enabled);
-    // Accessing http requires borrowing the Arc first
-    let expected_addr: std::net::SocketAddr = "127.0.0.1:0".parse().unwrap();
-    assert_eq!(app_state.config().http.bind_address, expected_addr);
+    assert!(
+        app_state.config().rate_limit.enabled,
+        "Rate limiting should be enabled by default"
+    );
+
+    // Check the default HTTP address provided by create_test_app_state() which
+    // uses JsonRpcConfig::default()
+    let expected_addr: std::net::SocketAddr = "127.0.0.1:8546".parse().unwrap(); // Default port is 8546
+    assert_eq!(
+        app_state.config().http.bind_address,
+        expected_addr,
+        "Default HTTP bind address mismatch"
+    );
+
+    // Verify config Arc points to the same instance
     assert!(Arc::ptr_eq(app_state.config(), app_state.config()));
 }
 
