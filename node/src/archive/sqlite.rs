@@ -17,6 +17,8 @@ use tracing::{error, info, warn};
 use crate::archive::transformer;
 use crate::archive::Archive;
 
+pub use data::ArchivedEvent;
+
 /// The name of the archive SQLite database.
 const SQLITEARCHIVE_DB_NAME: &str = "archive.sqlite3";
 
@@ -65,7 +67,7 @@ impl Archive {
     }
 
     /// Fetch the list of all vm events from the block of the given height.
-    async fn fetch_events_by_height(
+    pub async fn fetch_events_by_height(
         &self,
         block_height: i64,
     ) -> Result<Vec<data::ArchivedEvent>> {
@@ -95,7 +97,7 @@ impl Archive {
     }
 
     /// Fetch all vm events from a given block hash
-    async fn fetch_events_by_hash(
+    pub async fn fetch_events_by_hash(
         &self,
         hex_block_hash: &str,
     ) -> Result<Vec<data::ArchivedEvent>> {
