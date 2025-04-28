@@ -334,6 +334,3 @@ pub async fn run_server(app_state: Arc<AppState>) -> Result<(), Error> {
         }
     }
 }
-
-// TODO Add basic tests for server startup and `/health` endpoint
-// in `rusk/tests/jsonrpc/server.rs`.
