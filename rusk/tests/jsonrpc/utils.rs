@@ -736,13 +736,24 @@ impl VmAdapter for MockVmAdapter {
 ///
 /// Panics if `ManualRateLimiters` cannot be created from the config's rate
 /// limits.
-#[allow(dead_code)]
-pub(crate) fn create_test_app_state() -> AppState {
-    let mut config = JsonRpcConfig::test_config();
-    // Override the default bind address (which uses port 0) for testing
-    config.http.bind_address = "127.0.0.1:39999"
-        .parse()
-        .expect("Failed to parse test bind address");
+///
+/// Allows specifying a custom bind address for the HTTP server, overriding
+/// defaults and environment variables for test isolation.
+pub(crate) fn create_test_app_state_with_addr(
+    http_addr: Option<SocketAddr>,
+) -> AppState {
+    let mut config = JsonRpcConfig::default();
+    if let Some(addr) = http_addr {
+        config.http.bind_address = addr;
+    }
+    // Ensure the port is what we expect if None was passed (using default)
+    else {
+        assert_eq!(
+            config.http.bind_address.port(),
+            8546,
+            "Default port assumption failed in create_test_app_state_with_addr"
+        );
+    }
 
     let db_mock = MockDbAdapter::default();
     let archive_mock = MockArchiveAdapter::default();
@@ -754,9 +765,9 @@ pub(crate) fn create_test_app_state() -> AppState {
     let manual_rate_limiters = ManualRateLimiters::new(rate_limit_config)
         .expect("Failed to create manual rate limiters");
 
-    // Create AppState using the mocks
+    // Create AppState using the potentially modified config
     AppState::new(
-        config,
+        config, // Use the (potentially modified) config
         Arc::new(db_mock),
         Arc::new(archive_mock),
         Arc::new(network_mock),
@@ -765,6 +776,12 @@ pub(crate) fn create_test_app_state() -> AppState {
         metrics,
         manual_rate_limiters,
     )
+}
+
+// Keep the old helper for compatibility if needed, but point it to the new one
+#[allow(dead_code)]
+pub(crate) fn create_test_app_state() -> AppState {
+    create_test_app_state_with_addr(None)
 }
 
 /// Helper to setup a basic `AppState` with mock adapters for testing.
