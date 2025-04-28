@@ -49,7 +49,8 @@
 //! # use rusk::jsonrpc::infrastructure::error::{ArchiveError, DbError, NetworkError, VmError};
 //! # use rusk::jsonrpc::infrastructure::metrics::MetricsCollector;
 //! # use rusk::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
-//! # use rusk::jsonrpc::model::{block::Block, transaction::MoonlightEventGroup};
+//! # use rusk::jsonrpc::model::block::Block;
+//! # use rusk::jsonrpc::model::archive::{ArchivedEvent, Order, MoonlightEventGroup};
 //! # use dusk_core::abi::ContractId;
 //! # use dusk_bytes::{Serializable, DeserializableSlice};
 //! # use async_trait::async_trait;
@@ -86,7 +87,19 @@
 //! #     async fn metadata_op_read(&self, _: &[u8]) -> Result<Option<Vec<u8>>, DbError> { Ok(None) }
 //! #     async fn metadata_op_write(&mut self, _: &[u8], _: &[u8]) -> Result<(), DbError> { Ok(()) }
 //! # }
-//! # #[derive(Debug, Clone)] struct MockArchiveAdapter; #[async_trait] impl ArchiveAdapter for MockArchiveAdapter { async fn get_moonlight_txs_by_memo(&self, _m: &str) -> Result<Vec<MoonlightEventGroup>, ArchiveError> { Ok(vec![]) } async fn get_last_archived_block_height(&self) -> Result<u64, ArchiveError> { Ok(42) } }
+//! # #[derive(Debug, Clone)] struct MockArchiveAdapter;
+//! # #[async_trait]
+//! # impl ArchiveAdapter for MockArchiveAdapter {
+//! #     async fn get_moonlight_txs_by_memo(&self, _memo: Vec<u8>) -> Result<Option<Vec<MoonlightEventGroup>>, ArchiveError> { Ok(Some(vec![])) }
+//! #     async fn get_last_archived_block(&self) -> Result<(u64, String), ArchiveError> { Ok((42, "dummy_hash".to_string())) }
+//! #     async fn get_block_events_by_hash(&self, _hex_block_hash: &str) -> Result<Vec<ArchivedEvent>, ArchiveError> { unimplemented!() }
+//! #     async fn get_block_events_by_height(&self, _block_height: u64) -> Result<Vec<ArchivedEvent>, ArchiveError> { unimplemented!() }
+//! #     async fn get_latest_block_events(&self) -> Result<Vec<ArchivedEvent>, ArchiveError> { unimplemented!() } // Can use default if desired
+//! #     async fn get_contract_finalized_events(&self, _contract_id: &str) -> Result<Vec<ArchivedEvent>, ArchiveError> { unimplemented!() }
+//! #     async fn get_next_block_with_phoenix_transaction(&self, _block_height: u64) -> Result<Option<u64>, ArchiveError> { unimplemented!() }
+//! #     async fn get_moonlight_transaction_history(&self, _pk_bs58: String, _ord: Option<Order>, _from_block: Option<u64>, _to_block: Option<u64>) -> Result<Option<Vec<MoonlightEventGroup>>, ArchiveError> { unimplemented!() }
+//! #     // Default methods like get_last_archived_block_height are implicitly included
+//! # }
 //! # #[derive(Debug, Clone)] struct MockNetworkAdapter; #[async_trait] impl NetworkAdapter for MockNetworkAdapter { async fn broadcast_transaction(&self, _tx: Vec<u8>) -> Result<(), NetworkError> { Ok(()) } async fn get_network_info(&self) -> Result<String, NetworkError> { Ok("MockNet".to_string()) } async fn get_public_address(&self) -> Result<std::net::SocketAddr, NetworkError> { Ok(([127,0,0,1], 8080).into()) } async fn get_alive_peers(&self, _max: usize) -> Result<Vec<std::net::SocketAddr>, NetworkError> { Ok(vec![]) } async fn get_alive_peers_count(&self) -> Result<usize, NetworkError> { Ok(0) } async fn flood_request(&self, _inv: node_data::message::payload::Inv, _ttl: Option<u64>, _hops: u16) -> Result<(), NetworkError> { Ok(()) }}
 //! # #[derive(Debug, Clone)] struct MockVmAdapter; #[async_trait] impl VmAdapter for MockVmAdapter { async fn simulate_transaction(&self, _tx: Vec<u8>) -> Result<rusk::jsonrpc::model::transaction::SimulationResult, VmError> { unimplemented!() } async fn preverify_transaction(&self, _tx: Vec<u8>) -> Result<node::vm::PreverificationResult, VmError> { Ok(node::vm::PreverificationResult::Valid) } async fn get_provisioners(&self) -> Result<Vec<(StakeKeys, StakeData)>, VmError> { Ok(Vec::new()) } async fn get_stake_info_by_pk(&self, _pk: &BlsPublicKey) -> Result<Option<Stake>, VmError> { Ok(None) } async fn get_state_root(&self) -> Result<[u8; 32], VmError> { Ok([0; 32]) } async fn get_block_gas_limit(&self) -> Result<u64, VmError> { Ok(1000000) } async fn query_contract_raw(&self, _contract_id: dusk_core::abi::ContractId, _method: String, _base_commit: [u8; 32], _args_bytes: Vec<u8>) -> Result<Vec<u8>, VmError> { Ok(vec![]) } async fn get_vm_config(&self) -> Result<rusk::node::RuskVmConfig, VmError> { unimplemented!() } async fn get_chain_id(&self) -> Result<u8, VmError> { Ok(0) } async fn get_account_data(&self, _pk: &BlsPublicKey) -> Result<AccountData, VmError> { Ok(AccountData { balance: 0, nonce: 0 }) } }
 //! # // --- End Mock Implementations ---
@@ -170,6 +183,7 @@ use dusk_core::{signatures::bls::PublicKey as BlsPublicKey, stake::StakeKeys};
 
 use parking_lot::RwLock;
 
+use crate::jsonrpc::config::JsonRpcConfig;
 use crate::jsonrpc::infrastructure::archive::ArchiveAdapter;
 use crate::jsonrpc::infrastructure::db::DatabaseAdapter;
 use crate::jsonrpc::infrastructure::error::Error as RpcInfraError;
@@ -181,13 +195,11 @@ use crate::jsonrpc::infrastructure::metrics::MetricsCollector;
 use crate::jsonrpc::infrastructure::network::NetworkAdapter;
 use crate::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
 use crate::jsonrpc::infrastructure::vm::VmAdapter;
+use crate::jsonrpc::model::archive::MoonlightEventGroup;
 use crate::jsonrpc::model::block::Block;
 use crate::jsonrpc::model::provisioner::ProvisionerInfo;
-use crate::jsonrpc::model::transaction::MoonlightEventGroup;
+use crate::jsonrpc::model::provisioner::StakeOwnerInfo;
 use crate::jsonrpc::model::transaction::SimulationResult;
-use crate::jsonrpc::{
-    config::JsonRpcConfig, model::provisioner::StakeOwnerInfo,
-};
 
 #[derive(Debug, Clone)]
 pub struct AppState {
@@ -325,11 +337,12 @@ impl AppState {
     /// Delegates to [`ArchiveAdapter::get_moonlight_txs_by_memo`].
     pub async fn get_moonlight_txs_by_memo(
         &self,
-        memo_hex: &str,
+        memo_hex: Vec<u8>,
     ) -> Result<Vec<MoonlightEventGroup>, ArchiveError> {
         self.archive_adapter
             .get_moonlight_txs_by_memo(memo_hex)
             .await
+            .map(|option_vec| option_vec.unwrap_or_default())
     }
 
     /// Delegates to [`ArchiveAdapter::get_last_archived_block_height`].
