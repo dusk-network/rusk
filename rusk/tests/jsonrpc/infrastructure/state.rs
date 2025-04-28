@@ -145,7 +145,9 @@ async fn test_using_adapters_from_state() {
         hex::decode(&mock_header.hash).expect("Hex decode should succeed"), // Decode hex hash
     );
 
-    archive_mock.last_height = 99;
+    // Set the mock value for the last archived block (height, hash)
+    archive_mock.last_archived_block =
+        Some((99, "mock_archived_hash".to_string()));
 
     // Create Arcs for the configured mocks
     let db_adapter_arc: Arc<dyn DatabaseAdapter> = Arc::new(db_mock);
