@@ -9,14 +9,10 @@
 use crate::jsonrpc::config::{ConfigError, HttpServerConfig};
 use crate::jsonrpc::error::Error;
 use crate::jsonrpc::infrastructure::state::AppState;
-use axum::{
-    routing::{any_service, get},
-    Router,
-};
+use axum::routing::get;
+use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
 use axum_server::Handle;
-use http_body_util::{BodyExt, Empty};
-use hyper::Response;
 use rustls::pki_types::PrivateKeyDer;
 use rustls_pemfile::certs;
 use std::fs::File;
@@ -35,8 +31,14 @@ use tower_governor::{
     GovernorLayer,
 };
 
-// Imports for CORS
-use tower_http::cors::{Any, CorsLayer};
+use crate::jsonrpc::rpc_methods::{RuskInfoRpcImpl, RuskInfoRpcServer};
+use axum::{
+    extract::{FromRequest, Request, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::post,
+};
+use jsonrpsee::server::RpcModule;
 
 /// Loads TLS configuration from the specified certificate and key files.
 ///
@@ -146,17 +148,108 @@ async fn load_tls_config(
 }
 
 /// Spawns a task to listen for CTRL+C and trigger graceful shutdown via the
-/// provided handle.
-fn spawn_graceful_shutdown_handler(handle: Handle) {
+/// provided axum handle.
+fn spawn_graceful_shutdown_handler(axum_handle: Handle) {
     tokio::spawn(async move {
         signal::ctrl_c()
             .await
             .expect("Failed to install CTRL+C signal handler");
-        info!("Received graceful shutdown signal (CTRL+C). Triggering shutdown...");
+        info!(
+            "Received graceful shutdown signal (CTRL+C). Triggering shutdown..."
+        );
+
+        // Trigger axum server graceful shutdown
         let shutdown_timeout = Duration::from_secs(30);
-        handle.graceful_shutdown(Some(shutdown_timeout));
-        info!("Graceful shutdown initiated (timeout: {:?}). Waiting for connections to close...", shutdown_timeout);
+        axum_handle.graceful_shutdown(Some(shutdown_timeout));
+        info!(
+            "Axum graceful shutdown initiated (timeout: {:?}). Waiting for connections to close...",
+            shutdown_timeout
+        );
     });
+}
+
+/// Custom extractor to get raw request body bytes.
+struct RawBytes(Vec<u8>);
+
+impl<S> FromRequest<S> for RawBytes
+where
+    S: Send + Sync,
+{
+    type Rejection = Response;
+
+    fn from_request(
+        req: Request,
+        _state: &S,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<Self, Self::Rejection>>
+                + Send,
+        >,
+    > {
+        Box::pin(async move {
+            let body = req.into_body();
+            let bytes = axum::body::to_bytes(body, usize::MAX).await.map_err(
+                |err| {
+                    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
+                        .into_response()
+                },
+            )?;
+            Ok(RawBytes(bytes.into()))
+        })
+    }
+}
+
+/// Axum handler for JSON-RPC requests.
+///
+/// This function manually extracts the raw JSON-RPC request body, calls the
+/// `jsonrpsee` RpcModule to process it, and converts the response back into an
+/// Axum response.
+async fn rpc_handler(
+    State(module): State<RpcModule<Arc<AppState>>>, /* Access RpcModule from
+                                                     * state */
+    RawBytes(raw_body): RawBytes, // Use custom extractor for raw body
+) -> Response {
+    const MAX_RESPONSE_SIZE: usize = 1024 * 1024; // Example limit: 1MB
+
+    let body_str = match std::str::from_utf8(&raw_body) {
+        Ok(s) => s,
+        Err(e) => {
+            error!(error = %e, "Failed to decode request body as UTF-8");
+            // Consider returning a JSON-RPC error response here
+            return (StatusCode::BAD_REQUEST, "Invalid UTF-8 in request body")
+                .into_response();
+        }
+    };
+    // Process the raw request using jsonrpsee
+    let (response_result, _stream) =
+        match module.raw_json_request(body_str, MAX_RESPONSE_SIZE).await {
+            Ok(response) => response,
+            Err(e) => {
+                error!(error = %e, "Failed to process JSON-RPC request");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to process RPC request",
+                )
+                    .into_response();
+            }
+        };
+
+    // raw_json_request returns the response string and a stream (for
+    // subscriptions) We ignore the stream for now.
+
+    // Convert the response string into an Axum response
+    // Ensure correct Content-Type header
+    Response::builder()
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(response_result))
+        .unwrap_or_else(|_| {
+            // Fallback if building response fails
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to construct RPC response",
+            )
+                .into_response()
+        })
 }
 
 /// Runs the JSON-RPC server using Axum.
@@ -169,14 +262,17 @@ fn spawn_graceful_shutdown_handler(handle: Handle) {
 /// ## Middleware
 ///
 /// The server applies the following middleware layers:
-/// - **CORS:** A permissive CORS layer (`tower_http::cors::CorsLayer`) allowing
-///   requests from any origin, method, or header.
+/// - **CORS:** Configurable CORS layer via [`JsonRpcConfig::build_cors_layer`].
 /// - **Rate Limiting:** Global rate limiting per IP address using
 ///   `tower_governor::GovernorLayer`, configured by
 ///   `JsonRpcConfig.rate_limit.default_limit`. This is applied only if rate
 ///   limiting is enabled in the config.
-/// - **State:** The shared `AppState` is added as an Axum state layer for
-///   access in handlers.
+///
+/// ## RPC Handling
+///
+/// Requests to the `/rpc` path are routed to a `jsonrpsee` server instance
+/// which handles JSON-RPC method dispatch based on the `RpcModule` configured
+/// with methods from [`crate::jsonrpc::rpc_methods`].
 ///
 /// # Arguments
 ///
@@ -192,31 +288,32 @@ pub async fn run_server(app_state: Arc<AppState>) -> Result<(), Error> {
     // 1. Load TLS configuration
     let rustls_config = load_tls_config(&app_state.config().http).await?;
 
+    // Instantiate the RPC implementation
+    let rpc_impl = RuskInfoRpcImpl::new(app_state.clone());
+    // Create a new RpcModule with AppState context
+    let mut rpc_module = RpcModule::new(app_state.clone());
+    // Merge the implementation
+    rpc_module.merge(rpc_impl.into_rpc()).map_err(|e| {
+        Error::Internal(format!("Failed to merge RuskInfoRpc methods: {}", e))
+    })?;
+    info!("JSON-RPC module prepared and methods merged.");
+
     // 2. Define Axum router
-    let mut router = Router::new()
+    let router = Router::new()
         // Basic health check endpoint
         .route("/health", get(|| async { "OK" }))
-        // Placeholder for the main JSON-RPC endpoint
-        .route(
-            "/rpc",
-            any_service(tower::service_fn(|_req| async {
-                Ok::<_, std::convert::Infallible>(
-                    Response::builder()
-                        .status(hyper::StatusCode::NOT_IMPLEMENTED)
-                        .body(Empty::<axum::body::Bytes>::new().boxed_unsync())
-                        .unwrap(),
-                )
-            })),
-        )
-        // Add the AppState extractor layer
-        .with_state(app_state.clone());
+        // Route /rpc requests to our manual handler
+        .route("/rpc", post(rpc_handler)) // Use post() for RPC handler
+        // Add the RpcModule as state for the handler
+        .with_state(rpc_module);
 
-    // --- Add Governor Rate Limiting Middleware --- START ---
+    // 3. Apply rate limiting if configured using tower-governor
+    let mut router_with_middleware = router; // Create a new variable for clarity
     if app_state.config().rate_limit.enabled {
         info!("Rate limiting enabled. Applying tower-governor middleware...");
 
         let default_limit = &app_state.config().rate_limit.default_limit;
-        let requests = default_limit.requests as u32; // Governor uses u32
+        let requests = default_limit.requests as u32;
         let window = default_limit.window;
 
         let requests_non_zero =
@@ -229,73 +326,64 @@ pub async fn run_server(app_state: Arc<AppState>) -> Result<(), Error> {
             });
 
         if window == Duration::ZERO {
-            error!(window=?window, "Rate limit window must be non-zero. Panicking.");
-            panic!("Invalid rate limit configuration: window cannot be zero");
+            let err_msg = "Rate limit window must be non-zero";
+            error!(window = ?window, error = err_msg);
+            return Err(Error::Config(ConfigError::Validation(format!(
+                "Invalid rate limit configuration: {}",
+                err_msg
+            ))));
         }
 
-        // Build the config using builder methods
+        // Build the governor config
         let governor_config = GovernorConfigBuilder::default()
-            .burst_size(requests_non_zero.get()) // Use .get() to convert NonZeroU32 to u32
+            .burst_size(requests_non_zero.get()) // Use .get() here
             .period(window) // Set replenishment period
             .key_extractor(PeerIpKeyExtractor) // Limit per IP
             .finish()
-            // Since we checked for zero window, finish should return Some.
-            // Panic if finish returns None, indicating an unexpected issue.
-            .expect("Failed to create Governor config from valid parameters");
+            .expect("Failed to create Governor config from valid parameters"); // Handle Option
 
-        // Wrap the config in Arc for the layer
-        let governor_config_arc = Arc::new(governor_config);
-
-        router = router.layer(GovernorLayer {
-            config: governor_config_arc, // Pass the Arc
+        // Apply the GovernorLayer
+        router_with_middleware = router_with_middleware.layer(GovernorLayer {
+            config: Arc::new(governor_config),
         });
 
         info!("tower-governor middleware applied.");
     } else {
-        info!("Rate limiting disabled globally. Skipping tower-governor middleware.");
+        info!(
+            "Global rate limiting disabled. Skipping tower-governor middleware."
+        );
     }
-    // --- Add Governor Rate Limiting Middleware --- END ---
 
-    // --- Add CORS Middleware --- START ---
-    info!("Applying permissive CORS middleware...");
-    let cors_layer = CorsLayer::new()
-        // Allow requests from any origin
-        .allow_origin(Any)
-        // Allow common methods
-        .allow_methods(Any)
-        // Allow all headers
-        .allow_headers(Any);
+    if let Some(cors_layer) = app_state.config().build_cors_layer() {
+        info!("Applying CORS middleware based on configuration...");
+        router_with_middleware = router_with_middleware.layer(cors_layer); // Apply to router_with_middleware
+        info!("CORS middleware applied.");
+    } else {
+        info!("CORS middleware disabled in configuration.");
+    }
 
-    router = router.layer(cors_layer);
-    info!("CORS middleware applied.");
-    // --- Add CORS Middleware --- END ---
-
-    // 3. Prepare for binding and serving
+    // 4. Prepare for binding and serving
     let bind_address = app_state.config().http.bind_address;
-    let handle = Handle::new(); // Create the handle
+    let axum_handle = Handle::new(); // Create the axum handle
 
-    // Spawn the handler task BEFORE starting the server
-    spawn_graceful_shutdown_handler(handle.clone());
+    // Spawn the handler task BEFORE starting the server, passing only axum
+    // handle
+    spawn_graceful_shutdown_handler(axum_handle.clone());
 
     info!(%bind_address, tls_enabled = rustls_config.is_some(), "Attempting to bind server...");
 
-    // 4. Bind and serve using the handle
     let serve_result = if let Some(tls) = rustls_config {
-        // --- Serve HTTPS ---
         info!("Binding HTTPS server to {}...", bind_address);
         axum_server::bind_rustls(bind_address, tls)
-            .handle(handle) // Pass the handle
-            .serve(router.into_make_service_with_connect_info::<SocketAddr>())
-            .await // Await server termination
+            .handle(axum_handle)
+            .serve(router_with_middleware.into_make_service_with_connect_info::<SocketAddr>()) // Use router_with_middleware
+            .await
             .map_err(|e| {
                 error!(address = %bind_address, error = %e, "HTTPS server failed during operation");
                 Error::Transport(format!("HTTPS Server error: {}", e))
             })
     } else {
-        // --- Serve HTTP ---
         info!("Binding HTTP server to {}...", bind_address);
-        // For HTTP, we need to bind the listener first to get the actual
-        // address
         let listener = TcpListener::bind(bind_address).await.map_err(|e| {
             error!(address = %bind_address, error = %e, "Failed to bind HTTP listener");
             Error::Transport(format!("Failed to bind to {}: {}", bind_address, e))
@@ -306,17 +394,15 @@ pub async fn run_server(app_state: Arc<AppState>) -> Result<(), Error> {
         })?;
         info!(address = %actual_addr, "HTTP server listening");
 
-        // Use axum_server::from_tcp to apply the handle
-        // Convert tokio::net::TcpListener to std::net::TcpListener
         let std_listener = listener.into_std().map_err(|e| {
             error!(address = %actual_addr, error = %e, "Failed to convert listener to std");
             Error::Internal(format!("Listener conversion error: {}", e))
         })?;
 
-        axum_server::from_tcp(std_listener) // Pass the std listener
-            .handle(handle) // Pass the handle
-            .serve(router.into_make_service_with_connect_info::<SocketAddr>())
-            .await // Await server termination
+        axum_server::from_tcp(std_listener)
+            .handle(axum_handle)
+            .serve(router_with_middleware.into_make_service_with_connect_info::<SocketAddr>()) // Use router_with_middleware
+            .await
             .map_err(|e| {
                 error!(address = %actual_addr, error = %e, "HTTP server failed during operation");
                 Error::Transport(format!("HTTP Server error: {}", e))
