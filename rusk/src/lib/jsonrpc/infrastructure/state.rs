@@ -408,6 +408,15 @@ impl AppState {
         self.vm_adapter.get_vm_config().await
     }
 
+    /// Retrieves the configured chain ID from the VM adapter.
+    ///
+    /// This is necessary for providing chain context in RPC responses.
+    /// Requires the `chain` feature flag, as the VM adapter depends on it.
+    #[cfg(feature = "chain")]
+    pub async fn get_chain_id(&self) -> Result<u8, VmError> {
+        self.vm_adapter.get_chain_id().await
+    }
+
     // --- New Methods for Provisioner Info --- //
 
     /// Helper function to map internal `StakeData` and the known account public
