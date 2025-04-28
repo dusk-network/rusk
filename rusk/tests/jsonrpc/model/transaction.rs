@@ -6,54 +6,13 @@
 
 //! Tests for JSON-RPC transaction models.
 
-use crate::jsonrpc::utils::{
-    create_mock_ml_tx_response, create_mock_moonlight_group,
-};
+use crate::jsonrpc::utils::create_mock_ml_tx_response;
 use rusk::jsonrpc::model::transaction::{
-    BaseTransaction, ContractEvent, MoonlightEventGroup,
-    MoonlightTransactionData, PhoenixTransactionData, TransactionDataType,
-    TransactionResponse, TransactionStatus, TransactionStatusType,
-    TransactionType,
+    BaseTransaction, MoonlightTransactionData, PhoenixTransactionData,
+    TransactionDataType, TransactionResponse, TransactionStatus,
+    TransactionStatusType, TransactionType,
 };
 use serde_json;
-
-#[test]
-fn contract_event_equality() {
-    let event1 = ContractEvent {
-        target: "target1".to_string(),
-        topic: "topic1".to_string(),
-        data: "data1".to_string(),
-    };
-    let event2 = ContractEvent {
-        target: "target1".to_string(),
-        topic: "topic1".to_string(),
-        data: "data1".to_string(),
-    };
-    let event3 = ContractEvent {
-        target: "target2".to_string(),
-        topic: "topic1".to_string(),
-        data: "data1".to_string(),
-    };
-    assert_eq!(event1, event2);
-    assert_ne!(event1, event3);
-}
-
-#[test]
-fn moonlight_event_group_equality() {
-    let group1 = create_mock_moonlight_group("tx1", 100);
-    let group2 = create_mock_moonlight_group("tx1", 100);
-    let group3 = create_mock_moonlight_group("tx2", 100);
-    let mut group4 = create_mock_moonlight_group("tx1", 100);
-    group4.events.push(ContractEvent {
-        target: "t".into(),
-        topic: "t".into(),
-        data: "d".into(),
-    }); // Add an event
-
-    assert_eq!(group1, group2);
-    assert_ne!(group1, group3);
-    assert_ne!(group1, group4);
-}
 
 #[test]
 fn transaction_type_equality() {
@@ -185,35 +144,6 @@ fn transaction_response_equality() {
     assert_ne!(tx1, tx3); // Different hash
     assert_ne!(tx1, tx4); // Different status option
     assert_ne!(tx1, tx5); // Different transaction data
-}
-
-#[test]
-fn contract_event_serialization() {
-    let event = ContractEvent {
-        target: "0x1234".to_string(),
-        topic: "Transfer".to_string(),
-        data: "0xabcd".to_string(),
-    };
-    let json = serde_json::to_value(event).unwrap();
-    assert_eq!(json["target"], "0x1234");
-    assert_eq!(json["topic"], "Transfer");
-    assert_eq!(json["data"], "0xabcd");
-}
-
-#[test]
-fn moonlight_event_group_serialization() {
-    let mut group = create_mock_moonlight_group("tx_ser", 150);
-    group.events.push(ContractEvent {
-        target: "t".into(),
-        topic: "tp".into(),
-        data: "d".into(),
-    });
-    let json = serde_json::to_value(&group).unwrap();
-    assert_eq!(json["tx_hash"], "tx_ser_150");
-    assert_eq!(json["block_height"], "150"); // String
-    assert!(json["events"].is_array());
-    assert_eq!(json["events"].as_array().unwrap().len(), 1);
-    assert_eq!(json["events"][0]["target"], "t");
 }
 
 #[test]
@@ -468,50 +398,6 @@ fn base_transaction_deserialization() {
     let deserialized_base: BaseTransaction =
         serde_json::from_str(json_str).unwrap();
     assert_eq!(deserialized_base, expected_base);
-}
-
-#[test]
-fn moonlight_event_group_deserialization() {
-    let json_str = r#"
-    {
-        "events": [
-            {
-                "target": "t_deser",
-                "topic": "tp_deser",
-                "data": "d_deser"
-            }
-        ],
-        "tx_hash": "tx_deser_200",
-        "block_height": "200"
-    }
-    "#;
-    let expected_group = MoonlightEventGroup {
-        events: vec![ContractEvent {
-            target: "t_deser".into(),
-            topic: "tp_deser".into(),
-            data: "d_deser".into(),
-        }],
-        tx_hash: "tx_deser_200".into(),
-        block_height: 200,
-    };
-
-    let deserialized_group: MoonlightEventGroup =
-        serde_json::from_str(json_str).unwrap();
-
-    assert_eq!(deserialized_group, expected_group);
-}
-
-#[test]
-fn contract_event_deserialization() {
-    let json_str = r#"{"target": "t_d", "topic": "tp_d", "data": "d_d"}"#;
-    let expected_event = ContractEvent {
-        target: "t_d".into(),
-        topic: "tp_d".into(),
-        data: "d_d".into(),
-    };
-    let deserialized_event: ContractEvent =
-        serde_json::from_str(json_str).unwrap();
-    assert_eq!(deserialized_event, expected_event);
 }
 
 #[test]
