@@ -56,35 +56,9 @@ use std::convert::From;
 // NOTE: Field types use appropriate Rust numerics internally, but
 // large u64 values are serialized as Strings via `serde_helper`.
 
-/// Represents a contract event emitted during transaction execution.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct ContractEvent {
-    /// 32-byte contract address that emitted the event.
-    /// Serialized as a hex string.
-    pub target: String,
-    /// The name or topic identifying the type of event.
-    pub topic: String,
-    /// Event-specific data payload.
-    /// Serialized as a hex string.
-    pub data: String,
-}
-
-/// Groups contract events associated with a single Moonlight transaction.
-///
-/// This is primarily used for retrieving historical event data from archive
-/// nodes.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct MoonlightEventGroup {
-    /// A list of [`ContractEvent`]s emitted by the transaction.
-    pub events: Vec<ContractEvent>,
-    /// 32-byte hash of the transaction that emitted these events.
-    /// Serialized as a 64-character hex string.
-    pub tx_hash: String,
-    /// Height of the block where the transaction was included.
-    /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::u64_to_string")]
-    pub block_height: u64,
-}
+// Removed ContractEvent and MoonlightEventGroup definitions
+// These have been moved to the `archive` module as they primarily relate
+// to data retrieved from the archive.
 
 // --- Base Transaction and Status Types ---
 
@@ -605,40 +579,6 @@ impl From<NodeTransaction> for TransactionResponse {
             base,
             status: None, // Status is unknown when just fetching from block
             transaction_data,
-        }
-    }
-}
-
-/// Converts the node's internal contract event representation
-/// (`node_data::events::contract::ContractEvent`) into the JSON-RPC
-/// `ContractEvent` model.
-#[cfg(feature = "archive")]
-impl From<node_data::events::contract::ContractEvent> for ContractEvent {
-    fn from(node_event: node_data::events::contract::ContractEvent) -> Self {
-        Self {
-            target: node_event.target.to_string(), /* Convert ContractId to
-                                                    * String */
-            topic: node_event.topic,
-            data: hex::encode(node_event.data), // Convert Vec<u8> to hex String
-        }
-    }
-}
-
-/// Converts the node's internal Moonlight event group representation
-/// (`node::archive::MoonlightGroup`) into the JSON-RPC `MoonlightEventGroup`
-/// model.
-#[cfg(feature = "archive")]
-impl From<node::archive::MoonlightGroup> for MoonlightEventGroup {
-    fn from(group: node::archive::MoonlightGroup) -> Self {
-        Self {
-            tx_hash: hex::encode(group.origin()),
-            block_height: group.block_height(),
-            events: group
-                .events()
-                .iter()
-                .cloned()
-                .map(ContractEvent::from)
-                .collect(),
         }
     }
 }
