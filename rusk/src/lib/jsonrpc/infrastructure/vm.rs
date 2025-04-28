@@ -34,6 +34,7 @@ use node_data::ledger::Transaction;
 use node_data::Serializable as NodeSerializable;
 use std::fmt::{self, Debug};
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use crate::jsonrpc::infrastructure::error::VmError;
 use crate::jsonrpc::model::provisioner::{ProvisionerInfo, StakeOwnerInfo};
@@ -364,13 +365,13 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
 
 /// Real implementation of the `VmAdapter` for the Rusk node.
 ///
-/// This struct wraps an `Arc<NodeRusk>` allowing interaction with the main Rusk
-/// node logic.
+/// This struct wraps an `Arc<tokio::sync::RwLock<NodeRusk>>` allowing
+/// interaction with the main Rusk node logic, ensuring thread-safe access.
 #[cfg(feature = "chain")]
 #[derive(Clone)]
 pub struct RuskVmAdapter {
-    /// Shared access to the main Rusk node instance.
-    node_rusk: Arc<NodeRusk>,
+    /// Shared, lock-protected access to the main Rusk node instance.
+    node_rusk_lock: Arc<RwLock<NodeRusk>>,
 }
 
 #[cfg(feature = "chain")]
@@ -379,19 +380,20 @@ impl RuskVmAdapter {
     ///
     /// # Arguments
     ///
-    /// * `node_rusk` - An `Arc<NodeRusk>` pointing to the main Rusk node
-    ///   instance.
-    pub fn new(node_rusk: Arc<NodeRusk>) -> Self {
-        Self { node_rusk }
+    /// * `node_rusk_lock` - An `Arc<tokio::sync::RwLock<NodeRusk>>` pointing to
+    ///   the main Rusk node instance, typically obtained from
+    ///   `node.inner().vm_handler()`.
+    pub fn new(node_rusk_lock: Arc<RwLock<NodeRusk>>) -> Self {
+        Self { node_rusk_lock }
     }
 }
 
-// Manual Debug implementation to prevent leaking sensitive info
+// Manual Debug implementation
 #[cfg(feature = "chain")]
 impl fmt::Debug for RuskVmAdapter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("RuskVmAdapter")
-            .field("node_rusk", &"Arc<node::Rusk>") // Updated field name
+            .field("node_rusk_lock", &"Arc<tokio::sync::RwLock<node::Rusk>>")
             .finish_non_exhaustive()
     }
 }
@@ -431,7 +433,6 @@ impl VmAdapter for RuskVmAdapter {
         &self,
         tx_bytes: Vec<u8>,
     ) -> Result<SimulationResult, VmError> {
-        // Deserialize transaction for VM execution
         let tx = Transaction::read(&mut tx_bytes.as_slice()).map_err(|e| {
             VmError::QueryFailed(format!(
                 "Failed to deserialize transaction: {}",
@@ -439,22 +440,19 @@ impl VmAdapter for RuskVmAdapter {
             ))
         })?;
 
-        // Clone node for blocking call
-        let node = Arc::clone(&self.node_rusk);
+        // Clone the lock Arc to move into the blocking task
+        let node_rusk_lock = self.node_rusk_lock.clone();
 
-        // Use current state root as base commit
-        let base_commit = node.state_root();
-
-        // Perform execution in blocking thread to avoid blocking the async
-        // runtime
         tokio::task::spawn_blocking(move || {
-            // Initialize a VM session for simulation with dummy height (0)
-            let mut session = node
+            // Acquire lock synchronously inside the blocking task
+            let node_guard = node_rusk_lock.blocking_read();
+            let base_commit = node_guard.state_root();
+
+            // Initialize a VM session using the guard
+            let mut session = node_guard
                 .new_block_session(0, base_commit)
                 .map_err(|e| VmError::ExecutionFailed(e.to_string()))?;
-            // Build execution config from VM settings (dummy height)
-            let config = node.vm_config.to_execution_config(0);
-            // Execute transaction using the underlying protocol transaction
+            let config = node_guard.vm_config.to_execution_config(0);
             let receipt = execute(&mut session, &tx.inner, &config);
             // Map to SimulationResult
             let sim = match receipt {
@@ -479,7 +477,6 @@ impl VmAdapter for RuskVmAdapter {
         &self,
         tx_bytes: Vec<u8>,
     ) -> Result<PreverificationResult, VmError> {
-        // Deserialize transaction
         let tx = Transaction::read(&mut tx_bytes.as_slice()).map_err(|e| {
             VmError::QueryFailed(format!(
                 "Failed to deserialize transaction: {}",
@@ -487,11 +484,15 @@ impl VmAdapter for RuskVmAdapter {
             ))
         })?;
 
-        // Clone node for blocking preverification call
-        let node = Arc::clone(&self.node_rusk);
+        // Clone the lock Arc to move into the blocking task
+        let node_rusk_lock = self.node_rusk_lock.clone();
 
         tokio::task::spawn_blocking(move || {
-            node.preverify(&tx)
+            // Acquire lock synchronously inside the blocking task
+            let node_guard = node_rusk_lock.blocking_read();
+            // Call the original method on the guard
+            node_guard
+                .preverify(&tx)
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
@@ -502,16 +503,12 @@ impl VmAdapter for RuskVmAdapter {
     ///
     /// Spawns a blocking task to delegate the call to `node::Rusk::chain_id`.
     async fn get_chain_id(&self) -> Result<u8, VmError> {
-        // Clone node for blocking call
-        let node = Arc::clone(&self.node_rusk);
-
-        tokio::task::spawn_blocking(move || {
-            // Delegate to the underlying node::Rusk method
-            node.chain_id()
-                .map_err(|e| VmError::QueryFailed(e.to_string()))
-        })
-        .await
-        .map_err(|e| VmError::InternalError(e.to_string()))?
+        // Acquire read lock asynchronously for quick read
+        let node_guard = self.node_rusk_lock.read().await;
+        // Delegate to the underlying method (assuming it's quick)
+        node_guard
+            .chain_id()
+            .map_err(|e| VmError::QueryFailed(e.to_string()))
     }
 
     /// Retrieves account data (balance and nonce) for a given public key from
@@ -522,13 +519,16 @@ impl VmAdapter for RuskVmAdapter {
         &self,
         pk: &BlsPublicKey,
     ) -> Result<AccountData, VmError> {
-        // Clone required data for the blocking task
-        let node = Arc::clone(&self.node_rusk);
+        // Clone the lock Arc and key for the blocking task
+        let node_rusk_lock = self.node_rusk_lock.clone();
         let key = *pk; // Copy pk so it can be moved
 
         tokio::task::spawn_blocking(move || {
-            // Delegate to the underlying node::Rusk method
-            node.account(&key)
+            // Acquire lock synchronously inside the blocking task
+            let node_guard = node_rusk_lock.blocking_read();
+            // Call the original method on the guard
+            node_guard
+                .account(&key)
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
@@ -536,13 +536,15 @@ impl VmAdapter for RuskVmAdapter {
     }
 
     async fn get_state_root(&self) -> Result<[u8; 32], VmError> {
-        Ok(self.node_rusk.state_root())
+        // Acquire read lock asynchronously for quick read
+        Ok(self.node_rusk_lock.read().await.state_root())
     }
 
     /// Retrieves the gas limit for a block directly from the Rusk node's
     /// config.
     async fn get_block_gas_limit(&self) -> Result<u64, VmError> {
-        Ok(self.node_rusk.vm_config.block_gas_limit)
+        // Acquire read lock asynchronously for quick read
+        Ok(self.node_rusk_lock.read().await.vm_config.block_gas_limit)
     }
 
     /// Retrieves the full details (StakeKeys, StakeData) for all current
@@ -553,32 +555,25 @@ impl VmAdapter for RuskVmAdapter {
     async fn get_provisioners(
         &self,
     ) -> Result<Vec<(StakeKeys, StakeData)>, VmError> {
-        // Use current state root implicitly via node.provisioners(None)
-        // let base_commit = self.node_rusk.state_root(); // Not needed as None
-        // implies current
-        let node = Arc::clone(&self.node_rusk);
+        // Clone the lock Arc for the blocking task
+        let node_rusk_lock = self.node_rusk_lock.clone();
 
         tokio::task::spawn_blocking(
             move || -> Result<Vec<(StakeKeys, StakeData)>, String> {
-                // node.provisioners returns Result<impl Iterator>
+                // Acquire lock synchronously inside the blocking task
+                let node_guard = node_rusk_lock.blocking_read();
                 let provisioner_iter =
-                    node.provisioners(None).map_err(|e| {
+                    node_guard.provisioners(None).map_err(|e| {
                         format!("Failed to get provisioners iterator: {}", e)
                     })?;
-
-                // Collect the results from the iterator.
-                // Assuming the iterator yields (StakeKeys, StakeData) directly
-                // based on expect() usage in NodeRusk::provisioners.
-                // If iterator yields Result, need to handle errors during
-                // collection.
                 let details: Vec<(StakeKeys, StakeData)> =
                     provisioner_iter.collect();
                 Ok(details)
             },
         )
         .await
-        .map_err(|e| VmError::InternalError(format!("Task join error: {}", e)))? // Handle JoinError
-        .map_err(VmError::QueryFailed) // Map inner String error to QueryFailed
+        .map_err(|e| VmError::InternalError(format!("Task join error: {}", e)))?
+        .map_err(VmError::QueryFailed)
     }
 
     /// Retrieves stake information for a single provisioner by their BLS public
@@ -587,17 +582,17 @@ impl VmAdapter for RuskVmAdapter {
         &self,
         pk: &BlsPublicKey,
     ) -> Result<Option<Stake>, VmError> {
+        // Clone the lock Arc and key for the blocking task
+        let node_rusk_lock = self.node_rusk_lock.clone();
         let key = *pk;
-        let node = Arc::clone(&self.node_rusk);
 
         tokio::task::spawn_blocking(move || {
-            // NodeRusk::provisioner returns Result<Option<StakeData>>
-            // We need to map StakeData -> Stake for this method signature
-            node.provisioner(&key)
+            // Acquire lock synchronously inside the blocking task
+            let node_guard = node_rusk_lock.blocking_read();
+            node_guard
+                .provisioner(&key)
                 .map(|stake_data_option| {
                     stake_data_option.map(|stake_data| {
-                        // Extract value and eligibility from StakeData to
-                        // create Stake
                         let amount = stake_data.amount.unwrap_or_default();
                         Stake::new(amount.value, amount.eligibility)
                     })
@@ -605,9 +600,7 @@ impl VmAdapter for RuskVmAdapter {
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
         })
         .await
-        .map_err(|e| VmError::InternalError(e.to_string()))? // Handle JoinError
-                                                             // first
-                                                             // The inner Result<Result<Option<Stake>, VmError>, JoinError> needs careful unwrapping
+        .map_err(|e| VmError::InternalError(e.to_string()))?
     }
 
     /// Executes a read-only query on a contract at a specific state commit
@@ -621,21 +614,22 @@ impl VmAdapter for RuskVmAdapter {
         base_commit: [u8; 32],
         args_bytes: Vec<u8>,
     ) -> Result<Vec<u8>, VmError> {
-        // Clone the node for the blocking call
-        let node = Arc::clone(&self.node_rusk);
+        // Clone the lock Arc for the blocking task
+        let node_rusk_lock = self.node_rusk_lock.clone();
 
         tokio::task::spawn_blocking(move || {
-            // Create a session at the specified base commit
-            let mut session = node
+            // Acquire lock synchronously inside the blocking task
+            let node_guard = node_rusk_lock.blocking_read();
+            // Create a session at the specified base commit using the guard
+            let mut session = node_guard
                 .query_session(Some(base_commit))
                 .map_err(|e| VmError::QueryFailed(e.to_string()))?;
-            // Perform a raw contract call with the full block gas limit
             let receipt = session
                 .call_raw(
                     contract_id,
                     method.as_ref(),
                     args_bytes,
-                    node.vm_config.block_gas_limit,
+                    node_guard.vm_config.block_gas_limit, // Use guard here too
                 )
                 .map_err(|e| VmError::QueryFailed(e.to_string()))?;
             Ok(receipt.data)
@@ -647,6 +641,7 @@ impl VmAdapter for RuskVmAdapter {
     /// Retrieves the VM configuration settings directly from the Rusk node's
     /// config.
     async fn get_vm_config(&self) -> Result<RuskVmConfig, VmError> {
-        Ok(self.node_rusk.vm_config.clone())
+        // Acquire read lock asynchronously for quick read
+        Ok(self.node_rusk_lock.read().await.vm_config.clone())
     }
 }
