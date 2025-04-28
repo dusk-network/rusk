@@ -3,16 +3,3 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-
-//! Integration tests for the JSON-RPC functionality.
-
-// Declare test modules within this directory
-pub mod config;
-pub mod error;
-pub mod infrastructure;
-pub mod model;
-pub mod rpc_methods;
-pub mod server;
-pub mod serde_helpers;
-
-pub mod utils;
