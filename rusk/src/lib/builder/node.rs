@@ -26,8 +26,10 @@ use tracing::{error, info, warn};
 use {dusk_bytes::Serializable, node::archive::Archive, tracing::debug};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
+
 #[cfg(feature = "jsonrpc-server")]
 use crate::jsonrpc::config::JsonRpcConfig;
+
 use crate::node::{ChainEventStreamer, RuskNode, RuskVmConfig, Services};
 use crate::{Rusk, VERSION};
 
@@ -361,8 +363,9 @@ impl RuskNodeBuilder {
         node.inner().spawn_all(service_list).await?;
 
         // --- Conditionally Initialize JSON-RPC Components --- START ---
-        #[cfg(feature = "jsonrpc-server")]
+
         // Gate the entire JSON-RPC setup block
+        #[cfg(feature = "jsonrpc-server")]
         {
             if let Some(config) = jsonrpc_config {
                 info!("JSON-RPC server enabled. Creating Adapters and AppState...");
@@ -371,7 +374,7 @@ impl RuskNodeBuilder {
                 let db_handle = node.db().clone(); // Arc<RwLock<Backend>>
                 let archive_handle = node.archive().clone(); // This gets an owned Archive
                 let network_handle = node.network().clone(); // Arc<Kadcast>
-                let _vm_handle = node.inner().vm_handler(); // Access VM handler via inner
+                let vm_handle = node.inner().vm_handler(); // Access VM handler via inner
 
                 // - Create RuskDbAdapter
                 let db_adapter: Arc<
@@ -415,8 +418,6 @@ impl RuskNodeBuilder {
                 let vm_adapter = {
                     use crate::jsonrpc::infrastructure::vm::RuskVmAdapter;
                     info!("Creating RuskVmAdapter...");
-                    // Get the Arc<RwLock<Rusk>> handle
-                    let vm_handle = node.inner().vm_handler();
                     // Pass it to the updated constructor
                     let adapter = Arc::new(RuskVmAdapter::new(vm_handle));
                     info!("RuskVmAdapter created.");
@@ -429,16 +430,12 @@ impl RuskNodeBuilder {
 
                 // Subscription Manager
                 use crate::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
-                let subscription_manager = SubscriptionManager::default(); // Directly use, as it likely needs Arc internally or AppState
-                                                                           // wraps
-                                                                           // it
+                let subscription_manager = SubscriptionManager::default();
                 info!("SubscriptionManager created.");
 
                 // Metrics Collector
                 use crate::jsonrpc::infrastructure::metrics::MetricsCollector;
-                let metrics_collector = MetricsCollector::default(); // Directly use, as it likely needs Arc internally or AppState
-                                                                     // wraps
-                                                                     // it
+                let metrics_collector = MetricsCollector::default();
                 info!("MetricsCollector created.");
 
                 // Rate Limiters
@@ -470,8 +467,8 @@ impl RuskNodeBuilder {
                         config.clone(),       // Pass owned config
                         db_adapter,           // Arc<dyn DatabaseAdapter>
                         archive_adapter,      // Arc<dyn ArchiveAdapter>
-                        network_adapter,      // Arc<RuskNetworkAdapter>
-                        vm_adapter,           // Arc<RuskVmAdapter>
+                        network_adapter,      // Arc<dyn NetworkAdapter>
+                        vm_adapter,           // Arc<dyn VmAdapter>
                         subscription_manager, // Pass owned manager
                         metrics_collector,    // Pass owned collector
                         manual_rate_limiters, // Pass owned limiters
