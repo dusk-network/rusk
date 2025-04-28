@@ -80,7 +80,7 @@ node-data = { workspace = true, optional = true }
 async-graphql = { workspace = true }
 
 ## RUES deps
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
 
 ## Ephemeral dependencies
 tempfile = { workspace = true, optional = true }
