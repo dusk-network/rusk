@@ -1973,6 +1973,7 @@ dependencies = [
  "async-trait",
  "axum",
  "axum-server",
+ "base64 0.22.1",
  "blake3",
  "bs58",
  "bytecheck",
