@@ -92,13 +92,10 @@ async fn load_tls_config(
 
     if cert_chain.is_empty() {
         error!(path = %cert_path.display(), "No valid PEM certificates found in file");
-        return Err(Error::Config(ConfigError::Validation(
-            format!(
-                "No valid PEM certificates found in {}",
-                cert_path.display()
-            )
-            .into(),
-        )));
+        return Err(Error::Config(ConfigError::Validation(format!(
+            "No valid PEM certificates found in {}",
+            cert_path.display()
+        ))));
     }
 
     let key_file = File::open(key_path).map_err(|e| {
@@ -123,13 +120,10 @@ async fn load_tls_config(
             Some(_) => continue,
             None => {
                 error!(path = %key_path.display(), "No valid PEM private keys found in file");
-                return Err(Error::Config(ConfigError::Validation(
-                    format!(
-                        "No valid PEM private keys found in {}",
-                        key_path.display()
-                    )
-                    .into(),
-                )));
+                return Err(Error::Config(ConfigError::Validation(format!(
+                    "No valid PEM private keys found in {}",
+                    key_path.display()
+                ))));
             }
         }
     };
@@ -225,7 +219,6 @@ pub async fn run_server(app_state: Arc<AppState>) -> Result<(), Error> {
         let requests = default_limit.requests as u32; // Governor uses u32
         let window = default_limit.window;
 
-        // Ensure requests and window are non-zero to avoid governor panics
         let requests_non_zero =
             NonZeroU32::new(requests).unwrap_or_else(|| {
                 error!(
@@ -240,26 +233,21 @@ pub async fn run_server(app_state: Arc<AppState>) -> Result<(), Error> {
             panic!("Invalid rate limit configuration: window cannot be zero");
         }
 
+        // Build the config using builder methods
         let governor_config = GovernorConfigBuilder::default()
-            .per(window) // Use per-window duration
-            .burst_size(requests_non_zero) // Set burst size
+            .burst_size(requests_non_zero.get()) // Use .get() to convert NonZeroU32 to u32
+            .period(window) // Set replenishment period
             .key_extractor(PeerIpKeyExtractor) // Limit per IP
             .finish()
-            .map_err(|e| {
-                Error::Internal(format!(
-                    "Failed to create Governor config: {}",
-                    e
-                ))
-            })?; // Handle potential config error
+            // Since we checked for zero window, finish should return Some.
+            // Panic if finish returns None, indicating an unexpected issue.
+            .expect("Failed to create Governor config from valid parameters");
 
-        // Note: GovernorLayer requires the config to be 'static.
-        // Leaking or using Arc might be needed if config needs mutation,
-        // but here we build it once.
-        // Using Box::leak as shown in tower-governor examples for simplicity.
-        let governor_config_leaked = Box::leak(Box::new(governor_config));
+        // Wrap the config in Arc for the layer
+        let governor_config_arc = Arc::new(governor_config);
 
         router = router.layer(GovernorLayer {
-            config: governor_config_leaked,
+            config: governor_config_arc, // Pass the Arc
         });
 
         info!("tower-governor middleware applied.");
