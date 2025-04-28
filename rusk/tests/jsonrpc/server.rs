@@ -6,6 +6,8 @@
 
 //! Integration tests for the JSON-RPC server startup and basic functionality.
 
+use crate::jsonrpc::utils::get_ephemeral_port;
+
 // Use available helpers from utils.rs
 use super::utils::{
     create_test_app_state, create_test_app_state_with_addr, MockArchiveAdapter,
@@ -24,6 +26,7 @@ use rusk::jsonrpc::infrastructure::state::AppState;
 use rusk::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
 use rusk::jsonrpc::server::run_server;
 use rustls::crypto::ring;
+use serde_json::json;
 use std::fs;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
@@ -96,10 +99,22 @@ fn create_custom_app_state(config: JsonRpcConfig) -> AppState {
 
 #[tokio::test]
 async fn test_server_starts_http() {
-    // 1. Setup: Use helper that ensures default port 8546
-    let app_state = Arc::new(create_test_app_state());
+    // 1. Setup: Get an ephemeral port and configure AppState
+    let ephemeral_addr =
+        get_ephemeral_port().expect("Failed to get an ephemeral port");
+    println!("Using ephemeral port: {}", ephemeral_addr.port());
+
+    let mut config = JsonRpcConfig::test_config(); // Start with test defaults
+                                                   // Ensure HTTP config uses the ephemeral address
+    config.http.bind_address = ephemeral_addr;
+    // Disable TLS for this HTTP test
+    config.http.cert = None;
+    config.http.key = None;
+
+    let app_state = Arc::new(create_custom_app_state(config));
+    // Verify address in config matches the one we obtained
     let addr = app_state.config().http.bind_address;
-    assert_eq!(addr.port(), 8546, "Test assumes default HTTP port 8546");
+    assert_eq!(addr, ephemeral_addr, "Config address mismatch");
 
     // 2. Action: Spawn server
     let mut server_task = tokio::spawn(run_server(app_state.clone()));
@@ -109,7 +124,7 @@ async fn test_server_starts_http() {
 
     // 3. Assert: Try connecting while monitoring the server task
     let client = reqwest::Client::new();
-    let health_url = format!("http://{}/health", addr);
+    let health_url = format!("http://{}/health", addr); // addr is now ephemeral
 
     // Define the client request future separately
     let client_request_future = async {
@@ -524,4 +539,184 @@ async fn test_rate_limiting() {
             e
         ),
     }
+}
+
+#[tokio::test]
+async fn test_basic_rpc_call_get_node_info() {
+    // 1. Setup: Use helper to create AppState with default config (HTTP)
+    let app_state = Arc::new(create_test_app_state());
+    let addr = app_state.config().http.bind_address;
+    assert_eq!(addr.port(), 8546, "Test assumes default HTTP port 8546");
+
+    // 2. Action: Spawn server
+    let mut server_task = tokio::spawn(run_server(app_state.clone()));
+
+    // Allow time for server to start
+    sleep(Duration::from_millis(1500)).await;
+
+    // 3. Assert: Send RPC request and verify response
+    let client = reqwest::Client::new();
+    let rpc_url = format!("http://{}/rpc", addr);
+
+    let request_body = json!({
+        "jsonrpc": "2.0",
+        "method": "rusk_getNodeInfo", // Use the correct namespaced method name
+        "params": [],
+        "id": 1
+    });
+
+    let client_request_future =
+        client.post(&rpc_url).json(&request_body).send();
+
+    tokio::select! {
+        biased;
+        // Case 1: Server task finishes (or crashes) first
+        server_result = &mut server_task => {
+            panic!("Server task exited unexpectedly before RPC client could connect: {:?}", server_result);
+        }
+        // Case 2: Client request completes first
+        client_response_result = client_request_future => {
+            match client_response_result {
+                Ok(response) => {
+                    assert_eq!(response.status(), StatusCode::OK, "RPC request status mismatch");
+                    let body_text = response.text().await.unwrap_or_else(|_| "Failed to get body text".to_string());
+                    println!("RPC Response Body: {}", body_text);
+                    let body_json: serde_json::Value = serde_json::from_str(&body_text).expect("Failed to parse RPC response as JSON");
+
+                    assert!(body_json.get("error").is_none(), "RPC response contained an error: {:#?}", body_json["error"]);
+                    assert!(body_json.get("result").is_some(), "RPC response missing 'result' field");
+                    assert_eq!(body_json["id"], 1, "RPC response ID mismatch");
+
+                    // Verify structure of the 'result' object (NodeInfo)
+                    let result = &body_json["result"];
+                    assert!(result["version"].is_string(), "Result 'version' field is not a string");
+                    assert!(result["chainId"].is_number(), "Result 'chainId' field is not a number");
+                    assert!(result["jsonrpcHttpAddress"].is_string(), "Result 'jsonrpcHttpAddress' field is not a string");
+                    // Check specific values if necessary (e.g., default chainId)
+                    // Note: This assumes the test runs without the 'chain' feature enabled, or that the mock VmAdapter returns 0.
+                    assert_eq!(result["chainId"].as_u64().unwrap_or(999), 0, "Expected default chainId 0"); // Use unwrap_or for robustness
+                    assert_eq!(result["jsonrpcHttpAddress"].as_str().unwrap(), addr.to_string());
+
+                    println!("RPC call rusk_getNodeInfo successful.");
+                }
+                Err(e) => {
+                    // Client failed. Await the server task to see its fate.
+                     match server_task.await {
+                        Ok(Ok(())) => panic!(
+                            "RPC Client request failed ({:?}), but server task completed successfully?", e
+                        ),
+                        Ok(Err(server_err)) => panic!(
+                            "RPC Client request failed ({:?}). Server task failed: {:?}", e, server_err
+                        ),
+                        Err(join_err) => panic!(
+                            "RPC Client request failed ({:?}). Server task panicked: {:?}", e, join_err
+                        ),
+                    }
+                }
+            }
+        }
+        // Case 3: Timeout
+         _ = sleep(Duration::from_secs(10)) => {
+            panic!("Test timed out waiting for RPC client request or server exit.");
+        }
+    }
+
+    // 4. Cleanup (only reached if client request succeeded)
+    println!("Aborting server task after successful RPC call.");
+    server_task.abort();
+    match server_task.await {
+        Ok(Ok(())) => println!("Server task finished ok after abort."),
+        Ok(Err(e)) => {
+            eprintln!("Server task finished with error after abort: {}", e)
+        }
+        Err(e) if e.is_cancelled() => {
+            println!("Server task cancelled successfully.")
+        }
+        Err(e) => {
+            eprintln!("Server task panicked during abort/shutdown: {:?}", e)
+        }
+    }
+}
+
+#[tokio::test]
+async fn test_rpc_method_via_server() {
+    // 1. Setup: Start server on an ephemeral port
+    let ephemeral_addr =
+        get_ephemeral_port().expect("Failed to get ephemeral port");
+    println!(
+        "Integration test using ephemeral port: {}",
+        ephemeral_addr.port()
+    );
+
+    let mut config = JsonRpcConfig::test_config();
+    config.http.bind_address = ephemeral_addr;
+    config.http.cert = None; // Ensure HTTP for this test
+    config.http.key = None;
+
+    let app_state = Arc::new(create_custom_app_state(config));
+    let addr = app_state.config().http.bind_address;
+
+    // 2. Action: Spawn server
+    let mut server_task = tokio::spawn(run_server(app_state.clone()));
+
+    // Allow time for server to start
+    sleep(Duration::from_millis(1500)).await;
+
+    // 3. Assert: Send RPC request via HTTP and verify response
+    let client = reqwest::Client::new();
+    let rpc_url = format!("http://{}/rpc", addr);
+
+    let request_body = json!({
+        "jsonrpc": "2.0",
+        "method": "rusk_getNodeInfo",
+        "params": [],
+        "id": "test-integration-rpc-1"
+    });
+
+    let client_request_future =
+        client.post(&rpc_url).json(&request_body).send();
+
+    tokio::select! {
+        biased;
+        server_result = &mut server_task => {
+            panic!("Server task exited unexpectedly (RPC method test): {:?}", server_result);
+        }
+        client_response_result = client_request_future => {
+            match client_response_result {
+                Ok(response) => {
+                    assert_eq!(response.status(), StatusCode::OK, "RPC method request status mismatch");
+                    let body_text = response.text().await.unwrap_or_else(|_| "Failed to get body text".to_string());
+                    println!("RPC Method Response Body: {}", body_text);
+                    let body_json: serde_json::Value = serde_json::from_str(&body_text).expect("Failed to parse RPC method response as JSON");
+
+                    assert!(body_json.get("error").is_none(), "RPC method response contained an error: {:#?}", body_json.get("error"));
+                    assert!(body_json.get("result").is_some(), "RPC method response missing 'result' field");
+                    assert_eq!(body_json["id"], "test-integration-rpc-1", "RPC method response ID mismatch");
+
+                    let result = &body_json["result"];
+                    assert!(result["version"].is_string());
+                    assert_eq!(result["chainId"].as_u64().unwrap_or(999), 0);
+                    assert_eq!(result["jsonrpcHttpAddress"].as_str().unwrap(), addr.to_string());
+
+                    println!("RPC method call rusk_getNodeInfo via server successful.");
+                }
+                Err(e) => {
+                     match server_task.await {
+                        Ok(Ok(())) => panic!("RPC Method Client request failed ({:?}), but server task OK?", e),
+                        Ok(Err(server_err)) => panic!("RPC Method Client request failed ({:?}). Server failed: {:?}", e, server_err),
+                        Err(join_err) => panic!("RPC Method Client request failed ({:?}). Server panicked: {:?}", e, join_err),
+                    }
+                }
+            }
+        }
+         _ = sleep(Duration::from_secs(10)) => {
+            panic!("Test timed out waiting for RPC method client request or server exit.");
+        }
+    }
+
+    // 4. Cleanup
+    println!("Aborting server task after successful RPC method call.");
+    server_task.abort();
+    // Suppress shutdown errors/cancellations in test output for brevity
+    let _ = server_task.await;
 }
