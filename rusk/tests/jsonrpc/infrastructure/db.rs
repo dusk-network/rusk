@@ -369,15 +369,17 @@ async fn mock_archive_get_moonlight_txs_found() {
     let group2 = create_mock_moonlight_group("tx_def", 95);
     let mut txs_by_memo = HashMap::new();
     txs_by_memo
-        .insert("aabbcc".to_string(), vec![group1.clone(), group2.clone()]);
+        .insert(b"aabbcc".to_vec(), vec![group1.clone(), group2.clone()]);
     let adapter = MockArchiveAdapter {
         txs_by_memo,
         ..Default::default()
     };
 
-    let result = adapter.get_moonlight_txs_by_memo("aabbcc").await;
+    let result = adapter.get_moonlight_txs_by_memo(b"aabbcc".to_vec()).await;
     assert!(result.is_ok());
-    let groups = result.unwrap();
+    let groups_opt = result.unwrap();
+    assert!(groups_opt.is_some());
+    let groups = groups_opt.unwrap();
     assert_eq!(groups.len(), 2);
     assert_eq!(groups[0], group1);
     assert_eq!(groups[1], group2);
@@ -386,9 +388,10 @@ async fn mock_archive_get_moonlight_txs_found() {
 #[tokio::test]
 async fn mock_archive_get_moonlight_txs_not_found() {
     let adapter = MockArchiveAdapter::default();
-    let result = adapter.get_moonlight_txs_by_memo("ffffff").await;
+    let result = adapter.get_moonlight_txs_by_memo(b"ffffff".to_vec()).await;
     assert!(result.is_ok());
-    assert!(result.unwrap().is_empty());
+    let groups_opt = result.unwrap();
+    assert!(groups_opt.map_or(true, |g| g.is_empty()));
 }
 
 #[tokio::test]
@@ -399,7 +402,7 @@ async fn mock_archive_get_moonlight_txs_error() {
         ..Default::default()
     };
 
-    let result = adapter.get_moonlight_txs_by_memo("aabbcc").await;
+    let result = adapter.get_moonlight_txs_by_memo(b"aabbcc".to_vec()).await;
     assert!(result.is_err());
     assert_eq!(result.err().unwrap(), forced_error);
 }
@@ -407,7 +410,7 @@ async fn mock_archive_get_moonlight_txs_error() {
 #[tokio::test]
 async fn mock_archive_get_last_height_success() {
     let adapter = MockArchiveAdapter {
-        last_height: 98,
+        last_archived_block: Some((98, "dummy_hash".to_string())),
         ..Default::default()
     };
 
@@ -444,28 +447,56 @@ mod rusk_archive_adapter_tests {
     #[tokio::test]
     async fn rusk_archive_get_last_height() {
         let (_temp_dir, archive): (_, Archive) = setup_test_archive().await;
-        let last_height = archive.last_finalized_block_height();
-        assert_eq!(last_height, 0);
+        // Check the result of the direct call first
+        let direct_result = archive.fetch_last_finalized_block().await;
+        let expected_height =
+            direct_result.as_ref().map(|(h, _)| *h).unwrap_or(0);
 
         let adapter = RuskArchiveAdapter::new(Arc::new(archive));
-        let result = adapter.get_last_archived_block_height().await;
+        let adapter_result = adapter.get_last_archived_block_height().await;
 
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), last_height);
+        // If the direct call failed (e.g., empty archive), expect adapter error
+        // Otherwise, expect Ok with the same height
+        match direct_result {
+            Err(_) => {
+                assert!(adapter_result.is_err());
+                assert_matches::assert_matches!(
+                    adapter_result.unwrap_err(),
+                    ArchiveError::QueryFailed(_)
+                );
+            }
+            Ok(_) => {
+                assert!(adapter_result.is_ok());
+                assert_eq!(adapter_result.unwrap(), expected_height);
+            }
+        }
     }
 
     #[tokio::test]
-    async fn rusk_archive_get_moonlight_txs_invalid_hex() {
+    async fn rusk_archive_get_moonlight_history_invalid_base58() {
         let (_temp_dir, archive) = setup_test_archive().await;
         let adapter = RuskArchiveAdapter::new(Arc::new(archive));
-        let result = adapter.get_moonlight_txs_by_memo("invalid-hex").await;
+        // Call the correct method with invalid base58
+        let result = adapter
+            .get_moonlight_transaction_history(
+                "invalid-base58-*&^".to_string(), // Invalid base58 input
+                None,
+                None,
+                None,
+            )
+            .await;
 
-        assert!(result.is_err());
+        assert!(result.is_err()); // Expecting an error
         match result.err().unwrap() {
             ArchiveError::QueryFailed(msg) => {
-                assert!(msg.contains("Invalid hex memo"))
+                // Check if the error message indicates invalid base58 or pk
+                // bytes
+                assert!(
+                    msg.contains("Invalid Base58")
+                        || msg.contains("Invalid public key bytes")
+                )
             }
-            _ => panic!("Unexpected error type"),
+            _ => panic!("Unexpected error type, expected QueryFailed"),
         }
     }
 
@@ -474,10 +505,13 @@ mod rusk_archive_adapter_tests {
         let (_temp_dir, archive) = setup_test_archive().await;
         let adapter = RuskArchiveAdapter::new(Arc::new(archive));
         let valid_memo_hex = hex::encode([1u8; 32]);
-        let result = adapter.get_moonlight_txs_by_memo(&valid_memo_hex).await;
+        let result = adapter
+            .get_moonlight_txs_by_memo(hex::decode(&valid_memo_hex).unwrap())
+            .await;
 
         assert!(result.is_ok());
-        assert!(result.unwrap().is_empty());
+        let groups_opt = result.unwrap();
+        assert!(groups_opt.map_or(true, |g| g.is_empty()));
     }
 }
 
@@ -489,7 +523,7 @@ mod rusk_db_adapter_tests {
     use rusk::jsonrpc::infrastructure::db::{DatabaseAdapter, RuskDbAdapter};
     use rusk::jsonrpc::infrastructure::error::DbError;
     use std::sync::Arc;
-    use tokio::sync::RwLock; // Need RwLock
+    use tokio::sync::RwLock;
 
     #[tokio::test]
     async fn rusk_db_get_block_by_hash_invalid_hex() {
