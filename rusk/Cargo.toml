@@ -124,7 +124,7 @@ rusk-prover = { workspace = true, features = ["no_random", "debug"] }
 criterion = { workspace = true }
 futures = { workspace = true }
 assert_matches = { workspace = true }
-rcgen = "0.13"
+rcgen = { version = "0.13", features = ["pem"] }
 tempfile = { workspace = true }
 
 [build-dependencies]
