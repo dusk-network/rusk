@@ -60,3 +60,36 @@ pub mod opt_u64_to_string {
             .transpose()
     }
 }
+
+/// Serialize/deserialize `Vec<u8>` to/from Base64 string.
+pub mod base64_vec_u8 {
+    use serde::{Deserialize, Deserializer, Serializer};
+    // Import the Engine trait to get access to the encode/decode methods
+    use base64::Engine as _;
+
+    /// Serializes `Vec<u8>` to a Base64 string using the standard engine.
+    pub fn serialize<S>(
+        bytes: &Vec<u8>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Use the engine's encode method via the Engine trait
+        serializer.serialize_str(
+            &base64::engine::general_purpose::STANDARD.encode(bytes),
+        )
+    }
+
+    /// Deserializes a Base64 string into `Vec<u8>` using the standard engine.
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        // Use the engine's decode method via the Engine trait
+        base64::engine::general_purpose::STANDARD
+            .decode(s.as_bytes())
+            .map_err(serde::de::Error::custom)
+    }
+}
