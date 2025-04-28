@@ -294,9 +294,13 @@ impl RuskNodeBuilder {
             Box::new(TelemetrySrv::new(self.telemetry_address)),
         ];
 
+        // TODO: This block initializes the legacy WebSocket server
+        // (`rusk::http::HttpServer`). It needs to be preserved for now
+        // but should be consolidated with the new axum-based
+        // JSON-RPC/WebSocket server in a later stage.
         let mut _ws_server = None;
         if let Some(http) = self.http {
-            info!("Configuring HTTP");
+            info!("Configuring HTTP"); // Legacy HTTP/WebSocket server
 
             service_list.push(Box::new(ChainEventStreamer {
                 node_receiver,
