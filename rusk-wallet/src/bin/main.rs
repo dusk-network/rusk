@@ -32,7 +32,6 @@ use rusk_wallet::{
 };
 use tracing::{error, info, warn, Level};
 
-use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
 
 use config::Config;
@@ -488,9 +487,8 @@ async fn exec() -> anyhow::Result<()> {
                     println!("{},{}", pub_key.display(), key_pair.display())
                 }
                 RunResult::History(txns) => {
-                    println!("{}", TransactionHistory::header());
-                    for th in txns {
-                        println!("{th}");
+                    if let Err(err) = crate::prompt::tx_history_list(&txns) {
+                        println!("Failed to output transaction history with error {err}");
                     }
                 }
                 RunResult::ContractId(id) => {
