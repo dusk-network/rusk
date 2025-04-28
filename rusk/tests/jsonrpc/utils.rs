@@ -47,6 +47,16 @@ use std::sync::Arc;
 
 // --- Helper Functions ---
 
+/// Helper to get an ephemeral port by binding to port 0.
+pub fn get_ephemeral_port() -> Result<std::net::SocketAddr, std::io::Error> {
+    // Bind to port 0 to get an OS-assigned ephemeral port
+    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+    let addr = listener.local_addr()?;
+    // Drop the listener immediately to free the port for the actual server
+    drop(listener);
+    Ok(addr)
+}
+
 /// Creates a mock `Block` for testing with basic fields populated.
 pub(crate) fn create_mock_block(height: u64, _hash_prefix: &str) -> Block {
     // Use a simple, deterministic hex hash based on height
