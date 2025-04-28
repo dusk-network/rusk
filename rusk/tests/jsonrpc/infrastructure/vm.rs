@@ -24,7 +24,7 @@ use node::archive::Archive;
 use crate::jsonrpc::utils::MockVmAdapter;
 
 // Helper to create a basic NodeRusk instance for testing
-async fn create_test_node_rusk() -> Arc<NodeRusk> {
+async fn create_test_node_rusk() -> NodeRusk {
     let tmp = tempdir().expect("Failed to create temp dir");
     let state_dir = tmp.path(); // Keep as Path for deploy
 
@@ -43,19 +43,17 @@ async fn create_test_node_rusk() -> Arc<NodeRusk> {
     #[cfg(feature = "archive")]
     let archive = Archive::create_or_open(state_dir).await; // Use state_dir for archive path too
 
-    Arc::new(
-        NodeRusk::new(
-            state_dir,
-            250, // <-- Use 0xFA (250) as chain_id instead of 0
-            vm_config,
-            1000,   // min_gas_limit
-            100000, // feeder_gas_limit
-            event_sender,
-            #[cfg(feature = "archive")]
-            archive,
-        )
-        .expect("Failed to create NodeRusk"),
+    NodeRusk::new(
+        state_dir,
+        250, // <-- Use 0xFA (250) as chain_id instead of 0
+        vm_config,
+        1000,   // min_gas_limit
+        100000, // feeder_gas_limit
+        event_sender,
+        #[cfg(feature = "archive")]
+        archive,
     )
+    .expect("Failed to create NodeRusk")
 }
 
 #[tokio::test]
@@ -63,9 +61,11 @@ async fn create_test_node_rusk() -> Arc<NodeRusk> {
 // is available. Read the comment inside the function for more details.
 #[ignore = "init.toml doesn't deploy TRANSFER_CONTRACT"]
 async fn test_rusk_vm_adapter_get_chain_id() {
-    // Await the async helper function
+    // Await the async helper function to get the owned Rusk instance
     let node_rusk = create_test_node_rusk().await;
-    let adapter = RuskVmAdapter::new(node_rusk.clone());
+    // Pass the owned Rusk instance to RwLock::new
+    let adapter =
+        RuskVmAdapter::new(Arc::new(tokio::sync::RwLock::new(node_rusk)));
 
     let result = adapter.get_chain_id().await;
 
@@ -78,9 +78,11 @@ async fn test_rusk_vm_adapter_get_chain_id() {
 
 #[tokio::test]
 async fn test_rusk_vm_adapter_get_account_data() {
-    // Await the async helper function
-    let node_rusk = create_test_node_rusk().await; // <-- Added .await
-    let adapter = RuskVmAdapter::new(node_rusk.clone());
+    // Await the async helper function to get the owned Rusk instance
+    let node_rusk = create_test_node_rusk().await;
+    // Pass the owned Rusk instance to RwLock::new
+    let adapter =
+        RuskVmAdapter::new(Arc::new(tokio::sync::RwLock::new(node_rusk)));
 
     // Create a dummy public key for testing
     // NOTE: This account likely won't exist in the default test NodeRusk state.
