@@ -45,7 +45,6 @@
 //! - [`key`]: Models for key-related types.
 //! - [`mempool`]: Models for mempool information.
 //! - [`network`]: Models for network peer metrics.
-//! - [`common`]: Types shared across multiple modules.
 //! - [`prover`]: Placeholder for prover-related models (if any).
 //! - [`provisioner`]: Models related to provisioner information (stakes, etc.).
 //! - [`serde_helper`]: Utility functions for custom `serde` serialization.
@@ -56,7 +55,6 @@
 pub mod archive;
 pub mod block;
 pub mod chain;
-pub mod common;
 pub mod consensus;
 pub mod contract;
 pub mod gas;
