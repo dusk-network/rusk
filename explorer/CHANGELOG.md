@@ -18,6 +18,8 @@ and this project adheres to
 
 ### Fixed
 
+- Fix Badge doesn't have content width [#3692]
+
 ## [1.3.2] - 2025-04-29
 
 ### Fixed
@@ -233,6 +235,7 @@ and this project adheres to
 [#3667]: https://github.com/dusk-network/rusk/issues/3667
 [#3675]: https://github.com/dusk-network/rusk/issues/3675
 [#3676]: https://github.com/dusk-network/rusk/issues/3676
+[#3676]: https://github.com/dusk-network/rusk/issues/3692
 
 <!-- VERSIONS -->
 
