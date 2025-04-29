@@ -106,6 +106,7 @@ impl Rusk {
         let to_slash = params.to_slash.clone();
         let prev_state_root = params.prev_state_root;
 
+        //this should be renamed prev_round_voters
         let voters = &params.voters_pubkey[..];
 
         info!(
@@ -135,6 +136,7 @@ impl Rusk {
 
         for unspent_tx in txs {
             if let Some(timeout) = self.vm_config.generation_timeout {
+                // Why do we load timeout inside the loop?
                 if started.elapsed() > timeout {
                     info!(
                         event = "Stopping execute_transactions",
@@ -157,6 +159,11 @@ impl Rusk {
             let tx_id = hex::encode(unspent_tx.id());
             let tx_size = unspent_tx.size();
 
+            // this is not really optimal. if we reach the limit, we have to go
+            // though all txs before stopping possible solutions:
+            // - maintain a "smallest_tx_size" variable and stop if size_left <
+            //   smallest_tx_size
+            // what would be the impact if the mempool were full?
             if tx_size > block_space_left {
                 info!(
                     event = "Skipping transaction",
@@ -186,6 +193,8 @@ impl Rusk {
                         session = self
                             .new_block_session(block_height, prev_state_root)?;
 
+                        // this is really terrible. can't we find a solution?
+                        // e.g. duplicate the session before executing a tx
                         for spent_tx in &spent_txs {
                             // We know these transactions were correctly
                             // executed before, so we don't bother checking.
@@ -202,6 +211,7 @@ impl Rusk {
                     block_space_left -= tx_size;
 
                     // We're currently ignoring the result of successful calls
+                    // why? isn't it needed? is it returned?
                     let error = receipt.data.err().map(|e| format!("{e}"));
                     info!(event = "Tx executed", tx_id, gas_spent, error);
 
@@ -234,15 +244,16 @@ impl Rusk {
             }
         }
 
+        // this should probably be handled by the vm or an intermediate
+        // component (chain) if we had chain sessions, we could do all
+        // these by "closing" the chain session (finalizing the new block)
         let coinbase_events = reward_and_slash(
             &mut session,
             block_height,
             generator,
             voters,
             dusk_spent,
-            generator,
             to_slash,
-            voters,
         )?;
 
         event_bloom.add_events(&coinbase_events);
@@ -260,8 +271,11 @@ impl Rusk {
     }
 
     /// Verify the given transactions are ok.
+    /// this function does not verify anything. it just executes transactions
+    /// and return the result. can we reuse this or another function?
     #[allow(clippy::too_many_arguments)]
     pub fn verify_transactions(
+        // can we replace these args with the block?
         &self,
         prev_commit: [u8; 32],
         block_height: u64,
@@ -295,7 +309,8 @@ impl Rusk {
             voters,
             &execution_config,
         )
-        .map(|(a, b, _, _)| (a, b))
+        .map(|(a, b, _, _)| (a, b)) // spent transactions are not used by the
+                                    // caller. we should not return them
     }
 
     /// Accept the given transactions.
@@ -555,7 +570,7 @@ impl Rusk {
     fn _session(
         &self,
         block_height: u64,
-        commit: Option<[u8; 32]>,
+        commit: Option<[u8; 32]>, /* why do we have both block_height and commit? aren't they mutually exclusive? */
     ) -> Result<Session> {
         let commit = commit.unwrap_or_else(|| {
             let tip = self.tip.read();
@@ -591,6 +606,9 @@ impl Rusk {
 }
 
 #[allow(clippy::too_many_arguments)]
+// this function should be renamed. it gives the idea it's accepting a block,
+// but this is only true with accept_transactions, while it's not the case with
+// verify_transactions. what this function does is to apply a block (which entails txs, rewards and slashes) to a given session, and return the result
 fn accept(
     session: Session,
     block_height: u64,
@@ -640,7 +658,7 @@ fn accept(
         dusk_spent += gas_spent * tx.gas_price();
         block_gas_left = block_gas_left
             .checked_sub(gas_spent)
-            .ok_or(RuskError::OutOfGas)?;
+            .ok_or(RuskError::OutOfGas)?; // this chould be moved right after execute
 
         spent_txs.push(SpentTransaction {
             inner: unspent_tx.clone(),

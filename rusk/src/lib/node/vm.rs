@@ -47,6 +47,7 @@ impl VMExecution for Rusk {
         Ok((txs, discarded_txs, verification_output))
     }
 
+    // this function does not verify anything; it simply applies the block and returns the output
     fn verify_state_transition(
         &self,
         prev_commit: [u8; 32],

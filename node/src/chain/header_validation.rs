@@ -456,6 +456,9 @@ pub async fn verify_att(
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
     let vote = att.result.vote();
 
+    // TODO: if vote is NoQuorum, check att.validation is empty and skip
+    // verification
+
     // Verify validation
     let (val_result, validation_voters) = verifiers::verify_step_votes(
         &consensus_header,

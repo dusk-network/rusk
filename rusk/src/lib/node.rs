@@ -33,7 +33,7 @@ pub struct RuskTip {
 }
 
 #[derive(Clone)]
-pub struct Rusk {
+pub struct Rusk { //This is actually the VMHandler component. It could also be the "chain" component. It should be renamed
     pub(crate) tip: Arc<RwLock<RuskTip>>,
     pub(crate) vm: Arc<VM>,
     dir: PathBuf,

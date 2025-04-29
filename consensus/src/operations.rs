@@ -37,7 +37,7 @@ pub struct Output {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct VerificationOutput {
+pub struct VerificationOutput { // this is a terrible name. it should be sth like ExecutionOutput or SessionResult
     pub state_root: StateRoot,
     pub event_bloom: EventBloom,
 }
