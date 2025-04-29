@@ -372,7 +372,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// * `Ok(())` if the value is written.
     /// * `Err(DbError)` if a database error occurs.
     async fn metadata_op_write(
-        &mut self,
+        &self,
         key: &[u8],
         value: &[u8],
     ) -> Result<(), DbError>;
@@ -1748,7 +1748,7 @@ impl DatabaseAdapter for RuskDbAdapter {
     }
 
     async fn metadata_op_write(
-        &mut self,
+        &self,
         key: &[u8],
         value: &[u8],
     ) -> Result<(), DbError> {
