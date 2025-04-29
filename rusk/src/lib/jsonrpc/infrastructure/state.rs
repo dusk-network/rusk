@@ -184,22 +184,25 @@ use dusk_core::{signatures::bls::PublicKey as BlsPublicKey, stake::StakeKeys};
 use parking_lot::RwLock;
 
 use crate::jsonrpc::config::JsonRpcConfig;
+use crate::jsonrpc::error::Error as JsonRpcError;
 use crate::jsonrpc::infrastructure::archive::ArchiveAdapter;
 use crate::jsonrpc::infrastructure::db::DatabaseAdapter;
-use crate::jsonrpc::infrastructure::error::Error as RpcInfraError;
 use crate::jsonrpc::infrastructure::error::{
-    ArchiveError, DbError, NetworkError, VmError,
+    ArchiveError, DbError, Error as RpcInfraError, NetworkError, VmError,
 };
 use crate::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
 use crate::jsonrpc::infrastructure::metrics::MetricsCollector;
 use crate::jsonrpc::infrastructure::network::NetworkAdapter;
 use crate::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
 use crate::jsonrpc::infrastructure::vm::VmAdapter;
-use crate::jsonrpc::model::archive::MoonlightEventGroup;
+use crate::jsonrpc::model::archive::{
+    ArchivedEvent, MoonlightEventGroup, Order,
+};
 use crate::jsonrpc::model::block::Block;
-use crate::jsonrpc::model::provisioner::ProvisionerInfo;
-use crate::jsonrpc::model::provisioner::StakeOwnerInfo;
+use crate::jsonrpc::model::block::BlockFaults;
+use crate::jsonrpc::model::provisioner::{ProvisionerInfo, StakeOwnerInfo};
 use crate::jsonrpc::model::transaction::SimulationResult;
+use crate::jsonrpc::model::transaction::TransactionResponse;
 
 #[derive(Debug, Clone)]
 pub struct AppState {
@@ -309,270 +312,1021 @@ impl AppState {
         &self.manual_rate_limiters
     }
 
+    // --- Delegated ArchiveAdapter Methods ---
+
+    /// Fetches Moonlight transaction groups associated with a specific memo.
+    ///
+    /// Moonlight transactions often include an encrypted memo field. This
+    /// method allows querying the archive for all transaction groups
+    /// (representing single transactions) that contain a specific memo byte
+    /// sequence.
+    ///
+    /// # Arguments
+    ///
+    /// * `memo`: The raw byte sequence of the memo to search for.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some(Vec<MoonlightEventGroup>))`: If transactions with the given
+    ///   memo are found, returns a vector of corresponding event groups.
+    /// * `Ok(None)`: If no transactions with the given memo are found in the
+    ///   archive.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the query fails due to
+    ///   database issues or other internal errors.
+    pub async fn get_moonlight_txs_by_memo(
+        &self,
+        memo: Vec<u8>,
+    ) -> Result<Option<Vec<model::archive::MoonlightEventGroup>>, JsonRpcError>
+    {
+        self.archive_adapter
+            .get_moonlight_txs_by_memo(memo)
+            .await
+            .map_err(RpcInfraError::Archive) // Map adapter error to RpcInfraError
+            .map_err(JsonRpcError::Infrastructure) // Map RpcInfraError to
+                                                   // JsonRpcError::Infrastructure
+    }
+
+    /// Fetches the height and hash of the most recent block marked as finalized
+    /// within the archive.
+    ///
+    /// The archive might lag slightly behind the node's absolute latest block,
+    /// so this represents the tip of the *archived* finalized chain.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok((u64, String))`: A tuple containing the block height and its
+    ///   corresponding hex-encoded block hash.
+    /// * `Err(JsonRpcError::Infrastructure)`: If no finalized blocks are found
+    ///   in the archive (e.g., during initial sync), or if the query fails due
+    ///   to database issues.
+    pub async fn get_last_archived_block(
+        &self,
+    ) -> Result<(u64, String), JsonRpcError> {
+        self.archive_adapter
+            .get_last_archived_block()
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches all archived VM events associated with a specific block hash.
+    ///
+    /// This retrieves events regardless of whether the block itself is
+    /// currently marked as finalized or unfinalized within the archive's
+    /// perspective.
+    ///
+    /// # Arguments
+    ///
+    /// * `hex_block_hash`: The hex-encoded string representation of the block
+    ///   hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all archived events for
+    ///   the specified block. Returns an empty vector if the block is found but
+    ///   has no associated events, or if the block hash is not found in the
+    ///   archive.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the query fails due to
+    ///   database issues.
+    pub async fn get_block_events_by_hash(
+        &self,
+        hex_block_hash: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_block_events_by_hash(hex_block_hash)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches all archived VM events associated with a specific block height.
+    ///
+    /// Similar to `get_block_events_by_hash`, this retrieves events regardless
+    /// of the block's finalization status in the archive.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_height`: The block height number.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all archived events for
+    ///   the specified block height. Returns an empty vector if the block is
+    ///   found but has no associated events, or if the block height is not
+    ///   found in the archive.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the query fails due to
+    ///   database issues.
+    pub async fn get_block_events_by_height(
+        &self,
+        block_height: u64,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_block_events_by_height(block_height)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches all archived VM events from the latest block known to the
+    /// archive (regardless of finalization status).
+    ///
+    /// This is useful for getting the most recent events indexed by the
+    /// archive, which might include events from blocks not yet marked as
+    /// finalized.
+    ///
+    /// # Implementation Note
+    ///
+    /// This method delegates to the underlying `ArchiveAdapter` which might
+    /// first call `get_last_archived_block` to find the latest height and
+    /// then call `get_block_events_by_height` with that height.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all archived events for
+    ///   the latest block found in the archive. Returns an empty vector if the
+    ///   latest block has no events.
+    /// * `Err(JsonRpcError::Infrastructure)`: If fetching the last block height
+    ///   or fetching events by height fails in the underlying adapter.
+    pub async fn get_latest_block_events(
+        &self,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_latest_block_events()
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches all **finalized** VM events emitted by a specific contract ID.
+    ///
+    /// This retrieves only events from blocks that are marked as finalized
+    /// within the archive.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract (e.g., a
+    ///   hex-encoded ID).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all finalized events
+    ///   emitted by the specified contract. Returns an empty vector if the
+    ///   contract has emitted no finalized events or is not found.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the query fails due to
+    ///   database issues.
+    pub async fn get_contract_finalized_events(
+        &self,
+        contract_id: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_contract_finalized_events(contract_id)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Finds the height of the next block **after** the given height that
+    /// contains at least one Phoenix transaction.
+    ///
+    /// Phoenix transactions are a specific type within the Dusk ecosystem.
+    /// This query helps in navigating the chain based on the presence of these
+    /// transactions.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_height`: The height *after* which to start searching for a
+    ///   block containing a Phoenix transaction.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some(u64))`: The height of the next block containing a Phoenix
+    ///   transaction.
+    /// * `Ok(None)`: If no subsequent block contains a Phoenix transaction.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the query fails due to
+    ///   database issues.
+    pub async fn get_next_block_with_phoenix_transaction(
+        &self,
+        block_height: u64,
+    ) -> Result<Option<u64>, JsonRpcError> {
+        self.archive_adapter
+            .get_next_block_with_phoenix_transaction(block_height)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches the full Moonlight transaction history for a given account,
+    /// identified by its public key.
+    ///
+    /// Allows filtering by block range and specifying the order of results.
+    /// Moonlight history includes transactions where the given account was
+    /// either the sender or the receiver.
+    ///
+    /// # Arguments
+    ///
+    /// * `pk_bs58`: The Base58 encoded public key string of the account.
+    /// * `ord`: An optional [`Order`](model::archive::Order) enum specifying
+    ///   whether to sort results `Ascending` or `Descending` by block height.
+    ///   Defaults typically to descending (newest first) if `None`.
+    /// * `from_block`: An optional block height to start the history from
+    ///   (inclusive).
+    /// * `to_block`: An optional block height to end the history at
+    ///   (inclusive).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some(Vec<MoonlightEventGroup>))`: If history is found for the
+    ///   account within the specified range, returns a vector of event groups,
+    ///   sorted according to `ord`.
+    /// * `Ok(None)`: If no Moonlight transaction history is found for the
+    ///   account in the specified range.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the input `pk_bs58` is
+    ///   invalid, if the query fails due to database issues, or other internal
+    ///   errors.
+    pub async fn get_moonlight_transaction_history(
+        &self,
+        pk_bs58: String,
+        ord: Option<Order>,
+        from_block: Option<u64>,
+        to_block: Option<u64>,
+    ) -> Result<Option<Vec<MoonlightEventGroup>>, JsonRpcError> {
+        self.archive_adapter
+            .get_moonlight_transaction_history(
+                pk_bs58, ord, from_block, to_block,
+            )
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized events from a specific contract, filtered by event
+    /// topic.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which first calls `get_contract_finalized_events` and then filters the
+    /// results based on the provided `topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `topic`: The exact event topic string to filter by.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing finalized events from
+    ///   the contract that match the specified topic. Returns an empty vector
+    ///   if no matching events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call to
+    ///   `get_contract_finalized_events` fails.
+    pub async fn get_contract_events_by_topic(
+        &self,
+        contract_id: &str,
+        topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_contract_events_by_topic(contract_id, topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches the height of the last block finalized in the archive.
+    ///
+    /// A convenience method that delegates to the underlying adapter, which
+    /// calls `get_last_archived_block` and extracts only the height
+    /// component.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)`: The height of the last finalized block in the archive.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call to
+    ///   `get_last_archived_block` fails.
+    pub async fn get_last_archived_block_height(
+        &self,
+    ) -> Result<u64, JsonRpcError> {
+        self.archive_adapter
+            .get_last_archived_block_height()
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches all finalized events emitted by a specific contract.
+    ///
+    /// This is an alias for `get_contract_finalized_events` provided by the
+    /// underlying adapter. It provides a potentially more intuitive name
+    /// depending on the calling context.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all finalized events
+    ///   emitted by the specified contract. Returns an empty vector if the
+    ///   contract has emitted no finalized events or is not found.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call to
+    ///   `get_contract_finalized_events` fails.
+    ///
+    /// See [`get_contract_finalized_events`](AppState::get_contract_finalized_events).
+    pub async fn get_contract_events(
+        &self,
+        contract_id: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_contract_events(contract_id)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches events from a specific block height, filtered by source contract
+    /// ID.
+    ///
+    /// Delegates to the underlying adapter which calls
+    /// `get_block_events_by_height` and filters the results, keeping only
+    /// events where the `source` field matches the provided `contract_id`.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_height`: The block height number.
+    /// * `contract_id`: The identifier string of the source contract to filter
+    ///   by.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing events from the
+    ///   specified block height whose source matches the `contract_id`. Returns
+    ///   an empty vector if no matching events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call to
+    ///   `get_block_events_by_height` fails.
+    pub async fn get_contract_events_by_block_height(
+        &self,
+        block_height: u64,
+        contract_id: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_contract_events_by_block_height(block_height, contract_id)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches events from a specific block hash, filtered by source contract
+    /// ID.
+    ///
+    /// Delegates to the underlying adapter which calls
+    /// `get_block_events_by_hash` and filters the results, keeping only events
+    /// where the `source` field matches the provided `contract_id`.
+    ///
+    /// # Arguments
+    ///
+    /// * `hex_block_hash`: The hex-encoded string of the block hash.
+    /// * `contract_id`: The identifier string of the source contract to filter
+    ///   by.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing events from the
+    ///   specified block hash whose source matches the `contract_id`. Returns
+    ///   an empty vector if no matching events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call to
+    ///   `get_block_events_by_hash` fails.
+    pub async fn get_contract_events_by_block_hash(
+        &self,
+        hex_block_hash: &str,
+        contract_id: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_contract_events_by_block_hash(hex_block_hash, contract_id)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized contract events considered as 'transactions' (alias
+    /// for [`get_contract_events`](AppState::get_contract_events)).
+    ///
+    /// Provides an alternative naming convention where general contract events
+    /// are referred to as transactions. Delegates to the underlying adapter.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: See
+    ///   [`get_contract_events`](AppState::get_contract_events).
+    /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call fails.
+    pub async fn get_contract_transactions(
+        &self,
+        contract_id: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_contract_transactions(contract_id)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized contract events from a specific block height
+    /// considered as 'transactions' (alias for
+    /// [`get_contract_events_by_block_height`](AppState::get_contract_events_by_block_height)).
+    ///
+    /// Provides an alternative naming convention. Delegates to the underlying
+    /// adapter.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_height`: The block height number.
+    /// * `contract_id`: The identifier string of the source contract.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: See
+    ///   [`get_contract_events_by_block_height`](AppState::get_contract_events_by_block_height).
+    /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call fails.
+    pub async fn get_contract_transactions_by_block_height(
+        &self,
+        block_height: u64,
+        contract_id: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_contract_transactions_by_block_height(
+                block_height,
+                contract_id,
+            )
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized contract events from a specific block hash considered
+    /// as 'transactions' (alias for
+    /// [`get_contract_events_by_block_hash`](AppState::get_contract_events_by_block_hash)).
+    ///
+    /// Provides an alternative naming convention. Delegates to the underlying
+    /// adapter.
+    ///
+    /// # Arguments
+    ///
+    /// * `hex_block_hash`: The hex-encoded string of the block hash.
+    /// * `contract_id`: The identifier string of the source contract.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: See
+    ///   [`get_contract_events_by_block_hash`](AppState::get_contract_events_by_block_hash).
+    /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call fails.
+    pub async fn get_contract_transactions_by_block_hash(
+        &self,
+        hex_block_hash: &str,
+        contract_id: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_contract_transactions_by_block_hash(
+                hex_block_hash,
+                contract_id,
+            )
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    // --- Topic-Specific Event Getters ---
+
+    /// Fetches finalized 'item added' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `item_added_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `item_added_topic`: The exact topic string constant representing 'item
+    ///   added' events (e.g., from `node_data::events::contract`).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_item_added_events(
+        &self,
+        contract_id: &str,
+        item_added_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_item_added_events(contract_id, item_added_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'item removed' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `item_removed_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `item_removed_topic`: The exact topic string constant representing
+    ///   'item removed' events.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_item_removed_events(
+        &self,
+        contract_id: &str,
+        item_removed_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_item_removed_events(contract_id, item_removed_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'item modified' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `item_modified_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `item_modified_topic`: The exact topic string constant representing
+    ///   'item modified' events.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_item_modified_events(
+        &self,
+        contract_id: &str,
+        item_modified_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_item_modified_events(contract_id, item_modified_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'stake' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `stake_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `stake_topic`: The exact topic string constant representing 'stake'
+    ///   events.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_stake_events(
+        &self,
+        contract_id: &str,
+        stake_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_stake_events(contract_id, stake_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'transfer' events from a specific contract (e.g.,
+    /// "moonlight").
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `transfer_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `transfer_topic`: The exact topic string constant representing
+    ///   'transfer' events (e.g.,
+    ///   `node_data::events::contract::MOONLIGHT_TOPIC`).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_transfer_events(
+        &self,
+        contract_id: &str,
+        transfer_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_transfer_events(contract_id, transfer_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'unstake' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `unstake_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `unstake_topic`: The exact topic string constant representing
+    ///   'unstake' events.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_unstake_events(
+        &self,
+        contract_id: &str,
+        unstake_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_unstake_events(contract_id, unstake_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'slash' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `slash_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `slash_topic`: The exact topic string constant representing 'slash'
+    ///   events.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_slash_events(
+        &self,
+        contract_id: &str,
+        slash_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_slash_events(contract_id, slash_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'deposit' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `deposit_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `deposit_topic`: The exact topic string constant representing
+    ///   'deposit' events.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_deposit_events(
+        &self,
+        contract_id: &str,
+        deposit_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_deposit_events(contract_id, deposit_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'withdraw' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `withdraw_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `withdraw_topic`: The exact topic string constant representing
+    ///   'withdraw' events (e.g.,
+    ///   `node_data::events::contract::WITHDRAW_TOPIC`).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_withdraw_events(
+        &self,
+        contract_id: &str,
+        withdraw_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_withdraw_events(contract_id, withdraw_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'convert' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `convert_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `convert_topic`: The exact topic string constant representing
+    ///   'convert' events (e.g., `node_data::events::contract::CONVERT_TOPIC`).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_convert_events(
+        &self,
+        contract_id: &str,
+        convert_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_convert_events(contract_id, convert_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'provisioner changes' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `provisioner_changes_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `provisioner_changes_topic`: The exact topic string constant
+    ///   representing 'provisioner changes' events.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_provisioner_changes(
+        &self,
+        contract_id: &str,
+        provisioner_changes_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_provisioner_changes(contract_id, provisioner_changes_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Fetches finalized 'hard slash' events from a specific contract.
+    ///
+    /// This is a convenience method that delegates to the underlying adapter,
+    /// which calls
+    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// with the provided `hard_slash_topic` string.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract_id`: The identifier string of the contract.
+    /// * `hard_slash_topic`: The exact topic string constant representing 'hard
+    ///   slash' events.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
+    ///   underlying adapter.
+    ///
+    /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
+    pub async fn get_hard_slash_events(
+        &self,
+        contract_id: &str,
+        hard_slash_topic: &str,
+    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+        self.archive_adapter
+            .get_hard_slash_events(contract_id, hard_slash_topic)
+            .await
+            .map_err(RpcInfraError::Archive)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
     // --- Delegated DatabaseAdapter Methods ---
 
-    /// Delegates to [`DatabaseAdapter::get_block_by_hash`].
+    /// Retrieves a block summary by its 32-byte hash.
+    ///
+    /// # Arguments
+    /// * `block_hash_hex`: 64-char hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::Block>)`: if the block is found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
     pub async fn get_block_by_hash(
         &self,
         block_hash_hex: &str,
-    ) -> Result<Option<Block>, DbError> {
-        self.db_adapter.get_block_by_hash(block_hash_hex).await
+    ) -> Result<Option<model::block::Block>, JsonRpcError> {
+        self.db_adapter
+            .get_block_by_hash(block_hash_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
     }
 
-    /// Delegates to [`DatabaseAdapter::get_block_by_height`].
-    pub async fn get_block_by_height(
+    /// Retrieves the list of full transactions for a block by hash.
+    ///
+    /// # Arguments
+    /// * `block_hash_hex`: 64-char hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<TransactionResponse>>)`: if the transactions are found
+    ///   for the block.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn get_block_transactions_by_hash(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<Option<Vec<TransactionResponse>>, JsonRpcError> {
+        self.db_adapter
+            .get_block_transactions_by_hash(block_hash_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves consensus faults for a block by hash.
+    ///
+    /// # Arguments
+    /// * `block_hash_hex`: 64-char hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<BlockFaults>)`: if the faults are found for the block.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn get_block_faults_by_hash(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<Option<BlockFaults>, JsonRpcError> {
+        self.db_adapter
+            .get_block_faults_by_hash(block_hash_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a block hash by its height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: The block height.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<String>)`: The hex-encoded block hash if found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn get_block_hash_by_height(
         &self,
         height: u64,
-    ) -> Result<Option<Block>, DbError> {
-        self.db_adapter.get_block_by_height(height).await
-    }
-
-    /// Delegates to [`DatabaseAdapter::get_latest_block`].
-    pub async fn get_latest_block(&self) -> Result<Block, DbError> {
-        self.db_adapter.get_latest_block().await
-    }
-
-    // --- Delegated ArchiveAdapter Methods --- //
-
-    /// Delegates to [`ArchiveAdapter::get_moonlight_txs_by_memo`].
-    pub async fn get_moonlight_txs_by_memo(
-        &self,
-        memo_hex: Vec<u8>,
-    ) -> Result<Vec<MoonlightEventGroup>, ArchiveError> {
-        self.archive_adapter
-            .get_moonlight_txs_by_memo(memo_hex)
+    ) -> Result<Option<String>, JsonRpcError> {
+        self.db_adapter
+            .get_block_hash_by_height(height)
             .await
-            .map(|option_vec| option_vec.unwrap_or_default())
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
     }
 
-    /// Delegates to [`ArchiveAdapter::get_last_archived_block_height`].
-    pub async fn get_last_archived_block_height(
-        &self,
-    ) -> Result<u64, ArchiveError> {
-        self.archive_adapter.get_last_archived_block_height().await
-    }
-
-    // --- Delegated NetworkAdapter Methods --- //
-
-    /// Delegates to [`NetworkAdapter::broadcast_transaction`].
-    pub async fn broadcast_transaction(
-        &self,
-        tx_bytes: Vec<u8>,
-    ) -> Result<(), NetworkError> {
-        self.network_adapter.broadcast_transaction(tx_bytes).await
-    }
-
-    /// Delegates to [`NetworkAdapter::get_public_address`].
-    pub async fn get_public_address(&self) -> Result<SocketAddr, NetworkError> {
-        self.network_adapter.get_public_address().await
-    }
-
-    /// Delegates to [`NetworkAdapter::get_alive_peers`].
-    pub async fn get_alive_peers(
-        &self,
-        max_peers: usize,
-    ) -> Result<Vec<SocketAddr>, NetworkError> {
-        self.network_adapter.get_alive_peers(max_peers).await
-    }
-
-    /// Delegates to [`NetworkAdapter::get_alive_peers_count`].
-    pub async fn get_alive_peers_count(&self) -> Result<usize, NetworkError> {
-        self.network_adapter.get_alive_peers_count().await
-    }
-
-    /// Delegates to [`NetworkAdapter::get_network_info`].
-    pub async fn get_network_info(&self) -> Result<String, NetworkError> {
-        self.network_adapter.get_network_info().await
-    }
-
-    // --- Delegated VmAdapter Methods --- //
-
-    /// Delegates to [`VmAdapter::get_state_root`].
-    /// Used internally but exposed for potential direct use.
-    pub async fn get_state_root(&self) -> Result<[u8; 32], VmError> {
-        self.vm_adapter.get_state_root().await
-    }
-
-    /// Delegates to [`VmAdapter::simulate_transaction`].
-    pub async fn simulate_transaction(
-        &self,
-        tx_bytes: Vec<u8>,
-    ) -> Result<SimulationResult, VmError> {
-        self.vm_adapter.simulate_transaction(tx_bytes).await
-    }
-
-    /// Delegates to [`VmAdapter::query_contract_raw`].
-    pub async fn query_contract_raw(
-        &self,
-        contract_id: dusk_core::abi::ContractId,
-        method: String,
-        base_commit: [u8; 32],
-        args_bytes: Vec<u8>,
-    ) -> Result<Vec<u8>, VmError> {
-        self.vm_adapter
-            .query_contract_raw(contract_id, method, base_commit, args_bytes)
-            .await
-    }
-
-    /// Delegates to [`VmAdapter::get_vm_config`].
-    pub async fn get_vm_config(
-        &self,
-    ) -> Result<crate::node::RuskVmConfig, VmError> {
-        self.vm_adapter.get_vm_config().await
-    }
-
-    /// Retrieves the configured chain ID from the VM adapter.
+    /// Retrieves a block header by its 32-byte hash.
     ///
-    /// This is necessary for providing chain context in RPC responses.
-    /// Requires the `chain` feature flag, as the VM adapter depends on it.
-    #[cfg(feature = "chain")]
-    pub async fn get_chain_id(&self) -> Result<u8, VmError> {
-        self.vm_adapter.get_chain_id().await
-    }
-
-    // --- New Methods for Provisioner Info --- //
-
-    /// Helper function to map internal `StakeData` and the known account public
-    /// key to the JSON-RPC `ProvisionerInfo` model.
-    fn map_stake_data_to_provisioner_info(
-        account_pk: &BlsPublicKey,
-        data: &StakeData,
-    ) -> ProvisionerInfo {
-        let owner_info = StakeOwnerInfo::Account(
-            bs58::encode(Serializable::to_bytes(account_pk)).into_string(),
-        );
-
-        // Use default if amount is None (though it typically shouldn't be)
-        // StakeAmount structure assumed: { value: u64, locked: u64,
-        // eligibility: u64 }
-        let amount_data = data.amount.unwrap_or_default();
-
-        ProvisionerInfo {
-            public_key: bs58::encode(Serializable::to_bytes(account_pk))
-                .into_string(),
-            amount: amount_data.value, // Assumed field
-            locked_amount: amount_data.locked, // Assumed field
-            eligibility: amount_data.eligibility, // Assumed field
-            reward: data.reward,       // Assumed field
-            faults: data.faults,       // Assumed field
-            hard_faults: data.hard_faults, // Assumed field
-            owner: owner_info,
-        }
-    }
-
-    /// Retrieves information for all current provisioners using VmAdapter.
-    pub async fn get_all_provisioner_info(
+    /// # Arguments
+    /// * `block_hash_hex`: 64-char hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::BlockHeader>)`: if the header is found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn get_block_header_by_hash(
         &self,
-    ) -> Result<Vec<ProvisionerInfo>, RpcInfraError> {
-        // 1. Get current state root using the delegated method
-        let state_root = self.get_state_root().await?;
-
-        // 2. Query stake contract for all stakes using VmAdapter
-        let args_bytes = Vec::new(); // Empty args for "stakes" method
-        let all_stakes_bytes: Vec<u8> = self
-            .vm_adapter
-            .query_contract_raw(
-                STAKE_CONTRACT,
-                "stakes".to_string(),
-                state_root,
-                args_bytes,
-            )
+        block_hash_hex: &str,
+    ) -> Result<Option<model::block::BlockHeader>, JsonRpcError> {
+        self.db_adapter
+            .get_block_header_by_hash(block_hash_hex)
             .await
-            .map_err(RpcInfraError::Vm)?;
-
-        // 3. Manually deserialize the Vec<(StakeKeys, StakeData)> from bytes
-        let all_stakes_results: Vec<(StakeKeys, StakeData)> =
-            rkyv::from_bytes(&all_stakes_bytes).map_err(|e| {
-                RpcInfraError::Unknown(format!(
-                    "Failed to deserialize stakes result: {}",
-                    e
-                ))
-            })?;
-
-        // 4. Map results using the account key from StakeKeys
-        let provisioner_infos = all_stakes_results
-            .iter()
-            .map(|(keys, data)| {
-                // Use the correct helper function
-                Self::map_stake_data_to_provisioner_info(&keys.account, data)
-            })
-            .collect();
-
-        Ok(provisioner_infos)
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
     }
 
-    /// Retrieves information for a single provisioner by their public key using
-    /// VmAdapter.
-    pub async fn get_single_provisioner_info(
+    /// Retrieves a block header by its height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: The block height.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::BlockHeader>)`: if the header is found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn get_block_header_by_height(
         &self,
-        public_key_bls_hex: &str,
-    ) -> Result<Option<ProvisionerInfo>, RpcInfraError> {
-        // 1. Decode public key from hex
-        let pk_bytes_vec = hex::decode(public_key_bls_hex).map_err(|e| {
-            RpcInfraError::Unknown(format!("Invalid hex public key: {}", e))
-        })?;
+        height: u64,
+    ) -> Result<Option<model::block::BlockHeader>, JsonRpcError> {
+        self.db_adapter
+            .get_block_header_by_height(height)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
 
-        let pk_bytes_arr: [u8; 96] =
-            pk_bytes_vec.try_into().map_err(|v: Vec<u8>| {
-                RpcInfraError::Unknown(format!(
-                    "Invalid BLS public key length: expected 96, got {}",
-                    v.len()
-                ))
-            })?;
-
-        let bls_pk =
-            DeserializableSlice::from_slice(&pk_bytes_arr).map_err(|e| {
-                RpcInfraError::Unknown(format!(
-                    "Invalid BLS public key bytes: {:?}",
-                    e
-                ))
-            })?;
-
-        // 2. Get current state root using the delegated method
-        let state_root = self.get_state_root().await?;
-
-        // 3. Serialize args (BlsPublicKey)
-        let args_bytes = Serializable::to_bytes(&bls_pk).to_vec();
-
-        // 4. Query stake contract using VmAdapter
-        let stake_data_bytes_result = self
-            .vm_adapter
-            .query_contract_raw(
-                STAKE_CONTRACT,
-                "get_stake".to_string(),
-                state_root,
-                args_bytes,
-            )
-            .await;
-
-        // 5. Handle the result: Deserialize bytes or map error to None/Error
-        match stake_data_bytes_result {
-            Ok(bytes) => {
-                // Successfully got bytes, try to deserialize StakeData
-                let stake_data = rkyv::from_bytes::<StakeData>(&bytes)
-                    .map_err(|e| {
-                        RpcInfraError::Unknown(format!(
-                            "Failed to deserialize StakeData result: {}",
-                            e
-                        ))
-                    })?;
-                // Deserialization successful, map to ProvisionerInfo
-                Ok(Some(Self::map_stake_data_to_provisioner_info(
-                    &bls_pk,
-                    &stake_data,
-                )))
-            }
-            Err(VmError::ExecutionFailed(e)) if e.contains("NotFound") => {
-                // Contract execution indicated 'Not Found'
-                // TODO: Confirm this is the correct error variant/message for
-                // NotFound
-                Ok(None)
-            }
-            Err(e) => {
-                // Any other VmError should be propagated, wrapped in
-                // RpcInfraError
-                Err(RpcInfraError::Vm(e))
-            }
-        }
+    /// Retrieves the consensus label for a block by height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: Height of the block.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::BlockLabel>)`: if the label is found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn get_block_label_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<model::block::BlockLabel>, JsonRpcError> {
+        self.db_adapter
+            .get_block_label_by_height(height)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
     }
 }
