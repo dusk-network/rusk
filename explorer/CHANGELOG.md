@@ -18,6 +18,10 @@ and this project adheres to
 
 ### Fixed
 
+## [1.3.2] - 2025-04-29
+
+### Fixed
+
 - Fix truncated provisioners addresses when copied while on mobile view [#3675]
 - Fix line height and letter spacing not being applied to the account balance's container [#3676]
 
@@ -233,6 +237,7 @@ and this project adheres to
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.3.2]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.2
 [1.3.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.1
 [1.3.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.2.0
