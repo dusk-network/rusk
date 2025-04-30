@@ -8,7 +8,7 @@ mod history;
 
 pub use history::TransactionHistory;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "e2e-test"))]
 mod tests;
 
 use std::fmt;
