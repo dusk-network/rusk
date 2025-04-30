@@ -8,6 +8,9 @@ mod history;
 
 pub use history::TransactionHistory;
 
+#[cfg(test)]
+mod tests;
+
 use std::fmt;
 use std::fs::File;
 use std::io::Write;
