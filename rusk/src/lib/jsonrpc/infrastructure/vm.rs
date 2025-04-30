@@ -24,12 +24,8 @@
 //! [`VM Adapter Methods Comparison`](../../../../docs/vm_adapter_methods.md)
 
 use crate::node::Rusk as NodeRusk;
-use crate::node::RuskVmConfig;
 use async_trait::async_trait;
-use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::transfer::moonlight::AccountData;
-use node::vm::PreverificationResult;
 use node_data::ledger::Transaction;
 use node_data::Serializable as NodeSerializable;
 use std::fmt::{self, Debug};
@@ -37,10 +33,9 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::jsonrpc::infrastructure::error::VmError;
-use crate::jsonrpc::model::provisioner::{ProvisionerInfo, StakeOwnerInfo};
-use crate::jsonrpc::model::transaction::SimulationResult;
+use crate::jsonrpc::model;
+
 use dusk_bytes::Serializable;
-use dusk_core::stake::{StakeAmount, StakeData, StakeFundOwner, StakeKeys};
 
 use dusk_vm::execute;
 use node::vm::VMExecution;
@@ -73,7 +68,7 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     async fn simulate_transaction(
         &self,
         tx_bytes: Vec<u8>,
-    ) -> Result<SimulationResult, VmError>;
+    ) -> Result<model::transaction::SimulationResult, VmError>;
 
     /// Performs preverification checks on a transaction.
     ///
@@ -87,14 +82,14 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(PreverificationResult)` - Indicates whether the preverification
+    /// * `Ok(VmPreverificationResult)` - Indicates whether the preverification
     ///   checks passed or failed, potentially with details.
     /// * `Err(VmError)` - If the preverification process encountered an
     ///   internal error.
     async fn preverify_transaction(
         &self,
         tx_bytes: Vec<u8>,
-    ) -> Result<PreverificationResult, VmError>;
+    ) -> Result<model::vm::VmPreverificationResult, VmError>;
 
     /// Retrieves the current chain ID from the VM.
     ///
@@ -120,13 +115,13 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(AccountData)` - The account's balance and nonce.
+    /// * `Ok(AccountInfo)` - The account's balance and nonce.
     /// * `Err(VmError)` - If the account query failed (e.g., account not found,
     ///   internal error).
     async fn get_account_data(
         &self,
         pk: &BlsPublicKey,
-    ) -> Result<AccountData, VmError>;
+    ) -> Result<model::account::AccountInfo, VmError>;
 
     /// Retrieves the balance for a given account public key.
     ///
@@ -207,17 +202,22 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<(StakeKeys, StakeData)>)` - A vector containing tuples of
-    ///   stake keys and stake data for each provisioner.
+    /// * `Ok(Vec<(ProvisionerKeys, ProvisionerStakeData)>)` - A vector
+    ///   containing tuples of provisioner keys and stake data for each
+    ///   provisioner.
     /// * `Err(VmError)` - If retrieving the provisioners failed.
     async fn get_provisioners(
         &self,
-    ) -> Result<Vec<(StakeKeys, StakeData)>, VmError>;
+    ) -> Result<
+        Vec<(
+            model::provisioner::ProvisionerKeys,
+            model::provisioner::ProvisionerStakeData,
+        )>,
+        VmError,
+    >;
 
     /// Retrieves stake information for a single provisioner by their BLS public
     /// key.
-    ///
-    /// # Required Method
     ///
     /// Corresponds to `node::vm::VMExecution::get_provisioner`.
     ///
@@ -227,55 +227,60 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<Stake>)` - The stake information if the provisioner exists,
-    ///   otherwise `None`.
+    /// * `Ok(Option<ConsensusStakeInfo>)` - The simplified stake information if
+    ///   the provisioner exists, otherwise `None`.
     /// * `Err(VmError)` - If the query failed.
     async fn get_stake_info_by_pk(
         &self,
         pk: &BlsPublicKey,
-    ) -> Result<Option<Stake>, VmError>;
-
-    /// Retrieves the stake data for a specific provisioner by their public key.
-    ///
-    /// # Default Method - Now potentially incorrect if get_stake_info_by_pk changes/is removed
-    async fn get_stake_data_by_pk(
-        &self,
-        pk: &BlsPublicKey,
-    ) -> Result<Option<Stake>, VmError> {
-        // Same underlying logic as get_stake_info_by_pk
-        self.get_stake_info_by_pk(pk).await
-    }
+    ) -> Result<Option<model::provisioner::ConsensusStakeInfo>, VmError>;
 
     /// Retrieves a list of all provisioners and their corresponding simplified
-    /// stake data (`Stake`).
+    /// stake data (`ConsensusStakeInfo`).
     ///
     /// This default implementation calls `get_provisioners` and maps the
-    /// detailed `(StakeKeys, StakeData)` pairs into `(BlsPublicKey, Stake)`
-    /// pairs. If a provisioner has no stake amount (`StakeData.amount` is
-    /// `None`), a default `Stake::new(0, 0)` is used.
+    /// detailed `(ProvisionerKeys, ProvisionerStakeData)` pairs into
+    /// `(AccountPublicKey, ConsensusStakeInfo)` pairs. If a provisioner has
+    /// no stake amount (`ProvisionerStakeData.amount` is `None`), a default
+    /// `ConsensusStakeInfo { value: 0, eligible_since: 0 }` is used.
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<(BlsPublicKey, Stake)>)` - A vector containing tuples of BLS
-    ///   public keys and their simplified stake information.
+    /// * `Ok(Vec<(AccountPublicKey, ConsensusStakeInfo)>)` - A vector
+    ///   containing tuples of BLS public keys (wrapped in `AccountPublicKey`)
+    ///   and their simplified stake information.
     /// * `Err(VmError)` - If retrieving the provisioners failed.
     async fn get_all_stake_data(
         &self,
-    ) -> Result<Vec<(BlsPublicKey, Stake)>, VmError> {
+    ) -> Result<
+        Vec<(
+            model::key::AccountPublicKey,
+            model::provisioner::ConsensusStakeInfo,
+        )>,
+        VmError,
+    > {
         // Retrieve full provisioners details
         let provisioners_details = self.get_provisioners().await?;
 
-        // Map the detailed data to the simplified (PublicKey, Stake) format
+        // Map the detailed data to the simplified (AccountPublicKey,
+        // ConsensusStakeInfo) format
         let data = provisioners_details
             .into_iter()
             .map(|(keys, data)| {
                 // Extract value and eligibility from StakeData.amount,
                 // defaulting to 0 if None.
-                let (value, eligibility) =
-                    data.amount.map_or((0, 0), |sa| (sa.value, sa.eligibility));
-                // Create the simplified Stake struct
-                let consensus_stake = Stake::new(value, eligibility);
-                (keys.account, consensus_stake) // Use the account key directly
+                let stake_info = data.amount.map_or_else(
+                    || model::provisioner::ConsensusStakeInfo {
+                        value: 0,
+                        eligible_since: 0,
+                    },
+                    |sa| model::provisioner::ConsensusStakeInfo {
+                        value: sa.value,
+                        eligible_since: sa.eligibility,
+                    },
+                );
+                (keys.account, stake_info) // Use the AccountPublicKey from
+                                           // ProvisionerKeys
             })
             .collect();
 
@@ -306,7 +311,11 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     /// Retrieves the VM configuration settings.
     ///
     /// # Required Method
-    async fn get_vm_config(&self) -> Result<RuskVmConfig, VmError>;
+    ///
+    /// # Returns
+    /// * `Ok(VmConfig)` - The VM configuration settings.
+    /// * `Err(VmError)` - If retrieving the configuration failed.
+    async fn get_vm_config(&self) -> Result<model::vm::VmConfig, VmError>;
 
     /// Retrieves detailed information about a single provisioner by public key.
     ///
@@ -314,36 +323,38 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     async fn get_provisioner_info_by_pk(
         &self,
         pk: &BlsPublicKey,
-    ) -> Result<ProvisionerInfo, VmError> {
+    ) -> Result<model::provisioner::ProvisionerInfo, VmError> {
         let all_details = self.get_provisioners().await?; // Call the refactored method
 
         // Find the details for the requested public key
-        if let Some((keys, data)) =
-            all_details.into_iter().find(|(k, _)| k.account == *pk)
+        if let Some((keys, data)) = all_details
+            .into_iter()
+            .find(|(k, _)| k.account.inner() == pk)
+        // Compare inner BlsPublicKey
         {
-            // Map the found StakeKeys and StakeData to the ProvisionerInfo
-            // model
-            let pk_b58 = bs58::encode(keys.account.to_bytes()).into_string();
+            // Map the found ProvisionerKeys and ProvisionerStakeData to the
+            // ProvisionerInfo model
+            let pk_b58 = keys.account.to_base58().map_err(|e| {
+                VmError::InternalError(format!(
+                    "Failed to encode public key: {}",
+                    e
+                ))
+            })?;
 
-            // Extract amount details, providing defaults if None
-            let (amount, locked, eligibility) =
-                data.amount.map_or((0, 0, 0), |sa: StakeAmount| {
+            // Extract amount details from Option<ProvisionerStakeAmount>,
+            // providing defaults if None
+            let (amount, locked, eligibility) = data.amount.map_or(
+                (0, 0, 0),
+                |sa: model::provisioner::ProvisionerStakeAmount| {
                     (sa.value, sa.locked, sa.eligibility)
-                });
+                },
+            );
 
-            // Map StakeFundOwner to StakeOwnerInfo
-            let owner_info = match keys.owner {
-                StakeFundOwner::Account(owner_pk) => StakeOwnerInfo::Account(
-                    bs58::encode(owner_pk.to_bytes()).into_string(),
-                ),
-                StakeFundOwner::Contract(contract_id) => {
-                    StakeOwnerInfo::Contract(hex::encode(
-                        contract_id.to_bytes(),
-                    ))
-                }
-            };
+            // owner is already in the correct StakeOwnerInfo format within
+            // ProvisionerKeys
+            let owner_info = keys.owner;
 
-            Ok(ProvisionerInfo {
+            Ok(model::provisioner::ProvisionerInfo {
                 public_key: pk_b58,
                 amount,
                 locked_amount: locked,
@@ -432,7 +443,7 @@ impl VmAdapter for RuskVmAdapter {
     async fn simulate_transaction(
         &self,
         tx_bytes: Vec<u8>,
-    ) -> Result<SimulationResult, VmError> {
+    ) -> Result<model::transaction::SimulationResult, VmError> {
         let tx = Transaction::read(&mut tx_bytes.as_slice()).map_err(|e| {
             VmError::QueryFailed(format!(
                 "Failed to deserialize transaction: {}",
@@ -454,14 +465,14 @@ impl VmAdapter for RuskVmAdapter {
                 .map_err(|e| VmError::ExecutionFailed(e.to_string()))?;
             let config = node_guard.vm_config.to_execution_config(0);
             let receipt = execute(&mut session, &tx.inner, &config);
-            // Map to SimulationResult
+            // Map to model::transaction::SimulationResult
             let sim = match receipt {
-                Ok(receipt) => SimulationResult {
+                Ok(receipt) => model::transaction::SimulationResult {
                     success: true,
                     gas_estimate: Some(receipt.gas_spent),
                     error: None,
                 },
-                Err(err) => SimulationResult {
+                Err(err) => model::transaction::SimulationResult {
                     success: false,
                     gas_estimate: None,
                     error: Some(format!("{:?}", err)),
@@ -476,7 +487,7 @@ impl VmAdapter for RuskVmAdapter {
     async fn preverify_transaction(
         &self,
         tx_bytes: Vec<u8>,
-    ) -> Result<PreverificationResult, VmError> {
+    ) -> Result<model::vm::VmPreverificationResult, VmError> {
         let tx = Transaction::read(&mut tx_bytes.as_slice()).map_err(|e| {
             VmError::QueryFailed(format!(
                 "Failed to deserialize transaction: {}",
@@ -490,10 +501,13 @@ impl VmAdapter for RuskVmAdapter {
         tokio::task::spawn_blocking(move || {
             // Acquire lock synchronously inside the blocking task
             let node_guard = node_rusk_lock.blocking_read();
-            // Call the original method on the guard
+            // Call the original method on the guard and convert the result
             node_guard
                 .preverify(&tx)
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
+                // Convert Ok(PreverificationResult) to
+                // Ok(VmPreverificationResult)
+                .map(Into::into)
         })
         .await
         .map_err(|e| VmError::InternalError(e.to_string()))?
@@ -518,7 +532,7 @@ impl VmAdapter for RuskVmAdapter {
     async fn get_account_data(
         &self,
         pk: &BlsPublicKey,
-    ) -> Result<AccountData, VmError> {
+    ) -> Result<model::account::AccountInfo, VmError> {
         // Clone the lock Arc and key for the blocking task
         let node_rusk_lock = self.node_rusk_lock.clone();
         let key = *pk; // Copy pk so it can be moved
@@ -526,10 +540,12 @@ impl VmAdapter for RuskVmAdapter {
         tokio::task::spawn_blocking(move || {
             // Acquire lock synchronously inside the blocking task
             let node_guard = node_rusk_lock.blocking_read();
-            // Call the original method on the guard
+            // Call the original method on the guard and convert the result
             node_guard
                 .account(&key)
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
+                // Convert Ok(AccountData) to Ok(AccountInfo)
+                .map(Into::into)
         })
         .await
         .map_err(|e| VmError::InternalError(e.to_string()))?
@@ -554,23 +570,32 @@ impl VmAdapter for RuskVmAdapter {
     /// `node::Rusk::provisioners`.
     async fn get_provisioners(
         &self,
-    ) -> Result<Vec<(StakeKeys, StakeData)>, VmError> {
+    ) -> Result<
+        Vec<(
+            model::provisioner::ProvisionerKeys,
+            model::provisioner::ProvisionerStakeData,
+        )>,
+        VmError,
+    > {
         // Clone the lock Arc for the blocking task
         let node_rusk_lock = self.node_rusk_lock.clone();
 
-        tokio::task::spawn_blocking(
-            move || -> Result<Vec<(StakeKeys, StakeData)>, String> {
-                // Acquire lock synchronously inside the blocking task
-                let node_guard = node_rusk_lock.blocking_read();
-                let provisioner_iter =
-                    node_guard.provisioners(None).map_err(|e| {
-                        format!("Failed to get provisioners iterator: {}", e)
-                    })?;
-                let details: Vec<(StakeKeys, StakeData)> =
-                    provisioner_iter.collect();
-                Ok(details)
-            },
-        )
+        tokio::task::spawn_blocking(move || {
+            // Acquire lock synchronously inside the blocking task
+            let node_guard = node_rusk_lock.blocking_read();
+            let provisioner_iter =
+                node_guard.provisioners(None).map_err(|e| {
+                    format!("Failed to get provisioners iterator: {}", e)
+                })?;
+            // Collect and convert each element in the vector
+            let details: Vec<(
+                model::provisioner::ProvisionerKeys,
+                model::provisioner::ProvisionerStakeData,
+            )> = provisioner_iter
+                .map(|(keys, data)| (keys.into(), data.into()))
+                .collect();
+            Ok(details)
+        })
         .await
         .map_err(|e| VmError::InternalError(format!("Task join error: {}", e)))?
         .map_err(VmError::QueryFailed)
@@ -581,7 +606,7 @@ impl VmAdapter for RuskVmAdapter {
     async fn get_stake_info_by_pk(
         &self,
         pk: &BlsPublicKey,
-    ) -> Result<Option<Stake>, VmError> {
+    ) -> Result<Option<model::provisioner::ConsensusStakeInfo>, VmError> {
         // Clone the lock Arc and key for the blocking task
         let node_rusk_lock = self.node_rusk_lock.clone();
         let key = *pk;
@@ -591,10 +616,16 @@ impl VmAdapter for RuskVmAdapter {
             let node_guard = node_rusk_lock.blocking_read();
             node_guard
                 .provisioner(&key)
+                // Map Option<StakeData> to Option<ConsensusStakeInfo>
                 .map(|stake_data_option| {
                     stake_data_option.map(|stake_data| {
+                        // Extract amount details, providing defaults if None
                         let amount = stake_data.amount.unwrap_or_default();
-                        Stake::new(amount.value, amount.eligibility)
+                        // Construct ConsensusStakeInfo from StakeAmount fields
+                        model::provisioner::ConsensusStakeInfo {
+                            value: amount.value,
+                            eligible_since: amount.eligibility,
+                        }
                     })
                 })
                 .map_err(|e| VmError::QueryFailed(e.to_string()))
@@ -640,8 +671,9 @@ impl VmAdapter for RuskVmAdapter {
 
     /// Retrieves the VM configuration settings directly from the Rusk node's
     /// config.
-    async fn get_vm_config(&self) -> Result<RuskVmConfig, VmError> {
+    async fn get_vm_config(&self) -> Result<model::vm::VmConfig, VmError> {
         // Acquire read lock asynchronously for quick read
-        Ok(self.node_rusk_lock.read().await.vm_config.clone())
+        // Clone the config and convert it
+        Ok(self.node_rusk_lock.read().await.vm_config.clone().into())
     }
 }
