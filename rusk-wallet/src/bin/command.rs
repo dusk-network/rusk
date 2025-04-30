@@ -525,7 +525,14 @@ impl Command {
                 let mut history =
                     history::transaction_from_notes(settings, notes).await?;
 
-                match history::moonlight_history(settings, address).await {
+                match history::moonlight_history(
+                    wallet,
+                    settings,
+                    address,
+                    profile_idx,
+                )
+                .await
+                {
                     Ok(mut moonlight_history) => {
                         history.append(&mut moonlight_history)
                     }

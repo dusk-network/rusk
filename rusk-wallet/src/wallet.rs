@@ -25,7 +25,7 @@ use dusk_core::signatures::bls::{
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
-    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
+    SecretKey as PhoenixSecretKey, StealthAddress, ViewKey as PhoenixViewKey,
 };
 use dusk_core::BlsScalar;
 use wallet_core::prelude::keys::{
@@ -367,6 +367,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .collect();
 
         Ok(history)
+    }
+
+    /// Checks if the profile at `profile_idx` owns the note with address
+    /// `stealth_address`.
+    pub fn owns_note(
+        &self,
+        stealth_address: &StealthAddress,
+        profile_idx: u8,
+    ) -> bool {
+        let vk = self.derive_phoenix_vk(profile_idx);
+        vk.owns(stealth_address)
     }
 
     /// Get the Phoenix balance

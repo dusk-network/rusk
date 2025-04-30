@@ -8,9 +8,11 @@
 //! The <node-url>/on/gaphql/query if queried with empty bytes returns the
 //! graphql schema
 
-use dusk_core::transfer::Transaction;
+use dusk_core::transfer::phoenix::StealthAddress;
+use dusk_core::transfer::{withdraw::WithdrawReceiver, Transaction};
 use serde::Deserialize;
 use serde_json::Value;
+use serde_with::hex::Hex;
 use serde_with::{serde_as, DisplayFromStr};
 use tokio::time::{sleep, Duration};
 
@@ -59,13 +61,62 @@ struct BlockResponse {
 }
 
 #[serde_as]
-#[derive(Deserialize, Debug)]
-pub struct BlockData {
+#[derive(Deserialize, Debug, Clone)]
+pub struct Note {
+    pub stealth_address: StealthAddress,
+}
+
+#[serde_as]
+#[derive(serde::Deserialize, Debug)]
+pub struct PhoenixTransactionEvent {
+    /// Notes produced during the transaction.
+    pub notes: Vec<Note>,
+    /// The memo included in the transaction.
+    #[serde_as(as = "Hex")]
+    pub memo: Vec<u8>,
+    /// Gas spent by the transaction.
     #[serde_as(as = "DisplayFromStr")]
     pub gas_spent: u64,
+    /// Optional gas-refund note if the refund is positive.
+    pub refund_note: Option<Note>,
+}
+
+#[serde_as]
+#[derive(Deserialize, Debug)]
+pub struct MoonlightTransactionEvent {
+    /// The account that initiated the transaction.
     pub sender: String,
+    /// Transfer amount
     #[serde_as(as = "DisplayFromStr")]
-    pub value: f64,
+    pub value: u64,
+    /// Gas spent by the transaction.
+    #[serde_as(as = "DisplayFromStr")]
+    pub gas_spent: u64,
+}
+
+/// A deserialized `ConvertEvent`
+#[serde_as]
+#[derive(Deserialize, Debug)]
+pub struct ConvertEvent {
+    pub sender: Option<String>,
+    #[serde_as(as = "DisplayFromStr")]
+    pub value: u64,
+    pub receiver: WithdrawReceiver,
+}
+
+/// Deserialized block data in the full moonlight history.
+#[serde_as]
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+pub enum BlockData {
+    /// For the moonlight transaction event.
+    MoonlightTransactionEvent(MoonlightTransactionEvent),
+    /// For the PhoenixTransactionEvent.
+    /// In the case where a conversion is made from phoenix to
+    /// moonlight, this appears.
+    PhoenixTransactionEvent(PhoenixTransactionEvent),
+    /// For the convert event.
+    ConvertEvent(ConvertEvent),
 }
 
 #[derive(Deserialize, Debug)]
@@ -336,6 +387,11 @@ async fn deser() -> Result<(), Box<dyn std::error::Error>> {
 
     let empty_full_moonlight_history = r#"{"fullMoonlightHistory":null}"#;
     serde_json::from_str::<FullMoonlightHistory>(empty_full_moonlight_history)
+        .unwrap();
+
+    let full_moonlight_history =
+        include_str!("./gql/full_moonlight_history.json");
+    serde_json::from_str::<FullMoonlightHistory>(full_moonlight_history)
         .unwrap();
 
     Ok(())
