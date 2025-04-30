@@ -522,20 +522,20 @@ impl Command {
                 let notes = wallet.get_all_notes(profile_idx)?;
                 let address = wallet.public_address(profile_idx)?;
 
-                let mut phoenix_history =
+                let mut history =
                     history::transaction_from_notes(settings, notes).await?;
 
                 match history::moonlight_history(settings, address).await {
                     Ok(mut moonlight_history) => {
-                        phoenix_history.append(&mut moonlight_history)
+                        history.append(&mut moonlight_history)
                     }
                     Err(err) => tracing::error!(
                         "Failed to fetch archive history with error: {err}"
                     ),
                 }
 
-                phoenix_history.sort_by_key(|th| th.height());
-                Ok(RunResult::History(phoenix_history))
+                history.sort_by_key(|th| th.height());
+                Ok(RunResult::History(history))
             }
             Command::Unshield {
                 profile_idx,
