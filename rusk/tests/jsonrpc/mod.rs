@@ -12,7 +12,7 @@ pub mod error;
 pub mod infrastructure;
 pub mod model;
 pub mod rpc_methods;
-pub mod server;
 pub mod serde_helpers;
+pub mod server;
 
 pub mod utils;
