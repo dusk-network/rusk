@@ -90,7 +90,13 @@ pub(crate) async fn run_loop(
                     if confirm(&cmd, wallet)? {
                         // run command
                         prompt::hide_cursor()?;
-                        let res = cmd.run(wallet, settings).await?;
+                        let res = match cmd.run(wallet, settings).await {
+                            Ok(res) => res,
+                            Err(err) => {
+                                println!("{err}\n");
+                                continue;
+                            }
+                        };
                         prompt::show_cursor()?;
 
                         // output results
