@@ -24,19 +24,20 @@
 //! [`Network Adapter Methods
 //! Comparison`](../../../../docs/network_adapter_methods.md)
 
-use crate::jsonrpc::infrastructure::error::NetworkError;
+use std::fmt;
+use std::net::SocketAddr;
+use std::sync::Arc;
+
 use async_trait::async_trait;
-#[cfg(feature = "chain")]
+use tokio::sync::RwLock;
+
 use node::Network;
 use node_data::ledger;
 use node_data::message::payload::Inv;
 use node_data::message::Message;
 use node_data::Serializable;
-use std::fmt;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
+use crate::jsonrpc::infrastructure::error::NetworkError;
 use crate::jsonrpc::model;
 
 /// Trait defining the interface for network operations needed by the JSON-RPC
@@ -183,13 +184,11 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
 
 // RuskNetworkAdapter implementation (requires 'chain' feature)
 
-#[cfg(feature = "chain")]
 pub struct RuskNetworkAdapter<N: Network> {
     /// Shared, thread-safe access to the network client.
     network_client: Arc<RwLock<N>>,
 }
 
-#[cfg(feature = "chain")]
 impl<N: Network> RuskNetworkAdapter<N> {
     /// Creates a new `RuskNetworkAdapter`.
     ///
@@ -204,7 +203,6 @@ impl<N: Network> RuskNetworkAdapter<N> {
 
 // Manual Debug implementation to avoid requiring N: Debug and potentially
 // leaking sensitive info.
-#[cfg(feature = "chain")]
 impl<N: Network> fmt::Debug for RuskNetworkAdapter<N> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("RuskNetworkAdapter")
@@ -213,7 +211,6 @@ impl<N: Network> fmt::Debug for RuskNetworkAdapter<N> {
     }
 }
 
-#[cfg(feature = "chain")]
 #[async_trait]
 impl<N: Network> NetworkAdapter for RuskNetworkAdapter<N> {
     async fn broadcast_transaction(
