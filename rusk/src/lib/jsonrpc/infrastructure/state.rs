@@ -1289,20 +1289,22 @@ impl AppState {
     ///
     /// # Arguments
     ///
-    /// * `height`: The block height.
+    /// * `height`: Height of the block.
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<model::block::BlockHeader>)`: if the header is found.
-    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    /// * `Ok(Option<model::block::BlockHeader>)` if the header is found for the
+    ///   given height.
+    /// * `Err(jsonrpc::error::Error)` if a database error occurs during hash or
+    ///   header lookup.
     pub async fn get_block_header_by_height(
         &self,
         height: u64,
     ) -> Result<Option<model::block::BlockHeader>, JsonRpcError> {
-        self.db_adapter
+        self.db_adapter // Corrected: Use field access
             .get_block_header_by_height(height)
             .await
-            .map_err(RpcInfraError::Database)
+            .map_err(RpcInfraError::Database) // Reverted: Explicit chain
             .map_err(JsonRpcError::Infrastructure)
     }
 
@@ -1920,6 +1922,391 @@ impl AppState {
     ) -> Result<Vec<Option<model::block::Block>>, JsonRpcError> {
         self.db_adapter
             .get_blocks_by_hashes(hashes_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the latest block header.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::block::BlockHeader)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_latest_block_header(
+        &self,
+    ) -> Result<model::block::BlockHeader, JsonRpcError> {
+        self.db_adapter
+            .get_latest_block_header()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a range of block headers concurrently.
+    ///
+    /// # Arguments
+    ///
+    /// * `height_start`: Start height of the range.
+    /// * `height_end`: End height of the range.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<model::block::BlockHeader>)` containing headers for found
+    ///   blocks in the range. Note: If individual header lookups within the
+    ///   range fail (e.g., height not found), they are skipped.
+    /// * `Err(jsonrpc::error::Error::InternalError)` if `height_start >
+    ///   height_end`.
+    pub async fn get_block_headers_range(
+        &self,
+        height_start: u64,
+        height_end: u64,
+    ) -> Result<Vec<model::block::BlockHeader>, JsonRpcError> {
+        self.db_adapter
+            .get_block_headers_range(height_start, height_end)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves multiple block headers concurrently.
+    ///
+    /// # Arguments
+    ///
+    /// * `hashes_hex`: Array of block hashes.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<Option<model::block::BlockHeader>>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_block_headers_by_hashes(
+        &self,
+        hashes_hex: &[String],
+    ) -> Result<Vec<Option<model::block::BlockHeader>>, JsonRpcError> {
+        self.db_adapter
+            .get_block_headers_by_hashes(hashes_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves block timestamp by hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_hash_hex`: Block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<u64>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_block_timestamp_by_hash(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<Option<u64>, JsonRpcError> {
+        self.db_adapter
+            .get_block_timestamp_by_hash(block_hash_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves block timestamp by height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: Height of the block.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<u64>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_block_timestamp_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<u64>, JsonRpcError> {
+        self.db_adapter
+            .get_block_timestamp_by_height(height)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves transactions for a block by height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: Height of the block.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<model::transaction::TransactionResponse>>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_block_transactions_by_height(
+        &self,
+        height: u64,
+    ) -> Result<
+        Option<Vec<model::transaction::TransactionResponse>>,
+        JsonRpcError,
+    > {
+        self.db_adapter
+            .get_block_transactions_by_height(height)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves faults for a block by height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: Height of the block.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::BlockFaults>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_block_faults_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<model::block::BlockFaults>, JsonRpcError> {
+        self.db_adapter
+            .get_block_faults_by_height(height)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the consensus label for the latest block.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::block::BlockLabel)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_latest_block_label(
+        &self,
+    ) -> Result<model::block::BlockLabel, JsonRpcError> {
+        self.db_adapter
+            .get_latest_block_label()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves detailed transaction info by hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_hash_hex`: Transaction hash.
+    /// * `include_tx_index`: Whether to include the transaction index in the
+    ///   returned [`TransactionInfo`].
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::transaction::TransactionInfo>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_transaction_by_hash(
+        &self,
+        tx_hash_hex: &str,
+        include_tx_index: bool,
+    ) -> Result<Option<model::transaction::TransactionInfo>, JsonRpcError> {
+        self.db_adapter
+            .get_transaction_by_hash(tx_hash_hex, include_tx_index)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves multiple transactions concurrently.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_hashes_hex`: Array of transaction hashes.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<Option<model::transaction::TransactionInfo>>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_transactions_batch(
+        &self,
+        tx_hashes_hex: &[String],
+    ) -> Result<Vec<Option<model::transaction::TransactionInfo>>, JsonRpcError>
+    {
+        self.db_adapter
+            .get_transactions_batch(tx_hashes_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the count of transactions currently in the mempool.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_mempool_transactions_count(
+        &self,
+    ) -> Result<u64, JsonRpcError> {
+        self.db_adapter
+            .get_mempool_transactions_count()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the `count` most recent block summaries.
+    ///
+    /// # Arguments
+    ///
+    /// * `count`: The number of latest blocks to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<model::block::Block>)` containing the block summaries.
+    /// * `Err(JsonRpcError::Infrastructure)` if fetching the latest block
+    ///   height or the block range fails.
+    pub async fn get_latest_blocks(
+        &self,
+        count: u64,
+    ) -> Result<Vec<model::block::Block>, JsonRpcError> {
+        self.db_adapter
+            .get_latest_blocks(count)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the total number of blocks in the chain.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` containing the block count (latest height + 1).
+    /// * `Err(JsonRpcError::Infrastructure)` if fetching the latest block
+    ///   height fails.
+    pub async fn get_blocks_count(&self) -> Result<u64, JsonRpcError> {
+        self.db_adapter
+            .get_blocks_count()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a pair of consecutive block summaries by the height of the
+    /// first block.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: The height of the first block in the pair.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some((model::block::Block, model::block::Block)))` if both blocks
+    ///   at `height` and `height + 1` are found.
+    /// * `Ok(None)` if either block in the pair is not found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_block_pair(
+        &self,
+        height: u64,
+    ) -> Result<Option<(model::block::Block, model::block::Block)>, JsonRpcError>
+    {
+        self.db_adapter
+            .get_block_pair(height)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a specific range of transactions from a block identified by
+    /// its hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_hash_hex`: The hex-encoded hash of the block.
+    /// * `start_index`: The starting index (0-based) of the transaction range.
+    /// * `count`: The maximum number of transactions to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<model::transaction::TransactionResponse>>)`: Contains
+    ///   the transactions in the specified range if the block and range are
+    ///   valid. Returns `None` if the block itself is not found.
+    /// * `Err(JsonRpcError::Infrastructure)`: If a database error occurs.
+    pub async fn get_block_transaction_range_by_hash(
+        &self,
+        block_hash_hex: &str,
+        start_index: usize,
+        count: usize,
+    ) -> Result<
+        Option<Vec<model::transaction::TransactionResponse>>,
+        JsonRpcError,
+    > {
+        self.db_adapter
+            .get_block_transaction_range_by_hash(
+                block_hash_hex,
+                start_index,
+                count,
+            )
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the last `count` transactions from a block identified by its
+    /// height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: The height of the block.
+    /// * `count`: The maximum number of last transactions to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<model::transaction::TransactionResponse>>)`: Contains
+    ///   the last `count` transactions if the block is found. Returns `None` if
+    ///   the block itself is not found.
+    /// * `Err(JsonRpcError::Infrastructure)`: If a database error occurs.
+    pub async fn get_last_block_transactions_by_height(
+        &self,
+        height: u64,
+        count: usize,
+    ) -> Result<
+        Option<Vec<model::transaction::TransactionResponse>>,
+        JsonRpcError,
+    > {
+        self.db_adapter
+            .get_last_block_transactions_by_height(height, count)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a specific range of transactions from a block identified by
+    /// its height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: The height of the block.
+    /// * `start_index`: The starting index (0-based) of the transaction range.
+    /// * `count`: The maximum number of transactions to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<model::transaction::TransactionResponse>>)`: Contains
+    ///   the transactions in the specified range if the block and range are
+    ///   valid. Returns `None` if the block itself is not found.
+    /// * `Err(JsonRpcError::Infrastructure)`: If a database error occurs.
+    pub async fn get_block_transaction_range_by_height(
+        &self,
+        height: u64,
+        start_index: usize,
+        count: usize,
+    ) -> Result<
+        Option<Vec<model::transaction::TransactionResponse>>,
+        JsonRpcError,
+    > {
+        self.db_adapter
+            .get_block_transaction_range_by_height(height, start_index, count)
             .await
             .map_err(RpcInfraError::Database)
             .map_err(JsonRpcError::Infrastructure)
