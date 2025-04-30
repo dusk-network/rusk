@@ -30,7 +30,10 @@
 //!   optional status, and the specific data payload.
 //! - [`MempoolTransaction`]: Represents a transaction currently in the mempool.
 //! - [`TransactionInfo`]: Detailed information about a confirmed transaction,
-//!   including its block context.
+//!   including its block context. It's conceptually related to
+//!   `node_data::ledger::SpentTransaction` but enriched with block details like
+//!   hash, timestamp, and index, typically requiring additional lookups to
+//!   construct.
 //! - [`SimulationResult`]: Outcome of simulating a transaction's execution.
 //! - [`ContractEvent`], [`MoonlightEventGroup`]: Structures related to contract
 //!   events emitted during transaction execution (primarily for archival
@@ -394,7 +397,9 @@ pub struct MempoolTransaction {
 /// in a block.
 ///
 /// Includes both the transaction data and its execution context within the
-/// block.
+/// block. This structure corresponds conceptually to a confirmed transaction
+/// like `node_data::ledger::SpentTransaction` but is enriched with additional
+/// block context (hash, timestamp, index) obtained through separate lookups.
 ///
 /// # Examples
 ///
