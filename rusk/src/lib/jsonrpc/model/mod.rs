@@ -35,6 +35,7 @@
 //!
 //! ## Submodules:
 //!
+//! - [`account`]: Models for account information.
 //! - [`archive`]: Models for archive-related types.
 //! - [`block`]: Models related to blocks, headers, status, and faults.
 //! - [`chain`]: Models for overall blockchain statistics.
@@ -51,7 +52,9 @@
 //! - [`subscription`]: Placeholder for WebSocket subscription models (if any).
 //! - [`transaction`]: Models for transactions, status, types, events, and
 //!   simulation results.
+//! - [`vm`]: Models for virtual machine (VM) operations and configurations.
 
+pub mod account;
 pub mod archive;
 pub mod block;
 pub mod chain;
@@ -66,3 +69,4 @@ pub mod provisioner;
 pub mod serde_helper;
 pub mod subscription;
 pub mod transaction;
+pub mod vm;
