@@ -533,6 +533,7 @@ impl Command {
                     tracing::error!("Cannot fetch archive history");
                 }
 
+                phoenix_history.sort_by_key(|th| th.height());
                 Ok(RunResult::History(phoenix_history))
             }
             Command::Unshield {
