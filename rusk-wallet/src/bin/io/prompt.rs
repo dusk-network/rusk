@@ -94,10 +94,11 @@ pub(crate) fn derive_key_from_new_password(
     password: &Option<String>,
     salt: Option<&[u8; SALT_SIZE]>,
     file_version: DatFileVersion,
+    prompter: &dyn Prompt,
 ) -> anyhow::Result<Vec<u8>> {
     let pwd = match password.as_ref() {
         Some(p) => p.to_string(),
-        None => create_new_password()?,
+        None => prompter.create_new_password()?,
     };
 
     derive_key(file_version, &pwd, salt)
@@ -126,12 +127,14 @@ where
 }
 
 /// Request the user to input the mnemonic phrase
-pub(crate) fn request_mnemonic_phrase() -> anyhow::Result<String> {
+pub(crate) fn request_mnemonic_phrase(
+    prompter: &dyn Prompt,
+) -> anyhow::Result<String> {
     // let the user input the mnemonic phrase
     let mut attempt = 1;
     loop {
         let phrase =
-            Text::new("Please enter the mnemonic phrase: ").prompt()?;
+            prompter.prompt_text("Please enter the mnemonic phrase: ")?;
 
         match Mnemonic::from_phrase(&phrase, Language::English) {
             Ok(phrase) => break Ok(phrase.to_string()),
