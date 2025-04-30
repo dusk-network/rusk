@@ -1617,18 +1617,27 @@ impl DatabaseAdapter for RuskDbAdapter {
         &self,
     ) -> Result<Vec<model::transaction::TransactionResponse>, DbError> {
         let db_client = self.db_client.clone();
-        let node_txs = tokio::task::spawn_blocking(move || {
-            let db = db_client.blocking_read();
-            let collected_txs: Vec<ledger::Transaction> =
-                db.view(|v| v.mempool_txs_sorted_by_fee()).collect();
-            collected_txs
-        })
-        .await
-        .map_err(|e| {
-            DbError::InternalError(format!("Task join error: {}", e))
-        })?;
 
-        let response_txs = node_txs
+        let join_result: Result<
+            Vec<ledger::Transaction>,
+            tokio::task::JoinError,
+        > = tokio::task::spawn_blocking(move || {
+            let db = db_client.blocking_read();
+            // The closure passed to view returns Vec<Transaction>
+            db.view(|v| {
+                v.mempool_txs_sorted_by_fee()
+                    .collect::<Vec<ledger::Transaction>>()
+            }) // view itself returns Vec<Transaction>
+        })
+        .await;
+
+        // Handle potential JoinError from spawn_blocking
+        let collected_node_txs: Vec<ledger::Transaction> = join_result
+            .map_err(|e| {
+                DbError::InternalError(format!("Task join error: {}", e))
+            })?;
+
+        let response_txs = collected_node_txs
             .into_iter()
             .map(model::transaction::TransactionResponse::from)
             .collect();
