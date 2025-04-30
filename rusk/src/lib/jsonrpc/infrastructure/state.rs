@@ -178,6 +178,9 @@ use std::sync::Arc;
 
 use parking_lot::RwLock;
 
+use dusk_core::abi::ContractId;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+
 use crate::jsonrpc::config::JsonRpcConfig;
 use crate::jsonrpc::error::Error as JsonRpcError;
 use crate::jsonrpc::infrastructure::error::Error as RpcInfraError;
@@ -2310,5 +2313,289 @@ impl AppState {
             .await
             .map_err(RpcInfraError::Database)
             .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Simulates the execution of a transaction without applying state changes.
+    ///
+    /// This is useful for estimating gas costs or predicting the outcome of a
+    /// transaction before broadcasting it.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_bytes` - The serialized transaction bytes to be simulated.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::transaction::SimulationResult)` - Contains details about
+    ///   the simulation outcome (e.g., gas used, return value, logs).
+    /// * `Err(JsonRpcError)` - If the simulation failed (e.g., invalid
+    ///   transaction, execution error, internal VM error).
+    pub async fn simulate_transaction(
+        &self,
+        tx_bytes: Vec<u8>,
+    ) -> Result<model::transaction::SimulationResult, JsonRpcError> {
+        self.vm_adapter
+            .simulate_transaction(tx_bytes)
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    // -- VmAdapter Methods --
+
+    /// Performs preverification checks on a transaction.
+    ///
+    /// Checks performed may include signature validation, nonce checks, and
+    /// basic structural validity without full execution.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_bytes` - The serialized transaction bytes to preverify.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::vm::VmPreverificationResult)` - Indicates whether the
+    ///   preverification checks passed or failed, potentially with details.
+    /// * `Err(JsonRpcError)` - If the preverification process encountered an
+    ///   internal error.
+    pub async fn preverify_transaction(
+        &self,
+        tx_bytes: Vec<u8>,
+    ) -> Result<model::vm::VmPreverificationResult, JsonRpcError> {
+        self.vm_adapter
+            .preverify_transaction(tx_bytes)
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves the current chain ID from the VM.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u8)` - The chain ID.
+    /// * `Err(JsonRpcError)` - If retrieving the chain ID failed.
+    pub async fn get_chain_id(&self) -> Result<u8, JsonRpcError> {
+        self.vm_adapter
+            .get_chain_id()
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves account data (balance and nonce) for a given public key.
+    ///
+    /// # Arguments
+    ///
+    /// * `pk` - The BLS public key of the account to query.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::account::AccountInfo)` - The account's balance and nonce.
+    /// * `Err(JsonRpcError)` - If the account query failed (e.g., account not
+    ///   found, internal error).
+    pub async fn get_account_data(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<model::account::AccountInfo, JsonRpcError> {
+        self.vm_adapter
+            .get_account_data(pk)
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves the balance for a given account public key.
+    ///
+    /// # Arguments
+    ///
+    /// * `pk` - The BLS public key of the account to query.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` - The account's balance.
+    /// * `Err(JsonRpcError)` - If the underlying query failed.
+    pub async fn get_account_balance(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<u64, JsonRpcError> {
+        self.vm_adapter
+            .get_account_balance(pk)
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves the nonce for a given account public key.
+    ///
+    /// # Arguments
+    ///
+    /// * `pk` - The BLS public key of the account to query.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` - The account's nonce.
+    /// * `Err(JsonRpcError)` - If the underlying query failed.
+    pub async fn get_account_nonce(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<u64, JsonRpcError> {
+        self.vm_adapter
+            .get_account_nonce(pk)
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves the current state root hash from the VM.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok([u8; 32])` - The 32-byte state root hash.
+    /// * `Err(JsonRpcError)` - If retrieving the state root failed.
+    pub async fn get_state_root(&self) -> Result<[u8; 32], JsonRpcError> {
+        self.vm_adapter
+            .get_state_root()
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves the gas limit for a block from the VM.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` - The block gas limit.
+    /// * `Err(JsonRpcError)` - If retrieving the gas limit failed.
+    pub async fn get_block_gas_limit(&self) -> Result<u64, JsonRpcError> {
+        self.vm_adapter
+            .get_block_gas_limit()
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves the full details (ProvisionerKeys, ProvisionerStakeData) for
+    /// all current provisioners from the VM state.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<(model::provisioner::ProvisionerKeys,
+    ///   model::provisioner::ProvisionerStakeData)>)`
+    ///   - A vector containing tuples of provisioner keys and stake data for
+    ///     each provisioner.
+    /// * `Err(JsonRpcError)` - If retrieving the provisioners failed.
+    pub async fn get_provisioners(
+        &self,
+    ) -> Result<
+        Vec<(
+            model::provisioner::ProvisionerKeys,
+            model::provisioner::ProvisionerStakeData,
+        )>,
+        JsonRpcError,
+    > {
+        self.vm_adapter
+            .get_provisioners()
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves stake information for a single provisioner by their BLS public
+    /// key.
+    ///
+    /// # Arguments
+    ///
+    /// * `pk` - The BLS public key of the provisioner.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::provisioner::ConsensusStakeInfo>)` - The simplified
+    ///   stake information if the provisioner exists, otherwise `None`.
+    /// * `Err(JsonRpcError)` - If the query failed.
+    pub async fn get_stake_info_by_pk(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<Option<model::provisioner::ConsensusStakeInfo>, JsonRpcError>
+    {
+        self.vm_adapter
+            .get_stake_info_by_pk(pk)
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves a list of all provisioners and their corresponding simplified
+    /// stake data (`ConsensusStakeInfo`).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<(model::key::AccountPublicKey,
+    ///   model::provisioner::ConsensusStakeInfo)>)`
+    ///   - A vector containing tuples of BLS public keys (wrapped in
+    ///     `model::key::AccountPublicKey`) and their simplified stake
+    ///     information.
+    /// * `Err(JsonRpcError)` - If retrieving the provisioners failed.
+    pub async fn get_all_stake_data(
+        &self,
+    ) -> Result<
+        Vec<(
+            model::key::AccountPublicKey,
+            model::provisioner::ConsensusStakeInfo,
+        )>,
+        JsonRpcError,
+    > {
+        self.vm_adapter
+            .get_all_stake_data()
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Executes a read-only query on a contract at a specific state commit.
+    ///
+    /// # Arguments
+    /// * `contract_id` - The ID of the contract to query.
+    /// * `method` - The name of the contract method to call.
+    /// * `base_commit` - The state commit hash to execute the query against.
+    /// * `args_bytes` - The serialized arguments for the contract method.
+    ///
+    /// # Returns
+    /// * `Ok(Vec<u8>)` - The serialized result bytes from the contract query.
+    /// * `Err(JsonRpcError)` - If the query failed.
+    pub async fn query_contract_raw(
+        &self,
+        contract_id: ContractId,
+        method: String,
+        base_commit: [u8; 32],
+        args_bytes: Vec<u8>,
+    ) -> Result<Vec<u8>, JsonRpcError> {
+        self.vm_adapter
+            .query_contract_raw(contract_id, method, base_commit, args_bytes)
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves the VM configuration settings.
+    ///
+    /// # Returns
+    /// * `Ok(model::vm::VmConfig)` - The VM configuration settings.
+    /// * `Err(JsonRpcError)` - If retrieving the configuration failed.
+    pub async fn get_vm_config(
+        &self,
+    ) -> Result<model::vm::VmConfig, JsonRpcError> {
+        self.vm_adapter
+            .get_vm_config()
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
+    }
+
+    /// Retrieves detailed information about a single provisioner by public key.
+    ///
+    /// # Arguments
+    /// * `pk` - The BLS public key of the provisioner.
+    ///
+    /// # Returns
+    /// * `Ok(model::provisioner::ProvisionerInfo)` - Detailed information if
+    ///   the provisioner is found.
+    /// * `Err(JsonRpcError)` - If the provisioner is not found or the query
+    ///   failed.
+    pub async fn get_provisioner_info_by_pk(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<model::provisioner::ProvisionerInfo, JsonRpcError> {
+        self.vm_adapter
+            .get_provisioner_info_by_pk(pk)
+            .await
+            .map_err(|err| RpcInfraError::Vm(err).into())
     }
 }

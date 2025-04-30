@@ -193,8 +193,8 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
     /// * `Err(VmError)` - If retrieving the gas limit failed.
     async fn get_block_gas_limit(&self) -> Result<u64, VmError>;
 
-    /// Retrieves the full details (StakeKeys, StakeData) for all current
-    /// provisioners from the VM state.
+    /// Retrieves the full details (ProvisionerKeys, ProvisionerStakeData) for
+    /// all current provisioners from the VM state.
     ///
     /// # Required Method
     /// Corresponds to `node::Rusk::provisioners`.
@@ -563,8 +563,8 @@ impl VmAdapter for RuskVmAdapter {
         Ok(self.node_rusk_lock.read().await.vm_config.block_gas_limit)
     }
 
-    /// Retrieves the full details (StakeKeys, StakeData) for all current
-    /// provisioners from the Rusk node.
+    /// Retrieves the full details (ProvisionerKeys, ProvisionerStakeData) for
+    /// all current provisioners from the Rusk node.
     ///
     /// Spawns a blocking task to delegate the call to
     /// `node::Rusk::provisioners`.
