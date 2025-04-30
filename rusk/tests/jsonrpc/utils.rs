@@ -473,6 +473,24 @@ impl DatabaseAdapter for MockDbAdapter {
         // tests, ignoring the write is often acceptable.
         Ok(())
     }
+
+    async fn get_block_finality_status(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<model::block::BlockFinalityStatus, DbError> {
+        if let Some(err) = self.force_error.clone() {
+            return Err(err);
+        }
+        // Simple mock: return Accepted if block exists in map, otherwise
+        // Unknown
+        if self.blocks_by_hash.contains_key(block_hash_hex)
+            || self.headers_by_hash.contains_key(block_hash_hex)
+        {
+            Ok(model::block::BlockFinalityStatus::Accepted)
+        } else {
+            Ok(model::block::BlockFinalityStatus::Unknown)
+        }
+    }
 }
 
 // --- Mock Archive Adapter ---
@@ -737,6 +755,8 @@ pub struct MockVmAdapter {
     pub account_data: Option<Vec<(BlsPublicKey, model::account::AccountInfo)>>,
     /// Predefined VmConfig
     pub vm_config: Option<model::vm::VmConfig>,
+    /// Set of existing nullifiers for the mock.
+    pub existing_nullifiers_set: Option<std::collections::HashSet<[u8; 32]>>,
 }
 
 // Manual implementation of Debug
@@ -753,6 +773,7 @@ impl std::fmt::Debug for MockVmAdapter {
             .field("chain_id", &self.chain_id)
             .field("account_data", &self.account_data)
             .field("vm_config", &self.vm_config)
+            .field("existing_nullifiers_set", &self.existing_nullifiers_set)
             .finish()
     }
 }
@@ -771,6 +792,7 @@ impl Clone for MockVmAdapter {
             chain_id: self.chain_id,
             account_data: self.account_data.clone(),
             vm_config: self.vm_config.clone(),
+            existing_nullifiers_set: self.existing_nullifiers_set.clone(),
         }
     }
 }
@@ -899,6 +921,27 @@ impl VmAdapter for MockVmAdapter {
         }
         // Return a predefined config or a default config for the mock
         Ok(self.vm_config.clone().unwrap_or_default())
+    }
+
+    async fn validate_nullifiers(
+        &self,
+        nullifiers: &[[u8; 32]],
+    ) -> Result<Vec<[u8; 32]>, VmError> {
+        if let Some(err) = &self.force_error {
+            return Err(err.clone());
+        }
+
+        if let Some(existing_set) = &self.existing_nullifiers_set {
+            let spent_nullifiers = nullifiers
+                .iter()
+                .filter(|n| existing_set.contains(*n))
+                .cloned()
+                .collect();
+            Ok(spent_nullifiers)
+        } else {
+            // Default: no nullifiers exist if set is not provided
+            Ok(Vec::new())
+        }
     }
 }
 
