@@ -7,7 +7,6 @@
 #![cfg(feature = "chain")]
 
 use dusk_core::signatures::bls::{PublicKey as BlsPublicKey, SecretKey};
-use dusk_core::transfer::moonlight::AccountData;
 use rusk::jsonrpc::infrastructure::error::VmError;
 use rusk::jsonrpc::infrastructure::vm::{RuskVmAdapter, VmAdapter};
 use rusk::node::Rusk as NodeRusk;
@@ -22,6 +21,8 @@ use rusk_recovery_tools::state;
 use node::archive::Archive;
 
 use crate::jsonrpc::utils::MockVmAdapter;
+
+use rusk::jsonrpc::model;
 
 // Helper to create a basic NodeRusk instance for testing
 async fn create_test_node_rusk() -> NodeRusk {
@@ -116,14 +117,14 @@ async fn test_vm_adapter_default_methods() {
 
     let expected_balance = 12345_u64;
     let expected_nonce = 42_u64;
-    let account_data = AccountData {
+    // Use the model::account::AccountInfo type
+    let account_info = model::account::AccountInfo {
         balance: expected_balance,
         nonce: expected_nonce,
     };
 
-    // Configure the mock to return specific AccountData for our pk
-    // Use Vec instead of HashMap
-    let data_vec = vec![(pk, account_data)]; // <-- Changed to Vec::new()
+    // Configure the mock to return specific AccountInfo for our pk
+    let data_vec = vec![(pk, account_info)]; // Use AccountInfo
     mock_adapter.account_data = Some(data_vec);
 
     // 2. Test get_account_balance (Default Method)
@@ -142,9 +143,13 @@ async fn test_vm_adapter_default_methods() {
 
     let balance_result_default = mock_adapter.get_account_balance(&pk2).await;
     assert!(balance_result_default.is_ok());
-    assert_eq!(balance_result_default.unwrap(), 0); // Mock default balance is 0
+    // MockVmAdapter::get_account_data default returns AccountInfo { balance: 0,
+    // nonce: 0 }
+    assert_eq!(balance_result_default.unwrap(), 0);
 
     let nonce_result_default = mock_adapter.get_account_nonce(&pk2).await;
     assert!(nonce_result_default.is_ok());
-    assert_eq!(nonce_result_default.unwrap(), 0); // Mock default nonce is 0
+    // MockVmAdapter::get_account_data default returns AccountInfo { balance: 0,
+    // nonce: 0 }
+    assert_eq!(nonce_result_default.unwrap(), 0);
 }

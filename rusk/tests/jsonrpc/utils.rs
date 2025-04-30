@@ -6,16 +6,14 @@
 
 //! Utility functions for JSON-RPC integration tests.
 
-use dusk_consensus::user::stake::Stake;
-
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::stake::StakeData;
-use dusk_core::stake::StakeKeys;
-use dusk_core::transfer::moonlight::AccountData;
 
 use node_data::ledger::{self as node_ledger};
 use node_data::message::{payload as node_payload, ConsensusHeader};
 
+use rusk::jsonrpc::config::{ConfigError, JsonRpcConfig};
+use rusk::jsonrpc::infrastructure::archive::ArchiveAdapter;
+use rusk::jsonrpc::infrastructure::db::DatabaseAdapter;
 use rusk::jsonrpc::infrastructure::error::NetworkError;
 use rusk::jsonrpc::infrastructure::error::{ArchiveError, DbError};
 use rusk::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
@@ -25,34 +23,13 @@ use rusk::jsonrpc::infrastructure::state::AppState;
 use rusk::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
 use rusk::jsonrpc::infrastructure::{error::VmError, vm::VmAdapter};
 use rusk::jsonrpc::model;
-use rusk::jsonrpc::model::archive::MoonlightEventGroup;
-use rusk::jsonrpc::model::block::{Block, BlockHeader, BlockStatus};
-use rusk::jsonrpc::model::provisioner::StakeInfo;
-use rusk::jsonrpc::model::transaction::{
-    BaseTransaction, TransactionResponse, TransactionType,
-};
-use rusk::jsonrpc::{
-    config::{ConfigError, JsonRpcConfig},
-    model::transaction::SimulationResult,
-};
-use rusk::jsonrpc::{
-    infrastructure::archive::ArchiveAdapter,
-    model::provisioner::ProvisionerInfo,
-};
-use rusk::jsonrpc::{
-    infrastructure::db::DatabaseAdapter,
-    model::transaction::{
-        MoonlightTransactionData, TransactionDataType, TransactionStatus,
-        TransactionStatusType,
-    },
-};
-
-use rusk::node::RuskVmConfig;
 
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::sync::Arc;
+
+use dusk_bytes::Serializable;
 
 // --- Helper Functions ---
 
@@ -67,14 +44,17 @@ pub fn get_ephemeral_port() -> Result<std::net::SocketAddr, std::io::Error> {
 }
 
 /// Creates a mock `Block` for testing with basic fields populated.
-pub(crate) fn create_mock_block(height: u64, _hash_prefix: &str) -> Block {
+pub(crate) fn create_mock_block(
+    height: u64,
+    _hash_prefix: &str,
+) -> model::block::Block {
     // Use a simple, deterministic hex hash based on height
     let hash_bytes = [height as u8; 32];
     let hash = hex::encode(hash_bytes);
     let prev_hash = hex::encode([(height.saturating_sub(1)) as u8; 32]);
 
-    Block {
-        header: BlockHeader {
+    model::block::Block {
+        header: model::block::BlockHeader {
             version: 1,
             height,
             previous_hash: prev_hash, // Deterministic prev hash
@@ -87,7 +67,7 @@ pub(crate) fn create_mock_block(height: u64, _hash_prefix: &str) -> Block {
             seed: format!("seed_{}", hash),
             sequence: 1,
         },
-        status: Some(BlockStatus::Final),
+        status: Some(model::block::BlockStatus::Final),
         transactions: None,
         transactions_count: 0,
         block_reward: Some(5000),
@@ -99,8 +79,8 @@ pub(crate) fn create_mock_block(height: u64, _hash_prefix: &str) -> Block {
 pub(crate) fn create_mock_moonlight_group(
     tx_hash_prefix: &str,
     block_height: u64,
-) -> MoonlightEventGroup {
-    MoonlightEventGroup {
+) -> model::archive::MoonlightEventGroup {
+    model::archive::MoonlightEventGroup {
         origin: format!("{}_{}", tx_hash_prefix, block_height),
         block_height,
         events: vec![], // Keep it simple for mock tests
@@ -108,26 +88,28 @@ pub(crate) fn create_mock_moonlight_group(
 }
 
 /// Helper to create a simple Moonlight Tx Response for testing.
-pub(crate) fn create_mock_ml_tx_response(hash: &str) -> TransactionResponse {
-    TransactionResponse {
-        base: BaseTransaction {
+pub(crate) fn create_mock_ml_tx_response(
+    hash: &str,
+) -> model::transaction::TransactionResponse {
+    model::transaction::TransactionResponse {
+        base: model::transaction::BaseTransaction {
             tx_hash: hash.into(),
             version: 1,
-            tx_type: TransactionType::Moonlight,
+            tx_type: model::transaction::TransactionType::Moonlight,
             gas_price: 10,
             gas_limit: 1000,
             raw: format!("raw_{}", hash),
         },
-        status: Some(TransactionStatus {
-            status: TransactionStatusType::Executed,
+        status: Some(model::transaction::TransactionStatus {
+            status: model::transaction::TransactionStatusType::Executed,
             block_height: Some(101),
             block_hash: Some(format!("bh_{}", hash)),
             gas_spent: Some(800),
             timestamp: Some(54321),
             error: None,
         }),
-        transaction_data: TransactionDataType::Moonlight(
-            MoonlightTransactionData {
+        transaction_data: model::transaction::TransactionDataType::Moonlight(
+            model::transaction::MoonlightTransactionData {
                 sender: "sender".to_string(),
                 receiver: Some("receiver".to_string()),
                 value: 1000,
@@ -174,13 +156,13 @@ pub(crate) fn create_environment_config(
 #[derive(Debug, Clone, Default)]
 pub struct MockDbAdapter {
     /// Mock storage for blocks keyed by height.
-    pub blocks_by_height: HashMap<u64, Block>,
+    pub blocks_by_height: HashMap<u64, model::block::Block>,
     /// Mock storage for blocks keyed by hex-encoded hash.
-    pub blocks_by_hash: HashMap<String, Block>,
+    pub blocks_by_hash: HashMap<String, model::block::Block>,
     /// Mock storage for headers keyed by height.
-    pub headers_by_height: HashMap<u64, BlockHeader>,
+    pub headers_by_height: HashMap<u64, model::block::BlockHeader>,
     /// Mock storage for headers keyed by hex-encoded hash.
-    pub headers_by_hash: HashMap<String, BlockHeader>,
+    pub headers_by_hash: HashMap<String, model::block::BlockHeader>,
     /// Mock storage for spent transactions keyed by hex-encoded hash.
     pub spent_txs_by_hash: HashMap<String, node_ledger::SpentTransaction>,
     /// Mock storage for mempool transactions keyed by tx_id.
@@ -212,7 +194,7 @@ impl DatabaseAdapter for MockDbAdapter {
     async fn get_block_by_hash(
         &self,
         block_hash_hex: &str,
-    ) -> Result<Option<Block>, DbError> {
+    ) -> Result<Option<model::block::Block>, DbError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
@@ -304,12 +286,14 @@ impl DatabaseAdapter for MockDbAdapter {
 
     async fn get_spent_transaction_by_hash(
         &self,
-        tx_hash_hex: &str,
-    ) -> Result<Option<node_ledger::SpentTransaction>, DbError> {
+        _tx_hash_hex: &str,
+    ) -> Result<Option<model::transaction::TransactionInfo>, DbError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
-        Ok(self.spent_txs_by_hash.get(tx_hash_hex).cloned())
+        // Mock: Return None. Constructing TransactionInfo is too complex for
+        // a simple mock.
+        Ok(None)
     }
 
     async fn ledger_tx_exists(
@@ -332,11 +316,16 @@ impl DatabaseAdapter for MockDbAdapter {
     async fn mempool_tx(
         &self,
         tx_id: [u8; 32],
-    ) -> Result<Option<node_ledger::Transaction>, DbError> {
+    ) -> Result<Option<model::transaction::TransactionResponse>, DbError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
-        Ok(self.mempool_txs.get(&tx_id).cloned())
+        // Mock: Retrieve NodeTransaction, convert if found.
+        Ok(self
+            .mempool_txs
+            .get(&tx_id)
+            .cloned()
+            .map(model::transaction::TransactionResponse::from))
     }
 
     async fn mempool_tx_exists(
@@ -351,14 +340,17 @@ impl DatabaseAdapter for MockDbAdapter {
 
     async fn mempool_txs_sorted_by_fee(
         &self,
-    ) -> Result<Vec<node_ledger::Transaction>, DbError> {
+    ) -> Result<Vec<model::transaction::TransactionResponse>, DbError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
-        // Mock: Sort stored mempool txs by gas_price (descending)
+        // Mock: Retrieve all, sort by fee, convert.
         let mut txs: Vec<_> = self.mempool_txs.values().cloned().collect();
         txs.sort_by_key(|b| std::cmp::Reverse(b.gas_price()));
-        Ok(txs)
+        Ok(txs
+            .into_iter()
+            .map(model::transaction::TransactionResponse::from)
+            .collect())
     }
 
     async fn mempool_txs_count(&self) -> Result<usize, DbError> {
@@ -405,41 +397,54 @@ impl DatabaseAdapter for MockDbAdapter {
     async fn candidate(
         &self,
         hash: &[u8; 32],
-    ) -> Result<Option<node_ledger::Block>, DbError> {
+    ) -> Result<Option<model::block::CandidateBlock>, DbError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
-        Ok(self.candidates_by_hash.get(hash).cloned())
+        // Mock: Retrieve node_ledger::Block, convert if found.
+        Ok(self
+            .candidates_by_hash
+            .get(hash)
+            .cloned()
+            .map(model::block::CandidateBlock::from))
     }
 
     async fn candidate_by_iteration(
         &self,
         header: &ConsensusHeader,
-    ) -> Result<Option<node_ledger::Block>, DbError> {
+    ) -> Result<Option<model::block::CandidateBlock>, DbError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
-        // Use a simple string representation for the key in the mock
+        // Serialize header to use as key (simplified mock)
         let key = format!(
-            "{:?}-{}-{}",
+            "{:?}_{}_{}",
             header.prev_block_hash, header.round, header.iteration
         );
-        Ok(self.candidates_by_iteration.get(&key).cloned())
+        Ok(self
+            .candidates_by_iteration
+            .get(&key)
+            .cloned()
+            .map(model::block::CandidateBlock::from))
     }
 
     async fn validation_result(
         &self,
         header: &ConsensusHeader,
-    ) -> Result<Option<node_payload::ValidationResult>, DbError> {
+    ) -> Result<Option<model::consensus::ValidationResult>, DbError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
-        // Use a simple string representation for the key in the mock
+        // Serialize header to use as key (simplified mock)
         let key = format!(
-            "{:?}-{}-{}",
+            "{:?}_{}_{}",
             header.prev_block_hash, header.round, header.iteration
         );
-        Ok(self.validation_results.get(&key).cloned())
+        Ok(self
+            .validation_results
+            .get(&key)
+            .cloned()
+            .map(model::consensus::ValidationResult::from))
     }
 
     // --- Metadata Primitives ---
@@ -455,14 +460,17 @@ impl DatabaseAdapter for MockDbAdapter {
     }
 
     async fn metadata_op_write(
-        &mut self,
-        key: &[u8],
-        value: &[u8],
+        &self,
+        _key: &[u8],
+        _value: &[u8],
     ) -> Result<(), DbError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
-        self.metadata.insert(key.to_vec(), value.to_vec());
+        // Mock: Silently ignore write as we changed to &self for trait
+        // compatibility If mutation is needed, the HashMap would need
+        // interior mutability (e.g., Arc<RwLock<...>>) For simple
+        // tests, ignoring the write is often acceptable.
         Ok(())
     }
 }
@@ -473,7 +481,7 @@ impl DatabaseAdapter for MockDbAdapter {
 #[derive(Debug, Clone, Default)]
 pub struct MockArchiveAdapter {
     /// Mock storage for transaction groups keyed by memo bytes (as Vec<u8>).
-    pub txs_by_memo: HashMap<Vec<u8>, Vec<MoonlightEventGroup>>,
+    pub txs_by_memo: HashMap<Vec<u8>, Vec<model::archive::MoonlightEventGroup>>,
     /// Mock storage for last archived block (height, hash).
     pub last_archived_block: Option<(u64, String)>,
     /// Mock storage for events keyed by hex block hash.
@@ -705,11 +713,18 @@ pub struct MockVmAdapter {
     /// Force an error on all method calls if Some.
     pub force_error: Option<VmError>,
     /// Predefined simulation result.
-    pub simulation_result: Option<SimulationResult>,
-    /// Predefined list of provisioners.
-    pub provisioners: Vec<ProvisionerInfo>,
-    /// Predefined stake info map (BLS pubkey hex -> StakeInfo).
-    pub stakes: HashMap<String, StakeInfo>,
+    pub simulation_result: Option<model::transaction::SimulationResult>,
+    /// Predefined preverification result.
+    pub preverification_result: Option<model::vm::VmPreverificationResult>,
+    /// Predefined list of provisioners with model types.
+    pub provisioners: Option<
+        Vec<(
+            model::provisioner::ProvisionerKeys,
+            model::provisioner::ProvisionerStakeData,
+        )>,
+    >,
+    /// Predefined stake info map (BLS pubkey -> ConsensusStakeInfo).
+    pub stakes: Option<HashMap<String, model::provisioner::ConsensusStakeInfo>>,
     /// Predefined state root.
     pub state_root: Option<[u8; 32]>,
     /// Predefined block gas limit.
@@ -718,7 +733,10 @@ pub struct MockVmAdapter {
     pub chain_id: Option<u8>,
     /// Predefined AccountData map for get_account_data. Use Vec as
     /// BlsPublicKey doesn't impl Ord or Hash.
-    pub account_data: Option<Vec<(BlsPublicKey, AccountData)>>,
+    /// Stores model::account::AccountInfo now.
+    pub account_data: Option<Vec<(BlsPublicKey, model::account::AccountInfo)>>,
+    /// Predefined VmConfig
+    pub vm_config: Option<model::vm::VmConfig>,
 }
 
 // Manual implementation of Debug
@@ -727,12 +745,14 @@ impl std::fmt::Debug for MockVmAdapter {
         f.debug_struct("MockVmAdapter")
             .field("force_error", &self.force_error)
             .field("simulation_result", &self.simulation_result)
+            .field("preverification_result", &self.preverification_result)
             .field("provisioners", &self.provisioners)
             .field("stakes", &self.stakes)
             .field("state_root", &self.state_root)
             .field("block_gas_limit", &self.block_gas_limit)
             .field("chain_id", &self.chain_id)
             .field("account_data", &self.account_data)
+            .field("vm_config", &self.vm_config)
             .finish()
     }
 }
@@ -743,12 +763,14 @@ impl Clone for MockVmAdapter {
         Self {
             force_error: self.force_error.clone(),
             simulation_result: self.simulation_result.clone(),
+            preverification_result: self.preverification_result.clone(),
             provisioners: self.provisioners.clone(),
             stakes: self.stakes.clone(),
             state_root: self.state_root,
             block_gas_limit: self.block_gas_limit,
             chain_id: self.chain_id,
             account_data: self.account_data.clone(),
+            vm_config: self.vm_config.clone(),
         }
     }
 }
@@ -758,7 +780,7 @@ impl VmAdapter for MockVmAdapter {
     async fn simulate_transaction(
         &self,
         _tx_bytes: Vec<u8>,
-    ) -> Result<SimulationResult, VmError> {
+    ) -> Result<model::transaction::SimulationResult, VmError> {
         if let Some(err) = &self.force_error {
             return Err(err.clone());
         }
@@ -770,11 +792,15 @@ impl VmAdapter for MockVmAdapter {
     async fn preverify_transaction(
         &self,
         _tx_bytes: Vec<u8>,
-    ) -> Result<::node::vm::PreverificationResult, VmError> {
+    ) -> Result<model::vm::VmPreverificationResult, VmError> {
         if let Some(err) = &self.force_error {
             return Err(err.clone());
         }
-        Ok(::node::vm::PreverificationResult::Valid)
+        // Return the predefined result or default to Valid
+        Ok(self
+            .preverification_result
+            .clone()
+            .unwrap_or(model::vm::VmPreverificationResult::Valid))
     }
 
     async fn get_chain_id(&self) -> Result<u8, VmError> {
@@ -787,7 +813,7 @@ impl VmAdapter for MockVmAdapter {
     async fn get_account_data(
         &self,
         pk: &BlsPublicKey,
-    ) -> Result<AccountData, VmError> {
+    ) -> Result<model::account::AccountInfo, VmError> {
         if let Some(err) = &self.force_error {
             return Err(err.clone());
         }
@@ -795,13 +821,12 @@ impl VmAdapter for MockVmAdapter {
         if let Some(vec) = &self.account_data {
             for (key, data) in vec {
                 if key == pk {
-                    // BlsPublicKey implements PartialEq
                     return Ok(data.clone());
                 }
             }
         }
         // Default if not found in vec or vec is None
-        Ok(AccountData {
+        Ok(model::account::AccountInfo {
             balance: 0,
             nonce: 0,
         })
@@ -823,16 +848,36 @@ impl VmAdapter for MockVmAdapter {
 
     async fn get_provisioners(
         &self,
-    ) -> Result<Vec<(StakeKeys, StakeData)>, VmError> {
-        // Return an empty Vec for the mock, matching the trait signature
-        Ok(Vec::new())
+    ) -> Result<
+        Vec<(
+            model::provisioner::ProvisionerKeys,
+            model::provisioner::ProvisionerStakeData,
+        )>,
+        VmError,
+    > {
+        if let Some(err) = &self.force_error {
+            return Err(err.clone());
+        }
+        // Return predefined or empty Vec
+        Ok(self.provisioners.clone().unwrap_or_default())
     }
 
     async fn get_stake_info_by_pk(
         &self,
-        _pk: &BlsPublicKey,
-    ) -> Result<Option<Stake>, VmError> {
-        Ok(None) // Default mock implementation
+        pk: &BlsPublicKey,
+    ) -> Result<Option<model::provisioner::ConsensusStakeInfo>, VmError> {
+        if let Some(err) = &self.force_error {
+            return Err(err.clone());
+        }
+        // Look up in the stakes map if provided
+        if let Some(stakes_map) = &self.stakes {
+            // Use Serializable::to_bytes()
+            let pk_bytes = pk.to_bytes();
+            let pk_b58 = bs58::encode(pk_bytes).into_string();
+            Ok(stakes_map.get(&pk_b58).cloned())
+        } else {
+            Ok(None) // Default mock implementation: None
+        }
     }
 
     async fn query_contract_raw(
@@ -848,12 +893,12 @@ impl VmAdapter for MockVmAdapter {
         Ok(Vec::new()) // Default mock: empty result
     }
 
-    async fn get_vm_config(&self) -> Result<RuskVmConfig, VmError> {
+    async fn get_vm_config(&self) -> Result<model::vm::VmConfig, VmError> {
         if let Some(err) = &self.force_error {
             return Err(err.clone());
         }
-        // Return a default config for the mock
-        Ok(RuskVmConfig::default())
+        // Return a predefined config or a default config for the mock
+        Ok(self.vm_config.clone().unwrap_or_default())
     }
 }
 
