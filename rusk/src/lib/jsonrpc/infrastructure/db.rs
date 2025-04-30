@@ -24,8 +24,8 @@ use hex;
 use node::database::rocksdb::{MD_HASH_KEY, MD_LAST_ITER};
 use node::database::{ConsensusStorage, Ledger, Mempool, Metadata, DB};
 
-use node_data::ledger::{self as node_ledger};
-use node_data::message::{payload as node_payload, ConsensusHeader};
+use node_data::ledger;
+use node_data::message::ConsensusHeader;
 use node_data::Serializable;
 
 use std::fmt::Debug;
@@ -180,13 +180,13 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<node_ledger::SpentTransaction>)` if the transaction is
-    ///   found.
+    /// * `Ok(Option<model::transaction::TransactionInfo>)` if the transaction
+    ///   is found and its context retrieved.
     /// * `Err(DbError)` if a database error occurs.
     async fn get_spent_transaction_by_hash(
         &self,
         tx_hash_hex: &str,
-    ) -> Result<Option<node_ledger::SpentTransaction>, DbError>;
+    ) -> Result<Option<model::transaction::TransactionInfo>, DbError>;
 
     /// (Required) Checks if a transaction exists in the confirmed ledger.
     ///
@@ -214,12 +214,13 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<node_ledger::Transaction>)` if the transaction is found.
+    /// * `Ok(Option<model::transaction::TransactionResponse>)` if the
+    ///   transaction is found.
     /// * `Err(DbError)` if a database error occurs.
     async fn mempool_tx(
         &self,
         tx_id: [u8; 32],
-    ) -> Result<Option<node_ledger::Transaction>, DbError>;
+    ) -> Result<Option<model::transaction::TransactionResponse>, DbError>;
 
     /// (Required) Checks if a transaction exists in the mempool.
     ///
@@ -243,11 +244,12 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<node_ledger::Transaction>)` if the iterator is found.
+    /// * `Ok(Vec<model::transaction::TransactionResponse>)` representing
+    ///   mempool transactions.
     /// * `Err(DbError)` if a database error occurs.
     async fn mempool_txs_sorted_by_fee(
         &self,
-    ) -> Result<Vec<node_ledger::Transaction>, DbError>;
+    ) -> Result<Vec<model::transaction::TransactionResponse>, DbError>;
 
     /// (Required) Gets the current count of transactions in the mempool.
     ///
@@ -296,13 +298,13 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<node_ledger::Block>)` if found.
+    /// * `Ok(Option<model::block::CandidateBlock>)` if found.
     /// * `Err(DbError)` if the identifier is invalid or a database error
     ///   occurs.
     async fn candidate(
         &self,
         hash: &[u8; 32],
-    ) -> Result<Option<node_ledger::Block>, DbError>;
+    ) -> Result<Option<model::block::CandidateBlock>, DbError>;
 
     /// (Required) Retrieves a candidate block by its consensus header.
     ///
@@ -313,13 +315,13 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<node_ledger::Block>)` if found.
+    /// * `Ok(Option<model::block::CandidateBlock>)` if found.
     /// * `Err(DbError)` if the identifier is invalid or a database error
     ///   occurs.
     async fn candidate_by_iteration(
         &self,
         header: &ConsensusHeader,
-    ) -> Result<Option<node_ledger::Block>, DbError>;
+    ) -> Result<Option<model::block::CandidateBlock>, DbError>;
 
     /// (Required) Retrieves a validation result by its consensus header.
     ///
@@ -331,13 +333,13 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<node_payload::ValidationResult>)` if found.
+    /// * `Ok(Option<model::consensus::ValidationResult>)` if found.
     /// * `Err(DbError)` if the identifier is invalid or a database error
     ///   occurs.
     async fn validation_result(
         &self,
         header: &ConsensusHeader,
-    ) -> Result<Option<node_payload::ValidationResult>, DbError>;
+    ) -> Result<Option<model::consensus::ValidationResult>, DbError>;
 
     // --- Metadata Primitives ---
 
@@ -428,8 +430,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
             .map_err(|_| {
                 DbError::InternalError("Invalid block hash length".into())
             })?;
-        let candidate_block = self.candidate(&block_hash).await?;
-        Ok(candidate_block.map(model::block::CandidateBlock::from))
+        self.candidate(&block_hash).await
     }
 
     /// (Default) Retrieves the latest candidate block proposed during
@@ -458,16 +459,14 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
                         e
                     ))
                 })?;
-        let candidate_block = self
-            .candidate_by_iteration(&latest_header)
+        self.candidate_by_iteration(&latest_header)
             .await?
             .ok_or_else(|| {
                 DbError::NotFound(format!(
                     "Candidate block not found for header: {:?}",
                     latest_header
                 ))
-            })?;
-        Ok(model::block::CandidateBlock::from(candidate_block))
+            })
     }
 
     /// (Default) Retrieves a validation result by consensus header, converting
@@ -509,8 +508,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
             round,
             iteration,
         };
-        let node_result = self.validation_result(&header).await?;
-        Ok(node_result.map(model::consensus::ValidationResult::from))
+        self.validation_result(&header).await
     }
 
     /// (Default) Retrieves the latest validation result.
@@ -537,16 +535,14 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
                         e
                     ))
                 })?;
-        let node_result = self
-            .validation_result(&latest_header)
+        self.validation_result(&latest_header)
             .await?
             .ok_or_else(|| {
                 DbError::NotFound(format!(
                     "Validation result not found for header: {:?}",
                     latest_header
                 ))
-            })?;
-        Ok(model::consensus::ValidationResult::from(node_result))
+            })
     }
 
     /// (Default) Retrieves the status (Confirmed, Pending, NotFound) of a
@@ -563,7 +559,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///   found (neither confirmed nor pending), or a database error occurs.
     ///
     /// Implementation uses `ledger_tx_exists`, `mempool_tx_exists`,
-    /// `get_spent_transaction_by_hash`, and `get_block_header_by_height`.
+    /// and the refactored `get_spent_transaction_by_hash`.
     async fn get_transaction_status(
         &self,
         tx_hash_hex: &str,
@@ -579,16 +575,8 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
 
         if self.ledger_tx_exists(&tx_id).await? {
             match self.get_spent_transaction_by_hash(tx_hash_hex).await? {
-                Some(spent_tx) => {
-                    let header_opt = self
-                        .get_block_header_by_height(spent_tx.block_height)
-                        .await?;
-                    let (block_hash, timestamp) = header_opt
-                        .map_or((None, None), |h| {
-                            (Some(h.hash), Some(h.timestamp))
-                        });
-
-                    let status_type = if spent_tx.err.is_some() {
+                Some(tx_info) => {
+                    let status_type = if tx_info.error.is_some() {
                         model::transaction::TransactionStatusType::Failed
                     } else {
                         model::transaction::TransactionStatusType::Executed
@@ -596,15 +584,15 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
 
                     Ok(model::transaction::TransactionStatus {
                         status: status_type,
-                        block_height: Some(spent_tx.block_height),
-                        block_hash,
-                        gas_spent: Some(spent_tx.gas_spent),
-                        timestamp,
-                        error: spent_tx.err,
+                        block_height: Some(tx_info.block_height),
+                        block_hash: Some(tx_info.block_hash),
+                        gas_spent: Some(tx_info.gas_spent),
+                        timestamp: Some(tx_info.timestamp),
+                        error: tx_info.error,
                     })
                 }
                 None => Err(DbError::InternalError(format!(
-                    "Tx {} exists in ledger but SpentTransaction not found",
+                    "Tx {} exists in ledger but TransactionInfo not found",
                     tx_hash_hex
                 ))),
             }
@@ -618,7 +606,6 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
                 error: None,
             })
         } else {
-            // Consider returning NotFound status type instead of error?
             Err(DbError::NotFound(format!(
                 "Transaction {} not found",
                 tx_hash_hex
@@ -634,15 +621,10 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// * `Err(DbError)` if a database error occurs.
     ///
     /// Implementation uses required `mempool_txs_sorted_by_fee`.
-    /// Note: Returns `TransactionResponse`, lacking `received_at` timestamp.
     async fn get_mempool_transactions(
         &self,
     ) -> Result<Vec<model::transaction::TransactionResponse>, DbError> {
-        let node_txs = self.mempool_txs_sorted_by_fee().await?;
-        Ok(node_txs
-            .into_iter()
-            .map(model::transaction::TransactionResponse::from)
-            .collect())
+        self.mempool_txs_sorted_by_fee().await
     }
 
     /// (Default) Retrieves a specific transaction from the mempool by hash.
@@ -658,7 +640,6 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///   occurs.
     ///
     /// Implementation uses required `mempool_tx`.
-    /// Note: Returns `TransactionResponse`, lacking `received_at` timestamp.
     async fn get_mempool_transaction_by_hash(
         &self,
         tx_hash_hex: &str,
@@ -671,8 +652,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
             .map_err(|_| {
                 DbError::InternalError("Invalid tx hash length".into())
             })?;
-        let node_tx_opt = self.mempool_tx(tx_id).await?;
-        Ok(node_tx_opt.map(model::transaction::TransactionResponse::from))
+        self.mempool_tx(tx_id).await
     }
 
     /// (Default) Retrieves statistics about the mempool (count, fee range).
@@ -690,14 +670,12 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     async fn get_mempool_info(
         &self,
     ) -> Result<model::mempool::MempoolInfo, DbError> {
-        // Execute the three required method calls concurrently
         let (count_res, fee_high_res, fee_low_res) = try_join!(
             self.mempool_txs_count(),
             self.mempool_txs_ids_sorted_by_fee(),
             self.mempool_txs_ids_sorted_by_low_fee()
         )?;
 
-        // Process the results
         let count = count_res as u64;
         let max_fee = fee_high_res.first().map(|(fee, _)| *fee);
         let min_fee = fee_low_res.first().map(|(fee, _)| *fee);
@@ -723,7 +701,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         let latest_header = self.get_latest_block_header().await?;
         Ok(model::chain::ChainStats {
             height: latest_header.height,
-            tip_hash: latest_header.hash, // Header hash is the tip hash
+            tip_hash: latest_header.hash,
             state_root_hash: latest_header.state_hash,
         })
     }
@@ -753,7 +731,6 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         let gas_prices: Vec<u64> = prices.into_iter().map(|(p, _)| p).collect();
 
         if gas_prices.is_empty() {
-            // Default to 1 if mempool is empty or no txs considered
             Ok(GasPriceStats {
                 average: 1,
                 max: 1,
@@ -763,13 +740,12 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         } else {
             let count = gas_prices.len() as u64;
             let sum: u64 = gas_prices.iter().sum();
-            let average = (sum + count - 1) / count; // Ceiling division
-            let max = *gas_prices.first().unwrap_or(&1); // Already sorted desc
+            let average = (sum + count - 1) / count;
+            let max = *gas_prices.first().unwrap_or(&1);
             let min = *gas_prices.last().unwrap_or(&1);
 
-            // For median, we need a sorted copy (or sort the sub-slice)
-            let mut sorted_prices = gas_prices; // Original vec is sorted desc
-            sorted_prices.sort_unstable(); // Sort ascending for median calc
+            let mut sorted_prices = gas_prices;
+            sorted_prices.sort_unstable();
             let mid = sorted_prices.len() / 2;
             let median = if sorted_prices.len() % 2 == 0 {
                 (sorted_prices[mid - 1] + sorted_prices[mid]) / 2
@@ -889,7 +865,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         hashes_hex: &[String],
     ) -> Result<Vec<Option<model::block::Block>>, DbError> {
         let futures = hashes_hex.iter().map(|h| self.get_block_by_hash(h));
-        try_join_all(futures).await // Use try_join_all to propagate errors
+        try_join_all(futures).await
     }
 
     /// (Default) Retrieves the latest block header.
@@ -1082,57 +1058,39 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// # Arguments
     ///
     /// * `tx_hash_hex`: Transaction hash.
-    /// * `include_tx_index`: Whether to include the transaction index.
+    /// * `include_tx_index`: Whether to include the transaction index in the
+    ///   returned [`TransactionInfo`].
     ///
     /// # Returns
     ///
     /// * `Ok(Option<model::transaction::TransactionInfo>)` if found.
     /// * `Err(DbError)` if a database error occurs.
     ///
-    /// Combines `get_spent_transaction_by_hash` and
-    /// `get_block_header_by_height`. Optionally fetches full block
+    /// This method now primarily relies on the refactored primitive
+    /// `get_spent_transaction_by_hash` which returns `TransactionInfo`.
+    /// If `include_tx_index` is true, it fetches block transactions to find
+    /// the index.
     async fn get_transaction_by_hash(
         &self,
         tx_hash_hex: &str,
         include_tx_index: bool,
     ) -> Result<Option<model::transaction::TransactionInfo>, DbError> {
-        if let Some(spent_tx) =
-            self.get_spent_transaction_by_hash(tx_hash_hex).await?
-        {
-            let header_opt = self
-                .get_block_header_by_height(spent_tx.block_height)
-                .await?;
-            let (block_hash, timestamp) = header_opt
-                .map_or((tx_hash_hex.to_string(), 0), |h| {
-                    (h.hash, h.timestamp)
-                });
+        let tx_info_opt =
+            self.get_spent_transaction_by_hash(tx_hash_hex).await?;
 
-            let mut tx_index = None;
-            if include_tx_index && block_hash != tx_hash_hex {
-                if let Some(txs) =
-                    self.get_block_transactions_by_hash(&block_hash).await?
+        if let Some(mut tx_info) = tx_info_opt {
+            if include_tx_index && tx_info.tx_index.is_none() {
+                if let Some(txs) = self
+                    .get_block_transactions_by_hash(&tx_info.block_hash)
+                    .await?
                 {
-                    tx_index = txs
+                    tx_info.tx_index = txs
                         .iter()
                         .position(|tx| tx.base.tx_hash == tx_hash_hex)
                         .map(|i| i as u32);
                 }
             }
-
-            let response = model::transaction::TransactionResponse::from(
-                spent_tx.inner.clone(),
-            );
-
-            Ok(Some(model::transaction::TransactionInfo {
-                base: response.base,
-                transaction_data: response.transaction_data,
-                block_height: spent_tx.block_height,
-                block_hash,
-                tx_index,
-                gas_spent: spent_tx.gas_spent,
-                timestamp,
-                error: spent_tx.err,
-            }))
+            Ok(Some(tx_info))
         } else {
             Ok(None)
         }
@@ -1154,7 +1112,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ) -> Result<Vec<Option<model::transaction::TransactionInfo>>, DbError> {
         let futures = tx_hashes_hex
             .iter()
-            .map(|h_str| self.get_transaction_by_hash(h_str, false)); // Default to not include index
+            .map(|h_str| self.get_transaction_by_hash(h_str, false));
         try_join_all(futures).await
     }
 
@@ -1483,7 +1441,7 @@ impl DatabaseAdapter for RuskDbAdapter {
 
         match block_result {
             Some(block) => {
-                let faults: Vec<node_ledger::Fault> = block.faults().to_vec();
+                let faults: Vec<ledger::Fault> = block.faults().to_vec();
                 let block_faults = model::block::BlockFaults::try_from(faults)
                     .map_err(|e| {
                         DbError::InternalError(format!(
@@ -1558,7 +1516,7 @@ impl DatabaseAdapter for RuskDbAdapter {
     async fn get_spent_transaction_by_hash(
         &self,
         tx_hash_hex: &str,
-    ) -> Result<Option<node_ledger::SpentTransaction>, DbError> {
+    ) -> Result<Option<model::transaction::TransactionInfo>, DbError> {
         let tx_hash: [u8; 32] = hex::decode(tx_hash_hex)
             .map_err(|e| {
                 DbError::InternalError(format!("Invalid tx hash hex: {}", e))
@@ -1569,13 +1527,42 @@ impl DatabaseAdapter for RuskDbAdapter {
             })?;
 
         let db_client = self.db_client.clone();
-        tokio::task::spawn_blocking(move || {
+        let spent_tx_opt = tokio::task::spawn_blocking(move || {
             let db = db_client.blocking_read();
             db.view(|v| v.ledger_tx(&tx_hash[..]))
         })
         .await
-        .map_err(|e| DbError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(DbError::from)
+        .map_err(|e| {
+            DbError::InternalError(format!("Task join error: {}", e))
+        })??;
+
+        if let Some(spent_tx) = spent_tx_opt {
+            let header_opt = self
+                .get_block_header_by_height(spent_tx.block_height)
+                .await?;
+
+            let (block_hash, timestamp) = header_opt
+                .map_or((String::new(), 0), |h| (h.hash, h.timestamp));
+
+            let tx_index = None;
+
+            let response = model::transaction::TransactionResponse::from(
+                spent_tx.inner.clone(),
+            );
+
+            Ok(Some(model::transaction::TransactionInfo {
+                base: response.base,
+                transaction_data: response.transaction_data,
+                block_height: spent_tx.block_height,
+                block_hash,
+                tx_index,
+                gas_spent: spent_tx.gas_spent,
+                timestamp,
+                error: spent_tx.err,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 
     async fn ledger_tx_exists(
@@ -1598,15 +1585,18 @@ impl DatabaseAdapter for RuskDbAdapter {
     async fn mempool_tx(
         &self,
         tx_id: [u8; 32],
-    ) -> Result<Option<node_ledger::Transaction>, DbError> {
+    ) -> Result<Option<model::transaction::TransactionResponse>, DbError> {
         let db_client = self.db_client.clone();
-        tokio::task::spawn_blocking(move || {
+        let node_tx_opt = tokio::task::spawn_blocking(move || {
             let db = db_client.blocking_read();
             db.view(|v| v.mempool_tx(tx_id))
         })
         .await
-        .map_err(|e| DbError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(DbError::from)
+        .map_err(|e| {
+            DbError::InternalError(format!("Task join error: {}", e))
+        })??;
+
+        Ok(node_tx_opt.map(model::transaction::TransactionResponse::from))
     }
 
     async fn mempool_tx_exists(
@@ -1625,17 +1615,25 @@ impl DatabaseAdapter for RuskDbAdapter {
 
     async fn mempool_txs_sorted_by_fee(
         &self,
-    ) -> Result<Vec<node_ledger::Transaction>, DbError> {
+    ) -> Result<Vec<model::transaction::TransactionResponse>, DbError> {
         let db_client = self.db_client.clone();
-        let result_vec = tokio::task::spawn_blocking(move || {
+        let node_txs = tokio::task::spawn_blocking(move || {
             let db = db_client.blocking_read();
-            db.view(|v| v.mempool_txs_sorted_by_fee().collect::<Vec<_>>())
+            let collected_txs: Vec<ledger::Transaction> =
+                db.view(|v| v.mempool_txs_sorted_by_fee()).collect();
+            collected_txs
         })
         .await
         .map_err(|e| {
             DbError::InternalError(format!("Task join error: {}", e))
         })?;
-        Ok(result_vec)
+
+        let response_txs = node_txs
+            .into_iter()
+            .map(model::transaction::TransactionResponse::from)
+            .collect();
+
+        Ok(response_txs)
     }
 
     async fn mempool_txs_count(&self) -> Result<usize, DbError> {
@@ -1688,46 +1686,52 @@ impl DatabaseAdapter for RuskDbAdapter {
     async fn candidate(
         &self,
         hash: &[u8; 32],
-    ) -> Result<Option<node_ledger::Block>, DbError> {
+    ) -> Result<Option<model::block::CandidateBlock>, DbError> {
         let hash_copy = *hash;
         let db_client = self.db_client.clone();
-        tokio::task::spawn_blocking(move || {
+        let node_block_opt = tokio::task::spawn_blocking(move || {
             let db = db_client.blocking_read();
             db.view(|v| v.candidate(&hash_copy[..]))
         })
         .await
-        .map_err(|e| DbError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(DbError::from)
+        .map_err(|e| {
+            DbError::InternalError(format!("Task join error: {}", e))
+        })??;
+        Ok(node_block_opt.map(model::block::CandidateBlock::from))
     }
 
     async fn candidate_by_iteration(
         &self,
         header: &ConsensusHeader,
-    ) -> Result<Option<node_ledger::Block>, DbError> {
+    ) -> Result<Option<model::block::CandidateBlock>, DbError> {
         let header_copy = *header;
         let db_client = self.db_client.clone();
-        tokio::task::spawn_blocking(move || {
+        let node_block_opt = tokio::task::spawn_blocking(move || {
             let db = db_client.blocking_read();
             db.view(|v| v.candidate_by_iteration(&header_copy))
         })
         .await
-        .map_err(|e| DbError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(DbError::from)
+        .map_err(|e| {
+            DbError::InternalError(format!("Task join error: {}", e))
+        })??;
+        Ok(node_block_opt.map(model::block::CandidateBlock::from))
     }
 
     async fn validation_result(
         &self,
         header: &ConsensusHeader,
-    ) -> Result<Option<node_payload::ValidationResult>, DbError> {
+    ) -> Result<Option<model::consensus::ValidationResult>, DbError> {
         let header_copy = *header;
         let db_client = self.db_client.clone();
-        tokio::task::spawn_blocking(move || {
+        let node_result_opt = tokio::task::spawn_blocking(move || {
             let db = db_client.blocking_read();
             db.view(|v| v.validation_result(&header_copy))
         })
         .await
-        .map_err(|e| DbError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(DbError::from)
+        .map_err(|e| {
+            DbError::InternalError(format!("Task join error: {}", e))
+        })??;
+        Ok(node_result_opt.map(model::consensus::ValidationResult::from))
     }
 
     // --- Metadata Primitives ---
