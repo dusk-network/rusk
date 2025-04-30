@@ -17,6 +17,7 @@ use crossterm::{
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
 
+use inquire::error::InquireResult;
 use inquire::ui::RenderConfig;
 use inquire::validator::Validation;
 use inquire::{
@@ -34,6 +35,22 @@ use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
 
 use crate::command::TransactionHistory;
+
+pub(crate) trait Prompt {
+    /// Prompt the user to enter a password
+    fn create_new_password(&self) -> InquireResult<String> {
+        create_new_password()
+    }
+
+    /// Prompt the user to enter text
+    fn prompt_text(&self, msg: &str) -> InquireResult<String> {
+        Text::new(msg).prompt()
+    }
+}
+
+pub(crate) struct Prompter;
+
+impl Prompt for Prompter {}
 
 pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
     let pwd = Password::new(msg)
