@@ -128,3 +128,15 @@ impl From<crate::node::RuskVmConfig> for VmConfig {
         }
     }
 }
+
+/// Represents the result of validating a list of nullifiers.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NullifiersValidationResult {
+    /// A list of hex-encoded nullifiers from the input that were found to
+    /// already exist (i.e., are spent).
+    pub existing: Vec<String>,
+    /// A list of hex-encoded nullifiers from the input that were not found
+    /// (i.e., are not spent).
+    pub non_existent: Vec<String>,
+}
