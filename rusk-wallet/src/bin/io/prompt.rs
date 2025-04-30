@@ -412,6 +412,10 @@ pub(crate) fn request_address(
 pub(crate) fn tx_history_list(
     history: &[TransactionHistory],
 ) -> anyhow::Result<()> {
+    if history.is_empty() {
+        println!("No transactions found");
+        return Ok(());
+    }
     let header = TransactionHistory::header();
     let history_str: Vec<String> =
         history.iter().map(|history| history.to_string()).collect();
