@@ -177,13 +177,16 @@
 use std::sync::Arc;
 
 use parking_lot::RwLock;
+use std::collections::HashSet;
 
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use hex;
+use node_data::message::payload::Inv;
 
 use crate::jsonrpc::config::JsonRpcConfig;
 use crate::jsonrpc::error::Error as JsonRpcError;
-use crate::jsonrpc::infrastructure::error::Error as RpcInfraError;
+use crate::jsonrpc::infrastructure::error::{Error as RpcInfraError, VmError};
 use crate::jsonrpc::infrastructure::{
     archive, db, manual_limiter, metrics, network, subscription, vm,
 };
@@ -2596,6 +2599,279 @@ impl AppState {
         self.vm_adapter
             .get_provisioner_info_by_pk(pk)
             .await
-            .map_err(|err| RpcInfraError::Vm(err).into())
+            .map_err(RpcInfraError::Vm)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Checks if a list of nullifiers (provided as hex strings) have already
+    /// been spent.
+    ///
+    /// This method translates between the JSON-RPC interface (hex strings,
+    /// specific response format) and the underlying `VmAdapter` (byte arrays,
+    /// returning only existing nullifiers).
+    ///
+    /// # Arguments
+    ///
+    /// * `nullifiers_hex`: A vector of 64-character hex strings representing
+    ///   the nullifiers to check.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(NullifiersValidationResult)`: An object containing two lists:
+    ///   `existing` (nullifiers that are already spent) and `non_existent`
+    ///   (nullifiers that are not spent), both as hex strings.
+    /// * `Err(JsonRpcError::Infrastructure)`: If hex decoding fails or the
+    ///   underlying VM query fails.
+    pub async fn validate_nullifiers(
+        &self,
+        nullifiers_hex: Vec<String>,
+    ) -> Result<model::vm::NullifiersValidationResult, JsonRpcError> {
+        // 1. Decode hex strings to byte arrays
+        let mut decoded_nullifiers = Vec::with_capacity(nullifiers_hex.len());
+        let mut invalid_hex = None;
+        for hex_str in &nullifiers_hex {
+            match hex::decode(hex_str) {
+                Ok(bytes) => {
+                    if bytes.len() == 32 {
+                        // Correct length, attempt conversion to [u8; 32]
+                        match bytes.try_into() {
+                            Ok(arr) => decoded_nullifiers.push(arr),
+                            Err(_) => {
+                                // Should be unreachable if len == 32
+                                invalid_hex = Some(format!(
+                                    "Internal error converting vec to array for: {}",
+                                    hex_str
+                                ));
+                                break;
+                            }
+                        }
+                    } else {
+                        invalid_hex = Some(format!(
+                            "Invalid hex string length ({} != 32) for: {}",
+                            bytes.len(),
+                            hex_str
+                        ));
+                        break;
+                    }
+                }
+                Err(e) => {
+                    invalid_hex = Some(format!(
+                        "Invalid hex string format for {}: {}",
+                        hex_str, e
+                    ));
+                    break;
+                }
+            }
+        }
+
+        if let Some(err_msg) = invalid_hex {
+            return Err(JsonRpcError::Infrastructure(RpcInfraError::Vm(
+                VmError::InternalError(err_msg),
+            )));
+        }
+
+        // 2. Call the VmAdapter
+        let existing_bytes = self
+            .vm_adapter
+            .validate_nullifiers(&decoded_nullifiers)
+            .await
+            .map_err(RpcInfraError::Vm)
+            .map_err(JsonRpcError::Infrastructure)?;
+
+        // 3. Determine non-existent nullifiers and format results
+        let existing_set: HashSet<[u8; 32]> =
+            existing_bytes.into_iter().collect();
+        let mut existing_hex = Vec::new();
+        let mut non_existent_hex = Vec::new();
+
+        for (i, original_bytes) in decoded_nullifiers.iter().enumerate() {
+            if existing_set.contains(original_bytes) {
+                existing_hex.push(nullifiers_hex[i].clone()); // Reuse original
+                                                              // hex
+            } else {
+                non_existent_hex.push(nullifiers_hex[i].clone()); // Reuse original hex
+            }
+        }
+
+        Ok(model::vm::NullifiersValidationResult {
+            existing: existing_hex,
+            non_existent: non_existent_hex,
+        })
+    }
+
+    // ---- NetworkAdapter Methods ----
+
+    /// Broadcasts a transaction to the network.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_bytes` - The serialized transaction bytes to be broadcast.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the broadcast request was successfully initiated.
+    /// * `Err(JsonRpcError::Infrastructure)` - If the broadcast failed (e.g.,
+    ///   network unavailable, serialization issues, internal errors).
+    pub async fn broadcast_transaction(
+        &self,
+        tx_bytes: Vec<u8>,
+    ) -> Result<(), JsonRpcError> {
+        self.network_adapter
+            .broadcast_transaction(tx_bytes)
+            .await
+            .map_err(RpcInfraError::Network)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves general information about the network state.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - A string containing network information (format
+    ///   determined by the underlying implementation).
+    /// * `Err(JsonRpcError::Infrastructure)` - If querying the network
+    ///   information failed.
+    pub async fn get_network_info(&self) -> Result<String, JsonRpcError> {
+        self.network_adapter
+            .get_network_info()
+            .await
+            .map_err(RpcInfraError::Network)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the public network address of this node.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(std::net::SocketAddr)` - The public socket address of the node.
+    /// * `Err(JsonRpcError::Infrastructure)` - If the public address could not
+    ///   be determined.
+    pub async fn get_public_address(
+        &self,
+    ) -> Result<std::net::SocketAddr, JsonRpcError> {
+        self.network_adapter
+            .get_public_address()
+            .await
+            .map_err(RpcInfraError::Network)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a list of currently alive peers known to the node.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_peers` - The maximum number of peer addresses to return.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<std::net::SocketAddr>)` - A vector containing the socket
+    ///   addresses of alive peers, up to `max_peers`.
+    /// * `Err(JsonRpcError::Infrastructure)` - If retrieving the peer list
+    ///   failed.
+    pub async fn get_alive_peers(
+        &self,
+        max_peers: usize,
+    ) -> Result<Vec<std::net::SocketAddr>, JsonRpcError> {
+        self.network_adapter
+            .get_alive_peers(max_peers)
+            .await
+            .map_err(RpcInfraError::Network)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the count of currently alive peers known to the node.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(usize)` - The number of alive peers.
+    /// * `Err(JsonRpcError::Infrastructure)` - If counting the peers failed.
+    pub async fn get_alive_peers_count(&self) -> Result<usize, JsonRpcError> {
+        self.network_adapter
+            .get_alive_peers_count()
+            .await
+            .map_err(RpcInfraError::Network)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Floods an inventory message (`Inv`) across the network.
+    ///
+    /// # Arguments
+    ///
+    /// * `inv` - The inventory message to flood.
+    /// * `ttl_seconds` - Optional time-to-live for the flood request in
+    ///   seconds.
+    /// * `hops` - The number of hops the message should propagate.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the flood request was successfully initiated.
+    /// * `Err(JsonRpcError::Infrastructure)` - If initiating the flood request
+    ///   failed.
+    pub async fn flood_request(
+        &self,
+        inv: Inv,
+        ttl_seconds: Option<u64>,
+        hops: u16,
+    ) -> Result<(), JsonRpcError> {
+        self.network_adapter
+            .flood_request(inv, ttl_seconds, hops)
+            .await
+            .map_err(RpcInfraError::Network)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves metrics about the node's connected peers.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::network::PeersMetrics)` - Metrics containing the peer
+    ///   count.
+    /// * `Err(JsonRpcError::Infrastructure)` - If retrieving the peer count
+    ///   failed.
+    pub async fn get_peers_metrics(
+        &self,
+    ) -> Result<model::network::PeersMetrics, JsonRpcError> {
+        self.network_adapter
+            .get_peers_metrics()
+            .await
+            .map_err(RpcInfraError::Network)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the finality status of a block by its hash.
+    ///
+    /// This method determines if a block is finalized, accepted into the
+    /// canonical chain but not yet final, or unknown.
+    /// It delegates to the underlying `DatabaseAdapter`, which is expected to:
+    /// 1. Check if the block header exists for the given hash.
+    /// 2. If it exists, retrieve the block's height.
+    /// 3. Look up the consensus label and associated hash for that height in
+    ///    the canonical chain.
+    /// 4. Compare the retrieved hash with the input hash.
+    /// 5. Map the label (`Final`, `Accepted`, `Confirmed`, `Attested`) to the
+    ///    corresponding `BlockFinalityStatus` (`Final` or `Accepted`) if the
+    ///    hashes match.
+    /// 6. Return `Unknown` if the header is not found or the hashes do not
+    ///    match.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_hash_hex`: 64-char hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::block::BlockFinalityStatus)`: indicating if the block is
+    ///   `Final`, `Accepted`, or `Unknown`.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs or the
+    ///   hash format is invalid.
+    pub async fn get_block_finality_status(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<model::block::BlockFinalityStatus, JsonRpcError> {
+        self.db_adapter
+            .get_block_finality_status(block_hash_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
     }
 }
