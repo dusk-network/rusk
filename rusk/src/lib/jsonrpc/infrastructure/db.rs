@@ -14,7 +14,7 @@
 //! design rationale and usage.
 
 use crate::jsonrpc::infrastructure::error::DbError;
-use crate::jsonrpc::model::{self, gas::*};
+use crate::jsonrpc::model;
 
 use async_trait::async_trait;
 use futures::future::{join_all, try_join_all};
@@ -379,6 +379,23 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         value: &[u8],
     ) -> Result<(), DbError>;
 
+    /// Retrieves the finality status of a block by its hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_hash_hex`: 64-char hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::block::BlockFinalityStatus)`: indicating if the block is
+    ///   `Final`, `Accepted` (part of canonical chain but not final), or
+    ///   `Unknown`.
+    /// * `Err(DbError)`: if a database error occurs or the hash is invalid.
+    async fn get_block_finality_status(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<model::block::BlockFinalityStatus, DbError>;
+
     // --- Default Implementations --- //
 
     /// (Default) Retrieves the height of the current chain tip.
@@ -731,7 +748,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         let gas_prices: Vec<u64> = prices.into_iter().map(|(p, _)| p).collect();
 
         if gas_prices.is_empty() {
-            Ok(GasPriceStats {
+            Ok(model::gas::GasPriceStats {
                 average: 1,
                 max: 1,
                 median: 1,
@@ -753,7 +770,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
                 sorted_prices[mid]
             };
 
-            Ok(GasPriceStats {
+            Ok(model::gas::GasPriceStats {
                 average,
                 max,
                 median,
@@ -1775,5 +1792,115 @@ impl DatabaseAdapter for RuskDbAdapter {
         .await
         .map_err(|e| DbError::InternalError(format!("Task join error: {}", e)))?
         .map_err(DbError::from)
+    }
+
+    /// Retrieves the finality status of a block by its hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_hash_hex`: 64-char hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::block::BlockFinalityStatus)`: indicating if the block is
+    ///   `Final`, `Accepted` (part of canonical chain but not final), or
+    ///   `Unknown`.
+    /// * `Err(DbError)`: if a database error occurs or the hash is invalid.
+    async fn get_block_finality_status(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<model::block::BlockFinalityStatus, DbError> {
+        let block_hash: [u8; 32] = hex::decode(block_hash_hex)
+            .map_err(|e| {
+                DbError::InternalError(format!("Invalid block hash hex: {}", e))
+            })?
+            .try_into()
+            .map_err(|_| {
+                DbError::InternalError("Invalid block hash length".into())
+            })?;
+
+        let db_client = self.db_client.clone();
+
+        // First, check if the block header exists at all
+        let header_opt = tokio::task::spawn_blocking({
+            let db_client = db_client.clone();
+            move || {
+                let db = db_client.blocking_read();
+                db.view(|v| v.block_header(&block_hash[..]))
+            }
+        })
+        .await
+        .map_err(|e| {
+            DbError::InternalError(format!(
+                "Task join error getting header: {}",
+                e
+            ))
+        })?
+        .map_err(DbError::from)?;
+
+        let header = match header_opt {
+            Some(h) => h,
+            // If header doesn't exist, the block is Unknown
+            None => return Ok(model::block::BlockFinalityStatus::Unknown),
+        };
+
+        let height = header.height;
+
+        // Now, get the label for the block's height
+        let label_opt = tokio::task::spawn_blocking({
+            // db_client already cloned
+            move || {
+                let db = db_client.blocking_read();
+                db.view(|v| v.block_label_by_height(height))
+            }
+        })
+        .await
+        .map_err(|e| {
+            DbError::InternalError(format!(
+                "Task join error getting label: {}",
+                e
+            ))
+        })?
+        .map_err(DbError::from)?;
+
+        match label_opt {
+            // Make sure the hash associated with the height matches the
+            // requested hash
+            Some((label_hash, label)) if label_hash == block_hash => {
+                match label {
+                    ledger::Label::Final(_) => {
+                        Ok(model::block::BlockFinalityStatus::Final)
+                    }
+                    // Treat Confirmed and Attested as Accepted for RPC purposes
+                    ledger::Label::Accepted(_)
+                    | ledger::Label::Confirmed(_)
+                    | ledger::Label::Attested(_) => {
+                        Ok(model::block::BlockFinalityStatus::Accepted)
+                    }
+                }
+            }
+            Some((label_hash, _)) => {
+                // Hash mismatch means the requested block is not the canonical
+                // one at this height
+                tracing::warn!(
+                    block_hash = block_hash_hex,
+                    height,
+                    label_hash = hex::encode(label_hash),
+                    "Hash mismatch when checking block finality status"
+                );
+                Ok(model::block::BlockFinalityStatus::Unknown)
+            }
+            None => {
+                // Should not happen if header exists, indicates inconsistency
+                tracing::error!(
+                    block_hash = block_hash_hex,
+                    height,
+                    "Block label not found for existing block header"
+                );
+                Err(DbError::InternalError(
+                    "Inconsistent state: Block label not found for existing block".into(),
+                ))
+            }
+        }
     }
 }

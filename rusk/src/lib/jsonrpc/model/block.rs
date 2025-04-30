@@ -140,6 +140,18 @@ impl Eq for BlockHeader {}
 /// This indicates whether a block is considered permanently part of the
 /// canonical chain (`Final`) or if it could potentially be reorganized out
 /// (`Provisional`).
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum BlockFinalityStatus {
+    /// Block is finalized and considered irreversible.
+    Final,
+    /// Block is part of the canonical chain but not yet finalized.
+    Accepted,
+    /// Block is not known to be part of the canonical chain.
+    Unknown,
+}
+
+/// Status of a block, primarily indicating finality.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum BlockStatus {
     /// The block has reached finality and is considered irreversible.
