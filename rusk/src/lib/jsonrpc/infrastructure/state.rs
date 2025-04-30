@@ -174,35 +174,17 @@
 //! For real usage, concrete adapter implementations like `RuskNetworkAdapter`
 //! and `RuskVmAdapter` are instantiated and passed during `AppState` creation.
 
-use std::{net::SocketAddr, sync::Arc};
-
-use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_core::stake::StakeData;
-use dusk_core::stake::STAKE_CONTRACT;
-use dusk_core::{signatures::bls::PublicKey as BlsPublicKey, stake::StakeKeys};
+use std::sync::Arc;
 
 use parking_lot::RwLock;
 
 use crate::jsonrpc::config::JsonRpcConfig;
 use crate::jsonrpc::error::Error as JsonRpcError;
-use crate::jsonrpc::infrastructure::archive::ArchiveAdapter;
-use crate::jsonrpc::infrastructure::db::DatabaseAdapter;
-use crate::jsonrpc::infrastructure::error::{
-    ArchiveError, DbError, Error as RpcInfraError, NetworkError, VmError,
+use crate::jsonrpc::infrastructure::error::Error as RpcInfraError;
+use crate::jsonrpc::infrastructure::{
+    archive, db, manual_limiter, metrics, network, subscription, vm,
 };
-use crate::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
-use crate::jsonrpc::infrastructure::metrics::MetricsCollector;
-use crate::jsonrpc::infrastructure::network::NetworkAdapter;
-use crate::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
-use crate::jsonrpc::infrastructure::vm::VmAdapter;
-use crate::jsonrpc::model::archive::{
-    ArchivedEvent, MoonlightEventGroup, Order,
-};
-use crate::jsonrpc::model::block::Block;
-use crate::jsonrpc::model::block::BlockFaults;
-use crate::jsonrpc::model::provisioner::{ProvisionerInfo, StakeOwnerInfo};
-use crate::jsonrpc::model::transaction::SimulationResult;
-use crate::jsonrpc::model::transaction::TransactionResponse;
+use crate::jsonrpc::model;
 
 #[derive(Debug, Clone)]
 pub struct AppState {
@@ -211,31 +193,32 @@ pub struct AppState {
 
     /// Shared database adapter instance.
     /// Provides access to the live blockchain state via [`DatabaseAdapter`].
-    db_adapter: Arc<dyn DatabaseAdapter>,
+    db_adapter: Arc<dyn db::DatabaseAdapter>,
 
     /// Shared archive adapter instance.
     /// Provides access to historical/indexed data via [`ArchiveAdapter`].
-    archive_adapter: Arc<dyn ArchiveAdapter>,
+    archive_adapter: Arc<dyn archive::ArchiveAdapter>,
 
     /// Shared network adapter instance.
     /// Provides access to network operations (broadcast, peers) via
     /// [`NetworkAdapter`].
-    network_adapter: Arc<dyn NetworkAdapter>,
+    network_adapter: Arc<dyn network::NetworkAdapter>,
 
     /// Shared VM adapter instance.
     /// Provides access to high-level VM operations (simulation, state queries)
     /// via [`VmAdapter`].
-    vm_adapter: Arc<dyn VmAdapter>,
+    vm_adapter: Arc<dyn vm::VmAdapter>,
 
     /// Shared subscription manager for WebSocket event handling.
     /// Needs `RwLock` for managing mutable subscription state.
-    subscription_manager: Arc<RwLock<SubscriptionManager>>,
+    subscription_manager:
+        Arc<RwLock<subscription::manager::SubscriptionManager>>,
 
     /// Shared metrics collector instance.
-    metrics_collector: Arc<MetricsCollector>,
+    metrics_collector: Arc<metrics::MetricsCollector>,
 
     /// Shared manual rate limiters for WebSockets and specific methods.
-    manual_rate_limiters: Arc<ManualRateLimiters>,
+    manual_rate_limiters: Arc<manual_limiter::ManualRateLimiters>,
 }
 
 impl AppState {
@@ -262,13 +245,13 @@ impl AppState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         config: JsonRpcConfig,
-        db_adapter: Arc<dyn DatabaseAdapter>,
-        archive_adapter: Arc<dyn ArchiveAdapter>,
-        network_adapter: Arc<dyn NetworkAdapter>,
-        vm_adapter: Arc<dyn VmAdapter>,
-        subscription_manager: SubscriptionManager,
-        metrics_collector: MetricsCollector,
-        manual_rate_limiters: ManualRateLimiters,
+        db_adapter: Arc<dyn db::DatabaseAdapter>,
+        archive_adapter: Arc<dyn archive::ArchiveAdapter>,
+        network_adapter: Arc<dyn network::NetworkAdapter>,
+        vm_adapter: Arc<dyn vm::VmAdapter>,
+        subscription_manager: subscription::manager::SubscriptionManager,
+        metrics_collector: metrics::MetricsCollector,
+        manual_rate_limiters: manual_limiter::ManualRateLimiters,
     ) -> Self {
         Self {
             config: Arc::new(config),
@@ -292,23 +275,28 @@ impl AppState {
 
     /// Returns a reference to the shared subscription manager.
     ///
-    /// The manager is wrapped in `Arc<RwLock<SubscriptionManager>>`, allowing
-    /// thread-safe read/write access to subscription state.
-    pub fn subscription_manager(&self) -> &Arc<RwLock<SubscriptionManager>> {
+    /// The manager is wrapped in
+    /// `Arc<RwLock<infrastructure::subscription::manager::SubscriptionManager>>`,
+    /// allowing thread-safe read/write access to subscription state.
+    pub fn subscription_manager(
+        &self,
+    ) -> &Arc<RwLock<subscription::manager::SubscriptionManager>> {
         &self.subscription_manager
     }
 
     /// Returns a reference to the shared metrics collector.
     ///
     /// The collector is wrapped in an `Arc`.
-    pub fn metrics_collector(&self) -> &Arc<MetricsCollector> {
+    pub fn metrics_collector(&self) -> &Arc<metrics::MetricsCollector> {
         &self.metrics_collector
     }
 
     /// Returns a reference to the shared manual rate limiters.
     ///
     /// The limiters are wrapped in an `Arc`.
-    pub fn manual_rate_limiters(&self) -> &Arc<ManualRateLimiters> {
+    pub fn manual_rate_limiters(
+        &self,
+    ) -> &Arc<manual_limiter::ManualRateLimiters> {
         &self.manual_rate_limiters
     }
 
@@ -327,8 +315,9 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Some(Vec<MoonlightEventGroup>))`: If transactions with the given
-    ///   memo are found, returns a vector of corresponding event groups.
+    /// * `Ok(Some(Vec<model::archive::MoonlightEventGroup>))`: If transactions
+    ///   with the given memo are found, returns a vector of corresponding event
+    ///   groups.
     /// * `Ok(None)`: If no transactions with the given memo are found in the
     ///   archive.
     /// * `Err(JsonRpcError::Infrastructure)`: If the query fails due to
@@ -382,16 +371,16 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all archived events for
-    ///   the specified block. Returns an empty vector if the block is found but
-    ///   has no associated events, or if the block hash is not found in the
-    ///   archive.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: A vector containing all
+    ///   archived events for the specified block. Returns an empty vector if
+    ///   the block is found but has no associated events, or if the block hash
+    ///   is not found in the archive.
     /// * `Err(JsonRpcError::Infrastructure)`: If the query fails due to
     ///   database issues.
     pub async fn get_block_events_by_hash(
         &self,
         hex_block_hash: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_block_events_by_hash(hex_block_hash)
             .await
@@ -410,16 +399,16 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all archived events for
-    ///   the specified block height. Returns an empty vector if the block is
-    ///   found but has no associated events, or if the block height is not
-    ///   found in the archive.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: A vector containing all
+    ///   archived events for the specified block height. Returns an empty
+    ///   vector if the block is found but has no associated events, or if the
+    ///   block height is not found in the archive.
     /// * `Err(JsonRpcError::Infrastructure)`: If the query fails due to
     ///   database issues.
     pub async fn get_block_events_by_height(
         &self,
         block_height: u64,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_block_events_by_height(block_height)
             .await
@@ -442,14 +431,14 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all archived events for
-    ///   the latest block found in the archive. Returns an empty vector if the
-    ///   latest block has no events.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: A vector containing all
+    ///   archived events for the latest block found in the archive. Returns an
+    ///   empty vector if the latest block has no events.
     /// * `Err(JsonRpcError::Infrastructure)`: If fetching the last block height
     ///   or fetching events by height fails in the underlying adapter.
     pub async fn get_latest_block_events(
         &self,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_latest_block_events()
             .await
@@ -469,15 +458,16 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all finalized events
-    ///   emitted by the specified contract. Returns an empty vector if the
-    ///   contract has emitted no finalized events or is not found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: A vector containing all
+    ///   finalized events emitted by the specified contract. Returns an empty
+    ///   vector if the contract has emitted no finalized events or is not
+    ///   found.
     /// * `Err(JsonRpcError::Infrastructure)`: If the query fails due to
     ///   database issues.
     pub async fn get_contract_finalized_events(
         &self,
         contract_id: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_contract_finalized_events(contract_id)
             .await
@@ -535,9 +525,9 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Some(Vec<MoonlightEventGroup>))`: If history is found for the
-    ///   account within the specified range, returns a vector of event groups,
-    ///   sorted according to `ord`.
+    /// * `Ok(Some(Vec<model::archive::MoonlightEventGroup>))`: If history is
+    ///   found for the account within the specified range, returns a vector of
+    ///   event groups, sorted according to `ord`.
     /// * `Ok(None)`: If no Moonlight transaction history is found for the
     ///   account in the specified range.
     /// * `Err(JsonRpcError::Infrastructure)`: If the input `pk_bs58` is
@@ -546,10 +536,11 @@ impl AppState {
     pub async fn get_moonlight_transaction_history(
         &self,
         pk_bs58: String,
-        ord: Option<Order>,
+        ord: Option<model::archive::Order>,
         from_block: Option<u64>,
         to_block: Option<u64>,
-    ) -> Result<Option<Vec<MoonlightEventGroup>>, JsonRpcError> {
+    ) -> Result<Option<Vec<model::archive::MoonlightEventGroup>>, JsonRpcError>
+    {
         self.archive_adapter
             .get_moonlight_transaction_history(
                 pk_bs58, ord, from_block, to_block,
@@ -573,16 +564,16 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing finalized events from
-    ///   the contract that match the specified topic. Returns an empty vector
-    ///   if no matching events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: A vector containing
+    ///   finalized events from the contract that match the specified topic.
+    ///   Returns an empty vector if no matching events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call to
     ///   `get_contract_finalized_events` fails.
     pub async fn get_contract_events_by_topic(
         &self,
         contract_id: &str,
         topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_contract_events_by_topic(contract_id, topic)
             .await
@@ -623,9 +614,10 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing all finalized events
-    ///   emitted by the specified contract. Returns an empty vector if the
-    ///   contract has emitted no finalized events or is not found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: A vector containing all
+    ///   finalized events emitted by the specified contract. Returns an empty
+    ///   vector if the contract has emitted no finalized events or is not
+    ///   found.
     /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call to
     ///   `get_contract_finalized_events` fails.
     ///
@@ -633,7 +625,7 @@ impl AppState {
     pub async fn get_contract_events(
         &self,
         contract_id: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_contract_events(contract_id)
             .await
@@ -656,16 +648,17 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing events from the
-    ///   specified block height whose source matches the `contract_id`. Returns
-    ///   an empty vector if no matching events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: A vector containing events
+    ///   from the specified block height whose source matches the
+    ///   `contract_id`. Returns an empty vector if no matching events are
+    ///   found.
     /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call to
     ///   `get_block_events_by_height` fails.
     pub async fn get_contract_events_by_block_height(
         &self,
         block_height: u64,
         contract_id: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_contract_events_by_block_height(block_height, contract_id)
             .await
@@ -688,16 +681,16 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: A vector containing events from the
-    ///   specified block hash whose source matches the `contract_id`. Returns
-    ///   an empty vector if no matching events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: A vector containing events
+    ///   from the specified block hash whose source matches the `contract_id`.
+    ///   Returns an empty vector if no matching events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call to
     ///   `get_block_events_by_hash` fails.
     pub async fn get_contract_events_by_block_hash(
         &self,
         hex_block_hash: &str,
         contract_id: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_contract_events_by_block_hash(hex_block_hash, contract_id)
             .await
@@ -717,13 +710,13 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: See
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: See
     ///   [`get_contract_events`](AppState::get_contract_events).
     /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call fails.
     pub async fn get_contract_transactions(
         &self,
         contract_id: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_contract_transactions(contract_id)
             .await
@@ -745,14 +738,14 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: See
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: See
     ///   [`get_contract_events_by_block_height`](AppState::get_contract_events_by_block_height).
     /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call fails.
     pub async fn get_contract_transactions_by_block_height(
         &self,
         block_height: u64,
         contract_id: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_contract_transactions_by_block_height(
                 block_height,
@@ -777,14 +770,14 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: See
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: See
     ///   [`get_contract_events_by_block_hash`](AppState::get_contract_events_by_block_hash).
     /// * `Err(JsonRpcError::Infrastructure)`: If the underlying call fails.
     pub async fn get_contract_transactions_by_block_hash(
         &self,
         hex_block_hash: &str,
         contract_id: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_contract_transactions_by_block_hash(
                 hex_block_hash,
@@ -812,7 +805,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -821,7 +814,7 @@ impl AppState {
         &self,
         contract_id: &str,
         item_added_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_item_added_events(contract_id, item_added_topic)
             .await
@@ -844,7 +837,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -853,7 +846,7 @@ impl AppState {
         &self,
         contract_id: &str,
         item_removed_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_item_removed_events(contract_id, item_removed_topic)
             .await
@@ -876,7 +869,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -885,7 +878,7 @@ impl AppState {
         &self,
         contract_id: &str,
         item_modified_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_item_modified_events(contract_id, item_modified_topic)
             .await
@@ -908,7 +901,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -917,7 +910,7 @@ impl AppState {
         &self,
         contract_id: &str,
         stake_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_stake_events(contract_id, stake_topic)
             .await
@@ -942,7 +935,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -951,7 +944,7 @@ impl AppState {
         &self,
         contract_id: &str,
         transfer_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_transfer_events(contract_id, transfer_topic)
             .await
@@ -974,7 +967,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -983,7 +976,7 @@ impl AppState {
         &self,
         contract_id: &str,
         unstake_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_unstake_events(contract_id, unstake_topic)
             .await
@@ -1006,7 +999,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -1015,7 +1008,7 @@ impl AppState {
         &self,
         contract_id: &str,
         slash_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_slash_events(contract_id, slash_topic)
             .await
@@ -1038,7 +1031,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -1047,7 +1040,7 @@ impl AppState {
         &self,
         contract_id: &str,
         deposit_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_deposit_events(contract_id, deposit_topic)
             .await
@@ -1071,7 +1064,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -1080,7 +1073,7 @@ impl AppState {
         &self,
         contract_id: &str,
         withdraw_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_withdraw_events(contract_id, withdraw_topic)
             .await
@@ -1103,7 +1096,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -1112,7 +1105,7 @@ impl AppState {
         &self,
         contract_id: &str,
         convert_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_convert_events(contract_id, convert_topic)
             .await
@@ -1135,7 +1128,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -1144,7 +1137,7 @@ impl AppState {
         &self,
         contract_id: &str,
         provisioner_changes_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_provisioner_changes(contract_id, provisioner_changes_topic)
             .await
@@ -1167,7 +1160,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<ArchivedEvent>)`: if the events are found.
+    /// * `Ok(Vec<model::archive::ArchivedEvent>)`: if the events are found.
     /// * `Err(JsonRpcError::Infrastructure)`: if an error occurs in the
     ///   underlying adapter.
     ///
@@ -1176,7 +1169,7 @@ impl AppState {
         &self,
         contract_id: &str,
         hard_slash_topic: &str,
-    ) -> Result<Vec<ArchivedEvent>, JsonRpcError> {
+    ) -> Result<Vec<model::archive::ArchivedEvent>, JsonRpcError> {
         self.archive_adapter
             .get_hard_slash_events(contract_id, hard_slash_topic)
             .await
@@ -1213,13 +1206,16 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<Vec<TransactionResponse>>)`: if the transactions are found
-    ///   for the block.
+    /// * `Ok(Option<Vec<model::transaction::TransactionResponse>>)`: if the
+    ///   transactions are found for the block.
     /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
     pub async fn get_block_transactions_by_hash(
         &self,
         block_hash_hex: &str,
-    ) -> Result<Option<Vec<TransactionResponse>>, JsonRpcError> {
+    ) -> Result<
+        Option<Vec<model::transaction::TransactionResponse>>,
+        JsonRpcError,
+    > {
         self.db_adapter
             .get_block_transactions_by_hash(block_hash_hex)
             .await
@@ -1234,12 +1230,13 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<BlockFaults>)`: if the faults are found for the block.
+    /// * `Ok(Option<model::block::BlockFaults>)`: if the faults are found for
+    ///   the block.
     /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
     pub async fn get_block_faults_by_hash(
         &self,
         block_hash_hex: &str,
-    ) -> Result<Option<BlockFaults>, JsonRpcError> {
+    ) -> Result<Option<model::block::BlockFaults>, JsonRpcError> {
         self.db_adapter
             .get_block_faults_by_hash(block_hash_hex)
             .await
@@ -1325,6 +1322,604 @@ impl AppState {
     ) -> Result<Option<model::block::BlockLabel>, JsonRpcError> {
         self.db_adapter
             .get_block_label_by_height(height)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a spent transaction record by its hash, returning detailed
+    /// info.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_hash_hex`: 64-char hex string of the transaction hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::transaction::TransactionInfo>)`: if the transaction
+    ///   is found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn get_spent_transaction_by_hash(
+        &self,
+        tx_hash_hex: &str,
+    ) -> Result<Option<model::transaction::TransactionInfo>, JsonRpcError> {
+        self.db_adapter
+            .get_spent_transaction_by_hash(tx_hash_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Checks if a transaction exists in the confirmed ledger.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_id`: 32-byte transaction hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(bool)`: true if the transaction exists, false otherwise.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn ledger_tx_exists(
+        &self,
+        tx_id: &[u8; 32],
+    ) -> Result<bool, JsonRpcError> {
+        self.db_adapter
+            .ledger_tx_exists(tx_id)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a transaction from the mempool by its hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_id`: 32-byte transaction hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::transaction::TransactionResponse>)`: if the
+    ///   transaction is found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn mempool_tx(
+        &self,
+        tx_id: [u8; 32],
+    ) -> Result<Option<model::transaction::TransactionResponse>, JsonRpcError>
+    {
+        self.db_adapter
+            .mempool_tx(tx_id)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Checks if a transaction exists in the mempool.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_id`: 32-byte transaction hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(bool)`: true if the transaction exists, false otherwise.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn mempool_tx_exists(
+        &self,
+        tx_id: [u8; 32],
+    ) -> Result<bool, JsonRpcError> {
+        self.db_adapter
+            .mempool_tx_exists(tx_id)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Gets transactions from the mempool, sorted by fee (highest first).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<model::transaction::TransactionResponse>)`: the sorted mempool
+    ///   transactions.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn mempool_txs_sorted_by_fee(
+        &self,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, JsonRpcError>
+    {
+        self.db_adapter
+            .mempool_txs_sorted_by_fee()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Gets the current count of transactions in the mempool.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(usize)`: if the count is found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn mempool_txs_count(&self) -> Result<usize, JsonRpcError> {
+        self.db_adapter
+            .mempool_txs_count()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Gets an iterator over mempool (fee, tx_id) pairs, sorted by
+    /// fee (highest first).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<(u64, [u8; 32])>)`: if the iterator is found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn mempool_txs_ids_sorted_by_fee(
+        &self,
+    ) -> Result<Vec<(u64, [u8; 32])>, JsonRpcError> {
+        self.db_adapter
+            .mempool_txs_ids_sorted_by_fee()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Gets an iterator over mempool (fee, tx_id) pairs, sorted by
+    /// fee (lowest first).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<(u64, [u8; 32])>)`: if the iterator is found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn mempool_txs_ids_sorted_by_low_fee(
+        &self,
+    ) -> Result<Vec<(u64, [u8; 32])>, JsonRpcError> {
+        self.db_adapter
+            .mempool_txs_ids_sorted_by_low_fee()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    // --- Delegated ConsensusStorage Primitives ---
+
+    /// Retrieves a candidate block by its hash.
+    ///
+    /// # Arguments
+    /// * `hash`: 32-byte candidate block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::CandidateBlock>)`: if found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if the identifier is invalid or a
+    ///   database error occurs.
+    pub async fn candidate(
+        &self,
+        hash: &[u8; 32],
+    ) -> Result<Option<model::block::CandidateBlock>, JsonRpcError> {
+        self.db_adapter
+            .candidate(hash)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a candidate block by its consensus header.
+    ///
+    /// # Arguments
+    /// * `header`: Consensus header.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::CandidateBlock>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if the identifier is invalid or a
+    ///   database error occurs.
+    pub async fn candidate_by_iteration(
+        &self,
+        header: &node_data::message::ConsensusHeader,
+    ) -> Result<Option<model::block::CandidateBlock>, JsonRpcError> {
+        self.db_adapter
+            .candidate_by_iteration(header)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a validation result by its consensus header.
+    ///
+    /// # Arguments
+    ///
+    /// * `header`: Consensus header.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::consensus::ValidationResult>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if the identifier is invalid or a
+    ///   database error occurs.
+    pub async fn validation_result(
+        &self,
+        header: &node_data::message::ConsensusHeader,
+    ) -> Result<Option<model::consensus::ValidationResult>, JsonRpcError> {
+        self.db_adapter
+            .validation_result(header)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    // --- Delegated Metadata Primitives ---
+
+    /// Reads a value from the metadata storage by key.
+    ///
+    /// Corresponds to `DatabaseAdapter::metadata_op_read`.
+    ///
+    /// # Arguments
+    ///
+    /// * `key`: Key to read.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<u8>>)` if the key is found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn metadata_op_read(
+        &self,
+        key: &[u8],
+    ) -> Result<Option<Vec<u8>>, JsonRpcError> {
+        self.db_adapter
+            .metadata_op_read(key)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Writes a value to the metadata storage by key.
+    ///
+    /// # Arguments
+    ///
+    /// * `key`: Key to write.
+    /// * `value`: Value to write.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the value is written.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn metadata_op_write(
+        &self,
+        key: &[u8],
+        value: &[u8],
+    ) -> Result<(), JsonRpcError> {
+        self.db_adapter
+            .metadata_op_write(key, value)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the height of the current chain tip.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` if the height is found.
+    /// * `Err(JsonRpcError::Infrastructure)` if the tip hash is not found, the
+    ///   block header is not found, or a database error occurs.
+    pub async fn get_block_height(&self) -> Result<u64, JsonRpcError> {
+        self.db_adapter
+            .get_block_height()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a candidate block by its hash, converting to the JSON-RPC
+    /// model.
+    ///
+    /// # Arguments
+    ///
+    /// * `block_hash_hex`: Hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::CandidateBlock>)`: if the candidate block is
+    ///   found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if the identifier is invalid or a
+    ///   database error occurs.
+    pub async fn get_candidate_block_by_hash(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<Option<model::block::CandidateBlock>, JsonRpcError> {
+        self.db_adapter
+            .get_candidate_block_by_hash(block_hash_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the latest candidate block proposed during consensus.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::block::CandidateBlock)`: if a latest candidate block is
+    ///   found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if the identifier is invalid, the
+    ///   block is not found, or a database error occurs.
+    pub async fn get_latest_candidate_block(
+        &self,
+    ) -> Result<model::block::CandidateBlock, JsonRpcError> {
+        self.db_adapter
+            .get_latest_candidate_block()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a consensus validation result by its identifier, converting to
+    /// the JSON-RPC model.
+    ///
+    /// # Arguments
+    ///
+    /// * `prev_block_hash_hex`: Hex string of the previous block hash for the
+    ///   consensus round.
+    /// * `round`: The consensus round number (block height).
+    /// * `iteration`: The consensus iteration number.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some(model::consensus::ValidationResult))`: if a result is found
+    ///   for the identifier.
+    /// * `Ok(None)`: if no validation result matches the identifier.
+    /// * `Err(JsonRpcError::Infrastructure)`: if the identifier is invalid or a
+    ///   database error occurs.
+    pub async fn get_validation_result(
+        &self,
+        prev_block_hash_hex: &str,
+        round: u64,
+        iteration: u8,
+    ) -> Result<Option<model::consensus::ValidationResult>, JsonRpcError> {
+        self.db_adapter
+            .get_validation_result(prev_block_hash_hex, round, iteration)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the latest consensus validation result.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::consensus::ValidationResult)`: if the latest result is
+    ///   found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if the identifier is invalid, the
+    ///   result is not found, or a database error occurs.
+    pub async fn get_latest_validation_result(
+        &self,
+    ) -> Result<model::consensus::ValidationResult, JsonRpcError> {
+        self.db_adapter
+            .get_latest_validation_result()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the status (Confirmed, Pending, NotFound) of a transaction by
+    /// its hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_hash_hex`: Hex string of the transaction hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::transaction::TransactionStatus)`: describing the status.
+    /// * `Err(JsonRpcError::Infrastructure)`: if the hash format is invalid,
+    ///   the transaction is not found (neither confirmed nor pending), or a
+    ///   database error occurs.
+    pub async fn get_transaction_status(
+        &self,
+        tx_hash_hex: &str,
+    ) -> Result<model::transaction::TransactionStatus, JsonRpcError> {
+        self.db_adapter
+            .get_transaction_status(tx_hash_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a list of transactions currently in the mempool, sorted by fee
+    /// (highest first).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<model::transaction::TransactionResponse>)`: a vector of
+    ///   mempool transactions.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn get_mempool_transactions(
+        &self,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, JsonRpcError>
+    {
+        self.db_adapter
+            .get_mempool_transactions()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a specific transaction from the mempool by hash.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_hash_hex`: Hex string of the transaction hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::transaction::TransactionResponse>)`: if found.
+    /// * `Err(JsonRpcError::Infrastructure)`: if the hash format is invalid or
+    ///   a database error occurs.
+    pub async fn get_mempool_transaction_by_hash(
+        &self,
+        tx_hash_hex: &str,
+    ) -> Result<Option<model::transaction::TransactionResponse>, JsonRpcError>
+    {
+        self.db_adapter
+            .get_mempool_transaction_by_hash(tx_hash_hex)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves statistics about the mempool (count, fee range).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::mempool::MempoolInfo)`: containing mempool statistics.
+    /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
+    pub async fn get_mempool_info(
+        &self,
+    ) -> Result<model::mempool::MempoolInfo, JsonRpcError> {
+        self.db_adapter
+            .get_mempool_info()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves overall chain statistics.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::chain::ChainStats)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_chain_stats(
+        &self,
+    ) -> Result<model::chain::ChainStats, JsonRpcError> {
+        self.db_adapter
+            .get_chain_stats()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Calculates gas price statistics based on mempool fees.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_transactions`: Maximum number of transactions to consider.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::gas::GasPriceStats)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_gas_price(
+        &self,
+        max_transactions: Option<usize>,
+    ) -> Result<model::gas::GasPriceStats, JsonRpcError> {
+        self.db_adapter
+            .get_gas_price(max_transactions)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Suggests gas price statistics based on mempool fees.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_transactions`: Maximum number of transactions to consider.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::gas::GasPriceStats)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn suggest_transaction_fee(
+        &self,
+        max_transactions: Option<usize>,
+    ) -> Result<model::gas::GasPriceStats, JsonRpcError> {
+        self.db_adapter
+            .suggest_transaction_fee(max_transactions)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves block summary by height.
+    ///
+    /// # Arguments
+    ///
+    /// * `height`: Height of the block.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::Block>)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_block_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<model::block::Block>, JsonRpcError> {
+        self.db_adapter
+            .get_block_by_height(height)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves the latest block summary.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::block::Block)` if found.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_latest_block(
+        &self,
+    ) -> Result<model::block::Block, JsonRpcError> {
+        self.db_adapter
+            .get_latest_block()
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves a range of block summaries concurrently.
+    ///
+    /// # Arguments
+    ///
+    /// * `height_start`: Start height of the range.
+    /// * `height_end`: End height of the range.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<model::block::Block>)` containing summaries for found blocks
+    ///   in the range. Note: If individual block lookups within the range fail
+    ///   (e.g., height not found), they are skipped.
+    /// * `Err(JsonRpcError::Infrastructure)` if `height_start > height_end` or
+    ///   a database error occurs.
+    pub async fn get_blocks_range(
+        &self,
+        height_start: u64,
+        height_end: u64,
+    ) -> Result<Vec<model::block::Block>, JsonRpcError> {
+        self.db_adapter
+            .get_blocks_range(height_start, height_end)
+            .await
+            .map_err(RpcInfraError::Database)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Retrieves multiple block summaries concurrently.
+    ///
+    /// # Arguments
+    ///
+    /// * `hashes_hex`: Array of block hashes.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<Option<model::block::Block>>)` containing an option for each
+    ///   requested hash.
+    /// * `Err(JsonRpcError::Infrastructure)` if a database error occurs.
+    pub async fn get_blocks_by_hashes(
+        &self,
+        hashes_hex: &[String],
+    ) -> Result<Vec<Option<model::block::Block>>, JsonRpcError> {
+        self.db_adapter
+            .get_blocks_by_hashes(hashes_hex)
             .await
             .map_err(RpcInfraError::Database)
             .map_err(JsonRpcError::Infrastructure)
