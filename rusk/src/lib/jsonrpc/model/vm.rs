@@ -34,8 +34,9 @@ pub enum VmPreverificationResult {
     /// higher than the expected next nonce for the sender's account.
     FutureNonce {
         /// The public key of the account whose nonce check failed.
+        /// Boxed to reduce the memory footprint of the enum.
         /// Serialized as Base58.
-        account: AccountPublicKey,
+        account: Box<AccountPublicKey>,
         /// The current state (nonce and balance) of the account at the time of
         /// the check.
         state: AccountInfo,
@@ -58,8 +59,9 @@ impl From<node::vm::PreverificationResult> for VmPreverificationResult {
                 state,
                 nonce_used,
             } => VmPreverificationResult::FutureNonce {
-                // Convert internal BlsPublicKey to model AccountPublicKey
-                account: AccountPublicKey(account),
+                // Convert internal BlsPublicKey to model AccountPublicKey and
+                // Box it
+                account: Box::new(AccountPublicKey(account)),
                 // Convert internal AccountData to model AccountInfo via From
                 state: AccountInfo::from(state),
                 nonce_used,
