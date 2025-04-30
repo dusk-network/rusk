@@ -40,6 +40,8 @@ use dusk_bytes::Serializable;
 use dusk_vm::execute;
 use node::vm::VMExecution;
 
+use dusk_core::BlsScalar;
+
 /// Trait defining the interface for VM operations needed by the JSON-RPC
 /// service.
 ///
@@ -372,6 +374,24 @@ pub trait VmAdapter: Send + Sync + Debug + 'static {
             )))
         }
     }
+
+    /// Checks a list of nullifiers against the current VM state to see which
+    /// ones have already been spent.
+    ///
+    /// # Arguments
+    ///
+    /// * `nullifiers`: A slice of 32-byte nullifiers to check.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<[u8; 32]>)`: A vector containing only the nullifiers from the
+    ///   input list that were found to be already spent in the VM state. An
+    ///   empty vector indicates all input nullifiers are valid (not spent).
+    /// * `Err(VmError)`: If the VM query fails or there is an internal error.
+    async fn validate_nullifiers(
+        &self,
+        nullifiers: &[[u8; 32]],
+    ) -> Result<Vec<[u8; 32]>, VmError>;
 }
 
 /// Real implementation of the `VmAdapter` for the Rusk node.
@@ -675,5 +695,115 @@ impl VmAdapter for RuskVmAdapter {
         // Acquire read lock asynchronously for quick read
         // Clone the config and convert it
         Ok(self.node_rusk_lock.read().await.vm_config.clone().into())
+    }
+
+    /// Retrieves detailed information about a single provisioner by public key.
+    ///
+    /// This default implementation filters the results from `get_provisioners`.
+    async fn get_provisioner_info_by_pk(
+        &self,
+        pk: &BlsPublicKey,
+    ) -> Result<model::provisioner::ProvisionerInfo, VmError> {
+        let all_details = self.get_provisioners().await?; // Call the refactored method
+
+        // Find the details for the requested public key
+        if let Some((keys, data)) = all_details
+            .into_iter()
+            .find(|(k, _)| k.account.inner() == pk)
+        // Compare inner BlsPublicKey
+        {
+            // Map the found ProvisionerKeys and ProvisionerStakeData to the
+            // ProvisionerInfo model
+            let pk_b58 = keys.account.to_base58().map_err(|e| {
+                VmError::InternalError(format!(
+                    "Failed to encode public key: {}",
+                    e
+                ))
+            })?;
+
+            // Extract amount details from Option<ProvisionerStakeAmount>,
+            // providing defaults if None
+            let (amount, locked, eligibility) = data.amount.map_or(
+                (0, 0, 0),
+                |sa: model::provisioner::ProvisionerStakeAmount| {
+                    (sa.value, sa.locked, sa.eligibility)
+                },
+            );
+
+            // owner is already in the correct StakeOwnerInfo format within
+            // ProvisionerKeys
+            let owner_info = keys.owner;
+
+            Ok(model::provisioner::ProvisionerInfo {
+                public_key: pk_b58,
+                amount,
+                locked_amount: locked,
+                eligibility,
+                reward: data.reward,
+                faults: data.faults,
+                hard_faults: data.hard_faults,
+                owner: owner_info,
+            })
+        } else {
+            // Provisioner not found in the list
+            Err(VmError::QueryFailed(format!(
+                "Provisioner details not found for public key: {}",
+                bs58::encode(pk.to_bytes()).into_string()
+            )))
+        }
+    }
+
+    /// Checks a list of nullifiers against the current VM state to see which
+    /// ones have already been spent.
+    ///
+    /// # Arguments
+    ///
+    /// * `nullifiers`: A slice of 32-byte nullifiers to check.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<[u8; 32]>)`: A vector containing only the nullifiers from the
+    ///   input list that were found to be already spent in the VM state. An
+    ///   empty vector indicates all input nullifiers are valid (not spent).
+    /// * `Err(VmError)`: If the VM query fails or there is an internal error.
+    async fn validate_nullifiers(
+        &self,
+        nullifiers: &[[u8; 32]],
+    ) -> Result<Vec<[u8; 32]>, VmError> {
+        // Convert input &[u8; 32] slice to Vec<BlsScalar>
+        let scalar_nullifiers = nullifiers
+            .iter()
+            .map(|n| {
+                // Use from_bytes from the Serializable trait
+                // Convert CtOption to Option and handle None case
+                Option::<BlsScalar>::from(BlsScalar::from_bytes(n)).ok_or_else(
+                    || {
+                        VmError::InternalError(format!(
+                            "Invalid nullifier byte sequence: {:?}",
+                            n
+                        ))
+                    },
+                )
+            })
+            .collect::<Result<Vec<BlsScalar>, _>>()?;
+
+        // Call the underlying RuskNode method
+        let existing_scalars = self
+            .node_rusk_lock
+            .read()
+            .await
+            .existing_nullifiers(&scalar_nullifiers)
+            .map_err(|e| {
+                VmError::QueryFailed(format!(
+                    "Failed to check nullifiers: {}",
+                    e
+                ))
+            })?;
+
+        // Convert Vec<BlsScalar> back to Vec<[u8; 32]>
+        let existing_bytes =
+            existing_scalars.into_iter().map(|s| s.to_bytes()).collect();
+
+        Ok(existing_bytes)
     }
 }
