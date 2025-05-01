@@ -38,3 +38,20 @@ pub struct PeersMetrics {
     /// of as being alive, depending on the underlying implementation).
     pub peer_count: u32,
 }
+
+/// Represents the geographical location information for a network peer.
+/// Derived from querying an external IP geolocation service.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PeerLocation {
+    /// Latitude of the peer's location.
+    pub lat: Option<f64>,
+    /// Longitude of the peer's location.
+    pub lon: Option<f64>,
+    /// City name associated with the peer's IP address.
+    pub city: Option<String>,
+    /// Country name associated with the peer's IP address.
+    pub country: Option<String>,
+    /// Country code (e.g., "US", "NL") associated with the peer's IP address.
+    pub country_code: Option<String>,
+}
