@@ -2838,6 +2838,27 @@ impl AppState {
             .map_err(JsonRpcError::Infrastructure)
     }
 
+    /// Retrieves the geographical location information for connected peers.
+    ///
+    /// Delegates to the underlying `NetworkAdapter`, which typically queries
+    /// an external GeoIP service and caches the results.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<model::network::PeerLocation>)` - A list of location data for
+    ///   peers.
+    /// * `Err(JsonRpcError::Infrastructure)` - If retrieving peer IPs or
+    ///   querying the geolocation service fails.
+    pub async fn get_network_peers_location(
+        &self,
+    ) -> Result<Vec<model::network::PeerLocation>, JsonRpcError> {
+        self.network_adapter
+            .get_network_peers_location()
+            .await
+            .map_err(RpcInfraError::Network)
+            .map_err(JsonRpcError::Infrastructure)
+    }
+
     /// Retrieves the finality status of a block by its hash.
     ///
     /// This method determines if a block is finalized, accepted into the
