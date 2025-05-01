@@ -40,68 +40,93 @@
 //! // Example: Setting up Axum router with AppState
 //! # use axum::{routing::get, Router, extract::State};
 //! # use std::sync::Arc;
+//! # use std::net::SocketAddr;
+//! # use std::fmt::Debug;
+//! # use async_trait::async_trait;
 //! # use parking_lot::RwLock;
 //! # use rusk::jsonrpc::infrastructure::state::AppState;
 //! # use rusk::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
 //! # use rusk::jsonrpc::config::JsonRpcConfig;
 //! # use rusk::jsonrpc::infrastructure::db::DatabaseAdapter;
 //! # use rusk::jsonrpc::infrastructure::archive::ArchiveAdapter;
+//! # use rusk::jsonrpc::infrastructure::network::NetworkAdapter;
+//! # use rusk::jsonrpc::infrastructure::vm::VmAdapter;
 //! # use rusk::jsonrpc::infrastructure::error::{ArchiveError, DbError, NetworkError, VmError};
 //! # use rusk::jsonrpc::infrastructure::metrics::MetricsCollector;
 //! # use rusk::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
-//! # use rusk::jsonrpc::model::block::Block;
-//! # use rusk::jsonrpc::model::archive::{ArchivedEvent, Order, MoonlightEventGroup};
+//! # use rusk::jsonrpc::model;
 //! # use dusk_core::abi::ContractId;
-//! # use dusk_bytes::{Serializable, DeserializableSlice};
-//! # use async_trait::async_trait;
-//! # use rusk::jsonrpc::infrastructure::network::NetworkAdapter;
-//! # use rusk::jsonrpc::infrastructure::vm::VmAdapter;
-//! # use dusk_consensus::user::{provisioners::Provisioners, stake::Stake};
 //! # use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-//! # use dusk_core::transfer::moonlight::AccountData;
-//! # use dusk_core::stake::{StakeData, StakeKeys};
-//! # use std::net::SocketAddr;
+//! # use node_data::message::ConsensusHeader;
+//! # use node_data::message::payload::Inv;
 //! # // --- Mock Implementations for Example ---
 //! # #[derive(Debug, Clone)]
 //! # struct MockDbAdapter;
 //! # #[async_trait]
 //! # impl DatabaseAdapter for MockDbAdapter {
-//! #     // --- Required Primitives ---
+//! #     // --- Required Ledger Primitives ---
 //! #     async fn get_block_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::Block>, DbError> { Ok(None) }
 //! #     async fn get_block_transactions_by_hash(&self, _: &str) -> Result<Option<Vec<rusk::jsonrpc::model::transaction::TransactionResponse>>, DbError> { Ok(None) }
 //! #     async fn get_block_faults_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::BlockFaults>, DbError> { Ok(None) }
 //! #     async fn get_block_hash_by_height(&self, _: u64) -> Result<Option<String>, DbError> { Ok(None) }
 //! #     async fn get_block_header_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::BlockHeader>, DbError> { Ok(None) }
 //! #     async fn get_block_label_by_height(&self, _: u64) -> Result<Option<rusk::jsonrpc::model::block::BlockLabel>, DbError> { Ok(None) }
-//! #     async fn get_spent_transaction_by_hash(&self, _: &str) -> Result<Option<node_data::ledger::SpentTransaction>, DbError> { Ok(None) }
+//! #     async fn get_spent_transaction_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::transaction::TransactionInfo>, DbError> { Ok(None) }
 //! #     async fn ledger_tx_exists(&self, _: &[u8; 32]) -> Result<bool, DbError> { Ok(false) }
-//! #     async fn mempool_tx(&self, _: [u8; 32]) -> Result<Option<node_data::ledger::Transaction>, DbError> { Ok(None) }
+//! #     async fn get_block_finality_status(&self, _: &str) -> Result<rusk::jsonrpc::model::block::BlockFinalityStatus, DbError> { Ok(rusk::jsonrpc::model::block::BlockFinalityStatus::Unknown) }
+//! #     // --- Required Mempool Primitives ---
+//! #     async fn mempool_tx(&self, _: [u8; 32]) -> Result<Option<rusk::jsonrpc::model::transaction::TransactionResponse>, DbError> { Ok(None) }
 //! #     async fn mempool_tx_exists(&self, _: [u8; 32]) -> Result<bool, DbError> { Ok(false) }
-//! #     async fn mempool_txs_sorted_by_fee(&self) -> Result<Vec<node_data::ledger::Transaction>, DbError> { Ok(vec![]) }
+//! #     async fn mempool_txs_sorted_by_fee(&self) -> Result<Vec<rusk::jsonrpc::model::transaction::TransactionResponse>, DbError> { Ok(vec![]) }
 //! #     async fn mempool_txs_count(&self) -> Result<usize, DbError> { Ok(0) }
 //! #     async fn mempool_txs_ids_sorted_by_fee(&self) -> Result<Vec<(u64, [u8; 32])>, DbError> { Ok(vec![]) }
 //! #     async fn mempool_txs_ids_sorted_by_low_fee(&self) -> Result<Vec<(u64, [u8; 32])>, DbError> { Ok(vec![]) }
-//! #     async fn candidate(&self, _: &[u8; 32]) -> Result<Option<node_data::ledger::Block>, DbError> { Ok(None) }
-//! #     async fn candidate_by_iteration(&self, _: &node_data::message::ConsensusHeader) -> Result<Option<node_data::ledger::Block>, DbError> { Ok(None) }
-//! #     async fn validation_result(&self, _: &node_data::message::ConsensusHeader) -> Result<Option<node_data::message::payload::ValidationResult>, DbError> { Ok(None) }
+//! #     // --- Required ConsensusStorage Primitives ---
+//! #     async fn candidate(&self, _: &[u8; 32]) -> Result<Option<rusk::jsonrpc::model::block::CandidateBlock>, DbError> { Ok(None) }
+//! #     async fn candidate_by_iteration(&self, _: &ConsensusHeader) -> Result<Option<rusk::jsonrpc::model::block::CandidateBlock>, DbError> { Ok(None) }
+//! #     async fn validation_result(&self, _: &ConsensusHeader) -> Result<Option<rusk::jsonrpc::model::consensus::ValidationResult>, DbError> { Ok(None) }
+//! #     // --- Required Metadata Primitives ---
 //! #     async fn metadata_op_read(&self, _: &[u8]) -> Result<Option<Vec<u8>>, DbError> { Ok(None) }
-//! #     async fn metadata_op_write(&mut self, _: &[u8], _: &[u8]) -> Result<(), DbError> { Ok(()) }
+//! #     async fn metadata_op_write(&self, _: &[u8], _: &[u8]) -> Result<(), DbError> { Ok(()) }
 //! # }
 //! # #[derive(Debug, Clone)] struct MockArchiveAdapter;
 //! # #[async_trait]
 //! # impl ArchiveAdapter for MockArchiveAdapter {
-//! #     async fn get_moonlight_txs_by_memo(&self, _memo: Vec<u8>) -> Result<Option<Vec<MoonlightEventGroup>>, ArchiveError> { Ok(Some(vec![])) }
+//! #     async fn get_moonlight_txs_by_memo(&self, _memo: Vec<u8>) -> Result<Option<Vec<model::archive::MoonlightEventGroup>>, ArchiveError> { Ok(Some(vec![])) }
 //! #     async fn get_last_archived_block(&self) -> Result<(u64, String), ArchiveError> { Ok((42, "dummy_hash".to_string())) }
-//! #     async fn get_block_events_by_hash(&self, _hex_block_hash: &str) -> Result<Vec<ArchivedEvent>, ArchiveError> { unimplemented!() }
-//! #     async fn get_block_events_by_height(&self, _block_height: u64) -> Result<Vec<ArchivedEvent>, ArchiveError> { unimplemented!() }
-//! #     async fn get_latest_block_events(&self) -> Result<Vec<ArchivedEvent>, ArchiveError> { unimplemented!() } // Can use default if desired
-//! #     async fn get_contract_finalized_events(&self, _contract_id: &str) -> Result<Vec<ArchivedEvent>, ArchiveError> { unimplemented!() }
-//! #     async fn get_next_block_with_phoenix_transaction(&self, _block_height: u64) -> Result<Option<u64>, ArchiveError> { unimplemented!() }
-//! #     async fn get_moonlight_transaction_history(&self, _pk_bs58: String, _ord: Option<Order>, _from_block: Option<u64>, _to_block: Option<u64>) -> Result<Option<Vec<MoonlightEventGroup>>, ArchiveError> { unimplemented!() }
-//! #     // Default methods like get_last_archived_block_height are implicitly included
+//! #     async fn get_block_events_by_hash(&self, _hex_block_hash: &str) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> { Ok(vec![]) }
+//! #     async fn get_block_events_by_height(&self, _block_height: u64) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> { Ok(vec![]) }
+//! #     async fn get_contract_finalized_events(&self, _contract_id: &str) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> { Ok(vec![]) }
+//! #     async fn get_next_block_with_phoenix_transaction(&self, _block_height: u64) -> Result<Option<u64>, ArchiveError> { Ok(None) }
+//! #     async fn get_moonlight_transaction_history(&self, _pk_bs58: String, _ord: Option<model::archive::Order>, _from_block: Option<u64>, _to_block: Option<u64>) -> Result<Option<Vec<model::archive::MoonlightEventGroup>>, ArchiveError> { Ok(None) }
+//! #     async fn get_latest_block_events(&self) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> { Ok(vec![]) }
 //! # }
-//! # #[derive(Debug, Clone)] struct MockNetworkAdapter; #[async_trait] impl NetworkAdapter for MockNetworkAdapter { async fn broadcast_transaction(&self, _tx: Vec<u8>) -> Result<(), NetworkError> { Ok(()) } async fn get_network_info(&self) -> Result<String, NetworkError> { Ok("MockNet".to_string()) } async fn get_public_address(&self) -> Result<std::net::SocketAddr, NetworkError> { Ok(([127,0,0,1], 8080).into()) } async fn get_alive_peers(&self, _max: usize) -> Result<Vec<std::net::SocketAddr>, NetworkError> { Ok(vec![]) } async fn get_alive_peers_count(&self) -> Result<usize, NetworkError> { Ok(0) } async fn flood_request(&self, _inv: node_data::message::payload::Inv, _ttl: Option<u64>, _hops: u16) -> Result<(), NetworkError> { Ok(()) }}
-//! # #[derive(Debug, Clone)] struct MockVmAdapter; #[async_trait] impl VmAdapter for MockVmAdapter { async fn simulate_transaction(&self, _tx: Vec<u8>) -> Result<rusk::jsonrpc::model::transaction::SimulationResult, VmError> { unimplemented!() } async fn preverify_transaction(&self, _tx: Vec<u8>) -> Result<node::vm::PreverificationResult, VmError> { Ok(node::vm::PreverificationResult::Valid) } async fn get_provisioners(&self) -> Result<Vec<(StakeKeys, StakeData)>, VmError> { Ok(Vec::new()) } async fn get_stake_info_by_pk(&self, _pk: &BlsPublicKey) -> Result<Option<Stake>, VmError> { Ok(None) } async fn get_state_root(&self) -> Result<[u8; 32], VmError> { Ok([0; 32]) } async fn get_block_gas_limit(&self) -> Result<u64, VmError> { Ok(1000000) } async fn query_contract_raw(&self, _contract_id: dusk_core::abi::ContractId, _method: String, _base_commit: [u8; 32], _args_bytes: Vec<u8>) -> Result<Vec<u8>, VmError> { Ok(vec![]) } async fn get_vm_config(&self) -> Result<rusk::node::RuskVmConfig, VmError> { unimplemented!() } async fn get_chain_id(&self) -> Result<u8, VmError> { Ok(0) } async fn get_account_data(&self, _pk: &BlsPublicKey) -> Result<AccountData, VmError> { Ok(AccountData { balance: 0, nonce: 0 }) } }
+//! # #[derive(Debug, Clone)] struct MockNetworkAdapter;
+//! # #[async_trait]
+//! # impl NetworkAdapter for MockNetworkAdapter {
+//! #     async fn broadcast_transaction(&self, _tx_bytes: Vec<u8>) -> Result<(), NetworkError> { Ok(()) }
+//! #     async fn get_network_info(&self) -> Result<String, NetworkError> { Ok("MockNet".to_string()) }
+//! #     async fn get_public_address(&self) -> Result<SocketAddr, NetworkError> { Ok(([127,0,0,1], 8080).into()) }
+//! #     async fn get_alive_peers(&self, _max_peers: usize) -> Result<Vec<SocketAddr>, NetworkError> { Ok(vec![]) }
+//! #     async fn get_alive_peers_count(&self) -> Result<usize, NetworkError> { Ok(0) }
+//! #     async fn flood_request(&self, _inv: Inv, _ttl_seconds: Option<u64>, _hops: u16) -> Result<(), NetworkError> { Ok(()) }
+//! #     async fn get_network_peers_location(&self) -> Result<Vec<model::network::PeerLocation>, NetworkError> { Ok(vec![]) }
+//! # }
+//! # #[derive(Debug, Clone)] struct MockVmAdapter;
+//! # #[async_trait]
+//! # impl VmAdapter for MockVmAdapter {
+//! #     async fn simulate_transaction(&self, _tx_bytes: Vec<u8>) -> Result<model::transaction::SimulationResult, VmError> { Ok(model::transaction::SimulationResult{ success: true, gas_estimate: Some(100), error: None }) }
+//! #     async fn preverify_transaction(&self, _tx_bytes: Vec<u8>) -> Result<model::vm::VmPreverificationResult, VmError> { Ok(model::vm::VmPreverificationResult::Valid) }
+//! #     async fn get_chain_id(&self) -> Result<u8, VmError> { Ok(0) }
+//! #     async fn get_account_data(&self, _pk: &BlsPublicKey) -> Result<model::account::AccountInfo, VmError> { Ok(model::account::AccountInfo { balance: 0, nonce: 0 }) }
+//! #     async fn get_state_root(&self) -> Result<[u8; 32], VmError> { Ok([0; 32]) }
+//! #     async fn get_block_gas_limit(&self) -> Result<u64, VmError> { Ok(1000000) }
+//! #     async fn get_provisioners(&self) -> Result<Vec<(model::provisioner::ProvisionerKeys, model::provisioner::ProvisionerStakeData)>, VmError> { Ok(Vec::new()) }
+//! #     async fn get_stake_info_by_pk(&self, _pk: &BlsPublicKey) -> Result<Option<model::provisioner::ConsensusStakeInfo>, VmError> { Ok(None) }
+//! #     async fn query_contract_raw(&self, _contract_id: ContractId, _method: String, _base_commit: [u8; 32], _args_bytes: Vec<u8>) -> Result<Vec<u8>, VmError> { Ok(vec![]) }
+//! #     async fn get_vm_config(&self) -> Result<model::vm::VmConfig, VmError> { unimplemented!() } // Assuming VmConfig has defaults or is simple
+//! #     async fn validate_nullifiers(&self, _nullifiers: &[[u8; 32]]) -> Result<Vec<[u8; 32]>, VmError> { Ok(vec![]) }
+//! # }
 //! # // --- End Mock Implementations ---
 //! // Initialize components (using mocks for example)
 //! let config = JsonRpcConfig::default();
@@ -127,20 +152,25 @@
 //! );
 //!
 //! // Create the Axum router and provide the state
-//! let app: Router<AppState> = Router::new()
+//! let app: Router = Router::new()
 //!     .route("/health", get(health_handler))
 //!     // Add other routes...
-//!     .with_state(app_state); // Pass AppState to the router
+//!     .with_state(app_state.clone()); // Pass AppState to the router
 //!
 //! // Example handler accessing the state
 //! async fn health_handler(State(state): State<AppState>) -> &'static str {
 //!     println!("Current config bind_address: {}", state.config().http.bind_address);
 //!     // Access components via direct methods on state
-//!     let _block = state.get_latest_block().await; // Example direct call
+//!     // Example: Call a method that delegates to the DB adapter
+//!     match state.get_block_by_height(100).await {
+//!         Ok(Some(block)) => println!("Found block: {}", block.header.hash),
+//!         Ok(None) => println!("Block 100 not found."),
+//!         Err(e) => println!("Error getting block: {}", e),
+//!     };
+//!     // Example: Call a method that delegates to the Network adapter
 //!     let _peers = state.get_alive_peers(10).await;
 //!     "OK"
 //! }
-//! // ...
 //! ```
 //!
 //! ## Adapters and Dynamic Dispatch
@@ -1445,7 +1475,7 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(usize)`: if the count is found.
+    /// * `Ok(usize)` if the count is found.
     /// * `Err(JsonRpcError::Infrastructure)`: if a database error occurs.
     pub async fn mempool_txs_count(&self) -> Result<usize, JsonRpcError> {
         self.db_adapter
