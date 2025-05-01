@@ -18,7 +18,8 @@ and this project adheres to
 
 ### Fixed
 
-- Fix Badge doesn't have content width [#3692]
+- Fix transaction type badges get wrapped [#3692]
+- Fix Transaction and Block entries have different row heights (Home page) [#3694]
 
 ## [1.3.2] - 2025-04-29
 
@@ -235,7 +236,8 @@ and this project adheres to
 [#3667]: https://github.com/dusk-network/rusk/issues/3667
 [#3675]: https://github.com/dusk-network/rusk/issues/3675
 [#3676]: https://github.com/dusk-network/rusk/issues/3676
-[#3676]: https://github.com/dusk-network/rusk/issues/3692
+[#3692]: https://github.com/dusk-network/rusk/issues/3692
+[#3694]: https://github.com/dusk-network/rusk/issues/3694
 
 <!-- VERSIONS -->
 
