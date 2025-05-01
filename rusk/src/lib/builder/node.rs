@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::path::PathBuf;
+#[cfg(feature = "jsonrpc-server")]
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -21,7 +22,9 @@ use node::telemetry::TelemetrySrv;
 use node::{LongLivedService, Node};
 
 use tokio::sync::{broadcast, mpsc};
-use tracing::{error, info, warn};
+use tracing::info;
+#[cfg(feature = "jsonrpc-server")]
+use tracing::{error, warn};
 #[cfg(feature = "archive")]
 use {dusk_bytes::Serializable, node::archive::Archive, tracing::debug};
 
