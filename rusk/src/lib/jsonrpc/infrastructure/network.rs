@@ -40,6 +40,20 @@ use node_data::Serializable;
 use crate::jsonrpc::infrastructure::error::NetworkError;
 use crate::jsonrpc::model;
 
+// Imports for GeoIP
+use std::env;
+use std::time::{Duration, Instant};
+
+use reqwest;
+use serde_json::Value;
+use tokio::time;
+
+// Static cache for peer locations
+static PEER_LOCATION_CACHE: RwLock<(
+    Option<Instant>,
+    Vec<model::network::PeerLocation>,
+)> = RwLock::const_new((None, Vec::new()));
+
 /// Trait defining the interface for network operations needed by the JSON-RPC
 /// service.
 ///
@@ -180,6 +194,25 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
         })?;
         Ok(model::network::PeersMetrics { peer_count })
     }
+
+    /// Retrieves the geographical location information for connected peers.
+    ///
+    /// This method typically involves:
+    /// 1. Getting the list of peer IP addresses.
+    /// 2. Querying an external IP geolocation API (e.g., ip-api.com) for each
+    ///    IP.
+    /// 3. Parsing the responses and returning a list of location data.
+    /// 4. Implementing caching to avoid excessive API calls.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<model::network::PeerLocation>)` - A list of location data for
+    ///   peers.
+    /// * `Err(NetworkError)` - If retrieving peer IPs or querying the
+    ///   geolocation service fails.
+    async fn get_network_peers_location(
+        &self,
+    ) -> Result<Vec<model::network::PeerLocation>, NetworkError>;
 }
 
 // RuskNetworkAdapter implementation (requires 'chain' feature)
@@ -275,5 +308,97 @@ impl<N: Network> NetworkAdapter for RuskNetworkAdapter<N> {
             .flood_request(&inv, ttl_seconds, hops)
             .await
             .map_err(|e| NetworkError::QueryFailed(e.to_string()))
+    }
+
+    async fn get_network_peers_location(
+        &self,
+    ) -> Result<Vec<model::network::PeerLocation>, NetworkError> {
+        // --- Check Cache --- //
+        {
+            let cache = PEER_LOCATION_CACHE.read().await;
+            if let Some(last_update) = cache.0 {
+                if last_update.elapsed() <= Duration::from_secs(60) {
+                    return Ok(cache.1.clone());
+                }
+            }
+            // Drop read lock here
+        }
+
+        // --- Cache Expired or Empty: Update Cache --- //
+        let mut cache_write = PEER_LOCATION_CACHE.write().await;
+
+        // Re-check expiration after acquiring write lock
+        if let Some(last_update) = cache_write.0 {
+            if last_update.elapsed() <= Duration::from_secs(60) {
+                return Ok(cache_write.1.clone()); // Return from existing cache
+                                                  // if updated by another
+                                                  // thread
+            }
+        }
+
+        // Fetch alive peers using the adapter's own method
+        let alive_peer_addrs = self.get_alive_peers(usize::MAX).await?;
+
+        let mut locations = Vec::new();
+        let client = reqwest::Client::new();
+        let api_key = env::var("IP_API_KEY").ok();
+        let max_query = if api_key.is_some() { usize::MAX } else { 45 };
+
+        for peer_addr in alive_peer_addrs.iter().take(max_query) {
+            let ip = peer_addr.ip(); // Get IP from SocketAddr
+            let url = if let Some(key) = &api_key {
+                format!("https://pro.ip-api.com/json/{}?key={}", ip, key)
+            } else {
+                format!("http://ip-api.com/json/{}", ip)
+            };
+
+            match client.get(&url).send().await {
+                Ok(response) => {
+                    match response.json::<Value>().await {
+                        Ok(resp_json) => {
+                            let location = model::network::PeerLocation {
+                                lat: resp_json["lat"].as_f64(),
+                                lon: resp_json["lon"].as_f64(),
+                                city: resp_json["city"]
+                                    .as_str()
+                                    .map(String::from),
+                                country: resp_json["country"]
+                                    .as_str()
+                                    .map(String::from),
+                                country_code: resp_json["countryCode"]
+                                    .as_str()
+                                    .map(String::from),
+                            };
+                            locations.push(location);
+                        }
+                        Err(e) => {
+                            // Log error but continue (don't fail the whole
+                            // request for one bad peer)
+                            tracing::warn!("Failed to parse JSON from geo IP API for {}: {}", ip, e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    // Log error but continue
+                    tracing::warn!(
+                        "Failed to query geo IP API for {}: {}",
+                        ip,
+                        e
+                    );
+                }
+            }
+
+            // Add a small delay if using the free API to respect rate limits
+            if api_key.is_none() {
+                time::sleep(Duration::from_millis(500)).await; // Approx 2 req/
+                                                               // sec
+            }
+        }
+
+        // Update cache
+        cache_write.0 = Some(Instant::now());
+        cache_write.1 = locations.clone();
+
+        Ok(locations)
     }
 }
