@@ -20,7 +20,12 @@ name = "rusk"
 path = "src/bin/main.rs"
 
 [dependencies]
-tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
+tokio = { workspace = true, features = [
+    "rt-multi-thread",
+    "fs",
+    "macros",
+    "time",
+] }
 futures-util = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = [
@@ -80,7 +85,7 @@ node-data = { workspace = true, optional = true }
 async-graphql = { workspace = true }
 
 ## RUES deps
-reqwest = { workspace = true, features = ["json"] }
+reqwest = { workspace = true, features = ["json", "blocking"] }
 
 ## Ephemeral dependencies
 tempfile = { workspace = true, optional = true }
