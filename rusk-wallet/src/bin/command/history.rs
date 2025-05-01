@@ -31,6 +31,10 @@ impl TransactionHistory {
             "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE", "TRANSACTION_TYPE"
         )
     }
+
+    pub fn height(&self) -> u64 {
+        self.height
+    }
 }
 
 impl Display for TransactionHistory {
@@ -152,7 +156,7 @@ pub(crate) async fn transaction_from_notes(
             }
         }
     }
-    ret.sort_by(|a, b| a.height.cmp(&b.height));
+
     Ok(ret)
 }
 
