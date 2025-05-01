@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change dependency declaration to not require strict equal [#3405]
 - Change key derivation to PBKDF2 and wallet encryption to AES-GCM [#3391]
 - Change default deploy gas limit to be accepted by std mempool
+- Change transaction history error message to a more helpful one [#3707]
 
 ### Removed
 
@@ -68,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Issues -->
 [#3702]: https://github.com/dusk-network/rusk/issues/3702
+[#3707]: https://github.com/dusk-network/rusk/issues/3707
 [#3597]: https://github.com/dusk-network/rusk/issues/3597
 [#3192]: https://github.com/dusk-network/rusk/issues/3192
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
