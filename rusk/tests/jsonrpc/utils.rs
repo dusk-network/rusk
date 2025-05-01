@@ -658,6 +658,8 @@ pub struct MockNetworkAdapter {
     pub alive_peers: Option<Vec<SocketAddr>>,
     /// Predefined count of alive peers.
     pub alive_peers_count: Option<usize>,
+    /// Predefined list of peer locations.
+    pub peer_locations: Option<Vec<model::network::PeerLocation>>,
 }
 
 #[async_trait::async_trait]
@@ -720,6 +722,15 @@ impl NetworkAdapter for MockNetworkAdapter {
         }
         // Simple Ok for mock
         Ok(())
+    }
+
+    async fn get_network_peers_location(
+        &self,
+    ) -> Result<Vec<model::network::PeerLocation>, NetworkError> {
+        if let Some(err) = &self.force_error {
+            return Err(err.clone());
+        }
+        Ok(self.peer_locations.clone().unwrap_or_default())
     }
 }
 
