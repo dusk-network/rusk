@@ -88,7 +88,7 @@ pub struct MoonlightHistoryJson {
 #[derive(Deserialize, Debug)]
 pub struct FullMoonlightHistory {
     #[serde(rename(deserialize = "fullMoonlightHistory"))]
-    pub full_moonlight_history: MoonlightHistoryJson,
+    pub full_moonlight_history: Option<MoonlightHistoryJson>,
 }
 
 #[derive(Deserialize)]
@@ -333,6 +333,10 @@ async fn deser() -> Result<(), Box<dyn std::error::Error>> {
 
     let block_with_tx = r#"{"block":{"transactions":[{"id":"88e6804989cc2f3fd5bf94dcd39a4e7b7da9a1114d9b8bf4e0515264bc81c50f"}]}}"#;
     serde_json::from_str::<BlockResponse>(block_with_tx).unwrap();
+
+    let empty_full_moonlight_history = r#"{"fullMoonlightHistory":null}"#;
+    serde_json::from_str::<FullMoonlightHistory>(empty_full_moonlight_history)
+        .unwrap();
 
     Ok(())
 }

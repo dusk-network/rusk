@@ -171,6 +171,9 @@ pub(crate) async fn moonlight_history(
         .moonlight_history(address.clone())
         .await?
         .full_moonlight_history;
+    let Some(history) = history else {
+        return Ok(vec![]);
+    };
 
     let mut collected_history = Vec::new();
 
