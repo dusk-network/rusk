@@ -131,6 +131,11 @@ impl Config {
         }
     }
 
+    /// Get the features of the config.
+    pub fn features(&self) -> HashMap<String, u64> {
+        self.features.clone()
+    }
+
     pub fn feature(&self, feature: &str) -> Option<u64> {
         self.features
             .iter()
