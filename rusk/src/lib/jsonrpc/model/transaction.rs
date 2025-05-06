@@ -48,11 +48,8 @@
 //! Serialization helpers are used for formatting numbers as strings where
 //! required by the spec.
 
-use dusk_bytes::Serializable as DuskSerializable; // For to_var_bytes
-use dusk_core::transfer::Transaction as ProtocolTransaction;
+use dusk_bytes::Serializable as DuskSerializable;
 use hex;
-use node_data::ledger::SpendingId as NodeSpendingId;
-use node_data::ledger::Transaction as NodeTransaction;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 
@@ -101,11 +98,11 @@ pub struct BaseTransaction {
     pub tx_type: TransactionType,
     /// Gas price offered by the transaction sender (in atomic units).
     /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::u64_to_string")]
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub gas_price: u64,
     /// Maximum gas units the transaction is allowed to consume.
     /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::u64_to_string")]
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub gas_limit: u64,
     /// The complete, serialized transaction data.
     /// Serialized as a hex string.
@@ -171,7 +168,7 @@ pub struct TransactionStatus {
     /// (`Executed` or `Failed`).
     /// Serialized as a numeric string.
     #[serde(
-        with = "super::serde_helper::opt_u64_to_string",
+        with = "crate::jsonrpc::model::serde_helper::opt_u64_to_string",
         skip_serializing_if = "Option::is_none"
     )]
     pub block_height: Option<u64>,
@@ -184,7 +181,7 @@ pub struct TransactionStatus {
     /// `Failed`).
     /// Serialized as a numeric string.
     #[serde(
-        with = "super::serde_helper::opt_u64_to_string",
+        with = "crate::jsonrpc::model::serde_helper::opt_u64_to_string",
         skip_serializing_if = "Option::is_none"
     )]
     pub gas_spent: Option<u64>,
@@ -192,7 +189,7 @@ pub struct TransactionStatus {
     /// included, if applicable.
     /// Serialized as a numeric string.
     #[serde(
-        with = "super::serde_helper::opt_u64_to_string",
+        with = "crate::jsonrpc::model::serde_helper::opt_u64_to_string",
         skip_serializing_if = "Option::is_none"
     )]
     pub timestamp: Option<u64>,
@@ -219,11 +216,11 @@ pub struct MoonlightTransactionData {
     pub receiver: Option<String>,
     /// Amount transferred in atomic units (e.g., Lovelace for Dusk).
     /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::u64_to_string")]
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub value: u64,
     /// Nonce used by the sender for replay protection.
     /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::u64_to_string")]
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub nonce: u64,
     /// Optional arbitrary data included in the transaction.
     /// Serialized as a hex string.
@@ -249,48 +246,32 @@ pub struct PhoenixTransactionData {
     pub proof: String,
 }
 
-/// Enum holding the data payload specific to different transaction types.
-///
-/// This uses `#[serde(untagged)]` so that the JSON serialization directly
-/// contains the fields of either [`MoonlightTransactionData`] or
-/// [`PhoenixTransactionData`], without an extra wrapping layer.
-///
-/// # Examples
-///
-/// ```
-/// use rusk::jsonrpc::model::transaction::{TransactionDataType, MoonlightTransactionData, PhoenixTransactionData};
-///
-/// // Example Moonlight data
-/// let moonlight_data = MoonlightTransactionData {
-///     sender: "...base58...".to_string(),
-///     receiver: Some("...base58...".to_string()),
-///     value: 1000,
-///     nonce: 1,
-///     memo: Some("...hex...".to_string()),
-/// };
-/// let tx_data_moonlight = TransactionDataType::Moonlight(moonlight_data);
-///
-/// // Example Phoenix data
-/// let phoenix_data = PhoenixTransactionData {
-///     nullifiers: vec!["...hex...".to_string()],
-///     outputs: vec!["...hex...".to_string()],
-///     proof: "...hex...".to_string(),
-/// };
-/// let tx_data_phoenix = TransactionDataType::Phoenix(phoenix_data);
-///
-/// // Serialization would look like the inner struct's fields directly.
-/// // let json_moonlight = serde_json::to_string(&tx_data_moonlight).unwrap();
-/// // let json_phoenix = serde_json::to_string(&tx_data_phoenix).unwrap();
-/// // assert!(json_moonlight.contains("sender"));
-/// // assert!(json_phoenix.contains("nullifiers"));
-/// ```
+/// Represents the specific data payload for a deployment transaction.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(untagged)] // Serialize as the inner type directly
+pub struct DeployTransactionData {
+    /// Hex-encoded WASM bytecode of the deployed contract.
+    pub bytecode: String,
+    /// Optional hex-encoded initialization arguments for the contract's `init`
+    /// function.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub init_args: Option<String>,
+    // Note: Owner is derived from the sender of the wrapping transaction.
+}
+
+/// Enum holding the data specific to each transaction type for JSON-RPC
+/// responses.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+// Consider adding #[serde(tag = "payloadType")] or similar if needed for
+// unambiguous deserialization For now, using untagged which relies on the
+// unique structure of each variant.
+#[serde(untagged)]
 pub enum TransactionDataType {
     /// Data specific to a Moonlight transaction.
     Moonlight(MoonlightTransactionData),
     /// Data specific to a Phoenix transaction.
     Phoenix(PhoenixTransactionData),
+    /// Data specific to a contract deployment transaction.
+    Deploy(DeployTransactionData),
 }
 
 // --- Combined Transaction Response ---
@@ -389,7 +370,7 @@ pub struct MempoolTransaction {
     /// Unix timestamp (in seconds) indicating when the transaction was
     /// received by the node's mempool.
     /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::u64_to_string")]
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub received_at: u64,
 }
 
@@ -438,7 +419,7 @@ pub struct TransactionInfo {
     // Block context
     /// Height of the block where the transaction was included.
     /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::u64_to_string")]
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub block_height: u64,
     /// 32-byte hash of the block where the transaction was included.
     /// Serialized as a 64-character hex string.
@@ -450,12 +431,12 @@ pub struct TransactionInfo {
     pub tx_index: Option<u32>,
     /// Amount of gas consumed by the transaction during execution.
     /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::u64_to_string")]
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub gas_spent: u64,
     /// Unix timestamp (in seconds) of the block where the transaction was
     /// included.
     /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::u64_to_string")]
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
     pub timestamp: u64,
     /// Error message if the transaction execution failed. `None` if
     /// successful.
@@ -521,53 +502,84 @@ pub struct SimulationResult {
 /// because the `node_data::ledger::Transaction` itself doesn't contain
 /// execution status information. Status must be determined separately (e.g., by
 /// checking if it's in the mempool or by querying for a `SpentTransaction`).
-impl From<NodeTransaction> for TransactionResponse {
-    fn from(node_tx: NodeTransaction) -> Self {
+impl From<node_data::ledger::Transaction> for TransactionResponse {
+    fn from(node_tx: node_data::ledger::Transaction) -> Self {
         let tx_hash = hex::encode(node_tx.id());
         let raw = hex::encode(node_tx.inner.to_var_bytes());
 
         let (tx_type, transaction_data) = match &node_tx.inner {
-            ProtocolTransaction::Phoenix(p) => {
-                let nullifiers = p
-                    .nullifiers()
-                    .iter()
-                    .map(|n| hex::encode(n.to_bytes()))
-                    .collect();
-                let outputs = p
-                    .outputs()
-                    .iter()
-                    .map(|note| hex::encode(note.stealth_address().to_bytes()))
-                    .collect();
-                let proof = hex::encode(p.proof());
+            dusk_core::transfer::Transaction::Phoenix(p) => {
+                if let Some(deploy_data) = p.deploy() {
+                    (
+                        TransactionType::Phoenix,
+                        TransactionDataType::Deploy(DeployTransactionData {
+                            bytecode: hex::encode(&deploy_data.bytecode.bytes),
+                            init_args: deploy_data
+                                .init_args
+                                .as_ref()
+                                .map(hex::encode),
+                        }),
+                    )
+                } else {
+                    let nullifiers = p
+                        .nullifiers()
+                        .iter()
+                        .map(|n| hex::encode(n.to_bytes()))
+                        .collect();
+                    let outputs = p
+                        .outputs()
+                        .iter()
+                        .map(|note| {
+                            hex::encode(note.stealth_address().to_bytes())
+                        })
+                        .collect();
+                    let proof = hex::encode(p.proof());
 
-                (
-                    TransactionType::Phoenix,
-                    TransactionDataType::Phoenix(PhoenixTransactionData {
-                        nullifiers,
-                        outputs, // Vec<String> of hex-encoded stealth addresses
-                        proof,
-                    }),
-                )
+                    (
+                        TransactionType::Phoenix,
+                        TransactionDataType::Phoenix(PhoenixTransactionData {
+                            nullifiers,
+                            outputs,
+                            proof,
+                        }),
+                    )
+                }
             }
-            ProtocolTransaction::Moonlight(m) => {
-                let sender = bs58::encode(m.sender().to_bytes()).into_string();
-                let receiver = m
-                    .receiver()
-                    .map(|r| bs58::encode(r.to_bytes()).into_string());
-                let value = m.value();
-                let nonce = m.nonce();
-                let memo = m.memo().map(hex::encode);
+            dusk_core::transfer::Transaction::Moonlight(m) => {
+                if let Some(deploy_data) = m.deploy() {
+                    (
+                        TransactionType::Moonlight,
+                        TransactionDataType::Deploy(DeployTransactionData {
+                            bytecode: hex::encode(&deploy_data.bytecode.bytes),
+                            init_args: deploy_data
+                                .init_args
+                                .as_ref()
+                                .map(hex::encode),
+                        }),
+                    )
+                } else {
+                    let sender =
+                        bs58::encode(m.sender().to_bytes()).into_string();
+                    let receiver = m
+                        .receiver()
+                        .map(|r| bs58::encode(r.to_bytes()).into_string());
+                    let value = m.value();
+                    let nonce = m.nonce();
+                    let memo = m.memo().map(hex::encode);
 
-                (
-                    TransactionType::Moonlight,
-                    TransactionDataType::Moonlight(MoonlightTransactionData {
-                        sender,
-                        receiver,
-                        value,
-                        nonce,
-                        memo,
-                    }),
-                )
+                    (
+                        TransactionType::Moonlight,
+                        TransactionDataType::Moonlight(
+                            MoonlightTransactionData {
+                                sender,
+                                receiver,
+                                value,
+                                nonce,
+                                memo,
+                            },
+                        ),
+                    )
+                }
             }
         };
 
@@ -575,14 +587,14 @@ impl From<NodeTransaction> for TransactionResponse {
             tx_hash,
             version: node_tx.version,
             tx_type,
-            gas_price: node_tx.gas_price(),
+            gas_price: node_tx.inner.gas_price(),
             gas_limit: node_tx.inner.gas_limit(),
             raw,
         };
 
         TransactionResponse {
             base,
-            status: None, // Status is unknown when just fetching from block
+            status: None,
             transaction_data,
         }
     }
@@ -616,7 +628,10 @@ pub struct SpendingIdentifier {
     /// The nonce associated with the account, only present if `id_type` is
     /// `AccountNonce`.
     /// Serialized as a numeric string.
-    #[serde(with = "super::serde_helper::opt_u64_to_string", default)]
+    #[serde(
+        with = "crate::jsonrpc::model::serde_helper::opt_u64_to_string",
+        default
+    )]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<u64>,
 }
@@ -624,15 +639,15 @@ pub struct SpendingIdentifier {
 /// Converts the node's internal spending ID representation
 /// (`node_data::ledger::SpendingId`) into the JSON-RPC `SpendingIdentifier`
 /// model.
-impl From<NodeSpendingId> for SpendingIdentifier {
-    fn from(node_id: NodeSpendingId) -> Self {
+impl From<node_data::ledger::SpendingId> for SpendingIdentifier {
+    fn from(node_id: node_data::ledger::SpendingId) -> Self {
         match node_id {
-            NodeSpendingId::Nullifier(n) => SpendingIdentifier {
+            node_data::ledger::SpendingId::Nullifier(n) => SpendingIdentifier {
                 id_type: SpendingIdType::Nullifier,
                 identifier: hex::encode(n),
                 nonce: None,
             },
-            NodeSpendingId::AccountNonce(account, nonce) => {
+            node_data::ledger::SpendingId::AccountNonce(account, nonce) => {
                 SpendingIdentifier {
                     id_type: SpendingIdType::AccountNonce,
                     identifier: bs58::encode(account.to_bytes()).into_string(),
