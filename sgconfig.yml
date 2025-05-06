@@ -1,0 +1,6 @@
+ruleDirs:
+- /Users/aw/Dev/rusk/rules
+testConfigs:
+- testDir: /Users/aw/Dev/rusk/rule-tests
+utilDirs:
+- /Users/aw/Dev/rusk/utils
