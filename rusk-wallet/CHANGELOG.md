@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix exit when command errors in interactive mode [#3597], [#3192]
 - Fix out of order transaction history [#3702]
 - Fix empty transaction history error [#3700]
+- Fix insufficient balance to stake error message [#3713]
 
 ## [0.1.0] - 2025-01-20
 
@@ -69,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- Issues -->
+[#3713]: https://github.com/dusk-network/rusk/issues/3713
 [#3702]: https://github.com/dusk-network/rusk/issues/3702
 [#3707]: https://github.com/dusk-network/rusk/issues/3707
 [#3700]: https://github.com/dusk-network/rusk/issues/3700

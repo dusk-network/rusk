@@ -185,6 +185,11 @@ pub(crate) async fn online(
                 }
             };
 
+            if balance < min_val {
+                println!("The stake must be at least {min_val}, but your balance is only {balance}\n");
+                return Ok(ProfileOp::Stay);
+            }
+
             let owner = match wallet.find_stake_owner_account(stake_pk).await {
                 Ok(account) => account,
                 Err(Error::NotStaked) => {
