@@ -182,3 +182,84 @@ pub enum Error {
     #[error("Unknown error: {0}")]
     Unknown(String),
 }
+
+// Compiler complains about missing `From` implementation for `VmError` and
+// `NetworkError` for `jsonrpc::error::Error`, so the manual implementation is
+// added.
+
+impl From<VmError> for crate::jsonrpc::error::Error {
+    fn from(vm_error: VmError) -> Self {
+        let infra_error =
+            crate::jsonrpc::infrastructure::error::Error::Vm(vm_error);
+        crate::jsonrpc::error::Error::Infrastructure(infra_error)
+    }
+}
+
+impl From<NetworkError> for crate::jsonrpc::error::Error {
+    fn from(network_error: NetworkError) -> Self {
+        let infra_error = crate::jsonrpc::infrastructure::error::Error::Network(
+            network_error,
+        );
+        crate::jsonrpc::error::Error::Infrastructure(infra_error)
+    }
+}
+
+impl From<DbError> for crate::jsonrpc::error::Error {
+    fn from(db_error: DbError) -> Self {
+        let infra_error =
+            crate::jsonrpc::infrastructure::error::Error::Database(db_error);
+        crate::jsonrpc::error::Error::Infrastructure(infra_error)
+    }
+}
+
+impl From<StateError> for crate::jsonrpc::error::Error {
+    fn from(state_error: StateError) -> Self {
+        let infra_error =
+            crate::jsonrpc::infrastructure::error::Error::State(state_error);
+        crate::jsonrpc::error::Error::Infrastructure(infra_error)
+    }
+}
+
+impl From<RateLimitError> for crate::jsonrpc::error::Error {
+    fn from(rate_limit_error: RateLimitError) -> Self {
+        let infra_error =
+            crate::jsonrpc::infrastructure::error::Error::RateLimit(
+                rate_limit_error,
+            );
+        crate::jsonrpc::error::Error::Infrastructure(infra_error)
+    }
+}
+
+impl From<ArchiveError> for crate::jsonrpc::error::Error {
+    fn from(archive_error: ArchiveError) -> Self {
+        let infra_error = crate::jsonrpc::infrastructure::error::Error::Archive(
+            archive_error,
+        );
+        crate::jsonrpc::error::Error::Infrastructure(infra_error)
+    }
+}
+
+impl From<ConversionError> for crate::jsonrpc::error::Error {
+    fn from(conversion_error: ConversionError) -> Self {
+        let infra_error =
+            crate::jsonrpc::infrastructure::error::Error::Conversion(
+                conversion_error,
+            );
+        crate::jsonrpc::error::Error::Infrastructure(infra_error)
+    }
+}
+
+impl
+    From<crate::jsonrpc::infrastructure::subscription::error::SubscriptionError>
+    for crate::jsonrpc::error::Error
+{
+    fn from(
+        sub_error: crate::jsonrpc::infrastructure::subscription::error::SubscriptionError,
+    ) -> Self {
+        let infra_error =
+            crate::jsonrpc::infrastructure::error::Error::Subscription(
+                sub_error,
+            );
+        crate::jsonrpc::error::Error::Infrastructure(infra_error)
+    }
+}
