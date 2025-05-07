@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix out of order transaction history [#3702]
 - Fix empty transaction history error [#3700]
 - Fix insufficient balance to stake error message [#3713]
+- Fix wrong amount in phoenix transaction history [#3704]
 
 ## [0.1.0] - 2025-01-20
 
@@ -74,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3702]: https://github.com/dusk-network/rusk/issues/3702
 [#3707]: https://github.com/dusk-network/rusk/issues/3707
 [#3700]: https://github.com/dusk-network/rusk/issues/3700
+[#3704]: https://github.com/dusk-network/rusk/issues/3704
 [#3597]: https://github.com/dusk-network/rusk/issues/3597
 [#3192]: https://github.com/dusk-network/rusk/issues/3192
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
