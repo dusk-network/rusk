@@ -29,14 +29,13 @@ use std::sync::Arc;
 
 /// Represents basic information about the Rusk node.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NodeInfo {
     /// Rusk node version.
     pub version: String,
     /// Configured network chain ID.
-    #[serde(rename = "chainId")]
     pub chain_id: u8,
     /// Bind address for the JSON-RPC HTTP/S server.
-    #[serde(rename = "jsonrpcHttpAddress")]
     pub jsonrpc_http_address: String,
     // Add more fields as needed, e.g., network ID, uptime, sync status etc.
 }
