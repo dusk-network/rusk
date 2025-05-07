@@ -213,6 +213,7 @@ use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use hex;
 use node_data::message::payload::Inv;
+use node_data::Serializable;
 
 use crate::jsonrpc::config::JsonRpcConfig;
 use crate::jsonrpc::error::Error as JsonRpcError;
@@ -299,6 +300,15 @@ impl AppState {
             metrics_collector: Arc::new(metrics_collector),
             manual_rate_limiters: Arc::new(manual_rate_limiters),
         }
+    }
+
+    // Private static helper method.
+    fn calculate_deployment_gas(
+        bytecode_size: usize,
+        gas_per_deploy_byte: u64,
+        min_deploy_points: u64,
+    ) -> u64 {
+        (bytecode_size as u64) * gas_per_deploy_byte + min_deploy_points
     }
 
     /// Returns a reference to the shared JSON-RPC configuration.
@@ -2924,5 +2934,123 @@ impl AppState {
             .await
             .map_err(RpcInfraError::Database)
             .map_err(JsonRpcError::Infrastructure)
+    }
+
+    /// Deploys a new smart contract to the blockchain by simulating and then
+    /// broadcasting a pre-constructed and signed deployment transaction.
+    ///
+    /// This method expects the client to have already:
+    /// 1. Constructed the `ContractDeploy` data.
+    /// 2. Wrapped it in the appropriate `dusk_core::transfer::Transaction`
+    ///    variant (Moonlight or Phoenix).
+    /// 3. For Phoenix transactions, generated the ZK proof.
+    /// 4. For Moonlight transactions, signed the transaction.
+    /// 5. Wrapped this into a `node_data::ledger::Transaction`.
+    /// 6. Serialized the `node_data::ledger::Transaction` into bytes.
+    ///
+    /// # Arguments
+    ///
+    /// * `signed_deployment_tx_bytes` - A `Vec<u8>` containing the fully
+    ///   serialized, signed (for Moonlight) or proven (for Phoenix) deployment
+    ///   transaction. This byte array should be deserializable into a
+    ///   `node_data::ledger::Transaction`.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` containing the hex-encoded transaction hash upon
+    /// successful broadcast, or a `JsonRpcError` if any step
+    /// (deserialization, validation, simulation, broadcast) fails.
+    pub async fn deploy_contract(
+        &self,
+        signed_deployment_tx_bytes: Vec<u8>,
+    ) -> Result<String, JsonRpcError> {
+        // 1. Deserialize bytes to node_data::ledger::Transaction
+        let node_ledger_tx = node_data::ledger::Transaction::read(
+            &mut signed_deployment_tx_bytes.as_slice(),
+        )
+        .map_err(|e| {
+            JsonRpcError::InvalidParams(format!(
+                "Failed to deserialize transaction bytes: {}",
+                e
+            ))
+        })?;
+
+        // 2. Validation using node_ledger_tx and model::vm::VmConfig
+        let vm_model_config = self.get_vm_config().await?;
+
+        let gas_limit_from_tx = match &node_ledger_tx.inner {
+            dusk_core::transfer::Transaction::Phoenix(p_tx) => p_tx.gas_limit(),
+            dusk_core::transfer::Transaction::Moonlight(m_tx) => {
+                m_tx.gas_limit()
+            }
+        };
+        let gas_price_from_tx = node_ledger_tx.gas_price();
+
+        if gas_price_from_tx < vm_model_config.min_deployment_gas_price {
+            return Err(JsonRpcError::InvalidParams(format!(
+                    "Gas price {} from transaction is too low for deployment. Minimum allowed: {}",
+                    gas_price_from_tx, vm_model_config.min_deployment_gas_price
+                )));
+        }
+
+        if gas_limit_from_tx > vm_model_config.block_gas_limit {
+            return Err(JsonRpcError::InvalidParams(format!(
+                "Transaction gas limit {} exceeds block gas limit {}",
+                gas_limit_from_tx, vm_model_config.block_gas_limit
+            )));
+        }
+
+        if let Some(deploy_data) = match &node_ledger_tx.inner {
+            dusk_core::transfer::Transaction::Phoenix(p_tx) => p_tx.deploy(),
+            dusk_core::transfer::Transaction::Moonlight(m_tx) => m_tx.deploy(),
+        } {
+            let deploy_charge = Self::calculate_deployment_gas(
+                deploy_data.bytecode.bytes.len(),
+                vm_model_config.gas_per_deploy_byte,
+                vm_model_config.min_deploy_points,
+            );
+
+            if gas_limit_from_tx < deploy_charge {
+                return Err(JsonRpcError::InvalidParams(format!(
+                        "Transaction gas limit {} is insufficient for deployment charge {}. Bytecode size: {}",
+                        gas_limit_from_tx,
+                        deploy_charge,
+                        deploy_data.bytecode.bytes.len()
+                    )));
+            }
+        } else {
+            return Err(JsonRpcError::InvalidParams(
+                "Transaction data does not contain deployment information."
+                    .into(),
+            ));
+        }
+
+        // 3. Simulate Transaction
+        // We use a clone of the original bytes for simulation.
+        let sim_result = self
+            .vm_adapter
+            .simulate_transaction(signed_deployment_tx_bytes.clone())
+            .await?;
+
+        if !sim_result.success {
+            return Err(JsonRpcError::Internal(format!(
+                "Deployment simulation failed: {}",
+                sim_result
+                    .error
+                    .unwrap_or_else(|| "Unknown VM error".into())
+            )));
+        }
+
+        // 4. Broadcast Transaction
+        // The original signed_deployment_tx_bytes are consumed here.
+        self.network_adapter
+            .broadcast_transaction(signed_deployment_tx_bytes)
+            .await?;
+
+        // 5. Return Transaction Hash
+        let tx_hash_bytes = node_ledger_tx.id();
+        let tx_hash_hex = hex::encode(tx_hash_bytes);
+
+        Ok(tx_hash_hex)
     }
 }
