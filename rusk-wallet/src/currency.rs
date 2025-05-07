@@ -38,9 +38,9 @@ impl Dusk {
     }
 }
 
-/// Core ops
-/// Implementations of Addition, Subtraction, Multiplication,
-/// Division, and Comparison operators for Dusk
+// Core ops
+// Implementations of Addition, Subtraction, Multiplication,
+// Division, and Comparison operators for Dusk
 
 /// Addition
 impl Add for Dusk {
@@ -153,8 +153,8 @@ impl PartialOrd<f64> for Dusk {
     }
 }
 
-/// Conversion ops
-/// Convenient conversion of primitives to and from Dusk
+// Conversion ops
+// Convenient conversion of primitives to and from Dusk
 
 /// Floats are used directly as Dusk value
 impl TryFrom<f64> for Dusk {

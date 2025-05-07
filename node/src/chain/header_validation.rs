@@ -31,7 +31,6 @@ use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger, StepName};
-use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::{debug, error};
 
@@ -41,9 +40,6 @@ use crate::database::Ledger;
 const MARGIN_TIMESTAMP: u64 = 3;
 
 // TODO: Use thiserror instead of anyhow
-
-#[derive(Debug, Error)]
-enum HeaderVerificationErr {}
 
 /// An implementation of the all validation checks of a candidate block header
 /// according to current context
@@ -69,7 +65,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
     /// Executes check points to make sure a candidate header is fully valid
     ///
     /// * `disable_winner_att_check` - disables the check of the winning
-    /// attestation
+    ///   attestation
     ///
     /// Returns a tuple containing:
     ///   - the number of Previous Non-Attested Iterations (PNI)

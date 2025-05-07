@@ -66,7 +66,7 @@ pub async fn verify_step_votes(
 
     let (quorum_result, voters) =
         verify_votes(header, step, vote, sv, committee)
-        .map_err(|e|
+        .inspect_err(|e|
             {
                 error!( "invalid {:?}, vote = {:?}, round = {}, iter = {}, seed = {}, sv = {:?}, err = {}",
                     step,
@@ -77,7 +77,6 @@ pub async fn verify_step_votes(
                     sv,
                     e
                 );
-                e
             }
         )?;
 
