@@ -13,7 +13,7 @@
 use crate::jsonrpc::model::account::AccountInfo;
 use crate::jsonrpc::model::key::AccountPublicKey;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 /// Represents the result of a transaction preverification check performed by
 /// the VM.
@@ -111,6 +111,12 @@ pub struct VmConfig {
     /// using `humantime_serde::option`.
     #[serde(with = "humantime_serde::option", default)]
     pub generation_timeout: Option<Duration>,
+    /// A map of feature names to their activation block heights.
+    /// Serialized as a JSON object with string keys and string values.
+    #[serde(
+        with = "crate::jsonrpc::model::serde_helper::string_u64_map_as_strings"
+    )]
+    pub features: HashMap<String, u64>,
 }
 
 /// Converts the internal `RuskVmConfig` (alias for `crate::node::vm::Config`)
@@ -123,8 +129,7 @@ impl From<crate::node::RuskVmConfig> for VmConfig {
             min_deployment_gas_price: config.min_deployment_gas_price,
             block_gas_limit: config.block_gas_limit,
             generation_timeout: config.generation_timeout,
-            // Note: `features` field from the internal config is intentionally
-            // omitted from the JSON-RPC model.
+            features: config.features(),
         }
     }
 }
