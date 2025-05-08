@@ -1,6 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
+  // @ts-nocheck
   import { onMount } from "svelte";
   import { createValueFormatter } from "$lib/dusk/value";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";

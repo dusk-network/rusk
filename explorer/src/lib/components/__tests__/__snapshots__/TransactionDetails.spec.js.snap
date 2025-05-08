@@ -278,6 +278,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
          
       </dd>
       
+      
       <dt
         class="details-list__term"
       >
@@ -868,6 +869,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
         </div>
          
       </dd>
+      
       
       <dt
         class="details-list__term"
@@ -1467,6 +1469,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
         </div>
          
       </dd>
+      
       
       <dt
         class="details-list__term"

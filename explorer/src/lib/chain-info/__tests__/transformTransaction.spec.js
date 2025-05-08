@@ -7,7 +7,6 @@ import { transformTransaction } from "..";
 describe("transformTransaction", () => {
   const txData = gqlTransaction.tx;
   const expectedTx = {
-    amount: undefined,
     blockhash:
       "3c6e4018cfa86723e50644e33d3990bc27fc794f6b49fbf6290e4d308e07bd2d",
     blockheight: 487166,

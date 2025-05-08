@@ -183,6 +183,19 @@
       </ListItem>
     {/if}
 
+    <!-- AMOUNT -->
+    {#if jsonPayload?.value}
+      <ListItem tooltipText="The transaction amount">
+        <svelte:fragment slot="term">Amount</svelte:fragment>
+        <svelte:fragment slot="definition">
+          <DataGuard data={market?.currentPrice.usd}>
+            {`${feeFormatter(luxToDusk(jsonPayload.value))} DUSK (${currencyFormatter(luxToDusk(jsonPayload.value) * /** @type {number} */ (market?.currentPrice.usd))})`}
+          </DataGuard>
+          <StaleDataNotice /></svelte:fragment
+        >
+      </ListItem>
+    {/if}
+
     <!-- TYPE -->
     <ListItem tooltipText="The transaction type">
       <svelte:fragment slot="term">type</svelte:fragment>
@@ -258,7 +271,6 @@
           />
         </div>
       </svelte:fragment>
-
       <svelte:fragment slot="definition">
         {#if isMemoDecoded}
           <Card onSurface={true} className="transaction-details__memo">
@@ -282,7 +294,6 @@
           />
         </div>
       </svelte:fragment>
-
       <svelte:fragment slot="definition">
         {#if isPayloadToggled}
           <Card onSurface={true} className="transaction-details__payload">

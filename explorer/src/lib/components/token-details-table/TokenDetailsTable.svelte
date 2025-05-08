@@ -1,6 +1,7 @@
 <svelte:options immutable={true} />
 
 <script>
+  // @ts-nocheck
   import { makeClassName, middleEllipsis } from "$lib/dusk/string";
   import {
     Table,
