@@ -651,7 +651,7 @@ pub struct MockNetworkAdapter {
     /// Force an error on all method calls if Some.
     pub force_error: Option<NetworkError>,
     /// Predefined network info string.
-    pub network_info: Option<String>,
+    pub bootstrapping_nodes: Option<Vec<String>>,
     /// Predefined public address.
     pub public_address: Option<SocketAddr>,
     /// Predefined list of alive peers.
@@ -675,14 +675,15 @@ impl NetworkAdapter for MockNetworkAdapter {
         Ok(())
     }
 
-    async fn get_network_info(&self) -> Result<String, NetworkError> {
+    async fn get_bootstrapping_nodes(
+        &self,
+    ) -> Result<Vec<String>, NetworkError> {
         if let Some(err) = &self.force_error {
             return Err(err.clone());
         }
-        Ok(self
-            .network_info
-            .clone()
-            .unwrap_or_else(|| "MockNetwork".to_string()))
+        Ok(self.bootstrapping_nodes.clone().unwrap_or_else(|| {
+            vec!["MockNetwork_1".to_string(), "MockNetwork_2".to_string()]
+        }))
     }
 
     async fn get_public_address(&self) -> Result<SocketAddr, NetworkError> {

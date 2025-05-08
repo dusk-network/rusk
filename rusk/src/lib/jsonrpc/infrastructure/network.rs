@@ -85,18 +85,23 @@ pub trait NetworkAdapter: Send + Sync + fmt::Debug + 'static {
         tx_bytes: Vec<u8>,
     ) -> Result<(), NetworkError>;
 
-    /// Retrieves general information about the network state.
+    /// List of known bootstrapping kadcast nodes.
     ///
-    /// Corresponds to the `node::Network::get_info` functionality.
+    /// It accepts the same representation of `public_address` but with domain
+    /// names allowed
+    ///
+    /// Corresponds to the `node::Network::bootstrapping_nodes` functionality.
     ///
     /// # Required Method
     ///
     /// # Returns
     ///
-    /// * `Ok(String)` - A string containing network information (format
-    ///   determined by the underlying implementation).
+    /// * `Ok(Vec<String>)` - A vector of strings containing the list of known
+    ///   bootstrapping kadcast nodes.
     /// * `Err(NetworkError)` - If querying the network information failed.
-    async fn get_network_info(&self) -> Result<String, NetworkError>;
+    async fn get_bootstrapping_nodes(
+        &self,
+    ) -> Result<Vec<String>, NetworkError>;
 
     /// Retrieves the public network address of this node.
     ///
@@ -270,13 +275,23 @@ impl<N: Network> NetworkAdapter for RuskNetworkAdapter<N> {
             .map_err(|e| NetworkError::QueryFailed(e.to_string()))
     }
 
-    async fn get_network_info(&self) -> Result<String, NetworkError> {
+    /// List of known bootstrapping kadcast nodes.
+    ///
+    /// It accepts the same representation of `public_address` but with domain
+    /// names allowed
+    async fn get_bootstrapping_nodes(
+        &self,
+    ) -> Result<Vec<String>, NetworkError> {
         let client = self.network_client.read().await;
         client
-            .get_info()
+            .bootstrapping_nodes()
             .map_err(|e| NetworkError::QueryFailed(e.to_string()))
     }
 
+    /// Public `SocketAddress` of the Peer. No domain name allowed
+    ///
+    /// This is the address where other peers can contact you.
+    /// This address MUST be accessible from any peer of the network
     async fn get_public_address(&self) -> Result<SocketAddr, NetworkError> {
         let client = self.network_client.read().await;
         Ok(*client.public_addr())
