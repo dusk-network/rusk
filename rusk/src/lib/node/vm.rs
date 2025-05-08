@@ -319,7 +319,7 @@ impl Rusk {
             });
         let mut ret = Provisioners::empty();
         for (pubkey_bls, stake) in provisioners {
-            ret.add_member_with_stake(pubkey_bls, stake);
+            ret.add_provisioner(pubkey_bls, stake);
         }
 
         Ok(ret)
