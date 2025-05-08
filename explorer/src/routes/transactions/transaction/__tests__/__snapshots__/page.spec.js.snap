@@ -157,6 +157,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
           </a>
         </dd>
         
+        
         <dt
           class="details-list__term"
         >
@@ -438,7 +439,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
               class="transaction-details__switch-wrapper"
             >
               memo
-
           
               <div
                 aria-checked="false"
@@ -484,7 +484,6 @@ exports[`Transaction Details > should render the Transaction details page and qu
               class="transaction-details__switch-wrapper"
             >
               payload
-
           
               <div
                 aria-checked="false"
