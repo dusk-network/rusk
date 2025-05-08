@@ -258,74 +258,95 @@ impl Provisioners {
 
 #[derive(Default)]
 struct CommitteeGenerator<'a> {
-    members: BTreeMap<&'a PublicKey, Stake>,
+    // Provisioners eligible for the committee
+    eligibles: BTreeMap<&'a PublicKey, Stake>,
 }
 
 impl<'a> CommitteeGenerator<'a> {
-    fn from_provisioners(
+    /// Creates a [`CommitteeGenerator`] from the provisioner set.
+    ///
+    /// # Arguments
+    /// * `provisioners` - the current list of provisioners
+    /// * `round` - the round of the extraction (to determine eligibility)
+    /// * `exclusion_list` - list of provisioners to exclude from extraction
+    fn new(
         provisioners: &'a Provisioners,
         round: u64,
-        exclusion: &Vec<PublicKeyBytes>,
+        exclusion_list: &Vec<PublicKeyBytes>,
     ) -> Self {
-        let eligibles = provisioners
+        // Get provisioners eligible at round `round`
+        let eligible_set: Vec<_> = provisioners
             .eligibles(round)
-            .map(|(p, stake)| (p, stake.clone()));
+            .map(|(pk, stake)| (pk, stake.clone()))
+            .collect();
 
-        let members = match exclusion.len() {
-            0 => BTreeMap::from_iter(eligibles),
-            _ => {
-                let eligibles = eligibles.filter(|(p, _)| {
-                    !exclusion.iter().any(|excluded| excluded == p.bytes())
-                });
-                BTreeMap::from_iter(eligibles)
+        let num_eligibles = eligible_set.len();
+        let eligible_set = eligible_set.into_iter();
+
+        // Set `eligibles` to  the eligible set minus the exclusion list
+        let eligibles = if num_eligibles > 1 {
+            let eligible_iter = eligible_set;
+            match exclusion_list.len() {
+                0 => BTreeMap::from_iter(eligible_iter),
+                _ => {
+                    let filtered_eligibles = eligible_iter.filter(|(p, _)| {
+                        !exclusion_list
+                            .iter()
+                            .any(|excluded| excluded == p.bytes())
+                    });
+                    BTreeMap::from_iter(filtered_eligibles)
+                }
             }
+        } else {
+            // If only one provisioner is eligible, we always include it
+            BTreeMap::from_iter(eligible_set)
         };
 
-        if members.is_empty() {
-            // This is the edge case when there is only 1 active provisioner.
-            // Handling it just for single node cluster scenario
-            let eligibles = provisioners
-                .eligibles(round)
-                .map(|(p, stake)| (p, stake.clone()));
-
-            let members = BTreeMap::from_iter(eligibles);
-
-            debug_assert!(
-                !members.is_empty(),
-                "No provisioners are eligible for the committee"
-            );
-
-            Self { members }
-        } else {
-            Self { members }
-        }
+        Self { eligibles }
     }
 
-    /// Sums up the total weight of all stakes
-    fn total_weight(&self) -> u64 {
-        self.members.values().map(|m| m.value()).sum()
+    /// Sums up the total weight of all eligible provisioners
+    fn eligible_weight(&self) -> u64 {
+        self.eligibles.values().map(|m| m.value()).sum()
     }
 
-    fn extract_and_subtract_member(
-        &mut self,
-        mut score: BigInt,
-    ) -> (PublicKey, BigInt) {
-        if self.members.is_empty() {
-            panic!("Cannot extract member from an empty committee");
+    /// Extracts a member from `eligibles` given a Sortition score.
+    ///
+    /// At the beginning of the extraction, each provisioner has a weight equal
+    /// to its stake. Each time a provisioner is extracted, its weight is
+    /// reduced by 1 DUSK to decrease its probability of being extracted.
+    ///
+    /// # Arguments
+    /// * `score` - the Sortition score for the extraction
+    ///
+    /// # Output
+    /// * The extracted stake [`PublicKey`]
+    /// * The remaining stake weight after the extraction
+    fn extract_member(&mut self, mut score: BigInt) -> (PublicKey, BigInt) {
+        if self.eligibles.is_empty() {
+            panic!("No eligible provisioners to extract for the committee");
         }
 
         loop {
-            for (&pk, stake) in self.members.iter_mut() {
-                let total_stake = BigInt::from(stake.value());
-                if total_stake >= score {
-                    // Subtract 1 DUSK from the value extracted and rebalance
-                    // accordingly.
-                    let subtracted_stake = BigInt::from(stake.subtract(DUSK));
+            // Loop over eligible provisioners
+            for (&provisioner, provisioner_weight) in self.eligibles.iter_mut()
+            {
+                // Set the initial provisioner's weight to the stake's value
+                let weight = BigInt::from(provisioner_weight.value());
 
-                    return (pk.clone(), subtracted_stake);
+                // If the provisioner's weight is higher than the score, extract
+                // the provisioner and reduce its weight
+                if weight >= score {
+                    // Subtract 1 DUSK from the extracted stake's weight
+                    let new_weight =
+                        BigInt::from(provisioner_weight.subtract(DUSK));
+
+                    return (provisioner.clone(), new_weight);
                 }
 
-                score -= total_stake;
+                // Otherwise, decrease the score and move to the next
+                // provisioner
+                score -= weight;
             }
         }
     }
