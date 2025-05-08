@@ -189,47 +189,51 @@ impl Provisioners {
     /// Runs the deterministic sortition algorithm which determines the
     /// committee members for a given round, step and seed.
     ///
-    /// Returns a vector of provisioners public keys.
+    /// Returns the committee as a list of the extracted provisioners public
+    /// keys, where keys can have repetitions.
     pub(crate) fn create_committee(
         &self,
         cfg: &sortition::Config,
     ) -> Vec<PublicKey> {
         let committee_credits = cfg.committee_credits();
-        let mut extracted: Vec<PublicKey> =
+        // List of the extracted members.
+        // Note: members extracted multiple times will appear multiple times in
+        // the list
+        let mut committee: Vec<PublicKey> =
             Vec::with_capacity(committee_credits);
 
-        let mut comm = CommitteeGenerator::from_provisioners(
-            self,
-            cfg.round(),
-            cfg.exclusion(),
-        );
+        let mut comm_gen =
+            CommitteeGenerator::new(self, cfg.round(), cfg.exclusion());
 
-        let mut total_weight = comm.total_weight().into();
+        let mut eligible_weight = comm_gen.eligible_weight().into();
 
-        while extracted.len() != committee_credits {
-            let counter = extracted.len() as u32;
+        while committee.len() != committee_credits {
+            let credit_index = committee.len() as u32;
 
-            // 1. Compute n ← H(seed ∣∣ step ∣∣ counter)
-            let hash = sortition::create_sortition_hash(cfg, counter);
+            // Compute sortition hash
+            // hash = H(seed ∣∣ step ∣∣ index)
+            let hash = sortition::create_sortition_hash(cfg, credit_index);
 
-            // 2. Compute d ← n mod s
+            // Compute sortition score
+            // score = hash % eligible_weight
             let score =
-                sortition::generate_sortition_score(hash, &total_weight);
+                sortition::generate_sortition_score(hash, &eligible_weight);
 
-            // NB: The public key can be extracted multiple times per committee.
-            let (pk, subtracted_stake) =
-                comm.extract_and_subtract_member(score);
-            // append the public key to the committee set.
-            extracted.push(pk);
+            // Extract the committee member.
+            // Note: eligible provisioners can be extracted multiple times for
+            // the same committee
+            let (prov_pk, prov_weight) = comm_gen.extract_member(score);
+            // Add the extracted member to the committee
+            committee.push(prov_pk);
 
-            if total_weight > subtracted_stake {
-                total_weight -= subtracted_stake;
+            if eligible_weight > prov_weight {
+                eligible_weight -= prov_weight;
             } else {
                 break;
             }
         }
 
-        extracted
+        committee
     }
 
     pub fn get_generator(
