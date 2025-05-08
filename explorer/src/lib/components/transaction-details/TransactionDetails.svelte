@@ -121,6 +121,7 @@
       >
     </ListItem>
 
+    <!-- SENDER / RECEIVER -->
     {#if data.txtype.toLowerCase() === "moonlight" && data.method === "transfer" && jsonPayload?.sender && jsonPayload?.receiver}
       <ListItem tooltipText="The sender of the transaction">
         <svelte:fragment slot="term">From</svelte:fragment>
@@ -164,6 +165,19 @@
             name="Receiver's address"
           />
         </svelte:fragment>
+      </ListItem>
+    {/if}
+
+    <!-- AMOUNT -->
+    {#if jsonPayload?.value}
+      <ListItem tooltipText="The transaction amount">
+        <svelte:fragment slot="term">Amount</svelte:fragment>
+        <svelte:fragment slot="definition">
+          <DataGuard data={market?.currentPrice.usd}>
+            {`${feeFormatter(luxToDusk(jsonPayload.value))} DUSK (${currencyFormatter(luxToDusk(jsonPayload.value) * /** @type {number} */ (market?.currentPrice.usd))})`}
+          </DataGuard>
+          <StaleDataNotice /></svelte:fragment
+        >
       </ListItem>
     {/if}
 
@@ -248,7 +262,6 @@
       <svelte:fragment slot="term">
         <div class="transaction-details__switch-wrapper">
           memo
-
           <Switch
             className="transaction-details__payload-switch"
             onSurface={true}
@@ -257,7 +270,6 @@
           />
         </div>
       </svelte:fragment>
-
       <svelte:fragment slot="definition">
         {#if isMemoDecoded}
           <Card onSurface={true} className="transaction-details__memo">
@@ -274,7 +286,6 @@
       <svelte:fragment slot="term">
         <div class="transaction-details__switch-wrapper">
           payload
-
           <Switch
             className="transaction-details__payload-switch"
             onSurface={true}
@@ -282,7 +293,6 @@
           />
         </div>
       </svelte:fragment>
-
       <svelte:fragment slot="definition">
         {#if isPayloadToggled}
           <Card onSurface={true} className="transaction-details__payload">

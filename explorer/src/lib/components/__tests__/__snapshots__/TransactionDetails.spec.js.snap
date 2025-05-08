@@ -241,6 +241,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
          
       </dd>
       
+      
       <dt
         class="details-list__term"
       >
@@ -522,7 +523,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
             class="transaction-details__switch-wrapper"
           >
             memo
-
           
             <div
               aria-checked="false"
@@ -568,7 +568,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
             class="transaction-details__switch-wrapper"
           >
             payload
-
           
             <div
               aria-checked="false"
@@ -834,6 +833,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
          
       </dd>
       
+      
       <dt
         class="details-list__term"
       >
@@ -1115,7 +1115,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="transaction-details__switch-wrapper"
           >
             memo
-
           
             <div
               aria-checked="true"
@@ -1169,7 +1168,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="transaction-details__switch-wrapper"
           >
             payload
-
           
             <div
               aria-checked="false"
@@ -1435,6 +1433,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
          
       </dd>
       
+      
       <dt
         class="details-list__term"
       >
@@ -1716,7 +1715,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="transaction-details__switch-wrapper"
           >
             memo
-
           
             <div
               aria-checked="false"
@@ -1762,7 +1760,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="transaction-details__switch-wrapper"
           >
             payload
-
           
             <div
               aria-checked="true"

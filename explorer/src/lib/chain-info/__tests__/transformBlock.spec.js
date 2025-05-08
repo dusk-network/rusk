@@ -25,7 +25,6 @@ describe("transformBlock", () => {
     transactions: {
       data: [
         {
-          amount: undefined,
           blockhash:
             "bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f",
           blockheight: 495868,
@@ -44,7 +43,6 @@ describe("transformBlock", () => {
           txtype: "Moonlight",
         },
         {
-          amount: undefined,
           blockhash:
             "bd5c99bb720b03500e89f103fe66113ba62f2e124ed9651563f38fd15977719f",
           blockheight: 495868,
