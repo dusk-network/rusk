@@ -79,7 +79,6 @@ impl From<node::vm::PreverificationResult> for VmPreverificationResult {
 /// Mirrors a subset of fields from `crate::node::vm::Config` (aliased as
 /// `RuskVmConfig`).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct VmConfig {
     /// The cost in gas points charged for each byte of a smart contract's
     /// deployment bytecode.
