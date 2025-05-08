@@ -214,11 +214,11 @@ use hex;
 use node_data::message::payload::Inv;
 use node_data::Serializable;
 
-use crate::jsonrpc;
 use crate::jsonrpc::infrastructure::{
     archive, db, manual_limiter, metrics, network, subscription, vm,
 };
 use crate::jsonrpc::model;
+use crate::{jsonrpc, VERSION, VERSION_BUILD};
 
 #[derive(Debug, Clone)]
 pub struct AppState {
@@ -3218,9 +3218,28 @@ impl AppState {
         })
     }
 
-    pub async fn get_info(
+    pub async fn get_node_info(
         &self,
     ) -> Result<model::network::NodeInfo, jsonrpc::error::Error> {
-        todo!()
+        let chain_id_fut = self.get_chain_id();
+        let public_address_fut = self.get_public_address();
+        let bootstrap_nodes_fut = self.get_bootstrapping_nodes();
+        let vm_config_fut = self.get_vm_config();
+
+        let (chain_id, public_address, bootstrap_nodes, vm_config) = tokio::try_join!(
+            chain_id_fut,
+            public_address_fut,
+            bootstrap_nodes_fut,
+            vm_config_fut
+        )?;
+
+        Ok(model::network::NodeInfo {
+            version: VERSION.as_str().into(),
+            version_build: VERSION_BUILD.as_str().into(),
+            chain_id,
+            public_address,
+            bootstrap_nodes,
+            vm_config,
+        })
     }
 }
