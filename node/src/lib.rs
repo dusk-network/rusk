@@ -86,7 +86,7 @@ pub trait Network: Send + Sync + 'static {
     ) -> anyhow::Result<()>;
 
     /// Retrieves information about the network.
-    fn get_info(&self) -> anyhow::Result<String>;
+    fn bootstrapping_nodes(&self) -> anyhow::Result<Vec<String>>;
 
     /// Returns public address in Kadcast
     fn public_addr(&self) -> &SocketAddr;
