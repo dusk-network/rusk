@@ -308,7 +308,7 @@ mod tests {
             let stake_value = 1000 * (i) as u64 * DUSK;
             let stake_pk =
                 node_data::bls::PublicKey::new(BlsPublicKey::from(sk));
-            p.add_member_with_value(stake_pk, stake_value);
+            p.add_provisioner_with_value(stake_pk, stake_value);
         }
         p
     }
