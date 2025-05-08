@@ -319,7 +319,10 @@ impl Rusk {
             });
         let mut ret = Provisioners::empty();
         for (pubkey_bls, stake) in provisioners {
-            ret.add_provisioner(pubkey_bls, stake);
+            // Only include active provisioners
+            if stake.value() > 0 {
+                ret.add_provisioner(pubkey_bls, stake);
+            }
         }
 
         Ok(ret)
