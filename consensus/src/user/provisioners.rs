@@ -207,6 +207,10 @@ impl Provisioners {
 
         let mut eligible_weight = comm_gen.eligible_weight().into();
 
+        if eligible_weight == BigInt::ZERO {
+            panic!("No stakes available. Cannot run consensus");
+        }
+
         while committee.len() != committee_credits {
             let credit_index = committee.len() as u32;
 
