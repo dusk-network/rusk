@@ -301,7 +301,7 @@ mod tests {
             let pubkey_bls =
                 node_data::bls::PublicKey::new(BlsPublicKey::from(&secret_key));
 
-            p.add_member_with_value(pubkey_bls.clone(), 1000 * DUSK);
+            p.add_provisioner_with_value(pubkey_bls.clone(), 1000 * DUSK);
 
             let ru = RoundUpdate::new(
                 pubkey_bls,

@@ -21,13 +21,11 @@ use crate::user::stake::Stake;
 pub const DUSK: u64 = dusk(1.0);
 
 #[derive(Clone, Debug)]
-pub struct Provisioners {
-    members: BTreeMap<PublicKey, Stake>,
-}
+pub struct Provisioners(BTreeMap<PublicKey, Stake>);
 
 impl Provisioners {
     pub fn iter(&self) -> impl Iterator<Item = (&PublicKey, &Stake)> {
-        self.members.iter()
+        self.0.iter()
     }
 }
 
@@ -105,27 +103,21 @@ impl ContextProvisioners {
 
 impl Provisioners {
     pub fn empty() -> Self {
-        Self {
-            members: BTreeMap::default(),
-        }
+        Self(BTreeMap::default())
     }
 
     /// Adds a provisioner with stake.
     ///
     /// If the provisioner already exists, no action is performed.
-    pub fn add_member_with_stake(
-        &mut self,
-        pubkey_bls: PublicKey,
-        stake: Stake,
-    ) {
-        self.members.entry(pubkey_bls).or_insert_with(|| stake);
+    pub fn add_provisioner(&mut self, pubkey_bls: PublicKey, stake: Stake) {
+        self.0.entry(pubkey_bls).or_insert_with(|| stake);
     }
 
-    pub fn get_member_mut(
+    pub fn get_provisioner_mut(
         &mut self,
         pubkey_bls: &PublicKey,
     ) -> Option<&mut Stake> {
-        self.members.get_mut(pubkey_bls)
+        self.0.get_mut(pubkey_bls)
     }
 
     pub fn replace_stake(
@@ -133,7 +125,7 @@ impl Provisioners {
         pubkey_bls: PublicKey,
         stake: Stake,
     ) -> Option<Stake> {
-        self.members.insert(pubkey_bls, stake)
+        self.0.insert(pubkey_bls, stake)
     }
 
     /// Subtract `amount` from a staker, returning the stake left
@@ -145,28 +137,33 @@ impl Provisioners {
         pubkey_bls: &PublicKey,
         amount: u64,
     ) -> Option<u64> {
-        let stake = self.members.get_mut(pubkey_bls)?;
+        let stake = self.0.get_mut(pubkey_bls)?;
         if stake.value() < amount {
             None
         } else {
             stake.subtract(amount);
             let left = stake.value();
             if left == 0 {
-                self.members.remove(pubkey_bls);
+                self.0.remove(pubkey_bls);
             }
             Some(left)
         }
     }
 
     pub fn remove_stake(&mut self, pubkey_bls: &PublicKey) -> Option<Stake> {
-        self.members.remove(pubkey_bls)
+        self.0.remove(pubkey_bls)
     }
 
-    /// Adds a new member with reward=0 and elibile_since=0.
+    /// Adds a provisioner with a stake of value `value`
+    /// `reward` and `elibile_since` are set to 0.
     ///
-    /// Useful for implementing unit tests.
-    pub fn add_member_with_value(&mut self, pubkey_bls: PublicKey, value: u64) {
-        self.add_member_with_stake(pubkey_bls, Stake::from_value(value));
+    /// This function is used for unit tests.
+    pub fn add_provisioner_with_value(
+        &mut self,
+        pubkey_bls: PublicKey,
+        value: u64,
+    ) {
+        self.add_provisioner(pubkey_bls, Stake::from_value(value));
     }
 
     // Returns a pair of count of all provisioners and count of eligible
@@ -174,14 +171,14 @@ impl Provisioners {
     pub fn get_provisioners_info(&self, round: u64) -> (usize, usize) {
         let eligible_len = self.eligibles(round).count();
 
-        (self.members.len(), eligible_len)
+        (self.0.len(), eligible_len)
     }
 
     pub fn eligibles(
         &self,
         round: u64,
     ) -> impl Iterator<Item = (&PublicKey, &Stake)> {
-        self.members.iter().filter(move |(_, m)| {
+        self.0.iter().filter(move |(_, m)| {
             m.is_eligible(round) && m.value() >= DEFAULT_MINIMUM_STAKE
         })
     }
