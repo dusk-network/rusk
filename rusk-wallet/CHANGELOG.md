@@ -111,5 +111,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Releases -->
 [Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.2.0...HEAD
-[1.2.0]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...rusk-wallet-0.2.0
+[0.2.0]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...rusk-wallet-0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/tree/rusk-wallet-0.1.0
