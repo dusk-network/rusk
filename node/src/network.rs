@@ -372,11 +372,18 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         Ok(())
     }
 
-    // TODO: Duplicated func
-    fn get_info(&self) -> anyhow::Result<String> {
-        Ok(self.conf.public_address.to_string())
+    /// List of known bootstrapping kadcast nodes.
+    ///
+    /// It accepts the same representation of `public_address` but with domain
+    /// names allowed
+    fn bootstrapping_nodes(&self) -> anyhow::Result<Vec<String>> {
+        Ok(self.conf.bootstrapping_nodes.clone())
     }
 
+    /// Public `SocketAddress` of the Peer. No domain name allowed
+    ///
+    /// This is the address where other peers can contact you.
+    /// This address MUST be accessible from any peer of the network
     fn public_addr(&self) -> &SocketAddr {
         &self.public_addr
     }
