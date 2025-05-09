@@ -542,7 +542,7 @@ async fn test_rate_limiting() {
 }
 
 #[tokio::test]
-async fn test_basic_rpc_call_get_node_info() {
+async fn test_rpc_call_get_node_info() {
     // 1. Setup: Use helper to create AppState with default config (HTTP)
     let app_state = Arc::new(create_test_app_state());
     let addr = app_state.config().http.bind_address;
@@ -560,7 +560,7 @@ async fn test_basic_rpc_call_get_node_info() {
 
     let request_body = json!({
         "jsonrpc": "2.0",
-        "method": "rusk_getNodeInfo", // Use the correct namespaced method name
+        "method": "getNodeInfo", // Use the correct namespaced method name
         "params": [],
         "id": 1
     });
@@ -590,12 +590,58 @@ async fn test_basic_rpc_call_get_node_info() {
                     // Verify structure of the 'result' object (NodeInfo)
                     let result = &body_json["result"];
                     assert!(result["version"].is_string(), "Result 'version' field is not a string");
-                    assert!(result["chainId"].is_number(), "Result 'chainId' field is not a number");
-                    assert!(result["jsonrpcHttpAddress"].is_string(), "Result 'jsonrpcHttpAddress' field is not a string");
-                    // Check specific values if necessary (e.g., default chainId)
+                    assert!(result["version_build"].is_string(), "Result 'version_build' field is not a string");
+                    assert!(result["network_id"].is_number(), "Result 'network_id' field is not a number");
+                    assert!(result["public_address"].is_string(), "Result 'public_address' field is not a string");
+                    assert!(result["bootstrap_nodes"].is_array(), "Result 'bootstrap_nodes' field is not an array");
+                    // Check specific values if necessary (e.g., default network_id)
                     // Note: This assumes the test runs without the 'chain' feature enabled, or that the mock VmAdapter returns 0.
-                    assert_eq!(result["chainId"].as_u64().unwrap_or(999), 0, "Expected default chainId 0"); // Use unwrap_or for robustness
-                    assert_eq!(result["jsonrpcHttpAddress"].as_str().unwrap(), addr.to_string());
+                    assert_eq!(result["network_id"].as_u64().unwrap_or(999), 0, "Expected default network_id 0"); // Use unwrap_or for robustness
+                    assert_eq!(result["public_address"].as_str().unwrap(), "127.0.0.1:9000".to_string(), "Public address mismatch with the value from the MockNetworkAdapter");
+
+
+                    let vm_config = &result["vm_config"];
+                    assert!(vm_config.is_object());
+                    assert!(vm_config["block_gas_limit"].is_string());
+                    assert_eq!(
+                        vm_config["block_gas_limit"].as_str().unwrap().to_string(),
+                        app_state.get_vm_config().await.unwrap().block_gas_limit.to_string(),
+                        "Block gas limit mismatch"
+                    );
+                    assert!(vm_config["gas_per_deploy_byte"].is_string());
+                    assert_eq!(
+                        vm_config["gas_per_deploy_byte"].as_str().unwrap().to_string(),
+                        app_state.get_vm_config().await.unwrap().gas_per_deploy_byte.to_string(),
+                        "Gas per deploy byte mismatch"
+                    );
+                    assert!(vm_config["min_deploy_points"].is_string());
+                    assert_eq!(
+                        vm_config["min_deploy_points"].as_str().unwrap().to_string(),
+                        app_state.get_vm_config().await.unwrap().min_deploy_points.to_string(),
+                        "Minimum deploy points mismatch"
+                    );
+                    assert!(vm_config["min_deployment_gas_price"].is_string());
+                    assert_eq!(
+                        vm_config["min_deployment_gas_price"].as_str().unwrap().to_string(),
+                        app_state.get_vm_config().await.unwrap().min_deployment_gas_price.to_string(),
+                        "Minimum deployment gas price mismatch"
+                    );
+                    assert!(vm_config["generation_timeout"].is_string());
+
+                    let mut generation_timeout = app_state
+                        .get_vm_config()
+                        .await
+                        .unwrap()
+                        .generation_timeout
+                        .unwrap()
+                        .as_secs()
+                        .to_string();
+                    generation_timeout.push('s');
+                    assert_eq!(
+                        vm_config["generation_timeout"].as_str().unwrap().to_string(),
+                        generation_timeout,
+                        "Generation timeout mismatch"
+                    );
 
                     println!("RPC call rusk_getNodeInfo successful.");
                 }
@@ -668,7 +714,7 @@ async fn test_rpc_method_via_server() {
 
     let request_body = json!({
         "jsonrpc": "2.0",
-        "method": "rusk_getNodeInfo",
+        "method": "getNodeInfo",
         "params": [],
         "id": "test-integration-rpc-1"
     });
@@ -695,8 +741,53 @@ async fn test_rpc_method_via_server() {
 
                     let result = &body_json["result"];
                     assert!(result["version"].is_string());
-                    assert_eq!(result["chainId"].as_u64().unwrap_or(999), 0);
-                    assert_eq!(result["jsonrpcHttpAddress"].as_str().unwrap(), addr.to_string());
+                    assert!(result["version_build"].is_string());
+                    assert!(result["network_id"].is_number(), "Result 'network_id' field is not a number");
+                    assert_eq!(result["network_id"].as_u64().unwrap_or(999), 0, "Expected default network_id 0");
+                    assert_eq!(result["public_address"].as_str().unwrap(), "127.0.0.1:9000".to_string(), "Public address mismatch with the value from the MockNetworkAdapter");
+
+                    let vm_config = &result["vm_config"];
+                    assert!(vm_config.is_object());
+                    assert!(vm_config["block_gas_limit"].is_string());
+                    assert_eq!(
+                        vm_config["block_gas_limit"].as_str().unwrap().to_string(),
+                        app_state.get_vm_config().await.unwrap().block_gas_limit.to_string(),
+                        "Block gas limit mismatch"
+                    );
+                    assert!(vm_config["gas_per_deploy_byte"].is_string());
+                    assert_eq!(
+                        vm_config["gas_per_deploy_byte"].as_str().unwrap().to_string(),
+                        app_state.get_vm_config().await.unwrap().gas_per_deploy_byte.to_string(),
+                        "Gas per deploy byte mismatch"
+                    );
+                    assert!(vm_config["min_deploy_points"].is_string());
+                    assert_eq!(
+                        vm_config["min_deploy_points"].as_str().unwrap().to_string(),
+                        app_state.get_vm_config().await.unwrap().min_deploy_points.to_string(),
+                        "Minimum deploy points mismatch"
+                    );
+                    assert!(vm_config["min_deployment_gas_price"].is_string());
+                    assert_eq!(
+                        vm_config["min_deployment_gas_price"].as_str().unwrap().to_string(),
+                        app_state.get_vm_config().await.unwrap().min_deployment_gas_price.to_string(),
+                        "Minimum deployment gas price mismatch"
+                    );
+                    assert!(vm_config["generation_timeout"].is_string());
+
+                    let mut generation_timeout = app_state
+                        .get_vm_config()
+                        .await
+                        .unwrap()
+                        .generation_timeout
+                        .unwrap()
+                        .as_secs()
+                        .to_string();
+                    generation_timeout.push('s');
+                    assert_eq!(
+                        vm_config["generation_timeout"].as_str().unwrap().to_string(),
+                        generation_timeout,
+                        "Generation timeout mismatch"
+                    );
 
                     println!("RPC method call rusk_getNodeInfo via server successful.");
                 }
