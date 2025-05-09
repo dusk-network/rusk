@@ -21,8 +21,8 @@ use node_data::message::{
     ConsensusHeader as NodeConsensusHeader, SignInfo as NodeSignInfo,
 };
 use rusk::jsonrpc::model::block::{
-    Block, BlockFaults, BlockHeader, BlockLabel, BlockStatus, CandidateBlock,
-    ChainTip, ConsensusHeaderJson, Fault, FaultItem, FaultType,
+    Block, BlockFaults, BlockHeader, BlockStatus, CandidateBlock, ChainTip,
+    ConsensusHeaderJson, Fault, FaultItem, FaultType,
 };
 use rusk::jsonrpc::model::key::AccountPublicKey;
 
@@ -258,50 +258,50 @@ fn block_deserialization_with_txs() {
 
 #[test]
 fn block_label_equality() {
-    assert_eq!(BlockLabel::Final, BlockLabel::Final);
-    assert_eq!(BlockLabel::Provisional, BlockLabel::Provisional);
-    assert_ne!(BlockLabel::Final, BlockLabel::Provisional);
+    assert_eq!(BlockStatus::Final, BlockStatus::Final);
+    assert_eq!(BlockStatus::Provisional, BlockStatus::Provisional);
+    assert_ne!(BlockStatus::Final, BlockStatus::Provisional);
 }
 
 #[test]
 fn block_label_serialization() {
     assert_eq!(
-        serde_json::to_value(BlockLabel::Final).unwrap(),
+        serde_json::to_value(BlockStatus::Final).unwrap(),
         serde_json::json!("Final")
     );
     assert_eq!(
-        serde_json::to_value(BlockLabel::Provisional).unwrap(),
+        serde_json::to_value(BlockStatus::Provisional).unwrap(),
         serde_json::json!("Provisional")
     );
 }
 
 #[test]
 fn block_label_deserialization() {
-    let final_label: BlockLabel = serde_json::from_str("\"Final\"").unwrap();
-    assert_eq!(final_label, BlockLabel::Final);
+    let final_label: BlockStatus = serde_json::from_str("\"Final\"").unwrap();
+    assert_eq!(final_label, BlockStatus::Final);
 
-    let prov_label: BlockLabel =
+    let prov_label: BlockStatus =
         serde_json::from_str("\"Provisional\"").unwrap();
-    assert_eq!(prov_label, BlockLabel::Provisional);
+    assert_eq!(prov_label, BlockStatus::Provisional);
 
-    let invalid = serde_json::from_str::<BlockLabel>("\"Unknown\"");
+    let invalid = serde_json::from_str::<BlockStatus>("\"Unknown\"");
     assert!(invalid.is_err());
 }
 
 #[test]
 fn block_label_from_node_label() {
-    assert_eq!(BlockLabel::from(NodeLabel::Final(10)), BlockLabel::Final);
+    assert_eq!(BlockStatus::from(NodeLabel::Final(10)), BlockStatus::Final);
     assert_eq!(
-        BlockLabel::from(NodeLabel::Accepted(10)),
-        BlockLabel::Provisional
+        BlockStatus::from(NodeLabel::Accepted(10)),
+        BlockStatus::Provisional
     );
     assert_eq!(
-        BlockLabel::from(NodeLabel::Attested(10)),
-        BlockLabel::Provisional
+        BlockStatus::from(NodeLabel::Attested(10)),
+        BlockStatus::Provisional
     );
     assert_eq!(
-        BlockLabel::from(NodeLabel::Confirmed(10)),
-        BlockLabel::Provisional
+        BlockStatus::from(NodeLabel::Confirmed(10)),
+        BlockStatus::Provisional
     );
 }
 
