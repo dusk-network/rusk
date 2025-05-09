@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix transaction history fail after shield/unshield conversions [#3600]
+
 ## [0.2.0] - 2025-05-07
 
 ### Added
@@ -82,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3192]: https://github.com/dusk-network/rusk/issues/3192
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
 [#3623]: https://github.com/dusk-network/rusk/issues/3623
+[#3600]: https://github.com/dusk-network/rusk/issues/3600
 [#3602]: https://github.com/dusk-network/rusk/issues/3602
 [#3598]: https://github.com/dusk-network/rusk/issues/3598
 [#3593]: https://github.com/dusk-network/rusk/issues/3593
