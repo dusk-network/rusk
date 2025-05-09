@@ -27,7 +27,7 @@ use crate::user::sortition;
 pub async fn verify_step_votes(
     ch: &ConsensusHeader,
     vote: &Vote,
-    sv: &StepVotes,
+    step_votes: &StepVotes,
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     step: StepName,
@@ -42,8 +42,8 @@ pub async fn verify_step_votes(
     let committee = get_step_committee(ch, committees_set, seed, step).await;
 
     // Verify the aggregated signature is valid and reach the quorum threshold
-    let voters =
-        verify_quorum_votes(ch, step, vote, sv, &committee).map_err(|e| {
+    let voters = verify_quorum_votes(ch, step, vote, step_votes, &committee)
+        .map_err(|e| {
             error!(
                 event = "Invalid StepVotes",
                 reason = %e,
@@ -52,7 +52,7 @@ pub async fn verify_step_votes(
                 iter = ch.iteration,
                 ?step,
                 seed = to_str(seed.inner()),
-                ?sv
+                ?step_votes
             );
 
             e
@@ -65,11 +65,11 @@ pub fn verify_quorum_votes(
     header: &ConsensusHeader,
     step: StepName,
     vote: &Vote,
-    sv: &StepVotes,
+    step_votes: &StepVotes,
     committee: &Committee,
 ) -> Result<Vec<Voter>, StepSigError> {
-    let bitset = sv.bitset;
-    let signature = sv.aggregate_signature().inner();
+    let bitset = step_votes.bitset;
+    let signature = step_votes.aggregate_signature().inner();
     let sub_committee = committee.intersect(bitset);
 
     let total_credits = committee.total_occurrences(&sub_committee);
@@ -136,7 +136,7 @@ fn verify_step_signature(
 
 pub async fn get_step_voters(
     header: &ConsensusHeader,
-    sv: &StepVotes,
+    step_votes: &StepVotes,
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     step: StepName,
@@ -145,8 +145,8 @@ pub async fn get_step_voters(
     let committee =
         get_step_committee(header, committees_set, seed, step).await;
 
-    // extract quorum voters from `sv`
-    let bitset = sv.bitset;
+    // extract quorum voters from `step_votes`
+    let bitset = step_votes.bitset;
     let q_committee = committee.intersect(bitset);
 
     q_committee.to_voters()

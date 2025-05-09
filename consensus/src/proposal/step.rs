@@ -64,9 +64,9 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             let iteration =
                 cmp::min(config::RELAX_ITERATION_THRESHOLD, ctx.iteration);
 
-            // Fetch failed attestations from sv_registry
+            // Fetch failed attestations from att_registry
             let failed_attestations =
-                ctx.sv_registry.lock().await.get_failed_atts(iteration);
+                ctx.att_registry.lock().await.get_failed_atts(iteration);
 
             match self
                 .bg
