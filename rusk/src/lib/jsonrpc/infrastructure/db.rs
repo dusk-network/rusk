@@ -164,12 +164,12 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<model::block::BlockLabel>)` if the label is found.
+    /// * `Ok(Option<model::block::BlockStatus>)` if the label is found.
     /// * `Err(DbError)` if a database error occurs.
-    async fn get_block_label_by_height(
+    async fn get_block_status_by_height(
         &self,
         height: u64,
-    ) -> Result<Option<model::block::BlockLabel>, DbError>;
+    ) -> Result<Option<model::block::BlockStatus>, DbError>;
 
     /// (Required) Retrieves a spent transaction record by its hash.
     ///
@@ -1054,13 +1054,13 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// # Returns
     ///
-    /// * `Ok(model::block::BlockLabel)` if found.
+    /// * `Ok(model::block::BlockStatus)` if found.
     /// * `Err(DbError)` if a database error occurs.
-    async fn get_latest_block_label(
+    async fn get_latest_block_status(
         &self,
-    ) -> Result<model::block::BlockLabel, DbError> {
+    ) -> Result<model::block::BlockStatus, DbError> {
         let height = self.get_block_height().await?;
-        self.get_block_label_by_height(height)
+        self.get_block_status_by_height(height)
             .await?
             .ok_or_else(|| {
                 DbError::NotFound(format!(
@@ -1513,10 +1513,10 @@ impl DatabaseAdapter for RuskDbAdapter {
         Ok(header_result.map(model::block::BlockHeader::from))
     }
 
-    async fn get_block_label_by_height(
+    async fn get_block_status_by_height(
         &self,
         height: u64,
-    ) -> Result<Option<model::block::BlockLabel>, DbError> {
+    ) -> Result<Option<model::block::BlockStatus>, DbError> {
         let db_client = self.db_client.clone();
         let label_result = tokio::task::spawn_blocking(move || {
             let db = db_client.blocking_read();
@@ -1527,7 +1527,7 @@ impl DatabaseAdapter for RuskDbAdapter {
         .map_err(DbError::from)?;
 
         Ok(label_result
-            .map(|(_hash, label)| model::block::BlockLabel::from(label)))
+            .map(|(_hash, label)| model::block::BlockStatus::from(label)))
     }
 
     async fn get_spent_transaction_by_hash(
