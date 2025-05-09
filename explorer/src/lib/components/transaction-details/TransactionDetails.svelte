@@ -121,9 +121,24 @@
       >
     </ListItem>
 
+    <!-- TIMESTAMP -->
+    <ListItem tooltipText="The date and time the transaction was created">
+      <svelte:fragment slot="term">timestamp</svelte:fragment>
+      <RelativeTime
+        autoRefresh={true}
+        className="transaction-details__list-timestamp"
+        date={data.date}
+        slot="definition"
+        ><svelte:fragment let:relativeTime
+          >{`${data.date.toUTCString()} (${relativeTime})`}</svelte:fragment
+        ></RelativeTime
+      >
+    </ListItem>
+
+    <!-- FROM -->
     {#if data.txtype.toLowerCase() === "moonlight" && data.method === "transfer" && jsonPayload?.sender && jsonPayload?.receiver}
       <ListItem tooltipText="The sender of the transaction">
-        <svelte:fragment slot="term">From</svelte:fragment>
+        <svelte:fragment slot="term">from</svelte:fragment>
         <svelte:fragment slot="definition">
           <AppAnchor
             className="transaction-details__list-anchor"
@@ -142,8 +157,9 @@
           <CopyButton rawValue={jsonPayload.sender} name="Sender's address" />
         </svelte:fragment>
       </ListItem>
+      <!-- TO -->
       <ListItem tooltipText="The receiver of the transaction">
-        <svelte:fragment slot="term">To</svelte:fragment>
+        <svelte:fragment slot="term">to</svelte:fragment>
         <svelte:fragment slot="definition">
           <AppAnchor
             className="transaction-details__list-anchor"
@@ -167,9 +183,17 @@
       </ListItem>
     {/if}
 
+    <!-- TYPE -->
+    <ListItem tooltipText="The transaction type">
+      <svelte:fragment slot="term">type</svelte:fragment>
+      <svelte:fragment slot="definition">
+        <TransactionType {data} displayTooltips={true} />
+      </svelte:fragment>
+    </ListItem>
+
     <!-- STATUS -->
     <ListItem tooltipText="The transaction status">
-      <svelte:fragment slot="term">Status</svelte:fragment>
+      <svelte:fragment slot="term">status</svelte:fragment>
       <svelte:fragment slot="definition"
         ><TransactionStatus
           className="transaction-details__status explorer-badge"
@@ -177,28 +201,6 @@
           showErrorTooltip={true}
         /></svelte:fragment
       >
-    </ListItem>
-
-    <!-- TIMESTAMP -->
-    <ListItem tooltipText="The date and time the transaction was created">
-      <svelte:fragment slot="term">timestamp</svelte:fragment>
-      <RelativeTime
-        autoRefresh={true}
-        className="transaction-details__list-timestamp"
-        date={data.date}
-        slot="definition"
-        ><svelte:fragment let:relativeTime
-          >{`${data.date.toUTCString()} (${relativeTime})`}</svelte:fragment
-        ></RelativeTime
-      >
-    </ListItem>
-
-    <!-- TYPE -->
-    <ListItem tooltipText="The transaction type">
-      <svelte:fragment slot="term">type</svelte:fragment>
-      <svelte:fragment slot="definition">
-        <TransactionType {data} displayTooltips={true} />
-      </svelte:fragment>
     </ListItem>
 
     <!-- TRANSACTION FEE -->
@@ -248,7 +250,6 @@
       <svelte:fragment slot="term">
         <div class="transaction-details__switch-wrapper">
           memo
-
           <Switch
             className="transaction-details__payload-switch"
             onSurface={true}
@@ -274,7 +275,6 @@
       <svelte:fragment slot="term">
         <div class="transaction-details__switch-wrapper">
           payload
-
           <Switch
             className="transaction-details__payload-switch"
             onSurface={true}

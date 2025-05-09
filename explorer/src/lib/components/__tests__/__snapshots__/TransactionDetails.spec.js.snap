@@ -128,6 +128,43 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
             class="dusk-icon dusk-icon--size--default detail-list__help"
             data-tooltip-id="main-tooltip"
             data-tooltip-place="top"
+            data-tooltip-text="The date and time the transaction was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          timestamp
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <time
+          class="dusk-relative-time transaction-details__list-timestamp"
+          datetime="2024-04-16T06:39:09.000Z"
+          slot="definition"
+        >
+          Tue, 16 Apr 2024 06:39:09 GMT (last month)
+          
+        </time>
+      </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
             data-tooltip-text="The sender of the transaction"
             data-tooltip-type="info"
             role="graphics-symbol"
@@ -139,7 +176,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           </svg>
           
            
-          From
+          from
         </div>
       </dt>
        
@@ -200,7 +237,7 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
           </svg>
           
            
-          To
+          to
         </div>
       </dt>
        
@@ -241,77 +278,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
          
       </dd>
       
-      <dt
-        class="details-list__term"
-      >
-        <div
-          class="details-list__term-layout"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default detail-list__help"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="The transaction status"
-            data-tooltip-type="info"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-            />
-          </svg>
-          
-           
-          Status
-        </div>
-      </dt>
-       
-      <dd
-        class="details-list__definition"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-success transaction-status transaction-details__status explorer-badge"
-        >
-          success
-        </span>
-      </dd>
-      <dt
-        class="details-list__term"
-      >
-        <div
-          class="details-list__term-layout"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default detail-list__help"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="The date and time the transaction was created"
-            data-tooltip-type="info"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-            />
-          </svg>
-          
-           
-          timestamp
-        </div>
-      </dt>
-       
-      <dd
-        class="details-list__definition"
-      >
-        <time
-          class="dusk-relative-time transaction-details__list-timestamp"
-          datetime="2024-04-16T06:39:09.000Z"
-          slot="definition"
-        >
-          Tue, 16 Apr 2024 06:39:09 GMT (last month)
-          
-        </time>
-      </dd>
       <dt
         class="details-list__term"
       >
@@ -367,6 +333,40 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
            
         </div>
          
+      </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction status"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          status
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <span
+          class="dusk-badge dusk-badge--variant-success transaction-status transaction-details__status explorer-badge"
+        >
+          success
+        </span>
       </dd>
       <dt
         class="details-list__term"
@@ -522,7 +522,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
             class="transaction-details__switch-wrapper"
           >
             memo
-
           
             <div
               aria-checked="false"
@@ -568,7 +567,6 @@ exports[`Transaction Details > renders the Transaction Details component 1`] = `
             class="transaction-details__switch-wrapper"
           >
             payload
-
           
             <div
               aria-checked="false"
@@ -721,6 +719,43 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="dusk-icon dusk-icon--size--default detail-list__help"
             data-tooltip-id="main-tooltip"
             data-tooltip-place="top"
+            data-tooltip-text="The date and time the transaction was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          timestamp
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <time
+          class="dusk-relative-time transaction-details__list-timestamp"
+          datetime="2024-04-16T06:39:09.000Z"
+          slot="definition"
+        >
+          Tue, 16 Apr 2024 06:39:09 GMT (last month)
+          
+        </time>
+      </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
             data-tooltip-text="The sender of the transaction"
             data-tooltip-type="info"
             role="graphics-symbol"
@@ -732,7 +767,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
           </svg>
           
            
-          From
+          from
         </div>
       </dt>
        
@@ -793,7 +828,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
           </svg>
           
            
-          To
+          to
         </div>
       </dt>
        
@@ -834,77 +869,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
          
       </dd>
       
-      <dt
-        class="details-list__term"
-      >
-        <div
-          class="details-list__term-layout"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default detail-list__help"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="The transaction status"
-            data-tooltip-type="info"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-            />
-          </svg>
-          
-           
-          Status
-        </div>
-      </dt>
-       
-      <dd
-        class="details-list__definition"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-success transaction-status transaction-details__status explorer-badge"
-        >
-          success
-        </span>
-      </dd>
-      <dt
-        class="details-list__term"
-      >
-        <div
-          class="details-list__term-layout"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default detail-list__help"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="The date and time the transaction was created"
-            data-tooltip-type="info"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-            />
-          </svg>
-          
-           
-          timestamp
-        </div>
-      </dt>
-       
-      <dd
-        class="details-list__definition"
-      >
-        <time
-          class="dusk-relative-time transaction-details__list-timestamp"
-          datetime="2024-04-16T06:39:09.000Z"
-          slot="definition"
-        >
-          Tue, 16 Apr 2024 06:39:09 GMT (last month)
-          
-        </time>
-      </dd>
       <dt
         class="details-list__term"
       >
@@ -960,6 +924,40 @@ exports[`Transaction Details > renders the Transaction Details component with th
            
         </div>
          
+      </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction status"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          status
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <span
+          class="dusk-badge dusk-badge--variant-success transaction-status transaction-details__status explorer-badge"
+        >
+          success
+        </span>
       </dd>
       <dt
         class="details-list__term"
@@ -1115,7 +1113,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="transaction-details__switch-wrapper"
           >
             memo
-
           
             <div
               aria-checked="true"
@@ -1169,7 +1166,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="transaction-details__switch-wrapper"
           >
             payload
-
           
             <div
               aria-checked="false"
@@ -1322,6 +1318,43 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="dusk-icon dusk-icon--size--default detail-list__help"
             data-tooltip-id="main-tooltip"
             data-tooltip-place="top"
+            data-tooltip-text="The date and time the transaction was created"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          timestamp
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <time
+          class="dusk-relative-time transaction-details__list-timestamp"
+          datetime="2024-04-16T06:39:09.000Z"
+          slot="definition"
+        >
+          Tue, 16 Apr 2024 06:39:09 GMT (last month)
+          
+        </time>
+      </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
             data-tooltip-text="The sender of the transaction"
             data-tooltip-type="info"
             role="graphics-symbol"
@@ -1333,7 +1366,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
           </svg>
           
            
-          From
+          from
         </div>
       </dt>
        
@@ -1394,7 +1427,7 @@ exports[`Transaction Details > renders the Transaction Details component with th
           </svg>
           
            
-          To
+          to
         </div>
       </dt>
        
@@ -1435,77 +1468,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
          
       </dd>
       
-      <dt
-        class="details-list__term"
-      >
-        <div
-          class="details-list__term-layout"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default detail-list__help"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="The transaction status"
-            data-tooltip-type="info"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-            />
-          </svg>
-          
-           
-          Status
-        </div>
-      </dt>
-       
-      <dd
-        class="details-list__definition"
-      >
-        <span
-          class="dusk-badge dusk-badge--variant-success transaction-status transaction-details__status explorer-badge"
-        >
-          success
-        </span>
-      </dd>
-      <dt
-        class="details-list__term"
-      >
-        <div
-          class="details-list__term-layout"
-        >
-          <svg
-            class="dusk-icon dusk-icon--size--default detail-list__help"
-            data-tooltip-id="main-tooltip"
-            data-tooltip-place="top"
-            data-tooltip-text="The date and time the transaction was created"
-            data-tooltip-type="info"
-            role="graphics-symbol"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-            />
-          </svg>
-          
-           
-          timestamp
-        </div>
-      </dt>
-       
-      <dd
-        class="details-list__definition"
-      >
-        <time
-          class="dusk-relative-time transaction-details__list-timestamp"
-          datetime="2024-04-16T06:39:09.000Z"
-          slot="definition"
-        >
-          Tue, 16 Apr 2024 06:39:09 GMT (last month)
-          
-        </time>
-      </dd>
       <dt
         class="details-list__term"
       >
@@ -1561,6 +1523,40 @@ exports[`Transaction Details > renders the Transaction Details component with th
            
         </div>
          
+      </dd>
+      <dt
+        class="details-list__term"
+      >
+        <div
+          class="details-list__term-layout"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--default detail-list__help"
+            data-tooltip-id="main-tooltip"
+            data-tooltip-place="top"
+            data-tooltip-text="The transaction status"
+            data-tooltip-type="info"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+          
+           
+          status
+        </div>
+      </dt>
+       
+      <dd
+        class="details-list__definition"
+      >
+        <span
+          class="dusk-badge dusk-badge--variant-success transaction-status transaction-details__status explorer-badge"
+        >
+          success
+        </span>
       </dd>
       <dt
         class="details-list__term"
@@ -1716,7 +1712,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="transaction-details__switch-wrapper"
           >
             memo
-
           
             <div
               aria-checked="false"
@@ -1762,7 +1757,6 @@ exports[`Transaction Details > renders the Transaction Details component with th
             class="transaction-details__switch-wrapper"
           >
             payload
-
           
             <div
               aria-checked="true"
