@@ -19,7 +19,6 @@
 //! - [`CandidateBlock`]: Represents a block proposed during consensus but not
 //!   yet finalized.
 //! - [`BlockStatus`]: Indicates whether a block is `Final` or `Provisional`.
-//! - [`BlockLabel`]: Similar to `BlockStatus`, derived from the ledger's label.
 //! - [`ChainTip`]: Represents a potential head of the blockchain (used for fork
 //!   detection).
 //! - [`BlockFaults`], [`Fault`], [`FaultItem`], [`FaultType`]: Structures for
@@ -151,16 +150,6 @@ pub enum BlockFinalityStatus {
     Unknown,
 }
 
-/// Status of a block, primarily indicating finality.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum BlockStatus {
-    /// The block has reached finality and is considered irreversible.
-    Final,
-    /// The block has been accepted by the node but has not yet reached
-    /// finality.
-    Provisional,
-}
-
 /// Represents the label assigned to a block in the ledger, simplified for
 /// the JSON-RPC API.
 ///
@@ -168,7 +157,7 @@ pub enum BlockStatus {
 /// (Accepted, Attested, Confirmed, Final) to a simpler status relevant for
 /// RPC consumers.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum BlockLabel {
+pub enum BlockStatus {
     /// The block has reached finality.
     Final,
     /// The block is accepted but not yet final (includes Accepted, Attested,
@@ -434,24 +423,6 @@ impl From<node_data::ledger::Label> for BlockStatus {
             | node_data::ledger::Label::Confirmed(_) => {
                 BlockStatus::Provisional
             }
-        }
-    }
-}
-
-/// Converts the node's internal ledger label (`node_data::ledger::Label`)
-/// into the simplified JSON-RPC `BlockLabel`.
-///
-/// This conversion logic is identical to the one for [`BlockStatus`].
-/// `Final` maps directly to `Final`. `Accepted`, `Attested`, and `Confirmed`
-/// all map to `Provisional`.
-impl From<node_data::ledger::Label> for BlockLabel {
-    fn from(label: node_data::ledger::Label) -> Self {
-        match label {
-            node_data::ledger::Label::Final(_) => BlockLabel::Final,
-            // Map Accepted, Attested, Confirmed to Provisional
-            node_data::ledger::Label::Accepted(_)
-            | node_data::ledger::Label::Attested(_)
-            | node_data::ledger::Label::Confirmed(_) => BlockLabel::Provisional,
         }
     }
 }
