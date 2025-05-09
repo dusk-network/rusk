@@ -271,10 +271,10 @@ impl DatabaseAdapter for MockDbAdapter {
         Ok(self.headers_by_hash.get(block_hash_hex).cloned())
     }
 
-    async fn get_block_label_by_height(
+    async fn get_block_status_by_height(
         &self,
         _height: u64,
-    ) -> Result<Option<model::block::BlockLabel>, DbError> {
+    ) -> Result<Option<model::block::BlockStatus>, DbError> {
         Box::pin(async move {
             if let Some(err) = self.force_error.clone() {
                 return Err(err);
@@ -931,8 +931,18 @@ impl VmAdapter for MockVmAdapter {
         if let Some(err) = &self.force_error {
             return Err(err.clone());
         }
+        let mut features = HashMap::with_capacity(1);
+        features.insert("ABI_PUBLIC_SENDER".to_string(), 1000000);
+
         // Return a predefined config or a default config for the mock
-        Ok(self.vm_config.clone().unwrap_or_default())
+        Ok(model::vm::VmConfig {
+            block_gas_limit: 3000000000,
+            gas_per_deploy_byte: 100,
+            min_deploy_points: 5000000,
+            min_deployment_gas_price: 2000,
+            generation_timeout: Some(std::time::Duration::from_secs(2)),
+            features,
+        })
     }
 
     async fn validate_nullifiers(
