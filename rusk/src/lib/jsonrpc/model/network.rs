@@ -97,7 +97,7 @@ pub struct NodeInfo {
     pub version_build: String,
     /// The unique identifier of the blockchain network the node is connected
     /// to.
-    pub chain_id: u8,
+    pub network_id: u8,
     /// Public `SocketAddress` of the Peer. No domain name allowed
     ///
     /// This is the address where other peers can contact you.
@@ -114,4 +114,13 @@ pub struct NodeInfo {
     /// parameters influencing transaction execution and block generation
     /// within the VM.
     pub vm_config: model::vm::VmConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// Version information about the node for compatibility checking
+pub struct NodeVersion {
+    /// Semantic version of the node
+    pub version: String,
+    /// Build information of the node
+    pub version_build: String,
 }
