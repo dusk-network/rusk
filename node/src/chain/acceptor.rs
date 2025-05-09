@@ -965,8 +965,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             histogram!("dusk_future_msg_count").record(f.msg_count() as f64);
         }
 
-        let fsv_bitset = tip.inner().header().att.validation.bitset;
-        let ssv_bitset = tip.inner().header().att.ratification.bitset;
+        let validation_bitset = tip.inner().header().att.validation.bitset;
+        let ratification_bitset = tip.inner().header().att.ratification.bitset;
 
         let duration = start.elapsed();
         info!(
@@ -976,10 +976,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             hash = to_str(&tip.inner().header().hash),
             txs = tip.inner().txs().len(),
             state_hash = to_str(&tip.inner().header().state_hash),
-            fsv_bitset,
-            ssv_bitset,
-            block_time,
             generator = tip.inner().header().generator_bls_pubkey.to_bs58(),
+            validation_bitset,
+            ratification_bitset,
+            block_time,
             dur_ms = duration.as_millis(),
             ?label
         );
