@@ -69,7 +69,7 @@
 //! #     async fn get_block_faults_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::BlockFaults>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn get_block_hash_by_height(&self, _: u64) -> Result<Option<String>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn get_block_header_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::BlockHeader>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
-//! #     async fn get_block_label_by_height(&self, _: u64) -> Result<Option<rusk::jsonrpc::model::block::BlockLabel>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
+//! #     async fn get_block_status_by_height(&self, _: u64) -> Result<Option<rusk::jsonrpc::model::block::BlockStatus>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn get_spent_transaction_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::transaction::TransactionInfo>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn ledger_tx_exists(&self, _: &[u8; 32]) -> Result<bool, jsonrpc::infrastructure::error::DbError> { Ok(false) }
 //! #     async fn get_block_finality_status(&self, _: &str) -> Result<rusk::jsonrpc::model::block::BlockFinalityStatus, jsonrpc::infrastructure::error::DbError> { Ok(rusk::jsonrpc::model::block::BlockFinalityStatus::Unknown) }
@@ -1373,15 +1373,15 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(Option<model::block::BlockLabel>)`: if the label is found.
+    /// * `Ok(Option<model::block::BlockStatus>)`: if the label is found.
     /// * `Err(jsonrpc::error::Error::Infrastructure)`: if a database error
     ///   occurs.
-    pub async fn get_block_label_by_height(
+    pub async fn get_block_status_by_height(
         &self,
         height: u64,
-    ) -> Result<Option<model::block::BlockLabel>, jsonrpc::error::Error> {
+    ) -> Result<Option<model::block::BlockStatus>, jsonrpc::error::Error> {
         self.db_adapter
-            .get_block_label_by_height(height)
+            .get_block_status_by_height(height)
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
@@ -2183,14 +2183,14 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// * `Ok(model::block::BlockLabel)` if found.
+    /// * `Ok(model::block::BlockStatus)` if found.
     /// * `Err(jsonrpc::error::Error::Infrastructure)` if a database error
     ///   occurs.
-    pub async fn get_latest_block_label(
+    pub async fn get_latest_block_status(
         &self,
-    ) -> Result<model::block::BlockLabel, jsonrpc::error::Error> {
+    ) -> Result<model::block::BlockStatus, jsonrpc::error::Error> {
         self.db_adapter
-            .get_latest_block_label()
+            .get_latest_block_status()
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
@@ -3218,6 +3218,22 @@ impl AppState {
         })
     }
 
+    /// General information about the node, including version, configuration,
+    /// and network details.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(model::network::NodeInfo)` - A struct containing:
+    ///   - `version`: The version of the node.
+    ///   - `version_build`: The build number of the node.
+    ///   - `network_id`: The ID of the chain the node is running on.
+    ///   - `public_address`: The public address of the node.
+    ///   - `bootstrap_nodes`: The vector of strings containing the list of
+    ///     known bootstrapping kadcast nodes.
+    ///   - `vm_config`: The configuration of the virtual machine the node is
+    ///     running on.
+    /// * `Err(jsonrpc::error::Error)` - An error occurred while retrieving the
+    ///   node information.
     pub async fn get_node_info(
         &self,
     ) -> Result<model::network::NodeInfo, jsonrpc::error::Error> {
@@ -3226,7 +3242,7 @@ impl AppState {
         let bootstrap_nodes_fut = self.get_bootstrapping_nodes();
         let vm_config_fut = self.get_vm_config();
 
-        let (chain_id, public_address, bootstrap_nodes, vm_config) = tokio::try_join!(
+        let (network_id, public_address, bootstrap_nodes, vm_config) = tokio::try_join!(
             chain_id_fut,
             public_address_fut,
             bootstrap_nodes_fut,
@@ -3234,12 +3250,19 @@ impl AppState {
         )?;
 
         Ok(model::network::NodeInfo {
-            version: VERSION.as_str().into(),
-            version_build: VERSION_BUILD.as_str().into(),
-            chain_id,
+            version: VERSION.to_string(),
+            version_build: VERSION_BUILD.to_string(),
+            network_id,
             public_address,
             bootstrap_nodes,
             vm_config,
         })
+    }
+
+    pub fn get_node_version() -> model::network::NodeVersion {
+        model::network::NodeVersion {
+            version: VERSION.to_string(),
+            version_build: VERSION_BUILD.to_string(),
+        }
     }
 }
