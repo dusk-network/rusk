@@ -14,6 +14,8 @@ and this project adheres to
 
 ### Changed
 
+- Change transaction details arrangement (Transaction Details page) [#3720]
+
 ### Removed
 
 ### Fixed
@@ -242,6 +244,7 @@ and this project adheres to
 [#3676]: https://github.com/dusk-network/rusk/issues/3676
 [#3692]: https://github.com/dusk-network/rusk/issues/3692
 [#3694]: https://github.com/dusk-network/rusk/issues/3694
+[#3720]: https://github.com/dusk-network/rusk/issues/3720
 
 <!-- VERSIONS -->
 
