@@ -46,7 +46,7 @@ impl RatificationStep {
               step = "Ratification",
               info = ?msg.header,
               vote = ?vote,
-              validation_bitset = result.sv().bitset
+              validation_bitset = result.step_votes().bitset
             );
 
             // Publish
@@ -111,9 +111,9 @@ impl RatificationStep {
             name = self.name(),
             round = round,
             iter = iteration,
-            vote = ?handler.validation_result().vote(),
-            fsv_bitset = handler.validation_result().sv().bitset,
-            quorum_type = ?handler.validation_result().quorum()
+            validation_quorum = ?handler.validation_result().quorum(),
+            validation_vote = ?handler.validation_result().vote(),
+            validation_bitset = handler.validation_result().step_votes().bitset
         )
     }
 

@@ -23,12 +23,12 @@ use crate::config::is_emergency_iter;
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;
 use crate::msg_handler::{MsgHandler, StepOutcome};
-use crate::quorum::verifiers::verify_votes;
+use crate::quorum::verifiers::verify_quorum_votes;
 use crate::step_votes_reg::SafeAttestationInfoRegistry;
 use crate::user::committee::Committee;
 
 pub struct RatificationHandler {
-    pub(crate) sv_registry: SafeAttestationInfoRegistry,
+    pub(crate) att_registry: SafeAttestationInfoRegistry,
 
     pub(crate) aggregator: Aggregator<Ratification>,
     validation_result: ValidationResult,
@@ -131,7 +131,7 @@ impl MsgHandler for RatificationHandler {
 
         if vote == Vote::NoQuorum {
             // If the vote is NoQuorum, ensure StepVotes is empty
-            if !p.validation_result.sv().is_empty() {
+            if !p.validation_result.step_votes().is_empty() {
                 warn!(
                     event = "Vote discarded",
                     step = "Ratification",
@@ -194,7 +194,7 @@ impl MsgHandler for RatificationHandler {
         }
 
         // Collect vote
-        let (ratification_sv, quorum_reached) = self
+        let (step_votes, quorum_reached) = self
             .aggregator
             .collect_vote(committee, &p)
             .map_err(|error| {
@@ -212,14 +212,16 @@ impl MsgHandler for RatificationHandler {
 
         // Record updated Ratification StepVotes in global registry
         // If we reached a quorum on both steps, return the Quorum message
-        if let Some(attestation) = self.sv_registry.lock().await.set_step_votes(
-            iteration,
-            &vote,
-            ratification_sv,
-            StepName::Ratification,
-            quorum_reached,
-            &generator.expect("There must be a valid generator"),
-        ) {
+        if let Some(attestation) =
+            self.att_registry.lock().await.set_step_votes(
+                iteration,
+                &vote,
+                step_votes,
+                StepName::Ratification,
+                quorum_reached,
+                &generator.expect("There must be a valid generator"),
+            )
+        {
             let ch = ConsensusHeader {
                 prev_block_hash: ru.hash(),
                 round: ru.round,
@@ -245,13 +247,13 @@ impl MsgHandler for RatificationHandler {
         let collect_vote = self.aggregator.collect_vote(committee, &p);
 
         match collect_vote {
-            Ok((sv, quorum_reached)) => {
+            Ok((step_votes, quorum_reached)) => {
                 // Record any signature in global registry
                 if let Some(attestation) =
-                    self.sv_registry.lock().await.set_step_votes(
+                    self.att_registry.lock().await.set_step_votes(
                         p.header().iteration,
                         &p.vote,
-                        sv,
+                        step_votes,
                         StepName::Ratification,
                         quorum_reached,
                         &generator.expect("There must be a valid generator"),
@@ -289,9 +291,9 @@ impl MsgHandler for RatificationHandler {
 }
 
 impl RatificationHandler {
-    pub(crate) fn new(sv_registry: SafeAttestationInfoRegistry) -> Self {
+    pub(crate) fn new(att_registry: SafeAttestationInfoRegistry) -> Self {
         Self {
-            sv_registry,
+            att_registry,
             aggregator: Default::default(),
             validation_result: Default::default(),
             curr_iteration: 0,
@@ -344,11 +346,11 @@ impl RatificationHandler {
                 error!("could not get validation committee");
                 ConsensusError::CommitteeNotGenerated
             })?;
-        verify_votes(
+        verify_quorum_votes(
             header,
             StepName::Validation,
             result.vote(),
-            result.sv(),
+            result.step_votes(),
             validation_committee,
         )?;
         Ok(())

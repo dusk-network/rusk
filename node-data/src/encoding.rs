@@ -396,7 +396,7 @@ impl Serializable for Ratification {
 
 impl Serializable for ValidationResult {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        self.sv.write(w)?;
+        self.step_votes.write(w)?;
         self.vote.write(w)?;
         self.quorum.write(w)?;
 
@@ -407,11 +407,11 @@ impl Serializable for ValidationResult {
     where
         Self: Sized,
     {
-        let sv = StepVotes::read(r)?;
+        let step_votes: StepVotes = StepVotes::read(r)?;
         let vote = Vote::read(r)?;
         let quorum = QuorumType::read(r)?;
 
-        Ok(ValidationResult::new(sv, vote, quorum))
+        Ok(ValidationResult::new(step_votes, vote, quorum))
     }
 }
 

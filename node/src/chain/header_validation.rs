@@ -18,7 +18,6 @@ use dusk_consensus::errors::{
 };
 use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
-use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_core::signatures::bls::{
@@ -27,7 +26,7 @@ use dusk_core::signatures::bls::{
 use dusk_core::stake::EPOCH;
 use hex;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
+use node_data::ledger::{Fault, InvalidFault, Seed};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger, StepName};
@@ -89,7 +88,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         let mut block_voters = vec![];
         if check_attestation {
-            (_, _, block_voters) = verify_att(
+            block_voters = verify_att(
                 &header.att,
                 header.to_consensus_header(),
                 self.prev_header.seed,
@@ -267,7 +266,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             .ok_or(HeaderError::Generic("Header not found"))
             .map(|h| h.seed)?;
 
-        let (_, _, voters) = verify_att(
+        let voters = verify_att(
             &candidate_block.prev_block_cert,
             self.prev_header.to_consensus_header(),
             prev_block_seed,
@@ -421,10 +420,10 @@ pub async fn verify_faults<DB: database::DB>(
 pub async fn verify_att(
     att: &ledger::Attestation,
     consensus_header: ConsensusHeader,
-    curr_seed: Signature,
-    curr_eligible_provisioners: &Provisioners,
+    seed: Seed,
+    eligible_provisioners: &Provisioners,
     expected_result: Option<RatificationResult>,
-) -> Result<(QuorumResult, QuorumResult, Vec<Voter>), AttestationError> {
+) -> Result<Vec<Voter>, AttestationError> {
     // Check expected result
     if let Some(expected) = expected_result {
         match (att.result, expected) {
@@ -453,35 +452,35 @@ pub async fn verify_att(
         }
     }
 
-    let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
+    let committee_set = RwLock::new(CommitteeSet::new(eligible_provisioners));
     let vote = att.result.vote();
 
-    // Verify validation
-    let (val_result, validation_voters) = verifiers::verify_step_votes(
+    // Verify Validation votes
+    let validation_voters = verifiers::verify_step_votes(
         &consensus_header,
         vote,
         &att.validation,
-        &committee,
-        curr_seed,
+        &committee_set,
+        seed,
         StepName::Validation,
     )
     .await
     .map_err(|s| AttestationError::InvalidVotes(StepName::Validation, s))?;
 
-    // Verify ratification
-    let (rat_result, ratification_voters) = verifiers::verify_step_votes(
+    // Verify Ratification votes
+    let ratification_voters = verifiers::verify_step_votes(
         &consensus_header,
         vote,
         &att.ratification,
-        &committee,
-        curr_seed,
+        &committee_set,
+        seed,
         StepName::Ratification,
     )
     .await
     .map_err(|s| AttestationError::InvalidVotes(StepName::Ratification, s))?;
 
     let voters = merge_voters(validation_voters, ratification_voters);
-    Ok((val_result, rat_result, voters))
+    Ok(voters)
 }
 
 /// Merges two Vec<Voter>, summing up the usize values if the PublicKey is

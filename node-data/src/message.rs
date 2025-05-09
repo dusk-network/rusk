@@ -725,20 +725,28 @@ pub mod payload {
     pub struct ValidationResult {
         pub(crate) quorum: QuorumType,
         pub(crate) vote: Vote,
-        pub(crate) sv: StepVotes,
+        pub(crate) step_votes: StepVotes,
     }
 
     impl ValidationResult {
-        pub fn new(sv: StepVotes, vote: Vote, quorum: QuorumType) -> Self {
-            Self { sv, vote, quorum }
+        pub fn new(
+            step_votes: StepVotes,
+            vote: Vote,
+            quorum: QuorumType,
+        ) -> Self {
+            Self {
+                step_votes,
+                vote,
+                quorum,
+            }
         }
 
         pub fn quorum(&self) -> QuorumType {
             self.quorum
         }
 
-        pub fn sv(&self) -> &StepVotes {
-            &self.sv
+        pub fn step_votes(&self) -> &StepVotes {
+            &self.step_votes
         }
 
         pub fn vote(&self) -> &Vote {
