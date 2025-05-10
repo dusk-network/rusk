@@ -4,7 +4,7 @@ help: ## Display this help screen
 build: ## Build the wallet
 	cargo b --release
 
-install: build
+install: build ## Install the wallet
 	cargo install --path .
 
 clippy: 
@@ -13,4 +13,4 @@ clippy:
 test: build ## Run wallet tests
 	cargo test --release
 
-.PHONY: build clippy test help 
+.PHONY: build clippy test help install
