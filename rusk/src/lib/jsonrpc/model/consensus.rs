@@ -158,7 +158,8 @@ impl From<NodeValidationResult> for ValidationResult {
         // number of set bits in the `StepVotes.bitset`.
         // It does NOT represent the total weighted vote count if members have
         // varying weights.
-        let signature_count = node_result.sv().bitset.count_ones() as u64;
+        let signature_count =
+            node_result.step_votes().bitset.count_ones() as u64;
 
         // Ensure conversion from NodeVote doesn't panic here if NoQuorum occurs
         // If node_result.vote() can be NoQuorum, handle it gracefully if
