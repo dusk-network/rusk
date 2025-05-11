@@ -3030,6 +3030,8 @@ impl AppState {
             .map_err(jsonrpc::error::Error::Infrastructure)
     }
 
+    // ---- Methods that require interaction with more than one adapter ----
+
     /// Deploys a new smart contract to the blockchain by simulating and then
     /// broadcasting a pre-constructed and signed deployment transaction.
     ///
@@ -3264,5 +3266,76 @@ impl AppState {
             version: VERSION.to_string(),
             version_build: VERSION_BUILD.to_string(),
         }
+    }
+
+    /// Estimates the fee for a given transaction.
+    ///
+    /// This involves simulating the transaction to get a gas estimate and then
+    /// multiplying it by the current average gas price.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_bytes` - The serialized transaction bytes.
+    /// * `max_fee` - Optional maximum fee allowed.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing an
+    /// `model::transaction::EstimateTransactionFeeResponse` with the estimated
+    /// fee and gas or a `jsonrpc::error::Error` if estimation fails.
+    pub async fn estimate_transaction_fee(
+        &self,
+        tx_bytes: Vec<u8>,
+        max_fee: Option<u64>,
+    ) -> Result<
+        model::transaction::EstimateTransactionFeeResponse,
+        jsonrpc::error::Error,
+    > {
+        // 1. Concurrently simulate transaction and get gas price
+        let (simulation_result, gas_price_stats) = tokio::try_join!(
+            self.simulate_transaction(tx_bytes),
+            self.get_gas_price(None)
+        )?;
+
+        // 2. Handle simulation result
+        if !simulation_result.success {
+            return Err(jsonrpc::error::Error::Internal(format!(
+                "Transaction simulation failed: {}",
+                simulation_result
+                    .error
+                    .unwrap_or_else(|| "Unknown simulation error".to_string())
+            )));
+        }
+
+        let gas_estimate_val = simulation_result.gas_estimate.ok_or_else(|| {
+                jsonrpc::error::Error::Internal(
+                    "Transaction simulation succeeded but no gas estimate was provided".to_string(),
+                )
+            })?;
+
+        // 3. Get current gas price from fetched stats
+        let current_gas_price = gas_price_stats.average;
+
+        // 4. Calculate fee
+        let estimated_fee_val =
+            gas_estimate_val.saturating_mul(current_gas_price);
+
+        // 5. Handle max_fee
+        if let Some(max_fee_value) = max_fee {
+            if max_fee_value < estimated_fee_val {
+                return Err(jsonrpc::error::Error::Validation(format!(
+                    "Estimated fee ({}) exceeds maximum allowed ({})",
+                    estimated_fee_val, max_fee_value
+                )));
+            }
+        }
+
+        // 6. Format response
+        let response = model::transaction::EstimateTransactionFeeResponse {
+            fee: estimated_fee_val,
+            gas_estimate: gas_estimate_val,
+        };
+
+        Ok(response)
     }
 }
