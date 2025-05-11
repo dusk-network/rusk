@@ -199,6 +199,17 @@ pub struct TransactionStatus {
     pub error: Option<String>,
 }
 
+/// Represents the response for an estimated transaction fee.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct EstimateTransactionFeeResponse {
+    /// Estimated fee (serialized as a numeric string).
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
+    pub fee: u64,
+    /// Estimated gas (serialized as a numeric string).
+    #[serde(with = "crate::jsonrpc::model::serde_helper::u64_to_string")]
+    pub gas_estimate: u64,
+}
+
 // --- Transaction Data Payloads ---
 
 /// Represents the specific data payload for a Moonlight transaction.
