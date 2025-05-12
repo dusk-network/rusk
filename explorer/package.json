@@ -42,7 +42,7 @@
     "lamb": "0.61.1"
   },
   "devDependencies": {
-    "@dusk-network/eslint-config": "4.0.0",
+    "@dusk-network/eslint-config": "4.0.1",
     "@dusk-network/prettier-config": "1.1.0",
     "@eslint/js": "9.26.0",
     "@juggle/resize-observer": "3.4.0",
@@ -59,6 +59,7 @@
     "eslint-config-prettier": "10.1.2",
     "eslint-import-resolver-typescript": "4.3.4",
     "eslint-plugin-svelte": "3.5.1",
+    "globals": "16.1.0",
     "jsdom": "26.1.0",
     "jsdom-worker": "0.3.0",
     "lamb-types": "0.61.13",
