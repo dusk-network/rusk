@@ -32,14 +32,11 @@
 //! Fields requiring specific serialization formats (e.g., `u64` to JSON
 //! string) utilize helpers from the `serde_helper` module.
 
-use crate::jsonrpc::{
-    infrastructure::error::ConversionError,
-    model::transaction::TransactionResponse,
-};
+use crate::jsonrpc::model::transaction::TransactionResponse;
 use hex;
 use node_data::ledger;
 use serde::{Deserialize, Serialize};
-use std::convert::{From, TryFrom};
+use std::convert::From;
 
 use dusk_bytes::Serializable;
 use node_data::ledger::Fault as NodeFault;
@@ -516,7 +513,7 @@ impl<'a> From<&'a NodeSignInfo> for AccountPublicKey {
 fn fault_item_from_node_data(
     header: &NodeConsensusHeader,
     sign_info: &NodeSignInfo,
-) -> Result<FaultItem, ConversionError> {
+) -> FaultItem {
     // Get the inner BlsPublicKey which implements Serializable
     let inner_signer_key = sign_info.signer.inner();
     let signer_bytes = Serializable::to_bytes(inner_signer_key);
@@ -524,43 +521,44 @@ fn fault_item_from_node_data(
 
     let header_json = ConsensusHeaderJson::from(header);
 
-    Ok(FaultItem {
+    FaultItem {
         header: header_json,
         signer_key,
-    })
+    }
 }
 
 /// Converts the node's internal fault representation
 /// (`node_data::ledger::Fault`) into the JSON-RPC `Fault` model.
-impl TryFrom<NodeFault> for Fault {
-    type Error = ConversionError;
-
-    fn try_from(node_fault: NodeFault) -> Result<Self, Self::Error> {
-        // Use the item1() and item2() methods provided by NodeFault
-        // to access header and sign_info without needing to match on variants
-        // or access private fields.
+impl From<node_data::ledger::Fault> for Fault {
+    fn from(node_fault: node_data::ledger::Fault) -> Self {
+        // Use the item1() and item2() methods provided by
+        // node_data::ledger::Fault to access header and sign_info
+        // without needing to match on variants or access private
+        // fields.
         let (header1, sig1) = node_fault.item1();
         let (header2, sig2) = node_fault.item2();
 
-        // Determine FaultType based on NodeFault variant
+        // Determine FaultType based on node_data::ledger::Fault variant
         let fault_type = match node_fault {
-            NodeFault::DoubleCandidate { .. } => FaultType::DoubleCandidate,
-            NodeFault::DoubleRatificationVote { .. } => {
+            node_data::ledger::Fault::DoubleCandidate { .. } => {
+                FaultType::DoubleCandidate
+            }
+            node_data::ledger::Fault::DoubleRatificationVote { .. } => {
                 FaultType::DoubleRatificationVote
             }
-            NodeFault::DoubleValidationVote { .. } => {
+            node_data::ledger::Fault::DoubleValidationVote { .. } => {
                 FaultType::DoubleValidationVote
             }
         };
 
-        let item1 = fault_item_from_node_data(header1, sig1)?;
-        let item2 = fault_item_from_node_data(header2, sig2)?;
+        let item1 = fault_item_from_node_data(header1, sig1);
+        let item2 = fault_item_from_node_data(header2, sig2);
 
-        Ok(Fault {
+        Fault {
             fault_type,
             item1,
             item2,
-        })
+        }
     }
 }
 
