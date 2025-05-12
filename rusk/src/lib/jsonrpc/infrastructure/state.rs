@@ -65,7 +65,7 @@
 //! # impl DatabaseAdapter for MockDbAdapter {
 //! #     // --- Required Ledger Primitives ---
 //! #     async fn get_block_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::Block>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
-//! #     async fn get_block_transactions_by_hash(&self, _: &str) -> Result<Option<Vec<rusk::jsonrpc::model::transaction::TransactionResponse>>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
+//! #     async fn get_block_transactions_by_hash(&self, _: &str, _: bool) -> Result<Option<Vec<rusk::jsonrpc::model::transaction::TransactionResponse>>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn get_block_faults_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::BlockFaults>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn get_block_hash_by_height(&self, _: u64) -> Result<Option<String>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn get_block_header_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::BlockHeader>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
@@ -1235,6 +1235,8 @@ impl AppState {
     ///
     /// # Arguments
     /// * `block_hash_hex`: 64-char hex string of the block hash.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summary.
     ///
     /// # Returns
     ///
@@ -1244,9 +1246,10 @@ impl AppState {
     pub async fn get_block_by_hash(
         &self,
         block_hash_hex: &str,
+        include_txs: bool,
     ) -> Result<Option<model::block::Block>, jsonrpc::error::Error> {
         self.db_adapter
-            .get_block_by_hash(block_hash_hex)
+            .get_block_by_hash(block_hash_hex, include_txs)
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
@@ -1939,6 +1942,8 @@ impl AppState {
     /// # Arguments
     ///
     /// * `height`: Height of the block.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summary.
     ///
     /// # Returns
     ///
@@ -1948,15 +1953,21 @@ impl AppState {
     pub async fn get_block_by_height(
         &self,
         height: u64,
+        include_txs: bool,
     ) -> Result<Option<model::block::Block>, jsonrpc::error::Error> {
         self.db_adapter
-            .get_block_by_height(height)
+            .get_block_by_height(height, include_txs)
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
     }
 
     /// Retrieves the latest block summary.
+    ///
+    /// # Arguments
+    ///
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summary.
     ///
     /// # Returns
     ///
@@ -1965,9 +1976,10 @@ impl AppState {
     ///   occurs.
     pub async fn get_latest_block(
         &self,
+        include_txs: bool,
     ) -> Result<model::block::Block, jsonrpc::error::Error> {
         self.db_adapter
-            .get_latest_block()
+            .get_latest_block(include_txs)
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
@@ -1979,6 +1991,8 @@ impl AppState {
     ///
     /// * `height_start`: Start height of the range.
     /// * `height_end`: End height of the range.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summaries.
     ///
     /// # Returns
     ///
@@ -1991,9 +2005,10 @@ impl AppState {
         &self,
         height_start: u64,
         height_end: u64,
+        include_txs: bool,
     ) -> Result<Vec<model::block::Block>, jsonrpc::error::Error> {
         self.db_adapter
-            .get_blocks_range(height_start, height_end)
+            .get_blocks_range(height_start, height_end, include_txs)
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
@@ -2004,6 +2019,8 @@ impl AppState {
     /// # Arguments
     ///
     /// * `hashes_hex`: Array of block hashes.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summary.
     ///
     /// # Returns
     ///
@@ -2014,9 +2031,10 @@ impl AppState {
     pub async fn get_blocks_by_hashes(
         &self,
         hashes_hex: &[String],
+        include_txs: bool,
     ) -> Result<Vec<Option<model::block::Block>>, jsonrpc::error::Error> {
         self.db_adapter
-            .get_blocks_by_hashes(hashes_hex)
+            .get_blocks_by_hashes(hashes_hex, include_txs)
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
@@ -2309,6 +2327,8 @@ impl AppState {
     /// # Arguments
     ///
     /// * `height`: The height of the first block in the pair.
+    /// * `include_txs`: Whether to include transaction data in the block
+    ///   summaries.
     ///
     /// # Returns
     ///
@@ -2320,12 +2340,13 @@ impl AppState {
     pub async fn get_block_pair(
         &self,
         height: u64,
+        include_txs: bool,
     ) -> Result<
         Option<(model::block::Block, model::block::Block)>,
         jsonrpc::error::Error,
     > {
         self.db_adapter
-            .get_block_pair(height)
+            .get_block_pair(height, include_txs)
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
