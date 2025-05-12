@@ -69,6 +69,7 @@ pub(crate) fn create_mock_block(
         },
         status: Some(model::block::BlockStatus::Final),
         transactions: None,
+        faults: None,
         transactions_count: 0,
         block_reward: Some(5000),
         total_gas_limit: Some(50_000),
@@ -194,6 +195,7 @@ impl DatabaseAdapter for MockDbAdapter {
     async fn get_block_by_hash(
         &self,
         block_hash_hex: &str,
+        _include_txs: bool,
     ) -> Result<Option<model::block::Block>, DbError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
