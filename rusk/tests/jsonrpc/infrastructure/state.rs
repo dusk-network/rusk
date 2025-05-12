@@ -125,6 +125,7 @@ async fn test_using_adapters_from_state() {
     let mock_block = Block {
         header: mock_header.clone(),
         status: Some(BlockStatus::Final),
+        faults: None,
         transactions_count: 0,
         block_reward: Some(1000),
         total_gas_limit: Some(50000),
@@ -175,11 +176,11 @@ async fn test_using_adapters_from_state() {
     );
 
     // Call delegated methods directly on app_state
-    let block_opt = app_state.get_block_by_height(100).await;
+    let block_opt = app_state.get_block_by_height(100, false).await;
     assert!(block_opt.is_ok(), "get_block_by_height failed");
     assert!(block_opt.unwrap().is_some(), "Block 100 not found");
 
-    let latest_block = app_state.get_latest_block().await;
+    let latest_block = app_state.get_latest_block(false).await;
     assert!(latest_block.is_ok(), "get_latest_block failed");
     assert_eq!(
         latest_block.unwrap().header.height,
