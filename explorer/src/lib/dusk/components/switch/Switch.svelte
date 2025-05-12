@@ -53,4 +53,4 @@
   on:keydown|preventDefault={handleKeyDown}
   role="switch"
   tabindex={disabled ? -1 : tabindex}
-/>
+></div>

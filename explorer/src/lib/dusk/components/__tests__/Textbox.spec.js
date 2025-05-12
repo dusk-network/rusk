@@ -101,8 +101,6 @@ describe("Textbox", () => {
       value: "some input text",
     };
     const { component, getByRole } = render(Textbox, { ...baseOptions, props });
-
-    // eslint-disable-next-line no-extra-parens
     const input = /** @type {HTMLInputElement} */ (getByRole("textbox"));
 
     component.select();
