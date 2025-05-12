@@ -13,7 +13,8 @@ use std::{io, vec};
 
 use anyhow::Result;
 use node_data::ledger::{
-    Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
+    Block, BlockWithSpentTransactions, Fault, Header, Label, SpendingId,
+    SpentTransaction, Transaction,
 };
 use node_data::message::{payload, ConsensusHeader};
 use node_data::Serializable;
@@ -484,6 +485,62 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                     Block::new(record.header, txs, faults)
                         .expect("block should be valid"),
                 ))
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn block_with_spent_transactions(
+        &self,
+        hash: &[u8],
+    ) -> Result<Option<BlockWithSpentTransactions>> {
+        match self.inner.get_cf(self.ledger_cf, hash)? {
+            Some(blob) => {
+                let record = LightBlock::read(&mut &blob[..])?;
+
+                // Retrieve all transactions buffers with single call
+                let txs_buffers = self.inner.multi_get_cf(
+                    record
+                        .transactions_ids
+                        .iter()
+                        .map(|id| (self.ledger_txs_cf, id))
+                        .collect::<Vec<(&ColumnFamily, &[u8; 32])>>(),
+                );
+
+                let mut txs = vec![];
+                for buf in txs_buffers {
+                    let buf = buf?.unwrap();
+                    let tx = SpentTransaction::read(&mut &buf[..])?;
+                    txs.push(tx);
+                }
+
+                // Retrieve all faults ID with single call
+                let faults_buffer = self.inner.multi_get_cf(
+                    record
+                        .faults_ids
+                        .iter()
+                        .map(|id| (self.ledger_faults_cf, id))
+                        .collect::<Vec<(&ColumnFamily, &[u8; 32])>>(),
+                );
+                let mut faults = vec![];
+                for buf in faults_buffer {
+                    let buf = buf?.unwrap();
+                    let fault = Fault::read(&mut &buf[..])?;
+                    faults.push(fault);
+                }
+
+                // Fetch block label by height
+                let label = self
+                    .block_label_by_height(record.header.height)?
+                    .map(|(_, label)| label)
+                    .ok_or_else(|| anyhow::anyhow!("Block label not found"))?;
+
+                Ok(Some(BlockWithSpentTransactions::new(
+                    record.header,
+                    txs,
+                    faults,
+                    label,
+                )))
             }
             None => Ok(None),
         }
