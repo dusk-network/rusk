@@ -1,5 +1,4 @@
 <script>
-  // eslint-disable-next-line import/default
   import QrScanner from "qr-scanner";
   import { Button } from "$lib/dusk/components";
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
@@ -30,7 +29,7 @@
       toggleScanner = true;
       clearTimeout(timeoutId);
       scanner?.start();
-    } catch (e) {
+    } catch {
       error = !error;
     }
   };

@@ -2,11 +2,23 @@
   "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "allowJs": true,
+    "baseUrl": ".",
     "checkJs": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["esnext", "DOM", "DOM.AsyncIterable", "DOM.Iterable"],
     "noImplicitAny": true,
+    "paths": {
+      "$app": ["./node_modules/@sveltejs/kit/src/runtime/app"],
+      "$app/*": ["./node_modules/@sveltejs/kit/src/runtime/app/*"],
+      "$lib": ["./src/lib"],
+      "$lib/*": ["./src/lib/*"],
+      "svelte/motion": ["node_modules/svelte/src/runtime/motion/index.js"],
+      "svelte/store": ["./node_modules/svelte/src/runtime/store/index.js"],
+      "svelte/transition": [
+        "node_modules/svelte/src/runtime/transition/index.js"
+      ]
+    },
     "resolveJsonModule": true,
     "skipLibCheck": false,
     "sourceMap": true,

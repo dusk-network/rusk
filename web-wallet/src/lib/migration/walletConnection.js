@@ -1,6 +1,5 @@
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-// eslint-disable-next-line import/no-unresolved
 import { bsc, mainnet, sepolia } from "@reown/appkit/networks";
 import {
   disconnect,

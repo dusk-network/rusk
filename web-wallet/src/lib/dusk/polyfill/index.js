@@ -3,5 +3,4 @@
 import "./asyncIterator";
 import "./promiseWithResolvers";
 
-// eslint-disable-next-line import/no-unresolved
 import "web-streams-polyfill/polyfill";

@@ -11,7 +11,6 @@ import {
 import { rejectAfter } from "$lib/dusk/promise";
 import { makeNodeUrl } from "$lib/url";
 
-// eslint-disable-next-line import/no-unresolved
 import wasmPath from "$lib/vendor/dusk_wallet_core.wasm?url";
 
 function getNetworkUrl() {

@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { ProfileGenerator } from "@dusk/w3sper";
 
-import { getSeedFromMnemonic } from "$lib/wallet";
+import getSeedFromMnemonic from "$lib/wallet/getSeedFromMnemonic";
 
 import { profileGeneratorFrom } from "..";
 

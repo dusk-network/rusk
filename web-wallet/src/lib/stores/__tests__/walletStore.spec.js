@@ -514,6 +514,8 @@ describe("Wallet store", async () => {
       updateCachedPendingNotesSpy.mockRestore();
     });
 
+    /* eslint-disable vitest/expect-expect */
+
     it("should expose a method to claim the rewards", async () => {
       await walletStoreTransferCheck("claimRewards", [amount, gas]);
     });
@@ -551,6 +553,8 @@ describe("Wallet store", async () => {
     it("should expose a method to unstake the staked amount", async () => {
       await walletStoreTransferCheck("unstake", [amount, gas]);
     });
+
+    /* eslint-enable vitest/expect-expect */
   });
 
   describe("Wallet store services", () => {
