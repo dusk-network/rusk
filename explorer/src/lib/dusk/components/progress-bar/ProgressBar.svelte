@@ -24,5 +24,5 @@
     class:dusk-progress-bar__filler--undetermined={currentPercentage ===
       undefined}
     class="dusk-progress-bar__filler"
-  />
+  ></div>
 </div>
