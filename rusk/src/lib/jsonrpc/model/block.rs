@@ -219,6 +219,7 @@ pub struct ChainTip {
 ///     header,
 ///     status: Some(BlockStatus::Final),
 ///     transactions: None, // Or Some(vec![...]) if requested
+///     faults: None, // Or Some(BlockFaults { faults: vec![] }) if requested
 ///     transactions_count: 10,
 ///     block_reward: Some(5000000000), // Example reward
 ///     total_gas_limit: Some(800000), // Example sum of tx gas limits

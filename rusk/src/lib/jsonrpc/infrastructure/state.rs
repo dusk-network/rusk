@@ -64,9 +64,7 @@
 //! # #[async_trait]
 //! # impl DatabaseAdapter for MockDbAdapter {
 //! #     // --- Required Ledger Primitives ---
-//! #     async fn get_block_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::Block>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
-//! #     async fn get_block_transactions_by_hash(&self, _: &str, _: bool) -> Result<Option<Vec<rusk::jsonrpc::model::transaction::TransactionResponse>>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
-//! #     async fn get_block_faults_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::BlockFaults>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
+//! #     async fn get_block_by_hash(&self, _: &str, _: bool) -> Result<Option<rusk::jsonrpc::model::block::Block>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn get_block_hash_by_height(&self, _: u64) -> Result<Option<String>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn get_block_header_by_hash(&self, _: &str) -> Result<Option<rusk::jsonrpc::model::block::BlockHeader>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn get_block_status_by_height(&self, _: u64) -> Result<Option<rusk::jsonrpc::model::block::BlockStatus>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
@@ -161,7 +159,7 @@
 //!     println!("Current config bind_address: {}", state.config().http.bind_address);
 //!     // Access components via direct methods on state
 //!     // Example: Call a method that delegates to the DB adapter
-//!     match state.get_block_by_height(100).await {
+//!     match state.get_block_by_height(100, false).await {
 //!         Ok(Some(block)) => println!("Found block: {}", block.header.hash),
 //!         Ok(None) => println!("Block 100 not found."),
 //!         Err(e) => println!("Error getting block: {}", e),
