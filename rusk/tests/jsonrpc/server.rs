@@ -6,96 +6,25 @@
 
 //! Integration tests for the JSON-RPC server startup and basic functionality.
 
-use crate::jsonrpc::utils::get_ephemeral_port;
+use crate::jsonrpc::utils::{
+    create_custom_app_state, generate_tls_certs, get_ephemeral_port,
+};
 
 // Use available helpers from utils.rs
-use super::utils::{
-    create_test_app_state, create_test_app_state_with_addr, MockArchiveAdapter,
-    MockDbAdapter, MockNetworkAdapter, MockVmAdapter,
-};
+use super::utils::{create_test_app_state, create_test_app_state_with_addr};
 use assert_matches::assert_matches;
-use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair, SanType};
+use rcgen::{CertificateParams, KeyPair};
 use reqwest::StatusCode;
-use rusk::jsonrpc::config::{
-    ConfigError, HttpServerConfig, JsonRpcConfig, RateLimit,
-};
+use rusk::jsonrpc::config::{ConfigError, JsonRpcConfig, RateLimit};
 use rusk::jsonrpc::error::Error;
-use rusk::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
-use rusk::jsonrpc::infrastructure::metrics::MetricsCollector;
-use rusk::jsonrpc::infrastructure::state::AppState;
-use rusk::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
 use rusk::jsonrpc::server::run_server;
 use rustls::crypto::ring;
 use serde_json::json;
 use std::fs;
-use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
-use tempfile::{tempdir, TempDir};
+use tempfile::tempdir;
 use tokio::time::sleep;
-
-// generate_tls_certs remains mostly the same, but returns HttpServerConfig
-fn generate_tls_certs(
-) -> Result<(TempDir, HttpServerConfig), Box<dyn std::error::Error>> {
-    let dir = tempdir()?;
-    let cert_path = dir.path().join("cert.pem");
-    let key_path = dir.path().join("key.pem");
-
-    let mut params = CertificateParams::new(vec!["localhost".to_string()])?;
-    params.distinguished_name = DistinguishedName::new();
-    params
-        .distinguished_name
-        .push(DnType::CommonName, "Rusk Test Cert");
-    params
-        .subject_alt_names
-        .push(SanType::IpAddress(IpAddr::V4(Ipv4Addr::LOCALHOST)));
-
-    let key_pair = KeyPair::generate()?;
-    let cert = params.self_signed(&key_pair)?;
-
-    // Use correct rcgen 0.13 methods with 'pem' feature
-    let cert_pem = cert.pem(); // Get cert PEM string
-    let key_pem = key_pair.serialize_pem(); // Serialize keypair to PEM string
-
-    fs::write(&cert_path, cert_pem)?;
-    fs::write(&key_path, key_pem)?;
-
-    let http_config = HttpServerConfig {
-        // Use a fixed, likely available port for testing instead of 0
-        // If this port is taken, the test will fail, indicating need for a
-        // different approach
-        bind_address: "127.0.0.1:39989".parse()?,
-        cert: Some(cert_path),
-        key: Some(key_path),
-        ..Default::default()
-    };
-
-    Ok((dir, http_config))
-}
-
-// Function to manually create AppState with custom JsonRpcConfig
-fn create_custom_app_state(config: JsonRpcConfig) -> AppState {
-    let db_mock = MockDbAdapter::default();
-    let archive_mock = MockArchiveAdapter::default();
-    let network_mock = MockNetworkAdapter::default();
-    let vm_mock = MockVmAdapter::default();
-    let sub_manager = SubscriptionManager::default();
-    let metrics = MetricsCollector::default();
-    let rate_limit_config = Arc::new(config.rate_limit.clone());
-    let manual_rate_limiters = ManualRateLimiters::new(rate_limit_config)
-        .expect("Failed to create manual rate limiters for custom config");
-
-    AppState::new(
-        config, // Use the provided config
-        Arc::new(db_mock),
-        Arc::new(archive_mock),
-        Arc::new(network_mock),
-        Arc::new(vm_mock),
-        sub_manager,
-        metrics,
-        manual_rate_limiters,
-    )
-}
 
 #[tokio::test]
 async fn test_server_starts_http() {
