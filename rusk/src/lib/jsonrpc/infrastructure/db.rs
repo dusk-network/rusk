@@ -75,11 +75,12 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
 
     /// (Required) Retrieves a block summary by its 32-byte hash.
     ///
-    /// Corresponds to `Ledger::block` and potentially combining with
-    /// `Ledger::block_label_by_height`.
+    /// Corresponds to `Ledger::block_with_spent_transactions`.
     ///
     /// # Arguments
     /// * `block_hash_hex`: 64-char hex string of the block hash.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summary.
     ///
     /// # Returns
     ///
@@ -88,40 +89,8 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     async fn get_block_by_hash(
         &self,
         block_hash_hex: &str,
+        include_txs: bool,
     ) -> Result<Option<model::block::Block>, DbError>;
-
-    /// (Required) Retrieves the list of full transactions for a block by hash.
-    ///
-    /// Corresponds to iterating `Ledger::block(...).txs()`.
-    ///
-    /// # Arguments
-    /// * `block_hash_hex`: 64-char hex string of the block hash.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Option<Vec<model::transaction::TransactionResponse>>)` if the
-    ///   transactions are found.
-    /// * `Err(DbError)` if a database error occurs.
-    async fn get_block_transactions_by_hash(
-        &self,
-        block_hash_hex: &str,
-    ) -> Result<Option<Vec<model::transaction::TransactionResponse>>, DbError>;
-
-    /// (Required) Retrieves consensus faults for a block by hash.
-    ///
-    /// Corresponds to iterating `Ledger::block(...).faults()`.
-    ///
-    /// # Arguments
-    /// * `block_hash_hex`: 64-char hex string of the block hash.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Option<model::block::BlockFaults>)` if the faults are found.
-    /// * `Err(DbError)` if a database error occurs.
-    async fn get_block_faults_by_hash(
-        &self,
-        block_hash_hex: &str,
-    ) -> Result<Option<model::block::BlockFaults>, DbError>;
 
     /// (Required) Retrieves a block hash hex string by its height.
     ///
@@ -420,6 +389,59 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
             .await?
             .ok_or(DbError::NotFound("Tip block header not found".into()))?;
         Ok(header.height)
+    }
+
+    /// (Default) Retrieves the list of full transactions for a block by hash.
+    ///
+    /// # Arguments
+    /// * `block_hash_hex`: 64-char hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<model::transaction::TransactionResponse>>)` if the
+    ///   transactions are found.
+    /// * `Err(DbError)` if a database error occurs.
+    async fn get_block_transactions_by_hash(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<Option<Vec<model::transaction::TransactionResponse>>, DbError>
+    {
+        let block_result = self.get_block_by_hash(block_hash_hex, true).await?;
+
+        match block_result {
+            Some(block) => match block.transactions {
+                Some(transactions) => Ok(Some(transactions)),
+                None => Ok(None),
+            },
+            None => Ok(None),
+        }
+    }
+
+    /// (Default) Retrieves consensus faults for a block by hash.
+    ///
+    /// # Arguments
+    /// * `block_hash_hex`: 64-char hex string of the block hash.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<model::block::BlockFaults>)` if the faults are found.
+    /// * `Err(DbError)` if a database error occurs.
+    async fn get_block_faults_by_hash(
+        &self,
+        block_hash_hex: &str,
+    ) -> Result<Option<model::block::BlockFaults>, DbError> {
+        let block_result =
+            self.get_block_by_hash(block_hash_hex, false).await?;
+
+        if let Some(block) = block_result {
+            if let Some(faults) = block.faults {
+                Ok(Some(faults))
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
     }
 
     /// (Default) Retrieves a candidate block by its hash, converting to model.
@@ -806,6 +828,8 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// # Arguments
     ///
     /// * `height`: Height of the block.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summary.
     ///
     /// # Returns
     ///
@@ -814,27 +838,38 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     async fn get_block_by_height(
         &self,
         height: u64,
+        include_txs: bool,
     ) -> Result<Option<model::block::Block>, DbError> {
         match self.get_block_hash_by_height(height).await? {
-            Some(hash) => self.get_block_by_hash(&hash).await,
+            Some(hash) => self.get_block_by_hash(&hash, include_txs).await,
             None => Ok(None),
         }
     }
 
     /// (Default) Retrieves the latest block summary.
     ///
+    /// # Arguments
+    ///
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summary.
+    ///
     /// # Returns
     ///
     /// * `Ok(model::block::Block)` if found.
     /// * `Err(DbError)` if a database error occurs.
-    async fn get_latest_block(&self) -> Result<model::block::Block, DbError> {
+    async fn get_latest_block(
+        &self,
+        include_txs: bool,
+    ) -> Result<model::block::Block, DbError> {
         let height = self.get_block_height().await?;
-        self.get_block_by_height(height).await?.ok_or_else(|| {
-            DbError::NotFound(format!(
-                "Latest block not found at height {}",
-                height
-            ))
-        })
+        self.get_block_by_height(height, include_txs)
+            .await?
+            .ok_or_else(|| {
+                DbError::NotFound(format!(
+                    "Latest block not found at height {}",
+                    height
+                ))
+            })
     }
 
     /// (Default) Retrieves a range of block summaries concurrently.
@@ -843,6 +878,8 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// * `height_start`: Start height of the range.
     /// * `height_end`: End height of the range.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summaries.
     ///
     /// # Returns
     ///
@@ -854,14 +891,15 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         &self,
         height_start: u64,
         height_end: u64,
+        include_txs: bool,
     ) -> Result<Vec<model::block::Block>, DbError> {
         if height_start > height_end {
             return Err(DbError::InternalError(
                 "Start height cannot be greater than end height".into(),
             ));
         }
-        let futures =
-            (height_start..=height_end).map(|h| self.get_block_by_height(h));
+        let futures = (height_start..=height_end)
+            .map(|h| self.get_block_by_height(h, include_txs));
         let results: Vec<Result<Option<model::block::Block>, DbError>> =
             join_all(futures).await;
         results.into_iter().filter_map(Result::transpose).collect()
@@ -872,6 +910,8 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// # Arguments
     ///
     /// * `hashes_hex`: Array of block hashes.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summaries.
     ///
     /// # Returns
     ///
@@ -880,8 +920,11 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     async fn get_blocks_by_hashes(
         &self,
         hashes_hex: &[String],
+        include_txs: bool,
     ) -> Result<Vec<Option<model::block::Block>>, DbError> {
-        let futures = hashes_hex.iter().map(|h| self.get_block_by_hash(h));
+        let futures = hashes_hex
+            .iter()
+            .map(|h| self.get_block_by_hash(h, include_txs));
         try_join_all(futures).await
     }
 
@@ -894,7 +937,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     async fn get_latest_block_header(
         &self,
     ) -> Result<model::block::BlockHeader, DbError> {
-        let block = self.get_latest_block().await?;
+        let block = self.get_latest_block(false).await?;
         Ok(block.header)
     }
 
@@ -1083,8 +1126,6 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// * `Ok(Option<model::transaction::TransactionInfo>)` if found.
     /// * `Err(DbError)` if a database error occurs.
     ///
-    /// This method now primarily relies on the refactored primitive
-    /// `get_spent_transaction_by_hash` which returns `TransactionInfo`.
     /// If `include_tx_index` is true, it fetches block transactions to find
     /// the index.
     async fn get_transaction_by_hash(
@@ -1164,7 +1205,8 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         }
         let latest_height = self.get_block_height().await?;
         let start_height = latest_height.saturating_sub(count - 1);
-        self.get_blocks_range(start_height, latest_height).await
+        self.get_blocks_range(start_height, latest_height, false)
+            .await
     }
 
     /// (Default) Retrieves the total number of blocks in the chain.
@@ -1184,6 +1226,8 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// # Arguments
     ///
     /// * `height`: The height of the first block in the pair.
+    /// * `include_txs`: Whether to include transaction data in the block
+    ///   summaries.
     ///
     /// # Returns
     ///
@@ -1194,10 +1238,12 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     async fn get_block_pair(
         &self,
         height: u64,
+        include_txs: bool,
     ) -> Result<Option<(model::block::Block, model::block::Block)>, DbError>
     {
-        let block1_fut = self.get_block_by_height(height);
-        let block2_fut = self.get_block_by_height(height.saturating_add(1));
+        let block1_fut = self.get_block_by_height(height, include_txs);
+        let block2_fut =
+            self.get_block_by_height(height.saturating_add(1), include_txs);
 
         let (block1_opt, block2_opt) = try_join!(block1_fut, block2_fut)?;
 
@@ -1375,6 +1421,7 @@ impl DatabaseAdapter for RuskDbAdapter {
     async fn get_block_by_hash(
         &self,
         block_hash_hex: &str,
+        include_txs: bool,
     ) -> Result<Option<model::block::Block>, DbError> {
         let block_hash: [u8; 32] = hex::decode(block_hash_hex)
             .map_err(|e| {
@@ -1386,90 +1433,23 @@ impl DatabaseAdapter for RuskDbAdapter {
             })?;
 
         let db_client = self.db_client.clone();
-        let block_with_label_result = tokio::task::spawn_blocking(move || {
-            let db = db_client.blocking_read();
-            db.view(|v| v.block(&block_hash[..]))
-        })
-        .await
-        .map_err(|e| DbError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(DbError::from)?;
-
-        Ok(block_with_label_result.map(model::block::Block::from))
-    }
-
-    async fn get_block_transactions_by_hash(
-        &self,
-        block_hash_hex: &str,
-    ) -> Result<Option<Vec<model::transaction::TransactionResponse>>, DbError>
-    {
-        let block_hash: [u8; 32] = hex::decode(block_hash_hex)
-            .map_err(|e| {
-                DbError::InternalError(format!("Invalid block hash hex: {}", e))
-            })?
-            .try_into()
-            .map_err(|_| {
-                DbError::InternalError("Invalid block hash length".into())
-            })?;
-
-        let db_client = self.db_client.clone();
         let block_result = tokio::task::spawn_blocking(move || {
             let db = db_client.blocking_read();
-            db.view(|v| v.block(&block_hash[..]))
+            db.view(|v| v.block_with_spent_transactions(&block_hash[..]))
         })
         .await
         .map_err(|e| DbError::InternalError(format!("Task join error: {}", e)))?
         .map_err(DbError::from)?;
 
-        match block_result {
-            Some(block) => {
-                let transactions = block
-                    .txs()
-                    .iter()
-                    .cloned()
-                    .map(model::transaction::TransactionResponse::from)
-                    .collect();
-                Ok(Some(transactions))
+        let mut block = block_result.map(model::block::Block::from);
+
+        if let Some(ref mut block) = block {
+            if block.transactions.is_some() && !include_txs {
+                block.transactions = None
             }
-            None => Ok(None),
         }
-    }
 
-    async fn get_block_faults_by_hash(
-        &self,
-        block_hash_hex: &str,
-    ) -> Result<Option<model::block::BlockFaults>, DbError> {
-        let block_hash: [u8; 32] = hex::decode(block_hash_hex)
-            .map_err(|e| {
-                DbError::InternalError(format!("Invalid block hash hex: {}", e))
-            })?
-            .try_into()
-            .map_err(|_| {
-                DbError::InternalError("Invalid block hash length".into())
-            })?;
-
-        let db_client = self.db_client.clone();
-        let block_result = tokio::task::spawn_blocking(move || {
-            let db = db_client.blocking_read();
-            db.view(|v| v.block(&block_hash[..]))
-        })
-        .await
-        .map_err(|e| DbError::InternalError(format!("Task join error: {}", e)))?
-        .map_err(DbError::from)?;
-
-        match block_result {
-            Some(block) => {
-                let faults: Vec<ledger::Fault> = block.faults().to_vec();
-                let block_faults = model::block::BlockFaults::try_from(faults)
-                    .map_err(|e| {
-                        DbError::InternalError(format!(
-                            "Failed to convert faults: {}",
-                            e
-                        ))
-                    })?;
-                Ok(Some(block_faults))
-            }
-            None => Ok(None),
-        }
+        Ok(block)
     }
 
     async fn get_block_hash_by_height(
