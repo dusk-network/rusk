@@ -108,6 +108,55 @@ impl BlockWithLabel {
     }
 }
 
+#[derive(Debug, Clone)]
+/// Immutable view of a finalized block with spent transactions that is/(should
+/// be) persisted
+pub struct BlockWithSpentTransactions {
+    header: Header,
+    txs: Vec<SpentTransaction>,
+    faults: Vec<Fault>,
+    label: Label,
+}
+
+impl PartialEq<Self> for BlockWithSpentTransactions {
+    fn eq(&self, other: &Self) -> bool {
+        self.header.hash == other.header.hash
+    }
+}
+
+impl Eq for BlockWithSpentTransactions {}
+
+impl BlockWithSpentTransactions {
+    /// Creates a new BlockWithSpentTransactions. The block is already finalized
+    /// and has a hash and no faults.
+    pub fn new(
+        header: Header,
+        txs: Vec<SpentTransaction>,
+        faults: Vec<Fault>,
+        label: Label,
+    ) -> Self {
+        BlockWithSpentTransactions {
+            header,
+            txs,
+            faults,
+            label,
+        }
+    }
+
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+    pub fn txs(&self) -> &Vec<SpentTransaction> {
+        &self.txs
+    }
+    pub fn faults(&self) -> &Vec<Fault> {
+        &self.faults
+    }
+    pub fn label(&self) -> &Label {
+        &self.label
+    }
+}
+
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
     use rand::Rng;
