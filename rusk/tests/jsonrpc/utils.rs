@@ -11,7 +11,8 @@ use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use node_data::ledger::{self as node_ledger};
 use node_data::message::{payload as node_payload, ConsensusHeader};
 
-use rusk::jsonrpc::config::{ConfigError, JsonRpcConfig};
+use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair, SanType};
+use rusk::jsonrpc::config::{ConfigError, HttpServerConfig, JsonRpcConfig};
 use rusk::jsonrpc::infrastructure::archive::ArchiveAdapter;
 use rusk::jsonrpc::infrastructure::db::DatabaseAdapter;
 use rusk::jsonrpc::infrastructure::error::NetworkError;
@@ -23,10 +24,12 @@ use rusk::jsonrpc::infrastructure::state::AppState;
 use rusk::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
 use rusk::jsonrpc::infrastructure::{error::VmError, vm::VmAdapter};
 use rusk::jsonrpc::model;
+use tempfile::{tempdir, TempDir};
 
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::net::SocketAddr;
+use std::fs;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use dusk_bytes::Serializable;
@@ -1061,8 +1064,6 @@ pub fn setup_mock_app_state() -> (
 #[cfg(feature = "archive")]
 pub(crate) async fn setup_test_archive(
 ) -> (tempfile::TempDir, ::node::archive::Archive) {
-    use tempfile::tempdir;
-
     let temp_dir = tempdir().expect("Failed to create temp dir");
     let archive =
         ::node::archive::Archive::create_or_open(temp_dir.path()).await;
@@ -1073,8 +1074,6 @@ pub(crate) async fn setup_test_archive(
 #[cfg(feature = "chain")]
 pub(crate) fn setup_test_db(
 ) -> (tempfile::TempDir, ::node::database::rocksdb::Backend) {
-    use tempfile::tempdir;
-
     let temp_dir = tempdir().expect("Failed to create temp dir for DB");
     let db_opts = ::node::database::DatabaseOptions {
         create_if_missing: true, // Ensure DB is created
@@ -1083,4 +1082,67 @@ pub(crate) fn setup_test_db(
     // Call create_or_open via the DB trait
     let db = ::node::database::DB::create_or_open(temp_dir.path(), db_opts);
     (temp_dir, db)
+}
+
+// generate_tls_certs remains mostly the same, but returns HttpServerConfig
+pub fn generate_tls_certs(
+) -> Result<(TempDir, HttpServerConfig), Box<dyn std::error::Error>> {
+    let dir = tempdir()?;
+    let cert_path = dir.path().join("cert.pem");
+    let key_path = dir.path().join("key.pem");
+
+    let mut params = CertificateParams::new(vec!["localhost".to_string()])?;
+    params.distinguished_name = DistinguishedName::new();
+    params
+        .distinguished_name
+        .push(DnType::CommonName, "Rusk Test Cert");
+    params
+        .subject_alt_names
+        .push(SanType::IpAddress(IpAddr::V4(Ipv4Addr::LOCALHOST)));
+
+    let key_pair = KeyPair::generate()?;
+    let cert = params.self_signed(&key_pair)?;
+
+    // Use correct rcgen 0.13 methods with 'pem' feature
+    let cert_pem = cert.pem(); // Get cert PEM string
+    let key_pem = key_pair.serialize_pem(); // Serialize keypair to PEM string
+
+    fs::write(&cert_path, cert_pem)?;
+    fs::write(&key_path, key_pem)?;
+
+    let http_config = HttpServerConfig {
+        // Use a fixed, likely available port for testing instead of 0
+        // If this port is taken, the test will fail, indicating need for a
+        // different approach
+        bind_address: "127.0.0.1:39989".parse()?,
+        cert: Some(cert_path),
+        key: Some(key_path),
+        ..Default::default()
+    };
+
+    Ok((dir, http_config))
+}
+
+// Function to manually create AppState with custom JsonRpcConfig
+pub fn create_custom_app_state(config: JsonRpcConfig) -> AppState {
+    let db_mock = MockDbAdapter::default();
+    let archive_mock = MockArchiveAdapter::default();
+    let network_mock = MockNetworkAdapter::default();
+    let vm_mock = MockVmAdapter::default();
+    let sub_manager = SubscriptionManager::default();
+    let metrics = MetricsCollector::default();
+    let rate_limit_config = Arc::new(config.rate_limit.clone());
+    let manual_rate_limiters = ManualRateLimiters::new(rate_limit_config)
+        .expect("Failed to create manual rate limiters for custom config");
+
+    AppState::new(
+        config, // Use the provided config
+        Arc::new(db_mock),
+        Arc::new(archive_mock),
+        Arc::new(network_mock),
+        Arc::new(vm_mock),
+        sub_manager,
+        metrics,
+        manual_rate_limiters,
+    )
 }
