@@ -564,14 +564,12 @@ impl From<node_data::ledger::Fault> for Fault {
 
 /// Converts a vector of node's internal faults
 /// (`Vec<node_data::ledger::Fault>`) into the JSON-RPC `BlockFaults` model.
-impl TryFrom<Vec<NodeFault>> for BlockFaults {
-    type Error = ConversionError;
-
-    fn try_from(node_faults: Vec<NodeFault>) -> Result<Self, Self::Error> {
+impl From<Vec<node_data::ledger::Fault>> for BlockFaults {
+    fn from(node_faults: Vec<NodeFault>) -> Self {
         let faults = node_faults
             .into_iter()
-            .map(Fault::try_from) // Use the fallible TryFrom conversion for each Fault
-            .collect::<Result<Vec<_>, _>>()?; // Collect into a Result<Vec<Fault>, Error>
-        Ok(BlockFaults { faults })
+            .map(Fault::from) // Use the fallible TryFrom conversion for each Fault
+            .collect();
+        BlockFaults { faults }
     }
 }
