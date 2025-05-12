@@ -243,6 +243,9 @@ pub struct Block {
     /// `None`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transactions: Option<Vec<TransactionResponse>>,
+    /// Optional list of faults detected in the block.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub faults: Option<BlockFaults>,
     /// The total number of transactions included in this block.
     /// This is always present, even if `transactions` is `None`.
     pub transactions_count: u64, // Serialized as number (u64 fits JS number)
