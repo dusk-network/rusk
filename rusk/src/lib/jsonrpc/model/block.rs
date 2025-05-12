@@ -427,31 +427,31 @@ impl From<node_data::ledger::Label> for BlockStatus {
     }
 }
 
-/// Converts the node's internal block representation
-/// (`node_data::ledger::Block`) into the JSON-RPC `Block` model.
-///
-/// **Note:** This conversion only populates fields directly available from
-/// `ledger::Block` (header, transaction count). Fields like `status`,
-/// `transactions` (actual data), `block_reward`, and `total_gas_limit` require
-/// additional information (like the block's label or execution results) and are
-/// set to `None`. The caller (e.g., `DatabaseAdapter`) is responsible for
-/// fetching this extra information and populating the `Block` model completely.
-impl From<ledger::Block> for Block {
-    fn from(b: ledger::Block) -> Self {
-        let header_model = BlockHeader::from(b.header().clone());
+/// Converts the node's internal finalized block with spent transactions
+/// representation (`node_data::ledger::BlockWithSpentTransactions`) into the
+/// JSON-RPC `Block` model.
+impl From<ledger::BlockWithSpentTransactions> for Block {
+    fn from(b: ledger::BlockWithSpentTransactions) -> Self {
+        let header = BlockHeader::from(b.header().clone());
+        let txs: Vec<TransactionResponse> = b
+            .txs()
+            .iter()
+            .map(|tx| TransactionResponse::from(tx.clone()))
+            .collect();
+        let faults: BlockFaults = BlockFaults::from(b.faults().clone());
+        let status = BlockStatus::from(b.label().clone());
 
-        // Status, reward, fees, and gas spent cannot be determined solely
-        // from ledger::Block. They require the block's Label and execution
-        // results (SpentTransaction data), which must be fetched and combined
-        // by the caller (e.g., the DatabaseAdapter).
+        let total_gas_limit = txs.iter().map(|tx| tx.base.gas_limit).sum();
+        let transactions_count = txs.len() as u64;
 
         Self {
-            header: header_model,
-            status: None,
-            transactions: None,
-            transactions_count: b.txs().len() as u64,
+            header,
+            status: Some(status),
+            transactions: Some(txs),
+            faults: Some(faults),
+            transactions_count,
             block_reward: None,
-            total_gas_limit: None,
+            total_gas_limit: Some(total_gas_limit),
         }
     }
 }
