@@ -8,7 +8,7 @@
 //! implementations.
 
 use crate::jsonrpc::utils::{
-    create_mock_block, create_mock_moonlight_group, MockArchiveAdapter,
+    create_basic_mock_block, create_mock_moonlight_group, MockArchiveAdapter,
     MockDbAdapter,
 };
 use futures::executor::block_on;
@@ -22,7 +22,7 @@ use std::collections::HashMap;
 
 #[tokio::test]
 async fn mock_db_get_block_by_hash_found() {
-    let block1 = create_mock_block(100, "hash_abc");
+    let block1 = create_basic_mock_block(100, "hash_abc");
     let mut blocks_by_hash = HashMap::new();
     blocks_by_hash.insert(block1.header.hash.clone(), block1.clone());
     let adapter = MockDbAdapter {
@@ -66,7 +66,7 @@ async fn mock_db_get_block_by_hash_error() {
 
 #[tokio::test]
 async fn mock_db_get_block_by_height_found() {
-    let block1 = create_mock_block(100, "hash_abc");
+    let block1 = create_basic_mock_block(100, "hash_abc");
     let mut blocks_by_height = HashMap::new();
     blocks_by_height.insert(100, block1.clone());
     let mut blocks_by_hash = HashMap::new();
@@ -105,7 +105,7 @@ async fn mock_db_get_block_by_height_error() {
 
 #[tokio::test]
 async fn mock_db_get_latest_block_found() {
-    let block_latest = create_mock_block(105, "hash_latest");
+    let block_latest = create_basic_mock_block(105, "hash_latest");
     let mut mock_db = MockDbAdapter {
         latest_height: 105,
         ..Default::default()
@@ -170,9 +170,9 @@ async fn mock_db_get_latest_block_error() {
 
 #[tokio::test]
 async fn mock_db_get_blocks_range_success() {
-    let block1 = create_mock_block(100, "hash_100");
-    let block2 = create_mock_block(101, "hash_101");
-    let block3 = create_mock_block(102, "hash_102");
+    let block1 = create_basic_mock_block(100, "hash_100");
+    let block2 = create_basic_mock_block(101, "hash_101");
+    let block3 = create_basic_mock_block(102, "hash_102");
     let mut mock_db = MockDbAdapter::default();
     let blocks_vec = vec![block1.clone(), block2.clone(), block3.clone()];
 
@@ -199,9 +199,9 @@ async fn mock_db_get_blocks_range_success() {
 
 #[tokio::test]
 async fn mock_db_get_blocks_range_not_found() {
-    let block1 = create_mock_block(100, "hash_100");
+    let block1 = create_basic_mock_block(100, "hash_100");
     // Block 101 is missing
-    let block3 = create_mock_block(102, "hash_102");
+    let block3 = create_basic_mock_block(102, "hash_102");
     let mut mock_db = MockDbAdapter::default();
 
     mock_db.blocks_by_height.insert(100, block1.clone());
@@ -269,8 +269,8 @@ async fn mock_db_get_blocks_range_force_error() {
 
 #[tokio::test]
 async fn mock_db_get_blocks_by_hashes_success() {
-    let block1 = create_mock_block(100, "hash_100");
-    let block2 = create_mock_block(101, "hash_101");
+    let block1 = create_basic_mock_block(100, "hash_100");
+    let block2 = create_basic_mock_block(101, "hash_101");
     let mut blocks_by_hash = HashMap::new();
     blocks_by_hash.insert(block1.header.hash.clone(), block1.clone());
     blocks_by_hash.insert(block2.header.hash.clone(), block2.clone());
@@ -293,7 +293,7 @@ async fn mock_db_get_blocks_by_hashes_success() {
 
 #[tokio::test]
 async fn mock_db_get_blocks_by_hashes_mixed_results() {
-    let block1 = create_mock_block(100, &hex::encode([100u8; 32])); // Found
+    let block1 = create_basic_mock_block(100, &hex::encode([100u8; 32])); // Found
     let mut blocks_by_hash = HashMap::new();
     blocks_by_hash.insert(block1.header.hash.clone(), block1.clone());
     let adapter = MockDbAdapter {
@@ -343,7 +343,7 @@ async fn mock_db_get_blocks_by_hashes_empty_input() {
 
 #[tokio::test]
 async fn mock_db_get_blocks_by_hashes_force_error() {
-    let block1 = create_mock_block(100, "hash_100");
+    let block1 = create_basic_mock_block(100, "hash_100");
     let mut blocks_by_hash = HashMap::new();
     blocks_by_hash.insert(block1.header.hash.clone(), block1.clone());
 
@@ -625,9 +625,9 @@ mod rusk_db_adapter_tests {
 
 #[tokio::test]
 async fn mock_db_get_block_headers_range_success() {
-    let block1 = create_mock_block(100, &hex::encode([100u8; 32]));
-    let block2 = create_mock_block(101, &hex::encode([101u8; 32]));
-    let block3 = create_mock_block(102, &hex::encode([102u8; 32]));
+    let block1 = create_basic_mock_block(100, &hex::encode([100u8; 32]));
+    let block2 = create_basic_mock_block(101, &hex::encode([101u8; 32]));
+    let block3 = create_basic_mock_block(102, &hex::encode([102u8; 32]));
     let header1 = block1.header.clone();
     let header2 = block2.header.clone();
     let header3 = block3.header.clone();
@@ -669,8 +669,8 @@ async fn mock_db_get_block_headers_range_success() {
 
 #[tokio::test]
 async fn mock_db_get_block_headers_range_not_found() {
-    let block1 = create_mock_block(100, &hex::encode([100u8; 32]));
-    let block3 = create_mock_block(102, &hex::encode([102u8; 32]));
+    let block1 = create_basic_mock_block(100, &hex::encode([100u8; 32]));
+    let block3 = create_basic_mock_block(102, &hex::encode([102u8; 32]));
     let header1 = block1.header.clone();
     let header3 = block3.header.clone();
     let mut mock_db = MockDbAdapter {
@@ -737,8 +737,8 @@ async fn mock_db_get_block_headers_range_force_error() {
 
 #[tokio::test]
 async fn mock_db_get_block_headers_by_hashes_success() {
-    let block1 = create_mock_block(100, "header_100");
-    let block2 = create_mock_block(101, "header_101");
+    let block1 = create_basic_mock_block(100, "header_100");
+    let block2 = create_basic_mock_block(101, "header_101");
     let mut headers_by_hash = HashMap::new();
     headers_by_hash.insert(block1.header.hash.clone(), block1.header.clone());
     headers_by_hash.insert(block2.header.hash.clone(), block2.header.clone());
@@ -761,7 +761,7 @@ async fn mock_db_get_block_headers_by_hashes_success() {
 
 #[tokio::test]
 async fn mock_db_get_block_headers_by_hashes_mixed_results() {
-    let block1 = create_mock_block(100, "header_100"); // Found
+    let block1 = create_basic_mock_block(100, "header_100"); // Found
     let mut headers_by_hash = HashMap::new();
     headers_by_hash.insert(block1.header.hash.clone(), block1.header.clone());
     let adapter = MockDbAdapter {
@@ -811,7 +811,7 @@ async fn mock_db_get_block_headers_by_hashes_empty_input() {
 
 #[tokio::test]
 async fn mock_db_get_block_headers_by_hashes_force_error() {
-    let header1 = create_mock_block(100, "header_100").header;
+    let header1 = create_basic_mock_block(100, "header_100").header;
     let mut headers_by_hash = HashMap::new();
     headers_by_hash.insert(header1.hash.clone(), header1.clone());
 

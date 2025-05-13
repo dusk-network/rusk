@@ -17,7 +17,7 @@ use rusk::jsonrpc::config::{
     ConfigError, CorsConfig, JsonRpcConfig, MethodRateLimit, RateLimit,
 };
 
-use crate::jsonrpc::utils::{assert_security_error, create_environment_config};
+use crate::jsonrpc::utils::assert_security_error;
 
 lazy_static! {
     static ref ENV_MUTEX: Mutex<()> = Mutex::new(());
@@ -1068,17 +1068,17 @@ fn test_production_environment_security(
 #[test]
 fn test_environment_specific_configs() -> Result<(), Box<dyn std::error::Error>>
 {
-    let dev_config = create_environment_config(&[]);
+    let dev_config = JsonRpcConfig::default();
     assert!(dev_config.validate().is_ok(),
         "Development config should be valid (security checks adjusted for localhost)");
 
-    let test_config = create_environment_config(&[]);
+    let test_config = JsonRpcConfig::default();
     assert!(
         test_config.validate().is_ok(),
         "Testing config should be valid"
     );
 
-    let prod_config = create_environment_config(&[]);
+    let prod_config = JsonRpcConfig::default();
     assert!(
         prod_config.validate().is_ok(),
         "Production config should be valid and secure"

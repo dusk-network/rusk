@@ -8,7 +8,7 @@
 //! `BlockLabel`, `ChainTip`, `CandidateBlock`, `BlockFaults`, `Fault`,
 //! `FaultType`, `FaultItem`, `ConsensusHeaderJson`.
 
-use crate::jsonrpc::utils::{create_mock_block, create_mock_ml_tx_response};
+use crate::jsonrpc::utils::{create_basic_mock_block, create_mock_ml_tx_response};
 use bs58;
 use dusk_bytes::Serializable;
 use hex;
@@ -36,9 +36,9 @@ fn block_status_equality() {
 
 #[test]
 fn block_header_equality() {
-    let header1 = create_mock_block(10, "h1").header;
-    let header2 = create_mock_block(10, "h1").header; // Identical
-    let header3 = create_mock_block(11, "h1").header; // Different height
+    let header1 = create_basic_mock_block(10, "h1").header;
+    let header2 = create_basic_mock_block(10, "h1").header; // Identical
+    let header3 = create_basic_mock_block(11, "h1").header; // Different height
                                                       // header4 is now identical to header1 because hash_prefix is ignored
                                                       // let header4 = create_mock_block(10, "h2").header;
 
@@ -49,10 +49,10 @@ fn block_header_equality() {
 
 #[test]
 fn block_equality() {
-    let block1 = create_mock_block(20, "b1");
-    let block2 = create_mock_block(20, "b1"); // Identical
-    let block3 = create_mock_block(21, "b1"); // Different header (height)
-    let mut block4 = create_mock_block(20, "b1");
+    let block1 = create_basic_mock_block(20, "b1");
+    let block2 = create_basic_mock_block(20, "b1"); // Identical
+    let block3 = create_basic_mock_block(21, "b1"); // Different header (height)
+    let mut block4 = create_basic_mock_block(20, "b1");
     block4.status = Some(BlockStatus::Provisional); // Different status
 
     assert_eq!(block1, block2);
@@ -62,7 +62,7 @@ fn block_equality() {
 
 #[test]
 fn block_header_serialization() {
-    let header = create_mock_block(10, "h1").header;
+    let header = create_basic_mock_block(10, "h1").header;
     let json = serde_json::to_value(header).unwrap();
 
     // Use deterministic hashes based on height 10
@@ -87,7 +87,7 @@ fn block_header_serialization() {
 
 #[test]
 fn block_serialization_no_txs() {
-    let block = create_mock_block(20, "b1");
+    let block = create_basic_mock_block(20, "b1");
     let json = serde_json::to_value(block).unwrap();
 
     assert!(json["header"].is_object());
@@ -102,7 +102,7 @@ fn block_serialization_no_txs() {
 
 #[test]
 fn block_serialization_with_txs() {
-    let mut block = create_mock_block(30, "b_tx");
+    let mut block = create_basic_mock_block(30, "b_tx");
     let tx1 = create_mock_ml_tx_response("tx1_in_block");
     let tx2 = create_mock_ml_tx_response("tx2_in_block");
     block.transactions = Some(vec![tx1.clone(), tx2.clone()]);
@@ -176,7 +176,7 @@ fn block_header_deserialization() {
 
     let deserialized_header: BlockHeader =
         serde_json::from_str(&json_str).unwrap();
-    let expected_header = create_mock_block(10, "h1").header;
+    let expected_header = create_basic_mock_block(10, "h1").header;
 
     assert_eq!(deserialized_header, expected_header);
 }
@@ -218,7 +218,7 @@ fn block_deserialization_no_txs() {
     // Note: `transactions` field is missing, which deserialize correctly to
     // None
     let deserialized_block: Block = serde_json::from_str(&json_str).unwrap();
-    let expected_block = create_mock_block(20, "b1"); // Helper creates with transactions=None
+    let expected_block = create_basic_mock_block(20, "b1"); // Helper creates with transactions=None
 
     assert_eq!(deserialized_block.header, expected_block.header);
     assert_eq!(deserialized_block.status, expected_block.status);
@@ -237,7 +237,7 @@ fn block_deserialization_no_txs() {
 #[test]
 fn block_deserialization_with_txs() {
     // Create expected block using helpers
-    let mut expected_block = create_mock_block(30, "b_tx");
+    let mut expected_block = create_basic_mock_block(30, "b_tx");
     let tx1 = create_mock_ml_tx_response("tx1_in_block");
     let tx2 = create_mock_ml_tx_response("tx2_in_block");
     expected_block.transactions = Some(vec![tx1.clone(), tx2.clone()]);
