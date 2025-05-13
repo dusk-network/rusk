@@ -611,7 +611,8 @@ impl From<node_data::ledger::Transaction> for TransactionResponse {
     }
 }
 
-/// Converts a node's SpentTransaction to our JSON-RPC TransactionResponse model.
+/// Converts a node's SpentTransaction to our JSON-RPC TransactionResponse
+/// model.
 ///
 /// This implementation first converts the inner Transaction object using the
 /// existing From<Transaction> implementation, then adds the additional fields
@@ -621,17 +622,19 @@ impl From<node_data::ledger::Transaction> for TransactionResponse {
 /// Note that some fields (block_hash, timestamp) are set to None because
 /// SpentTransaction doesn't contain this information.
 ///
-/// According to the SpentTransaction documentation, a spent transaction has always
-/// been executed, but may have failed during execution. We use TransactionStatusType::Executed
-/// for all SpentTransactions, and include any error information in the error field.
+/// According to the SpentTransaction documentation, a spent transaction has
+/// always been executed, but may have failed during execution. We use
+/// TransactionStatusType::Executed for all SpentTransactions, and include any
+/// error information in the error field.
 impl From<node_data::ledger::SpentTransaction> for TransactionResponse {
     fn from(info: node_data::ledger::SpentTransaction) -> Self {
         // First convert the inner Transaction to get base transaction data
         let mut response = TransactionResponse::from(info.inner.clone());
-        
+
         // Create TransactionStatus from SpentTransaction data
         let status = TransactionStatus {
-            // All SpentTransactions are considered executed, even if they resulted in errors
+            // All SpentTransactions are considered executed, even if they
+            // resulted in errors
             status: TransactionStatusType::Executed,
             // Include block height information
             block_height: Some(info.block_height),
@@ -644,10 +647,10 @@ impl From<node_data::ledger::SpentTransaction> for TransactionResponse {
             // Include any error message that occurred during execution
             error: info.err,
         };
-        
+
         // Attach the status information to the response
         response.status = Some(status);
-        
+
         response
     }
 }
