@@ -15,8 +15,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use super::{
-    create_basic_mock_block, MockArchiveAdapter, MockDbAdapter, MockNetworkAdapter,
-    MockVmAdapter,
+    create_basic_mock_block, MockArchiveAdapter, MockDbAdapter,
+    MockNetworkAdapter, MockVmAdapter,
 };
 
 /// Creates a default AppState instance for use in tests, including

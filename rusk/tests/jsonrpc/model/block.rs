@@ -8,7 +8,9 @@
 //! `BlockLabel`, `ChainTip`, `CandidateBlock`, `BlockFaults`, `Fault`,
 //! `FaultType`, `FaultItem`, `ConsensusHeaderJson`.
 
-use crate::jsonrpc::utils::{create_basic_mock_block, create_mock_ml_tx_response};
+use crate::jsonrpc::utils::{
+    create_basic_mock_block, create_mock_ml_tx_response,
+};
 use bs58;
 use dusk_bytes::Serializable;
 use hex;
@@ -39,8 +41,8 @@ fn block_header_equality() {
     let header1 = create_basic_mock_block(10, "h1").header;
     let header2 = create_basic_mock_block(10, "h1").header; // Identical
     let header3 = create_basic_mock_block(11, "h1").header; // Different height
-                                                      // header4 is now identical to header1 because hash_prefix is ignored
-                                                      // let header4 = create_mock_block(10, "h2").header;
+                                                            // header4 is now identical to header1 because hash_prefix is ignored
+                                                            // let header4 = create_mock_block(10, "h2").header;
 
     assert_eq!(header1, header2);
     assert_ne!(header1, header3);
