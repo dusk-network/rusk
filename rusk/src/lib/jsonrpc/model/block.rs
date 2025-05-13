@@ -165,7 +165,7 @@ pub enum BlockStatus {
 /// Represents the JSON-RPC response for a block status query.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BlockStatusResponse {
-    status: BlockStatus,
+    pub status: BlockStatus,
 }
 
 /// Represents a potential head of the blockchain (chain tip).
