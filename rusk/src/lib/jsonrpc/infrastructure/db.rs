@@ -275,6 +275,14 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         hash: &[u8; 32],
     ) -> Result<Option<model::block::CandidateBlock>, DbError>;
 
+    /// (Required) Gets the count of candidate (non-finalized) blocks.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` containing the count of candidate blocks.
+    /// * `Err(DbError)` if counting the candidate blocks fails.
+    async fn get_candidate_blocks_count(&self) -> Result<u64, DbError>;
+
     /// (Required) Retrieves a candidate block by its consensus header.
     ///
     /// Corresponds to `ConsensusStorage::candidate_by_iteration`.
@@ -1704,6 +1712,23 @@ impl DatabaseAdapter for RuskDbAdapter {
             DbError::InternalError(format!("Task join error: {}", e))
         })??;
         Ok(node_block_opt.map(model::block::CandidateBlock::from))
+    }
+
+    async fn get_candidate_blocks_count(&self) -> Result<u64, DbError> {
+        let db_client = self.db_client.clone();
+
+        tokio::task::spawn_blocking(move || {
+            let db = db_client.blocking_read();
+
+            db.view(|v| {
+                let count = v.count_candidates();
+                Ok(count as u64) // Convert usize to u64
+            })
+        })
+        .await
+        .map_err(|e| {
+            DbError::InternalError(format!("Task join error: {}", e))
+        })?
     }
 
     async fn candidate_by_iteration(

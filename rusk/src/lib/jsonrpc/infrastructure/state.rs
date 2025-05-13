@@ -80,6 +80,7 @@
 //! #     async fn mempool_txs_ids_sorted_by_low_fee(&self) -> Result<Vec<(u64, [u8; 32])>, jsonrpc::infrastructure::error::DbError> { Ok(vec![]) }
 //! #     // --- Required ConsensusStorage Primitives ---
 //! #     async fn candidate(&self, _: &[u8; 32]) -> Result<Option<rusk::jsonrpc::model::block::CandidateBlock>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
+//! #     async fn get_candidate_blocks_count(&self) -> Result<u64, jsonrpc::infrastructure::error::DbError> { Ok(0) }
 //! #     async fn candidate_by_iteration(&self, _: &ConsensusHeader) -> Result<Option<rusk::jsonrpc::model::block::CandidateBlock>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     async fn validation_result(&self, _: &ConsensusHeader) -> Result<Option<rusk::jsonrpc::model::consensus::ValidationResult>, jsonrpc::infrastructure::error::DbError> { Ok(None) }
 //! #     // --- Required Metadata Primitives ---
@@ -1578,6 +1579,23 @@ impl AppState {
     {
         self.db_adapter
             .candidate(hash)
+            .await
+            .map_err(jsonrpc::infrastructure::error::Error::Database)
+            .map_err(jsonrpc::error::Error::Infrastructure)
+    }
+
+    /// Gets the count of candidate (non-finalized) blocks.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(u64)` containing the count of candidate blocks.
+    /// * `Err(jsonrpc::error::Error::Infrastructure)`: if counting the
+    ///   candidate blocks fails.
+    pub async fn get_candidate_blocks_count(
+        &self,
+    ) -> Result<u64, jsonrpc::error::Error> {
+        self.db_adapter
+            .get_candidate_blocks_count()
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
