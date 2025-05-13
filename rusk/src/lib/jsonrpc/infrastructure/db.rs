@@ -484,7 +484,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// consensus.
     ///
     /// Implementation uses `metadata_op_read` and required
-    /// `candidate_by_iteration`.
+    /// `candidate_by_iteration`. It has O(1) time complexity.
     ///
     /// # Returns
     ///
@@ -494,10 +494,13 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     async fn get_latest_candidate_block(
         &self,
     ) -> Result<model::block::CandidateBlock, DbError> {
+        // 1. Read the latest consensus header from metadata
         let latest_header_bytes =
             self.metadata_op_read(MD_LAST_ITER).await?.ok_or(
                 DbError::NotFound("Last iteration metadata not found".into()),
             )?;
+
+        // 2. Deserialize the header
         let latest_header =
             ConsensusHeader::read(&mut latest_header_bytes.as_slice())
                 .map_err(|e| {
@@ -506,6 +509,8 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
                         e
                     ))
                 })?;
+
+        // 3. Use the header to find the corresponding candidate block
         self.candidate_by_iteration(&latest_header)
             .await?
             .ok_or_else(|| {
@@ -1247,37 +1252,30 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         Ok(finalized_count + candidate_count)
     }
 
-    /// (Default) Retrieves a pair of consecutive block summaries by the height
-    /// of the first block.
+    /// (Default) Retrieves both the latest candidate block with transaction
+    /// data and the latest finalized block.
     ///
     /// # Arguments
     ///
-    /// * `height`: The height of the first block in the pair.
-    /// * `include_txs`: Whether to include transaction data in the block
-    ///   summaries.
+    /// * `include_txs`: Whether to include transaction data in the finalized
+    ///   block summary.
     ///
     /// # Returns
     ///
-    /// * `Ok(Some((Block, Block)))` if both blocks at `height` and `height + 1`
-    ///   are found.
+    /// * `Ok(BlockPair)` if both blocks are found where the `latest` is the
+    ///   latest candidate block and `finalized` is latest finalized block.
     /// * `Ok(None)` if either block in the pair is not found.
     /// * `Err(DbError)` if a database error occurs during lookup.
     async fn get_block_pair(
         &self,
-        height: u64,
         include_txs: bool,
-    ) -> Result<Option<(model::block::Block, model::block::Block)>, DbError>
-    {
-        let block1_fut = self.get_block_by_height(height, include_txs);
-        let block2_fut =
-            self.get_block_by_height(height.saturating_add(1), include_txs);
+    ) -> Result<model::block::BlockPair, DbError> {
+        let block1_fut = self.get_latest_candidate_block();
+        let block2_fut = self.get_latest_block(include_txs);
 
-        let (block1_opt, block2_opt) = try_join!(block1_fut, block2_fut)?;
+        let (latest, finalized) = try_join!(block1_fut, block2_fut)?;
 
-        match (block1_opt, block2_opt) {
-            (Some(b1), Some(b2)) => Ok(Some((b1, b2))),
-            _ => Ok(None),
-        }
+        Ok(model::block::BlockPair { latest, finalized })
     }
 
     /// (Default) Retrieves a specific range of transactions from a block
