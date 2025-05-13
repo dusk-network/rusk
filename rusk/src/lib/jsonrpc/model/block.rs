@@ -321,6 +321,16 @@ impl PartialEq for CandidateBlock {
 }
 impl Eq for CandidateBlock {}
 
+/// Contains a pair of blocks, one representing the latest candidate (latest)
+/// block and another representing the latest finalized block.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockPair {
+    /// The latest candidate block.
+    pub latest: CandidateBlock,
+    /// The latest finalized block.
+    pub finalized: Block,
+}
+
 /// Represents consensus fault information included within a finalized block.
 ///
 /// This structure aggregates multiple individual [`Fault`] instances reported
