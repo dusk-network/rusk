@@ -828,9 +828,6 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         self.get_gas_price(max_transactions).await
     }
 
-    // --- Passthrough Default Implementations ---
-    // These call other default or required methods without much extra logic.
-
     /// (Default) Retrieves block summary by height.
     ///
     /// # Arguments
@@ -892,8 +889,9 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// # Returns
     ///
     /// * `Ok(Vec<model::block::Block>)` containing summaries for found blocks
-    ///   in the range. Note: If individual block lookups within the range fail
-    ///   (e.g., height not found), they are skipped.
+    ///   in the range in order from newest to oldest. Note: If individual block
+    ///   lookups within the range fail (e.g., height not found), they are
+    ///   skipped.
     /// * `Err(DbError::InternalError)` if `height_start > height_end`.
     async fn get_blocks_range(
         &self,
@@ -908,6 +906,9 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
         }
         let futures = (height_start..=height_end)
             .map(|h| self.get_block_by_height(h, include_txs));
+
+        // The order of the blocks is guaranteed to be ascending by height
+        // (`join_all` preserves the order instead of `select_all`)
         let results: Vec<Result<Option<model::block::Block>, DbError>> =
             join_all(futures).await;
         results.into_iter().filter_map(Result::transpose).collect()
@@ -1198,22 +1199,26 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     /// # Arguments
     ///
     /// * `count`: The number of latest blocks to retrieve.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summary.
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<model::block::Block>)` containing the block summaries.
+    /// * `Ok(Vec<model::block::Block>)` containing the block summaries in order
+    ///   from newest to oldest.
     /// * `Err(DbError)` if fetching the latest block height or the block range
     ///   fails.
     async fn get_latest_blocks(
         &self,
         count: u64,
+        include_txs: bool,
     ) -> Result<Vec<model::block::Block>, DbError> {
         if count == 0 {
             return Ok(Vec::new());
         }
         let latest_height = self.get_block_height().await?;
         let start_height = latest_height.saturating_sub(count - 1);
-        self.get_blocks_range(start_height, latest_height, false)
+        self.get_blocks_range(start_height, latest_height, include_txs)
             .await
     }
 

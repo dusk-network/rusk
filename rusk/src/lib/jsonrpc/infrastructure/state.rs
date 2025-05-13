@@ -2305,18 +2305,22 @@ impl AppState {
     /// # Arguments
     ///
     /// * `count`: The number of latest blocks to retrieve.
+    /// * `include_txs`: Whether to include the transaction details in the block
+    ///   summary.
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<model::block::Block>)` containing the block summaries.
+    /// * `Ok(Vec<model::block::Block>)` containing the block summaries in order
+    ///   from newest to oldest.
     /// * `Err(jsonrpc::error::Error::Infrastructure)` if fetching the latest
     ///   block height or the block range fails.
     pub async fn get_latest_blocks(
         &self,
         count: u64,
+        include_txs: bool,
     ) -> Result<Vec<model::block::Block>, jsonrpc::error::Error> {
         self.db_adapter
-            .get_latest_blocks(count)
+            .get_latest_blocks(count, include_txs)
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
