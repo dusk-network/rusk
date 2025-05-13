@@ -20,8 +20,8 @@ pub trait BlockRpc {
     ///
     /// # Arguments
     /// * `block_hash` - The block hash as a hex-encoded 32-byte string
-    /// * `include_txs` - Whether to include transaction details in the
-    ///   response. Default is false.
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
     ///
     /// # Returns
     /// A `Result` containing the block information or an error.
@@ -37,7 +37,51 @@ pub trait BlockRpc {
     async fn get_block_by_hash(
         &self,
         hash: String,
-        include_txs: bool,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::Block, ErrorObjectOwned>;
+
+    /// Returns detailed information about a block at the specified height.
+    ///
+    /// # Arguments
+    /// * `height` - The block height as a u64
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
+    ///
+    /// # Returns
+    /// A `Result` containing the block information or an error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid height format (negative or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified height doesn't exist |
+    #[method(name = "getBlockByHeight")]
+    async fn get_block_by_height(
+        &self,
+        height: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Option<model::block::Block>, ErrorObjectOwned>;
+
+    /// Returns information about the most recent block.
+    ///
+    /// # Arguments
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
+    ///
+    /// # Returns
+    /// A `Result` containing the block information or an error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getLatestBlock")]
+    async fn get_latest_block(
+        &self,
+        include_txs: Option<bool>,
     ) -> Result<model::block::Block, ErrorObjectOwned>;
 }
 
@@ -58,7 +102,7 @@ impl BlockRpcServer for BlockRpcImpl {
     async fn get_block_by_hash(
         &self,
         hash: String,
-        include_txs: bool,
+        include_txs: Option<bool>,
     ) -> Result<model::block::Block, ErrorObjectOwned> {
         // 1. Validate the hash format
         if hash.len() != 64 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
@@ -71,7 +115,7 @@ impl BlockRpcServer for BlockRpcImpl {
 
         let block = self
             .app_state
-            .get_block_by_hash(hash.as_str(), include_txs)
+            .get_block_by_hash(hash.as_str(), include_txs.unwrap_or(false))
             .await
             .map_err(|e| {
                 ErrorObjectOwned::owned(
@@ -89,5 +133,62 @@ impl BlockRpcServer for BlockRpcImpl {
                 Some(format!("Block with hash {} not found", hash)),
             )),
         }
+    }
+
+    async fn get_block_by_height(
+        &self,
+        height: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Option<model::block::Block>, ErrorObjectOwned> {
+        // 1. Validate the height format
+        if height == 0 || height > u64::MAX {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some(
+                    "Invalid height format (negative or too large)".to_string(),
+                ),
+            ));
+        }
+
+        let block = self
+            .app_state
+            .get_block_by_height(height, include_txs.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match block {
+            Some(block) => Ok(Some(block)),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some(format!("Block with height {} not found", height)),
+            )),
+        }
+    }
+
+    async fn get_latest_block(
+        &self,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::Block, ErrorObjectOwned> {
+        let block = self
+            .app_state
+            .get_latest_block(include_txs.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(block)
     }
 }
