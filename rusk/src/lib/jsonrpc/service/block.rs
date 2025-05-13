@@ -165,7 +165,7 @@ pub trait BlockRpc {
     /// # Returns
     /// A `Result` containing the block pair object where the `latest` block is
     /// the latest candidate block and the `finalized` block is the latest
-    /// finalized block.
+    /// finalized block or error if the fetching of either block fails.
     ///
     /// # Error Codes
     ///
@@ -177,6 +177,29 @@ pub trait BlockRpc {
         &self,
         include_txs: Option<bool>,
     ) -> Result<model::block::BlockPair, ErrorObjectOwned>;
+
+    /// Returns the finalization status of a block identified by its height.
+    ///
+    /// # Arguments
+    /// * `block_height` - The height of the block to check the finalization
+    ///   status.
+    ///
+    /// # Returns
+    /// A `Result` containing the block finalization status or the error if the
+    /// fetching of the block status fails or block not found.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid height (non-positive or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified height doesn't exist |
+    #[method(name = "getBlockStatus")]
+    async fn get_block_status(
+        &self,
+        block_height: u64,
+    ) -> Result<model::block::BlockStatusResponse, ErrorObjectOwned>;
 }
 
 /// Implementation of the `BlockRpcServer` trait.
@@ -420,5 +443,39 @@ impl BlockRpcServer for BlockRpcImpl {
                     Some(e.to_string()),
                 )
             })
+    }
+
+    async fn get_block_status(
+        &self,
+        block_height: u64,
+    ) -> Result<model::block::BlockStatusResponse, ErrorObjectOwned> {
+        if block_height == 0 || block_height > u64::MAX {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height (non-positive or too large)".to_string()),
+            ));
+        }
+
+        let status = self
+            .app_state
+            .get_block_status_by_height(block_height)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match status {
+            Some(status) => Ok(model::block::BlockStatusResponse { status }),
+            None => Err(ErrorObjectOwned::owned(
+                -32602,
+                "Block not found",
+                Some("Block with specified height doesn't exist".to_string()),
+            )),
+        }
     }
 }
