@@ -9,6 +9,7 @@
 use crate::jsonrpc::config::{ConfigError, HttpServerConfig};
 use crate::jsonrpc::error::Error;
 use crate::jsonrpc::infrastructure::state::AppState;
+use crate::jsonrpc::service::block::{BlockRpcImpl, BlockRpcServer};
 use axum::routing::get;
 use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
@@ -288,13 +289,24 @@ pub async fn run_server(app_state: Arc<AppState>) -> Result<(), Error> {
     // 1. Load TLS configuration
     let rustls_config = load_tls_config(&app_state.config().http).await?;
 
-    // Instantiate the RPC implementation
-    let rpc_impl = RuskInfoRpcImpl::new(app_state.clone());
+    // Instantiate the RPC implementations
+    let rusk_info_rpc_impl = RuskInfoRpcImpl::new(app_state.clone());
+    let block_rpc_impl = BlockRpcImpl::new(app_state.clone());
+
     // Create a new RpcModule with AppState context
     let mut rpc_module = RpcModule::new(app_state.clone());
-    // Merge the implementation
-    rpc_module.merge(rpc_impl.into_rpc()).map_err(|e| {
-        Error::Internal(format!("Failed to merge RuskInfoRpc methods: {}", e))
+
+    // Merge the implementations
+    rpc_module
+        .merge(rusk_info_rpc_impl.into_rpc())
+        .map_err(|e| {
+            Error::Internal(format!(
+                "Failed to merge RuskInfoRpc methods: {}",
+                e
+            ))
+        })?;
+    rpc_module.merge(block_rpc_impl.into_rpc()).map_err(|e| {
+        Error::Internal(format!("Failed to merge BlockRpc methods: {}", e))
     })?;
     info!("JSON-RPC module prepared and methods merged.");
 
