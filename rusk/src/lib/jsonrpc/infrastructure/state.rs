@@ -2346,32 +2346,27 @@ impl AppState {
             .map_err(|e| jsonrpc::error::Error::Infrastructure(e.into()))
     }
 
-    /// Retrieves a pair of consecutive block summaries by the height of the
-    /// first block.
+    /// Retrieves both the latest candidate block with transaction data and the
+    /// latest finalized block.
     ///
     /// # Arguments
     ///
-    /// * `height`: The height of the first block in the pair.
-    /// * `include_txs`: Whether to include transaction data in the block
-    ///   summaries.
+    /// * `include_txs`: Whether to include transaction data in the finalized
+    ///   block summary.
     ///
     /// # Returns
     ///
-    /// * `Ok(Some((model::block::Block, model::block::Block)))` if both blocks
-    ///   at `height` and `height + 1` are found.
+    /// * `Ok(BlockPair)` if both blocks are found where the `latest` is the
+    ///   latest candidate block and `finalized` is latest finalized block.
     /// * `Ok(None)` if either block in the pair is not found.
     /// * `Err(jsonrpc::error::Error::Infrastructure)` if a database error
     ///   occurs.
     pub async fn get_block_pair(
         &self,
-        height: u64,
         include_txs: bool,
-    ) -> Result<
-        Option<(model::block::Block, model::block::Block)>,
-        jsonrpc::error::Error,
-    > {
+    ) -> Result<model::block::BlockPair, jsonrpc::error::Error> {
         self.db_adapter
-            .get_block_pair(height, include_txs)
+            .get_block_pair(include_txs)
             .await
             .map_err(jsonrpc::infrastructure::error::Error::Database)
             .map_err(jsonrpc::error::Error::Infrastructure)
