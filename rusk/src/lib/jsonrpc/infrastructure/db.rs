@@ -1222,15 +1222,29 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
             .await
     }
 
-    /// (Default) Retrieves the total number of blocks in the chain.
+    /// (Default) Gets the count of blockchain blocks.
+    ///
+    /// # Arguments
+    /// * `finalized_only`: If true, returns only the count of finalized blocks.
+    ///   If false, returns the count of all blocks (finalized + candidates).
     ///
     /// # Returns
     ///
-    /// * `Ok(u64)` containing the block count (latest height + 1).
-    /// * `Err(DbError)` if fetching the latest block height fails.
-    async fn get_blocks_count(&self) -> Result<u64, DbError> {
-        let latest_height = self.get_block_height().await?;
-        Ok(latest_height + 1)
+    /// * `Ok(u64)` containing the block count.
+    /// * `Err(DbError)` if fetching block counts fails.
+    async fn get_blocks_count(
+        &self,
+        finalized_only: bool,
+    ) -> Result<u64, DbError> {
+        let finalized_count = self.get_block_height().await? + 1;
+
+        if finalized_only {
+            return Ok(finalized_count);
+        }
+
+        // Get candidate blocks count and add to finalized count
+        let candidate_count = self.get_candidate_blocks_count().await?;
+        Ok(finalized_count + candidate_count)
     }
 
     /// (Default) Retrieves a pair of consecutive block summaries by the height

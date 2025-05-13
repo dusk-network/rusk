@@ -2326,19 +2326,24 @@ impl AppState {
             .map_err(jsonrpc::error::Error::Infrastructure)
     }
 
-    /// Retrieves the total number of blocks in the chain.
+    /// Get the total number of blocks in the blockchain.
+    ///
+    /// # Arguments
+    /// * `finalized_only`: If true, returns only the count of finalized blocks.
+    ///   If false, returns the count of all blocks (finalized + candidates).
     ///
     /// # Returns
-    ///
-    /// * `Ok(u64)` containing the block count (latest height + 1).
-    /// * `Err(jsonrpc::error::Error::Infrastructure)` if fetching the latest
-    ///   block height fails.
-    pub async fn get_blocks_count(&self) -> Result<u64, jsonrpc::error::Error> {
+    /// * `Ok(u64)` with the total number of blocks.
+    /// * `Err(jsonrpc::error::Error::Infrastructure)` if fetching the block
+    ///   counts fails.
+    pub async fn get_blocks_count(
+        &self,
+        finalized_only: bool,
+    ) -> Result<u64, jsonrpc::error::Error> {
         self.db_adapter
-            .get_blocks_count()
+            .get_blocks_count(finalized_only)
             .await
-            .map_err(jsonrpc::infrastructure::error::Error::Database)
-            .map_err(jsonrpc::error::Error::Infrastructure)
+            .map_err(|e| jsonrpc::error::Error::Infrastructure(e.into()))
     }
 
     /// Retrieves a pair of consecutive block summaries by the height of the
