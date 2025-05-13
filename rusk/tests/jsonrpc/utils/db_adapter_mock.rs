@@ -36,6 +36,8 @@ pub struct MockDbAdapter {
     /// Mock storage for candidate blocks keyed by consensus header
     /// (serialized?). Using String representation for simplicity in mock.
     pub candidates_by_iteration: HashMap<String, node_ledger::Block>,
+    /// Mock storage for candidate blocks count
+    pub candidate_blocks_count: u64,
     /// Mock storage for validation results keyed by consensus header
     /// (serialized?). Using String representation for simplicity in mock.
     pub validation_results: HashMap<String, node_payload::ValidationResult>,
@@ -381,6 +383,13 @@ impl DatabaseAdapter for MockDbAdapter {
             .ok_or_else(|| {
                 DbError::NotFound("Tip block header not found".into())
             })
+    }
+
+    async fn get_candidate_blocks_count(&self) -> Result<u64, DbError> {
+        if let Some(err) = self.force_error.clone() {
+            return Err(err);
+        }
+        Ok(self.candidate_blocks_count)
     }
 }
 
