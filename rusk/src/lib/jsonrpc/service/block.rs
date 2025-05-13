@@ -134,6 +134,49 @@ pub trait BlockRpc {
         count: u64,
         include_txs: Option<bool>,
     ) -> Result<Vec<model::block::Block>, ErrorObjectOwned>;
+
+    /// Returns the total number of blocks in the blockchain.
+    ///
+    /// # Arguments
+    /// * `finalized_only` - Optional argument. If true, returns only finalized
+    ///   blocks count. Defaults to false
+    ///
+    /// # Returns
+    /// A `Result` containing the total number of blocks as numeric string.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getBlocksCount")]
+    async fn get_blocks_count(
+        &self,
+        finalized_only: Option<bool>,
+    ) -> Result<String, ErrorObjectOwned>;
+
+    /// Returns both the latest candidate block with transaction data and the
+    /// latest finalized block.
+    ///
+    /// # Arguments
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details in the finalized block. Defaults to false
+    ///
+    /// # Returns
+    /// A `Result` containing the block pair object where the `latest` block is
+    /// the latest candidate block and the `finalized` block is the latest
+    /// finalized block.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getBlockPair")]
+    async fn get_block_pair(
+        &self,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::BlockPair, ErrorObjectOwned>;
 }
 
 /// Implementation of the `BlockRpcServer` trait.
@@ -342,5 +385,40 @@ impl BlockRpcServer for BlockRpcImpl {
             })?;
 
         Ok(blocks)
+    }
+
+    async fn get_blocks_count(
+        &self,
+        finalized_only: Option<bool>,
+    ) -> Result<String, ErrorObjectOwned> {
+        let count = self
+            .app_state
+            .get_blocks_count(finalized_only.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(count.to_string())
+    }
+
+    async fn get_block_pair(
+        &self,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::BlockPair, ErrorObjectOwned> {
+        self.app_state
+            .get_block_pair(include_txs.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })
     }
 }
