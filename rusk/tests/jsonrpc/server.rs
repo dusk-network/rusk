@@ -31,7 +31,6 @@ async fn test_server_starts_http() {
     // 1. Setup: Get an ephemeral port and configure AppState
     let ephemeral_addr =
         get_ephemeral_port().expect("Failed to get an ephemeral port");
-    println!("Using ephemeral port: {}", ephemeral_addr.port());
 
     let mut config = JsonRpcConfig::test_config(); // Start with test defaults
                                                    // Ensure HTTP config uses the ephemeral address
@@ -80,7 +79,6 @@ async fn test_server_starts_http() {
                     // Client succeeded, check response
                     assert_eq!(response.status(), StatusCode::OK, "Health check status mismatch");
                     assert_eq!(response.text().await.unwrap(), "OK", "Health check body mismatch");
-                    println!("Health check successful.");
                     // Now we know the server is up and running, proceed to cleanup
                 }
                 Err(e) => {
@@ -110,7 +108,6 @@ async fn test_server_starts_http() {
 
     // 4. Cleanup (only reached if client request succeeded in the select!
     //    block)
-    println!("Aborting server task after successful health check.");
     server_task.abort();
     // Optionally await the aborted handle to ensure cleanup and check for
     // errors during shutdown
@@ -337,7 +334,6 @@ async fn test_cors_headers() {
                             .expect("Missing access-control-allow-origin header"),
                         "*"
                     );
-                     println!("CORS Test: Health check and headers successful.");
                 }
                 Err(e) => {
                     match server_task.await {
@@ -361,7 +357,6 @@ async fn test_cors_headers() {
     }
 
     // 4. Cleanup
-    println!("CORS Test: Aborting server task.");
     server_task.abort();
     match server_task.await {
         Ok(Ok(())) => {
@@ -450,7 +445,6 @@ async fn test_rate_limiting() {
     assert_eq!(resp4.status(), StatusCode::OK, "Req 4 status mismatch");
 
     // 4. Cleanup
-    println!("Rate Limit Test: Aborting server task.");
     server_task.abort();
     match server_task.await {
         Ok(Ok(())) => {
@@ -509,7 +503,6 @@ async fn test_rpc_call_get_node_info() {
                 Ok(response) => {
                     assert_eq!(response.status(), StatusCode::OK, "RPC request status mismatch");
                     let body_text = response.text().await.unwrap_or_else(|_| "Failed to get body text".to_string());
-                    println!("RPC Response Body: {}", body_text);
                     let body_json: serde_json::Value = serde_json::from_str(&body_text).expect("Failed to parse RPC response as JSON");
 
                     assert!(body_json.get("error").is_none(), "RPC response contained an error: {:#?}", body_json["error"]);
@@ -571,8 +564,6 @@ async fn test_rpc_call_get_node_info() {
                         generation_timeout,
                         "Generation timeout mismatch"
                     );
-
-                    println!("RPC call rusk_getNodeInfo successful.");
                 }
                 Err(e) => {
                     // Client failed. Await the server task to see its fate.
@@ -597,7 +588,6 @@ async fn test_rpc_call_get_node_info() {
     }
 
     // 4. Cleanup (only reached if client request succeeded)
-    println!("Aborting server task after successful RPC call.");
     server_task.abort();
     match server_task.await {
         Ok(Ok(())) => println!("Server task finished ok after abort."),
@@ -618,10 +608,6 @@ async fn test_rpc_method_via_server() {
     // 1. Setup: Start server on an ephemeral port
     let ephemeral_addr =
         get_ephemeral_port().expect("Failed to get ephemeral port");
-    println!(
-        "Integration test using ephemeral port: {}",
-        ephemeral_addr.port()
-    );
 
     let mut config = JsonRpcConfig::test_config();
     config.http.bind_address = ephemeral_addr;
@@ -661,7 +647,6 @@ async fn test_rpc_method_via_server() {
                 Ok(response) => {
                     assert_eq!(response.status(), StatusCode::OK, "RPC method request status mismatch");
                     let body_text = response.text().await.unwrap_or_else(|_| "Failed to get body text".to_string());
-                    println!("RPC Method Response Body: {}", body_text);
                     let body_json: serde_json::Value = serde_json::from_str(&body_text).expect("Failed to parse RPC method response as JSON");
 
                     assert!(body_json.get("error").is_none(), "RPC method response contained an error: {:#?}", body_json.get("error"));
@@ -718,7 +703,6 @@ async fn test_rpc_method_via_server() {
                         "Generation timeout mismatch"
                     );
 
-                    println!("RPC method call rusk_getNodeInfo via server successful.");
                 }
                 Err(e) => {
                      match server_task.await {
@@ -735,7 +719,6 @@ async fn test_rpc_method_via_server() {
     }
 
     // 4. Cleanup
-    println!("Aborting server task after successful RPC method call.");
     server_task.abort();
     // Suppress shutdown errors/cancellations in test output for brevity
     let _ = server_task.await;

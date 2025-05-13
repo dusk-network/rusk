@@ -11,8 +11,8 @@ pub mod config;
 pub mod error;
 pub mod infrastructure;
 pub mod model;
-pub mod rpc_methods;
 pub mod serde_helpers;
 pub mod server;
+pub mod service;
 
 pub mod utils;
