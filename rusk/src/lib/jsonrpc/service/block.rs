@@ -13,6 +13,8 @@ use jsonrpsee::types::ErrorObjectOwned;
 
 use std::sync::Arc;
 
+const MAX_BLOCKS_TO_RETRIEVE: u64 = 100;
+
 /// RPC trait for block-related methods.
 #[rpc(server)]
 pub trait BlockRpc {
@@ -83,6 +85,55 @@ pub trait BlockRpc {
         &self,
         include_txs: Option<bool>,
     ) -> Result<model::block::Block, ErrorObjectOwned>;
+
+    /// Returns a sequence of blocks within the specified height range.
+    ///
+    /// # Arguments
+    /// * `start_height` - Starting block height.
+    /// * `end_height` - Ending block height (inclusive).
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
+    ///
+    /// # Returns
+    /// A `Result` containing the an array of block information or an error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid height range (negative, too large, or end < start) |
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getBlocksRange")]
+    async fn get_blocks_range(
+        &self,
+        start_height: u64,
+        end_height: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Vec<model::block::Block>, ErrorObjectOwned>;
+
+    /// Returns the specified number of most recent blocks.
+    ///
+    /// # Arguments
+    /// * `count` - Number of latest blocks to return.
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
+    ///
+    /// # Returns
+    /// A `Result` containing the an array of block information ordered from
+    /// newest to oldest starting from the latest block or an error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid count (zero or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getLatestBlocks")]
+    async fn get_latest_blocks(
+        &self,
+        count: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Vec<model::block::Block>, ErrorObjectOwned>;
 }
 
 /// Implementation of the `BlockRpcServer` trait.
@@ -145,9 +196,7 @@ impl BlockRpcServer for BlockRpcImpl {
             return Err(ErrorObjectOwned::owned(
                 -32602,
                 "Invalid params",
-                Some(
-                    "Invalid height format (negative or too large)".to_string(),
-                ),
+                Some("Invalid height format (zero or too large)".to_string()),
             ));
         }
 
@@ -190,5 +239,108 @@ impl BlockRpcServer for BlockRpcImpl {
             })?;
 
         Ok(block)
+    }
+
+    async fn get_blocks_range(
+        &self,
+        start_height: u64,
+        end_height: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Vec<model::block::Block>, ErrorObjectOwned> {
+        if start_height == 0
+            || end_height == 0
+            || start_height > u64::MAX
+            || end_height > u64::MAX
+        {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height (zero or too large)".to_string()),
+            ));
+        }
+
+        if start_height > end_height {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height range (end < start)".to_string()),
+            ));
+        }
+
+        if start_height == end_height {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height range (start == end)".to_string()),
+            ));
+        }
+
+        if end_height - start_height > MAX_BLOCKS_TO_RETRIEVE {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some(format!(
+                    "Invalid height range (range > {})",
+                    MAX_BLOCKS_TO_RETRIEVE
+                )),
+            ));
+        }
+
+        let blocks = self
+            .app_state
+            .get_blocks_range(
+                start_height,
+                end_height,
+                include_txs.unwrap_or(false),
+            )
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(blocks)
+    }
+
+    async fn get_latest_blocks(
+        &self,
+        count: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Vec<model::block::Block>, ErrorObjectOwned> {
+        if count == 0 || count > u64::MAX {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid count (zero or too large)".to_string()),
+            ));
+        }
+
+        if count > MAX_BLOCKS_TO_RETRIEVE {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some(format!(
+                    "Invalid count (range > {})",
+                    MAX_BLOCKS_TO_RETRIEVE
+                )),
+            ));
+        }
+
+        let blocks = self
+            .app_state
+            .get_latest_blocks(count, include_txs.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(blocks)
     }
 }
