@@ -26,7 +26,8 @@ const fn default_block_gas_limit() -> u64 {
 /// Configuration for the execution of a transaction.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 
-pub struct Config { // Wouldn't hurt to rename this to VMConfig
+pub struct Config {
+    // Wouldn't hurt to rename this to VMConfig
     /// The amount of gas points charged for each byte in a contract-deployment
     /// bytecode.
     #[serde(default = "default_gas_per_deploy_byte")]

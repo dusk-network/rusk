@@ -49,7 +49,7 @@ pub enum Error {
     Io(io::Error),
     /// Failed to produce proper state
     #[cfg(feature = "chain")]
-    InconsistentState(Box<dusk_consensus::operations::VerificationOutput>),
+    InconsistentState(Box<dusk_consensus::operations::StateTransitionResult>),
     /// Other
     Other(Box<dyn std::error::Error>),
     /// Commit not found amongst existing commits

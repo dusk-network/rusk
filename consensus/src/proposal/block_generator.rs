@@ -18,7 +18,7 @@ use tracing::{debug, info};
 use crate::commons::RoundUpdate;
 use crate::config::{MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MINIMUM_BLOCK_TIME};
 use crate::merkle::merkle_root;
-use crate::operations::{CallParams, Operations};
+use crate::operations::{Operations, StateTransitionData};
 
 pub struct Generator<T: Operations> {
     executor: Arc<T>,
@@ -107,24 +107,26 @@ impl<T: Operations> Generator<T> {
         let max_txs_bytes = MAX_BLOCK_SIZE - header_size - faults_size;
         let voters = ru.att_voters();
 
-        let call_params = CallParams {
+        let transition_data = StateTransitionData {
             round: ru.round,
-            generator_pubkey: ru.pubkey_bls.clone(),
+            generator: ru.pubkey_bls.clone(),
             to_slash,
             voters_pubkey: voters.to_owned(),
             max_txs_bytes,
             prev_state_root: ru.state_root(),
         };
 
-        let result =
-            self.executor.execute_state_transition(call_params).await?;
+        // Compute a valid state transition for the block
+        let (txs, transition_result) = self
+            .executor
+            .create_state_transition(transition_data)
+            .await?;
 
-        blk_header.state_hash = result.verification_output.state_root;
-        blk_header.event_bloom = result.verification_output.event_bloom;
+        blk_header.state_hash = transition_result.state_root;
+        blk_header.event_bloom = transition_result.event_bloom;
 
-        let tx_digests: Vec<_> =
-            result.txs.iter().map(|t| t.inner.digest()).collect();
-        let txs: Vec<_> = result.txs.into_iter().map(|t| t.inner).collect();
+        let tx_digests: Vec<_> = txs.iter().map(|t| t.inner.digest()).collect();
+        let txs: Vec<_> = txs.into_iter().map(|t| t.inner).collect();
         blk_header.txroot = merkle_root(&tx_digests[..]);
 
         blk_header.timestamp = max(

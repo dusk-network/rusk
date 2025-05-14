@@ -12,7 +12,7 @@ use dusk_core::transfer::data::ContractBytecode;
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use piecrust::{CallReceipt, Error, Session};
 
-pub use config::Config;
+pub use config::ExecutionConfig;
 
 /// Executes a transaction in the provided session.
 ///
@@ -63,7 +63,7 @@ pub use config::Config;
 pub fn execute(
     session: &mut Session,
     tx: &Transaction,
-    config: &Config,
+    config: &ExecutionConfig,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
@@ -115,13 +115,13 @@ pub fn execute(
     Ok(receipt)
 }
 
-fn clear_session(session: &mut Session, config: &Config) {
+fn clear_session(session: &mut Session, config: &ExecutionConfig) {
     if config.with_public_sender {
         let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
     }
 }
 
-fn deploy_check(tx: &Transaction, config: &Config) -> Result<(), Error> {
+fn deploy_check(tx: &Transaction, config: &ExecutionConfig) -> Result<(), Error> {
     if tx.deploy().is_some() {
         let gas_per_deploy_byte = config.gas_per_deploy_byte;
         let min_deploy_gas_price = config.min_deploy_gas_price;
@@ -151,7 +151,7 @@ fn deploy_check(tx: &Transaction, config: &Config) -> Result<(), Error> {
 fn contract_deploy(
     session: &mut Session,
     tx: &Transaction,
-    config: &Config,
+    config: &ExecutionConfig,
     receipt: &mut CallReceipt<Result<Vec<u8>, ContractError>>,
 ) {
     if let Some(deploy) = tx.deploy() {

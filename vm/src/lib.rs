@@ -13,7 +13,7 @@
 
 extern crate alloc;
 
-pub use self::execute::{execute, gen_contract_id, Config as ExecutionConfig};
+pub use self::execute::{execute, gen_contract_id, ExecutionConfig as ExecutionConfig};
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
     Session,
