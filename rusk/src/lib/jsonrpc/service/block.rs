@@ -205,7 +205,7 @@ pub trait BlockRpc {
     /// its hash.
     ///
     /// # Arguments
-    /// * `block_hash` - TThe block hash as a hex-encoded 32-byte string.
+    /// * `block_hash` - The block hash as a hex-encoded 32-byte string.
     ///
     /// # Returns
     /// A `Result` containing an array of block events or the error if the
@@ -223,6 +223,30 @@ pub trait BlockRpc {
     async fn get_block_events_by_hash(
         &self,
         block_hash: String,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned>;
+
+    /// Returns events emitted during block execution for a block at the
+    /// specified height.
+    ///
+    /// # Arguments
+    /// * `height` - The height of the block.
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block events or the error if the
+    /// fetching of the block events fails, or block not found, or block has no
+    /// associated events.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid height (non-positive or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Not found | Block at specified height doesn't exist or has no associated events |
+    #[method(name = "getBlockEventsByHeight")]
+    async fn get_block_events_by_height(
+        &self,
+        height: u64,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned>;
 }
 
@@ -535,6 +559,41 @@ impl BlockRpcServer for BlockRpcImpl {
                 -32000,
                 "Not found",
                 Some("Block with specified hash doesn't exist or has no associated events".to_string()),
+            ));
+        }
+
+        Ok(events)
+    }
+
+    async fn get_block_events_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned> {
+        if height == 0 || height > u64::MAX {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height (non-positive or too large)".to_string()),
+            ));
+        }
+
+        let events = self
+            .app_state
+            .get_block_events_by_height(height)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        if events.is_empty() {
+            return Err(ErrorObjectOwned::owned(
+                -32000,
+                "Not found",
+                Some("Block with specified height doesn't exist or has no associated events".to_string()),
             ));
         }
 
