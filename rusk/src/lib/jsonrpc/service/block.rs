@@ -200,6 +200,30 @@ pub trait BlockRpc {
         &self,
         block_height: u64,
     ) -> Result<model::block::BlockStatusResponse, ErrorObjectOwned>;
+
+    /// Returns events emitted during block execution for a block identified by
+    /// its hash.
+    ///
+    /// # Arguments
+    /// * `block_hash` - TThe block hash as a hex-encoded 32-byte string.
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block events or the error if the
+    /// fetching of the block events fails, or block not found, or block has no
+    /// associated events.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid hash format (not 64 hex chars) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Not found | Block with specified hash doesn't exist or has no associated events |
+    #[method(name = "getBlockEventsByHash")]
+    async fn get_block_events_by_hash(
+        &self,
+        block_hash: String,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned>;
 }
 
 /// Implementation of the `BlockRpcServer` trait.
@@ -477,5 +501,43 @@ impl BlockRpcServer for BlockRpcImpl {
                 Some("Block with specified height doesn't exist".to_string()),
             )),
         }
+    }
+
+    async fn get_block_events_by_hash(
+        &self,
+        block_hash: String,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned> {
+        // 1. Validate the hash format
+        if block_hash.len() != 64
+            || !block_hash.chars().all(|c| c.is_ascii_hexdigit())
+        {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid hash format".to_string()),
+            ));
+        }
+
+        let events = self
+            .app_state
+            .get_block_events_by_hash(block_hash)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        if events.is_empty() {
+            return Err(ErrorObjectOwned::owned(
+                -32000,
+                "Not found",
+                Some("Block with specified hash doesn't exist or has no associated events".to_string()),
+            ));
+        }
+
+        Ok(events)
     }
 }
