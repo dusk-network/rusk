@@ -92,9 +92,9 @@
 //! # impl ArchiveAdapter for MockArchiveAdapter {
 //! #     async fn get_moonlight_txs_by_memo(&self, _memo: Vec<u8>) -> Result<Option<Vec<model::archive::MoonlightEventGroup>>, jsonrpc::infrastructure::error::ArchiveError> { Ok(Some(vec![])) }
 //! #     async fn get_last_archived_block(&self) -> Result<(u64, String), jsonrpc::infrastructure::error::ArchiveError> { Ok((42, "dummy_hash".to_string())) }
-//! #     async fn get_block_events_by_hash(&self, _hex_block_hash: &str) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::infrastructure::error::ArchiveError> { Ok(vec![]) }
+//! #     async fn get_block_events_by_hash(&self, _hex_block_hash: String) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::infrastructure::error::ArchiveError> { Ok(vec![]) }
 //! #     async fn get_block_events_by_height(&self, _block_height: u64) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::infrastructure::error::ArchiveError> { Ok(vec![]) }
-//! #     async fn get_contract_finalized_events(&self, _contract_id: &str) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::infrastructure::error::ArchiveError> { Ok(vec![]) }
+//! #     async fn get_contract_finalized_events(&self, _contract_id: String) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::infrastructure::error::ArchiveError> { Ok(vec![]) }
 //! #     async fn get_next_block_with_phoenix_transaction(&self, _block_height: u64) -> Result<Option<u64>, jsonrpc::infrastructure::error::ArchiveError> { Ok(None) }
 //! #     async fn get_moonlight_transaction_history(&self, _pk_bs58: String, _ord: Option<model::archive::Order>, _from_block: Option<u64>, _to_block: Option<u64>) -> Result<Option<Vec<model::archive::MoonlightEventGroup>>, jsonrpc::infrastructure::error::ArchiveError> { Ok(None) }
 //! #     async fn get_latest_block_events(&self) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::infrastructure::error::ArchiveError> { Ok(vec![]) }
@@ -424,7 +424,7 @@ impl AppState {
     ///   to database issues.
     pub async fn get_block_events_by_hash(
         &self,
-        hex_block_hash: &str,
+        hex_block_hash: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_block_events_by_hash(hex_block_hash)
@@ -512,7 +512,7 @@ impl AppState {
     ///   to database issues.
     pub async fn get_contract_finalized_events(
         &self,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_contract_finalized_events(contract_id)
@@ -619,8 +619,8 @@ impl AppState {
     ///   to `get_contract_finalized_events` fails.
     pub async fn get_contract_events_by_topic(
         &self,
-        contract_id: &str,
-        topic: &str,
+        contract_id: String,
+        topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_contract_events_by_topic(contract_id, topic)
@@ -672,7 +672,7 @@ impl AppState {
     /// See [`get_contract_finalized_events`](AppState::get_contract_finalized_events).
     pub async fn get_contract_events(
         &self,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_contract_events(contract_id)
@@ -705,7 +705,7 @@ impl AppState {
     pub async fn get_contract_events_by_block_height(
         &self,
         block_height: u64,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_contract_events_by_block_height(block_height, contract_id)
@@ -736,8 +736,8 @@ impl AppState {
     ///   to `get_block_events_by_hash` fails.
     pub async fn get_contract_events_by_block_hash(
         &self,
-        hex_block_hash: &str,
-        contract_id: &str,
+        hex_block_hash: String,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_contract_events_by_block_hash(hex_block_hash, contract_id)
@@ -764,7 +764,7 @@ impl AppState {
     ///   fails.
     pub async fn get_contract_transactions(
         &self,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_contract_transactions(contract_id)
@@ -794,7 +794,7 @@ impl AppState {
     pub async fn get_contract_transactions_by_block_height(
         &self,
         block_height: u64,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_contract_transactions_by_block_height(
@@ -826,8 +826,8 @@ impl AppState {
     ///   fails.
     pub async fn get_contract_transactions_by_block_hash(
         &self,
-        hex_block_hash: &str,
-        contract_id: &str,
+        hex_block_hash: String,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_contract_transactions_by_block_hash(
@@ -863,8 +863,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_item_added_events(
         &self,
-        contract_id: &str,
-        item_added_topic: &str,
+        contract_id: String,
+        item_added_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_item_added_events(contract_id, item_added_topic)
@@ -895,8 +895,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_item_removed_events(
         &self,
-        contract_id: &str,
-        item_removed_topic: &str,
+        contract_id: String,
+        item_removed_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_item_removed_events(contract_id, item_removed_topic)
@@ -927,8 +927,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_item_modified_events(
         &self,
-        contract_id: &str,
-        item_modified_topic: &str,
+        contract_id: String,
+        item_modified_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_item_modified_events(contract_id, item_modified_topic)
@@ -959,8 +959,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_stake_events(
         &self,
-        contract_id: &str,
-        stake_topic: &str,
+        contract_id: String,
+        stake_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_stake_events(contract_id, stake_topic)
@@ -993,8 +993,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_transfer_events(
         &self,
-        contract_id: &str,
-        transfer_topic: &str,
+        contract_id: String,
+        transfer_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_transfer_events(contract_id, transfer_topic)
@@ -1025,8 +1025,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_unstake_events(
         &self,
-        contract_id: &str,
-        unstake_topic: &str,
+        contract_id: String,
+        unstake_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_unstake_events(contract_id, unstake_topic)
@@ -1057,8 +1057,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_slash_events(
         &self,
-        contract_id: &str,
-        slash_topic: &str,
+        contract_id: String,
+        slash_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_slash_events(contract_id, slash_topic)
@@ -1089,8 +1089,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_deposit_events(
         &self,
-        contract_id: &str,
-        deposit_topic: &str,
+        contract_id: String,
+        deposit_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_deposit_events(contract_id, deposit_topic)
@@ -1122,8 +1122,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_withdraw_events(
         &self,
-        contract_id: &str,
-        withdraw_topic: &str,
+        contract_id: String,
+        withdraw_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_withdraw_events(contract_id, withdraw_topic)
@@ -1154,8 +1154,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_convert_events(
         &self,
-        contract_id: &str,
-        convert_topic: &str,
+        contract_id: String,
+        convert_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_convert_events(contract_id, convert_topic)
@@ -1186,8 +1186,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_provisioner_changes(
         &self,
-        contract_id: &str,
-        provisioner_changes_topic: &str,
+        contract_id: String,
+        provisioner_changes_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_provisioner_changes(contract_id, provisioner_changes_topic)
@@ -1218,8 +1218,8 @@ impl AppState {
     /// See [`get_contract_events_by_topic`](AppState::get_contract_events_by_topic).
     pub async fn get_hard_slash_events(
         &self,
-        contract_id: &str,
-        hard_slash_topic: &str,
+        contract_id: String,
+        hard_slash_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, jsonrpc::error::Error> {
         self.archive_adapter
             .get_hard_slash_events(contract_id, hard_slash_topic)

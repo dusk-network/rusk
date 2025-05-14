@@ -102,7 +102,7 @@ pub type MoonlightTxResult =
 /// impl ArchiveAdapter for ExampleMockArchiveAdapter {
 ///     async fn get_moonlight_txs_by_memo(&self, _memo: Vec<u8>) -> Result<Option<Vec<MoonlightEventGroup>>, ArchiveError> { Ok(None) }
 ///     async fn get_last_archived_block(&self) -> Result<(u64, String), ArchiveError> { Ok((100, "hash100".to_string())) }
-///     async fn get_block_events_by_hash(&self, _hex_block_hash: &str) -> Result<Vec<ArchivedEvent>, ArchiveError> {
+///     async fn get_block_events_by_hash(&self, _hex_block_hash: String) -> Result<Vec<ArchivedEvent>, ArchiveError> {
 ///         Ok(vec![ArchivedEvent { // Return one dummy event
 ///             origin: "origin1".to_string(),
 ///             topic: "topic1".to_string(),
@@ -112,14 +112,14 @@ pub type MoonlightTxResult =
 ///     }
 ///     async fn get_block_events_by_height(&self, _block_height: u64) -> Result<Vec<ArchivedEvent>, ArchiveError> { Ok(vec![]) }
 ///     async fn get_latest_block_events(&self) -> Result<Vec<ArchivedEvent>, ArchiveError> { Ok(vec![]) }
-///     async fn get_contract_finalized_events(&self, _contract_id: &str) -> Result<Vec<ArchivedEvent>, ArchiveError> { Ok(vec![]) }
+///     async fn get_contract_finalized_events(&self, _contract_id: String) -> Result<Vec<ArchivedEvent>, ArchiveError> { Ok(vec![]) }
 ///     async fn get_next_block_with_phoenix_transaction(&self, _block_height: u64) -> Result<Option<u64>, ArchiveError> { Ok(None) }
 ///     async fn get_moonlight_transaction_history(&self, _pk_bs58: String, _ord: Option<Order>, _from_block: Option<u64>, _to_block: Option<u64>) -> Result<Option<Vec<MoonlightEventGroup>>, ArchiveError> { Ok(None) }
 /// }
 ///
 /// // Function demonstrating usage of the adapter trait
-/// async fn process_events(adapter: Arc<dyn ArchiveAdapter>, hex_hash: &str) -> Result<(), ArchiveError> {
-///     let events: Vec<ArchivedEvent> = adapter.get_block_events_by_hash(hex_hash).await?;
+/// async fn process_events(adapter: Arc<dyn ArchiveAdapter>, hex_hash: String) -> Result<(), ArchiveError> {
+///     let events: Vec<ArchivedEvent> = adapter.get_block_events_by_hash(hex_hash.clone()).await?;
 ///     println!("Found {} events for hash {}", events.len(), hex_hash);
 ///     // ... further processing ...
 ///     Ok(())
@@ -130,7 +130,7 @@ pub type MoonlightTxResult =
 ///     // In a real application, `adapter` would be obtained from AppState or similar.
 ///     // Here, we use the mock implementation directly for the example.
 ///     let adapter: Arc<dyn ArchiveAdapter> = Arc::new(ExampleMockArchiveAdapter);
-///     let hex_hash = "valid_hex_hash_string";
+///     let hex_hash = "valid_hex_hash_string".to_string();
 ///
 ///     process_events(adapter, hex_hash).await?;
 ///
@@ -202,7 +202,7 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     ///   issues.
     async fn get_block_events_by_hash(
         &self,
-        hex_block_hash: &str,
+        hex_block_hash: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError>;
 
     /// Fetches all archived VM events associated with a specific block height.
@@ -272,7 +272,7 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     ///   issues.
     async fn get_contract_finalized_events(
         &self,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError>;
 
     /// Finds the height of the next block **after** the given height that
@@ -357,8 +357,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     ///   `get_contract_finalized_events` fails.
     async fn get_contract_events_by_topic(
         &self,
-        contract_id: &str,
-        topic: &str,
+        contract_id: String,
+        topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         // Default implementation logic:
         let events = self.get_contract_finalized_events(contract_id).await?;
@@ -398,7 +398,7 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_finalized_events`](ArchiveAdapter::get_contract_finalized_events).
     async fn get_contract_events(
         &self,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_finalized_events(contract_id).await
     }
@@ -426,7 +426,7 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     async fn get_contract_events_by_block_height(
         &self,
         block_height: u64,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         let events = self.get_block_events_by_height(block_height).await?;
         Ok(events
@@ -457,8 +457,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     ///   `get_block_events_by_hash` fails.
     async fn get_contract_events_by_block_hash(
         &self,
-        hex_block_hash: &str,
-        contract_id: &str,
+        hex_block_hash: String,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         let events = self.get_block_events_by_hash(hex_block_hash).await?;
         Ok(events
@@ -482,7 +482,7 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events`](ArchiveAdapter::get_contract_events).
     async fn get_contract_transactions(
         &self,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events(contract_id).await
     }
@@ -504,7 +504,7 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     async fn get_contract_transactions_by_block_height(
         &self,
         block_height: u64,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_block_height(block_height, contract_id)
             .await
@@ -526,8 +526,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_block_hash`](ArchiveAdapter::get_contract_events_by_block_hash).
     async fn get_contract_transactions_by_block_hash(
         &self,
-        hex_block_hash: &str,
-        contract_id: &str,
+        hex_block_hash: String,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_block_hash(hex_block_hash, contract_id)
             .await
@@ -559,8 +559,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_item_added_events(
         &self,
-        contract_id: &str,
-        item_added_topic: &str,
+        contract_id: String,
+        item_added_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, item_added_topic)
             .await
@@ -586,8 +586,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_item_removed_events(
         &self,
-        contract_id: &str,
-        item_removed_topic: &str,
+        contract_id: String,
+        item_removed_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, item_removed_topic)
             .await
@@ -613,8 +613,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_item_modified_events(
         &self,
-        contract_id: &str,
-        item_modified_topic: &str,
+        contract_id: String,
+        item_modified_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, item_modified_topic)
             .await
@@ -640,8 +640,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_stake_events(
         &self,
-        contract_id: &str,
-        stake_topic: &str,
+        contract_id: String,
+        stake_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, stake_topic)
             .await
@@ -667,8 +667,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_unstake_events(
         &self,
-        contract_id: &str,
-        unstake_topic: &str,
+        contract_id: String,
+        unstake_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, unstake_topic)
             .await
@@ -694,8 +694,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_slash_events(
         &self,
-        contract_id: &str,
-        slash_topic: &str,
+        contract_id: String,
+        slash_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, slash_topic)
             .await
@@ -721,8 +721,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_hard_slash_events(
         &self,
-        contract_id: &str,
-        hard_slash_topic: &str,
+        contract_id: String,
+        hard_slash_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, hard_slash_topic)
             .await
@@ -748,8 +748,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_provisioner_changes(
         &self,
-        contract_id: &str,
-        provisioner_changes_topic: &str,
+        contract_id: String,
+        provisioner_changes_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(
             contract_id,
@@ -780,8 +780,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_transfer_events(
         &self,
-        contract_id: &str,
-        transfer_topic: &str,
+        contract_id: String,
+        transfer_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, transfer_topic)
             .await
@@ -807,8 +807,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_deposit_events(
         &self,
-        contract_id: &str,
-        deposit_topic: &str,
+        contract_id: String,
+        deposit_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, deposit_topic)
             .await
@@ -835,8 +835,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_withdraw_events(
         &self,
-        contract_id: &str,
-        withdraw_topic: &str,
+        contract_id: String,
+        withdraw_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, withdraw_topic)
             .await
@@ -862,8 +862,8 @@ pub trait ArchiveAdapter: Send + Sync + Debug + 'static {
     /// See [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic).
     async fn get_convert_events(
         &self,
-        contract_id: &str,
-        convert_topic: &str,
+        contract_id: String,
+        convert_topic: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         self.get_contract_events_by_topic(contract_id, convert_topic)
             .await
@@ -1051,12 +1051,11 @@ impl ArchiveAdapter for RuskArchiveAdapter {
     /// - Maps errors to `ArchiveError`.
     async fn get_block_events_by_hash(
         &self,
-        hex_block_hash: &str,
+        hex_block_hash: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         let client = Arc::clone(&self.archive_client);
-        let block_hash_str = hex_block_hash.to_string(); // Clone for the closure
         let node_events = client
-            .fetch_events_by_hash(&block_hash_str)
+            .fetch_events_by_hash(hex_block_hash.as_str())
             .await // Await the future
             .map_err(|node_err| {
                 ArchiveError::QueryFailed(format!(
@@ -1175,10 +1174,10 @@ impl ArchiveAdapter for RuskArchiveAdapter {
     /// - Maps errors to `ArchiveError`.
     async fn get_contract_finalized_events(
         &self,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         let client = Arc::clone(&self.archive_client);
-        let contract_id_str = contract_id.to_string(); // Clone for closure
+        let contract_id_str = contract_id.as_str();
         let node_events = client
             .fetch_finalized_events_from_contract(&contract_id_str)
             .await // Await the future

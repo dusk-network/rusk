@@ -67,14 +67,14 @@ impl ArchiveAdapter for MockArchiveAdapter {
     /// Returns predefined events based on hash, or `force_error` if set.
     async fn get_block_events_by_hash(
         &self,
-        hex_block_hash: &str,
+        hex_block_hash: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
         Ok(self
             .events_by_hash
-            .get(hex_block_hash)
+            .get(&hex_block_hash)
             .cloned()
             .unwrap_or_default())
     }
@@ -109,14 +109,14 @@ impl ArchiveAdapter for MockArchiveAdapter {
     /// `force_error` if set.
     async fn get_contract_finalized_events(
         &self,
-        contract_id: &str,
+        contract_id: String,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ArchiveError> {
         if let Some(err) = self.force_error.clone() {
             return Err(err);
         }
         Ok(self
             .finalized_events_by_contract
-            .get(contract_id)
+            .get(&contract_id)
             .cloned()
             .unwrap_or_default())
     }
