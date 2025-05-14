@@ -135,7 +135,7 @@ async fn test_get_block_events_by_hash_success() {
         .insert(hash.clone(), vec![event1.clone(), event2.clone()]);
 
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
-    let result = adapter.get_block_events_by_hash(&hash).await;
+    let result = adapter.get_block_events_by_hash(hash).await;
 
     assert!(result.is_ok());
     let events = result.unwrap();
@@ -152,7 +152,7 @@ async fn test_get_block_events_by_hash_empty() {
     mock.events_by_hash.insert(hash.clone(), vec![]);
 
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
-    let result = adapter.get_block_events_by_hash(&hash).await;
+    let result = adapter.get_block_events_by_hash(hash).await;
 
     assert!(result.is_ok());
     assert!(result.unwrap().is_empty());
@@ -163,7 +163,7 @@ async fn test_get_block_events_by_hash_not_found() {
     let mock = default_mock(); // Hash not present
     let hash = "hash_nonexistent".to_string();
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
-    let result = adapter.get_block_events_by_hash(&hash).await;
+    let result = adapter.get_block_events_by_hash(hash).await;
 
     // Mock returns Ok(vec![]) when not found
     assert!(result.is_ok());
@@ -181,7 +181,7 @@ async fn test_get_block_events_by_hash_error() {
     mock.force_error = Some(expected_error.clone());
 
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
-    let result = adapter.get_block_events_by_hash(&hash).await;
+    let result = adapter.get_block_events_by_hash(hash).await;
 
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), expected_error);
@@ -327,7 +327,7 @@ async fn test_get_contract_finalized_events_success() {
         .insert(contract_id.clone(), vec![event1.clone(), event2.clone()]);
 
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
-    let result = adapter.get_contract_finalized_events(&contract_id).await;
+    let result = adapter.get_contract_finalized_events(contract_id).await;
 
     assert!(result.is_ok());
     let events = result.unwrap();
@@ -344,7 +344,7 @@ async fn test_get_contract_finalized_events_empty() {
         .insert(contract_id.clone(), vec![]); // Empty vec
 
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
-    let result = adapter.get_contract_finalized_events(&contract_id).await;
+    let result = adapter.get_contract_finalized_events(contract_id).await;
 
     assert!(result.is_ok());
     assert!(result.unwrap().is_empty());
@@ -355,7 +355,7 @@ async fn test_get_contract_finalized_events_not_found() {
     let mock = default_mock(); // Contract not present
     let contract_id = "contract_nonexistent".to_string();
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
-    let result = adapter.get_contract_finalized_events(&contract_id).await;
+    let result = adapter.get_contract_finalized_events(contract_id).await;
 
     // Mock returns Ok(vec![]) when not found
     assert!(result.is_ok());
@@ -373,7 +373,7 @@ async fn test_get_contract_finalized_events_error() {
     mock.force_error = Some(expected_error.clone());
 
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
-    let result = adapter.get_contract_finalized_events(&contract_id).await;
+    let result = adapter.get_contract_finalized_events(contract_id).await;
 
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), expected_error);
@@ -592,7 +592,7 @@ async fn test_default_get_contract_events_by_topic() {
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
     // Call the default method
     let result = adapter
-        .get_contract_events_by_topic(&contract_id, &target_topic)
+        .get_contract_events_by_topic(contract_id, target_topic)
         .await;
 
     assert!(result.is_ok());
@@ -618,7 +618,7 @@ async fn test_default_get_contract_events_by_topic_none_match() {
 
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
     let result = adapter
-        .get_contract_events_by_topic(&contract_id, &target_topic)
+        .get_contract_events_by_topic(contract_id, target_topic)
         .await;
 
     assert!(result.is_ok());
@@ -652,7 +652,7 @@ async fn test_default_get_contract_events_by_block_height() {
     let adapter = Arc::new(mock) as Arc<dyn ArchiveAdapter>;
     // Call the default method
     let result = adapter
-        .get_contract_events_by_block_height(height, &target_source)
+        .get_contract_events_by_block_height(height, target_source)
         .await;
 
     assert!(result.is_ok());
