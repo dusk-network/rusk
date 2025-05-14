@@ -221,30 +221,14 @@ const duskAPI = {
     const transactionIds = moonlightData.fullMoonlightHistory.json.map(
       (/** @type {{ origin: any; }} */ block) => block.origin
     );
-    // Fetches the transaction details for the extracted IDs
+    // Fetches the transaction details for each transaction ID
     const results = await Promise.all(
       transactionIds.map((/** @type {string} */ txnId) =>
         duskAPI.getTransaction(txnId)
       )
     );
-    // Filters out transactions in the mempool
-    const filteredTransactions = results.filter(
-      (transaction) => typeof transaction !== "string"
-    );
-    // Enhance each transaction with 'from' and 'to'
-    const enhancedTransactions = await Promise.all(
-      filteredTransactions.map(async (transaction) => {
-        const details = await duskAPI.getTransactionDetails(transaction.txid);
-        const jsonPayload = JSON.parse(details);
-        return {
-          ...transaction,
-          from: jsonPayload.sender || null,
-          to: jsonPayload.receiver || null,
-        };
-      })
-    );
     // Sort transactions by date in descending order (newest first)
-    const sortedTransactions = enhancedTransactions.sort((a, b) => {
+    const sortedTransactions = results.sort((a, b) => {
       const dateA = new Date(a.timestamp || a.time || a.date || 0);
       const dateB = new Date(b.timestamp || b.time || b.date || 0);
       return dateB.getTime() - dateA.getTime();
@@ -286,7 +270,7 @@ const duskAPI = {
 
   /**
    * @param {string} id
-   * @returns {Promise<Transaction | String>}
+   * @returns {Promise<Transaction | string>}
    */
   getTransaction(id) {
     return gqlGet(gqlQueries.getTransactionQueryInfo(id))
@@ -306,16 +290,6 @@ const duskAPI = {
           return transformTransaction(tx);
         }
       });
-  },
-
-  /**
-   * @param {string} id
-   * @returns {Promise<string>}
-   */
-  getTransactionDetails(id) {
-    return gqlGet(gqlQueries.getTransactionDetailsQueryInfo(id)).then(
-      getPath("tx.tx.json")
-    );
   },
 
   /**
