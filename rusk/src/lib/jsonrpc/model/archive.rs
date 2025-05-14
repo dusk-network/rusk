@@ -45,6 +45,7 @@ pub struct ArchivedEvent {
     /// The topic categorizing the event (e.g., "moonlight", "stake").
     pub topic: String,
     /// The source identifier, typically a contract ID, that emitted the event.
+    #[serde(rename = "target")]
     pub source: String,
     /// The raw event data payload.
     #[serde(with = "super::serde_helper::base64_vec_u8")]

@@ -26,7 +26,7 @@ fn test_archived_event_serde() {
     };
 
     let expected_json = format!(
-        r#"{{"origin":"{}","topic":"{}","source":"{}","data":"{}"}}"#,
+        r#"{{"origin":"{}","topic":"{}","target":"{}","data":"{}"}}"#,
         original.origin, original.topic, original.source, expected_b64_data
     );
 
@@ -55,7 +55,7 @@ fn test_archived_event_serde_empty_data() {
     };
 
     let expected_json = format!(
-        r#"{{"origin":"{}","topic":"{}","source":"{}","data":"{}"}}"#,
+        r#"{{"origin":"{}","topic":"{}","target":"{}","data":"{}"}}"#,
         original.origin, original.topic, original.source, expected_b64_data
     );
 
