@@ -88,7 +88,7 @@ assert_matches = "1.5.0"
 async-channel = "1.9"
 async-graphql = "5.0.10"
 async-trait = "0.1.83"
-axum = "0.8.3"
+axum = "0.8.4"
 axum-server = { version = "0.7.2", features = ["tls-rustls"] }
 base64 = "0.22.1"
 blake2b_simd = { version = "1.0.2", default-features = false }
@@ -123,12 +123,7 @@ hyper = "1.4.1"
 hyper-tungstenite = "0.13"
 hyper-util = "0.1.9"
 inquire = "0.7.5"
-jsonrpsee = { version = "0.24.9", features = [
-  "server",
-  "http-client",
-  "ws-client",
-  "macros",
-] }
+jsonrpsee = { version = "0.24.9", features = ["full"] }
 konst = "0.3.9"
 lazy_static = "1.5"
 lru = "0.12.4"
@@ -174,7 +169,7 @@ tokio-util = "0.7.12"
 toml = "0.7.8"
 tower = "0.5.2"
 tower_governor = "0.7.0"
-tower-http = { version = "0.6.2", features = ["fs"] }
+tower-http = { version = "0.6.4", features = ["fs"] }
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 tungstenite = "0.21"
