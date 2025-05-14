@@ -35,8 +35,8 @@ type SearchResult = {
 };
 
 type Transaction = {
-  from: string | undefined;
-  to: string | undefined;
+  from?: string;
+  to?: string;
   blockhash: string;
   blockheight: number;
   date: Date;
@@ -50,4 +50,5 @@ type Transaction = {
   txerror: string;
   txid: string;
   txtype: string;
+  amount?: number;
 };

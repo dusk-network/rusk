@@ -288,26 +288,44 @@ const duskAPI = {
    * @param {string} id
    * @returns {Promise<Transaction | String>}
    */
-  getTransaction(id) {
-    return gqlGet(gqlQueries.getTransactionQueryInfo(id))
-      .then(getKey("tx"))
-      .then((tx) => {
-        if (tx === null) {
-          return gqlGet(gqlQueries.getMempoolTx(id))
-            .then(getKey("mempoolTx"))
-            .then((mempoolTx) => {
-              if (mempoolTx) {
-                return "This transaction is currently in the mempool and has not yet been confirmed. The transaction details will be displayed after confirmation.";
-              } else {
-                throw new Error("Transaction not found");
-              }
-            });
-        } else {
-          return transformTransaction(tx);
+  async getTransaction(id) {
+    const [txResponse, detailsResponse] = await Promise.all([
+      gqlGet(gqlQueries.getTransactionQueryInfo(id)),
+      gqlGet(gqlQueries.getTransactionDetailsQueryInfo(id)),
+    ]);
+    const tx = txResponse.tx;
+    if (tx === null) {
+      return gqlGet(gqlQueries.getMempoolTx(id))
+        .then(getKey("mempoolTx"))
+        .then((mempoolTx) => {
+          if (mempoolTx) {
+            return "This transaction is currently in the mempool and has not yet been confirmed. The transaction details will be displayed after confirmation.";
+          } else {
+            throw new Error("Transaction not found");
+          }
+        });
+    } else {
+      const details = getPath("tx.tx.json")(detailsResponse);
+      const transformedTx = transformTransaction(tx);
+      if (details) {
+        try {
+          const jsonPayload = JSON.parse(details);
+          if (jsonPayload.value) {
+            transformedTx.amount = jsonPayload.value;
+          }
+          if (jsonPayload.sender) {
+            transformedTx.from = jsonPayload.sender;
+          }
+          if (jsonPayload.receiver) {
+            transformedTx.to = jsonPayload.receiver;
+          }
+        } catch (e) {
+          console.error("Failed to parse transaction details:", e);
         }
-      });
+      }
+      return transformedTx;
+    }
   },
-
   /**
    * @param {string} id
    * @returns {Promise<string>}
