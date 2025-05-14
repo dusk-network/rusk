@@ -11,6 +11,7 @@ and this project adheres to
 ### Added
 
 - Add Tokens page [#3415]
+- Add account address copy button (Account page) [#3698]
 
 ### Changed
 
@@ -244,6 +245,7 @@ and this project adheres to
 [#3676]: https://github.com/dusk-network/rusk/issues/3676
 [#3692]: https://github.com/dusk-network/rusk/issues/3692
 [#3694]: https://github.com/dusk-network/rusk/issues/3694
+[#3698]: https://github.com/dusk-network/rusk/issues/3698
 [#3720]: https://github.com/dusk-network/rusk/issues/3720
 
 <!-- VERSIONS -->
