@@ -5,11 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_consensus::errors::StateTransitionError;
-use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::operations::{
+    StateTransitionData, StateTransitionResult, Voter,
+};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
+use dusk_vm::Session;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
@@ -17,12 +20,16 @@ use node_data::ledger::{Block, SpentTransaction, Transaction};
 pub struct Config {}
 
 pub trait VMExecution: Send + Sync + 'static {
-    fn execute_state_transition<I: Iterator<Item = Transaction>>(
+    fn create_state_transition<I: Iterator<Item = Transaction>>(
         &self,
-        params: &CallParams,
-        txs: I,
+        transition_data: StateTransitionData,
+        mempool_txs: I,
     ) -> Result<
-        (Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput),
+        (
+            Vec<SpentTransaction>,
+            Vec<Transaction>,
+            StateTransitionResult,
+        ),
         StateTransitionError,
     >;
 
@@ -31,18 +38,29 @@ pub trait VMExecution: Send + Sync + 'static {
         prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
-    ) -> Result<VerificationOutput, StateTransitionError>;
+    ) -> Result<
+        (
+            Vec<SpentTransaction>,
+            StateTransitionResult,
+            Session,
+            Vec<ContractTxEvent>,
+        ),
+        StateTransitionError,
+    >;
 
-    fn accept(
+    fn execute_state_transition(
         &self,
         prev_root: [u8; 32],
         blk: &Block,
         voters: &[Voter],
-    ) -> anyhow::Result<(
-        Vec<SpentTransaction>,
-        VerificationOutput,
-        Vec<ContractTxEvent>,
-    )>;
+    ) -> anyhow::Result<
+        (
+            Vec<SpentTransaction>,
+            StateTransitionResult,
+            Vec<ContractTxEvent>,
+        ),
+        StateTransitionError,
+    >;
 
     fn finalize_state(
         &self,

@@ -69,10 +69,8 @@ impl From<BlsSigError> for ConsensusError {
 
 #[derive(Debug, Error)]
 pub enum OperationError {
-    #[error("VST failed: {0}")]
-    FailedVST(StateTransitionError),
-    #[error("EST failed: {0}")]
-    FailedEST(StateTransitionError),
+    #[error("State transition failed: {0}")]
+    FailedStateTransition(StateTransitionError),
     #[error("Invalid header: {0}")]
     InvalidHeader(HeaderError),
     #[error("Unable to update metrics: {0}")]
@@ -111,19 +109,6 @@ pub enum HeaderError {
     #[error("Invalid Failed Iterations: {0}")]
     InvalidFailedIterations(FailedIterationError),
 
-    #[error(
-        "mismatch, event_bloom: {}, candidate_event_bloom: {}",
-        hex::encode(.0.as_ref()),
-        hex::encode(.1.as_ref())
-    )]
-    EventBloomMismatch(Box<[u8; 256]>, Box<[u8; 256]>),
-    #[error(
-        "mismatch, state_hash: {}, candidate_state_hash: {}",
-        hex::encode(.0),
-        hex::encode(.1)
-    )]
-    StateRootMismatch([u8; 32], [u8; 32]),
-
     #[error("Generic error in header verification: {0}")]
     Generic(&'static str),
 
@@ -141,15 +126,29 @@ pub enum StateTransitionError {
     InvalidGenerator(dusk_bytes::Error),
     #[error("Execution failed: {0}")]
     ExecutionError(String),
-    #[error("Verification failed: {0}")]
-    VerificationError(String),
+    #[error(
+      "State root mismatch. transition result: {}, block header: {}",
+      hex::encode(.0),
+      hex::encode(.1)
+    )]
+    StateRootMismatch([u8; 32], [u8; 32]),
+    #[error(
+      "Event bloom mismatch. transition result: {}, block header: {}",
+      hex::encode(.0.as_ref()),
+      hex::encode(.1.as_ref())
+    )]
+    EventBloomMismatch(Box<[u8; 256]>, Box<[u8; 256]>),
+    #[error("Failed to persist state: {0}")]
+    PersistenceError(String),
 }
 
 impl OperationError {
     pub fn must_vote(&self) -> bool {
         match self {
             Self::InvalidHeader(e) => e.must_vote(),
-            Self::FailedVST(StateTransitionError::TipChanged) => false,
+            Self::FailedStateTransition(StateTransitionError::TipChanged) => {
+                false
+            }
             _ => true,
         }
     }
@@ -171,8 +170,6 @@ impl HeaderError {
             HeaderError::InvalidSeed(_) => true,
             HeaderError::InvalidAttestation(_) => true,
             HeaderError::InvalidFailedIterations(_) => true,
-            HeaderError::EventBloomMismatch(_, _) => true,
-            HeaderError::StateRootMismatch(_, _) => true,
 
             HeaderError::Generic(..) => false,
         }

@@ -6,7 +6,7 @@
 
 /// Configuration for the execution of a transaction.
 #[derive(Debug, Clone)]
-pub struct Config {
+pub struct ExecutionConfig {
     /// The amount of gas points charged for each byte in a contract-deployment
     /// bytecode.
     pub gas_per_deploy_byte: u64,
@@ -20,15 +20,15 @@ pub struct Config {
     pub with_public_sender: bool,
 }
 
-impl Default for Config {
+impl Default for ExecutionConfig {
     fn default() -> Self {
         Self::DEFAULT
     }
 }
 
-impl Config {
+impl ExecutionConfig {
     /// Create a config with all values to default
-    pub const DEFAULT: Config = Config {
+    pub const DEFAULT: ExecutionConfig = ExecutionConfig {
         gas_per_deploy_byte: 0,
         min_deploy_points: 0,
         min_deploy_gas_price: 0,

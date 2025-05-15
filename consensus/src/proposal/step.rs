@@ -113,7 +113,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                 }
 
                 Err(err) => match err {
-                    OperationError::FailedEST(
+                    OperationError::FailedStateTransition(
                         StateTransitionError::TipChanged,
                     ) => {
                         warn!(

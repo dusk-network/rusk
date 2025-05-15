@@ -8,9 +8,7 @@ use std::fmt;
 use std::time::Duration;
 
 use node_data::bls::{PublicKey, PublicKeyBytes};
-use node_data::ledger::{
-    Block, Fault, Header, Slash, SpentTransaction, Transaction,
-};
+use node_data::ledger::{Block, Fault, Header, Slash, SpentTransaction};
 use node_data::StepName;
 
 use crate::errors::*;
@@ -20,29 +18,22 @@ pub type EventBloom = [u8; 256];
 pub type Voter = (PublicKey, usize);
 
 #[derive(Default, Clone, Debug)]
-pub struct CallParams {
+pub struct StateTransitionData {
     pub round: u64,
-    pub generator_pubkey: node_data::bls::PublicKey,
+    pub generator: node_data::bls::PublicKey,
     pub to_slash: Vec<Slash>,
     pub voters_pubkey: Vec<Voter>,
     pub max_txs_bytes: usize,
     pub prev_state_root: StateRoot,
 }
 
-#[derive(Default)]
-pub struct Output {
-    pub txs: Vec<SpentTransaction>,
-    pub verification_output: VerificationOutput,
-    pub discarded_txs: Vec<Transaction>,
-}
-
 #[derive(Debug, PartialEq)]
-pub struct VerificationOutput {
+pub struct StateTransitionResult {
     pub state_root: StateRoot,
     pub event_bloom: EventBloom,
 }
 
-impl Default for VerificationOutput {
+impl Default for StateTransitionResult {
     fn default() -> Self {
         Self {
             state_root: [0u8; 32],
@@ -51,11 +42,11 @@ impl Default for VerificationOutput {
     }
 }
 
-impl fmt::Display for VerificationOutput {
+impl fmt::Display for StateTransitionResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "VerificationOutput {{ state_root: {}, event_bloom: {} }}",
+            "State transition result: {{ state_root: {}, event_bloom: {} }}",
             hex::encode(self.state_root),
             hex::encode(self.event_bloom)
         )
@@ -68,7 +59,7 @@ pub trait Operations: Send + Sync {
         &self,
         candidate_header: &Header,
         expected_generator: &PublicKeyBytes,
-    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError>;
+    ) -> Result<Vec<Voter>, HeaderError>;
 
     async fn verify_faults(
         &self,
@@ -78,15 +69,15 @@ pub trait Operations: Send + Sync {
 
     async fn verify_state_transition(
         &self,
-        prev_commit: StateRoot,
+        prev_state_root: StateRoot,
         blk: &Block,
-        voters: &[Voter],
-    ) -> Result<VerificationOutput, OperationError>;
+        certificate_voters: &[Voter],
+    ) -> Result<(), OperationError>;
 
-    async fn execute_state_transition(
+    async fn create_state_transition(
         &self,
-        params: CallParams,
-    ) -> Result<Output, OperationError>;
+        transition_data: StateTransitionData,
+    ) -> Result<(Vec<SpentTransaction>, StateTransitionResult), OperationError>;
 
     async fn add_step_elapsed_time(
         &self,
