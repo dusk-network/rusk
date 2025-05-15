@@ -553,6 +553,8 @@ export const phoenix = async (info) =>
     return [tx_buffer, proof_buffer];
   })();
 
+// this function supports only Memo as TransactionData (passed via info.data)
+// it should also support contract call
 export const moonlight = async (info) =>
   protocolDriverModule.task(async function ({ malloc, moonlight }, { memcpy }) {
     const ptr = Object.create(null);
@@ -1054,8 +1056,8 @@ function serializeMemo(memo) {
   }
 
   const memoBuffer = new Uint8Array(1 + buffer.byteLength);
-  memoBuffer[0] = 3; // Memo type
-  memoBuffer.set(buffer, 1);
+  memoBuffer[0] = 3; // Memo type (from enum Transaction Data)
+  memoBuffer.set(buffer, 1); // memo content is set at offset 1, byte 0 contains TransactionData enum distinguisher
 
   return new Uint8Array(DataBuffer.from(memoBuffer));
 }
