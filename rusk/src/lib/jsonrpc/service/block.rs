@@ -248,6 +248,44 @@ pub trait BlockRpc {
         &self,
         height: u64,
     ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned>;
+
+    /// Returns events emitted during the execution of the latest block.
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block events or the error if the
+    /// fetching of the block events fails.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getLatestBlockEvents")]
+    async fn get_latest_block_events(
+        &self,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned>;
+
+    /// Returns all transactions from a block identified by its hash.
+    ///
+    /// # Arguments
+    /// * `block_hash` - The block hash as a hex-encoded 32-byte string
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block transactions or an error if the
+    /// fetching of the block transactions fails or if the block does not exist.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid hash format (not 64 hex chars) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified hash doesn't exist |
+    #[method(name = "getBlockTransactionsByHash")]
+    async fn get_block_transactions_by_hash(
+        &self,
+        hash: String,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
 }
 
 /// Implementation of the `BlockRpcServer` trait.
@@ -274,7 +312,7 @@ impl BlockRpcServer for BlockRpcImpl {
             return Err(ErrorObjectOwned::owned(
                 -32602,
                 "Invalid params",
-                Some("Invalid hash format".to_string()),
+                Some("Invalid hash format (not 64 hex chars)".to_string()),
             ));
         }
 
@@ -538,10 +576,11 @@ impl BlockRpcServer for BlockRpcImpl {
             return Err(ErrorObjectOwned::owned(
                 -32602,
                 "Invalid params",
-                Some("Invalid hash format".to_string()),
+                Some("Invalid hash format (not 64 hex chars)".to_string()),
             ));
         }
 
+        // 2. Fetch the block events by hash
         let events = self
             .app_state
             .get_block_events_by_hash(block_hash)
@@ -554,6 +593,7 @@ impl BlockRpcServer for BlockRpcImpl {
                 )
             })?;
 
+        // 3. Validate the block events
         if events.is_empty() {
             return Err(ErrorObjectOwned::owned(
                 -32000,
@@ -598,5 +638,53 @@ impl BlockRpcServer for BlockRpcImpl {
         }
 
         Ok(events)
+    }
+
+    async fn get_latest_block_events(
+        &self,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned> {
+        self.app_state.get_latest_block_events().await.map_err(|e| {
+            ErrorObjectOwned::owned(
+                -32603,
+                "Internal error",
+                Some(e.to_string()),
+            )
+        })
+    }
+
+    async fn get_block_transactions_by_hash(
+        &self,
+        hash: String,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
+    {
+        // 1. Validate the hash format
+        if hash.len() != 64 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid hash format (not 64 hex chars)".to_string()),
+            ));
+        }
+
+        let transactions = self
+            .app_state
+            .get_block_transactions_by_hash(&hash)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match transactions {
+            Some(transactions) => Ok(transactions),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some("Block with specified hash doesn't exist".to_string()),
+            )),
+        }
     }
 }
