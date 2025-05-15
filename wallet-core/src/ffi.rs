@@ -35,7 +35,6 @@ use dusk_core::transfer::phoenix::{
 };
 use dusk_core::transfer::withdraw::WithdrawReplayToken;
 use dusk_core::transfer::{phoenix, Transaction};
-use dusk_core::abi::ContractId;
 use dusk_core::BlsScalar;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha12Rng;
@@ -48,7 +47,6 @@ use crate::keys::{
 };
 use crate::notes::{self, balance, owned, pick};
 use crate::Seed;
-use crate::alloc::string::ToString;
 
 use error::ErrorCode;
 
@@ -469,16 +467,8 @@ pub unsafe fn moonlight(
         None
     } else {
         let buffer = mem::read_buffer(data);
-        // we need to read buffer[0] and
-        // if it is 1, we convert it to ContractCall
-        // if it is 3, we need to leave the functionality as is
-        // if it is 2, meaning deployment, we convert to ContractDeploy (or ignore for now)
-
-        let _ = ContractCall{ contract: ContractId::from_bytes([0u8;32]), fn_name: "".to_string(), fn_args: Vec::<u8>::new() };
-
-        // note that first byte is skipped - which means - there is some hardcoding of payload type here
-        // payload is assumed to be always memo
-        Some(buffer[1..].to_vec().into())
+        let transaction_data: TransactionData = rkyv::from_bytes(buffer).or(Err(ErrorCode::DeserializationError))?;
+        Some(transaction_data)
     };
 
     let tx = MoonlightTransaction::new(
