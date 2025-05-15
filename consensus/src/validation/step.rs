@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block, Header};
+use node_data::ledger::{to_str, Block};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
     AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
@@ -18,10 +18,10 @@ use tracing::{debug, error, info, warn, Instrument};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
-use crate::errors::{HeaderError, OperationError};
+use crate::errors::OperationError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::StepOutcome;
-use crate::operations::{Operations, StateRoot, VerificationOutput};
+use crate::operations::{Operations, StateRoot};
 use crate::validation::handler;
 
 pub struct ValidationStep<T, D: Database> {
@@ -133,17 +133,14 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
             .await?;
 
         // Verify candidate header
-        let (_, voters, _) = executor
+        let prev_blk_voters = executor
             .verify_candidate_header(header, &expected_generator)
             .await?;
 
         // Verify state transition
-        let vst_result = executor
-            .verify_state_transition(state_root, candidate, &voters)
+        executor
+            .verify_state_transition(state_root, candidate, &prev_blk_voters)
             .await?;
-
-        // Verify header against state transition output
-        Self::check_header_vst(header, &vst_result)?;
 
         Ok(())
     }
@@ -176,28 +173,6 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
             // Register my vote locally
             inbound.try_send(msg);
         }
-    }
-
-    fn check_header_vst(
-        header: &Header,
-        vst_result: &VerificationOutput,
-    ) -> Result<(), HeaderError> {
-        // Check the header against `event_bloom` and `state_root` from VST
-        if vst_result.event_bloom != header.event_bloom {
-            return Err(HeaderError::EventBloomMismatch(
-                Box::new(vst_result.event_bloom),
-                Box::new(header.event_bloom),
-            ));
-        }
-
-        if vst_result.state_root != header.state_hash {
-            return Err(HeaderError::StateRootMismatch(
-                vst_result.state_root,
-                header.state_hash,
-            ));
-        }
-
-        Ok(())
     }
 }
 

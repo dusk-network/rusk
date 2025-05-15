@@ -42,7 +42,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let curr_h = acc.get_curr_height().await;
 
         if blk.header().height == curr_h + 1 {
-            acc.try_accept_block(blk, true).await?;
+            acc.accept_block(blk, true).await?;
         }
 
         info!(event = "entering in-sync", height = curr_h);
@@ -217,7 +217,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
                             // After reverting we can accept `remote_blk` as the
                             // new tip
-                            acc.try_accept_block(remote_blk, true).await?;
+                            acc.accept_block(remote_blk, true).await?;
                             return Ok(None);
                         }
                         Err(e) => {
@@ -264,7 +264,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
         // If remote_blk is a successor of our tip, we try to accept it
         if remote_height == tip_height + 1 {
-            let finalized = acc.try_accept_block(remote_blk, true).await?;
+            let finalized = acc.accept_block(remote_blk, true).await?;
 
             // On first final block accepted while we're inSync, clear
             // blacklisted blocks

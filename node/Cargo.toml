@@ -28,6 +28,7 @@ dusk-bytes = { workspace = true }
 node-data = { workspace = true }
 dusk-core = { workspace = true }
 smallvec = { workspace = true }
+dusk-vm = { workspace = true }
 
 serde = { workspace = true }
 humantime-serde = { workspace = true }

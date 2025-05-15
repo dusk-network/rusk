@@ -290,7 +290,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     let blk = db_ext
                         .view(|db| db.block_by_height(height))?
                         .expect("block to be found");
-                    acc.try_accept_block(&blk, false).await?;
+                    acc.accept_block(&blk, false).await?;
                 }
             }
         }
@@ -711,13 +711,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
     }
 
-    /// Return true if the accepted blocks triggered a rolling finality
-    pub(crate) async fn try_accept_block(
+    /// Verifies a block validity with respect to the current tip and accepts it
+    /// as the new tip if no errors are detected.
+    ///
+    /// Returns:
+    ///  - true if the accepted block triggered a rolling finality
+    ///  - false otherwise
+    pub(crate) async fn accept_block(
         &mut self,
         blk: &Block,
         enable_consensus: bool,
     ) -> anyhow::Result<bool> {
-        let mut events = vec![];
+        let mut events: Vec<Event> = vec![];
         let mut task = self.task.write().await;
 
         let mut tip = self.tip.write().await;
@@ -728,14 +733,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let header_verification_start = std::time::Instant::now();
         // Verify Block Header
-        let (pni, prev_block_voters, tip_block_voters) = verify_block_header(
-            self.db.clone(),
-            &prev_header,
-            &provisioners_list,
-            blk.header(),
-            &self.dusk_key,
-        )
-        .await?;
+        let (pni, certificate_voters, attestation_voters) =
+            verify_block_header(
+                self.db.clone(),
+                &prev_header,
+                &provisioners_list,
+                blk.header(),
+                &self.dusk_key,
+            )
+            .await?;
 
         // Elapsed time header verification
         histogram!("dusk_block_header_elapsed")
@@ -754,36 +760,34 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let (contract_events, finality) =
                 self.db.read().await.update(|db| {
-                    let (txs, verification_output, contract_events) = vm
-                        .accept(
+                    // Execute, verify, and persist the state_transition
+                    let (spent_txs, _, contract_events) = vm
+                        .execute_state_transition(
                             prev_header.state_hash,
                             blk,
-                            &prev_block_voters[..],
+                            &certificate_voters[..],
                         )?;
 
-                    for spent_tx in txs.iter() {
+                    // Add spent txs to event list
+                    for spent_tx in spent_txs.iter() {
                         events
                             .push(TransactionEvent::Executed(spent_tx).into());
                     }
                     est_elapsed_time = start.elapsed();
 
-                    assert_eq!(
-                        header.state_hash,
-                        verification_output.state_root
-                    );
-                    assert_eq!(
-                        header.event_bloom,
-                        verification_output.event_bloom
-                    );
-
+                    // Check if the new block triggers rolling finality
                     let finality =
                         self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
 
                     let label = finality.0;
-                    // Store block with updated transactions with Error and
-                    // GasSpent
-                    block_size_on_disk =
-                        db.store_block(header, &txs, blk.faults(), label)?;
+                    // Store block with spent transactions info (including
+                    // GasSpent and Errors), faults, and consensus status label
+                    block_size_on_disk = db.store_block(
+                        header,
+                        &spent_txs,
+                        blk.faults(),
+                        label,
+                    )?;
 
                     Ok((contract_events, finality))
                 })?;
@@ -1001,7 +1005,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 &self.db,
                 &self.vm,
                 base_timeouts,
-                tip_block_voters,
+                attestation_voters,
             );
         }
 
