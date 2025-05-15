@@ -286,6 +286,34 @@ pub trait BlockRpc {
         &self,
         hash: String,
     ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
+
+    /// Returns a range of transactions from a block identified by its hash.
+    ///
+    /// # Arguments
+    /// * `block_hash` - The block hash as a hex-encoded 32-byte string
+    /// * `start_index` - The starting index (0-based) of the transaction range
+    /// * `count` - The maximum number of transactions to retrieve
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block transactions or an error if the
+    /// fetching of the block transactions fails or if the block does not exist.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid hash format (not 64 hex chars) |
+    /// | -32602 | Invalid params | Invalid start_index (too large) |
+    /// | -32602 | Invalid params | Invalid count (zero or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified hash doesn't exist |
+    #[method(name = "getBlockTransactionRangeByHash")]
+    async fn get_block_transaction_range_by_hash(
+        &self,
+        hash: String,
+        start_index: u64,
+        count: u64,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
 }
 
 /// Implementation of the `BlockRpcServer` trait.
@@ -669,6 +697,64 @@ impl BlockRpcServer for BlockRpcImpl {
         let transactions = self
             .app_state
             .get_block_transactions_by_hash(&hash)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match transactions {
+            Some(transactions) => Ok(transactions),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some("Block with specified hash doesn't exist".to_string()),
+            )),
+        }
+    }
+
+    async fn get_block_transaction_range_by_hash(
+        &self,
+        hash: String,
+        start_index: u64,
+        count: u64,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
+    {
+        // 1. Validate the hash format
+        if hash.len() != 64 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid hash format (not 64 hex chars)".to_string()),
+            ));
+        }
+
+        if start_index > u64::MAX - count {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid start_index (too large)".to_string()),
+            ));
+        }
+
+        if start_index + count > u64::MAX || count > MAX_BLOCKS_TO_RETRIEVE {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid count (zero or too large)".to_string()),
+            ));
+        }
+
+        let transactions = self
+            .app_state
+            .get_block_transaction_range_by_hash(
+                &hash,
+                start_index as usize,
+                count as usize,
+            )
             .await
             .map_err(|e| {
                 ErrorObjectOwned::owned(
