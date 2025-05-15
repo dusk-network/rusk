@@ -12,6 +12,7 @@ and this project adheres to
 
 - Add Tokens page [#3415]
 - Add account address copy button (Account page) [#3698]
+- Add value property to Transaction Details [#3699]
 
 ### Changed
 
@@ -246,6 +247,7 @@ and this project adheres to
 [#3692]: https://github.com/dusk-network/rusk/issues/3692
 [#3694]: https://github.com/dusk-network/rusk/issues/3694
 [#3698]: https://github.com/dusk-network/rusk/issues/3698
+[#3699]: https://github.com/dusk-network/rusk/issues/3699
 [#3720]: https://github.com/dusk-network/rusk/issues/3720
 
 <!-- VERSIONS -->

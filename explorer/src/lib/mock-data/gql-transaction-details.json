@@ -1,7 +1,0 @@
-{
-  "tx": {
-    "tx": {
-      "json": "{\"type\":\"moonlight\",\"from\":\"ybqmEJESvmA7iENSncBg8WBjeqgWiCDtGJBMpwujnHYW2yQQCu8MBXwbGAe1W9MnNnzA5beiWniHjJi5LYqRy65UrpRR23ks4ce4QEzEoewpsJZVDRmdJsAen6HfxMK8vfT\",\"to\":null,\"value\":0,\"deposit\":0,\"fee\":{\"gas_limit\":\"500000000\",\"gas_price\":\"20\"},\"call\":{\"contract\":\"2fbb124feb26930bed23f559615b6955379aec1986b8d512873e77ebf4bd8761\",\"fn_name\":\"reset\",\"fn_args\":\"Lw==\"},\"is_deploy\":false,\"memo\":null}"
-    }
-  }
-}

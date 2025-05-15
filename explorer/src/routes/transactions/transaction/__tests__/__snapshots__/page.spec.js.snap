@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Transaction Details > should render the Transaction details page and query the necessary info 1`] = `
+exports[`Transaction Details > should render the Transaction details page 1`] = `
 <section
   class="transaction"
 >
@@ -35,7 +35,7 @@ exports[`Transaction Details > should render the Transaction details page and qu
 </section>
 `;
 
-exports[`Transaction Details > should render the Transaction details page and query the necessary info 2`] = `
+exports[`Transaction Details > should render the Transaction details page 2`] = `
 <section
   class="transaction"
 >
@@ -192,6 +192,163 @@ exports[`Transaction Details > should render the Transaction details page and qu
             Tue, 16 Apr 2024 06:39:09 GMT (last month)
             
           </time>
+        </dd>
+        <dt
+          class="details-list__term"
+        >
+          <div
+            class="details-list__term-layout"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--default detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The sender of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            from
+          </div>
+        </dt>
+         
+        <dd
+          class="details-list__definition"
+        >
+          <a
+            class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+            href="/some-base-path/accounts/?key=kT5BamV2Xq6JpnoCq9ux7EmYRShdg4W1sLzyGFUqicmZTqxeMWLiTGpBWNhpjiPtKqvWFFmdxVBAjts3oEnZgPfuiyTRwDdASJQjTSy7wNhHdCeKtzExREcXZsmmMRLwKbXj"
+          >
+            kT5BamV2Xq6JpnoCq9ux7EmYR...HdCeKtzExREcXZsmmMRLwKbXj
+          </a>
+           
+          <div
+            class="dusk-copy-button"
+          >
+            <button
+              aria-label="Copy Address"
+              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="Copy to clipboard"
+              type="button"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                />
+              </svg>
+              
+               
+              
+            </button>
+          </div>
+           
+        </dd>
+        
+        <dt
+          class="details-list__term"
+        >
+          <div
+            class="details-list__term-layout"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--default detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The receiver of the transaction"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            to
+          </div>
+        </dt>
+         
+        <dd
+          class="details-list__definition"
+        >
+          <a
+            class="dusk-anchor dusk-anchor--on-surface transaction-details__list-anchor"
+            href="/some-base-path/accounts/?key=mHWZo9qYUhqp2SEmtWN7EuDKFwVrjgdEyzpHdfLB6R9scRAq5EkUQyLB9fBfCGt1wjxfEpFxHq9MBPVVPY3Lk3JKnQLWZzj7UYAR4mGmeGQZwCaeCS8uA63ZPKnGpjiUnj"
+          >
+            mHWZo9qYUhqp2SEmtWN7EuDKF...GQZwCaeCS8uA63ZPKnGpjiUnj
+          </a>
+           
+          <div
+            class="dusk-copy-button"
+          >
+            <button
+              aria-label="Copy Address"
+              class="dusk-button dusk-button--type--button dusk-button--variant--primary dusk-button--size--default dusk-icon-button dusk-copy-button"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-text="Copy to clipboard"
+              type="button"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                />
+              </svg>
+              
+               
+              
+            </button>
+          </div>
+           
+        </dd>
+        
+        <dt
+          class="details-list__term"
+        >
+          <div
+            class="details-list__term-layout"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--default detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The transaction amount"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            amount
+          </div>
+        </dt>
+         
+        <dd
+          class="details-list__definition"
+        >
+          9,812.378912731 DUSK ($3,614.3897725045)
+          
+           
+          
         </dd>
         
         <dt
@@ -411,6 +568,36 @@ exports[`Transaction Details > should render the Transaction details page and qu
           class="details-list__definition"
         >
           290766
+        </dd>
+        <dt
+          class="details-list__term"
+        >
+          <div
+            class="details-list__term-layout"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--default detail-list__help"
+              data-tooltip-id="main-tooltip"
+              data-tooltip-place="top"
+              data-tooltip-text="The number of transactions sent from this address"
+              data-tooltip-type="info"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+              />
+            </svg>
+            
+             
+            nonce
+          </div>
+        </dt>
+         
+        <dd
+          class="details-list__definition"
+        >
+          156
         </dd>
         
         <dt

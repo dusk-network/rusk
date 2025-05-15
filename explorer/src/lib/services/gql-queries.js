@@ -104,15 +104,6 @@ export const getMempoolTx = (id) => ({
   variables: { id },
 });
 
-/** @param {string} id */
-export const getTransactionQueryInfo = (id) => ({
-  query: `
-    ${transactionFragment}
-    query($id: String!) { tx(hash: $id) {...TransactionInfo} }
-  `,
-  variables: { id },
-});
-
 /** @param {number} amount */
 export const getTransactionsQueryInfo = (amount) => ({
   query: `
@@ -123,8 +114,18 @@ export const getTransactionsQueryInfo = (amount) => ({
 });
 
 /** @param {string} id */
-export const getTransactionDetailsQueryInfo = (id) => ({
-  query: "query($id: String!) { tx(hash: $id) { tx { json } } }",
+export const getTransactionQueryInfo = (id) => ({
+  query: `
+    ${transactionFragment}
+    query($id: String!) {
+      tx(hash: $id) {
+        ...TransactionInfo
+        tx {
+          json
+        }
+      }
+    }
+  `,
   variables: { id },
 });
 
