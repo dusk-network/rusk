@@ -467,7 +467,8 @@ pub unsafe fn moonlight(
         None
     } else {
         let buffer = mem::read_buffer(data);
-        let transaction_data: TransactionData = rkyv::from_bytes(buffer).or(Err(ErrorCode::DeserializationError))?;
+        let transaction_data: TransactionData = rkyv::from_bytes(buffer)
+            .or(Err(ErrorCode::DeserializationError))?;
         Some(transaction_data)
     };
 
