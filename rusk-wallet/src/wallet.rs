@@ -25,7 +25,7 @@ use dusk_core::signatures::bls::{
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
-    SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
+    SecretKey as PhoenixSecretKey, StealthAddress, ViewKey as PhoenixViewKey,
 };
 use dusk_core::BlsScalar;
 use wallet_core::prelude::keys::{
@@ -367,6 +367,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             .collect();
 
         Ok(history)
+    }
+
+    /// Checks if the profile at `profile_idx` owns the note with address
+    /// `stealth_address`.
+    pub fn owns_note(
+        &self,
+        stealth_address: &StealthAddress,
+        profile_idx: u8,
+    ) -> bool {
+        let vk = self.derive_phoenix_vk(profile_idx);
+        vk.owns(stealth_address)
     }
 
     /// Get the Phoenix balance
@@ -722,6 +733,24 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let gas_prices: MempoolGasPrices = serde_json::from_slice(&response)?;
 
         Ok(gas_prices)
+    }
+
+    /// Get the amount of stake rewards the user has
+    ///
+    /// # Errors
+    /// This method will error if the wallet cannot connect to the network or if
+    /// there is no stake recorded for the given sender.
+    pub async fn get_stake_reward(
+        &self,
+        sender_index: u8,
+    ) -> Result<Dusk, Error> {
+        let available_reward = self
+            .stake_info(sender_index)
+            .await?
+            .ok_or(Error::NotStaked)?
+            .reward;
+
+        Ok(Dusk::from(available_reward))
     }
 }
 

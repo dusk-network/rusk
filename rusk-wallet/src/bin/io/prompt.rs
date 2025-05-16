@@ -272,6 +272,18 @@ pub(crate) fn request_token_amt(
     request_token(action, min, balance, None).map_err(Error::from)
 }
 
+/// Request positive amount of tokens with a default
+pub(crate) fn request_token_amt_with_default(
+    action: &str,
+    balance: Dusk,
+    default: Dusk,
+) -> Result<Dusk, Error> {
+    let min = MIN_CONVERTIBLE;
+
+    request_token(action, min, balance, Some(default.into()))
+        .map_err(Error::from)
+}
+
 /// Request amount of tokens that can be 0
 pub(crate) fn request_optional_token_amt(
     action: &str,
