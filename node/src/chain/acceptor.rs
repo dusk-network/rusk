@@ -290,7 +290,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     let blk = db_ext
                         .view(|db| db.block_by_height(height))?
                         .expect("block to be found");
-                    acc.try_accept_block(&blk, false).await?;
+                    acc.accept_block(&blk, false).await?;
                 }
             }
         }
@@ -370,7 +370,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
         }
 
-        let tip_block_voters =
+        let tip_voters =
             self.get_att_voters(provisioners_list.prev(), &tip).await;
 
         self.task.write().await.spawn(
@@ -379,7 +379,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &self.db,
             &self.vm,
             base_timeouts,
-            tip_block_voters,
+            tip_voters,
         );
     }
 
@@ -712,7 +712,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     /// Return true if the accepted blocks triggered a rolling finality
-    pub(crate) async fn try_accept_block(
+    pub(crate) async fn accept_block(
         &mut self,
         blk: &Block,
         enable_consensus: bool,
@@ -728,7 +728,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let header_verification_start = std::time::Instant::now();
         // Verify Block Header
-        let (pni, prev_block_voters, tip_block_voters) = verify_block_header(
+        let (pni, prev_block_voters, tip_voters) = verify_block_header(
             self.db.clone(),
             &prev_header,
             &provisioners_list,
@@ -754,7 +754,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let (contract_events, finality) =
                 self.db.read().await.update(|db| {
-                    let (txs, verification_output, contract_events) = vm
+                    let (txs, transition_result, contract_events) = vm
                         .accept(
                             prev_header.state_hash,
                             blk,
@@ -769,11 +769,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                     assert_eq!(
                         header.state_hash,
-                        verification_output.state_root
+                        transition_result.state_root
                     );
                     assert_eq!(
                         header.event_bloom,
-                        verification_output.event_bloom
+                        transition_result.event_bloom
                     );
 
                     let finality =
@@ -1001,7 +1001,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 &self.db,
                 &self.vm,
                 base_timeouts,
-                tip_block_voters,
+                tip_voters,
             );
         }
 
@@ -1305,7 +1305,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             hash = to_str(&tip.header().hash),
         );
 
-        let tip_block_voters =
+        let tip_voters =
             self.get_att_voters(provisioners_list.prev(), &tip).await;
 
         let base_timeouts = self.adjust_round_base_timeouts().await;
@@ -1315,7 +1315,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &self.db,
             &self.vm,
             base_timeouts,
-            tip_block_voters,
+            tip_voters,
         );
     }
 

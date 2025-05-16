@@ -19,7 +19,7 @@ use rusk_recovery_tools::state::{self, Snapshot};
 
 use dusk_consensus::{
     config::{RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS},
-    operations::CallParams,
+    operations::StateTransitionData,
 };
 use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::Transaction,
@@ -149,19 +149,19 @@ pub fn generator_procedure(
     let voter = (generator_pubkey.clone(), 1);
     let voters_size =
         VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS;
-    let voters = vec![voter; voters_size];
+    let cert_voters = vec![voter; voters_size];
 
-    let call_params = CallParams {
+    let transition_data = StateTransitionData {
         round,
-        generator_pubkey,
-        to_slash,
-        voters_pubkey: voters.clone(),
+        generator: generator_pubkey,
+        slashes: to_slash,
+        cert_voters: cert_voters.clone(),
         max_txs_bytes: usize::MAX,
         prev_state_root: prev_root,
     };
 
     let (transfer_txs, discarded, execute_output) =
-        rusk.execute_state_transition(&call_params, txs.into_iter())?;
+        rusk.execute_state_transition(&transition_data, txs.into_iter())?;
 
     assert_eq!(transfer_txs.len(), expected.executed, "all txs accepted");
     assert_eq!(discarded.len(), expected.discarded, "no discarded tx");
@@ -189,11 +189,11 @@ pub fn generator_procedure(
     .expect("valid block");
 
     let verify_output =
-        rusk.verify_state_transition(prev_root, &block, &voters)?;
+        rusk.verify_state_transition(prev_root, &block, &cert_voters)?;
     info!("verify_state_transition new verification: {verify_output}",);
 
     let (accept_txs, accept_output, _) =
-        rusk.accept(prev_root, &block, &voters)?;
+        rusk.accept(prev_root, &block, &cert_voters)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
@@ -261,26 +261,26 @@ pub fn generator_procedure2(
     let voter = (generator_pubkey.clone(), 1);
     let voters_size =
         VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS;
-    let voters = vec![voter; voters_size];
+    let cert_voters = vec![voter; voters_size];
 
-    let call_params = CallParams {
+    let transition_data = StateTransitionData {
         round,
-        generator_pubkey,
-        to_slash,
-        voters_pubkey: voters.clone(),
+        generator: generator_pubkey,
+        slashes: to_slash,
+        cert_voters: cert_voters.clone(),
         max_txs_bytes: usize::MAX,
         prev_state_root: prev_root,
     };
 
-    let (transfer_txs, discarded, execute_output) =
-        rusk.execute_state_transition(&call_params, txs.into_iter())?;
+    let (transfer_txs, discarded, execute_result) =
+        rusk.execute_state_transition(&transition_data, txs.into_iter())?;
 
     assert_eq!(transfer_txs.len(), expected.executed, "all txs accepted");
     assert_eq!(discarded.len(), expected.discarded, "no discarded tx");
 
     info!(
         "execute_state_transition new verification: {}",
-        execute_output
+        execute_result
     );
 
     let txs: Vec<_> = transfer_txs.into_iter().map(|tx| tx.inner).collect();
@@ -290,8 +290,8 @@ pub fn generator_procedure2(
             height: block_height,
             gas_limit: block_gas_limit,
             generator_bls_pubkey: generator_pubkey_bytes,
-            state_hash: execute_output.state_root,
-            event_bloom: execute_output.event_bloom,
+            state_hash: execute_result.state_root,
+            event_bloom: execute_result.event_bloom,
             failed_iterations,
             ..Default::default()
         },
@@ -301,23 +301,23 @@ pub fn generator_procedure2(
     .expect("valid block");
 
     let verify_output =
-        rusk.verify_state_transition(prev_root, &block, &voters)?;
+        rusk.verify_state_transition(prev_root, &block, &cert_voters)?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let (accept_txs, accept_output, _) =
-        rusk.accept(prev_root, &block, &voters)?;
+    let (accept_txs, accept_result, _) =
+        rusk.accept(prev_root, &block, &cert_voters)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
     info!(
-        "accept block {} with new verification: {accept_output}",
+        "accept block {} with new verification: {accept_result}",
         block_height,
     );
 
     assert_eq!(
-        accept_output, execute_output,
+        accept_result, execute_result,
         "Verification outputs should be equal"
     );
 
-    Ok((accept_txs, accept_output.state_root))
+    Ok((accept_txs, accept_result.state_root))
 }

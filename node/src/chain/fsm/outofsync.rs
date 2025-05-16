@@ -267,7 +267,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         // Try accepting consecutive block
         if block_height == current_height + 1 {
-            acc.try_accept_block(blk, false).await?;
+            acc.accept_block(blk, false).await?;
             // reset expiry_time only if we receive a valid block
             self.start_time = SystemTime::now();
             debug!(
@@ -281,7 +281,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             // available
             for height in self.range.0..=self.range.1 {
                 if let Some(blk) = self.pool.get(&height) {
-                    acc.try_accept_block(blk, false).await?;
+                    acc.accept_block(blk, false).await?;
                     // reset expiry_time only if we receive a valid block
                     self.start_time = SystemTime::now();
                     self.range.0 += 1;

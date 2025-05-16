@@ -12,7 +12,7 @@ use dusk_consensus::commons::{RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::errors::{ConsensusError, HeaderError, OperationError};
 use dusk_consensus::operations::{
-    CallParams, Operations, Output, VerificationOutput, Voter,
+    Operations, StateTransitionData, StateTransitionResult, Voter,
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
@@ -317,26 +317,34 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         &self,
         prev_root: [u8; 32],
         blk: &Block,
-        voters: &[Voter],
-    ) -> Result<VerificationOutput, OperationError> {
+        cert_voters: &[Voter],
+    ) -> Result<StateTransitionResult, OperationError> {
         let vm = self.vm.read().await;
 
-        vm.verify_state_transition(prev_root, blk, voters)
+        vm.verify_state_transition(prev_root, blk, cert_voters)
             .map_err(OperationError::FailedVST)
     }
 
     async fn execute_state_transition(
         &self,
-        params: CallParams,
-    ) -> Result<Output, OperationError> {
+        transition_data: StateTransitionData,
+    ) -> Result<
+        (
+            Vec<SpentTransaction>,
+            StateTransitionResult,
+            Vec<Transaction>,
+        ),
+        OperationError,
+    > {
         let vm = self.vm.read().await;
 
         let db = self.db.read().await;
-        let (executed_txs, discarded_txs, verification_output) = db
+        let (executed_txs, discarded_txs, transition_result) = db
             .view(|view| {
-                let txs = view.mempool_txs_sorted_by_fee();
-                let ret = vm.execute_state_transition(&params, txs)?;
-                Ok(ret)
+                let mempool_txs = view.mempool_txs_sorted_by_fee();
+                let (executed_txs, transition_result, discarded_txs) =
+                    vm.execute_state_transition(&transition_data, mempool_txs)?;
+                Ok((executed_txs, transition_result, discarded_txs))
             })
             .map_err(OperationError::FailedEST)?;
         let _ = db.update(|m| {
@@ -350,11 +358,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             Ok(())
         });
 
-        Ok(Output {
-            txs: executed_txs,
-            verification_output,
-            discarded_txs,
-        })
+        Ok((executed_txs, transition_result, discarded_txs))
     }
 
     async fn add_step_elapsed_time(

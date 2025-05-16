@@ -12,7 +12,9 @@ use node_data::events::contract::ContractTxEvent;
 use tracing::{debug, info};
 
 use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::operations::{
+    StateTransitionData, StateTransitionResult, Voter,
+};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
@@ -29,13 +31,17 @@ pub use config::Config as RuskVmConfig;
 impl VMExecution for Rusk {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(
         &self,
-        params: &CallParams,
+        params: &StateTransitionData,
         txs: I,
     ) -> Result<
-        (Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput),
+        (
+            Vec<SpentTransaction>,
+            Vec<Transaction>,
+            StateTransitionResult,
+        ),
         StateTransitionError,
     > {
-        let (txs, discarded_txs, verification_output) =
+        let (txs, discarded_txs, transition_result) =
             self.execute_transactions(params, txs).map_err(|err| {
                 if let crate::Error::TipChanged = err {
                     StateTransitionError::TipChanged
@@ -44,15 +50,15 @@ impl VMExecution for Rusk {
                 }
             })?;
 
-        Ok((txs, discarded_txs, verification_output))
+        Ok((txs, discarded_txs, transition_result))
     }
 
     fn verify_state_transition(
         &self,
-        prev_commit: [u8; 32],
+        prev_state_root: [u8; 32],
         blk: &Block,
-        voters: &[Voter],
-    ) -> Result<VerificationOutput, StateTransitionError> {
+        cert_voters: &[Voter],
+    ) -> Result<StateTransitionResult, StateTransitionError> {
         let generator = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator.0)
             .map_err(StateTransitionError::InvalidGenerator)?;
@@ -60,16 +66,16 @@ impl VMExecution for Rusk {
         let slashing = Slash::from_block(blk)
             .map_err(StateTransitionError::InvalidSlash)?;
 
-        let (_, verification_output) = self
+        let (_, transition_result) = self
             .verify_transactions(
-                prev_commit,
+                prev_state_root,
                 blk.header().height,
                 blk.header().hash,
                 blk.header().gas_limit,
                 &generator,
                 blk.txs(),
                 slashing,
-                voters,
+                cert_voters,
             )
             .map_err(|inner| {
                 if let crate::Error::TipChanged = inner {
@@ -79,7 +85,7 @@ impl VMExecution for Rusk {
                 }
             })?;
 
-        Ok(verification_output)
+        Ok(transition_result)
     }
 
     fn accept(
@@ -89,7 +95,7 @@ impl VMExecution for Rusk {
         voters: &[Voter],
     ) -> anyhow::Result<(
         Vec<SpentTransaction>,
-        VerificationOutput,
+        StateTransitionResult,
         Vec<ContractTxEvent>,
     )> {
         debug!("Received accept request");
@@ -99,7 +105,7 @@ impl VMExecution for Rusk {
 
         let slashing = Slash::from_block(blk)?;
 
-        let (txs, verification_output, contract_events) = self
+        let (txs, transition_result, contract_events) = self
             .accept_transactions(
                 prev_root,
                 blk.header().height,
@@ -107,7 +113,7 @@ impl VMExecution for Rusk {
                 blk.header().hash,
                 generator,
                 blk.txs().clone(),
-                Some(VerificationOutput {
+                Some(StateTransitionResult {
                     state_root: blk.header().state_hash,
                     event_bloom: blk.header().event_bloom,
                 }),
@@ -116,7 +122,7 @@ impl VMExecution for Rusk {
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
-        Ok((txs, verification_output, contract_events))
+        Ok((txs, transition_result, contract_events))
     }
 
     fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {

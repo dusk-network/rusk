@@ -14,7 +14,9 @@ use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
     validation_quorum, MAX_NUMBER_OF_TRANSACTIONS, TOTAL_COMMITTEES_CREDITS,
 };
-use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::operations::{
+    StateTransitionData, StateTransitionResult, Voter,
+};
 use dusk_core::abi::Event;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{
@@ -94,19 +96,22 @@ impl Rusk {
 
     pub fn execute_transactions<I: Iterator<Item = Transaction>>(
         &self,
-        params: &CallParams,
+        params: &StateTransitionData,
         txs: I,
-    ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
-    {
+    ) -> Result<(
+        Vec<SpentTransaction>,
+        Vec<Transaction>,
+        StateTransitionResult,
+    )> {
         let started = Instant::now();
 
         let block_height = params.round;
         let block_gas_limit = self.vm_config.block_gas_limit;
-        let generator = params.generator_pubkey.inner();
-        let to_slash = params.to_slash.clone();
+        let generator = params.generator.inner();
+        let to_slash = params.slashes.clone();
         let prev_state_root = params.prev_state_root;
 
-        let voters = &params.voters_pubkey[..];
+        let voters = &params.cert_voters[..];
 
         info!(
             event = "Start EST",
@@ -250,7 +255,7 @@ impl Rusk {
         Ok((
             spent_txs,
             discarded_txs,
-            VerificationOutput {
+            StateTransitionResult {
                 state_root,
                 event_bloom: event_bloom.into(),
             },
@@ -261,25 +266,25 @@ impl Rusk {
     #[allow(clippy::too_many_arguments)]
     pub fn verify_transactions(
         &self,
-        prev_commit: [u8; 32],
+        prev_state_root: [u8; 32],
         block_height: u64,
         block_hash: Hash,
         block_gas_limit: u64,
         generator: &BlsPublicKey,
         txs: &[Transaction],
-        slashing: Vec<Slash>,
+        slashes: Vec<Slash>,
         voters: &[Voter],
-    ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
+    ) -> Result<(Vec<SpentTransaction>, StateTransitionResult)> {
         info!(
             event = "Start VST",
             block_hash = to_str(&block_hash),
             height = block_height,
-            prev_state = to_str(&prev_commit),
+            prev_state = to_str(&prev_state_root),
             gas_limit = block_gas_limit,
-            to_slash = ?slashing
+            to_slash = ?slashes
         );
 
-        let session = self.new_block_session(block_height, prev_commit)?;
+        let session = self.new_block_session(block_height, prev_state_root)?;
         let execution_config = self.vm_config.to_execution_config(block_height);
 
         accept(
@@ -289,7 +294,7 @@ impl Rusk {
             block_gas_limit,
             generator,
             txs,
-            slashing,
+            slashes,
             voters,
             &execution_config,
         )
@@ -304,48 +309,48 @@ impl Rusk {
     ///
     /// # Returns
     ///  - Vec<SpentTransaction> - The transactions that were spent.
-    /// - VerificationOutput - The verification output.
+    /// - StateTransitionResult - The verification output.
     /// - Vec<ContractTxEvent> - All contract events that were emitted from the
     ///   given transactions.
     #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
         &self,
-        prev_commit: [u8; 32],
+        prev_state_root: [u8; 32],
         block_height: u64,
         block_gas_limit: u64,
         block_hash: Hash,
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
-        consistency_check: Option<VerificationOutput>,
-        slashing: Vec<Slash>,
+        consistency_check: Option<StateTransitionResult>,
+        slashes: Vec<Slash>,
         voters: &[Voter],
     ) -> Result<(
         Vec<SpentTransaction>,
-        VerificationOutput,
+        StateTransitionResult,
         Vec<ContractTxEvent>,
     )> {
-        let session = self.new_block_session(block_height, prev_commit)?;
+        let session = self.new_block_session(block_height, prev_state_root)?;
 
         let execution_config = self.vm_config.to_execution_config(block_height);
 
-        let (spent_txs, verification_output, session, events) = accept(
+        let (spent_txs, transition_result, session, events) = accept(
             session,
             block_height,
             block_hash,
             block_gas_limit,
             &generator,
             &txs[..],
-            slashing,
+            slashes,
             voters,
             &execution_config,
         )?;
 
         if let Some(expected_verification) = consistency_check {
-            if expected_verification != verification_output {
+            if expected_verification != transition_result {
                 // Drop the session if the resulting is inconsistent
                 // with the callers one.
                 return Err(RuskError::InconsistentState(Box::new(
-                    verification_output,
+                    transition_result,
                 )));
             }
         }
@@ -357,10 +362,10 @@ impl Rusk {
             // Send VM event to RUES
             let event = RuesEvent::from(event);
             let _ = self.event_sender.send(event);
-        } // TODO: move this also in acceptor (async fn try_accept_block) where
+        } // TODO: move this also in acceptor (async fn accept_block) where
           // stake events are filtered, to avoid looping twice?
 
-        Ok((spent_txs, verification_output, contract_events))
+        Ok((spent_txs, transition_result, contract_events))
     }
 
     pub fn finalize_state(
@@ -601,7 +606,7 @@ fn accept(
     execution_config: &ExecutionConfig,
 ) -> Result<(
     Vec<SpentTransaction>,
-    VerificationOutput,
+    StateTransitionResult,
     Session,
     Vec<ContractTxEvent>,
 )> {
@@ -673,7 +678,7 @@ fn accept(
 
     Ok((
         spent_txs,
-        VerificationOutput {
+        StateTransitionResult {
             state_root,
             event_bloom: event_bloom.into(),
         },
