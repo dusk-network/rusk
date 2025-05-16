@@ -12,8 +12,7 @@ use std::{fs, io};
 use dusk_bytes::Serializable;
 use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
-    validation_quorum, MAX_NUMBER_OF_TRANSACTIONS,
-    RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS,
+    validation_quorum, MAX_NUMBER_OF_TRANSACTIONS, TOTAL_COMMITTEES_CREDITS,
 };
 use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
 use dusk_core::abi::Event;
@@ -40,7 +39,7 @@ use tracing::info;
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::http::RuesEvent;
-use crate::node::{coinbase_value, Rusk, RuskTip};
+use crate::node::{get_block_rewards, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
 
 impl Rusk {
@@ -235,13 +234,13 @@ impl Rusk {
             }
         }
 
-        let coinbase_events = reward_slash_and_update_root(
+        let coinbase_events = reward_and_slash(
             &mut session,
             block_height,
-            dusk_spent,
             generator,
-            to_slash,
             voters,
+            dusk_spent,
+            to_slash,
         )?;
 
         event_bloom.add_events(&coinbase_events);
@@ -597,7 +596,7 @@ fn accept(
     block_gas_limit: u64,
     generator: &BlsPublicKey,
     txs: &[Transaction],
-    slashing: Vec<Slash>,
+    to_slash: Vec<Slash>,
     voters: &[Voter],
     execution_config: &ExecutionConfig,
 ) -> Result<(
@@ -650,13 +649,13 @@ fn accept(
         });
     }
 
-    let coinbase_events = reward_slash_and_update_root(
+    let coinbase_events = reward_and_slash(
         &mut session,
         block_height,
-        dusk_spent,
         generator,
-        slashing,
         voters,
+        dusk_spent,
+        to_slash,
     )?;
 
     event_bloom.add_events(&coinbase_events);
@@ -683,83 +682,32 @@ fn accept(
     ))
 }
 
-fn reward_slash_and_update_root(
+/// Execute rewards and slashes in a VM session.
+///
+/// The Trasnfer contract's note tree root is updated accordingly.
+fn reward_and_slash(
     session: &mut Session,
     block_height: u64,
-    dusk_spent: Dusk,
     generator: &BlsPublicKey,
-    slashing: Vec<Slash>,
     voters: &[Voter],
+    spent_amount: Dusk,
+    to_slash: Vec<Slash>,
 ) -> Result<Vec<Event>> {
-    let (dusk_value, generator_reward, generator_extra_reward, voters_reward) =
-        coinbase_value(block_height, dusk_spent);
+    let mut events = vec![];
 
-    let credits = voters
-        .iter()
-        .map(|(_, credits)| *credits as u64)
-        .sum::<u64>();
+    // Apply rewards
+    events.extend(reward(
+        session,
+        block_height,
+        generator,
+        voters,
+        spent_amount,
+    )?);
 
-    if !voters.is_empty() && credits == 0 && block_height > 1 {
-        return Err(RuskError::InvalidCreditsCount(block_height, 0));
-    }
+    // Apply slashes
+    events.extend(slash(session, to_slash)?);
 
-    let generator_extra_reward =
-        calc_generator_extra_reward(generator_extra_reward, credits);
-
-    // We first start with only the generator (fixed) and Dusk
-    let mut num_rewards = 2;
-
-    // If there is an extra reward we add it.
-    if generator_extra_reward != 0 {
-        num_rewards += 1;
-    }
-
-    // Additionally we also reward the voters.
-    num_rewards += voters.len();
-
-    let mut rewards = Vec::with_capacity(num_rewards);
-
-    rewards.push(Reward {
-        account: *generator,
-        value: generator_reward,
-        reason: RewardReason::GeneratorFixed,
-    });
-
-    rewards.push(Reward {
-        account: *DUSK_CONSENSUS_KEY,
-        value: dusk_value,
-        reason: RewardReason::Other,
-    });
-
-    if generator_extra_reward != 0 {
-        rewards.push(Reward {
-            account: *generator,
-            value: generator_extra_reward,
-            reason: RewardReason::GeneratorExtra,
-        });
-    }
-
-    let credit_reward = voters_reward
-        / (VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS)
-            as u64;
-
-    for (to_voter, credits) in voters {
-        let voter = to_voter.inner();
-        let voter_reward = *credits as u64 * credit_reward;
-        rewards.push(Reward {
-            account: *voter,
-            value: voter_reward,
-            reason: RewardReason::Voter,
-        });
-    }
-
-    let r =
-        session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
-
-    let mut events = r.events;
-
-    events.extend(slash(session, slashing)?);
-
+    // Update the note tree root in the Transfer contract
     let r = session.call::<_, ()>(
         TRANSFER_CONTRACT,
         "update_root",
@@ -771,28 +719,116 @@ fn reward_slash_and_update_root(
     Ok(events)
 }
 
-/// Calculates current extra reward for Block generator.
-fn calc_generator_extra_reward(
-    generator_extra_reward: Dusk,
-    credits: u64,
-) -> u64 {
-    if credits
-        == (VALIDATION_COMMITTEE_CREDITS + RATIFICATION_COMMITTEE_CREDITS)
-            as u64
-    {
-        return generator_extra_reward;
+/// Apply rewards by calling the `reward` method in the Stake Contract
+fn reward(
+    session: &mut Session,
+    block_height: u64,
+    generator: &BlsPublicKey,
+    voters: &[Voter],
+    spent_amount: Dusk,
+) -> Result<Vec<Event>> {
+    // Compute base rewards
+    let (dusk_reward, generator_reward, generator_extra_reward, voters_reward) =
+        get_block_rewards(block_height, spent_amount);
+
+    let voters_credits = voters
+        .iter()
+        .map(|(_, credits)| *credits as u64)
+        .sum::<u64>();
+
+    // Except for the genesis block, there should always be some voters
+    if block_height > 1 && (voters.is_empty() || voters_credits == 0) {
+        return Err(RuskError::InvalidCreditsCount(block_height, 0));
     }
 
-    let reward_per_quota = generator_extra_reward
-        / (validation_extra() + ratification_extra()) as u64;
+    let generator_extra_reward =
+        calc_generator_extra_reward(generator_extra_reward, voters_credits);
 
-    let sum = ratification_quorum() + validation_quorum();
-    credits.saturating_sub(sum as u64) * reward_per_quota
+    // Split voters reward in credit quotas.
+    // Each voter will get as many quotas as its credits in the committee.
+    let credit_reward = voters_reward / TOTAL_COMMITTEES_CREDITS as u64;
+
+    // Compute the number of rewards
+    let mut num_rewards = 2;
+    if generator_extra_reward != 0 {
+        num_rewards += 1;
+    }
+    num_rewards += voters.len();
+
+    // Collect individual rewards into a `rewards` vector
+    let mut rewards = Vec::with_capacity(num_rewards);
+
+    rewards.push(Reward {
+        account: *generator,
+        value: generator_reward,
+        reason: RewardReason::GeneratorFixed,
+    });
+
+    rewards.push(Reward {
+        account: *DUSK_CONSENSUS_KEY,
+        value: dusk_reward,
+        reason: RewardReason::Other,
+    });
+
+    if generator_extra_reward != 0 {
+        rewards.push(Reward {
+            account: *generator,
+            value: generator_extra_reward,
+            reason: RewardReason::GeneratorExtra,
+        });
+    }
+
+    for (voter, voter_credits) in voters {
+        let voter_pk = voter.inner();
+        let voter_reward = *voter_credits as u64 * credit_reward;
+
+        rewards.push(Reward {
+            account: *voter_pk,
+            value: voter_reward,
+            reason: RewardReason::Voter,
+        });
+    }
+
+    // Apply rewards
+    let r =
+        session.call::<_, ()>(STAKE_CONTRACT, "reward", &rewards, u64::MAX)?;
+
+    Ok(r.events)
 }
 
-fn slash(session: &mut Session, slash: Vec<Slash>) -> Result<Vec<Event>> {
+/// Calculates the extra reward for the block generator.
+/// This reward depends on the number of extra credits (i.e., credit beyond the
+/// minimum quorum threshold) included in the block attestation.
+///
+/// # Arguments
+///
+/// * `full_extra_reward` - Total available extra reward for the generator (as
+///   percentage of the total block reward)
+/// * `att_credits` - Total number of credits included in the block attestation
+fn calc_generator_extra_reward(
+    full_extra_reward: Dusk,
+    att_credits: u64,
+) -> u64 {
+    // If all votes are included, reward the whole amount.
+    // We do this check to avoid assigning less than `full_extra_reward` due
+    // to loss of precision when fractioning the total reward into quotas.
+    if att_credits == TOTAL_COMMITTEES_CREDITS as u64 {
+        return full_extra_reward;
+    }
+
+    // The calculate the extra reward, we divide the whole amount in quotas,
+    // with each quota corresponding to reward value for a single extra credit.
+    let max_extra_credits = validation_extra() + ratification_extra();
+    let reward_quota = full_extra_reward / max_extra_credits as u64;
+
+    let quorum_credits = validation_quorum() + ratification_quorum();
+    reward_quota * att_credits.saturating_sub(quorum_credits as u64)
+}
+
+/// Apply slashes by calling the `slash` method in the Stake Contract
+fn slash(session: &mut Session, to_slash: Vec<Slash>) -> Result<Vec<Event>> {
     let mut events = vec![];
-    for s in slash {
+    for s in to_slash {
         let provisioner = s.provisioner.into_inner();
         let r = match s.r#type {
             node_data::ledger::SlashType::Soft => session.call::<_, ()>(
