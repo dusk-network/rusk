@@ -183,7 +183,7 @@ impl HeaderError {
 pub enum AttestationError {
     #[error("Invalid votes for {0:?}: {1:?}")]
     InvalidVotes(StepName, StepSigError),
-    #[error("Expected block hash: {0:?}, Got: {1:?}")]
+    #[error("Expected block hash: {}, Got: {}", hex::encode(.0), hex::encode(.1))]
     InvalidHash(Hash, Hash),
     #[error("Result: {0:?}, Expected: {1:?}")]
     InvalidResult(RatificationResult, RatificationResult),
@@ -193,7 +193,7 @@ pub enum AttestationError {
 pub enum FailedIterationError {
     #[error("Too many {0}")]
     TooMany(usize),
-    #[error("Invalid generator. Expected {0:?}")]
+    #[error("Invalid generator. Expected {}",.0.to_base58())]
     InvalidGenerator(PublicKeyBytes),
     #[error("Invalid attestation: {0}")]
     InvalidAttestation(AttestationError),
