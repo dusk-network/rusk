@@ -22,6 +22,7 @@ use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 
 use crate::abi::ContractId;
+use crate::signatures::bls;
 use crate::Error;
 
 /// The maximum size of a memo.
@@ -39,6 +40,8 @@ pub enum TransactionData {
     /// Additional data added to a transaction, that is not a deployment or a
     /// call.
     Memo(Vec<u8>),
+    /// Data for blob storage together with contract call.
+    Blob(Option<ContractCall>, Vec<BlobData>),
 }
 
 impl From<ContractCall> for TransactionData {
@@ -77,6 +80,21 @@ pub struct ContractDeploy {
     pub init_args: Option<Vec<u8>>,
     /// Nonce for contract id uniqueness and vanity
     pub nonce: u64,
+}
+
+/// Data for used to identify a BLOB data
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct BlobData {
+    /// Hash of the blob
+    pub hash: [u8; 32],
+    /// 48-byte elliptic curve point committing to blob
+    pub commitment: [u8; 48],
+    /// BlsSignature binding the blob with the current account/nonce (Dunno if
+    /// needed)
+    pub signature: bls::Signature,
+    /// 4096 field elements (each 32 bytes), total 128 KiB
+    pub data: Option<[[u8; 32]; 4096]>,
 }
 
 /// All the data the transfer-contract needs to perform a contract-call.
@@ -294,5 +312,67 @@ impl ContractBytecode {
         let hash = crate::read_arr::<32>(buf)?;
         let bytes = crate::read_vec(buf)?;
         Ok(Self { hash, bytes })
+    }
+}
+
+impl BlobData {
+    /// Provides contribution bytes for an external hash.
+    #[must_use]
+    pub fn to_hash_input_bytes(&self) -> Vec<u8> {
+        self.hash.to_vec()
+    }
+
+    /// Serializes this object into a variable length buffer
+    #[must_use]
+    pub fn to_var_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend(self.hash);
+        bytes.extend(self.commitment);
+        bytes.extend(self.signature.to_bytes());
+        if let Some(data) = &self.data {
+            bytes.push(1u8);
+            // We can remove the len if we are going to use fixed size
+            bytes.extend((data.len() as u64).to_bytes());
+            for d in data {
+                bytes.extend(d);
+            }
+        } else {
+            bytes.push(0u8);
+        }
+        bytes
+    }
+
+    /// Deserialize from a bytes buffer.
+    /// Resets buffer to a position after the bytes read.
+    ///
+    /// # Errors
+    /// Errors when the bytes are not available.
+    pub fn from_buf(buf: &mut &[u8]) -> Result<Self, BytesError> {
+        let hash = crate::read_arr(buf)?;
+        let commitment = crate::read_arr(buf)?;
+        let signature_bytes = crate::read_arr(buf)?;
+        let signature = bls::Signature::from_bytes(&signature_bytes)
+            .map_err(|_| BytesError::InvalidData)?;
+
+        let data = match u8::from_reader(buf)? {
+            0 => None,
+            1 => {
+                // We can remove the len if we are going to use fixed size
+                let _data_len = u64::from_reader(buf)?;
+                let mut data = [[0u8; 32]; 4096];
+                for d in &mut data {
+                    *d = crate::read_arr(buf)?;
+                }
+                Some(data)
+            }
+            _ => return Err(BytesError::InvalidData),
+        };
+
+        Ok(Self {
+            hash,
+            commitment,
+            signature,
+            data,
+        })
     }
 }

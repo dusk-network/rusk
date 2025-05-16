@@ -26,6 +26,8 @@ use crate::transfer::data::{
 };
 use crate::{BlsScalar, Error};
 
+use super::data::BlobData;
+
 /// A Moonlight account's information.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
@@ -322,6 +324,12 @@ impl Transaction {
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
         let mut bytes = self.payload.signature_message();
         bytes.extend(self.signature.to_bytes());
+        if let Some(TransactionData::Blob(_, b)) = self.payload.data.as_ref() {
+            for blob in b {
+                bytes.extend(blob.hash);
+                bytes.extend(blob.commitment);
+            }
+        }
         bytes
     }
 
@@ -413,6 +421,20 @@ impl Payload {
                 bytes.extend((memo.len() as u64).to_bytes());
                 bytes.extend(memo);
             }
+            Some(TransactionData::Blob(call, blobs)) => {
+                bytes.push(4);
+                if let Some(call) = call {
+                    bytes.push(1);
+                    bytes.extend(call.to_var_bytes());
+                } else {
+                    bytes.push(0);
+                }
+                // Maybe we can use u8 as length
+                bytes.extend((blobs.len() as u64).to_bytes());
+                for blob in blobs {
+                    bytes.extend(blob.to_var_bytes());
+                }
+            }
             _ => bytes.push(0),
         }
 
@@ -475,6 +497,22 @@ impl Payload {
                 let memo = buf[..size].to_vec();
                 Some(TransactionData::Memo(memo))
             }
+            4 => {
+                #[allow(clippy::cast_possible_truncation)]
+                let call = u8::from_reader(&mut buf)?;
+                let call = if call == 1 {
+                    Some(ContractCall::from_slice(buf)?)
+                } else {
+                    None
+                };
+                let blobs_len = u8::from_reader(&mut buf)?;
+                let mut blobs = Vec::with_capacity(blobs_len as usize);
+                for _ in 0..blobs_len {
+                    let blob = BlobData::from_buf(&mut buf)?;
+                    blobs.push(blob);
+                }
+                Some(TransactionData::Blob(call, blobs))
+            }
             _ => {
                 return Err(BytesError::InvalidData);
             }
@@ -513,6 +551,7 @@ impl Payload {
         }
         bytes.extend(self.nonce.to_bytes());
 
+        #[allow(clippy::match_same_arms)]
         match &self.data {
             Some(TransactionData::Deploy(d)) => {
                 bytes.extend(&d.bytecode.to_hash_input_bytes());
@@ -528,6 +567,18 @@ impl Payload {
             }
             Some(TransactionData::Memo(m)) => {
                 bytes.extend(m);
+            }
+
+            Some(TransactionData::Blob(Some(c), _)) => {
+                bytes.extend(c.contract.as_bytes());
+                bytes.extend(c.fn_name.as_bytes());
+                bytes.extend(&c.fn_args);
+                // Exclude blobs from the signature, since the contract doesn't
+                // validate the blob
+            }
+            Some(TransactionData::Blob(_, _)) => {
+                // Exclude blobs from the signature, since the contract doesn't
+                // validate the blob
             }
             None => {}
         }
