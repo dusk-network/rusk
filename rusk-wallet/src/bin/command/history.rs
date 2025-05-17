@@ -15,13 +15,14 @@ use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
 use crate::io::{self};
 use crate::settings::Settings;
 
+#[derive(Debug, PartialEq)]
 pub struct TransactionHistory {
-    direction: TransactionDirection,
-    height: u64,
-    amount: f64,
-    fee: u64,
-    pub tx: Transaction,
-    id: String,
+    pub(crate) direction: TransactionDirection,
+    pub(crate) height: u64,
+    pub(crate) amount: f64,
+    pub(crate) fee: u64,
+    pub(crate) tx: Transaction,
+    pub(crate) id: String,
 }
 
 impl TransactionHistory {
@@ -225,7 +226,7 @@ pub(crate) async fn moonlight_history(
 }
 
 #[derive(PartialEq, Debug)]
-enum TransactionDirection {
+pub(crate) enum TransactionDirection {
     In,
     Out,
 }
