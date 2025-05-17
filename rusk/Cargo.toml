@@ -20,7 +20,12 @@ name = "rusk"
 path = "src/bin/main.rs"
 
 [dependencies]
-tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
+tokio = { workspace = true, features = [
+    "rt-multi-thread",
+    "fs",
+    "macros",
+    "time",
+] }
 futures-util = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = [
@@ -47,7 +52,8 @@ dirs = { workspace = true }
 blake3 = { workspace = true }
 dusk-transfer-contract-dd = { workspace = true }
 dusk-stake-contract-dd = { workspace = true }
-dusk-data-driver = {workspace = true}
+dusk-data-driver = { workspace = true }
+dusk-bls12_381 = { workspace = true }
 
 dusk-bytes = { workspace = true }
 kadcast = { workspace = true }
@@ -57,6 +63,7 @@ hyper-tungstenite = { workspace = true }
 hyper = { workspace = true, features = ["server", "http1", "http2"] }
 hyper-util = { workspace = true, features = ["server", "http1", "http2"] }
 http-body-util = { workspace = true }
+rocksdb = { workspace = true, optional = true }
 
 tokio-stream = { workspace = true, features = ["sync"] }
 tokio-rustls = { workspace = true }
@@ -78,7 +85,7 @@ node-data = { workspace = true, optional = true }
 async-graphql = { workspace = true }
 
 ## RUES deps
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["json", "blocking"] }
 
 ## Ephemeral dependencies
 tempfile = { workspace = true, optional = true }
@@ -87,6 +94,28 @@ rusk-recovery = { workspace = true, optional = true }
 ## testwallet dependencies
 futures = { workspace = true, optional = true }
 
+## JSON-RPC server dependencies
+axum = { workspace = true, features = ["json", "macros"] }
+axum-server = { workspace = true, features = ["tls-rustls"] }
+rustls = { workspace = true }
+http = { workspace = true }
+governor = { workspace = true }
+lazy_static = { workspace = true }
+metrics = { workspace = true }
+proptest = { workspace = true }
+regex = { workspace = true }
+thiserror = { workspace = true }
+tower = { workspace = true, features = ["util"] }
+tower-http = { workspace = true, features = ["cors", "limit", "trace"] }
+jsonrpsee = { workspace = true, features = ["full"] }
+once_cell = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+tower_governor = { workspace = true }
+dashmap = { workspace = true }
+glob = { workspace = true }
+uuid = { version = "1.16.0", features = ["v4", "serde"] }
+base64 = { workspace = true }
+
 [dev-dependencies]
 wallet-core = { workspace = true }
 zeroize = { workspace = true, features = ["derive"] }
@@ -94,28 +123,27 @@ rusk-recovery = { workspace = true, features = ["state"] }
 ff = { workspace = true }
 rusk-prover = { workspace = true, features = ["no_random", "debug"] }
 criterion = { workspace = true }
+futures = { workspace = true }
+assert_matches = { workspace = true }
+rcgen = { version = "0.13", features = ["pem"] }
+tempfile = { workspace = true }
 
 [build-dependencies]
 rustc_tools_util = { workspace = true }
 
 [features]
-default = [
-    "ephemeral",
-    "recovery-state",
-    "prover",
-    "chain",
-    "http-wasm",
-]
+default = ["ephemeral", "recovery-state", "prover", "chain", "http-wasm"]
 ephemeral = ["recovery-state", "chain"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]
 prover = ["dep:rusk-prover", "recovery-keys"]
 testwallet = ["dep:futures"]
-chain = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
+chain = ["dep:node", "dep:dusk-consensus", "dep:node-data", "dep:rocksdb"]
 archive = ["chain", "node/archive", "dusk-core/serde"]
 network-trace = ["node/network-trace"]
 http-wasm = []
 dynamic-verifier = []
+jsonrpc-server = ["testwallet", "chain", "archive"]
 
 [[bench]]
 name = "block_ingestion"

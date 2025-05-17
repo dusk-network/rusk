@@ -5,6 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::path::PathBuf;
+#[cfg(feature = "jsonrpc-server")]
+use std::sync::Arc;
 use std::time::Duration;
 
 use kadcast::config::Config as KadcastConfig;
@@ -21,10 +23,16 @@ use node::{LongLivedService, Node};
 
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
+#[cfg(feature = "jsonrpc-server")]
+use tracing::{error, warn};
 #[cfg(feature = "archive")]
 use {dusk_bytes::Serializable, node::archive::Archive, tracing::debug};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
+
+#[cfg(feature = "jsonrpc-server")]
+use crate::jsonrpc::config::JsonRpcConfig;
+
 use crate::node::{ChainEventStreamer, RuskNode, RuskVmConfig, Services};
 use crate::{Rusk, VERSION};
 
@@ -191,6 +199,36 @@ impl RuskNodeBuilder {
 
     /// Build the RuskNode and corresponding services
     pub async fn build_and_run(self) -> anyhow::Result<()> {
+        // Gate the loading and checking of JSON-RPC config
+        #[cfg(feature = "jsonrpc-server")]
+        let jsonrpc_config = {
+            // --- Load JSON-RPC Configuration --- START ---
+            match JsonRpcConfig::load_default() {
+                Ok(config) => {
+                    info!("Successfully loaded JSON-RPC configuration.");
+                    // Check if the server should be enabled based on config
+                    // (e.g., using http.bind_address port or a specific
+                    // http.enabled flag if added later)
+                    // For now, assume port 0 means disabled, otherwise enabled.
+                    // TODO: Add an explicit `enabled` flag to HttpServerConfig?
+                    if config.http.bind_address.port() != 0 {
+                        info!("JSON-RPC server is configured to be enabled.");
+                        Some(config)
+                    } else {
+                        warn!(
+                            "JSON-RPC server is configured with port 0, disabling."
+                        );
+                        None
+                    }
+                }
+                Err(e) => {
+                    error!(error = %e, "Failed to load JSON-RPC configuration, disabling server.");
+                    None // Server disabled if config fails to load
+                }
+            }
+            // --- Load JSON-RPC Configuration --- END ---
+        };
+
         let channel_cap = self
             .http
             .as_ref()
@@ -221,12 +259,16 @@ impl RuskNodeBuilder {
         .map_err(|e| anyhow::anyhow!("Cannot instantiate VM {e}"))?;
         info!("Rusk VM loaded");
 
+        // Rusk instance (type Rusk)
+        let rusk = rusk;
+
         let node = {
             let db = rocksdb::Backend::create_or_open(
                 self.db_path.clone(),
                 self.db_options.clone(),
             );
             let net = Kadcast::new(self.kadcast)?;
+            // Pass the owned Rusk instance to Node::new
             RuskNode::new(
                 Node::new(net, db, rusk.clone()),
                 #[cfg(feature = "archive")]
@@ -262,9 +304,13 @@ impl RuskNodeBuilder {
             Box::new(TelemetrySrv::new(self.telemetry_address)),
         ];
 
+        // TODO: This block initializes the legacy WebSocket server
+        // (`rusk::http::HttpServer`). It needs to be preserved for now
+        // but should be consolidated with the new axum-based
+        // JSON-RPC/WebSocket server in a later stage.
         let mut _ws_server = None;
         if let Some(http) = self.http {
-            info!("Configuring HTTP");
+            info!("Configuring HTTP"); // Legacy HTTP/WebSocket server
 
             service_list.push(Box::new(ChainEventStreamer {
                 node_receiver,
@@ -272,7 +318,7 @@ impl RuskNodeBuilder {
             }));
 
             let mut handler = DataSources::default();
-            handler.sources.push(Box::new(rusk.clone()));
+            // RuskNode implements HandleRequest and is Clone
             handler.sources.push(Box::new(node.clone()));
 
             #[cfg(feature = "prover")]
@@ -318,6 +364,140 @@ impl RuskNodeBuilder {
         }
 
         node.inner().spawn_all(service_list).await?;
+
+        // --- Conditionally Initialize JSON-RPC Components --- START ---
+
+        // Gate the entire JSON-RPC setup block
+        #[cfg(feature = "jsonrpc-server")]
+        {
+            if let Some(config) = jsonrpc_config {
+                info!("JSON-RPC server enabled. Creating Adapters and AppState...");
+
+                // - Get Component Handles
+                let db_handle = node.db().clone(); // Arc<RwLock<Backend>>
+                let archive_handle = node.archive().clone(); // This gets an owned Archive
+                let network_handle = node.network().clone(); // Arc<Kadcast>
+                let vm_handle = node.inner().vm_handler(); // Access VM handler via inner
+
+                // - Create RuskDbAdapter
+                let db_adapter: Arc<
+                    dyn crate::jsonrpc::infrastructure::db::DatabaseAdapter,
+                > = {
+                    use crate::jsonrpc::infrastructure::db::RuskDbAdapter;
+                    info!("Creating RuskDbAdapter...");
+                    let adapter = Arc::new(RuskDbAdapter::new(db_handle));
+                    info!("RuskDbAdapter created.");
+                    adapter
+                };
+
+                // - Create RuskArchiveAdapter
+                let archive_adapter: Arc<
+                    dyn crate::jsonrpc::infrastructure::archive::ArchiveAdapter,
+                > = {
+                    use crate::jsonrpc::infrastructure::archive::RuskArchiveAdapter;
+                    info!("Creating RuskArchiveAdapter...");
+                    // Wrap the owned Archive in Arc before passing to the
+                    // constructor
+                    let adapter_instance =
+                        RuskArchiveAdapter::new(Arc::new(archive_handle));
+                    // Wrap the adapter instance in Arc for AppState
+                    let adapter = Arc::new(adapter_instance);
+                    info!("RuskArchiveAdapter created.");
+                    adapter
+                };
+
+                // - Create RuskNetworkAdapter
+                let network_adapter = {
+                    use crate::jsonrpc::infrastructure::network::RuskNetworkAdapter;
+                    info!("Creating RuskNetworkAdapter...");
+                    // Pass the Arc<RwLock<Kadcast>> handle
+                    let adapter =
+                        Arc::new(RuskNetworkAdapter::new(network_handle));
+                    info!("RuskNetworkAdapter created.");
+                    adapter
+                };
+
+                // - Create RuskVmAdapter
+                let vm_adapter = {
+                    use crate::jsonrpc::infrastructure::vm::RuskVmAdapter;
+                    info!("Creating RuskVmAdapter...");
+                    // Pass it to the updated constructor
+                    let adapter = Arc::new(RuskVmAdapter::new(vm_handle));
+                    info!("RuskVmAdapter created.");
+                    adapter
+                };
+
+                // - Create Other AppState Components (Subs, Metrics,
+                //   RateLimiters)
+                info!("Creating other AppState components...");
+
+                // Subscription Manager
+                use crate::jsonrpc::infrastructure::subscription::manager::SubscriptionManager;
+                let subscription_manager = SubscriptionManager::default();
+                info!("SubscriptionManager created.");
+
+                // Metrics Collector
+                use crate::jsonrpc::infrastructure::metrics::MetricsCollector;
+                let metrics_collector = MetricsCollector::default();
+                info!("MetricsCollector created.");
+
+                // Rate Limiters
+                use crate::jsonrpc::infrastructure::manual_limiter::ManualRateLimiters;
+                let rate_limit_config_arc = Arc::new(config.rate_limit.clone());
+                let manual_rate_limiters = match ManualRateLimiters::new(
+                    rate_limit_config_arc,
+                ) {
+                    Ok(limiters) => {
+                        info!("ManualRateLimiters created.");
+                        limiters
+                    }
+                    Err(e) => {
+                        // If rate limiter creation fails due to config errors,
+                        // it indicates a critical setup issue. Panic to prevent
+                        // the server starting with invalid configuration.
+                        error!(error = %e, "Failed to create ManualRateLimiters due to configuration error. Panicking.");
+                        panic!("Invalid rate limiter configuration: {}", e);
+                    }
+                };
+
+                // - Create AppState
+                let app_state: Arc<
+                    crate::jsonrpc::infrastructure::state::AppState,
+                > = {
+                    use crate::jsonrpc::infrastructure::state::AppState;
+                    info!("Creating AppState with all adapters...");
+                    let app_state_instance = AppState::new(
+                        config.clone(),       // Pass owned config
+                        db_adapter,           // Arc<dyn DatabaseAdapter>
+                        archive_adapter,      // Arc<dyn ArchiveAdapter>
+                        network_adapter,      // Arc<dyn NetworkAdapter>
+                        vm_adapter,           // Arc<dyn VmAdapter>
+                        subscription_manager, // Pass owned manager
+                        metrics_collector,    // Pass owned collector
+                        manual_rate_limiters, // Pass owned limiters
+                    );
+                    let app_state_arc = Arc::new(app_state_instance);
+                    info!("AppState created successfully.");
+                    app_state_arc
+                };
+
+                // - Spawn run_server task
+                info!("AppState created. Spawning JSON-RPC server task...");
+                tokio::spawn(async move {
+                    info!("JSON-RPC server task started.");
+                    if let Err(e) =
+                        crate::jsonrpc::server::run_server(app_state).await
+                    {
+                        error!(error = %e, "JSON-RPC server failed");
+                    } else {
+                        info!("JSON-RPC server task finished gracefully.");
+                    }
+                });
+            } else {
+                info!("JSON-RPC server is disabled, skipping component initialization.");
+            }
+        }
+        // --- Conditionally Initialize JSON-RPC Components --- END ---
 
         Ok(())
     }

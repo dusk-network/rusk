@@ -6,6 +6,7 @@
 
 #![feature(lazy_cell)]
 mod common;
+mod jsonrpc;
 mod services;
 
 extern crate alloc;

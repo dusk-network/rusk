@@ -1,25 +1,165 @@
-# log_level = 'info'
-# log_type = 'coloured'
-# log_filter = 'dusk_consensus=debug'
+# Rusk Node Configuration File
+# ============================
+# This file contains configuration options for various Rusk components.
+# Uncomment and modify settings as needed.
 
-[http]
-#listen = true
-#listen_address = '127.0.0.1:8080'
-#cert = <path_of_pem>
-#key = <path_of_key>
+# Global Logging Configuration
+# log_level = 'info' # Options: trace, debug, info, warn, error
+# log_type = 'coloured' # Options: coloured, json, plain
+# log_filter = 'dusk_consensus=debug,rusk=info' # Fine-grained filtering
 
-# The default max cost for feeder calls is the maximum representable. Put in a
-# a string wrapped number up to u64::MAX
-#feeder_call_gas = "18446744073709551615" 
+# JSON-RPC Server Configuration
+# -----------------------------
+# All JSON-RPC specific settings are nested under this section.
+[jsonrpc]
 
-#ws_sub_channel_cap = 16,
-#ws_event_channel_cap = 1024,
+# HTTP server configuration
+[jsonrpc.http]
+# Socket address to bind the HTTP server to (IPv4 or IPv6 address with port)
+# bind_address = "127.0.0.1:8546"
 
-# Custom headers to put into every HTTP response. By default none are added.
-#headers = [["name1", "value1"], ["name2", "value2"]]
+# Maximum request body size in bytes (Default: 10 MB)
+# max_body_size = 10485760
 
+# Request timeout in seconds (Default: 30)
+# request_timeout = 30
+
+# Maximum number of concurrent connections (Default: 100)
+# max_connections = 100
+
+# Optional TLS configuration (HTTPS)
+# cert = "/path/to/your/certificate.pem"
+# key = "/path/to/your/private_key.pem"
+
+# CORS (Cross-Origin Resource Sharing) configuration
+[jsonrpc.http.cors]
+# Whether CORS is enabled (Default: true)
+# enabled = true
+
+# Allowed origins (empty array means all origins are allowed)
+# Example: allowed_origins = ["https://example.com", "https://test.com"]
+# allowed_origins = []
+
+# Allowed HTTP methods (Default: ["POST", "GET"])
+# allowed_methods = ["POST", "GET"]
+
+# Allowed HTTP headers (Default: ["Content-Type", "Rusk-Version"])
+# allowed_headers = ["Content-Type", "Rusk-Version"]
+
+# Whether to allow credentials (cookies, authorization headers, etc.) (Default: false)
+# allow_credentials = false
+
+# Maximum age for preflight requests in seconds (Default: 86400 / 24 hours)
+# max_age_seconds = 86400
+
+# WebSocket server configuration
+[jsonrpc.ws]
+# Socket address to bind the WebSocket server to (Default: "127.0.0.1:8547")
+# bind_address = "127.0.0.1:8547"
+
+# Maximum message size in bytes (Default: 1 MB)
+# max_message_size = 1048576
+
+# Maximum number of concurrent connections (Default: 50)
+# max_connections = 50
+
+# Maximum number of subscriptions per connection (Default: 10)
+# max_subscriptions_per_connection = 10
+
+# Idle timeout in seconds (Default: 300 / 5 minutes)
+# idle_timeout = 300
+
+# Maximum number of events per second per connection (Default: 100)
+# max_events_per_second = 100
+
+# Rate limiting configuration
+[jsonrpc.rate_limit]
+# Whether rate limiting is enabled (Default: true)
+# enabled = true
+
+# Default rate limit for all methods
+[jsonrpc.rate_limit.default_limit]
+# Maximum number of requests within the time window (Default: 100)
+# requests = 100
+
+# Time window in seconds (Default: 60)
+# window = 60
+
+# WebSocket connection rate limit
+[jsonrpc.rate_limit.websocket_limit]
+# Maximum number of new WebSocket connections within the time window (Default: 10)
+# requests = 10
+
+# Time window in seconds (Default: 60)
+# window = 60
+
+# Method-specific rate limits
+# These override the default rate limit for specific method patterns
+# The patterns support * as wildcard
+# [[jsonrpc.rate_limit.method_limits]]
+# method_pattern = "get*"
+# limit = { requests = 200, window = 60 }  # 200 requests per minute for all get* methods
+
+# [[jsonrpc.rate_limit.method_limits]]
+# method_pattern = "prove"
+# limit = { requests = 10, window = 60 }   # 10 requests per minute for the prove method
+
+# Feature toggles
+[jsonrpc.features]
+# Whether to enable WebSocket subscriptions (Default: true)
+# enable_websocket = true
+
+# Whether to enable detailed error messages (Default: true)
+# If false, minimal error information is returned to clients
+# detailed_errors = true
+
+# Whether to enable method timing metrics (Default: true)
+# method_timing = true
+
+# Whether to enable strict version checking (Default: false)
+# If true, clients must specify a compatible Rusk-Version header
+# strict_version_checking = false
+
+# Whether to validate parameters strictly (Default: true)
+# If true, extra parameters in requests will cause validation errors
+# strict_parameter_validation = true
+
+# Maximum block range allowed for range queries (Default: 1000)
+# This prevents excessive resource usage in block range queries
+# max_block_range = 1000
+
+# Maximum items in batch requests (Default: 20)
+# This limits the number of requests that can be batched in a single JSON-RPC call
+# max_batch_size = 20
+
+# Message sanitization configuration
+[jsonrpc.sanitization]
+# Whether to enable message sanitization (Default: true)
+# enabled = true
+
+# List of sensitive terms to redact in error messages
+# sensitive_terms = [
+#     "password", ".wallet", ".key", "keys", "secret", "private", "credential",
+#     "token", "api_key", "apikey", "auth", "passphrase", "cert", "certificate",
+#     "mnemonic", "seed", "wallet", "pk", "sk", "signing_key", "encryption_key"
+# ]
+
+# Maximum message length before truncation (Default: 200)
+# max_message_length = 200
+
+# Redaction placeholder (Default: "[REDACTED]")
+# redaction_marker = "[REDACTED]"
+
+# Path sanitization (Default: true)
+# sanitize_paths = true
+
+# Chain Configuration
+# -------------------
 [chain]
-#db_path = '/home/user/.dusk/rusk'
+# Path to the database directory
+# db_path = '/home/user/.dusk/rusk'
+
+# Path to the consensus keys file
 #consensus_keys_path = '/home/user/.dusk/rusk/consensus.keys'
 min_gas_limit = 150000
 
@@ -69,3 +209,22 @@ fec_redundancy = 0.15
 [kadcast.fec.decoder]
 cache_ttl = '1m'
 cache_prune_every = '5m'
+
+# Legacy HTTP server configuration
+# This section is deprecated and will be removed in future versions.
+# Uncomment and modify if you need to use the legacy HTTP server.
+[http]
+#listen = true
+#listen_address = '127.0.0.1:8080'
+#cert = <path_of_pem>
+#key = <path_of_key>
+
+# The default max cost for feeder calls is the maximum representable. Put in a
+# a string wrapped number up to u64::MAX
+#feeder_call_gas = "18446744073709551615" 
+
+#ws_sub_channel_cap = 16,
+#ws_event_channel_cap = 1024,
+
+# Custom headers to put into every HTTP response. By default none are added.
+#headers = [["name1", "value1"], ["name2", "value2"]]
