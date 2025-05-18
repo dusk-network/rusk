@@ -355,7 +355,7 @@ pub trait BlockRpc {
     /// | Code | Message | Description |
     /// |------|---------|-------------|
     /// | -32602 | Invalid params | Invalid start_index (too large) |
-    /// | -32602 | Invalid params | Invalid count (zero or too large) |
+    /// | -32602 | Invalid params | Invalid count (zero) |
     /// | -32603 | Internal error | Database or internal error |
     /// | -32000 | Block not found | Block with specified hash doesn't exist |
     #[method(name = "getBlockTransactionRangeByHeight")]
@@ -363,6 +363,31 @@ pub trait BlockRpc {
         &self,
         height: u64,
         start_index: usize,
+        count: usize,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
+
+    /// Returns all transactions from a block at the specified height.
+    ///
+    /// # Arguments
+    /// * `height` - Block height to query. Positive value representing the
+    ///   specific block height
+    /// * `count` - The maximum number of last transactions to retrieve
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block transactions or an error if the
+    /// fetching of the block transactions fails or if the block does not exist.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid count (zero) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified height doesn't exist |
+    #[method(name = "getLastBlockTransactionsByHeight")]
+    async fn get_last_block_transactions_by_height(
+        &self,
+        height: u64,
         count: usize,
     ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
 }
@@ -866,6 +891,7 @@ impl BlockRpcServer for BlockRpcImpl {
             ));
         }
 
+        // 2. Validate start index
         if start_index > usize::MAX - count {
             return Err(ErrorObjectOwned::owned(
                 -32602,
@@ -874,6 +900,7 @@ impl BlockRpcServer for BlockRpcImpl {
             ));
         }
 
+        // 3. Fetch transactions
         let transactions = self
             .app_state
             .get_block_transaction_range_by_height(height, start_index, count)
@@ -886,6 +913,46 @@ impl BlockRpcServer for BlockRpcImpl {
                 )
             })?;
 
+        // 4. In the result is None, block not found
+        match transactions {
+            Some(transactions) => Ok(transactions),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some("Block with specified height doesn't exist".to_string()),
+            )),
+        }
+    }
+
+    async fn get_last_block_transactions_by_height(
+        &self,
+        height: u64,
+        count: usize,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
+    {
+        // 1. Validate height
+        if height == 0 {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height (zero)".to_string()),
+            ));
+        }
+
+        // 2. Fetch transactions
+        let transactions = self
+            .app_state
+            .get_last_block_transactions_by_height(height, count)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        // 3. If the result is None, block not found
         match transactions {
             Some(transactions) => Ok(transactions),
             None => Err(ErrorObjectOwned::owned(
