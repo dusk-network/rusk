@@ -13,6 +13,7 @@ use jsonrpsee::types::ErrorObjectOwned;
 
 use std::sync::Arc;
 
+/// Maximum number of blocks to retrieve in a single request.
 const MAX_BLOCKS_TO_RETRIEVE: u64 = 100;
 
 /// RPC trait for block-related methods.
@@ -38,7 +39,7 @@ pub trait BlockRpc {
     #[method(name = "getBlockByHash")]
     async fn get_block_by_hash(
         &self,
-        hash: String,
+        block_hash: String,
         include_txs: Option<bool>,
     ) -> Result<model::block::Block, ErrorObjectOwned>;
 
@@ -310,9 +311,31 @@ pub trait BlockRpc {
     #[method(name = "getBlockTransactionRangeByHash")]
     async fn get_block_transaction_range_by_hash(
         &self,
-        hash: String,
+        block_hash: String,
         start_index: u64,
         count: u64,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
+
+    /// Returns all transactions from a block at the specified height.
+    ///
+    /// # Arguments
+    /// * `height` - Block height to query. Positive value representing the
+    ///   specific block height
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block transactions or an error if the
+    /// fetching of the block transactions fails or if the block does not exist.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified height doesn't exist |
+    #[method(name = "getBlockTransactionsByHeight")]
+    async fn get_block_transactions_by_height(
+        &self,
+        height: u64,
     ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
 }
 
@@ -332,11 +355,13 @@ impl BlockRpcImpl {
 impl BlockRpcServer for BlockRpcImpl {
     async fn get_block_by_hash(
         &self,
-        hash: String,
+        block_hash: String,
         include_txs: Option<bool>,
     ) -> Result<model::block::Block, ErrorObjectOwned> {
         // 1. Validate the hash format
-        if hash.len() != 64 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
+        if block_hash.len() != 64
+            || !block_hash.chars().all(|c| c.is_ascii_hexdigit())
+        {
             return Err(ErrorObjectOwned::owned(
                 -32602,
                 "Invalid params",
@@ -346,7 +371,10 @@ impl BlockRpcServer for BlockRpcImpl {
 
         let block = self
             .app_state
-            .get_block_by_hash(hash.as_str(), include_txs.unwrap_or(false))
+            .get_block_by_hash(
+                block_hash.as_str(),
+                include_txs.unwrap_or(false),
+            )
             .await
             .map_err(|e| {
                 ErrorObjectOwned::owned(
@@ -361,7 +389,7 @@ impl BlockRpcServer for BlockRpcImpl {
             None => Err(ErrorObjectOwned::owned(
                 -32000,
                 "Block not found",
-                Some(format!("Block with hash {} not found", hash)),
+                Some(format!("Block with hash {} not found", block_hash)),
             )),
         }
     }
@@ -429,8 +457,7 @@ impl BlockRpcServer for BlockRpcImpl {
     ) -> Result<Vec<model::block::Block>, ErrorObjectOwned> {
         if start_height == 0
             || end_height == 0
-            || start_height > u64::MAX
-            || end_height > u64::MAX
+            || start_height > u64::MAX - end_height
         {
             return Err(ErrorObjectOwned::owned(
                 -32602,
@@ -718,13 +745,15 @@ impl BlockRpcServer for BlockRpcImpl {
 
     async fn get_block_transaction_range_by_hash(
         &self,
-        hash: String,
+        block_hash: String,
         start_index: u64,
         count: u64,
     ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
     {
         // 1. Validate the hash format
-        if hash.len() != 64 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
+        if block_hash.len() != 64
+            || !block_hash.chars().all(|c| c.is_ascii_hexdigit())
+        {
             return Err(ErrorObjectOwned::owned(
                 -32602,
                 "Invalid params",
@@ -740,18 +769,10 @@ impl BlockRpcServer for BlockRpcImpl {
             ));
         }
 
-        if start_index + count > u64::MAX || count > MAX_BLOCKS_TO_RETRIEVE {
-            return Err(ErrorObjectOwned::owned(
-                -32602,
-                "Invalid params",
-                Some("Invalid count (zero or too large)".to_string()),
-            ));
-        }
-
         let transactions = self
             .app_state
             .get_block_transaction_range_by_hash(
-                &hash,
+                &block_hash,
                 start_index as usize,
                 count as usize,
             )
@@ -770,6 +791,33 @@ impl BlockRpcServer for BlockRpcImpl {
                 -32000,
                 "Block not found",
                 Some("Block with specified hash doesn't exist".to_string()),
+            )),
+        }
+    }
+
+    async fn get_block_transactions_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
+    {
+        let transactions = self
+            .app_state
+            .get_block_transactions_by_height(height)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match transactions {
+            Some(transactions) => Ok(transactions),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some("Block with specified height doesn't exist".to_string()),
             )),
         }
     }
