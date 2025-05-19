@@ -742,8 +742,8 @@ impl JsonRpcConfig {
     /// 1. Environment variables (flat structure, e.g.,
     ///    RUSK_JSONRPC_HTTP_BIND_ADDRESS)
     /// 2. Config file specified by RUSK_JSONRPC_CONFIG_PATH env var (expects
-    ///    [jsonrpc] section)
-    /// 3. Config file specified by `config_file` argument (expects [jsonrpc]
+    ///    \[jsonrpc\] section)
+    /// 3. Config file specified by `config_file` argument (expects \[jsonrpc\]
     ///    section)
     /// 4. Default values
     #[instrument(level = "info", name = "load_jsonrpc_config", skip_all, fields(path = ?config_file))]

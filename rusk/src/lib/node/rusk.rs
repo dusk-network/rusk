@@ -303,10 +303,10 @@ impl Rusk {
     ///   value disables the check.
     ///
     /// # Returns
-    ///  - Vec<SpentTransaction> - The transactions that were spent.
-    /// - VerificationOutput - The verification output.
-    /// - Vec<ContractTxEvent> - All contract events that were emitted from the
-    ///   given transactions.
+    ///  - `Vec<SpentTransaction>` - The transactions that were spent.
+    /// - `VerificationOutput` - The verification output.
+    /// - `Vec<ContractTxEvent>` - All contract events that were emitted from
+    ///   the given transactions.
     #[allow(clippy::too_many_arguments)]
     pub fn accept_transactions(
         &self,

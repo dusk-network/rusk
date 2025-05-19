@@ -264,10 +264,15 @@ impl AppState {
     /// # Arguments
     ///
     /// * `config` - The JSON-RPC server configuration.
-    /// * `db_adapter` - An implementation of the [`DatabaseAdapter`] trait.
-    /// * `archive_adapter` - An implementation of the [`ArchiveAdapter`] trait.
+    /// * `db_adapter` - An implementation of the
+    ///   [`DatabaseAdapter`](crate::jsonrpc::infrastructure::db::DatabaseAdapter)
+    ///   trait.
+    /// * `archive_adapter` - An implementation of the
+    ///   [`ArchiveAdapter`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter)
+    ///   trait.
     /// * `network_adapter` - The network adapter implementation.
-    /// * `vm_adapter` - The VM adapter implementation (`VMExecution`).
+    /// * `vm_adapter` - The VM adapter implementation
+    ///   ([`VMExecution`](node::vm::VMExecution)).
     /// * `subscription_manager` - The manager for WebSocket subscriptions.
     /// * `metrics_collector` - The collector for server metrics.
     /// * `manual_rate_limiters` - The manager for manual rate limiting.
@@ -845,7 +850,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `item_added_topic` string.
     ///
     /// # Arguments
@@ -877,7 +882,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `item_removed_topic` string.
     ///
     /// # Arguments
@@ -909,7 +914,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `item_modified_topic` string.
     ///
     /// # Arguments
@@ -941,7 +946,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `stake_topic` string.
     ///
     /// # Arguments
@@ -974,7 +979,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `transfer_topic` string.
     ///
     /// # Arguments
@@ -1007,7 +1012,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `unstake_topic` string.
     ///
     /// # Arguments
@@ -1039,7 +1044,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `slash_topic` string.
     ///
     /// # Arguments
@@ -1071,7 +1076,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `deposit_topic` string.
     ///
     /// # Arguments
@@ -1103,7 +1108,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `withdraw_topic` string.
     ///
     /// # Arguments
@@ -1136,7 +1141,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `convert_topic` string.
     ///
     /// # Arguments
@@ -1168,7 +1173,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `provisioner_changes_topic` string.
     ///
     /// # Arguments
@@ -1200,7 +1205,7 @@ impl AppState {
     ///
     /// This is a convenience method that delegates to the underlying adapter,
     /// which calls
-    /// [`get_contract_events_by_topic`](ArchiveAdapter::get_contract_events_by_topic)
+    /// [`get_contract_events_by_topic`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter::get_contract_events_by_topic)
     /// with the provided `hard_slash_topic` string.
     ///
     /// # Arguments
@@ -2237,7 +2242,7 @@ impl AppState {
     ///
     /// * `tx_hash_hex`: Transaction hash.
     /// * `include_tx_index`: Whether to include the transaction index in the
-    ///   returned [`TransactionInfo`].
+    ///   returned [`TransactionInfo`](crate::jsonrpc::model::transaction::TransactionInfo).
     ///
     /// # Returns
     ///

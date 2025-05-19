@@ -215,7 +215,7 @@ pub struct ManualRateLimiters {
     /// quotas.
     method_patterns: Arc<Vec<(Pattern, Arc<Quota>)>>,
     /// Limiters for new WebSocket connections per client. Stores
-    /// Arc<BaseLimiter>.
+    /// `Arc<BaseLimiter>`.
     websocket_limiters: Arc<DashMap<ClientInfo, Arc<BaseLimiter>>>,
     /// Nested map for method-specific limiters, using type aliases for
     /// clarity.

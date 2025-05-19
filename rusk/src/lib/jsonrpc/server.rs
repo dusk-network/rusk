@@ -263,7 +263,8 @@ async fn rpc_handler(
 /// ## Middleware
 ///
 /// The server applies the following middleware layers:
-/// - **CORS:** Configurable CORS layer via [`JsonRpcConfig::build_cors_layer`].
+/// - **CORS:** Configurable CORS layer via
+///   [`crate::jsonrpc::config::JsonRpcConfig::build_cors_layer`].
 /// - **Rate Limiting:** Global rate limiting per IP address using
 ///   `tower_governor::GovernorLayer`, configured by
 ///   `JsonRpcConfig.rate_limit.default_limit`. This is applied only if rate

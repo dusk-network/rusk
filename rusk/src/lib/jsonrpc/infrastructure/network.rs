@@ -16,7 +16,7 @@
 //! `node::Network` implementation (feature-gated behind `chain`). Using an
 //! adapter decouples the JSON-RPC layer from the specific network
 //! implementation details, improving testability (allowing mocks like
-//! [`MockNetworkAdapter`] found in test utilities) and maintainability.
+//! `MockNetworkAdapter` found in test utilities) and maintainability.
 //!
 //! Errors specific to network operations are defined in [`NetworkError`].
 //!

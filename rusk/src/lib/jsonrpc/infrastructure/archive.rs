@@ -40,9 +40,8 @@
 //!
 //! All methods within the `ArchiveAdapter` trait return
 //! `Result<_, ArchiveError>`, where
-//! [`ArchiveError`](crate::jsonrpc::infrastructure::error::ArchiveError) is an
-//! enum encompassing potential issues like database errors, query failures,
-//! invalid input, or data conversion problems.
+//! [`ArchiveError`] is an enum encompassing potential issues like database
+//! errors, query failures, invalid input, or data conversion problems.
 
 use crate::jsonrpc::infrastructure::error::ArchiveError;
 use crate::jsonrpc::model;
@@ -74,8 +73,9 @@ pub type MoonlightTxResult =
 /// # Design
 ///
 /// Separating archive access from live state access via distinct traits
-/// ([`DatabaseAdapter`] vs. [`ArchiveAdapter`]) ensures clarity of purpose and
-/// allows different storage/query mechanisms optimized for each use case.
+/// ([`DatabaseAdapter`](crate::jsonrpc::infrastructure::db::DatabaseAdapter)
+/// vs. [`ArchiveAdapter`]) ensures clarity of purpose and allows different
+/// storage/query mechanisms optimized for each use case.
 /// Like `DatabaseAdapter`, this trait provides testability and flexibility.
 ///
 /// # Errors

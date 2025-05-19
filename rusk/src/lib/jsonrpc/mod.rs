@@ -16,10 +16,12 @@
 //! underlying node components accessed via adapters, which in turn depend on
 //! other features:
 //!
-//! - **`chain`**: Required by the [`DatabaseAdapter`] (live state database
-//!   access).
-//! - **`archive`**: Required by the [`ArchiveAdapter`] (historical/indexed data
-//!   access).
+//! - **`chain`**: Required by the
+//!   [`DatabaseAdapter`](crate::jsonrpc::infrastructure::db::DatabaseAdapter)
+//!   (live state database access).
+//! - **`archive`**: Required by the
+//!   [`ArchiveAdapter`](crate::jsonrpc::infrastructure::archive::ArchiveAdapter)
+//!   (historical/indexed data access).
 //!
 //! As defined in `Cargo.toml`, the `jsonrpc-server` feature automatically
 //! enables both `chain` and `archive`. Therefore, simply enabling

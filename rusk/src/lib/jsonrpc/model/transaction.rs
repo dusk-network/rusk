@@ -35,9 +35,6 @@
 //!   hash, timestamp, and index, typically requiring additional lookups to
 //!   construct.
 //! - [`SimulationResult`]: Outcome of simulating a transaction's execution.
-//! - [`ContractEvent`], [`MoonlightEventGroup`]: Structures related to contract
-//!   events emitted during transaction execution (primarily for archival
-//!   purposes).
 //! - [`SpendingIdentifier`], [`SpendingIdType`]: Used to identify transaction
 //!   spending sources (nullifiers or account nonces).
 //!
@@ -55,10 +52,6 @@ use std::convert::From;
 
 // NOTE: Field types use appropriate Rust numerics internally, but
 // large u64 values are serialized as Strings via `serde_helper`.
-
-// Removed ContractEvent and MoonlightEventGroup definitions
-// These have been moved to the `archive` module as they primarily relate
-// to data retrieved from the archive.
 
 // --- Base Transaction and Status Types ---
 
@@ -615,7 +608,7 @@ impl From<node_data::ledger::Transaction> for TransactionResponse {
 /// model.
 ///
 /// This implementation first converts the inner Transaction object using the
-/// existing From<Transaction> implementation, then adds the additional fields
+/// existing `From<Transaction>` implementation, then adds the additional fields
 /// that are specific to SpentTransaction, primarily populating the transaction
 /// status information.
 ///

@@ -1134,7 +1134,7 @@ pub trait DatabaseAdapter: Send + Sync + Debug + 'static {
     ///
     /// * `tx_hash_hex`: Transaction hash.
     /// * `include_tx_index`: Whether to include the transaction index in the
-    ///   returned [`TransactionInfo`].
+    ///   returned [`TransactionInfo`](crate::jsonrpc::model::transaction::TransactionInfo).
     ///
     /// # Returns
     ///

@@ -41,7 +41,7 @@ Controls the behavior of the HTTP transport for the JSON-RPC server.
 **`bind_address`**
 
 - **Description:** The socket address (IP and port) the HTTP server should listen on. Use `0.0.0.0` to listen on all available network interfaces (requires careful security consideration, especially regarding rate limiting and firewalls).
-- **Type:** `String` (Socket Address, e.g., "127.0.0.1:8546", "[::1]:8546", "0.0.0.0:8546")
+- **Type:** `String` (Socket Address, e.g., "127.0.0.1:8546", "\[::1\]:8546", "0.0.0.0:8546")
 - **Default:** `"127.0.0.1:8546"`
 - **Environment Variable:** `RUSK_JSONRPC_HTTP_BIND_ADDRESS`
 - **Validation:** Must be a valid socket address.
@@ -607,7 +607,7 @@ Controls the behavior of the WebSocket transport, primarily used for subscriptio
 **`bind_address`**
 
 - **Description:** The socket address (IP and port) the WebSocket server should listen on. Use `0.0.0.0` to listen on all available network interfaces (requires careful security consideration).
-- **Type:** `String` (Socket Address, e.g., "127.0.0.1:8547", "[::1]:8547", "0.0.0.0:8547")
+- **Type:** `String` (Socket Address, e.g., "127.0.0.1:8547", "\[::1\]:8547", "0.0.0.0:8547")
 - **Default:** `"127.0.0.1:8547"`
 - **Environment Variable:** `RUSK_JSONRPC_WS_BIND_ADDRESS`
 - **Validation:** Must be a valid socket address.
