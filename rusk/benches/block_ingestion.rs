@@ -119,7 +119,7 @@ fn bench_accept(
     let generator = PublicKey::new(*DUSK_CONSENSUS_KEY).into_inner();
 
     let txs = Arc::new(txs);
-    let prev_root = rusk.state_root();
+    let prev_state = rusk.state_root();
 
     for n_txs in N_TXS {
         let rusk = rusk.clone();
@@ -132,8 +132,8 @@ fn bench_accept(
                 b.iter(|| {
                     let txs = txs[..*n_txs].to_vec();
 
-                    rusk.accept_transactions(
-                        prev_root,
+                    rusk.accept_state_transition(
+                        prev_state,
                         BLOCK_HEIGHT,
                         BLOCK_GAS_LIMIT,
                         BLOCK_HASH,
