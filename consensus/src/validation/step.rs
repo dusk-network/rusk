@@ -21,7 +21,7 @@ use crate::config::is_emergency_iter;
 use crate::errors::{HeaderError, OperationError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::StepOutcome;
-use crate::operations::{Operations, StateRoot, VerificationOutput};
+use crate::operations::{Operations, StateRoot, StateTransitionResult};
 use crate::validation::handler;
 
 pub struct ValidationStep<T, D: Database> {
@@ -121,7 +121,7 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
 
     async fn verify_candidate(
         candidate: &Block,
-        state_root: StateRoot,
+        prev_state: StateRoot,
         executor: Arc<T>,
         expected_generator: PublicKeyBytes,
     ) -> Result<(), OperationError> {
@@ -133,17 +133,17 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
             .await?;
 
         // Verify candidate header
-        let (_, voters, _) = executor
+        let (_, cert_voters, _) = executor
             .verify_candidate_header(header, &expected_generator)
             .await?;
 
         // Verify state transition
-        let vst_result = executor
-            .verify_state_transition(state_root, candidate, &voters)
+        let transition_result = executor
+            .verify_state_transition(prev_state, candidate, &cert_voters)
             .await?;
 
         // Verify header against state transition output
-        Self::check_header_vst(header, &vst_result)?;
+        Self::check_header_vst(header, &transition_result)?;
 
         Ok(())
     }
@@ -180,19 +180,19 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
 
     fn check_header_vst(
         header: &Header,
-        vst_result: &VerificationOutput,
+        transition_result: &StateTransitionResult,
     ) -> Result<(), HeaderError> {
         // Check the header against `event_bloom` and `state_root` from VST
-        if vst_result.event_bloom != header.event_bloom {
+        if transition_result.event_bloom != header.event_bloom {
             return Err(HeaderError::EventBloomMismatch(
-                Box::new(vst_result.event_bloom),
+                Box::new(transition_result.event_bloom),
                 Box::new(header.event_bloom),
             ));
         }
 
-        if vst_result.state_root != header.state_hash {
+        if transition_result.state_root != header.state_hash {
             return Err(HeaderError::StateRootMismatch(
-                vst_result.state_root,
+                transition_result.state_root,
                 header.state_hash,
             ));
         }
