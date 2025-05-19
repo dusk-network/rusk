@@ -534,7 +534,8 @@ impl Command {
                 let address = wallet.public_address(profile_idx)?;
 
                 let mut history =
-                    history::transaction_from_notes(settings, notes).await?;
+                    history::transaction_from_notes(settings, notes, &address)
+                        .await?;
 
                 match history::moonlight_history(settings, address).await {
                     Ok(mut moonlight_history) => {

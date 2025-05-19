@@ -8,9 +8,12 @@
 //! The <node-url>/on/gaphql/query if queried with empty bytes returns the
 //! graphql schema
 
+use dusk_core::transfer::phoenix::StealthAddress;
 use dusk_core::transfer::Transaction;
+use dusk_core::transfer::{ConvertEvent, MoonlightTransactionEvent};
 use serde::Deserialize;
 use serde_json::Value;
+use serde_with::hex::Hex;
 use serde_with::{serde_as, DisplayFromStr};
 use tokio::time::{sleep, Duration};
 
@@ -58,14 +61,52 @@ struct BlockResponse {
     pub block: Option<Block>,
 }
 
+// See `PhoenixTransactionEventSubset` for the reason for this struct
+// and allowing dead code here.
+#[serde_as]
+#[derive(Deserialize, Debug, Clone)]
+#[allow(dead_code)]
+struct NoteAddress {
+    stealth_address: StealthAddress,
+}
+
+// This struct is used instead of the one in `dusk_core::transfer`
+// because of the order-dependent deserialization bug in
+// the `dusk_core::transfer::phoenix::Note` https://github.com/dusk-network/phoenix/issues/274.
+// Dead code is allowed to avoid catch-alls, so that the case in which an
+// unexpected event is received, an appropriate error will be thrown.
+#[serde_as]
+#[derive(serde::Deserialize, Debug)]
+#[allow(dead_code)]
+pub struct PhoenixTransactionEventSubset {
+    /// Notes produced during the transaction.
+    #[serde(rename(deserialize = "notes"))]
+    note_addresses: Vec<NoteAddress>,
+    /// The memo included in the transaction.
+    #[serde_as(as = "Hex")]
+    memo: Vec<u8>,
+    /// Gas spent by the transaction.
+    #[serde_as(as = "DisplayFromStr")]
+    gas_spent: u64,
+    /// Optional gas-refund note if the refund is positive.
+    #[serde(rename(deserialize = "refund_note"))]
+    refund_note_address: Option<NoteAddress>,
+}
+
+/// Deserialized block data in the full moonlight history.
 #[serde_as]
 #[derive(Deserialize, Debug)]
-pub struct BlockData {
-    #[serde_as(as = "DisplayFromStr")]
-    pub gas_spent: u64,
-    pub sender: String,
-    #[serde_as(as = "DisplayFromStr")]
-    pub value: f64,
+#[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
+pub enum BlockData {
+    /// For the moonlight transaction event.
+    MoonlightTransactionEvent(MoonlightTransactionEvent),
+    /// For the PhoenixTransactionEvent.
+    /// In the case where a conversion is made from phoenix to
+    /// moonlight, this appears.
+    PhoenixTransactionEvent(PhoenixTransactionEventSubset),
+    /// For the convert event.
+    ConvertEvent(ConvertEvent),
 }
 
 #[derive(Deserialize, Debug)]
@@ -229,6 +270,33 @@ impl GraphQL {
         Ok(response)
     }
 
+    /// Query the archival node for moonlight transactions of `address`
+    /// in the given `block`.
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// or if the response body is not in JSON format or encoded correctly.
+    pub async fn moonlight_history_at_block(
+        &self,
+        address: &Address,
+        block: u64,
+    ) -> Result<FullMoonlightHistory, Error> {
+        let query = format!(
+            r#"query {{ fullMoonlightHistory(address: "{address}", fromBlock: {block}, toBlock: {block}) {{ json }} }}"#
+        );
+
+        let response = self
+            .query(&query)
+            .await
+            .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+
+        let response =
+            serde_json::from_slice::<FullMoonlightHistory>(&response)
+                .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+
+        Ok(response)
+    }
+
     /// Fetch the spent transaction given moonlight tx hash
     ///
     /// # Errors
@@ -336,6 +404,11 @@ async fn deser() -> Result<(), Box<dyn std::error::Error>> {
 
     let empty_full_moonlight_history = r#"{"fullMoonlightHistory":null}"#;
     serde_json::from_str::<FullMoonlightHistory>(empty_full_moonlight_history)
+        .unwrap();
+
+    let full_moonlight_history =
+        include_str!("./gql/tests/assets/full_moonlight_history.json");
+    serde_json::from_str::<FullMoonlightHistory>(full_moonlight_history)
         .unwrap();
 
     Ok(())
