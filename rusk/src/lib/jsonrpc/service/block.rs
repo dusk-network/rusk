@@ -412,6 +412,34 @@ pub trait BlockRpc {
         &self,
         from_height: u64,
     ) -> Result<Option<String>, ErrorObjectOwned>;
+
+    /// Returns gas price statistics from mempool transactions to help users set
+    /// appropriate gas prices for new transactions.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_transactions`: Maximum number of transactions to analyze. If not
+    ///   specified, all available transactions will be analyzed.
+    ///
+    /// # Returns
+    /// The object containing the calculated statistics (average, median,
+    /// maximum, and minimum as numeric strings) or an error if there is
+    /// an internal or database error.
+    ///
+    /// **Note**: When the mempool is empty, all gas price values default to "1"
+    /// to ensure a minimum viable gas price is always available.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | max_transactions is not a positive integer |
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getGasPrice")]
+    async fn get_gas_price(
+        &self,
+        max_transactions: Option<usize>,
+    ) -> Result<model::gas::GasPriceStats, ErrorObjectOwned>;
 }
 
 /// Implementation of the `BlockRpcServer` trait.
@@ -1002,5 +1030,39 @@ impl BlockRpcServer for BlockRpcImpl {
             })?;
 
         Ok(result.map(|block_height| block_height.to_string()))
+    }
+
+    async fn get_gas_price(
+        &self,
+        max_transactions: Option<usize>,
+    ) -> Result<model::gas::GasPriceStats, ErrorObjectOwned> {
+        // 1. Validate input parameters
+        if let Some(max_transactions) = max_transactions {
+            if max_transactions == 0 {
+                return Err(ErrorObjectOwned::owned(
+                    -32602,
+                    "Invalid parameter",
+                    Some(
+                        "max_transactions is not a positive integer"
+                            .to_string(),
+                    ),
+                ));
+            }
+        }
+
+        // 2. Fetch gas price data
+        let gas_price = self
+            .app_state
+            .get_gas_price(max_transactions)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(gas_price)
     }
 }
