@@ -12,13 +12,15 @@ use dusk_consensus::commons::{RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::errors::{ConsensusError, HeaderError, OperationError};
 use dusk_consensus::operations::{
-    CallParams, Operations, Output, VerificationOutput, Voter,
+    Operations, StateTransitionData, StateTransitionResult, Voter,
 };
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
 use metrics::gauge;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block, Fault, Hash, Header};
+use node_data::ledger::{
+    to_str, Block, Fault, Hash, Header, SpentTransaction, Transaction,
+};
 use node_data::message::{payload, AsyncQueue, ConsensusHeader};
 use node_data::{ledger, Serializable, StepName};
 use tokio::sync::{oneshot, Mutex, RwLock};
@@ -315,27 +317,35 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
     async fn verify_state_transition(
         &self,
-        prev_root: [u8; 32],
+        prev_state: [u8; 32],
         blk: &Block,
-        voters: &[Voter],
-    ) -> Result<VerificationOutput, OperationError> {
+        cert_voters: &[Voter],
+    ) -> Result<StateTransitionResult, OperationError> {
         let vm = self.vm.read().await;
 
-        vm.verify_state_transition(prev_root, blk, voters)
+        vm.verify_state_transition(prev_state, blk, cert_voters)
             .map_err(OperationError::FailedVST)
     }
 
-    async fn execute_state_transition(
+    async fn create_state_transition(
         &self,
-        params: CallParams,
-    ) -> Result<Output, OperationError> {
+        transition_data: StateTransitionData,
+    ) -> Result<
+        (
+            Vec<SpentTransaction>,
+            StateTransitionResult,
+            Vec<Transaction>,
+        ),
+        OperationError,
+    > {
         let vm = self.vm.read().await;
 
         let db = self.db.read().await;
-        let (executed_txs, discarded_txs, verification_output) = db
+        let (executed_txs, discarded_txs, transition_result) = db
             .view(|view| {
-                let txs = view.mempool_txs_sorted_by_fee();
-                let ret = vm.execute_state_transition(&params, txs)?;
+                let mempool_txs = view.mempool_txs_sorted_by_fee();
+                let ret =
+                    vm.create_state_transition(&transition_data, mempool_txs)?;
                 Ok(ret)
             })
             .map_err(OperationError::FailedEST)?;
@@ -350,11 +360,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             Ok(())
         });
 
-        Ok(Output {
-            txs: executed_txs,
-            verification_output,
-            discarded_txs,
-        })
+        Ok((executed_txs, transition_result, discarded_txs))
     }
 
     async fn add_step_elapsed_time(
