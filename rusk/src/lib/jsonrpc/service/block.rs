@@ -390,6 +390,28 @@ pub trait BlockRpc {
         height: u64,
         count: usize,
     ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
+
+    /// Returns the height of the next block **after** the given height  that
+    /// contains at least one Phoenix transaction.
+    ///
+    /// # Arguments
+    /// * `from_height` - Starting block height to search from. Positive value
+    ///   representing the specific block height
+    ///
+    /// # Returns
+    /// The block height as a numeric string, or null if no Phoenix transaction
+    /// is found, or an error if there is an internal or database error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getNextBlockWithPhoenixTransaction")]
+    async fn get_next_block_with_phoenix_transaction(
+        &self,
+        from_height: u64,
+    ) -> Result<Option<String>, ErrorObjectOwned>;
 }
 
 /// Implementation of the `BlockRpcServer` trait.
@@ -961,5 +983,24 @@ impl BlockRpcServer for BlockRpcImpl {
                 Some("Block with specified height doesn't exist".to_string()),
             )),
         }
+    }
+
+    async fn get_next_block_with_phoenix_transaction(
+        &self,
+        from_height: u64,
+    ) -> Result<Option<String>, ErrorObjectOwned> {
+        let result = self
+            .app_state
+            .get_next_block_with_phoenix_transaction(from_height)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(result.map(|block_height| block_height.to_string()))
     }
 }
