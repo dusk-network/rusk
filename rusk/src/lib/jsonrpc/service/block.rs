@@ -11,10 +11,6 @@
 //! events, and other related data. The methods are defined in the
 //! `BlockRpc` trait and implemented in the `BlockRpcImpl` struct.
 //!
-//! For detailed documentation on the available block methods, refer to:
-//! [docs/JSON-RPC-block-methods.md](../../../../docs/
-//! JSON-RPC-block-methods.md)
-//!
 //! # Error Handling
 //! Each method provides detailed error codes and descriptions for better
 //! debugging.
@@ -22,6 +18,7 @@
 //! # Thread Safety
 //! The implementation ensures thread safety by using `Arc` for shared
 //! state management.
+#![doc = include_str!("../../../../docs/JSON-RPC-block-methods.md")]
 
 use crate::jsonrpc::infrastructure::state::AppState;
 use crate::jsonrpc::model;

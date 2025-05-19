@@ -1,112 +1,5 @@
 # Block Methods
 
-## Table of Contents
-
-- [Block Methods](#block-methods)
-  - [Table of Contents](#table-of-contents)
-  - [Block Types](#block-types)
-  - [Types](#types)
-    - [Type Conventions](#type-conventions)
-    - [Request Types](#request-types)
-    - [Response Types](#response-types)
-  - [Methods](#methods)
-    - [Get Blocks Queries](#get-blocks-queries)
-    - [getBlockByHash](#getblockbyhash)
-      - [Parameters](#parameters-0)
-      - [Returns](#returns-0)
-      - [Errors](#errors-0)
-      - [Examples](#examples-0)
-    - [getBlockByHeight](#getblockbyheight)
-      - [Parameters](#parameters-1)
-      - [Returns](#returns-1)
-      - [Errors](#errors-1)
-      - [Examples](#examples-1)
-    - [getLatestBlock](#getlatestblock)
-      - [Parameters](#parameters-2)
-      - [Returns](#returns-2)
-      - [Errors](#errors-2)
-      - [Examples](#examples-2)
-    - [getBlockRange](#getblockrange)
-      - [Parameters](#parameters-3)
-      - [Returns](#returns-3)
-      - [Errors](#errors-3)
-      - [Examples](#examples-3)
-    - [getLatestBlocks](#getlatestblocks)
-      - [Parameters](#parameters-4)
-      - [Returns](#returns-4)
-      - [Errors](#errors-4)
-      - [Examples](#examples-4)
-    - [getBlocksCount](#getblockscount)
-      - [Parameters](#parameters-5)
-      - [Returns](#returns-5)
-      - [Errors](#errors-5)
-      - [Examples](#examples-5)
-    - [getBlockPair](#getblockpair)
-      - [Parameters](#parameters-6)
-      - [Returns](#returns-6)
-      - [Errors](#errors-6)
-      - [Examples](#examples-6)
-    - [Get Block Status](#get-block-status)
-    - [getBlockStatus](#getblockstatus)
-      - [Parameters](#parameters-7)
-      - [Returns](#returns-7)
-      - [Errors](#errors-7)
-      - [Examples](#examples-7)
-    - [Get Block Events](#get-block-events)
-    - [getBlockEventsByHash](#getblockeventsbyhash)
-      - [Parameters](#parameters-8)
-      - [Returns](#returns-8)
-      - [Errors](#errors-8)
-      - [Examples](#examples-8)
-    - [getBlockEventsByHeight](#getblockeventsbyheight)
-      - [Parameters](#parameters-9)
-      - [Returns](#returns-9)
-      - [Errors](#errors-9)
-      - [Examples](#examples-9)
-    - [getLatestBlockEvents](#getlatestblockevents)
-      - [Parameters](#parameters-10)
-      - [Returns](#returns-10)
-      - [Errors](#errors-10)
-      - [Examples](#examples-10)
-    - [Get Block Transactions](#get-block-transactions)
-    - [getBlockTransactionsByHash](#getblocktransactionsbyhash)
-      - [Parameters](#parameters-11)
-      - [Returns](#returns-11)
-      - [Errors](#errors-11)
-      - [Examples](#examples-11)
-    - [getBlockTransactionRangeByHash](#getblocktransactionrangebyhash)
-      - [Parameters](#parameters-12)
-      - [Returns](#returns-12)
-      - [Errors](#errors-12)
-      - [Examples](#examples-12)
-    - [getBlockTransactionsByHeight](#getblocktransactionsbyheight)
-      - [Parameters](#parameters-14)
-      - [Returns](#returns-14)
-      - [Errors](#errors-14)
-      - [Examples](#examples-14)
-    - [getBlockTransactionRangeByHeight](#getblocktransactionrangebyheight)
-      - [Parameters](#parameters-15)
-      - [Returns](#returns-15)
-      - [Errors](#errors-15)
-      - [Examples](#examples-15)
-    - [getLastBlockTransactionsByHeight](#getlastblocktransactionsbyheight)
-      - [Parameters](#parameters-16)
-      - [Returns](#returns-16)
-      - [Errors](#errors-16)
-      - [Examples](#examples-16)
-    - [Specialized Methods](#specialized-methods)
-    - [getNextBlockWithPhoenixTransaction](#getnextblockwithphoenixtransaction)
-      - [Parameters](#parameters-17)
-      - [Returns](#returns-17)
-      - [Errors](#errors-17)
-      - [Examples](#examples-17)
-    - [Get Gas Price](#get-gas-price)
-    - [getGasPrice](#getgasprice)
-      - [Parameters](#parameters-18)
-      - [Returns](#returns-18)
-      - [Errors](#errors-18)
-      - [Examples](#examples-18)
-
 ## Block Types
 
 Blocks in the Dusk Network have two states:
@@ -157,6 +50,8 @@ Blocks in the Dusk Network have two states:
 - Other values that won't exceed 2^53 - 1
 
 ### Request Types
+
+Note: Types are represented in TypeScript.
 
 ```typescript
 type BlockByHashRequest = {
@@ -233,6 +128,8 @@ type GasPriceRequest = {
 ```
 
 ### Response Types
+
+Note: Types are represented in TypeScript.
 
 ```typescript
 type BlockHeader = {
