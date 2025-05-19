@@ -11,11 +11,6 @@
 //! loading configuration settings from multiple sources including TOML files
 //! and environment variables, providing sensible defaults for all options.
 //!
-//! For a detailed external overview of all configuration options, the TOML file
-//! format, environment variable mappings, and security considerations, please
-//! refer to: [docs/jsonrpc_configuration.md](../../../docs/
-//! jsonrpc_configuration.md)
-//!
 //! ## Core Features
 //!
 //! - **Layered Configuration:** Loads settings with clear precedence:
@@ -230,6 +225,7 @@
 //! For more details on specific fields, see the documentation for
 //! [`JsonRpcConfig`] and its nested structs like [`HttpServerConfig`],
 //! [`RateLimitConfig`], etc.
+#![doc = include_str!("../../../docs/jsonrpc_configuration.md")]
 
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
