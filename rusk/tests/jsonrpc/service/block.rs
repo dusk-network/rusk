@@ -722,3 +722,144 @@ async fn test_get_block_by_hash_transactions_none() {
     server_task.abort();
     let _ = server_task.await;
 }
+
+#[tokio::test]
+async fn test_get_next_block_with_phoenix_transaction() {
+    // --- Test Case 1: Phoenix transaction found ---
+    {
+        let ephemeral_addr = get_ephemeral_port()
+            .expect("Failed to get ephemeral port (case found)");
+        let mut config = JsonRpcConfig::test_config();
+        config.http.bind_address = ephemeral_addr;
+        config.http.cert = None;
+        config.http.key = None;
+
+        // Setup mock data
+        let mut archive_mock = MockArchiveAdapter::default();
+        let from_height = 1000;
+        let phoenix_block_height = 1002;
+        archive_mock
+            .next_phoenix_height
+            .insert(from_height, Some(phoenix_block_height));
+
+        let db_mock = MockDbAdapter::default();
+        let network_mock = MockNetworkAdapter::default();
+        let vm_mock = MockVmAdapter::default();
+        let sub_manager = SubscriptionManager::default();
+        let metrics = MetricsCollector::default();
+        let rate_limiters =
+            ManualRateLimiters::new(Arc::new(config.rate_limit.clone()))
+                .expect("Failed to create rate limiters");
+
+        let app_state = Arc::new(AppState::new(
+            config.clone(),
+            Arc::new(db_mock),
+            Arc::new(archive_mock),
+            Arc::new(network_mock),
+            Arc::new(vm_mock),
+            sub_manager,
+            metrics,
+            rate_limiters,
+        ));
+
+        // Start the JSON-RPC server
+        let server_handle = tokio::spawn(run_server(app_state));
+        sleep(Duration::from_millis(500)).await;
+
+        // Send a request to get_next_block_with_phoenix_transaction
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(format!("http://{}/rpc", ephemeral_addr))
+            .json(&json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getNextBlockWithPhoenixTransaction",
+                "params": [1000]
+            }))
+            .send()
+            .await
+            .expect("Failed to send request");
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        let resp_json = resp
+            .json::<serde_json::Value>()
+            .await
+            .expect("Failed to parse response as JSON");
+
+        // Verify the response format when a Phoenix transaction is found
+        assert_eq!(resp_json["jsonrpc"], "2.0");
+        assert_eq!(resp_json["id"], 1);
+        assert_eq!(resp_json["result"], "1002");
+
+        // Cleanup
+        server_handle.abort();
+    }
+
+    // --- Test Case 2: Phoenix transaction not found ---
+    {
+        let ephemeral_addr = get_ephemeral_port()
+            .expect("Failed to get ephemeral port (case not found)");
+        let mut config = JsonRpcConfig::test_config();
+        config.http.bind_address = ephemeral_addr;
+        config.http.cert = None;
+        config.http.key = None;
+
+        // Setup mock data - Return None for the
+        // get_next_block_with_phoenix_transaction
+        let mut archive_mock = MockArchiveAdapter::default();
+        let from_height = 1000;
+        archive_mock.next_phoenix_height.insert(from_height, None);
+
+        let db_mock = MockDbAdapter::default();
+        let network_mock = MockNetworkAdapter::default();
+        let vm_mock = MockVmAdapter::default();
+        let sub_manager = SubscriptionManager::default();
+        let metrics = MetricsCollector::default();
+        let rate_limiters =
+            ManualRateLimiters::new(Arc::new(config.rate_limit.clone()))
+                .expect("Failed to create rate limiters");
+
+        let app_state = Arc::new(AppState::new(
+            config.clone(),
+            Arc::new(db_mock),
+            Arc::new(archive_mock),
+            Arc::new(network_mock),
+            Arc::new(vm_mock),
+            sub_manager,
+            metrics,
+            rate_limiters,
+        ));
+
+        // Start the JSON-RPC server
+        let server_handle = tokio::spawn(run_server(app_state));
+        sleep(Duration::from_millis(500)).await;
+
+        // Send a request to get_next_block_with_phoenix_transaction
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(format!("http://{}/rpc", ephemeral_addr))
+            .json(&json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getNextBlockWithPhoenixTransaction",
+                "params": [1000]
+            }))
+            .send()
+            .await
+            .expect("Failed to send request");
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        let resp_json = resp
+            .json::<serde_json::Value>()
+            .await
+            .expect("Failed to parse response as JSON");
+
+        // Verify the response format when no Phoenix transaction is found
+        assert_eq!(resp_json["jsonrpc"], "2.0");
+        assert_eq!(resp_json["id"], 1);
+        assert_eq!(resp_json["result"], serde_json::Value::Null);
+
+        // Cleanup
+        server_handle.abort();
+    }
+}
