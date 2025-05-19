@@ -25,7 +25,7 @@ const fn default_block_gas_limit() -> u64 {
 
 /// Configuration for the execution of a transaction.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
+pub struct Config { // Wouldn't hurt to rename this to VMConfig
     /// The amount of gas points charged for each byte in a contract-deployment
     /// bytecode.
     #[serde(default = "default_gas_per_deploy_byte")]
@@ -41,7 +41,9 @@ pub struct Config {
 
     /// The maximum amount of gas points that can be used in a block.
     #[serde(default = "default_block_gas_limit")]
-    pub block_gas_limit: u64,
+    pub block_gas_limit: u64, /* is it ok to have this as config? what if I
+                               * decide to put a very high limit (eg
+                               * u64::MAX)? can I disrupt others? */
 
     /// The timeout for a candidate block generation.
     #[serde(with = "humantime_serde")]

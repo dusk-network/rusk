@@ -140,6 +140,7 @@ impl Rusk {
 
         for unspent_tx in mempool_txs {
             if let Some(timeout) = self.vm_config.generation_timeout {
+                // Why do we load timeout inside the loop?
                 if started.elapsed() > timeout {
                     info!(
                         event = "Stop creating state transition",
@@ -162,6 +163,11 @@ impl Rusk {
             let tx_id = hex::encode(unspent_tx.id());
             let tx_size = unspent_tx.size();
 
+            // this is not really optimal. if we reach the limit, we have to go
+            // though all txs before stopping possible solutions:
+            // - maintain a "smallest_tx_size" variable and stop if size_left <
+            //   smallest_tx_size
+            // what would be the impact if the mempool were full?
             if tx_size > space_left {
                 info!(
                     event = "Skipping transaction",
@@ -192,6 +198,8 @@ impl Rusk {
                         session =
                             self.new_block_session(block_height, prev_state)?;
 
+                        // this is really terrible. can't we find a solution?
+                        // e.g. duplicate the session before executing a tx
                         for spent_tx in &spent_txs {
                             // We know these transactions were correctly
                             // executed before, so we don't bother checking.
@@ -208,6 +216,7 @@ impl Rusk {
                     space_left -= tx_size;
 
                     // We're currently ignoring the result of successful calls
+                    // why? isn't it needed? is it returned?
                     let error = receipt.data.err().map(|e| format!("{e}"));
                     info!(event = "Tx executed", tx_id, gas_spent, error);
 
@@ -240,6 +249,9 @@ impl Rusk {
             }
         }
 
+        // this should probably be handled by the vm or an intermediate
+        // component (chain) if we had chain sessions, we could do all
+        // these by "closing" the chain session (finalizing the new block)
         let coinbase_events = reward_and_slash(
             &mut session,
             block_height,
@@ -461,7 +473,7 @@ impl Rusk {
     fn _session(
         &self,
         block_height: u64,
-        commit: Option<[u8; 32]>,
+        commit: Option<[u8; 32]>, /* why do we have both block_height and commit? aren't they mutually exclusive? */
     ) -> Result<Session> {
         let commit = commit.unwrap_or_else(|| {
             let tip = self.tip.read();
