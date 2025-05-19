@@ -4,6 +4,25 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! This module provides the implementation of JSON-RPC methods related to
+//! blockchain blocks.
+//!
+//! It includes functionalities for retrieving block details, transactions,
+//! events, and other related data. The methods are defined in the
+//! `BlockRpc` trait and implemented in the `BlockRpcImpl` struct.
+//!
+//! For detailed documentation on the available block methods, refer to:
+//! [docs/JSON-RPC-block-methods.md](../../../../docs/
+//! JSON-RPC-block-methods.md)
+//!
+//! # Error Handling
+//! Each method provides detailed error codes and descriptions for better
+//! debugging.
+//!
+//! # Thread Safety
+//! The implementation ensures thread safety by using `Arc` for shared
+//! state management.
+
 use crate::jsonrpc::infrastructure::state::AppState;
 use crate::jsonrpc::model;
 
