@@ -96,7 +96,6 @@ pub(crate) async fn online(
     }
 
     let select = select?;
-    let max_withdraw = wallet.get_stake_reward(profile_idx).await?;
 
     let res = match select {
         MenuItem::Transfer => {
@@ -264,6 +263,7 @@ pub(crate) async fn online(
             }
 
             let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+            let max_withdraw = wallet.get_stake_reward(profile_idx).await?;
 
             ProfileOp::Run(Box::new(Command::Withdraw {
                 address: Some(addr),
