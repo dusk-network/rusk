@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change withdraw rewards to withdraw partial amount [#2538]
 
+### Fixed
+
+- Fix transaction history error when the wallet has no stake [#3734]
+
 ## [0.2.0] - 2025-05-07
 
 ### Added
@@ -77,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- Issues -->
+[#3734]: https://github.com/dusk-network/rusk/issues/3734
 [#3713]: https://github.com/dusk-network/rusk/issues/3713
 [#3707]: https://github.com/dusk-network/rusk/issues/3707
 [#3704]: https://github.com/dusk-network/rusk/issues/3704
