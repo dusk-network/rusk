@@ -1913,7 +1913,8 @@ impl AppState {
     ///
     /// # Arguments
     ///
-    /// * `max_transactions`: Maximum number of transactions to consider.
+    /// * `max_transactions`: Maximum number of transactions to analyze. If not
+    ///   specified, all available transactions will be analyzed.
     ///
     /// # Returns
     ///
