@@ -324,7 +324,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         let vm = self.vm.read().await;
 
         vm.verify_state_transition(prev_state, blk, cert_voters)
-            .map_err(OperationError::FailedVST)
+            .map_err(OperationError::FailedTransitionVerification)
     }
 
     async fn new_state_transition(
@@ -348,7 +348,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                     vm.create_state_transition(&transition_data, mempool_txs)?;
                 Ok(ret)
             })
-            .map_err(OperationError::FailedEST)?;
+            .map_err(OperationError::FailedTransitionCreation)?;
         let _ = db.update(|m| {
             for t in &discarded_txs {
                 if let Ok(_removed) = m.delete_mempool_tx(t.id(), true) {
