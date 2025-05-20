@@ -51,7 +51,7 @@ impl Display for TransactionHistory {
             TransactionDirection::Out => {
                 let fee: u64 = self.fee;
                 let fee = from_dusk(fee);
-                format!("{: >12.9}", fee)
+                format!("{: >12.9}", -fee)
             }
         };
 
