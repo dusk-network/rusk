@@ -4,30 +4,38 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import {assert, seeder, test, Treasury} from "./harness.js";
-import {AccountSyncer, Bookkeeper, Network, ProfileGenerator} from "@dusk/w3sper";
+import {assert, getLocalWasmBuffer, seeder, test, Treasury} from "./harness.js";
+import {AccountSyncer, AddressSyncer, Bookkeeper, Network, ProfileGenerator, useAsProtocolDriver} from "@dusk/w3sper";
 
-test("withdraw 0 as stake reward", async () => {
+test("account memo transfer", async () => {
     const network = await Network.connect("http://localhost:8080/");
     const profiles = new ProfileGenerator(seeder);
-
-    const users = [await profiles.default, await profiles.next()];
-
+    const users = await Promise.all([profiles.default, profiles.next()]);
     const accounts = new AccountSyncer(network);
-
     const treasury = new Treasury(users);
-    const bookkeeper = new Bookkeeper(treasury);
-    const bookentry = bookkeeper.as(users[0]);
 
     await treasury.update({ accounts });
 
-    const transfer = bookentry.withdraw(0n).gas({ limit: 500_000_000n });
+    const bookkeeper = new Bookkeeper(treasury);
 
-    await assert.reject(
-        async () => await network.execute(transfer),
-        RangeError,
-        "Can't withdraw an empty reward amount.",
-    );
+    let transfer = bookkeeper
+        .as(users[1])
+        .transfer(1n)
+        .to(users[0].account)
+        // .memo(new Uint8Array([2, 4, 8, 16]))
+        .memo(null)
+        .fn_name("get_version")
+        .fn_args([0])
+        .contract_id([0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        .gas({ limit: 500_000_000n });
+
+    let { hash } = await network.execute(transfer);
+
+    let evt = await network.transactions.withId(hash).once.executed();
+
+    // assert.equal([...evt.memo()], [2, 4, 8, 16]);
+
+    await treasury.update({ accounts });
 
     await network.disconnect();
 });
