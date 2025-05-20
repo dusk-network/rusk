@@ -61,7 +61,7 @@ pub trait Operations: Send + Sync {
         &self,
         candidate_header: &Header,
         expected_generator: &PublicKeyBytes,
-    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError>;
+    ) -> Result<Vec<Voter>, HeaderError>;
 
     async fn validate_faults(
         &self,
