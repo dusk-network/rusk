@@ -69,10 +69,10 @@ impl From<BlsSigError> for ConsensusError {
 
 #[derive(Debug, Error)]
 pub enum OperationError {
-    #[error("VST failed: {0}")]
-    FailedVST(StateTransitionError),
-    #[error("EST failed: {0}")]
-    FailedEST(StateTransitionError),
+    #[error("State transition creation failed: {0}")]
+    FailedTransitionCreation(StateTransitionError),
+    #[error("State transition verification failed: {0}")]
+    FailedTransitionVerification(StateTransitionError),
     #[error("Invalid header: {0}")]
     InvalidHeader(HeaderError),
     #[error("Unable to update metrics: {0}")]
@@ -149,7 +149,9 @@ impl OperationError {
     pub fn must_vote(&self) -> bool {
         match self {
             Self::InvalidHeader(e) => e.must_vote(),
-            Self::FailedVST(StateTransitionError::TipChanged) => false,
+            Self::FailedTransitionVerification(
+                StateTransitionError::TipChanged,
+            ) => false,
             _ => true,
         }
     }
