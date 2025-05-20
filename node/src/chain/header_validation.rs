@@ -65,24 +65,31 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
     }
 
-    /// Executes check points to make sure a candidate header is fully valid
+    /// Verifies all header fields except state root and event bloom
     ///
-    /// * `disable_winner_att_check` - disables the check of the winning
-    /// attestation
+    /// # Arguments
     ///
-    /// Returns a tuple containing:
-    ///   - the number of Previous Non-Attested Iterations (PNI)
-    ///   - previous block voters
-    ///   - current block voters (if not `disable_winner_att_check`)
-    pub async fn execute_checks(
+    /// * `header` - the block header to verify
+    /// * `expected_generator` - the generator extracted by the Deterministic
+    ///   Sortition algorithm
+    /// * `check_attestation` - `true` if the Attestation has to be verified
+    ///   (this should be `false` for Candidate headers, for which no
+    ///   Attestation has been yet produced)
+    ///
+    /// # Returns
+    ///
+    /// * the number of Previous Non-Attested Iterations (PNI)
+    /// * the voters of the previous block Certificate
+    /// * the voters of current block Attestation (if `check_attestation` is
+    ///   `true`)
+    pub async fn verify_block_header_fields(
         &self,
         header: &ledger::Header,
         expected_generator: &PublicKeyBytes,
         check_attestation: bool,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
-        let generator =
-            self.verify_block_generator(header, expected_generator)?;
-        self.verify_basic_fields(header, &generator).await?;
+        self.verify_block_header_basic_fields(header, expected_generator)
+            .await?;
 
         let cert_voters = self.verify_prev_block_cert(header).await?;
 
@@ -143,31 +150,32 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(generator)
     }
 
-    /// Verifies any non-attestation field
-    async fn verify_basic_fields(
+    /// Performs sanity checks for basic fields of the block header
+    async fn verify_block_header_basic_fields(
         &self,
-        candidate_block: &'a ledger::Header,
-        generator: &MultisigPublicKey,
+        header: &'a ledger::Header,
+        expected_generator: &PublicKeyBytes,
     ) -> Result<(), HeaderError> {
-        if candidate_block.version != BLOCK_HEADER_VERSION {
+        let generator =
+            self.verify_block_generator(header, expected_generator)?;
+
+        if header.version != BLOCK_HEADER_VERSION {
             return Err(HeaderError::UnsupportedVersion);
         }
 
-        if candidate_block.hash == [0u8; 32] {
+        if header.hash == [0u8; 32] {
             return Err(HeaderError::EmptyHash);
         }
 
-        if candidate_block.height != self.prev_header.height + 1 {
+        if header.height != self.prev_header.height + 1 {
             return Err(HeaderError::MismatchHeight(
-                candidate_block.height,
+                header.height,
                 self.prev_header.height,
             ));
         }
 
         // Ensure rule of minimum block time is addressed
-        if candidate_block.timestamp
-            < self.prev_header.timestamp + *MINIMUM_BLOCK_TIME
-        {
+        if header.timestamp < self.prev_header.timestamp + *MINIMUM_BLOCK_TIME {
             return Err(HeaderError::BlockTimeLess);
         }
 
@@ -178,8 +186,8 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         // is higher than the maximum time needed to run all round iterations.
         // This guarantees the network has enough time to actually produce a
         // block, if possible.
-        if is_emergency_block(candidate_block.iteration)
-            && candidate_block.timestamp
+        if is_emergency_block(header.iteration)
+            && header.timestamp
                 < self.prev_header.timestamp
                     + MIN_EMERGENCY_BLOCK_TIME.as_secs()
         {
@@ -188,13 +196,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         let local_time = get_current_timestamp();
 
-        if candidate_block.timestamp > local_time + MARGIN_TIMESTAMP {
-            return Err(HeaderError::BlockTimeHigher(
-                candidate_block.timestamp,
-            ));
+        if header.timestamp > local_time + MARGIN_TIMESTAMP {
+            return Err(HeaderError::BlockTimeHigher(header.timestamp));
         }
 
-        if candidate_block.prev_block_hash != self.prev_header.hash {
+        if header.prev_block_hash != self.prev_header.hash {
             return Err(HeaderError::PrevBlockHash);
         }
 
@@ -203,7 +209,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             .db
             .read()
             .await
-            .view(|db| db.block_exists(&candidate_block.hash))
+            .view(|db| db.block_exists(&header.hash))
             .map_err(|e| {
                 HeaderError::Storage(
                     "error checking Ledger::get_block_exists",
@@ -216,7 +222,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         // Verify seed field
-        self.verify_seed_field(candidate_block.seed.inner(), generator)?;
+        self.verify_seed_field(header.seed.inner(), &generator)?;
 
         Ok(())
     }

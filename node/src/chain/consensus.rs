@@ -290,16 +290,22 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         &self,
         candidate_header: &Header,
         expected_generator: &PublicKeyBytes,
-    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
+    ) -> Result<Vec<Voter>, HeaderError> {
         let validator = Validator::new(
             self.db.clone(),
             &self.tip_header,
             &self.provisioners,
         );
 
-        validator
-            .execute_checks(candidate_header, expected_generator, false)
-            .await
+        let (_, cert_voters, _) = validator
+            .verify_block_header_fields(
+                candidate_header,
+                expected_generator,
+                false,
+            )
+            .await?;
+
+        Ok(cert_voters)
     }
 
     async fn validate_faults(

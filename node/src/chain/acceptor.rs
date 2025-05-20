@@ -1531,8 +1531,7 @@ async fn broadcast<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
     });
 }
 
-/// Performs full verification of block header against prev_block header where
-/// prev_block is usually the blockchain tip
+/// Verifies a block header against its previous block
 ///
 /// Returns the number of Previous Non-Attested Iterations (PNI).
 pub(crate) async fn verify_block_header<DB: database::DB>(
@@ -1565,6 +1564,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     // Verify header validity
     let validator = Validator::new(db, prev_header, provisioners);
     validator
-        .execute_checks(header, &expected_generator, check_att)
+        .verify_block_header_fields(header, &expected_generator, check_att)
         .await
 }
