@@ -601,8 +601,9 @@ export const moonlight = async (info) =>
     let tx = await malloc(4);
     let hash = await malloc(64);
 
-    console.log("hi realm, fun=", moonlight);
+    console.log("hi realm, tx_data=", info.data);
     const data = await serializeTxData(info.data, malloc, memcpy, create_call_data);
+      console.log("hi realm, serialized tx_data=", data);
 
     //console.log("obtained call data=", data);
 
@@ -1078,9 +1079,15 @@ async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memc
     }
 
     const fn_name_buffer = new Uint8Array(fn_name_arg);
-    console.log("222", fn_name_arg, fn_name_buffer.byteLength);
     ptr.fn_name = await malloc(fn_name_buffer.byteLength);
+    let fn_name_len = fn_name_buffer.byteLength;
     await memcpy(ptr.fn_name, fn_name_buffer);
+
+    const fn_name_len_buf = new Uint8Array(4);
+    new DataView(fn_name_len_buf.buffer).setUint32(0, fn_name_len, true);
+    ptr.fn_name_len = await malloc(4);
+    await memcpy(ptr.fn_name_len, fn_name_len_buf);
+
 
     //
     // fn args
@@ -1088,7 +1095,13 @@ async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memc
 
     const fn_args_buffer = new Uint8Array(fn_args);
     ptr.fn_args = await malloc(fn_args_buffer.byteLength);
+    let fn_args_len = fn_args_buffer.byteLength;
     await memcpy(ptr.fn_args, fn_args_buffer);
+
+    const fn_args_len_buf = new Uint8Array(4);
+    new DataView(fn_args_len_buf.buffer).setUint32(0, fn_args_len, true);
+    ptr.fn_args_len = await malloc(4);
+    await memcpy(ptr.fn_args_len, fn_args_len_buf);
 
     //
     // contract_id
@@ -1104,12 +1117,12 @@ async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memc
 
     let ret = await malloc(4);
 
-    console.log("about to call create_call_data", create_call_data);
+    console.log("about to call create_call_data, ==============>", fn_name_len);
 
     const code = await create_call_data(
-        fn_name_buffer.byteLength,
+        ptr.fn_name_len,
         ptr.fn_name,
-        fn_args_buffer.byteLength,
+        ptr.fn_args_len,
         ptr.fn_args,
         ptr.contract_id,
         ret

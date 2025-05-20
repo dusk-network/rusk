@@ -25,8 +25,8 @@ test("account memo transfer", async () => {
         // .memo(new Uint8Array([2, 4, 8, 16]))
         .memo(null)
         .fn_name("get_version")
-        .fn_args([0])
-        .contract_id([0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        .fn_args([44, 55, 66, 77, 88])
+        .contract_id([0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 33])
         .gas({ limit: 500_000_000n });
 
     let { hash } = await network.execute(transfer);
