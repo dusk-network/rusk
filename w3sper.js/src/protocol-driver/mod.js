@@ -5,11 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import * as exu from "@dusk/exu";
-import { none } from "./none.js";
+import {none} from "./none.js";
 
-import { DriverError } from "./error.js";
+import {DriverError} from "./error.js";
 import * as DataBuffer from "./buffer.js";
-import { withAllocator } from "./alloc.js";
+import {withAllocator} from "./alloc.js";
 
 const rng = () => crypto.getRandomValues(new Uint8Array(32));
 
@@ -556,7 +556,7 @@ export const phoenix = async (info) =>
 // this function supports only Memo as TransactionData (passed via info.data)
 // it should also support contract call
 export const moonlight = async (info) =>
-  protocolDriverModule.task(async function ({ malloc, moonlight }, { memcpy }) {
+  protocolDriverModule.task(async function ({ malloc, moonlight, create_call_data }, { memcpy }) {
     const ptr = Object.create(null);
 
     const seed = new Uint8Array(await info.sender.seed);
@@ -601,7 +601,10 @@ export const moonlight = async (info) =>
     let tx = await malloc(4);
     let hash = await malloc(64);
 
-    const data = serializeMemo(info.data);
+    console.log("hi realm, fun=", moonlight);
+    const data = await serializeTxData(info.data, malloc, memcpy, create_call_data);
+
+    //console.log("obtained call data=", data);
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -626,6 +629,7 @@ export const moonlight = async (info) =>
       hash
     );
 
+    console.log("moonlight call returned code", code);
     if (code > 0) throw DriverError.from(code);
 
     let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
@@ -637,6 +641,8 @@ export const moonlight = async (info) =>
       0,
       true
     );
+
+    console.log("tx_len=", tx_len);
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
 
@@ -1036,6 +1042,96 @@ export const withdraw = async (info) =>
     hash = new TextDecoder().decode(await memcpy(null, hash, 64));
     return [tx_buffer, hash];
   })();
+
+
+async function serializeTxData(tx_data, malloc, memcpy, create_call_data) {
+    if (tx_data.memo) {
+        return serializeMemo(tx_data.memo)
+    }
+
+    return await serializeContractCall(tx_data.fn_name, tx_data.fn_args, tx_data.contract_id, malloc, memcpy, create_call_data);
+}
+
+async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memcpy, create_call_data) {
+
+    const ptr = Object.create(null);
+
+    //
+    // fn name
+    //
+
+    if (!fn_name) {
+        return null;
+    }
+
+    let fn_name_arg = null;
+    if (typeof fn_name === "string") {
+        fn_name_arg = new TextEncoder().encode(fn_name);
+    } else if (fn_name instanceof ArrayBuffer) {
+        fn_name_arg = new Uint8Array(fn_name);
+    } else if (fn_name instanceof Uint8Array) {
+        fn_name_arg = fn_name;
+    }
+
+    if (!fn_name_arg) {
+        return null;
+    }
+
+    const fn_name_buffer = new Uint8Array(fn_name_arg);
+    console.log("222", fn_name_arg, fn_name_buffer.byteLength);
+    ptr.fn_name = await malloc(fn_name_buffer.byteLength);
+    await memcpy(ptr.fn_name, fn_name_buffer);
+
+    //
+    // fn args
+    //
+
+    const fn_args_buffer = new Uint8Array(fn_args);
+    ptr.fn_args = await malloc(fn_args_buffer.byteLength);
+    await memcpy(ptr.fn_args, fn_args_buffer);
+
+    //
+    // contract_id
+    //
+
+    const contract_id_buffer = new Uint8Array(contract_id);
+    ptr.contract_id = await malloc(contract_id_buffer.byteLength);
+    await memcpy(ptr.contract_id, contract_id_buffer);
+
+    //
+    // result
+    //
+
+    let ret = await malloc(4);
+
+    console.log("about to call create_call_data", create_call_data);
+
+    const code = await create_call_data(
+        fn_name_buffer.byteLength,
+        ptr.fn_name,
+        fn_args_buffer.byteLength,
+        ptr.fn_args,
+        ptr.contract_id,
+        ret
+    )
+
+    console.log("create_call_data returned code=", code);
+    if (code > 0) throw DriverError.from(code);
+
+    let ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
+        0,
+        true
+    );
+
+    let ret_len = new DataView((await memcpy(null, ret_ptr, 4)).buffer).getUint32(
+        0,
+        true
+    );
+
+    let ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
+    console.log("after calling create_call_data, ret_buf=", ret_buf);
+    return ret_buf;
+}
 
 function serializeMemo(memo) {
   if (!memo) {
