@@ -603,7 +603,7 @@ export const moonlight = async (info) =>
 
     console.log("hi realm, tx_data=", info.data);
     const data = await serializeTxData(info.data, malloc, memcpy, create_call_data);
-      console.log("hi realm, serialized tx_data=", data);
+    console.log("hi realm, serialized tx_data=", data);
 
     //console.log("obtained call data=", data);
 
@@ -1142,8 +1142,8 @@ async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memc
     );
 
     let ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
-    console.log("after calling create_call_data, ret_buf=", ret_buf);
-    return ret_buf;
+    console.log("after calling create_call_data, ret_buf=", ret_buf, " ret_len=", ret_len);
+    return new Uint8Array(DataBuffer.from(ret_buf));
 }
 
 function serializeMemo(memo) {
