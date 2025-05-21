@@ -7,7 +7,7 @@
 import {assert, getLocalWasmBuffer, seeder, test, Treasury} from "./harness.js";
 import {AccountSyncer, AddressSyncer, Bookkeeper, Network, ProfileGenerator, useAsProtocolDriver} from "@dusk/w3sper";
 
-test("account memo transfer", async () => {
+test("account contract call transfer", async () => {
     const network = await Network.connect("http://localhost:8080/");
     const profiles = new ProfileGenerator(seeder);
     const users = await Promise.all([profiles.default, profiles.next()]);

@@ -556,7 +556,7 @@ export const phoenix = async (info) =>
 // this function supports only Memo as TransactionData (passed via info.data)
 // it should also support contract call
 export const moonlight = async (info) =>
-  protocolDriverModule.task(async function ({ malloc, moonlight, create_call_data }, { memcpy }) {
+  protocolDriverModule.task(async function ({ malloc, moonlight, create_tx_data }, { memcpy }) {
     const ptr = Object.create(null);
 
     const seed = new Uint8Array(await info.sender.seed);
@@ -602,7 +602,7 @@ export const moonlight = async (info) =>
     let hash = await malloc(64);
 
     console.log("hi realm, tx_data=", info.data);
-    const data = await serializeTxData(info.data, malloc, memcpy, create_call_data);
+    const data = await serializeTxData(info.data, malloc, memcpy, create_tx_data);
     console.log("hi realm, serialized tx_data=", data);
 
     //console.log("obtained call data=", data);
@@ -1045,15 +1045,15 @@ export const withdraw = async (info) =>
   })();
 
 
-async function serializeTxData(tx_data, malloc, memcpy, create_call_data) {
+async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
     if (tx_data.memo) {
         return serializeMemo(tx_data.memo)
     }
 
-    return await serializeContractCall(tx_data.fn_name, tx_data.fn_args, tx_data.contract_id, malloc, memcpy, create_call_data);
+    return await serializeContractCall(tx_data.fn_name, tx_data.fn_args, tx_data.contract_id, malloc, memcpy, create_tx_data);
 }
 
-async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memcpy, create_call_data) {
+async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memcpy, create_tx_data) {
 
     const ptr = Object.create(null);
 
@@ -1117,18 +1117,20 @@ async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memc
 
     let ret = await malloc(4);
 
-    console.log("about to call create_call_data, ==============>", fn_name_len);
+    console.log("about to call create_tx_data, ==============>", fn_name_len);
 
-    const code = await create_call_data(
+    const code = await create_tx_data(
         ptr.fn_name_len,
         ptr.fn_name,
         ptr.fn_args_len,
         ptr.fn_args,
         ptr.contract_id,
+        null,
+        null,
         ret
     )
 
-    console.log("create_call_data returned code=", code);
+    console.log("create_tx_data returned code=", code);
     if (code > 0) throw DriverError.from(code);
 
     let ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
@@ -1142,7 +1144,7 @@ async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memc
     );
 
     let ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
-    console.log("after calling create_call_data, ret_buf=", ret_buf, " ret_len=", ret_len);
+    console.log("after calling create_tx_data, ret_buf=", ret_buf, " ret_len=", ret_len);
     return new Uint8Array(DataBuffer.from(ret_buf));
 }
 
