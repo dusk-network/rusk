@@ -117,10 +117,8 @@ impl<T: Operations> Generator<T> {
         };
 
         // Compute a valid state transition for the block
-        let (executed_txs, transition_result, _) = self
-            .executor
-            .create_state_transition(transition_data)
-            .await?;
+        let (executed_txs, transition_result, _) =
+            self.executor.new_state_transition(transition_data).await?;
 
         blk_header.state_hash = transition_result.state_root;
         blk_header.event_bloom = transition_result.event_bloom;

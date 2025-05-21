@@ -129,17 +129,17 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
 
         // Verify faults
         executor
-            .verify_faults(header.height, candidate.faults())
+            .validate_faults(header.height, candidate.faults())
             .await?;
 
         // Verify candidate header
         let (_, cert_voters, _) = executor
-            .verify_candidate_header(header, &expected_generator)
+            .validate_block_header(header, &expected_generator)
             .await?;
 
         // Verify state transition
         let transition_result = executor
-            .verify_state_transition(prev_state, candidate, &cert_voters)
+            .validate_state_transition(prev_state, candidate, &cert_voters)
             .await?;
 
         // Verify header against state transition output

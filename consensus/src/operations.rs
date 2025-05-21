@@ -57,26 +57,26 @@ impl fmt::Display for StateTransitionResult {
 
 #[async_trait::async_trait]
 pub trait Operations: Send + Sync {
-    async fn verify_candidate_header(
+    async fn validate_block_header(
         &self,
         candidate_header: &Header,
         expected_generator: &PublicKeyBytes,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError>;
 
-    async fn verify_faults(
+    async fn validate_faults(
         &self,
         block_height: u64,
         faults: &[Fault],
     ) -> Result<(), OperationError>;
 
-    async fn verify_state_transition(
+    async fn validate_state_transition(
         &self,
         prev_state: StateRoot,
         blk: &Block,
         cert_voters: &[Voter],
     ) -> Result<StateTransitionResult, OperationError>;
 
-    async fn create_state_transition(
+    async fn new_state_transition(
         &self,
         transition_data: StateTransitionData,
     ) -> Result<
