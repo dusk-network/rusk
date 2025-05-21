@@ -388,8 +388,10 @@ pub unsafe fn phoenix(
         None
     } else {
         let buffer = mem::read_buffer(data);
-
-        Some(buffer[1..].to_vec().into())
+        let transaction_data: TransactionData =
+            rkyv::from_bytes(buffer.to_vec().as_slice())
+                .or(Err(ErrorCode::DeserializationError))?;
+        Some(transaction_data)
     };
 
     let prover = NoOpProver::default();
