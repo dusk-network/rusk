@@ -467,8 +467,9 @@ pub unsafe fn moonlight(
         None
     } else {
         let buffer = mem::read_buffer(data);
-        let transaction_data: TransactionData = rkyv::from_bytes(buffer)
-            .or(Err(ErrorCode::DeserializationError))?;
+        let transaction_data: TransactionData =
+            rkyv::from_bytes(buffer.to_vec().as_slice())
+                .or(Err(ErrorCode::DeserializationError))?;
         Some(transaction_data)
     };
 
@@ -847,7 +848,7 @@ pub unsafe fn create_call_data(
         contract,
     };
     let tx_data = TransactionData::Call(contract_call);
-    let bytes = match rkyv::to_bytes::<TransactionData, 4096>(&tx_data) {
+    let bytes = match rkyv::to_bytes::<_, 4096>(&tx_data) {
         Ok(v) => v.to_vec(),
         Err(_) => return ErrorCode::ArchivingError,
     };
