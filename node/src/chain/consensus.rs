@@ -324,11 +324,13 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         prev_state: [u8; 32],
         blk: &Block,
         cert_voters: &[Voter],
-    ) -> Result<StateTransitionResult, OperationError> {
+    ) -> Result<(), OperationError> {
         let vm = self.vm.read().await;
 
         vm.verify_state_transition(prev_state, blk, cert_voters)
-            .map_err(OperationError::FailedTransitionVerification)
+            .map_err(OperationError::FailedTransitionVerification)?;
+
+        Ok(())
     }
 
     async fn generate_state_transition(

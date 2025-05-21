@@ -37,7 +37,7 @@ pub trait VMExecution: Send + Sync + 'static {
         prev_state: [u8; 32],
         blk: &Block,
         cert_voters: &[Voter],
-    ) -> Result<StateTransitionResult, StateTransitionError>;
+    ) -> Result<(), StateTransitionError>;
 
     fn do_accept_state_transition(
         &self,
