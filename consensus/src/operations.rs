@@ -72,7 +72,7 @@ pub trait Operations: Send + Sync {
         prev_state: StateRoot,
         blk: &Block,
         cert_voters: &[Voter],
-    ) -> Result<StateTransitionResult, OperationError>;
+    ) -> Result<(), OperationError>;
 
     async fn generate_state_transition(
         &self,
