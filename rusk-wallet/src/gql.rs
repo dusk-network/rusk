@@ -252,10 +252,10 @@ impl GraphQL {
     /// or if the response body is not in JSON format or encoded correctly.
     pub async fn moonlight_history(
         &self,
-        address: Address,
+        public_address: Address,
     ) -> Result<FullMoonlightHistory, Error> {
         let query = format!(
-            r#"query {{ fullMoonlightHistory(address: "{address}") {{ json }} }}"#
+            r#"query {{ fullMoonlightHistory(address: "{public_address}") {{ json }} }}"#
         );
 
         let response = self
@@ -270,7 +270,7 @@ impl GraphQL {
         Ok(response)
     }
 
-    /// Query the archival node for moonlight transactions of `address`
+    /// Query the archival node for moonlight transactions of `public_address`
     /// in the given `block`.
     ///
     /// # Errors
@@ -278,11 +278,11 @@ impl GraphQL {
     /// or if the response body is not in JSON format or encoded correctly.
     pub async fn moonlight_history_at_block(
         &self,
-        address: &Address,
+        public_address: &Address,
         block: u64,
     ) -> Result<FullMoonlightHistory, Error> {
         let query = format!(
-            r#"query {{ fullMoonlightHistory(address: "{address}", fromBlock: {block}, toBlock: {block}) {{ json }} }}"#
+            r#"query {{ fullMoonlightHistory(address: "{public_address}", fromBlock: {block}, toBlock: {block}) {{ json }} }}"#
         );
 
         let response = self
