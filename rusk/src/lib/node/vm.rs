@@ -43,19 +43,11 @@ impl VMExecution for Rusk {
         ),
         StateTransitionError,
     > {
-        let (executed_txs, discarded_txs, transition_result) = self
-            .build_state_transition(transition_data, mempool_txs)
-            .map_err(|err| {
-                if let RuskError::TipChanged = err {
-                    StateTransitionError::TipChanged
-                } else {
-                    StateTransitionError::ExecutionError(format!("{err}"))
-                }
-            })?;
-
-        Ok((executed_txs, discarded_txs, transition_result))
+        self.create_state_transition(transition_data, mempool_txs)
     }
 
+    /// Executes a block's state transition and checks its result against the
+    /// block's header
     fn verify_state_transition(
         &self,
         prev_state: [u8; 32],

@@ -14,6 +14,7 @@ use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
     validation_quorum, MAX_NUMBER_OF_TRANSACTIONS, TOTAL_COMMITTEES_CREDITS,
 };
+use dusk_consensus::errors::StateTransitionError;
 use dusk_consensus::operations::{
     StateTransitionData, StateTransitionResult, Voter,
 };
@@ -94,15 +95,18 @@ impl Rusk {
         })
     }
 
-    pub fn build_state_transition<I: Iterator<Item = Transaction>>(
+    pub fn create_state_transition<I: Iterator<Item = Transaction>>(
         &self,
         transition_data: &StateTransitionData,
         mempool_txs: I,
-    ) -> Result<(
-        Vec<SpentTransaction>,
-        Vec<Transaction>,
-        StateTransitionResult,
-    )> {
+    ) -> Result<
+        (
+            Vec<SpentTransaction>,
+            Vec<Transaction>,
+            StateTransitionResult,
+        ),
+        StateTransitionError,
+    > {
         let started = Instant::now();
 
         let block_height = transition_data.round;
@@ -114,7 +118,7 @@ impl Rusk {
         let cert_voters = &transition_data.cert_voters[..];
 
         info!(
-            event = "Building state transition",
+            event = "Creating state transition",
             height = block_height,
             prev_state = to_str(&prev_state),
             gas_limit = gas_limit,
@@ -141,7 +145,7 @@ impl Rusk {
             if let Some(timeout) = self.vm_config.generation_timeout {
                 if started.elapsed() > timeout {
                     info!(
-                        event = "Stopping state transition building",
+                        event = "Stop creating state transition",
                         reason = "timeout expired",
                         ?timeout
                     );
@@ -152,7 +156,7 @@ impl Rusk {
             // Limit execution to the block transactions limit
             if spent_txs.len() >= MAX_NUMBER_OF_TRANSACTIONS {
                 info!(
-                    event = "Stopping state transition building",
+                    event = "Stop creating state transition",
                     reason = "maximum number of transactions reached"
                 );
                 break;
@@ -187,6 +191,7 @@ impl Rusk {
                             gas_spent,
                             gas_left
                         );
+
                         session =
                             self.new_block_session(block_height, prev_state)?;
 
@@ -245,7 +250,10 @@ impl Rusk {
             cert_voters,
             dusk_spent,
             slashes,
-        )?;
+        )
+        .map_err(|err| {
+            StateTransitionError::ExecutionError(format!("{err}"))
+        })?;
 
         event_bloom.add_events(&coinbase_events);
 
