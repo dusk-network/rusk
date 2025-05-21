@@ -822,32 +822,45 @@ pub unsafe fn moonlight_stake_reward(
 }
 
 #[no_mangle]
-pub unsafe fn create_call_data(
+pub unsafe fn create_tx_data(
     fn_name_len: *const u32,
     fn_name_buf: *mut u8,
     fn_args_len: *const u32,
     fn_args_buf: *mut u8,
     contract_id: [u8; 32],
+    memo_len: *const u32,
+    memo_buf: *mut u8,
     rkyv_ptr: *mut *mut u8,
 ) -> ErrorCode {
-    let fn_name = alloc::string::String::from_raw_parts(
-        fn_name_buf,
-        *fn_name_len as usize,
-        *fn_name_len as usize,
-    );
-    let fn_args = alloc::vec::Vec::from_raw_parts(
-        fn_args_buf,
-        *fn_args_len as usize,
-        *fn_args_len as usize,
-    );
-    let contract = ContractId::from_bytes(contract_id);
+    let tx_data = if memo_len == crate::ffi::ptr::null()
+        || memo_buf == crate::ffi::ptr::null_mut()
+    {
+        let fn_name = alloc::string::String::from_raw_parts(
+            fn_name_buf,
+            *fn_name_len as usize,
+            *fn_name_len as usize,
+        );
+        let fn_args = alloc::vec::Vec::from_raw_parts(
+            fn_args_buf,
+            *fn_args_len as usize,
+            *fn_args_len as usize,
+        );
+        let contract = ContractId::from_bytes(contract_id);
 
-    let contract_call = ContractCall {
-        fn_name,
-        fn_args,
-        contract,
+        let contract_call = ContractCall {
+            fn_name,
+            fn_args,
+            contract,
+        };
+        TransactionData::Call(contract_call)
+    } else {
+        let memo = alloc::vec::Vec::from_raw_parts(
+            memo_buf,
+            *memo_len as usize,
+            *memo_len as usize,
+        );
+        TransactionData::Memo(memo)
     };
-    let tx_data = TransactionData::Call(contract_call);
     let bytes = match rkyv::to_bytes::<_, 4096>(&tx_data) {
         Ok(v) => v.to_vec(),
         Err(_) => return ErrorCode::ArchivingError,
