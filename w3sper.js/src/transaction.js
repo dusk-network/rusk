@@ -172,7 +172,7 @@ class AddressTransfer extends Transfer {
       amount: transfer_value,
       obfuscated: obfuscated_transaction,
       gas,
-      memo: data,
+      memo,
     } = attributes;
     const sender = this.bookentry.profile;
     const receiver = base58.decode(to);
@@ -201,6 +201,8 @@ class AddressTransfer extends Transfer {
     // Get the chain id from the network
     const { chainId } = await network.node.info;
 
+    const tx_data = new TxData(memo, null, null, null);
+
     // Create the unproven transaction
     const [tx, circuits] = await ProtocolDriver.phoenix({
       sender,
@@ -214,7 +216,7 @@ class AddressTransfer extends Transfer {
       gas_limit: gas.limit,
       gas_price: gas.price,
       chainId,
-      data,
+      data: tx_data,
     });
 
     // Attempt to prove the transaction

@@ -494,7 +494,7 @@ export const phoenix = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
-    const data = await serializeMemo(info.data, malloc, memcpy, create_tx_data);
+    const data = await serializeTxData(info.data, malloc, memcpy, create_tx_data);
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -601,9 +601,9 @@ export const moonlight = async (info) =>
     let tx = await malloc(4);
     let hash = await malloc(64);
 
-    console.log("about to call moonlight with tx_data=", info.data);
+    // console.log("about to call moonlight with tx_data=", info.data);
     const data = await serializeTxData(info.data, malloc, memcpy, create_tx_data);
-    console.log("about to call moonlight with tx_data serialized=", data);
+    // console.log("about to call moonlight with tx_data serialized=", data);
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
