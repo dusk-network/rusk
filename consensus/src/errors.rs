@@ -139,6 +139,8 @@ pub enum StateTransitionError {
     InvalidSlash(io::Error),
     #[error("Invalid generator: {0:?}")]
     InvalidGenerator(dusk_bytes::Error),
+    #[error("Session instantiation failed: {0}")]
+    SessionError(String),
     #[error("Execution failed: {0}")]
     ExecutionError(String),
     #[error("Verification failed: {0}")]
