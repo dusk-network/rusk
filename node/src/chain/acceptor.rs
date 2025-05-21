@@ -767,34 +767,36 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let (contract_events, finality) =
                 self.db.read().await.update(|db| {
                     // Execute, verify, and persist the state_transition
-                    let (txs, transition_result, contract_events) = vm
-                        .do_accept_state_transition(
+                    let (spent_txs, contract_events) = vm
+                        .accept_state_transition(
                             prev_header.state_hash,
                             blk,
                             &cert_voters[..],
                         )?;
 
-                    for spent_tx in txs.iter() {
+                    // Add spent txs to event list
+                    for spent_tx in spent_txs.iter() {
                         events
                             .push(TransactionEvent::Executed(spent_tx).into());
                     }
+
+                    // Stop elapsed time
                     est_elapsed_time = start.elapsed();
 
-                    assert_eq!(header.state_hash, transition_result.state_root);
-                    assert_eq!(
-                        header.event_bloom,
-                        transition_result.event_bloom
-                    );
-
-                    // Check if the new block triggers rolling finality
+                    // Check finality for previous blocks and the Consensus
+                    // State label for the accepted block
                     let finality =
                         self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
-
                     let label = finality.0;
+
                     // Store block with spent transactions info (including
                     // GasSpent and Errors), faults, and consensus status label
-                    block_size_on_disk =
-                        db.store_block(header, &txs, blk.faults(), label)?;
+                    block_size_on_disk = db.store_block(
+                        header,
+                        &spent_txs,
+                        blk.faults(),
+                        label,
+                    )?;
 
                     Ok((contract_events, finality))
                 })?;

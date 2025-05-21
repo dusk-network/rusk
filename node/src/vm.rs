@@ -39,16 +39,15 @@ pub trait VMExecution: Send + Sync + 'static {
         cert_voters: &[Voter],
     ) -> Result<(), StateTransitionError>;
 
-    fn do_accept_state_transition(
+    fn accept_state_transition(
         &self,
         prev_state: [u8; 32],
         blk: &Block,
         cert_voters: &[Voter],
-    ) -> anyhow::Result<(
-        Vec<SpentTransaction>,
-        StateTransitionResult,
-        Vec<ContractTxEvent>,
-    )>;
+    ) -> Result<
+        (Vec<SpentTransaction>, Vec<ContractTxEvent>),
+        StateTransitionError,
+    >;
 
     fn finalize_state(
         &self,
