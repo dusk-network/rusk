@@ -22,7 +22,7 @@ use dusk_core::stake::StakeData;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
-use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
+use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
 use super::Rusk;
 pub use config::feature::*;
@@ -53,37 +53,18 @@ impl VMExecution for Rusk {
         prev_state: [u8; 32],
         blk: &Block,
         cert_voters: &[Voter],
-    ) -> Result<StateTransitionResult, StateTransitionError> {
-        let generator = blk.header().generator_bls_pubkey;
-        let generator = BlsPublicKey::from_slice(&generator.0)
-            .map_err(StateTransitionError::InvalidGenerator)?;
+    ) -> Result<(), StateTransitionError> {
+        debug!("Verifying state transition");
 
-        let slashes = Slash::from_block(blk)
-            .map_err(StateTransitionError::InvalidSlash)?;
+        // Execute state transition
+        let (_, transition_result, _, _) =
+            self.execute_state_transition(prev_state, blk, cert_voters)?;
 
-        let (_, transition_result) = self
-            .verify_transactions(
-                prev_state,
-                blk.header().height,
-                blk.header().hash,
-                blk.header().gas_limit,
-                &generator,
-                blk.txs(),
-                slashes,
-                cert_voters,
-            )
-            .map_err(|err| {
-                if let RuskError::TipChanged = err {
-                    StateTransitionError::TipChanged
-                } else {
-                    StateTransitionError::VerificationError(format!("{err}"))
-                }
-            })?;
+        // Check result against header
+        check_transition_result(&transition_result, blk.header())?;
 
-        Ok(transition_result)
+        Ok(())
     }
-
-    fn do_accept_state_transition(
         &self,
         prev_state: [u8; 32],
         blk: &Block,
@@ -339,4 +320,28 @@ impl Rusk {
 
         Stake::new(value, stake_amount.eligibility)
     }
+}
+
+/// Check a state transition result against the block header
+fn check_transition_result(
+    transition_result: &StateTransitionResult,
+    header: &Header,
+) -> Result<(), StateTransitionError> {
+    // Check state root
+    if transition_result.state_root != header.state_hash {
+        return Err(StateTransitionError::StateRootMismatch(
+            transition_result.state_root,
+            header.state_hash,
+        ));
+    }
+
+    // Check event bloom
+    if transition_result.event_bloom != header.event_bloom {
+        return Err(StateTransitionError::EventBloomMismatch(
+            Box::new(transition_result.event_bloom),
+            Box::new(header.event_bloom),
+        ));
+    }
+
+    Ok(())
 }
