@@ -18,9 +18,7 @@ use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
 use metrics::gauge;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{
-    to_str, Block, Fault, Hash, Header, SpentTransaction, Transaction,
-};
+use node_data::ledger::{to_str, Block, Fault, Hash, Header, SpentTransaction};
 use node_data::message::{payload, AsyncQueue, ConsensusHeader};
 use node_data::{ledger, Serializable, StepName};
 use tokio::sync::{oneshot, Mutex, RwLock};
@@ -333,17 +331,11 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             .map_err(OperationError::FailedTransitionVerification)
     }
 
-    async fn new_state_transition(
+    async fn generate_state_transition(
         &self,
         transition_data: StateTransitionData,
-    ) -> Result<
-        (
-            Vec<SpentTransaction>,
-            StateTransitionResult,
-            Vec<Transaction>,
-        ),
-        OperationError,
-    > {
+    ) -> Result<(Vec<SpentTransaction>, StateTransitionResult), OperationError>
+    {
         let vm = self.vm.read().await;
 
         let db = self.db.read().await;
@@ -366,7 +358,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             Ok(())
         });
 
-        Ok((executed_txs, transition_result, discarded_txs))
+        Ok((executed_txs, transition_result))
     }
 
     async fn add_step_elapsed_time(
