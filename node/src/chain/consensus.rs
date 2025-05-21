@@ -286,7 +286,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Executor<DB, VM> {
 
 #[async_trait::async_trait]
 impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
-    async fn verify_candidate_header(
+    async fn validate_block_header(
         &self,
         candidate_header: &Header,
         expected_generator: &PublicKeyBytes,
@@ -302,7 +302,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             .await
     }
 
-    async fn verify_faults(
+    async fn validate_faults(
         &self,
         block_height: u64,
         faults: &[Fault],
@@ -315,7 +315,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         Ok(validator.verify_faults(block_height, faults).await?)
     }
 
-    async fn verify_state_transition(
+    async fn validate_state_transition(
         &self,
         prev_state: [u8; 32],
         blk: &Block,
@@ -327,7 +327,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             .map_err(OperationError::FailedVST)
     }
 
-    async fn create_state_transition(
+    async fn new_state_transition(
         &self,
         transition_data: StateTransitionData,
     ) -> Result<
