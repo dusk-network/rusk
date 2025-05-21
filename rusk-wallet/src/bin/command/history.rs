@@ -8,9 +8,10 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
+use dusk_core::transfer::withdraw::WithdrawReceiver;
 use dusk_core::transfer::Transaction;
 use dusk_core::{dusk, from_dusk};
-use rusk_wallet::{BlockTransaction, DecodedNote, GraphQL};
+use rusk_wallet::{Address, BlockData, BlockTransaction, DecodedNote, GraphQL};
 
 use crate::io::{self};
 use crate::settings::Settings;
@@ -72,6 +73,7 @@ impl Display for TransactionHistory {
 pub(crate) async fn transaction_from_notes(
     settings: &Settings,
     mut notes: Vec<DecodedNote>,
+    public_address: &Address,
 ) -> anyhow::Result<Vec<TransactionHistory>> {
     notes.sort_by(|a, b| a.note.pos().cmp(b.note.pos()));
     let mut ret: Vec<TransactionHistory> = vec![];
@@ -156,14 +158,54 @@ pub(crate) async fn transaction_from_notes(
                     && th.height == decoded_note.block_height
             });
 
-            // If outgoing txs found, this should be the change or any
-            // other output created by the tx result
-            // (like withdraw or unstake)
             if let Some(th) = outgoing_tx {
-                th.amount += note_amount
-
-                // If no outgoing txs found, this note should belong to a
-                // preconfigured genesis state
+                // Outgoing txs found, this should be the change or any
+                // other output created by the tx result
+                // (like withdraw or unstake)
+                th.amount += note_amount;
+            } else {
+                // No outgoing txs found, this note should either belong to a
+                // preconfigured genesis state or is the result of a
+                // moonlight to phoenix conversion.
+                let moonlight_tx_events = gql
+                    .moonlight_history_at_block(
+                        public_address,
+                        decoded_note.block_height,
+                    )
+                    .await?;
+                let Some(moonlight_history) =
+                    moonlight_tx_events.full_moonlight_history
+                else {
+                    continue;
+                };
+                for history_info in moonlight_history.json {
+                    for event in history_info.events {
+                        if let BlockData::ConvertEvent(event) = event.data {
+                            if let WithdrawReceiver::Phoenix(receiver_address) =
+                                event.receiver
+                            {
+                                if decoded_note.note.stealth_address()
+                                    == &receiver_address
+                                {
+                                    // The note is the output of a moonlight to
+                                    // phoenix conversion.
+                                    let note_creator = txs.iter().find(|block_tx| {
+                                        block_tx.id == history_info.origin
+                                    }).expect("The transaction should be in this list since it's the list of all transactions at its block height.");
+                                    ret.push(TransactionHistory {
+                                        direction: TransactionDirection::In,
+                                        height: decoded_note.block_height,
+                                        amount: event.value as f64,
+                                        fee: 0,
+                                        tx: note_creator.tx.clone(),
+                                        id: history_info.origin.clone(),
+                                    });
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -193,32 +235,54 @@ pub(crate) async fn moonlight_history(
         let events = history_item.events;
         let height = history_item.block_height;
         let tx = gql.moonlight_tx(&id).await?;
+        let mut amount = 0.0;
+        let mut direction = None;
+        let mut fee = 0;
 
         for event in events {
-            let data = event.data;
-            let gas_spent = data.gas_spent;
-            let mut amount = data.value;
-            let sender = data.sender;
-
-            let direction: TransactionDirection =
-                match sender == address.to_string() {
-                    true => {
-                        amount = -amount;
-
-                        TransactionDirection::Out
-                    }
-                    false => TransactionDirection::In,
-                };
-
-            collected_history.push(TransactionHistory {
-                direction,
-                height,
-                amount,
-                fee: gas_spent * tx.gas_price(),
-                tx: tx.clone(),
-                id: id.clone(),
-            })
+            match event.data {
+                BlockData::MoonlightTransactionEvent(event) => {
+                    fee = event.gas_spent * tx.gas_price();
+                    let sender = event.sender;
+                    let (event_direction, event_amount) = match &sender
+                        == address.public_key()?
+                    {
+                        true => {
+                            (TransactionDirection::Out, -(event.value as f64))
+                        }
+                        false => (TransactionDirection::In, event.value as f64),
+                    };
+                    amount += event_amount;
+                    direction = Some(event_direction);
+                }
+                BlockData::ConvertEvent(event) => {
+                    let (event_direction, event_amount) = match event
+                        .sender
+                        .is_some()
+                        && &event.sender.unwrap() == address.public_key()?
+                    {
+                        true => {
+                            (TransactionDirection::Out, -(event.value as f64))
+                        }
+                        false => (TransactionDirection::In, event.value as f64),
+                    };
+                    direction = Some(event_direction);
+                    amount += event_amount;
+                }
+                BlockData::PhoenixTransactionEvent(_) => {
+                    // This case has already been handled in
+                    // `transaction_from_notes`
+                }
+            }
         }
+        collected_history.push(TransactionHistory {
+            direction: direction.expect("should be determined"),
+            height,
+            amount,
+            tx: tx.clone(),
+            id: id.clone(),
+            fee,
+        });
     }
 
     Ok(collected_history)
