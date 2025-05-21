@@ -440,7 +440,7 @@ export const intoProven = async (tx, proof) =>
   })();
 
 export const phoenix = async (info) =>
-  protocolDriverModule.task(async function ({ malloc, phoenix }, { memcpy }) {
+  protocolDriverModule.task(async function ({ malloc, phoenix, create_tx_data }, { memcpy }) {
     const ptr = Object.create(null);
 
     const seed = new Uint8Array(await info.sender.seed);
@@ -494,7 +494,7 @@ export const phoenix = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
-    const data = serializeMemo(info.data);
+    const data = await serializeMemo(info.data, malloc, memcpy, create_tx_data);
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -601,11 +601,9 @@ export const moonlight = async (info) =>
     let tx = await malloc(4);
     let hash = await malloc(64);
 
-    console.log("hi realm, tx_data=", info.data);
+    console.log("about to call moonlight with tx_data=", info.data);
     const data = await serializeTxData(info.data, malloc, memcpy, create_tx_data);
-    console.log("hi realm, serialized tx_data=", data);
-
-    //console.log("obtained call data=", data);
+    console.log("about to call moonlight with tx_data serialized=", data);
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -630,7 +628,6 @@ export const moonlight = async (info) =>
       hash
     );
 
-    console.log("moonlight call returned code", code);
     if (code > 0) throw DriverError.from(code);
 
     let tx_ptr = new DataView((await memcpy(null, tx, 4)).buffer).getUint32(
@@ -642,8 +639,6 @@ export const moonlight = async (info) =>
       0,
       true
     );
-
-    console.log("tx_len=", tx_len);
 
     const tx_buffer = await memcpy(null, tx_ptr + 4, tx_len);
 
@@ -1047,7 +1042,7 @@ export const withdraw = async (info) =>
 
 async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
     if (tx_data.memo) {
-        return serializeMemo(tx_data.memo)
+        return serializeMemo(tx_data.memo, malloc, memcpy, create_tx_data);
     }
 
     return await serializeContractCall(tx_data.fn_name, tx_data.fn_args, tx_data.contract_id, malloc, memcpy, create_tx_data);
@@ -1117,8 +1112,6 @@ async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memc
 
     let ret = await malloc(4);
 
-    console.log("about to call create_tx_data, ==============>", fn_name_len);
-
     const code = await create_tx_data(
         ptr.fn_name_len,
         ptr.fn_name,
@@ -1130,7 +1123,6 @@ async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memc
         ret
     )
 
-    console.log("create_tx_data returned code=", code);
     if (code > 0) throw DriverError.from(code);
 
     let ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
@@ -1144,31 +1136,69 @@ async function serializeContractCall(fn_name, fn_args, contract_id, malloc, memc
     );
 
     let ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
-    console.log("after calling create_tx_data, ret_buf=", ret_buf, " ret_len=", ret_len);
     return new Uint8Array(DataBuffer.from(ret_buf));
 }
 
-function serializeMemo(memo) {
+async function serializeMemo(memo, malloc, memcpy, create_tx_data) {
+  const ptr = Object.create(null);
+
   if (!memo) {
     return null;
   }
 
   let buffer = null;
   if (typeof memo === "string") {
-    buffer = new TextEncoder().encode(memo);
+      buffer = new TextEncoder().encode(memo);
   } else if (memo instanceof ArrayBuffer) {
-    buffer = new Uint8Array(memo);
+      buffer = new Uint8Array(memo);
   } else if (memo instanceof Uint8Array) {
-    buffer = memo;
+      buffer = memo;
   }
 
   if (!buffer) {
     return null;
   }
 
-  const memoBuffer = new Uint8Array(1 + buffer.byteLength);
-  memoBuffer[0] = 3; // Memo type (from enum Transaction Data)
-  memoBuffer.set(buffer, 1); // memo content is set at offset 1, byte 0 contains TransactionData enum distinguisher
+    ptr.memo = await malloc(buffer.byteLength);
+    let memo_len = buffer.byteLength;
+    await memcpy(ptr.memo, buffer);
 
-  return new Uint8Array(DataBuffer.from(memoBuffer));
+    const memo_len_buf = new Uint8Array(4);
+    new DataView(memo_len_buf.buffer).setUint32(0, memo_len, true);
+    ptr.memo_len = await malloc(4);
+    await memcpy(ptr.memo_len, memo_len_buf);
+
+    //
+    // result
+    //
+
+    let ret = await malloc(4);
+    ptr.dummy_contract_id = await malloc(32);
+
+    const code = await create_tx_data(
+        null,
+        null,
+        null,
+        null,
+        ptr.dummy_contract_id,
+        ptr.memo_len,
+        ptr.memo,
+        ret
+    )
+
+    if (code > 0) throw DriverError.from(code);
+
+    let ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
+        0,
+        true
+    );
+
+    let ret_len = new DataView((await memcpy(null, ret_ptr, 4)).buffer).getUint32(
+        0,
+        true
+    );
+
+    let ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
+    return new Uint8Array(DataBuffer.from(ret_buf));
+
 }
