@@ -517,18 +517,23 @@ impl Rusk {
     ///
     /// Before returning the session, "before_state_transition" of Stake
     /// Contract is called
-    pub(crate) fn new_block_session(
+    pub fn new_block_session(
         &self,
         block_height: u64,
         commit: [u8; 32],
-    ) -> Result<Session> {
-        let mut session = self._session(block_height, None)?;
+    ) -> Result<Session, StateTransitionError> {
+        let mut session = self._session(block_height, None).map_err(|err| {
+            StateTransitionError::SessionError(format!("{err}"))
+        })?;
+
         if session.root() != commit {
-            return Err(RuskError::TipChanged);
+            return Err(StateTransitionError::TipChanged);
         }
+
         let _: CallReceipt<()> = session
             .call(STAKE_CONTRACT, "before_state_transition", &(), u64::MAX)
             .expect("before_state_transition to success");
+
         Ok(session)
     }
 
