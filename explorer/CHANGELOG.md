@@ -11,6 +11,17 @@ and this project adheres to
 ### Added
 
 - Add Tokens page [#3415]
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## [1.4.0] - 2025-05-22
+
+### Added
+
 - Add account address copy button (Account page) [#3698]
 - Add value property to Transaction Details [#3699]
 
@@ -18,10 +29,6 @@ and this project adheres to
 
 - Change transaction details arrangement (Transaction Details page) [#3720]
 - Change transaction list to use a single GraphQL query (Account page) [#3739]
-
-### Removed
-
-### Fixed
 
 ## [1.3.3] - 2025-05-05
 
@@ -255,6 +262,7 @@ and this project adheres to
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.4.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.4.0
 [1.3.3]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.3
 [1.3.2]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.2
 [1.3.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.1
