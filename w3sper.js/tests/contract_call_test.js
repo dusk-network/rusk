@@ -22,7 +22,6 @@ test("account contract call transfer", async () => {
         .as(users[1])
         .transfer(1n)
         .to(users[0].account)
-        // .memo(new Uint8Array([2, 4, 8, 16]))
         .memo(null)
         .fn_name("get_version")
         .fn_args([])
