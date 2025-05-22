@@ -17,6 +17,7 @@ and this project adheres to
 ### Changed
 
 - Change transaction details arrangement (Transaction Details page) [#3720]
+- Change transaction list to use a single GraphQL query (Account page) [#3739]
 
 ### Removed
 
@@ -249,6 +250,7 @@ and this project adheres to
 [#3698]: https://github.com/dusk-network/rusk/issues/3698
 [#3699]: https://github.com/dusk-network/rusk/issues/3699
 [#3720]: https://github.com/dusk-network/rusk/issues/3720
+[#3739]: https://github.com/dusk-network/rusk/issues/3739
 
 <!-- VERSIONS -->
 
