@@ -440,7 +440,7 @@ export const intoProven = async (tx, proof) =>
   })();
 
 export const phoenix = async (info) =>
-  protocolDriverModule.task(async function ({ malloc, phoenix }, { memcpy }) {
+  protocolDriverModule.task(async function ({ malloc, phoenix, create_tx_data }, { memcpy }) {
     const ptr = Object.create(null);
 
     const seed = new Uint8Array(await info.sender.seed);
@@ -494,7 +494,7 @@ export const phoenix = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
-    const data = serializeMemo(info.data);
+    const data = await serializeTxData(info.data, malloc, memcpy, create_tx_data);
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -554,7 +554,7 @@ export const phoenix = async (info) =>
   })();
 
 export const moonlight = async (info) =>
-  protocolDriverModule.task(async function ({ malloc, moonlight }, { memcpy }) {
+  protocolDriverModule.task(async function ({ malloc, moonlight, create_tx_data }, { memcpy }) {
     const ptr = Object.create(null);
 
     const seed = new Uint8Array(await info.sender.seed);
@@ -599,7 +599,7 @@ export const moonlight = async (info) =>
     let tx = await malloc(4);
     let hash = await malloc(64);
 
-    const data = serializeMemo(info.data);
+    const data = await serializeTxData(info.data, malloc, memcpy, create_tx_data);
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -1035,27 +1035,120 @@ export const withdraw = async (info) =>
     return [tx_buffer, hash];
   })();
 
-function serializeMemo(memo) {
-  if (!memo) {
-    return null;
-  }
 
-  let buffer = null;
-  if (typeof memo === "string") {
-    buffer = new TextEncoder().encode(memo);
-  } else if (memo instanceof ArrayBuffer) {
-    buffer = new Uint8Array(memo);
-  } else if (memo instanceof Uint8Array) {
-    buffer = memo;
-  }
+async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
+    let fn_name = tx_data.fn_name;
+    let fn_args = tx_data.fn_args;
+    let contract_id = tx_data.contract_id;
+    let memo = tx_data.memo;
 
-  if (!buffer) {
-    return null;
-  }
+    const ptr = Object.create(null);
 
-  const memoBuffer = new Uint8Array(1 + buffer.byteLength);
-  memoBuffer[0] = 3; // Memo type
-  memoBuffer.set(buffer, 1);
+    let code;
+    let ret;
+    if (!memo) {
+        // fn_name
+        if (!fn_name) {
+            return null;
+        }
+        let fn_name_arg = null;
+        if (typeof fn_name === "string") {
+            fn_name_arg = new TextEncoder().encode(fn_name);
+        } else if (fn_name instanceof ArrayBuffer) {
+            fn_name_arg = new Uint8Array(fn_name);
+        } else if (fn_name instanceof Uint8Array) {
+            fn_name_arg = fn_name;
+        }
+        if (!fn_name_arg) {
+            return null;
+        }
+        ptr.fn_name = await malloc(fn_name_arg.byteLength);
+        let fn_name_len = fn_name_arg.byteLength;
+        await memcpy(ptr.fn_name, fn_name_arg);
 
-  return new Uint8Array(DataBuffer.from(memoBuffer));
+        const fn_name_len_buf = new Uint8Array(4);
+        new DataView(fn_name_len_buf.buffer).setUint32(0, fn_name_len, true);
+        ptr.fn_name_len = await malloc(4);
+        await memcpy(ptr.fn_name_len, fn_name_len_buf);
+        // fn_args
+        const fn_args_buffer = new Uint8Array(fn_args);
+        ptr.fn_args = await malloc(fn_args_buffer.byteLength);
+        let fn_args_len = fn_args_buffer.byteLength;
+        await memcpy(ptr.fn_args, fn_args_buffer);
+
+        const fn_args_len_buf = new Uint8Array(4);
+        new DataView(fn_args_len_buf.buffer).setUint32(0, fn_args_len, true);
+        ptr.fn_args_len = await malloc(4);
+        await memcpy(ptr.fn_args_len, fn_args_len_buf);
+        // contract_id
+        const contract_id_buffer = new Uint8Array(contract_id);
+        ptr.contract_id = await malloc(contract_id_buffer.byteLength);
+        await memcpy(ptr.contract_id, contract_id_buffer);
+        // result
+        ret = await malloc(4);
+
+        code = await create_tx_data(
+            ptr.fn_name_len,
+            ptr.fn_name,
+            ptr.fn_args_len,
+            ptr.fn_args,
+            ptr.contract_id,
+            null,
+            null,
+            ret
+        )
+    } else {
+        // memo
+        if (!memo) {
+          return null;
+        }
+        let buffer = null;
+        if (typeof memo === "string") {
+          buffer = new TextEncoder().encode(memo);
+        } else if (memo instanceof ArrayBuffer) {
+          buffer = new Uint8Array(memo);
+        } else if (memo instanceof Uint8Array) {
+          buffer = memo;
+        }
+        if (!buffer) {
+          return null;
+        }
+        ptr.memo = await malloc(buffer.byteLength);
+        let memo_len = buffer.byteLength;
+        await memcpy(ptr.memo, buffer);
+
+        const memo_len_buf = new Uint8Array(4);
+        new DataView(memo_len_buf.buffer).setUint32(0, memo_len, true);
+        ptr.memo_len = await malloc(4);
+        await memcpy(ptr.memo_len, memo_len_buf);
+
+        ret = await malloc(4);
+        ptr.dummy_contract_id = await malloc(32);
+
+        code = await create_tx_data(
+            null,
+            null,
+            null,
+            null,
+            ptr.dummy_contract_id,
+            ptr.memo_len,
+            ptr.memo,
+            ret
+        )
+    }
+
+    if (code > 0) throw DriverError.from(code);
+
+    let ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
+        0,
+        true
+    );
+
+    let ret_len = new DataView((await memcpy(null, ret_ptr, 4)).buffer).getUint32(
+        0,
+        true
+    );
+
+    let ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
+    return new Uint8Array(DataBuffer.from(ret_buf));
 }
