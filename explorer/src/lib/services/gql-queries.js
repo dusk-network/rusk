@@ -1,4 +1,4 @@
-const transactionFragment = `
+export const transactionFragment = `
 fragment TransactionInfo on SpentTransaction {
 	blockHash,
 	blockHeight,
@@ -17,7 +17,8 @@ fragment TransactionInfo on SpentTransaction {
     id,
     isDeploy,
     memo,
-    txType
+    txType,
+    json
   }
 }
 `;
