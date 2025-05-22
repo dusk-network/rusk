@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import {assert, getLocalWasmBuffer, seeder, test, Treasury} from "./harness.js";
-import {AccountSyncer, AddressSyncer, Bookkeeper, Network, ProfileGenerator, useAsProtocolDriver} from "@dusk/w3sper";
+import {seeder, test, Treasury} from "./harness.js";
+import {AccountSyncer, Bookkeeper, Network, ProfileGenerator} from "@dusk/w3sper";
 
 test("account contract call transfer", async () => {
     const network = await Network.connect("http://localhost:8080/");
@@ -14,7 +14,7 @@ test("account contract call transfer", async () => {
     const accounts = new AccountSyncer(network);
     const treasury = new Treasury(users);
 
-    await treasury.update({ accounts });
+    await treasury.update({accounts});
 
     const bookkeeper = new Bookkeeper(treasury);
 
@@ -25,17 +25,18 @@ test("account contract call transfer", async () => {
         // .memo(new Uint8Array([2, 4, 8, 16]))
         .memo(null)
         .fn_name("get_version")
-        .fn_args([44, 55, 66, 77, 88])
-        .contract_id([0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 33])
-        .gas({ limit: 500_000_000n });
+        .fn_args([])
+        .contract_id([0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        .gas({limit: 500_000_000n});
 
-    let { hash } = await network.execute(transfer);
+    let {hash} = await network.execute(transfer);
 
     let evt = await network.transactions.withId(hash).once.executed();
 
-    // assert.equal([...evt.memo()], [2, 4, 8, 16]);
+    console.log("evt:", evt);
+    console.log("evt.payload:", evt.payload);
 
-    await treasury.update({ accounts });
+    await treasury.update({accounts});
 
     await network.disconnect();
 });
