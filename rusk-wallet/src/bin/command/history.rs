@@ -23,13 +23,14 @@ pub struct TransactionHistory {
     fee: u64,
     pub tx: Transaction,
     id: String,
+    bal_type: BalanceType,
 }
 
 impl TransactionHistory {
     pub fn header() -> String {
         format!(
             "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12} | {: ^8}\n",
-            "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE", "TRANSACTION_TYPE"
+            "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE", "BALANCE_TYPE"
         )
     }
 
@@ -51,21 +52,17 @@ impl Display for TransactionHistory {
             TransactionDirection::Out => {
                 let fee: u64 = self.fee;
                 let fee = from_dusk(fee);
-                format!("{: >12.9}", fee)
+                format!("{: >12.9}", -fee)
             }
         };
 
         let tx_id = &self.id;
         let height = self.height;
-
-        let tx_type = match self.tx {
-            Transaction::Moonlight(_) => dusk_core::transfer::MOONLIGHT_TOPIC,
-            Transaction::Phoenix(_) => dusk_core::transfer::PHOENIX_TOPIC,
-        };
+        let bal_type = &self.bal_type;
 
         writeln!(
             f,
-            "{height: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee} | {tx_type}",
+            "{height: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee} | {bal_type}",
         )
     }
 }
@@ -149,6 +146,7 @@ pub(crate) async fn transaction_from_notes(
                         fee,
                         tx: tx.clone(),
                         id: id.clone(),
+                        bal_type: BalanceType::Shielded,
                     })
                 }
             }
@@ -199,6 +197,7 @@ pub(crate) async fn transaction_from_notes(
                                         fee: 0,
                                         tx: note_creator.tx.clone(),
                                         id: history_info.origin.clone(),
+                                        bal_type: BalanceType::Shielded,
                                     });
                                     continue;
                                 }
@@ -282,6 +281,7 @@ pub(crate) async fn moonlight_history(
             tx: tx.clone(),
             id: id.clone(),
             fee,
+            bal_type: BalanceType::Public,
         });
     }
 
@@ -292,4 +292,19 @@ pub(crate) async fn moonlight_history(
 enum TransactionDirection {
     In,
     Out,
+}
+
+#[derive(PartialEq, Debug)]
+enum BalanceType {
+    Shielded,
+    Public,
+}
+
+impl Display for BalanceType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Shielded => write!(f, "shielded"),
+            Self::Public => write!(f, "public"),
+        }
+    }
 }
