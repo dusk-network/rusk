@@ -1041,7 +1041,6 @@ export const withdraw = async (info) =>
 
 
 async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
-
     let fn_name = tx_data.fn_name;
     let fn_args = tx_data.fn_args;
     let contract_id = tx_data.contract_id;
@@ -1052,15 +1051,10 @@ async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
     let code;
     let ret;
     if (!memo) {
-
-        //
-        // fn name
-        //
-
+        // fn_name
         if (!fn_name) {
             return null;
         }
-
         let fn_name_arg = null;
         if (typeof fn_name === "string") {
             fn_name_arg = new TextEncoder().encode(fn_name);
@@ -1069,26 +1063,18 @@ async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
         } else if (fn_name instanceof Uint8Array) {
             fn_name_arg = fn_name;
         }
-
         if (!fn_name_arg) {
             return null;
         }
-
-        const fn_name_buffer = new Uint8Array(fn_name_arg);
-        ptr.fn_name = await malloc(fn_name_buffer.byteLength);
-        let fn_name_len = fn_name_buffer.byteLength;
-        await memcpy(ptr.fn_name, fn_name_buffer);
+        ptr.fn_name = await malloc(fn_name_arg.byteLength);
+        let fn_name_len = fn_name_arg.byteLength;
+        await memcpy(ptr.fn_name, fn_name_arg);
 
         const fn_name_len_buf = new Uint8Array(4);
         new DataView(fn_name_len_buf.buffer).setUint32(0, fn_name_len, true);
         ptr.fn_name_len = await malloc(4);
         await memcpy(ptr.fn_name_len, fn_name_len_buf);
-
-
-        //
-        // fn args
-        //
-
+        // fn_args
         const fn_args_buffer = new Uint8Array(fn_args);
         ptr.fn_args = await malloc(fn_args_buffer.byteLength);
         let fn_args_len = fn_args_buffer.byteLength;
@@ -1098,19 +1084,11 @@ async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
         new DataView(fn_args_len_buf.buffer).setUint32(0, fn_args_len, true);
         ptr.fn_args_len = await malloc(4);
         await memcpy(ptr.fn_args_len, fn_args_len_buf);
-
-        //
         // contract_id
-        //
-
         const contract_id_buffer = new Uint8Array(contract_id);
         ptr.contract_id = await malloc(contract_id_buffer.byteLength);
         await memcpy(ptr.contract_id, contract_id_buffer);
-
-        //
         // result
-        //
-
         ret = await malloc(4);
 
         code = await create_tx_data(
@@ -1124,10 +1102,10 @@ async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
             ret
         )
     } else {
+        // memo
         if (!memo) {
             return null;
         }
-
         let buffer = null;
         if (typeof memo === "string") {
             buffer = new TextEncoder().encode(memo);
@@ -1136,11 +1114,9 @@ async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
         } else if (memo instanceof Uint8Array) {
             buffer = memo;
         }
-
         if (!buffer) {
             return null;
         }
-
         ptr.memo = await malloc(buffer.byteLength);
         let memo_len = buffer.byteLength;
         await memcpy(ptr.memo, buffer);
@@ -1149,11 +1125,7 @@ async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
         new DataView(memo_len_buf.buffer).setUint32(0, memo_len, true);
         ptr.memo_len = await malloc(4);
         await memcpy(ptr.memo_len, memo_len_buf);
-
-        //
         // result
-        //
-
         ret = await malloc(4);
         ptr.dummy_contract_id = await malloc(32);
 
