@@ -12,7 +12,9 @@ use node_data::events::contract::ContractTxEvent;
 use tracing::{debug, info};
 
 use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::operations::{
+    StateTransitionData, StateTransitionResult, Voter,
+};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
@@ -26,97 +28,104 @@ use super::Rusk;
 pub use config::feature::*;
 pub use config::Config as RuskVmConfig;
 
+use crate::Error as RuskError;
+
 impl VMExecution for Rusk {
-    fn execute_state_transition<I: Iterator<Item = Transaction>>(
+    fn create_state_transition<I: Iterator<Item = Transaction>>(
         &self,
-        params: &CallParams,
-        txs: I,
+        transition_data: &StateTransitionData,
+        mempool_txs: I,
     ) -> Result<
-        (Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput),
+        (
+            Vec<SpentTransaction>,
+            Vec<Transaction>,
+            StateTransitionResult,
+        ),
         StateTransitionError,
     > {
-        let (txs, discarded_txs, verification_output) =
-            self.execute_transactions(params, txs).map_err(|err| {
-                if let crate::Error::TipChanged = err {
+        let (executed_txs, discarded_txs, transition_result) = self
+            .build_state_transition(transition_data, mempool_txs)
+            .map_err(|err| {
+                if let RuskError::TipChanged = err {
                     StateTransitionError::TipChanged
                 } else {
                     StateTransitionError::ExecutionError(format!("{err}"))
                 }
             })?;
 
-        Ok((txs, discarded_txs, verification_output))
+        Ok((executed_txs, discarded_txs, transition_result))
     }
 
     fn verify_state_transition(
         &self,
-        prev_commit: [u8; 32],
+        prev_state: [u8; 32],
         blk: &Block,
-        voters: &[Voter],
-    ) -> Result<VerificationOutput, StateTransitionError> {
+        cert_voters: &[Voter],
+    ) -> Result<StateTransitionResult, StateTransitionError> {
         let generator = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator.0)
             .map_err(StateTransitionError::InvalidGenerator)?;
 
-        let slashing = Slash::from_block(blk)
+        let slashes = Slash::from_block(blk)
             .map_err(StateTransitionError::InvalidSlash)?;
 
-        let (_, verification_output) = self
+        let (_, transition_result) = self
             .verify_transactions(
-                prev_commit,
+                prev_state,
                 blk.header().height,
                 blk.header().hash,
                 blk.header().gas_limit,
                 &generator,
                 blk.txs(),
-                slashing,
-                voters,
+                slashes,
+                cert_voters,
             )
-            .map_err(|inner| {
-                if let crate::Error::TipChanged = inner {
+            .map_err(|err| {
+                if let RuskError::TipChanged = err {
                     StateTransitionError::TipChanged
                 } else {
-                    StateTransitionError::VerificationError(format!("{inner}"))
+                    StateTransitionError::VerificationError(format!("{err}"))
                 }
             })?;
 
-        Ok(verification_output)
+        Ok(transition_result)
     }
 
-    fn accept(
+    fn do_accept_state_transition(
         &self,
-        prev_root: [u8; 32],
+        prev_state: [u8; 32],
         blk: &Block,
-        voters: &[Voter],
+        cert_voters: &[Voter],
     ) -> anyhow::Result<(
         Vec<SpentTransaction>,
-        VerificationOutput,
+        StateTransitionResult,
         Vec<ContractTxEvent>,
     )> {
-        debug!("Received accept request");
+        debug!("Executing state transition");
         let generator = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator.0)
             .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
-        let slashing = Slash::from_block(blk)?;
+        let slashes = Slash::from_block(blk)?;
 
-        let (txs, verification_output, contract_events) = self
-            .accept_transactions(
-                prev_root,
+        let (executed_txs, transition_result, contract_events) = self
+            .accept_state_transition(
+                prev_state,
                 blk.header().height,
                 blk.header().gas_limit,
                 blk.header().hash,
                 generator,
                 blk.txs().clone(),
-                Some(VerificationOutput {
+                Some(StateTransitionResult {
                     state_root: blk.header().state_hash,
                     event_bloom: blk.header().event_bloom,
                 }),
-                slashing,
-                voters,
+                slashes,
+                cert_voters,
             )
-            .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
+            .map_err(|err| anyhow::anyhow!("Cannot accept txs: {err}!!"))?;
 
-        Ok((txs, verification_output, contract_events))
+        Ok((executed_txs, transition_result, contract_events))
     }
 
     fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {
@@ -153,12 +162,12 @@ impl VMExecution for Rusk {
 
                 if !existing_nullifiers.is_empty() {
                     let err =
-                        crate::Error::RepeatingNullifiers(existing_nullifiers);
+                        RuskError::RepeatingNullifiers(existing_nullifiers);
                     return Err(anyhow::anyhow!("Invalid tx: {err}"));
                 }
 
                 if !has_unique_elements(tx_nullifiers) {
-                    let err = crate::Error::DoubleNullifiers;
+                    let err = RuskError::DoubleNullifiers;
                     return Err(anyhow::anyhow!("Invalid tx: {err}"));
                 }
 
@@ -189,7 +198,7 @@ impl VMExecution for Rusk {
                 }
 
                 if tx.nonce() <= account_data.nonce {
-                    let err = crate::Error::RepeatingNonce(
+                    let err = RuskError::RepeatingNonce(
                         (*tx.sender()).into(),
                         tx.nonce(),
                     );

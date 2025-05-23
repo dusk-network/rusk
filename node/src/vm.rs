@@ -5,7 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_consensus::errors::StateTransitionError;
-use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::operations::{
+    StateTransitionData, StateTransitionResult, Voter,
+};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
@@ -17,30 +19,34 @@ use node_data::ledger::{Block, SpentTransaction, Transaction};
 pub struct Config {}
 
 pub trait VMExecution: Send + Sync + 'static {
-    fn execute_state_transition<I: Iterator<Item = Transaction>>(
+    fn create_state_transition<I: Iterator<Item = Transaction>>(
         &self,
-        params: &CallParams,
-        txs: I,
+        transition_data: &StateTransitionData,
+        mempool_txs: I,
     ) -> Result<
-        (Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput),
+        (
+            Vec<SpentTransaction>,
+            Vec<Transaction>,
+            StateTransitionResult,
+        ),
         StateTransitionError,
     >;
 
     fn verify_state_transition(
         &self,
-        prev_root: [u8; 32],
+        prev_state: [u8; 32],
         blk: &Block,
-        voters: &[Voter],
-    ) -> Result<VerificationOutput, StateTransitionError>;
+        cert_voters: &[Voter],
+    ) -> Result<StateTransitionResult, StateTransitionError>;
 
-    fn accept(
+    fn do_accept_state_transition(
         &self,
-        prev_root: [u8; 32],
+        prev_state: [u8; 32],
         blk: &Block,
-        voters: &[Voter],
+        cert_voters: &[Voter],
     ) -> anyhow::Result<(
         Vec<SpentTransaction>,
-        VerificationOutput,
+        StateTransitionResult,
         Vec<ContractTxEvent>,
     )>;
 

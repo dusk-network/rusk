@@ -14,7 +14,9 @@ use dusk_consensus::config::{
     ratification_extra, ratification_quorum, validation_extra,
     validation_quorum, MAX_NUMBER_OF_TRANSACTIONS, TOTAL_COMMITTEES_CREDITS,
 };
-use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::operations::{
+    StateTransitionData, StateTransitionResult, Voter,
+};
 use dusk_core::abi::Event;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{
@@ -92,34 +94,36 @@ impl Rusk {
         })
     }
 
-    pub fn execute_transactions<I: Iterator<Item = Transaction>>(
+    pub fn build_state_transition<I: Iterator<Item = Transaction>>(
         &self,
-        params: &CallParams,
-        txs: I,
-    ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
-    {
+        transition_data: &StateTransitionData,
+        mempool_txs: I,
+    ) -> Result<(
+        Vec<SpentTransaction>,
+        Vec<Transaction>,
+        StateTransitionResult,
+    )> {
         let started = Instant::now();
 
-        let block_height = params.round;
-        let block_gas_limit = self.vm_config.block_gas_limit;
-        let generator = params.generator_pubkey.inner();
-        let to_slash = params.to_slash.clone();
-        let prev_state_root = params.prev_state_root;
+        let block_height = transition_data.round;
+        let gas_limit = self.vm_config.block_gas_limit;
+        let generator = transition_data.generator.inner();
+        let slashes = transition_data.slashes.clone();
+        let prev_state = transition_data.prev_state_root;
 
-        let voters = &params.voters_pubkey[..];
+        let cert_voters = &transition_data.cert_voters[..];
 
         info!(
-            event = "Start EST",
+            event = "Building state transition",
             height = block_height,
-            prev_state = to_str(&prev_state_root),
-            gas_limit = block_gas_limit,
-            ?to_slash
+            prev_state = to_str(&prev_state),
+            gas_limit = gas_limit,
+            ?slashes
         );
 
-        let mut session =
-            self.new_block_session(block_height, prev_state_root)?;
+        let mut session = self.new_block_session(block_height, prev_state)?;
 
-        let mut block_gas_left = block_gas_limit;
+        let mut gas_left = gas_limit;
 
         let mut spent_txs = Vec::<SpentTransaction>::new();
         let mut discarded_txs = vec![];
@@ -131,13 +135,13 @@ impl Rusk {
         let execution_config = self.vm_config.to_execution_config(block_height);
 
         // We always write the faults len in a u32
-        let mut block_space_left = params.max_txs_bytes - u32::SIZE;
+        let mut space_left = transition_data.max_txs_bytes - u32::SIZE;
 
-        for unspent_tx in txs {
+        for unspent_tx in mempool_txs {
             if let Some(timeout) = self.vm_config.generation_timeout {
                 if started.elapsed() > timeout {
                     info!(
-                        event = "Stopping execute_transactions",
+                        event = "Stopping state transition building",
                         reason = "timeout expired",
                         ?timeout
                     );
@@ -148,7 +152,7 @@ impl Rusk {
             // Limit execution to the block transactions limit
             if spent_txs.len() >= MAX_NUMBER_OF_TRANSACTIONS {
                 info!(
-                    event = "Stopping execute_transactions",
+                    event = "Stopping state transition building",
                     reason = "maximum number of transactions reached"
                 );
                 break;
@@ -157,13 +161,13 @@ impl Rusk {
             let tx_id = hex::encode(unspent_tx.id());
             let tx_size = unspent_tx.size();
 
-            if tx_size > block_space_left {
+            if tx_size > space_left {
                 info!(
                     event = "Skipping transaction",
                     reason = "not enough space in block",
                     tx_id,
                     tx_size,
-                    block_space_left
+                    space_left
                 );
                 continue;
             }
@@ -175,16 +179,16 @@ impl Rusk {
                     // If the transaction went over the block gas limit we
                     // re-execute all spent transactions. We don't discard the
                     // transaction, since it is technically valid.
-                    if gas_spent > block_gas_left {
+                    if gas_spent > gas_left {
                         info!(
                             event = "Skipping transaction",
                             reason = "exceeding block gas limit",
                             tx_id,
                             gas_spent,
-                            block_gas_left
+                            gas_left
                         );
-                        session = self
-                            .new_block_session(block_height, prev_state_root)?;
+                        session =
+                            self.new_block_session(block_height, prev_state)?;
 
                         for spent_tx in &spent_txs {
                             // We know these transactions were correctly
@@ -199,7 +203,7 @@ impl Rusk {
                         continue;
                     }
 
-                    block_space_left -= tx_size;
+                    space_left -= tx_size;
 
                     // We're currently ignoring the result of successful calls
                     let error = receipt.data.err().map(|e| format!("{e}"));
@@ -207,7 +211,7 @@ impl Rusk {
 
                     event_bloom.add_events(&receipt.events);
 
-                    block_gas_left -= gas_spent;
+                    gas_left -= gas_spent;
                     let gas_price = unspent_tx.inner.gas_price();
                     dusk_spent += gas_spent * gas_price;
                     spent_txs.push(SpentTransaction {
@@ -238,9 +242,9 @@ impl Rusk {
             &mut session,
             block_height,
             generator,
-            voters,
+            cert_voters,
             dusk_spent,
-            to_slash,
+            slashes,
         )?;
 
         event_bloom.add_events(&coinbase_events);
@@ -250,7 +254,7 @@ impl Rusk {
         Ok((
             spent_txs,
             discarded_txs,
-            VerificationOutput {
+            StateTransitionResult {
                 state_root,
                 event_bloom: event_bloom.into(),
             },
@@ -261,91 +265,94 @@ impl Rusk {
     #[allow(clippy::too_many_arguments)]
     pub fn verify_transactions(
         &self,
-        prev_commit: [u8; 32],
+        prev_state: [u8; 32],
         block_height: u64,
         block_hash: Hash,
-        block_gas_limit: u64,
+        gas_limit: u64,
         generator: &BlsPublicKey,
         txs: &[Transaction],
-        slashing: Vec<Slash>,
+        slashes: Vec<Slash>,
         voters: &[Voter],
-    ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
+    ) -> Result<(Vec<SpentTransaction>, StateTransitionResult)> {
         info!(
             event = "Start VST",
             block_hash = to_str(&block_hash),
             height = block_height,
-            prev_state = to_str(&prev_commit),
-            gas_limit = block_gas_limit,
-            to_slash = ?slashing
+            prev_state = to_str(&prev_state),
+            gas_limit = gas_limit,
+            slashes = ?slashes
         );
 
-        let session = self.new_block_session(block_height, prev_commit)?;
+        let session = self.new_block_session(block_height, prev_state)?;
         let execution_config = self.vm_config.to_execution_config(block_height);
 
-        accept(
+        execute_state_transition(
             session,
             block_height,
             block_hash,
-            block_gas_limit,
+            gas_limit,
             generator,
             txs,
-            slashing,
+            slashes,
             voters,
             &execution_config,
         )
-        .map(|(a, b, _, _)| (a, b))
+        .map(|(executed_txs, transition_result, _, _)| {
+            (executed_txs, transition_result)
+        })
     }
 
     /// Accept the given transactions.
     ///
-    ///   * `consistency_check` - represents a state_root, the caller expects to
+    ///   * `exptected_result` - represents a state_root, the caller expects to
     ///   be returned on successful transactions execution. Passing a None
     ///   value disables the check.
     ///
     /// # Returns
     ///  - Vec<SpentTransaction> - The transactions that were spent.
-    /// - VerificationOutput - The verification output.
+    /// - StateTransitionResult - The verification output.
     /// - Vec<ContractTxEvent> - All contract events that were emitted from the
     ///   given transactions.
     #[allow(clippy::too_many_arguments)]
-    pub fn accept_transactions(
+    pub fn accept_state_transition(
         &self,
-        prev_commit: [u8; 32],
+        prev_state: [u8; 32],
         block_height: u64,
-        block_gas_limit: u64,
+        gas_limit: u64,
         block_hash: Hash,
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
-        consistency_check: Option<VerificationOutput>,
-        slashing: Vec<Slash>,
+        exptected_result: Option<StateTransitionResult>,
+        slashes: Vec<Slash>,
         voters: &[Voter],
     ) -> Result<(
         Vec<SpentTransaction>,
-        VerificationOutput,
+        StateTransitionResult,
         Vec<ContractTxEvent>,
     )> {
-        let session = self.new_block_session(block_height, prev_commit)?;
+        let session = self.new_block_session(block_height, prev_state)?;
 
         let execution_config = self.vm_config.to_execution_config(block_height);
 
-        let (spent_txs, verification_output, session, events) = accept(
-            session,
-            block_height,
-            block_hash,
-            block_gas_limit,
-            &generator,
-            &txs[..],
-            slashing,
-            voters,
-            &execution_config,
-        )?;
+        let (spent_txs, transition_result, session, events) =
+            execute_state_transition(
+                session,
+                block_height,
+                block_hash,
+                gas_limit,
+                &generator,
+                &txs[..],
+                slashes,
+                voters,
+                &execution_config,
+            )?;
 
-        if let Some(expected_verification) = consistency_check {
-            if expected_verification != verification_output {
+        if let Some(expected_result) = exptected_result {
+            if expected_result != transition_result {
                 // Drop the session if the resulting is inconsistent
                 // with the callers one.
                 return Err(RuskError::InconsistentState(Box::new(
-                    verification_output,
+                    transition_result,
                 )));
             }
         }
@@ -357,10 +364,10 @@ impl Rusk {
             // Send VM event to RUES
             let event = RuesEvent::from(event);
             let _ = self.event_sender.send(event);
-        } // TODO: move this also in acceptor (async fn try_accept_block) where
+        } // TODO: move this also in acceptor (async fn accept_block) where
           // stake events are filtered, to avoid looping twice?
 
-        Ok((spent_txs, verification_output, contract_events))
+        Ok((spent_txs, transition_result, contract_events))
     }
 
     pub fn finalize_state(
@@ -588,26 +595,28 @@ impl Rusk {
     }
 }
 
+/// Computes the state transition for a given block by executing transactions
+/// and applying rewards and slashes
 #[allow(clippy::too_many_arguments)]
-fn accept(
+fn execute_state_transition(
     session: Session,
     block_height: u64,
     block_hash: Hash,
-    block_gas_limit: u64,
+    gas_limit: u64,
     generator: &BlsPublicKey,
     txs: &[Transaction],
-    to_slash: Vec<Slash>,
-    voters: &[Voter],
+    slashes: Vec<Slash>,
+    cert_voters: &[Voter],
     execution_config: &ExecutionConfig,
 ) -> Result<(
     Vec<SpentTransaction>,
-    VerificationOutput,
+    StateTransitionResult,
     Session,
     Vec<ContractTxEvent>,
 )> {
     let mut session = session;
 
-    let mut block_gas_left = block_gas_limit;
+    let mut gas_left = gas_limit;
 
     let mut spent_txs = Vec::with_capacity(txs.len());
     let mut dusk_spent = 0;
@@ -615,6 +624,7 @@ fn accept(
     let mut events = Vec::new();
     let mut event_bloom = Bloom::new();
 
+    // Execute transactions
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
         let tx_id = unspent_tx.id();
@@ -636,9 +646,8 @@ fn accept(
         let gas_spent = receipt.gas_spent;
 
         dusk_spent += gas_spent * tx.gas_price();
-        block_gas_left = block_gas_left
-            .checked_sub(gas_spent)
-            .ok_or(RuskError::OutOfGas)?;
+        gas_left =
+            gas_left.checked_sub(gas_spent).ok_or(RuskError::OutOfGas)?;
 
         spent_txs.push(SpentTransaction {
             inner: unspent_tx.clone(),
@@ -649,13 +658,14 @@ fn accept(
         });
     }
 
+    // Apply rewards and slashes
     let coinbase_events = reward_and_slash(
         &mut session,
         block_height,
         generator,
-        voters,
+        cert_voters,
         dusk_spent,
-        to_slash,
+        slashes,
     )?;
 
     event_bloom.add_events(&coinbase_events);
@@ -669,11 +679,12 @@ fn accept(
         .collect();
     events.extend(coinbase_events);
 
+    // Get new state root
     let state_root = session.root();
 
     Ok((
         spent_txs,
-        VerificationOutput {
+        StateTransitionResult {
             state_root,
             event_bloom: event_bloom.into(),
         },
@@ -691,7 +702,7 @@ fn reward_and_slash(
     generator: &BlsPublicKey,
     voters: &[Voter],
     spent_amount: Dusk,
-    to_slash: Vec<Slash>,
+    slashes: Vec<Slash>,
 ) -> Result<Vec<Event>> {
     let mut events = vec![];
 
@@ -705,7 +716,7 @@ fn reward_and_slash(
     )?);
 
     // Apply slashes
-    events.extend(slash(session, to_slash)?);
+    events.extend(slash(session, slashes)?);
 
     // Update the note tree root in the Transfer contract
     let r = session.call::<_, ()>(
@@ -826,9 +837,9 @@ fn calc_generator_extra_reward(
 }
 
 /// Apply slashes by calling the `slash` method in the Stake Contract
-fn slash(session: &mut Session, to_slash: Vec<Slash>) -> Result<Vec<Event>> {
+fn slash(session: &mut Session, slashes: Vec<Slash>) -> Result<Vec<Event>> {
     let mut events = vec![];
-    for s in to_slash {
+    for s in slashes {
         let provisioner = s.provisioner.into_inner();
         let r = match s.r#type {
             node_data::ledger::SlashType::Soft => session.call::<_, ()>(
