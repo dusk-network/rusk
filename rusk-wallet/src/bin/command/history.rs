@@ -242,6 +242,10 @@ pub(crate) async fn moonlight_history(
         for event in events {
             match event.data {
                 BlockData::MoonlightTransactionEvent(event) => {
+                    // This event comes up as the sole event the the case of
+                    // moonlight transfers. In other kinds of transactions, this
+                    // event comes up along with one or more
+                    // events.
                     fee = event.gas_spent * tx.gas_price();
                     let sender = event.sender;
                     let (event_direction, event_amount) = match &sender
@@ -256,6 +260,15 @@ pub(crate) async fn moonlight_history(
                     direction = Some(event_direction);
                 }
                 BlockData::ConvertEvent(event) => {
+                    // This comes up in phoenix to moonlight conversions
+                    // and moonlight to phoenix conversions.
+                    //
+                    // In phoenix to moonlight conversions, both this
+                    // `ConvertEvent`
+                    // and `PhoenixTransactionEvent` are emitted.
+                    // In moonlight to phoenix conversions, both this
+                    // `ConvertEvent`
+                    // and `MoonlightTransactionEvent` are emitted.
                     let (event_direction, event_amount) = match event
                         .sender
                         .is_some()
@@ -270,8 +283,34 @@ pub(crate) async fn moonlight_history(
                     amount += event_amount;
                 }
                 BlockData::PhoenixTransactionEvent(_) => {
+                    // In the full moonlight history, this
+                    // comes up in a phoenix to moonlight conversion.
+                    // In this conversion, a `PhoenixTransactionEvent`
+                    // and `ConvertEvent` are emitted.
+                    //
                     // This case has already been handled in
                     // `transaction_from_notes`
+                }
+                BlockData::DepositEvent(_) => {
+                    // This event is emitted when funds are deposited
+                    // in a contract.
+                    //
+                    // For public stake events: the value
+                    // staked is deposited in the stake contract.
+                    // Nothing needs to be done in this case because the
+                    // other two events, moonlight transaction event and
+                    // stake event handle everything.
+                }
+                BlockData::StakeEvent(event) => {
+                    // When a public stake is done, three events are emitted:
+                    // a `MoonlightTransactionEvent`, a `StakeEvent` and a
+                    // `DepositEvent`.
+                    //
+                    // This event contains only the amount that left the
+                    // account. All other info required for
+                    // the history is in the
+                    // `MoonlightTransactionEvent`.
+                    amount -= event.value as f64;
                 }
             }
         }
