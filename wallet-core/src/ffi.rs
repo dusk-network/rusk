@@ -24,7 +24,14 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::{ptr, slice};
 
+use crate::keys::{
+    derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
+    derive_phoenix_vk,
+};
+use crate::notes::{self, balance, owned, pick};
+use crate::Seed;
 use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{Stake, STAKE_CONTRACT};
 use dusk_core::transfer::data::{ContractCall, TransactionData};
@@ -40,13 +47,6 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha12Rng;
 use rkyv::to_bytes;
 use zeroize::Zeroize;
-
-use crate::keys::{
-    derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
-    derive_phoenix_vk,
-};
-use crate::notes::{self, balance, owned, pick};
-use crate::Seed;
 
 use error::ErrorCode;
 
@@ -388,8 +388,10 @@ pub unsafe fn phoenix(
         None
     } else {
         let buffer = mem::read_buffer(data);
-
-        Some(buffer[1..].to_vec().into())
+        let transaction_data: TransactionData =
+            rkyv::from_bytes(buffer.to_vec().as_slice())
+                .or(Err(ErrorCode::DeserializationError))?;
+        Some(transaction_data)
     };
 
     let prover = NoOpProver::default();
@@ -467,8 +469,10 @@ pub unsafe fn moonlight(
         None
     } else {
         let buffer = mem::read_buffer(data);
-
-        Some(buffer[1..].to_vec().into())
+        let transaction_data: TransactionData =
+            rkyv::from_bytes(buffer.to_vec().as_slice())
+                .or(Err(ErrorCode::DeserializationError))?;
+        Some(transaction_data)
     };
 
     let tx = MoonlightTransaction::new(
@@ -815,6 +819,63 @@ pub unsafe fn moonlight_stake_reward(
     let bytes = displayed.as_bytes();
 
     ptr::copy_nonoverlapping(bytes.as_ptr(), hash_ptr.as_mut_ptr(), 64);
+
+    ErrorCode::Ok
+}
+
+#[no_mangle]
+pub unsafe fn create_tx_data(
+    fn_name_len: *const u32,
+    fn_name_buf: *mut u8,
+    fn_args_len: *const u32,
+    fn_args_buf: *mut u8,
+    contract_id: [u8; 32],
+    memo_len: *const u32,
+    memo_buf: *mut u8,
+    rkyv_ptr: *mut *mut u8,
+) -> ErrorCode {
+    let tx_data = if memo_len == crate::ffi::ptr::null()
+        || memo_buf == crate::ffi::ptr::null_mut()
+    {
+        let fn_name = alloc::string::String::from_raw_parts(
+            fn_name_buf,
+            *fn_name_len as usize,
+            *fn_name_len as usize,
+        );
+        let fn_args = alloc::vec::Vec::from_raw_parts(
+            fn_args_buf,
+            *fn_args_len as usize,
+            *fn_args_len as usize,
+        );
+        let contract = ContractId::from_bytes(contract_id);
+
+        let contract_call = ContractCall {
+            fn_name,
+            fn_args,
+            contract,
+        };
+        TransactionData::Call(contract_call)
+    } else {
+        let memo = alloc::vec::Vec::from_raw_parts(
+            memo_buf,
+            *memo_len as usize,
+            *memo_len as usize,
+        );
+        TransactionData::Memo(memo)
+    };
+    let bytes = match rkyv::to_bytes::<_, 4096>(&tx_data) {
+        Ok(v) => v.to_vec(),
+        Err(_) => return ErrorCode::ArchivingError,
+    };
+    let len = bytes.len().to_le_bytes();
+
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    let ptr = ptr as *mut u8;
+
+    *rkyv_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
 
     ErrorCode::Ok
 }
