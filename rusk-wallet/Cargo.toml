@@ -62,3 +62,6 @@ aes-gcm = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+
+[features]
+e2e-test = []
