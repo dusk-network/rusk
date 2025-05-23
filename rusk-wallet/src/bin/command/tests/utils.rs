@@ -252,6 +252,48 @@ pub async fn convert_moonlight_to_phoenix(
     Ok(tx_id)
 }
 
+pub async fn stake_moonlight(
+    wallet: &mut Wallet<WalletFile>,
+    settings: &Settings,
+    amount: Dusk,
+    gas_price: u64,
+) -> anyhow::Result<String> {
+    let cmd = Command::Stake {
+        address: Some(wallet.default_address()),
+        owner: Some(wallet.default_address()),
+        amt: amount,
+        gas_limit: 3_000_000_000,
+        gas_price,
+    };
+    let run_result = cmd.run(wallet, &settings).await.unwrap();
+    let RunResult::Tx(tx_hash) = run_result else {
+        unreachable!()
+    };
+    let tx_id = hex::encode(&tx_hash.to_bytes());
+    Ok(tx_id)
+}
+
+pub async fn stake_phoenix(
+    wallet: &mut Wallet<WalletFile>,
+    settings: &Settings,
+    amount: Dusk,
+    gas_price: u64,
+) -> anyhow::Result<String> {
+    let cmd = Command::Stake {
+        address: Some(wallet.default_shielded_account()),
+        owner: Some(wallet.default_shielded_account()),
+        amt: amount,
+        gas_limit: 3_000_000_000,
+        gas_price,
+    };
+    let run_result = cmd.run(wallet, &settings).await.unwrap();
+    let RunResult::Tx(tx_hash) = run_result else {
+        unreachable!()
+    };
+    let tx_id = hex::encode(&tx_hash.to_bytes());
+    Ok(tx_id)
+}
+
 async fn block_is_finalized(
     gql: &GraphQL,
     block_height: u64,
