@@ -11,7 +11,8 @@ pub mod rocksdb;
 
 use anyhow::Result;
 use node_data::ledger::{
-    Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
+    Block, BlockWithSpentTransactions, Fault, Header, Label, SpendingId,
+    SpentTransaction, Transaction,
 };
 use node_data::message::{payload, ConsensusHeader};
 use serde::{Deserialize, Serialize};
@@ -74,6 +75,10 @@ pub trait Ledger {
     fn light_block(&self, hash: &[u8]) -> Result<Option<LightBlock>>;
 
     fn block(&self, hash: &[u8]) -> Result<Option<Block>>;
+    fn block_with_spent_transactions(
+        &self,
+        hash: &[u8],
+    ) -> Result<Option<BlockWithSpentTransactions>>;
     fn block_hash_by_height(&self, height: u64) -> Result<Option<[u8; 32]>>;
     fn block_by_height(&self, height: u64) -> Result<Option<Block>>;
 

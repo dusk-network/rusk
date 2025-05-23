@@ -1,0 +1,1084 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
+//! This module provides the implementation of JSON-RPC methods related to
+//! blockchain blocks.
+//!
+//! It includes functionalities for retrieving block details, transactions,
+//! events, and other related data. The methods are defined in the
+//! `BlockRpc` trait and implemented in the `BlockRpcImpl` struct.
+//!
+//! # Error Handling
+//! Each method provides detailed error codes and descriptions for better
+//! debugging.
+//!
+//! # Thread Safety
+//! The implementation ensures thread safety by using `Arc` for shared
+//! state management.
+#![doc = include_str!("../../../../docs/JSON-RPC-block-methods.md")]
+
+use crate::jsonrpc::infrastructure::state::AppState;
+use crate::jsonrpc::model;
+
+use jsonrpsee::core::async_trait;
+use jsonrpsee::proc_macros::rpc;
+use jsonrpsee::types::ErrorObjectOwned;
+
+use std::sync::Arc;
+
+/// Maximum number of blocks to retrieve in a single request.
+const MAX_BLOCKS_TO_RETRIEVE: u64 = 100;
+
+/// RPC trait for block-related methods.
+#[rpc(server)]
+pub trait BlockRpc {
+    /// Returns detailed information about a block identified by its hash.
+    ///
+    /// # Arguments
+    /// * `block_hash` - The block hash as a hex-encoded 32-byte string
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
+    ///
+    /// # Returns
+    /// A `Result` containing the block information or an error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid hash format (not 64 hex chars) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified hash doesn't exist |
+    #[method(name = "getBlockByHash")]
+    async fn get_block_by_hash(
+        &self,
+        block_hash: String,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::Block, ErrorObjectOwned>;
+
+    /// Returns detailed information about a block at the specified height.
+    ///
+    /// # Arguments
+    /// * `height` - The block height as a u64
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
+    ///
+    /// # Returns
+    /// A `Result` containing the block information or an error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid height format (negative or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified height doesn't exist |
+    #[method(name = "getBlockByHeight")]
+    async fn get_block_by_height(
+        &self,
+        height: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Option<model::block::Block>, ErrorObjectOwned>;
+
+    /// Returns information about the most recent block.
+    ///
+    /// # Arguments
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
+    ///
+    /// # Returns
+    /// A `Result` containing the block information or an error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getLatestBlock")]
+    async fn get_latest_block(
+        &self,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::Block, ErrorObjectOwned>;
+
+    /// Returns a sequence of blocks within the specified height range.
+    ///
+    /// # Arguments
+    /// * `start_height` - Starting block height.
+    /// * `end_height` - Ending block height (inclusive).
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
+    ///
+    /// # Returns
+    /// A `Result` containing the an array of block information or an error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid height range (negative, too large, or end < start) |
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getBlocksRange")]
+    async fn get_blocks_range(
+        &self,
+        start_height: u64,
+        end_height: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Vec<model::block::Block>, ErrorObjectOwned>;
+
+    /// Returns the specified number of most recent blocks.
+    ///
+    /// # Arguments
+    /// * `count` - Number of latest blocks to return.
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details. Defaults to false.
+    ///
+    /// # Returns
+    /// A `Result` containing the an array of block information ordered from
+    /// newest to oldest starting from the latest block or an error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid count (zero or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getLatestBlocks")]
+    async fn get_latest_blocks(
+        &self,
+        count: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Vec<model::block::Block>, ErrorObjectOwned>;
+
+    /// Returns the total number of blocks in the blockchain.
+    ///
+    /// # Arguments
+    /// * `finalized_only` - Optional argument. If true, returns only finalized
+    ///   blocks count. Defaults to false
+    ///
+    /// # Returns
+    /// A `Result` containing the total number of blocks as numeric string.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getBlocksCount")]
+    async fn get_blocks_count(
+        &self,
+        finalized_only: Option<bool>,
+    ) -> Result<String, ErrorObjectOwned>;
+
+    /// Returns both the latest candidate block with transaction data and the
+    /// latest finalized block.
+    ///
+    /// # Arguments
+    /// * `include_txs` - Optional argument. If true, includes transaction
+    ///   details in the finalized block. Defaults to false
+    ///
+    /// # Returns
+    /// A `Result` containing the block pair object where the `latest` block is
+    /// the latest candidate block and the `finalized` block is the latest
+    /// finalized block or error if the fetching of either block fails.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getBlockPair")]
+    async fn get_block_pair(
+        &self,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::BlockPair, ErrorObjectOwned>;
+
+    /// Returns the finalization status of a block identified by its height.
+    ///
+    /// # Arguments
+    /// * `block_height` - The height of the block to check the finalization
+    ///   status.
+    ///
+    /// # Returns
+    /// A `Result` containing the block finalization status or the error if the
+    /// fetching of the block status fails or block not found.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid height (non-positive or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified height doesn't exist |
+    #[method(name = "getBlockStatus")]
+    async fn get_block_status(
+        &self,
+        block_height: u64,
+    ) -> Result<model::block::BlockStatusResponse, ErrorObjectOwned>;
+
+    /// Returns events emitted during block execution for a block identified by
+    /// its hash.
+    ///
+    /// # Arguments
+    /// * `block_hash` - The block hash as a hex-encoded 32-byte string.
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block events or the error if the
+    /// fetching of the block events fails, or block not found, or block has no
+    /// associated events.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid hash format (not 64 hex chars) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Not found | Block with specified hash doesn't exist or has no associated events |
+    #[method(name = "getBlockEventsByHash")]
+    async fn get_block_events_by_hash(
+        &self,
+        block_hash: String,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned>;
+
+    /// Returns events emitted during block execution for a block at the
+    /// specified height.
+    ///
+    /// # Arguments
+    /// * `height` - The height of the block.
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block events or the error if the
+    /// fetching of the block events fails, or block not found, or block has no
+    /// associated events.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid height (non-positive or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Not found | Block at specified height doesn't exist or has no associated events |
+    #[method(name = "getBlockEventsByHeight")]
+    async fn get_block_events_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned>;
+
+    /// Returns events emitted during the execution of the latest block.
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block events or the error if the
+    /// fetching of the block events fails.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getLatestBlockEvents")]
+    async fn get_latest_block_events(
+        &self,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned>;
+
+    /// Returns all transactions from a block identified by its hash.
+    ///
+    /// # Arguments
+    /// * `block_hash` - The block hash as a hex-encoded 32-byte string
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block transactions or an error if the
+    /// fetching of the block transactions fails or if the block does not exist.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid hash format (not 64 hex chars) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified hash doesn't exist |
+    #[method(name = "getBlockTransactionsByHash")]
+    async fn get_block_transactions_by_hash(
+        &self,
+        hash: String,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
+
+    /// Returns a range of transactions from a block identified by its hash.
+    ///
+    /// # Arguments
+    /// * `block_hash` - The block hash as a hex-encoded 32-byte string
+    /// * `start_index` - The starting index (0-based) of the transaction range
+    /// * `count` - The maximum number of transactions to retrieve
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block transactions or an error if the
+    /// fetching of the block transactions fails or if the block does not exist.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid hash format (not 64 hex chars) |
+    /// | -32602 | Invalid params | Invalid start_index (too large) |
+    /// | -32602 | Invalid params | Invalid count (zero or too large) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified hash doesn't exist |
+    #[method(name = "getBlockTransactionRangeByHash")]
+    async fn get_block_transaction_range_by_hash(
+        &self,
+        block_hash: String,
+        start_index: u64,
+        count: u64,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
+
+    /// Returns all transactions from a block at the specified height.
+    ///
+    /// # Arguments
+    /// * `height` - Block height to query. Positive value representing the
+    ///   specific block height
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block transactions or an error if the
+    /// fetching of the block transactions fails or if the block does not exist.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified height doesn't exist |
+    #[method(name = "getBlockTransactionsByHeight")]
+    async fn get_block_transactions_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
+
+    /// Returns a range of transactions from a block at the specified height.
+    ///
+    /// # Arguments
+    /// * `height` - Block height to query. Positive value representing the
+    ///   specific block height
+    /// * `start_index` - The starting index (0-based) of the transaction range
+    /// * `count` - The maximum number of transactions to retrieve
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block transactions or an error if the
+    /// fetching of the block transactions fails or if the block does not exist.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid start_index (too large) |
+    /// | -32602 | Invalid params | Invalid count (zero) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified hash doesn't exist |
+    #[method(name = "getBlockTransactionRangeByHeight")]
+    async fn get_block_transaction_range_by_height(
+        &self,
+        height: u64,
+        start_index: usize,
+        count: usize,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
+
+    /// Returns all transactions from a block at the specified height.
+    ///
+    /// # Arguments
+    /// * `height` - Block height to query. Positive value representing the
+    ///   specific block height
+    /// * `count` - The maximum number of last transactions to retrieve
+    ///
+    /// # Returns
+    /// A `Result` containing an array of block transactions or an error if the
+    /// fetching of the block transactions fails or if the block does not exist.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | Invalid count (zero) |
+    /// | -32603 | Internal error | Database or internal error |
+    /// | -32000 | Block not found | Block with specified height doesn't exist |
+    #[method(name = "getLastBlockTransactionsByHeight")]
+    async fn get_last_block_transactions_by_height(
+        &self,
+        height: u64,
+        count: usize,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>;
+
+    /// Returns the height of the next block **after** the given height  that
+    /// contains at least one Phoenix transaction.
+    ///
+    /// # Arguments
+    /// * `from_height` - Starting block height to search from. Positive value
+    ///   representing the specific block height
+    ///
+    /// # Returns
+    /// The block height as a numeric string, or null if no Phoenix transaction
+    /// is found, or an error if there is an internal or database error.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getNextBlockWithPhoenixTransaction")]
+    async fn get_next_block_with_phoenix_transaction(
+        &self,
+        from_height: u64,
+    ) -> Result<Option<String>, ErrorObjectOwned>;
+
+    /// Returns gas price statistics from mempool transactions to help users set
+    /// appropriate gas prices for new transactions.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_transactions`: Maximum number of transactions to analyze. If not
+    ///   specified, all available transactions will be analyzed.
+    ///
+    /// # Returns
+    /// The object containing the calculated statistics (average, median,
+    /// maximum, and minimum as numeric strings) or an error if there is
+    /// an internal or database error.
+    ///
+    /// **Note**: When the mempool is empty, all gas price values default to "1"
+    /// to ensure a minimum viable gas price is always available.
+    ///
+    /// # Error Codes
+    ///
+    /// | Code | Message | Description |
+    /// |------|---------|-------------|
+    /// | -32602 | Invalid params | max_transactions is not a positive integer |
+    /// | -32603 | Internal error | Database or internal error |
+    #[method(name = "getGasPrice")]
+    async fn get_gas_price(
+        &self,
+        max_transactions: Option<usize>,
+    ) -> Result<model::gas::GasPriceStats, ErrorObjectOwned>;
+}
+
+/// Implementation of the `BlockRpcServer` trait.
+#[derive(Clone)]
+pub struct BlockRpcImpl {
+    app_state: Arc<AppState>,
+}
+
+impl BlockRpcImpl {
+    pub fn new(app_state: Arc<AppState>) -> Self {
+        Self { app_state }
+    }
+}
+
+#[async_trait]
+impl BlockRpcServer for BlockRpcImpl {
+    async fn get_block_by_hash(
+        &self,
+        block_hash: String,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::Block, ErrorObjectOwned> {
+        // 1. Validate the hash format
+        if block_hash.len() != 64
+            || !block_hash.chars().all(|c| c.is_ascii_hexdigit())
+        {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid hash format (not 64 hex chars)".to_string()),
+            ));
+        }
+
+        let block = self
+            .app_state
+            .get_block_by_hash(
+                block_hash.as_str(),
+                include_txs.unwrap_or(false),
+            )
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match block {
+            Some(block) => Ok(block),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some(format!("Block with hash {} not found", block_hash)),
+            )),
+        }
+    }
+
+    async fn get_block_by_height(
+        &self,
+        height: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Option<model::block::Block>, ErrorObjectOwned> {
+        // 1. Validate the height format
+        if height == 0 || height > u64::MAX {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height format (zero or too large)".to_string()),
+            ));
+        }
+
+        let block = self
+            .app_state
+            .get_block_by_height(height, include_txs.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match block {
+            Some(block) => Ok(Some(block)),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some(format!("Block with height {} not found", height)),
+            )),
+        }
+    }
+
+    async fn get_latest_block(
+        &self,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::Block, ErrorObjectOwned> {
+        let block = self
+            .app_state
+            .get_latest_block(include_txs.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(block)
+    }
+
+    async fn get_blocks_range(
+        &self,
+        start_height: u64,
+        end_height: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Vec<model::block::Block>, ErrorObjectOwned> {
+        if start_height == 0
+            || end_height == 0
+            || start_height > u64::MAX - end_height
+        {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height (zero or too large)".to_string()),
+            ));
+        }
+
+        if start_height > end_height {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height range (end < start)".to_string()),
+            ));
+        }
+
+        if start_height == end_height {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height range (start == end)".to_string()),
+            ));
+        }
+
+        if end_height - start_height > MAX_BLOCKS_TO_RETRIEVE {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some(format!(
+                    "Invalid height range (range > {})",
+                    MAX_BLOCKS_TO_RETRIEVE
+                )),
+            ));
+        }
+
+        let blocks = self
+            .app_state
+            .get_blocks_range(
+                start_height,
+                end_height,
+                include_txs.unwrap_or(false),
+            )
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(blocks)
+    }
+
+    async fn get_latest_blocks(
+        &self,
+        count: u64,
+        include_txs: Option<bool>,
+    ) -> Result<Vec<model::block::Block>, ErrorObjectOwned> {
+        if count == 0 || count > u64::MAX {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid count (zero or too large)".to_string()),
+            ));
+        }
+
+        if count > MAX_BLOCKS_TO_RETRIEVE {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some(format!(
+                    "Invalid count (range > {})",
+                    MAX_BLOCKS_TO_RETRIEVE
+                )),
+            ));
+        }
+
+        let blocks = self
+            .app_state
+            .get_latest_blocks(count, include_txs.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(blocks)
+    }
+
+    async fn get_blocks_count(
+        &self,
+        finalized_only: Option<bool>,
+    ) -> Result<String, ErrorObjectOwned> {
+        let count = self
+            .app_state
+            .get_blocks_count(finalized_only.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(count.to_string())
+    }
+
+    async fn get_block_pair(
+        &self,
+        include_txs: Option<bool>,
+    ) -> Result<model::block::BlockPair, ErrorObjectOwned> {
+        self.app_state
+            .get_block_pair(include_txs.unwrap_or(false))
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })
+    }
+
+    async fn get_block_status(
+        &self,
+        block_height: u64,
+    ) -> Result<model::block::BlockStatusResponse, ErrorObjectOwned> {
+        if block_height == 0 || block_height > u64::MAX {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height (non-positive or too large)".to_string()),
+            ));
+        }
+
+        let status = self
+            .app_state
+            .get_block_status_by_height(block_height)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match status {
+            Some(status) => Ok(model::block::BlockStatusResponse { status }),
+            None => Err(ErrorObjectOwned::owned(
+                -32602,
+                "Block not found",
+                Some("Block with specified height doesn't exist".to_string()),
+            )),
+        }
+    }
+
+    async fn get_block_events_by_hash(
+        &self,
+        block_hash: String,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned> {
+        // 1. Validate the hash format
+        if block_hash.len() != 64
+            || !block_hash.chars().all(|c| c.is_ascii_hexdigit())
+        {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid hash format (not 64 hex chars)".to_string()),
+            ));
+        }
+
+        // 2. Fetch the block events by hash
+        let events = self
+            .app_state
+            .get_block_events_by_hash(block_hash)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        // 3. Validate the block events
+        if events.is_empty() {
+            return Err(ErrorObjectOwned::owned(
+                -32000,
+                "Not found",
+                Some("Block with specified hash doesn't exist or has no associated events".to_string()),
+            ));
+        }
+
+        Ok(events)
+    }
+
+    async fn get_block_events_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned> {
+        if height == 0 || height > u64::MAX {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height (non-positive or too large)".to_string()),
+            ));
+        }
+
+        let events = self
+            .app_state
+            .get_block_events_by_height(height)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        if events.is_empty() {
+            return Err(ErrorObjectOwned::owned(
+                -32000,
+                "Not found",
+                Some("Block with specified height doesn't exist or has no associated events".to_string()),
+            ));
+        }
+
+        Ok(events)
+    }
+
+    async fn get_latest_block_events(
+        &self,
+    ) -> Result<Vec<model::archive::ArchivedEvent>, ErrorObjectOwned> {
+        self.app_state.get_latest_block_events().await.map_err(|e| {
+            ErrorObjectOwned::owned(
+                -32603,
+                "Internal error",
+                Some(e.to_string()),
+            )
+        })
+    }
+
+    async fn get_block_transactions_by_hash(
+        &self,
+        hash: String,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
+    {
+        // 1. Validate the hash format
+        if hash.len() != 64 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid hash format (not 64 hex chars)".to_string()),
+            ));
+        }
+
+        let transactions = self
+            .app_state
+            .get_block_transactions_by_hash(&hash)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match transactions {
+            Some(transactions) => Ok(transactions),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some("Block with specified hash doesn't exist".to_string()),
+            )),
+        }
+    }
+
+    async fn get_block_transaction_range_by_hash(
+        &self,
+        block_hash: String,
+        start_index: u64,
+        count: u64,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
+    {
+        // 1. Validate the hash format
+        if block_hash.len() != 64
+            || !block_hash.chars().all(|c| c.is_ascii_hexdigit())
+        {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid hash format (not 64 hex chars)".to_string()),
+            ));
+        }
+
+        if start_index > u64::MAX - count {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid start_index (too large)".to_string()),
+            ));
+        }
+
+        let transactions = self
+            .app_state
+            .get_block_transaction_range_by_hash(
+                &block_hash,
+                start_index as usize,
+                count as usize,
+            )
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match transactions {
+            Some(transactions) => Ok(transactions),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some("Block with specified hash doesn't exist".to_string()),
+            )),
+        }
+    }
+
+    async fn get_block_transactions_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
+    {
+        let transactions = self
+            .app_state
+            .get_block_transactions_by_height(height)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        match transactions {
+            Some(transactions) => Ok(transactions),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some("Block with specified height doesn't exist".to_string()),
+            )),
+        }
+    }
+
+    async fn get_block_transaction_range_by_height(
+        &self,
+        height: u64,
+        start_index: usize,
+        count: usize,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
+    {
+        // 1. Validate count
+        if count == 0 {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid count (zero)".to_string()),
+            ));
+        }
+
+        // 2. Validate start index
+        if start_index > usize::MAX - count {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid start index (too large)".to_string()),
+            ));
+        }
+
+        // 3. Fetch transactions
+        let transactions = self
+            .app_state
+            .get_block_transaction_range_by_height(height, start_index, count)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        // 4. In the result is None, block not found
+        match transactions {
+            Some(transactions) => Ok(transactions),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some("Block with specified height doesn't exist".to_string()),
+            )),
+        }
+    }
+
+    async fn get_last_block_transactions_by_height(
+        &self,
+        height: u64,
+        count: usize,
+    ) -> Result<Vec<model::transaction::TransactionResponse>, ErrorObjectOwned>
+    {
+        // 1. Validate height
+        if height == 0 {
+            return Err(ErrorObjectOwned::owned(
+                -32602,
+                "Invalid params",
+                Some("Invalid height (zero)".to_string()),
+            ));
+        }
+
+        // 2. Fetch transactions
+        let transactions = self
+            .app_state
+            .get_last_block_transactions_by_height(height, count)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        // 3. If the result is None, block not found
+        match transactions {
+            Some(transactions) => Ok(transactions),
+            None => Err(ErrorObjectOwned::owned(
+                -32000,
+                "Block not found",
+                Some("Block with specified height doesn't exist".to_string()),
+            )),
+        }
+    }
+
+    async fn get_next_block_with_phoenix_transaction(
+        &self,
+        from_height: u64,
+    ) -> Result<Option<String>, ErrorObjectOwned> {
+        let result = self
+            .app_state
+            .get_next_block_with_phoenix_transaction(from_height)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(result.map(|block_height| block_height.to_string()))
+    }
+
+    async fn get_gas_price(
+        &self,
+        max_transactions: Option<usize>,
+    ) -> Result<model::gas::GasPriceStats, ErrorObjectOwned> {
+        // 1. Validate input parameters
+        if let Some(max_transactions) = max_transactions {
+            if max_transactions == 0 {
+                return Err(ErrorObjectOwned::owned(
+                    -32602,
+                    "Invalid parameter",
+                    Some(
+                        "max_transactions is not a positive integer"
+                            .to_string(),
+                    ),
+                ));
+            }
+        }
+
+        // 2. Fetch gas price data
+        let gas_price = self
+            .app_state
+            .get_gas_price(max_transactions)
+            .await
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    -32603,
+                    "Internal error",
+                    Some(e.to_string()),
+                )
+            })?;
+
+        Ok(gas_price)
+    }
+}
