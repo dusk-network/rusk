@@ -8,9 +8,10 @@
 //! The <node-url>/on/gaphql/query if queried with empty bytes returns the
 //! graphql schema
 
+use dusk_core::stake::StakeEvent;
 use dusk_core::transfer::phoenix::StealthAddress;
-use dusk_core::transfer::Transaction;
 use dusk_core::transfer::{ConvertEvent, MoonlightTransactionEvent};
+use dusk_core::transfer::{DepositEvent, Transaction};
 use serde::Deserialize;
 use serde_json::Value;
 use serde_with::hex::Hex;
@@ -107,6 +108,10 @@ pub enum BlockData {
     PhoenixTransactionEvent(PhoenixTransactionEventSubset),
     /// For the convert event.
     ConvertEvent(ConvertEvent),
+    /// For the stake event.
+    StakeEvent(StakeEvent),
+    /// For the deposit event.
+    DepositEvent(DepositEvent),
 }
 
 #[derive(Deserialize, Debug)]
