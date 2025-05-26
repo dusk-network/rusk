@@ -24,9 +24,9 @@ test("account contract call transfer", async () => {
         .transfer(1n)
         .to(users[0].account)
         .memo(null)
-        .fn_name("get_version")
-        .fn_args([])
-        .contract_id([0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        .fnName("get_version")
+        .fnArgs([])
+        .contractId([0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         .gas({limit: 500_000_000n});
 
     let {hash} = await network.execute(transfer);

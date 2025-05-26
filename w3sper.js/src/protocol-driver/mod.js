@@ -29,6 +29,7 @@ export function load(source, importsURL) {
     return;
   }
 
+  console.log("source=", source);
   protocolDriverModule = new exu.Module(source);
 
   if (importsURL instanceof URL) {
@@ -1099,9 +1100,6 @@ async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
         )
     } else {
         // memo
-        if (!memo) {
-          return null;
-        }
         let buffer = null;
         if (typeof memo === "string") {
           buffer = new TextEncoder().encode(memo);
