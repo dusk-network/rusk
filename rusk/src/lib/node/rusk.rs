@@ -118,7 +118,7 @@ impl Rusk {
             event = "Creating state transition",
             height = block_height,
             prev_state = to_str(&prev_state),
-            gas_limit = gas_limit,
+            gas_limit,
             ?slashes
         );
 
