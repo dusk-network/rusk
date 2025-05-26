@@ -76,18 +76,18 @@ export class Transfer extends BasicTransfer {
     return this;
   }
 
-  fn_name(name) {
-    this[_attributes].fn_name = name;
+  fnName(name) {
+    this[_attributes].fnName = name;
     return this;
   }
 
-  fn_args(args) {
-    this[_attributes].fn_args = args;
+  fnArgs(args) {
+    this[_attributes].fnArgs = args;
     return this;
   }
 
-  contract_id(id) {
-    this[_attributes].contract_id = id;
+  contractId(id) {
+    this[_attributes].contractId = id;
     return this;
   }
 }

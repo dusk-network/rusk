@@ -6,14 +6,14 @@
 
 export class TxData {
     memo;
-    fn_name;
-    fn_args;
-    contract_id;
+    fnName;
+    fnArgs;
+    contractId;
 
-    constructor(memo, fn_name, fn_args, contract_id) {
+    constructor(memo, fnName, fnArgs, contractId) {
         this.memo = memo;
-        this.fn_name = fn_name;
-        this.fn_args = fn_args;
-        this.contract_id = contract_id;
+        this.fnName = fnName;
+        this.fnArgs = fnArgs;
+        this.contract_id = contractId;
     }
 }

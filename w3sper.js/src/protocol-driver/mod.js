@@ -1099,9 +1099,6 @@ async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
         )
     } else {
         // memo
-        if (!memo) {
-          return null;
-        }
         let buffer = null;
         if (typeof memo === "string") {
           buffer = new TextEncoder().encode(memo);
