@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_core::dusk;
 use rusk_wallet::GraphQL;
 
 use super::*;
@@ -41,7 +42,7 @@ async fn test_non_empty_history() {
 
     let rcv_moonlight = rcv_moonlight_from_faucet(
         moonlight_addr.clone(),
-        6_000_000_000,
+        dusk(2750.0),
         gas_price,
     )
     .await
@@ -52,7 +53,7 @@ async fn test_non_empty_history() {
     gql.wait_for(&rcv_moonlight).await.unwrap();
 
     let rcv_phoenix =
-        rcv_phoenix_from_faucet(phoenix_addr.clone(), 4_000_000_000, gas_price)
+        rcv_phoenix_from_faucet(phoenix_addr.clone(), dusk(2500.0), gas_price)
             .await
             .unwrap();
     gql.wait_for(&rcv_phoenix).await.unwrap();
@@ -108,6 +109,17 @@ async fn test_non_empty_history() {
     .unwrap();
     gql.wait_for(&phoenix_to_moonlight).await.unwrap();
 
+    let stake_moonlight =
+        stake_moonlight(&mut wallet, &settings, dusk(1000.0).into(), gas_price)
+            .await
+            .unwrap();
+    gql.wait_for(&stake_moonlight).await.unwrap();
+
+    let stake_phoenix =
+        stake_phoenix(&mut wallet, &settings, dusk(1000.0).into(), gas_price)
+            .await
+            .unwrap();
+
     txs_info.extend(
         wait_for_tx_blocks_to_finalize(
             &gql,
@@ -116,6 +128,8 @@ async fn test_non_empty_history() {
                 &phoenix_trans_to_other_wallet,
                 &phoenix_to_moonlight,
                 &moonlight_to_phoenix,
+                &stake_moonlight,
+                &stake_phoenix,
             ],
         )
         .await
@@ -137,13 +151,13 @@ async fn test_non_empty_history() {
             // Receive money from faucet to moonlight address
             StrippedTxHistoryItem {
                 direction: TransactionDirection::In,
-                amount: 6_000_000_000.0,
+                amount: dusk(2750.0) as f64,
                 fee: txs_info[&rcv_moonlight].gas_spent * gas_price,
             },
             // Receive money from faucet to phoenix address
             StrippedTxHistoryItem {
                 direction: TransactionDirection::In,
-                amount: 4_000_000_000.0,
+                amount: dusk(2500.0) as f64,
                 fee: txs_info[&rcv_phoenix].gas_spent * gas_price,
             },
             // Send 4000 to other wallet
@@ -183,6 +197,18 @@ async fn test_non_empty_history() {
                 direction: TransactionDirection::In,
                 amount: 5_000.0,
                 fee: 0,
+            },
+            // Stake 1000 dusk with moonlight
+            StrippedTxHistoryItem {
+                direction: TransactionDirection::Out,
+                amount: -(dusk(1000.0) as f64),
+                fee: txs_info[&stake_moonlight].gas_spent * gas_price,
+            },
+            // Stake 1000 dusk with phoenix
+            StrippedTxHistoryItem {
+                direction: TransactionDirection::Out,
+                amount: -(dusk(1000.0) as f64),
+                fee: txs_info[&stake_phoenix].gas_spent * gas_price,
             },
         ]
     );
