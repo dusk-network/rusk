@@ -72,6 +72,8 @@ export class Network extends EventTarget {
   async connect(options = {}) {
     await this.#rues.connect(options);
 
+    // let local_url = new URL("http://localhost:8080");
+    // ProtocolDriver.load(new URL("/static/drivers/wallet-core.wasm", local_url));
     ProtocolDriver.load(new URL("/static/drivers/wallet-core.wasm", this.url));
 
     return this;

@@ -9,6 +9,7 @@ import {AccountSyncer, Bookkeeper, Network, ProfileGenerator} from "@dusk/w3sper
 
 test("account contract call transfer", async () => {
     const network = await Network.connect("http://localhost:8080/");
+    // const network = await Network.connect("https://testnet.nodes.dusk.network/");
     const profiles = new ProfileGenerator(seeder);
     const users = await Promise.all([profiles.default, profiles.next()]);
     const accounts = new AccountSyncer(network);

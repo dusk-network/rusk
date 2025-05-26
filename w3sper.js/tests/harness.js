@@ -4,6 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+import { mnemonicToSeedSync } from "bip39";
+
+/**
+ * @param {String} mnemonic
+ * @returns {Uint8Array}
+ */
+const getSeedFromMnemonic = (mnemonic) =>
+    Uint8Array.from(mnemonicToSeedSync(mnemonic));
+
+export default getSeedFromMnemonic;
+
 const hex = (bytes) =>
   Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0"));
 
@@ -115,6 +126,7 @@ const SEED = new Uint8Array([
 ]);
 
 export const seeder = () => SEED;
+// export const seeder = () => getSeedFromMnemonic("trial suffer emerge awesome diary rule soft raven reason unique nasty into");
 
 export class Treasury {
   #users;
