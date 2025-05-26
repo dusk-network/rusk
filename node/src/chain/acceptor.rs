@@ -718,12 +718,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     ///
     /// * blk: the block to accept as successor of the tip
     /// * restart_consensus: `true` if the consensus loop has to be restarted
-    ///   after accepting a block, false otherwise.
+    ///   after accepting a block.
     ///
     /// # Returns
     ///
     /// * `true` if the accepted block triggered rolling finality on a previous
-    ///   block; `false` otherwise.
+    ///   block.
     pub(crate) async fn accept_block(
         &mut self,
         blk: &Block,
@@ -740,6 +740,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let header_verification_start = std::time::Instant::now();
         // Verify Block Header
+        // `cert_voters` and `att_voters` are the voters of the previous-block
+        // Certificate and the `blk` Attestation, respectively
         let (pni, cert_voters, att_voters) = verify_block_header(
             self.db.clone(),
             &prev_header,
@@ -1535,7 +1537,11 @@ async fn broadcast<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
 
 /// Verifies a block header against its previous block
 ///
-/// Returns the number of Previous Non-Attested Iterations (PNI).
+/// # Returns
+///
+/// * The number of Previous Non-Attested Iterations (PNI)
+/// * The list of voters in the previous-block Certificate
+/// * The list of voters in the current-block Attestation
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     prev_header: &ledger::Header,
