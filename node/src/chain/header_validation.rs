@@ -84,11 +84,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             self.verify_block_generator(header, expected_generator)?;
         self.verify_basic_fields(header, &generator).await?;
 
-        let prev_block_voters = self.verify_prev_block_cert(header).await?;
+        let cert_voters = self.verify_prev_block_cert(header).await?;
 
-        let mut block_voters = vec![];
+        let mut att_voters = vec![];
         if check_attestation {
-            block_voters = verify_att(
+            att_voters = verify_att(
                 &header.att,
                 header.to_consensus_header(),
                 self.prev_header.seed,
@@ -99,7 +99,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         let pni = self.verify_failed_iterations(header).await?;
-        Ok((pni, prev_block_voters, block_voters))
+        Ok((pni, cert_voters, att_voters))
     }
 
     fn verify_block_generator(
