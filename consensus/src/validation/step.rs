@@ -89,7 +89,7 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         let header = candidate.header();
         let candidate_hash = header.hash;
 
-        let vote = match Self::verify_candidate(
+        let vote = match Self::validate_candidate(
             candidate,
             ru.state_root(),
             executor,
@@ -119,7 +119,7 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         Self::cast_vote(vote, ru, iteration, outbound, inbound).await;
     }
 
-    async fn verify_candidate(
+    async fn validate_candidate(
         candidate: &Block,
         prev_state: StateRoot,
         executor: Arc<T>,
@@ -127,17 +127,17 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     ) -> Result<(), OperationError> {
         let header = candidate.header();
 
-        // Verify faults
+        // Validate faults
         executor
             .validate_faults(header.height, candidate.faults())
             .await?;
 
-        // Verify candidate header
+        // Validate candidate header
         let cert_voters = executor
             .validate_block_header(header, &expected_generator)
             .await?;
 
-        // Verify state transition
+        // Validate state transition
         executor
             .validate_state_transition(prev_state, candidate, &cert_voters)
             .await?;
