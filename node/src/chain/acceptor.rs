@@ -598,7 +598,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 );
                 match &change {
                     ProvisionerChange::Stake(stake_event) => {
-                        match new_prov.get_member_mut(&account) {
+                        match new_prov.get_provisioner_mut(&account) {
                             Some(stake) if stake.value() == 0 => anyhow::bail!(
                                 "Found an active stake with 0 amount"
                             ),
@@ -612,7 +612,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                                     amount.value,
                                     amount.eligibility,
                                 );
-                                new_prov.add_member_with_stake(account, stake);
+                                new_prov.add_provisioner(account, stake);
                             }
                         }
                     }
@@ -625,10 +625,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     ProvisionerChange::Slash(slash_event)
                     | ProvisionerChange::HardSlash(slash_event) => {
                         let to_slash = new_prov
-                            .get_member_mut(&account)
+                            .get_provisioner_mut(&account)
                             .ok_or(anyhow::anyhow!(
-                                "Slashing a not existing stake"
-                            ))?;
+                            "Slashing a not existing stake"
+                        ))?;
                         to_slash.subtract(slash_event.value);
                         to_slash
                             .change_eligibility(slash_event.next_eligibility);
