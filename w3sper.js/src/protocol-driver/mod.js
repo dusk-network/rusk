@@ -1035,103 +1035,66 @@ export const withdraw = async (info) =>
     return [tx_buffer, hash];
   })();
 
+/**
+ * Converts string/buffer representations to Uint8Array
+ * @param {string|ArrayBuffer|Uint8Array} input - Input to convert
+ * @returns {Uint8Array|null} Converted Uint8Array or null for invalid input
+ */
+function strToArray(input) {
+    if (input == null || input === '') return null;
+    if (typeof input === 'string') {
+        return new TextEncoder().encode(input);
+    }
+    if (input instanceof ArrayBuffer) {
+        return input.byteLength ? new Uint8Array(input) : null;
+    }
+    if (input instanceof Uint8Array) {
+        return input.length ? input : null;
+    }
+    return null;
+}
 
+/**
+ * Extracts pointers to a given buffer and its length
+ * @param ptr_obj - object in which pointers will be set
+ * @param data_ptr_name - name of data pointer attribute to be set
+ * @param len_ptr_name - name of data length pointer attribute to be set
+ * @param buffer - data to which pointers will be created
+ * @param malloc - memory allocating function
+ * @param memcpy - memory copying function
+ * @returns {Promise<void>}
+ */
+async function setPointers(ptr_obj, data_ptr_name, len_ptr_name, buffer, malloc, memcpy) {
+    ptr_obj[data_ptr_name] = await malloc(buffer.byteLength);
+    let len = buffer.byteLength;
+    await memcpy(ptr_obj[data_ptr_name], buffer);
+
+    const len_buf = new Uint8Array(4);
+    new DataView(len_buf.buffer).setUint32(0, len, true);
+    ptr_obj[len_ptr_name] = await malloc(4);
+    await memcpy(ptr_obj[len_ptr_name], len_buf);
+}
+
+/**
+ * Serializes given payload to rkyv format
+ * @param payload - object containing payload, e.g. memo or contract call data
+ * @param malloc - memory allocating function
+ * @param memcpy - memory copying function
+ * @param create_tx_data - low level function performing the actual serialization
+ * @returns {Promise<Uint8Array<ArrayBuffer>|null>} Buffer containing serialized data
+ */
 async function serializePayload(payload = null, malloc, memcpy, create_tx_data) {
-    if (!payload){
-        return null;
-    }
-    let fn_name;
-    let fn_args;
-    let contract_id;
-    let memo = null;
-    if ('memo' in payload && payload.memo) {
-        memo = payload.memo;
-    } else if ('fnName' in payload && 'fnArgs' in payload && 'contractId' in payload) {
-        fn_name = payload.fnName;
-        fn_args = payload.fnArgs;
-        contract_id = payload.contractId;
-    }
-
+    if (!payload) return null;
     const ptr = Object.create(null);
-
     let code;
     let ret;
-    if (!memo) {
-        // fn_name
-        if (!fn_name) {
-            return null;
-        }
-        let fn_name_arg = null;
-        if (typeof fn_name === "string") {
-            fn_name_arg = new TextEncoder().encode(fn_name);
-        } else if (fn_name instanceof ArrayBuffer) {
-            fn_name_arg = new Uint8Array(fn_name);
-        } else if (fn_name instanceof Uint8Array) {
-            fn_name_arg = fn_name;
-        }
-        if (!fn_name_arg) {
-            return null;
-        }
-        ptr.fn_name = await malloc(fn_name_arg.byteLength);
-        let fn_name_len = fn_name_arg.byteLength;
-        await memcpy(ptr.fn_name, fn_name_arg);
 
-        const fn_name_len_buf = new Uint8Array(4);
-        new DataView(fn_name_len_buf.buffer).setUint32(0, fn_name_len, true);
-        ptr.fn_name_len = await malloc(4);
-        await memcpy(ptr.fn_name_len, fn_name_len_buf);
-        // fn_args
-        const fn_args_buffer = new Uint8Array(fn_args);
-        ptr.fn_args = await malloc(fn_args_buffer.byteLength);
-        let fn_args_len = fn_args_buffer.byteLength;
-        await memcpy(ptr.fn_args, fn_args_buffer);
-
-        const fn_args_len_buf = new Uint8Array(4);
-        new DataView(fn_args_len_buf.buffer).setUint32(0, fn_args_len, true);
-        ptr.fn_args_len = await malloc(4);
-        await memcpy(ptr.fn_args_len, fn_args_len_buf);
-        // contract_id
-        const contract_id_buffer = new Uint8Array(contract_id);
-        ptr.contract_id = await malloc(contract_id_buffer.byteLength);
-        await memcpy(ptr.contract_id, contract_id_buffer);
-        // result
-        ret = await malloc(4);
-
-        code = await create_tx_data(
-            ptr.fn_name_len,
-            ptr.fn_name,
-            ptr.fn_args_len,
-            ptr.fn_args,
-            ptr.contract_id,
-            null,
-            null,
-            ret
-        )
-    } else {
-        // memo
-        let buffer = null;
-        if (typeof memo === "string") {
-          buffer = new TextEncoder().encode(memo);
-        } else if (memo instanceof ArrayBuffer) {
-          buffer = new Uint8Array(memo);
-        } else if (memo instanceof Uint8Array) {
-          buffer = memo;
-        }
-        if (!buffer) {
-          return null;
-        }
-        ptr.memo = await malloc(buffer.byteLength);
-        let memo_len = buffer.byteLength;
-        await memcpy(ptr.memo, buffer);
-
-        const memo_len_buf = new Uint8Array(4);
-        new DataView(memo_len_buf.buffer).setUint32(0, memo_len, true);
-        ptr.memo_len = await malloc(4);
-        await memcpy(ptr.memo_len, memo_len_buf);
-
+    if ('memo' in payload && payload.memo) {
+        let buffer = strToArray(payload.memo);
+        if (!buffer) return null;
+        await setPointers(ptr, "memo", "memo_len", buffer, malloc, memcpy);
         ret = await malloc(4);
         ptr.dummy_contract_id = await malloc(32);
-
         code = await create_tx_data(
             null,
             null,
@@ -1142,7 +1105,30 @@ async function serializePayload(payload = null, malloc, memcpy, create_tx_data) 
             ptr.memo,
             ret
         )
-    }
+    } else if ('fnName' in payload && 'fnArgs' in payload && 'contractId' in payload) {
+        // fn_name
+        let fn_name_arg = strToArray(payload.fnName);
+        if (!fn_name_arg) return null;
+        await setPointers(ptr, "fn_name", "fn_name_len", fn_name_arg, malloc, memcpy);
+        // fn_args
+        const fn_args_buffer = new Uint8Array(payload.fnArgs);
+        await setPointers(ptr, "fn_args", "fn_args_len", fn_args_buffer, malloc, memcpy);
+        // contract_id
+        const contract_id_buffer = new Uint8Array(payload.contract_id);
+        ptr.contract_id = await malloc(contract_id_buffer.byteLength);
+        await memcpy(ptr.contract_id, contract_id_buffer);
+        ret = await malloc(4);
+        code = await create_tx_data(
+            ptr.fn_name_len,
+            ptr.fn_name,
+            ptr.fn_args_len,
+            ptr.fn_args,
+            ptr.contract_id,
+            null,
+            null,
+            ret
+        )
+    } else return null;
 
     if (code > 0) throw DriverError.from(code);
 
