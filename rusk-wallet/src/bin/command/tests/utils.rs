@@ -12,6 +12,7 @@ use std::time::Duration;
 use rusk_wallet::GraphQL;
 use serde::Deserialize;
 use tempfile::{tempdir, TempDir};
+use tokio::sync::{Mutex, OnceCell};
 use tracing_subscriber::EnvFilter;
 use url::Url;
 
@@ -103,17 +104,23 @@ pub async fn wait_for_nodes_to_start() -> anyhow::Result<()> {
     Err(anyhow::anyhow!("Nodes never started"))
 }
 
-async fn faucet_wallet() -> anyhow::Result<(Wallet<WalletFile>, Settings)> {
-    let wallet_dir = tempdir().unwrap();
-    let wallet_path = WalletPath::from(wallet_dir.path().join("wallet.dat"));
-    let prompter = FakePrompter { text_answer: "auction tribe type torch domain caution lyrics mouse alert fabric snake ticket".to_string() };
-    let wallet =
-        Command::run_restore_from_seed(&wallet_path, &prompter).unwrap();
-    let settings = wallet_settings(&wallet_dir);
-    Ok((
-        connect(wallet, &settings, status::headless).await.unwrap(),
-        settings,
-    ))
+async fn faucet_wallet(
+) -> anyhow::Result<&'static Mutex<(Wallet<WalletFile>, Settings)>> {
+    // Faucet wallet has to be in a mutex because most tests have to
+    // transfer from it to another wallet and they have to be done
+    // one by one to avoid reusing nonces.
+    static FAUCET_WALLET: OnceCell<Mutex<(Wallet<WalletFile>, Settings)>> =
+        OnceCell::const_new();
+    FAUCET_WALLET.get_or_try_init(|| async {
+        let wallet_dir = tempdir().unwrap();
+        let wallet_path = WalletPath::from(wallet_dir.path().join("wallet.dat"));
+        let prompter = FakePrompter { text_answer: "auction tribe type torch domain caution lyrics mouse alert fabric snake ticket".to_string() };
+        let wallet =
+            Command::run_restore_from_seed(&wallet_path, &prompter).unwrap();
+        let settings = wallet_settings(&wallet_dir);
+        let wallet = connect(wallet, &settings, status::headless).await.unwrap();
+        Ok(Mutex::new((wallet, settings)))
+    }).await
 }
 
 pub async fn create_wallet() -> anyhow::Result<(Wallet<WalletFile>, Settings)> {
@@ -139,15 +146,19 @@ pub async fn rcv_moonlight_from_faucet(
     amount: u64,
     gas_price: u64,
 ) -> anyhow::Result<String> {
-    let (mut faucet_wallet, settings) = faucet_wallet().await.unwrap();
-    transfer_moonlight(
-        &mut faucet_wallet,
+    let (ref mut faucet_wallet, ref settings) =
+        *faucet_wallet().await.unwrap().lock().await;
+    let id = transfer_moonlight(
+        faucet_wallet,
         rcvr_addr,
         &settings,
         amount,
         gas_price,
     )
-    .await
+    .await?;
+    let gql = GraphQL::new(settings.state.clone(), status::headless).unwrap();
+    gql.wait_for(&id).await.unwrap();
+    Ok(id)
 }
 
 pub async fn transfer_moonlight(
@@ -201,15 +212,19 @@ pub async fn rcv_phoenix_from_faucet(
     amount: u64,
     gas_price: u64,
 ) -> anyhow::Result<String> {
-    let (mut faucet_wallet, settings) = faucet_wallet().await.unwrap();
-    transfer_phoenix(
-        &mut faucet_wallet,
+    let (ref mut faucet_wallet, ref settings) =
+        *faucet_wallet().await.unwrap().lock().await;
+    let id = transfer_phoenix(
+        faucet_wallet,
         rcvr_addr,
         &settings,
         amount,
         gas_price,
     )
-    .await
+    .await?;
+    let gql = GraphQL::new(settings.state.clone(), status::headless).unwrap();
+    gql.wait_for(&id).await.unwrap();
+    Ok(id)
 }
 
 pub async fn convert_phoenix_to_moonlight(
@@ -283,6 +298,42 @@ pub async fn stake_phoenix(
         address: Some(wallet.default_shielded_account()),
         owner: Some(wallet.default_shielded_account()),
         amt: amount,
+        gas_limit: 3_000_000_000,
+        gas_price,
+    };
+    let run_result = cmd.run(wallet, &settings).await.unwrap();
+    let RunResult::Tx(tx_hash) = run_result else {
+        unreachable!()
+    };
+    let tx_id = hex::encode(&tx_hash.to_bytes());
+    Ok(tx_id)
+}
+
+pub async fn unstake_moonlight(
+    wallet: &mut Wallet<WalletFile>,
+    settings: &Settings,
+    gas_price: u64,
+) -> anyhow::Result<String> {
+    let cmd = Command::Unstake {
+        address: Some(wallet.default_address()),
+        gas_limit: 3_000_000_000,
+        gas_price,
+    };
+    let run_result = cmd.run(wallet, &settings).await.unwrap();
+    let RunResult::Tx(tx_hash) = run_result else {
+        unreachable!()
+    };
+    let tx_id = hex::encode(&tx_hash.to_bytes());
+    Ok(tx_id)
+}
+
+pub async fn unstake_phoenix(
+    wallet: &mut Wallet<WalletFile>,
+    settings: &Settings,
+    gas_price: u64,
+) -> anyhow::Result<String> {
+    let cmd = Command::Unstake {
+        address: Some(wallet.default_shielded_account()),
         gas_limit: 3_000_000_000,
         gas_price,
     };

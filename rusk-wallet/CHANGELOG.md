@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix transaction history error when the wallet has no stake [#3734]
 - Fix transaction history fail after shield/unshield conversions [#3600]
-- Fix transaction history fail after staking [#3712]
+- Fix transaction history fail after stake/unstake [#3712]
 
 ## [0.2.0] - 2025-05-07
 
