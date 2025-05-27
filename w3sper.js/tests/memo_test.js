@@ -9,8 +9,7 @@ import {AccountSyncer, AddressSyncer, Bookkeeper, Network, ProfileGenerator, use
 
 test("address memo transfer", async () => {
     const { cleanup } = useAsProtocolDriver(await getLocalWasmBuffer()); // Temporarily needed, while the node doesn't serve the latest WASM.
-    // const network = await Network.connect("http://localhost:8080/");
-    const network = await Network.connect("https://testnet.nodes.dusk.network/");
+    const network = await Network.connect("http://localhost:8080/");
     const profiles = new ProfileGenerator(seeder);
     const users = await Promise.all([profiles.default, profiles.next()]);
     const addresses = new AddressSyncer(network);
@@ -20,11 +19,15 @@ test("address memo transfer", async () => {
 
     const bookkeeper = new Bookkeeper(treasury);
 
+    const memo_payload_1 = {
+        memo: new Uint8Array([2, 4, 8, 16]),
+    }
+
     let transfer = bookkeeper
         .as(users[1])
         .transfer(1n)
         .to(users[0].address)
-        .memo(new Uint8Array([2, 4, 8, 16]))
+        .payload(memo_payload_1)
         .gas({ limit: 500_000_000n });
 
     let { hash } = await network.execute(transfer);
@@ -35,11 +38,15 @@ test("address memo transfer", async () => {
 
     await treasury.update({ addresses });
 
+    const memo_payload_2 = {
+        memo: "Tarapia Tapioco, come fosse stringa",
+    }
+
     transfer = bookkeeper
         .as(users[1])
         .transfer(1n)
         .to(users[0].address)
-        .memo("Tarapia Tapioco, come fosse stringa")
+        .payload(memo_payload_2)
         .gas({ limit: 500_000_000n });
 
     ({ hash } = await network.execute(transfer));

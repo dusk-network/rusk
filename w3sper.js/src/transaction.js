@@ -13,7 +13,6 @@ import * as ProtocolDriver from "./protocol-driver/mod.js";
 import { Profile, ProfileGenerator } from "./profile.js";
 import * as base58 from "./encoders/b58.js";
 import { Gas } from "./gas.js";
-import {TxData} from "./tx_data.js";
 
 const _attributes = Symbol("builder::attributes");
 
@@ -72,22 +71,15 @@ export class Transfer extends BasicTransfer {
   }
 
   memo(value) {
-    this[_attributes].memo = value;
+    let payload = {
+      memo: value,
+    }
+    this[_attributes].payload = payload;
     return this;
   }
 
-  fnName(name) {
-    this[_attributes].fnName = name;
-    return this;
-  }
-
-  fnArgs(args) {
-    this[_attributes].fnArgs = args;
-    return this;
-  }
-
-  contractId(id) {
-    this[_attributes].contractId = id;
+  payload(payload) {
+    this[_attributes].payload = payload;
     return this;
   }
 }
@@ -110,8 +102,7 @@ class AccountTransfer extends Transfer {
   async build(network) {
     const sender = this.bookentry.profile;
     const { attributes } = this;
-    const { to, amount: transfer_value, memo, gas, fn_name, fn_args, contract_id } = attributes;
-    const tx_data = new TxData(memo, fn_name, fn_args, contract_id);
+    const { to, amount: transfer_value, gas, payload } = attributes;
 
     const receiver = base58.decode(to);
 
@@ -144,7 +135,7 @@ class AccountTransfer extends Transfer {
       gas_price: gas.price,
       nonce,
       chainId,
-      data: tx_data,
+      data: payload,
     });
 
     return Object.freeze({
@@ -172,7 +163,7 @@ class AddressTransfer extends Transfer {
       amount: transfer_value,
       obfuscated: obfuscated_transaction,
       gas,
-      memo,
+      payload,
     } = attributes;
     const sender = this.bookentry.profile;
     const receiver = base58.decode(to);
@@ -201,8 +192,6 @@ class AddressTransfer extends Transfer {
     // Get the chain id from the network
     const { chainId } = await network.node.info;
 
-    const tx_data = new TxData(memo, null, null, null);
-
     // Create the unproven transaction
     const [tx, circuits] = await ProtocolDriver.phoenix({
       sender,
@@ -216,7 +205,7 @@ class AddressTransfer extends Transfer {
       gas_limit: gas.limit,
       gas_price: gas.price,
       chainId,
-      data: tx_data,
+      data: payload,
     });
 
     // Attempt to prove the transaction
