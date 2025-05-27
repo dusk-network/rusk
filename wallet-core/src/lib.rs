@@ -24,6 +24,9 @@ extern crate alloc;
 #[macro_use]
 mod ffi;
 
+#[cfg(feature = "ffi")]
+mod ffi_c;
+
 pub mod keys;
 pub mod notes;
 pub mod transaction;
