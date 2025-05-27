@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add BEP20 address and memo validation [#3746]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -585,6 +587,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3420]: https://github.com/dusk-network/rusk/issues/3420
 [#3486]: https://github.com/dusk-network/rusk/issues/3486
 [#3570]: https://github.com/dusk-network/rusk/issues/3570
+[#3746]: https://github.com/dusk-network/rusk/issues/3746
 
 <!-- VERSIONS -->
 
