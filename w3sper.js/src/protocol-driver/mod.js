@@ -494,7 +494,7 @@ export const phoenix = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
-    const data = await serializeTxData(info.data, malloc, memcpy, create_tx_data);
+    const data = await serializePayload(info.data, malloc, memcpy, create_tx_data);
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -599,7 +599,7 @@ export const moonlight = async (info) =>
     let tx = await malloc(4);
     let hash = await malloc(64);
 
-    const data = await serializeTxData(info.data, malloc, memcpy, create_tx_data);
+    const data = await serializePayload(info.data, malloc, memcpy, create_tx_data);
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -1036,11 +1036,21 @@ export const withdraw = async (info) =>
   })();
 
 
-async function serializeTxData(tx_data, malloc, memcpy, create_tx_data) {
-    let fn_name = tx_data.fn_name;
-    let fn_args = tx_data.fn_args;
-    let contract_id = tx_data.contract_id;
-    let memo = tx_data.memo;
+async function serializePayload(payload = null, malloc, memcpy, create_tx_data) {
+    if (!payload){
+        return null;
+    }
+    let fn_name;
+    let fn_args;
+    let contract_id;
+    let memo = null;
+    if ('memo' in payload && payload.memo) {
+        memo = payload.memo;
+    } else if ('fnName' in payload && 'fnArgs' in payload && 'contractId' in payload) {
+        fn_name = payload.fnName;
+        fn_args = payload.fnArgs;
+        contract_id = payload.contractId;
+    }
 
     const ptr = Object.create(null);
 
