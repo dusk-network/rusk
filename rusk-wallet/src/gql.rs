@@ -12,6 +12,7 @@ use dusk_core::stake::StakeEvent;
 use dusk_core::transfer::phoenix::StealthAddress;
 use dusk_core::transfer::{
     ConvertEvent, DepositEvent, MoonlightTransactionEvent, Transaction,
+    WithdrawEvent,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -113,6 +114,8 @@ pub enum BlockData {
     StakeEvent(StakeEvent),
     /// For the deposit event.
     DepositEvent(DepositEvent),
+    /// For the withdraw event.
+    WithdrawEvent(WithdrawEvent),
 }
 
 #[derive(Deserialize, Debug)]

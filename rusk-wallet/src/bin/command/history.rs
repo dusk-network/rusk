@@ -257,7 +257,11 @@ pub(crate) async fn moonlight_history(
                         false => (TransactionDirection::In, event.value as f64),
                     };
                     amount += event_amount;
-                    direction = Some(event_direction);
+                    if direction.is_none() {
+                        // It could have been set while handling some other
+                        // event.
+                        direction = Some(event_direction);
+                    }
                 }
                 BlockData::ConvertEvent(event) => {
                     // This comes up in phoenix to moonlight conversions
@@ -291,26 +295,40 @@ pub(crate) async fn moonlight_history(
                     // This case has already been handled in
                     // `transaction_from_notes`
                 }
-                BlockData::DepositEvent(_) => {
+                BlockData::DepositEvent(event) => {
                     // This event is emitted when funds are deposited
                     // in a contract.
                     //
                     // For public stake events: the value
                     // staked is deposited in the stake contract.
-                    // Nothing needs to be done in this case because the
-                    // other two events, moonlight transaction event and
-                    // stake event handle everything.
+                    // This event contains the amount deposited. All
+                    // other info required for the history is in the
+                    // `MoonlightTransactionEvent`.
+                    amount -= event.value as f64;
                 }
-                BlockData::StakeEvent(event) => {
+                BlockData::StakeEvent(_) => {
                     // When a public stake is done, three events are emitted:
                     // a `MoonlightTransactionEvent`, a `StakeEvent` and a
                     // `DepositEvent`.
+                    // When a public unstake is done, three events are emitted:
+                    // a `MoonlightTransactionEvent`, a `StakeEvent` and a
+                    // `WithdrawEvent`.
                     //
-                    // This event contains only the amount that left the
-                    // account. All other info required for
-                    // the history is in the
-                    // `MoonlightTransactionEvent`.
-                    amount -= event.value as f64;
+                    // In both cases, only the direction need to be set to
+                    // `Out` because the other two events,
+                    // moonlight transaction event
+                    // and deposit/withdraw event handle everything else.
+                    direction = Some(TransactionDirection::Out);
+                }
+                BlockData::WithdrawEvent(event) => {
+                    // This event is emitted when funds are withdrawn
+                    // from a contract.
+                    //
+                    // For public unstake events: the value unstaked is
+                    // withdrawn from the stake contract. This event contains
+                    // only the amount withdrawn. All other info required for
+                    // the history is in the `MoonlightTransactionEvent`.
+                    amount += event.value as f64;
                 }
             }
         }
