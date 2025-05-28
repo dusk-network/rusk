@@ -1114,7 +1114,7 @@ async function serializePayload(payload = null, malloc, memcpy, create_tx_data) 
         const fn_args_buffer = new Uint8Array(payload.fnArgs);
         await setPointers(ptr, "fn_args", "fn_args_len", fn_args_buffer, malloc, memcpy);
         // contract_id
-        const contract_id_buffer = new Uint8Array(payload.contract_id);
+        const contract_id_buffer = new Uint8Array(payload.contractId);
         ptr.contract_id = await malloc(contract_id_buffer.byteLength);
         await memcpy(ptr.contract_id, contract_id_buffer);
         ret = await malloc(4);
