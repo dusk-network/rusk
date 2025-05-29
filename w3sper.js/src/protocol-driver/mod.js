@@ -13,6 +13,8 @@ import { withAllocator } from "./alloc.js";
 
 const rng = () => crypto.getRandomValues(new Uint8Array(32));
 
+const CONTRACT_ID_LEN = 32;
+
 const uninit = Object.freeze([
   none`No Protocol Driver loaded yet. Call "load" first.`,
   none`No globals set yet. Load the Protocol Driver first.`,
@@ -494,7 +496,7 @@ export const phoenix = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
-    const data = await serializePayload(info.data, malloc, memcpy, create_tx_data);
+    const data = info.data ? await serializePayload(info.data, malloc, memcpy, create_tx_data) : null;
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -599,7 +601,7 @@ export const moonlight = async (info) =>
     let tx = await malloc(4);
     let hash = await malloc(64);
 
-    const data = await serializePayload(info.data, malloc, memcpy, create_tx_data);
+    const data = info.data ? await serializePayload(info.data, malloc, memcpy, create_tx_data) : null;
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -1040,8 +1042,7 @@ export const withdraw = async (info) =>
  * @param {string|ArrayBuffer|Uint8Array} input - Input to convert
  * @returns {Uint8Array|null} Converted Uint8Array or null for invalid input
  */
-function strToArray(input) {
-    if (input == null || input === '') return null;
+function toUint8Array(input) {
     if (typeof input === 'string') {
         return new TextEncoder().encode(input);
     }
@@ -1056,12 +1057,12 @@ function strToArray(input) {
 
 /**
  * Extracts pointers to a given buffer and its length
- * @param ptr_obj - object in which pointers will be set
- * @param data_ptr_name - name of data pointer attribute to be set
- * @param len_ptr_name - name of data length pointer attribute to be set
- * @param buffer - data to which pointers will be created
- * @param malloc - memory allocating function
- * @param memcpy - memory copying function
+ * @param {any} ptr_obj - object in which pointers will be set
+ * @param {string} data_ptr_name - name of data pointer attribute to be set
+ * @param {string} len_ptr_name - name of data length pointer attribute to be set
+ * @param {Uint8Array} buffer - data to which pointers will be created
+ * @param {function} malloc - memory allocating function
+ * @param {function} memcpy - memory copying function
  * @returns {Promise<void>}
  */
 async function setPointers(ptr_obj, data_ptr_name, len_ptr_name, buffer, malloc, memcpy) {
@@ -1077,20 +1078,19 @@ async function setPointers(ptr_obj, data_ptr_name, len_ptr_name, buffer, malloc,
 
 /**
  * Serializes given payload to rkyv format
- * @param payload - object containing payload, e.g. memo or contract call data
- * @param malloc - memory allocating function
- * @param memcpy - memory copying function
- * @param create_tx_data - low level function performing the actual serialization
+ * @param {any} payload - object containing payload, e.g. memo or contract call data
+ * @param {function} malloc - memory allocating function
+ * @param {function} memcpy - memory copying function
+ * @param {function} create_tx_data - low level function performing the actual serialization
  * @returns {Promise<Uint8Array<ArrayBuffer>|null>} Buffer containing serialized data
  */
-async function serializePayload(payload = null, malloc, memcpy, create_tx_data) {
-    if (!payload) return null;
+async function serializePayload(payload, malloc, memcpy, create_tx_data) {
     const ptr = Object.create(null);
     let code;
     let ret;
 
-    if ('memo' in payload && payload.memo) {
-        let buffer = strToArray(payload.memo);
+    if ('memo' in payload) {
+        const buffer = toUint8Array(payload.memo);
         if (!buffer) return null;
         await setPointers(ptr, "memo", "memo_len", buffer, malloc, memcpy);
         ret = await malloc(4);
@@ -1105,9 +1105,9 @@ async function serializePayload(payload = null, malloc, memcpy, create_tx_data) 
             ptr.memo,
             ret
         )
-    } else if ('fnName' in payload && 'fnArgs' in payload && 'contractId' in payload) {
+    } else if ('fnName' in payload) {
         // fn_name
-        let fn_name_arg = strToArray(payload.fnName);
+        const fn_name_arg = toUint8Array(payload.fnName);
         if (!fn_name_arg) return null;
         await setPointers(ptr, "fn_name", "fn_name_len", fn_name_arg, malloc, memcpy);
         // fn_args
@@ -1115,6 +1115,7 @@ async function serializePayload(payload = null, malloc, memcpy, create_tx_data) 
         await setPointers(ptr, "fn_args", "fn_args_len", fn_args_buffer, malloc, memcpy);
         // contract_id
         const contract_id_buffer = new Uint8Array(payload.contractId);
+        if (contract_id_buffer.byteLength !== CONTRACT_ID_LEN) return null;
         ptr.contract_id = await malloc(contract_id_buffer.byteLength);
         await memcpy(ptr.contract_id, contract_id_buffer);
         ret = await malloc(4);
@@ -1132,16 +1133,16 @@ async function serializePayload(payload = null, malloc, memcpy, create_tx_data) 
 
     if (code > 0) throw DriverError.from(code);
 
-    let ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
+    const ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
         0,
         true
     );
 
-    let ret_len = new DataView((await memcpy(null, ret_ptr, 4)).buffer).getUint32(
+    const ret_len = new DataView((await memcpy(null, ret_ptr, 4)).buffer).getUint32(
         0,
         true
     );
 
-    let ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
+    const ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
     return new Uint8Array(DataBuffer.from(ret_buf));
 }

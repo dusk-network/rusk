@@ -33,6 +33,10 @@ class TransactionExecutedEvent extends RuesEvent {
 
     return buffer;
   }
+
+  call() {
+    return this.payload.inner.call;
+  }
 }
 
 export class Transactions extends RuesScope {

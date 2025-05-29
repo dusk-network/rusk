@@ -71,7 +71,7 @@ export class Transfer extends BasicTransfer {
   }
 
   memo(value) {
-    let payload = {
+    const payload = {
       memo: value,
     }
     this[_attributes].payload = payload;

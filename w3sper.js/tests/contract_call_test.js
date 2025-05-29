@@ -4,8 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-import {seeder, test, Treasury} from "./harness.js";
+import {assert, seeder, test, Treasury} from "./harness.js";
 import {AccountSyncer, Bookkeeper, Network, ProfileGenerator} from "@dusk/w3sper";
+
+const GAS_LIMIT = 500_000_000n;
+const METHOD = "get_version";
 
 test("account contract call transfer", async () => {
     const network = await Network.connect("http://localhost:8080/");
@@ -19,7 +22,7 @@ test("account contract call transfer", async () => {
     const bookkeeper = new Bookkeeper(treasury);
 
     const payload = {
-        fnName: "get_version",
+        fnName: METHOD,
         fnArgs: [],
         contractId: [0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     };
@@ -29,14 +32,17 @@ test("account contract call transfer", async () => {
         .transfer(1n)
         .to(users[0].account)
         .payload(payload)
-        .gas({limit: 500_000_000n});
+        .gas({limit: GAS_LIMIT});
 
     let {hash} = await network.execute(transfer);
 
     let evt = await network.transactions.withId(hash).once.executed();
 
-    console.log("evt:", evt);
-    console.log("evt.payload:", evt.payload);
+    assert.ok(!evt.payload.err, "contract call error");
+    assert.ok(evt.payload.gas_spent < GAS_LIMIT, "gas limit reached");
+    const { contract, fn_name } = evt.call();
+    assert.equal(contract, "0200000000000000000000000000000000000000000000000000000000000000");
+    assert.equal(fn_name, METHOD);
 
     await treasury.update({accounts});
 
