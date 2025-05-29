@@ -166,46 +166,54 @@ pub(crate) async fn transaction_from_notes(
                 // No outgoing txs found, this note should either belong to a
                 // preconfigured genesis state or is the result of a
                 // moonlight to phoenix conversion.
+                if decoded_note.block_height == 0 {
+                    continue;
+                }
                 let moonlight_tx_events = gql
                     .moonlight_history_at_block(
                         public_address,
                         decoded_note.block_height,
                     )
                     .await?;
-                let Some(moonlight_history) =
-                    moonlight_tx_events.full_moonlight_history
-                else {
-                    continue;
-                };
-                for history_info in moonlight_history.json {
-                    for event in history_info.events {
-                        if let BlockData::ConvertEvent(event) = event.data {
-                            if let WithdrawReceiver::Phoenix(receiver_address) =
-                                event.receiver
-                            {
-                                if decoded_note.note.stealth_address()
-                                    == &receiver_address
+                let moonlight_history = moonlight_tx_events
+                    .full_moonlight_history
+                    .ok_or(anyhow::anyhow!("Couldn't find the transaction that created a note for the history."))?;
+                let note_creator = {
+                    let mut tx = None;
+                    'outer: for history_info in moonlight_history.json {
+                        for event in history_info.events {
+                            if let BlockData::ConvertEvent(event) = event.data {
+                                if let WithdrawReceiver::Phoenix(
+                                    receiver_address,
+                                ) = event.receiver
                                 {
-                                    // The note is the output of a moonlight to
-                                    // phoenix conversion.
-                                    let note_creator = txs.iter().find(|block_tx| {
-                                        block_tx.id == history_info.origin
-                                    }).expect("The transaction should be in this list since it's the list of all transactions at its block height.");
-                                    ret.push(TransactionHistory {
-                                        direction: TransactionDirection::In,
-                                        height: decoded_note.block_height,
-                                        amount: event.value as f64,
-                                        fee: 0,
-                                        tx: note_creator.tx.clone(),
-                                        id: history_info.origin.clone(),
-                                        bal_type: BalanceType::Shielded,
-                                    });
-                                    continue;
+                                    if decoded_note.note.stealth_address()
+                                        == &receiver_address
+                                    {
+                                        // The note is the output of a moonlight
+                                        // to phoenix conversion.
+                                        tx = Some(txs.iter().find(|block_tx| {
+                                            block_tx.id == history_info.origin
+                                        }).expect("The transaction should be in this list since it's the list of all transactions at its block height."));
+                                        break 'outer;
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                    tx
+                };
+                let note_creator = note_creator
+                    .ok_or(anyhow::anyhow!("Couldn't find the transaction that created a note for the history."))?;
+                ret.push(TransactionHistory {
+                    direction: TransactionDirection::In,
+                    height: decoded_note.block_height,
+                    amount: decoded_note.amount as f64,
+                    fee: 0,
+                    tx: note_creator.tx.clone(),
+                    id: note_creator.id.clone(),
+                    bal_type: BalanceType::Shielded,
+                });
             }
         }
     }
