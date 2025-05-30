@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+
 export const TRANSFER =
   "0100000000000000000000000000000000000000000000000000000000000000";
 
@@ -70,7 +71,15 @@ export class Transfer extends BasicTransfer {
   }
 
   memo(value) {
-    this[_attributes].memo = value;
+    const payload = {
+      memo: value,
+    }
+    this[_attributes].payload = payload;
+    return this;
+  }
+
+  payload(payload) {
+    this[_attributes].payload = payload;
     return this;
   }
 }
@@ -93,7 +102,7 @@ class AccountTransfer extends Transfer {
   async build(network) {
     const sender = this.bookentry.profile;
     const { attributes } = this;
-    const { to, amount: transfer_value, memo: data, gas } = attributes;
+    const { to, amount: transfer_value, gas, payload } = attributes;
 
     const receiver = base58.decode(to);
 
@@ -126,7 +135,7 @@ class AccountTransfer extends Transfer {
       gas_price: gas.price,
       nonce,
       chainId,
-      data,
+      data: payload,
     });
 
     return Object.freeze({
@@ -154,7 +163,7 @@ class AddressTransfer extends Transfer {
       amount: transfer_value,
       obfuscated: obfuscated_transaction,
       gas,
-      memo: data,
+      payload,
     } = attributes;
     const sender = this.bookentry.profile;
     const receiver = base58.decode(to);
@@ -196,7 +205,7 @@ class AddressTransfer extends Transfer {
       gas_limit: gas.limit,
       gas_price: gas.price,
       chainId,
-      data,
+      data: payload,
     });
 
     // Attempt to prove the transaction
