@@ -228,19 +228,57 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the market data", async () => {
-    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData));
+    const mockSupply = "456000000";
+
+    fetchSpy
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData))
+      .mockResolvedValueOnce(new Response(mockSupply, { status: 200 }));
+
+    /** @type {Record<string, number>} */
+    const expectedMarketCap = {};
+    Object.keys(mockData.apiMarketData.market_data.current_price).forEach(
+      (currency) => {
+        expectedMarketCap[currency] =
+          parseFloat(mockSupply) *
+          /** @type {Record<string, number>} */ (
+            mockData.apiMarketData.market_data.current_price
+          )[currency];
+      }
+    );
 
     await expect(duskAPI.getMarketData()).resolves.toStrictEqual({
       currentPrice: mockData.apiMarketData.market_data.current_price,
-      marketCap: mockData.apiMarketData.market_data.market_cap,
+      marketCap: expectedMarketCap,
     });
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
       new URL(
         "https://api.coingecko.com/api/v3/coins/dusk-network?community_data=false&developer_data=false&localization=false&market_data=true&sparkline=false&tickers=false"
       ),
       apiGetOptions
     );
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, "/supply");
+  });
+
+  it("should fallback to CoinGecko market cap when supply endpoint fails", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData))
+      .mockRejectedValueOnce(new Error("Supply endpoint unavailable"));
+
+    await expect(duskAPI.getMarketData()).resolves.toStrictEqual({
+      currentPrice: mockData.apiMarketData.market_data.current_price,
+      marketCap: mockData.apiMarketData.market_data.market_cap,
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      new URL(
+        "https://api.coingecko.com/api/v3/coins/dusk-network?community_data=false&developer_data=false&localization=false&market_data=true&sparkline=false&tickers=false"
+      ),
+      apiGetOptions
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, "/supply");
   });
 
   it("should expose a method to retrieve the node locations", async () => {

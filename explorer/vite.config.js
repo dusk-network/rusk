@@ -43,6 +43,11 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/rusk/, ""),
           target: "http://localhost:8080/",
         },
+        "/supply": {
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/supply/, ""),
+          target: "https://supply.dusk.network/",
+        },
       },
     },
     test: {
