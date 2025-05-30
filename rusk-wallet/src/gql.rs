@@ -8,6 +8,7 @@
 //! The <node-url>/on/gaphql/query if queried with empty bytes returns the
 //! graphql schema
 
+use dusk_core::abi::ContractId;
 use dusk_core::stake::StakeEvent;
 use dusk_core::transfer::phoenix::StealthAddress;
 use dusk_core::transfer::{
@@ -121,6 +122,7 @@ pub enum BlockData {
 #[derive(Deserialize, Debug)]
 pub struct BlockEvents {
     pub data: BlockData,
+    pub target: ContractId,
 }
 
 #[derive(Deserialize, Debug)]
