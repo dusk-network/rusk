@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block, Header};
+use node_data::ledger::{to_str, Block};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
     AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
@@ -18,10 +18,10 @@ use tracing::{debug, error, info, warn, Instrument};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
-use crate::errors::{HeaderError, OperationError};
+use crate::errors::OperationError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::StepOutcome;
-use crate::operations::{Operations, StateRoot, StateTransitionResult};
+use crate::operations::{Operations, StateRoot};
 use crate::validation::handler;
 
 pub struct ValidationStep<T, D: Database> {
@@ -89,7 +89,7 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         let header = candidate.header();
         let candidate_hash = header.hash;
 
-        let vote = match Self::verify_candidate(
+        let vote = match Self::validate_candidate(
             candidate,
             ru.state_root(),
             executor,
@@ -119,7 +119,7 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         Self::cast_vote(vote, ru, iteration, outbound, inbound).await;
     }
 
-    async fn verify_candidate(
+    async fn validate_candidate(
         candidate: &Block,
         prev_state: StateRoot,
         executor: Arc<T>,
@@ -127,23 +127,20 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     ) -> Result<(), OperationError> {
         let header = candidate.header();
 
-        // Verify faults
+        // Validate faults
         executor
             .validate_faults(header.height, candidate.faults())
             .await?;
 
-        // Verify candidate header
-        let (_, cert_voters, _) = executor
+        // Validate candidate header
+        let cert_voters = executor
             .validate_block_header(header, &expected_generator)
             .await?;
 
-        // Verify state transition
-        let transition_result = executor
+        // Validate state transition
+        executor
             .validate_state_transition(prev_state, candidate, &cert_voters)
             .await?;
-
-        // Verify header against state transition output
-        Self::check_header_vst(header, &transition_result)?;
 
         Ok(())
     }
@@ -176,28 +173,6 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
             // Register my vote locally
             inbound.try_send(msg);
         }
-    }
-
-    fn check_header_vst(
-        header: &Header,
-        transition_result: &StateTransitionResult,
-    ) -> Result<(), HeaderError> {
-        // Check the header against `event_bloom` and `state_root` from VST
-        if transition_result.event_bloom != header.event_bloom {
-            return Err(HeaderError::EventBloomMismatch(
-                Box::new(transition_result.event_bloom),
-                Box::new(header.event_bloom),
-            ));
-        }
-
-        if transition_result.state_root != header.state_hash {
-            return Err(HeaderError::StateRootMismatch(
-                transition_result.state_root,
-                header.state_hash,
-            ));
-        }
-
-        Ok(())
     }
 }
 

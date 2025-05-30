@@ -47,9 +47,6 @@ pub enum Error {
     Vm(VMError),
     /// IO Errors
     Io(io::Error),
-    /// Failed to produce proper state
-    #[cfg(feature = "chain")]
-    InconsistentState(Box<dusk_consensus::operations::StateTransitionResult>),
     /// Other
     Other(Box<dyn std::error::Error>),
     /// Commit not found amongst existing commits
@@ -58,8 +55,6 @@ pub enum Error {
     InvalidCreditsCount(u64, usize),
     /// Memo too large
     MemoTooLarge(usize),
-    /// Chain tip different from the expected one
-    TipChanged,
 }
 
 impl std::error::Error for Error {}
@@ -171,10 +166,6 @@ impl fmt::Display for Error {
             Error::InvalidCircuitArguments(inputs_len, outputs_len) => {
                 write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")
             }
-            #[cfg(feature = "chain")]
-            Error::InconsistentState(vo) => {
-                write!(f, "Inconsistent state verification data {vo}",)
-            }
             Error::CommitNotFound(commit_id) => {
                 write!(f, "Commit not found, id = {}", hex::encode(commit_id),)
             }
@@ -183,9 +174,6 @@ impl fmt::Display for Error {
             }
             Error::MemoTooLarge(size) => {
                 write!(f, "The memo size {size} is too large")
-            }
-            Error::TipChanged => {
-                write!(f, "Chain tip different from the expected one")
             }
         }
     }

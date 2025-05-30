@@ -8,9 +8,7 @@ use std::fmt;
 use std::time::Duration;
 
 use node_data::bls::{PublicKey, PublicKeyBytes};
-use node_data::ledger::{
-    Block, Fault, Header, Slash, SpentTransaction, Transaction,
-};
+use node_data::ledger::{Block, Fault, Header, Slash, SpentTransaction};
 use node_data::StepName;
 
 use crate::errors::*;
@@ -61,7 +59,7 @@ pub trait Operations: Send + Sync {
         &self,
         candidate_header: &Header,
         expected_generator: &PublicKeyBytes,
-    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError>;
+    ) -> Result<Vec<Voter>, HeaderError>;
 
     async fn validate_faults(
         &self,
@@ -74,19 +72,12 @@ pub trait Operations: Send + Sync {
         prev_state: StateRoot,
         blk: &Block,
         cert_voters: &[Voter],
-    ) -> Result<StateTransitionResult, OperationError>;
+    ) -> Result<(), OperationError>;
 
-    async fn new_state_transition(
+    async fn generate_state_transition(
         &self,
         transition_data: StateTransitionData,
-    ) -> Result<
-        (
-            Vec<SpentTransaction>,
-            StateTransitionResult,
-            Vec<Transaction>,
-        ),
-        OperationError,
-    >;
+    ) -> Result<(Vec<SpentTransaction>, StateTransitionResult), OperationError>;
 
     async fn add_step_elapsed_time(
         &self,

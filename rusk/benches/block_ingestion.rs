@@ -19,7 +19,7 @@ use criterion::{
 };
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node_data::bls::PublicKey;
-use node_data::ledger::Transaction;
+use node_data::ledger::{Block, Header, Transaction};
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
@@ -132,18 +132,22 @@ fn bench_accept(
                 b.iter(|| {
                     let txs = txs[..*n_txs].to_vec();
 
-                    rusk.accept_state_transition(
-                        prev_state,
-                        BLOCK_HEIGHT,
-                        BLOCK_GAS_LIMIT,
-                        BLOCK_HASH,
-                        generator,
-                        txs,
-                        None,
-                        vec![],
-                        &[],
-                    )
-                    .expect("Accepting transactions should succeed");
+                    // Build block
+                    let mut header = Header::default();
+                    header.generator_bls_pubkey =
+                        *PublicKey::new(*DUSK_CONSENSUS_KEY).bytes();
+                    header.height = BLOCK_HEIGHT;
+                    header.hash = BLOCK_HASH;
+                    header.gas_limit = BLOCK_GAS_LIMIT;
+                    let blk = Block::new(header, txs, vec![])
+                        .expect("Creating a block should succeed");
+
+                    let (_, _, _, session) = rusk
+                        .execute_state_transition(prev_state, &blk, &[])
+                        .expect("Executing state transition should succeed");
+
+                    rusk.commit_session(session)
+                        .expect("Committing the session should succeed");
 
                     rusk.revert_to_base_root()
                         .expect("Reverting should succeed");
