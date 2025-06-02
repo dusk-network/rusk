@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::fmt::{self, Display};
 
 use dusk_core::transfer::withdraw::WithdrawReceiver;
-use dusk_core::transfer::Transaction;
+use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use dusk_core::{dusk, from_dusk};
 use rusk_wallet::{Address, BlockData, BlockTransaction, DecodedNote, GraphQL};
 
@@ -239,7 +239,12 @@ pub(crate) async fn moonlight_history(
         let mut direction = None;
         let mut fee = 0;
 
-        for event in events {
+        // Any event could be emitted by a third party contract.
+        // Only events emitted by the transfer contract are trustworthy.
+        for event in events
+            .into_iter()
+            .filter(|event| event.target == TRANSFER_CONTRACT)
+        {
             match event.data {
                 BlockData::MoonlightTransactionEvent(event) => {
                     // This event comes up as the sole event the the case of
@@ -305,6 +310,7 @@ pub(crate) async fn moonlight_history(
                     // other info required for the history is in the
                     // `MoonlightTransactionEvent`.
                     amount -= event.value as f64;
+                    direction = Some(TransactionDirection::Out);
                 }
                 BlockData::StakeEvent(_) => {
                     // When a public stake is done, three events are emitted:
@@ -314,11 +320,10 @@ pub(crate) async fn moonlight_history(
                     // a `MoonlightTransactionEvent`, a `StakeEvent` and a
                     // `WithdrawEvent`.
                     //
-                    // In both cases, only the direction need to be set to
-                    // `Out` because the other two events,
-                    // moonlight transaction event
-                    // and deposit/withdraw event handle everything else.
-                    direction = Some(TransactionDirection::Out);
+                    // In both cases, the moonlight transaction event
+                    // and deposit/withdraw event handle everything so
+                    // there is no need to do anything here.
+                    unreachable!("Because all non-transfer contract events are filtered out.")
                 }
                 BlockData::WithdrawEvent(event) => {
                     // This event is emitted when funds are withdrawn
@@ -329,6 +334,7 @@ pub(crate) async fn moonlight_history(
                     // only the amount withdrawn. All other info required for
                     // the history is in the `MoonlightTransactionEvent`.
                     amount += event.value as f64;
+                    direction = Some(TransactionDirection::Out);
                 }
             }
         }
