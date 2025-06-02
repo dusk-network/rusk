@@ -59,7 +59,7 @@ For more information on **running a node for main- or testnet**, see our
 
 ## 📝 Prerequisites
 
-- Rust 1.71 nightly or higher
+- Rust 1.75 nightly (nightly-2023-11-10)
 - GCC 13 or higher
 - Clang 16 or higher
 
@@ -70,19 +70,6 @@ everything.
 
 ```bash
 bash scripts/dev-setup.sh
-```
-
-### Rust Installation
-
-Rusk makes use of the nightly toolchain, make sure it is installed. Furthermore,
-to build the WASM contracts, `wasm-pack` is required.
-
-To install and set the nightly toolchain, and install `wasm-pack`, run:
-
-```bash
-rustup toolchain install nightly
-rustup default nightly
-cargo install wasm-pack
 ```
 
 ## 🛠️ Build and Tests
