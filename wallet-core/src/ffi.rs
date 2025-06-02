@@ -154,9 +154,13 @@ pub unsafe fn map_owned(
 
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
-
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *owned_ptr = ptr;
 
@@ -192,7 +196,7 @@ pub unsafe fn display_scalar(
 }
 
 #[no_mangle]
-pub unsafe fn accounts_into_raw(
+pub unsafe extern "C" fn accounts_into_raw(
     accounts_ptr: *const u8,
     raws_ptr: *mut *mut u8,
 ) -> ErrorCode {
@@ -212,8 +216,14 @@ pub unsafe fn accounts_into_raw(
         });
 
     let len = bytes.len().to_le_bytes();
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *raws_ptr = ptr;
 
@@ -288,8 +298,13 @@ pub unsafe fn bookmarks(
         .flat_map(|&num| num.to_le_bytes())
         .collect();
 
+    #[cfg(target_family = "wasm")]
     let ptr = mem::malloc(bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(bytes.len());
 
     *bookmarks_ptr = ptr;
 
@@ -328,8 +343,13 @@ pub unsafe fn into_proven(
 
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *proven_ptr = ptr;
 
@@ -415,8 +435,13 @@ pub unsafe fn phoenix(
     let bytes = to_bytes::<_, 4096>(&tx).or(Err(ErrorCode::ArchivingError))?;
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *tx_ptr = ptr;
 
@@ -426,8 +451,13 @@ pub unsafe fn phoenix(
     let bytes = prover.circuits.into_inner();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *proof_ptr = ptr;
 
@@ -487,8 +517,13 @@ pub unsafe fn moonlight(
     let bytes = Transaction::Moonlight(tx.clone()).to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *tx_ptr = ptr;
 
@@ -562,8 +597,13 @@ pub unsafe fn phoenix_to_moonlight(
     let bytes = to_bytes::<_, 4096>(&tx).or(Err(ErrorCode::ArchivingError))?;
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *tx_ptr = ptr;
 
@@ -573,8 +613,13 @@ pub unsafe fn phoenix_to_moonlight(
     let bytes = prover.circuits.into_inner();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *proof_ptr = ptr;
 
@@ -617,8 +662,13 @@ pub unsafe fn moonlight_to_phoenix(
     let bytes = tx.to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *tx_ptr = ptr;
 
@@ -673,8 +723,13 @@ pub unsafe fn moonlight_stake(
     let bytes = tx.to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *tx_ptr = ptr;
 
@@ -738,8 +793,13 @@ pub unsafe fn moonlight_unstake(
     let bytes = tx.to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *tx_ptr = ptr;
 
@@ -803,8 +863,13 @@ pub unsafe fn moonlight_stake_reward(
     let bytes = tx.to_var_bytes();
     let len = bytes.len().to_le_bytes();
 
-    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc((4 + bytes.len()) as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *tx_ptr = ptr;
 

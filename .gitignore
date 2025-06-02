@@ -4,3 +4,4 @@ deno.lock
 .rusk
 .vscode
 .idea
+*.h
