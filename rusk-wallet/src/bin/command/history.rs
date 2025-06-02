@@ -75,8 +75,11 @@ pub(crate) async fn transaction_from_notes(
 ) -> anyhow::Result<Vec<TransactionHistory>> {
     notes.sort_by(|a, b| a.note.pos().cmp(b.note.pos()));
     let mut ret: Vec<TransactionHistory> = vec![];
-    let gql =
-        GraphQL::new(settings.state.to_string(), io::status::interactive)?;
+    let gql = GraphQL::new(
+        settings.state.to_string(),
+        settings.archiver.to_string(),
+        io::status::interactive,
+    )?;
 
     let nullifiers = notes
         .iter()
@@ -216,8 +219,11 @@ pub(crate) async fn moonlight_history(
     settings: &Settings,
     address: rusk_wallet::Address,
 ) -> anyhow::Result<Vec<TransactionHistory>> {
-    let gql =
-        GraphQL::new(settings.state.to_string(), io::status::interactive)?;
+    let gql = GraphQL::new(
+        settings.state.to_string(),
+        settings.archiver.to_string(),
+        io::status::interactive,
+    )?;
 
     let history = gql
         .moonlight_history(address.clone())

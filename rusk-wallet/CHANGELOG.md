@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change withdraw rewards to withdraw partial amount [#2538]
 - Change transaction history fee display to be negative
 - Change transaction history item type to display public/shielded
+- Separate archive node endpoint from state endpoint
 
 ### Fixed
 

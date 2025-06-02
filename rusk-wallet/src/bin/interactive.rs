@@ -108,6 +108,7 @@ pub(crate) async fn run_loop(
                                 // from network
                                 let gql = GraphQL::new(
                                     settings.state.to_string(),
+                                    settings.archiver.to_string(),
                                     io::status::interactive,
                                 )?;
                                 gql.wait_for(&tx_id).await?;
@@ -311,12 +312,16 @@ async fn menu_wallet(
 
     let emoji_state = status_emoji(settings.check_state_con().await.is_ok());
     let emoji_prover = status_emoji(settings.check_prover_con().await.is_ok());
+    let emoji_archiver =
+        status_emoji(settings.check_archiver_con().await.is_ok());
 
     let state_status = format!("{} State: {}", emoji_state, settings.state);
     let prover_status = format!("{} Prover: {}", emoji_prover, settings.prover);
+    let archiver_status =
+        format!("{} Archiver: {}", emoji_archiver, settings.archiver);
 
     let menu = format!(
-        "Welcome\n   {state_status}\n   {prover_status}   \nWhat would you like to do?",
+        "Welcome\n   {state_status}\n   {prover_status}\n   {archiver_status}   \nWhat would you like to do?",
     );
 
     // let the user choose an option

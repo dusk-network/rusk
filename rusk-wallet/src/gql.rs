@@ -30,7 +30,8 @@ use crate::{Address, Error};
 /// mixed with the wallet logic.
 #[derive(Clone)]
 pub struct GraphQL {
-    client: RuesHttpClient,
+    state_client: RuesHttpClient,
+    archiver_client: RuesHttpClient,
     status: fn(&str),
 }
 
@@ -163,11 +164,13 @@ impl GraphQL {
     /// This method errors if a TLS backend cannot be initialized, or the
     /// resolver cannot load the system configuration.
     pub fn new<S: Into<String>>(
-        url: S,
+        state_url: S,
+        archiver_url: S,
         status: fn(&str),
     ) -> Result<Self, Error> {
         Ok(Self {
-            client: RuesHttpClient::new(url)?,
+            state_client: RuesHttpClient::new(state_url)?,
+            archiver_client: RuesHttpClient::new(archiver_url)?,
             status,
         })
     }
@@ -204,7 +207,7 @@ impl GraphQL {
     async fn tx_status(&self, tx_id: &str) -> Result<TxStatus, Error> {
         let query =
             "query { tx(hash: \"####\") { id, err }}".replace("####", tx_id);
-        let response = self.query(&query).await?;
+        let response = self.query_state(&query).await?;
         let response = serde_json::from_slice::<SpentTxResponse>(&response)?.tx;
 
         match response {
@@ -226,7 +229,7 @@ impl GraphQL {
         let query = "query { block(height: ####) { transactions {id, raw, gasSpent, err}}}"
             .replace("####", block_height.to_string().as_str());
 
-        let response = self.query(&query).await?;
+        let response = self.query_state(&query).await?;
         let response =
             serde_json::from_slice::<BlockResponse>(&response)?.block;
         let block = response.ok_or(GraphQLError::BlockInfo)?;
@@ -252,7 +255,10 @@ impl GraphQL {
     /// # Errors
     /// This method errors if there was an error while sending the query.
     pub async fn check_connection(&self) -> Result<(), Error> {
-        self.query("").await.map(|_| ())
+        match (self.query_state("").await, self.query_archiver("").await) {
+            (Ok(_), Ok(_)) => Ok(()),
+            (Err(e), _) | (_, Err(e)) => Err(e),
+        }
     }
 
     /// Query the archival node for moonlight transactions given the
@@ -270,7 +276,7 @@ impl GraphQL {
         );
 
         let response = self
-            .query(&query)
+            .query_archiver(&query)
             .await
             .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
 
@@ -297,7 +303,7 @@ impl GraphQL {
         );
 
         let response = self
-            .query(&query)
+            .query_archiver(&query)
             .await
             .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
 
@@ -320,7 +326,7 @@ impl GraphQL {
         let query =
             format!(r#"query {{ tx(hash: "{origin}") {{ tx {{ raw }} }} }}"#);
 
-        let response = self.query(&query).await?;
+        let response = self.query_state(&query).await?;
         let json: Value = serde_json::from_slice(&response)?;
 
         let tx = json
@@ -362,13 +368,30 @@ impl From<serde_json::Error> for GraphQLError {
 }
 
 impl GraphQL {
-    /// Call the graphql endpoint of a node
+    /// Call the graphql endpoint of a state node
     ///
     /// # Errors
     /// This method errors if there was an error while sending the query,
     /// or if the response body is not in JSON format.
-    pub async fn query(&self, query: &str) -> Result<Vec<u8>, Error> {
-        self.client
+    pub async fn query_state(&self, query: &str) -> Result<Vec<u8>, Error> {
+        self.query(&self.state_client, query).await
+    }
+
+    /// Call the graphql endpoint of an archiver node
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// or if the response body is not in JSON format.
+    pub async fn query_archiver(&self, query: &str) -> Result<Vec<u8>, Error> {
+        self.query(&self.archiver_client, query).await
+    }
+
+    async fn query(
+        &self,
+        client: &RuesHttpClient,
+        query: &str,
+    ) -> Result<Vec<u8>, Error> {
+        client
             .call("graphql", None, "query", query.as_bytes())
             .await
     }
@@ -381,7 +404,10 @@ async fn test() -> Result<(), Error> {
         status: |s| {
             println!("{s}");
         },
-        client: RuesHttpClient::new(
+        state_client: RuesHttpClient::new(
+            "http://testnet.nodes.dusk.network:9500/graphql",
+        )?,
+        archiver_client: RuesHttpClient::new(
             "http://testnet.nodes.dusk.network:9500/graphql",
         )?,
     };

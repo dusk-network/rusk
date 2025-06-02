@@ -35,7 +35,12 @@ async fn test_history_transfer_convert() {
 
     let (mut wallet, settings) = create_wallet().await.unwrap();
     let (other_wallet, _) = create_wallet().await.unwrap();
-    let gql = GraphQL::new(settings.state.clone(), status::headless).unwrap();
+    let gql = GraphQL::new(
+        settings.state.clone(),
+        settings.archiver.clone(),
+        status::headless,
+    )
+    .unwrap();
     let moonlight_addr = wallet.default_address();
     let phoenix_addr = wallet.shielded_account(0).unwrap();
     let gas_price = 1;
@@ -193,7 +198,12 @@ async fn test_history_stake_unstake() {
     wait_for_nodes_to_start().await.unwrap();
 
     let (mut wallet, settings) = create_wallet().await.unwrap();
-    let gql = GraphQL::new(settings.state.clone(), status::headless).unwrap();
+    let gql = GraphQL::new(
+        settings.state.clone(),
+        settings.archiver.clone(),
+        status::headless,
+    )
+    .unwrap();
     let moonlight_addr = wallet.default_address();
     let phoenix_addr = wallet.shielded_account(0).unwrap();
     let gas_price = 1;

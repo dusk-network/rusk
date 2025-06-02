@@ -88,6 +88,7 @@ where
         .connect_with_status(
             settings.state.as_str(),
             settings.prover.as_str(),
+            settings.archiver.as_str(),
             status,
         )
         .await;
@@ -386,7 +387,11 @@ async fn exec() -> anyhow::Result<()> {
                     let tx_id = hex::encode(hash.to_bytes());
 
                     // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(settings.state, status::headless)?;
+                    let gql = GraphQL::new(
+                        settings.state,
+                        settings.archiver,
+                        status::headless,
+                    )?;
                     gql.wait_for(&tx_id).await?;
 
                     println!("{tx_id}");
@@ -397,7 +402,11 @@ async fn exec() -> anyhow::Result<()> {
                     println!("Deploying {contract_id}",);
 
                     // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(settings.state, status::headless)?;
+                    let gql = GraphQL::new(
+                        settings.state,
+                        settings.archiver,
+                        status::headless,
+                    )?;
                     gql.wait_for(&tx_id).await?;
 
                     println!("{tx_id}");
