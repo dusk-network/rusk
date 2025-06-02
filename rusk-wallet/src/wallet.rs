@@ -263,18 +263,22 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         &mut self,
         rusk_addr: S,
         prov_addr: S,
+        archiver_addr: S,
         status: fn(&str),
     ) -> Result<(), Error> {
         // attempt connection
         let http_state = RuesHttpClient::new(rusk_addr)?;
         let http_prover = RuesHttpClient::new(prov_addr)?;
+        let http_archiver = RuesHttpClient::new(archiver_addr)?;
 
         let state_status = http_state.check_connection().await;
         let prover_status = http_prover.check_connection().await;
+        let archiver_status = http_archiver.check_connection().await;
 
-        match (&state_status, prover_status) {
-            (Err(e),_)=> println!("Connection to Rusk Failed, some operations won't be available: {e}"),
-            (_,Err(e))=> println!("Connection to Prover Failed, some operations won't be available: {e}"),
+        match (&state_status, prover_status, archiver_status) {
+            (Err(e),_, _)=> println!("Connection to Rusk Failed, some operations won't be available: {e}"),
+            (_,Err(e), _)=> println!("Connection to Prover Failed, some operations won't be available: {e}"),
+            (_, _, Err(e)) => println!("Connection to Archiver Failed, some operations won't be available: {e}"),
             _=> {},
         }
 

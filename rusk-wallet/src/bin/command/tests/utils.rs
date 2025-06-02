@@ -78,6 +78,7 @@ fn wallet_settings(wallet_dir: &TempDir) -> Settings {
     Settings {
         state: Url::parse(&addr).unwrap(),
         prover: Url::parse(&addr).unwrap(),
+        archiver: Url::parse(&addr).unwrap(),
         explorer: None,
         logging: Logging {
             level: LogLevel::Trace,
@@ -156,7 +157,12 @@ pub async fn rcv_moonlight_from_faucet(
         gas_price,
     )
     .await?;
-    let gql = GraphQL::new(settings.state.clone(), status::headless).unwrap();
+    let gql = GraphQL::new(
+        settings.state.clone(),
+        settings.archiver.clone(),
+        status::headless,
+    )
+    .unwrap();
     gql.wait_for(&id).await.unwrap();
     Ok(id)
 }
@@ -222,7 +228,12 @@ pub async fn rcv_phoenix_from_faucet(
         gas_price,
     )
     .await?;
-    let gql = GraphQL::new(settings.state.clone(), status::headless).unwrap();
+    let gql = GraphQL::new(
+        settings.state.clone(),
+        settings.archiver.clone(),
+        status::headless,
+    )
+    .unwrap();
     gql.wait_for(&id).await.unwrap();
     Ok(id)
 }
@@ -356,7 +367,7 @@ async fn block_is_finalized(
         pub is_finalized: bool,
     }
     let query = format!("query {{ checkBlock(height: {block_height}, hash: \"{block_hash}\", onlyFinalized: true) }}");
-    let resp = gql.query(&query).await?;
+    let resp = gql.query_archiver(&query).await?;
     let CheckBlockResponse { is_finalized } = serde_json::from_slice(&resp)?;
     Ok(is_finalized)
 }
@@ -377,7 +388,7 @@ async fn get_tx_info(tx_id: &str, gql: &GraphQL) -> anyhow::Result<TxInfo> {
         tx: TxInfo,
     }
     let query = format!("query {{ tx(hash: \"{tx_id}\") {{ blockHash, blockHeight, gasSpent }} }}");
-    let resp = gql.query(&query).await?;
+    let resp = gql.query_archiver(&query).await?;
     let SpentTxResponse { tx } =
         serde_json::from_slice::<SpentTxResponse>(&resp)?;
     Ok(tx)
