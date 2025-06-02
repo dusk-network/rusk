@@ -250,7 +250,8 @@ test("shield", async () => {
   await network.disconnect();
 });
 
-test("account memo transfer", async () => {
+// note: ignored until PR 3743 is approved
+_ignore_test_1("account memo transfer", async () => {
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);
@@ -305,7 +306,8 @@ test("account memo transfer", async () => {
   await network.disconnect();
 });
 
-test("address memo transfer", async () => {
+// note: ignored until PR 3743 is approved
+_ignore_test_2("address memo transfer", async () => {
   const { cleanup } = useAsProtocolDriver(await getLocalWasmBuffer()); // Temporarily needed, while the node doesn't serve the latest WASM.
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
