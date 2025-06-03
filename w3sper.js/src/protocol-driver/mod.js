@@ -13,6 +13,8 @@ import { withAllocator } from "./alloc.js";
 
 const rng = () => crypto.getRandomValues(new Uint8Array(32));
 
+const CONTRACT_ID_LEN = 32;
+
 const uninit = Object.freeze([
   none`No Protocol Driver loaded yet. Call "load" first.`,
   none`No globals set yet. Load the Protocol Driver first.`,
@@ -440,7 +442,7 @@ export const intoProven = async (tx, proof) =>
   })();
 
 export const phoenix = async (info) =>
-  protocolDriverModule.task(async function ({ malloc, phoenix }, { memcpy }) {
+  protocolDriverModule.task(async function ({ malloc, phoenix, create_tx_data }, { memcpy }) {
     const ptr = Object.create(null);
 
     const seed = new Uint8Array(await info.sender.seed);
@@ -494,7 +496,7 @@ export const phoenix = async (info) =>
     ptr.gas_price = await malloc(8);
     await memcpy(ptr.gas_price, gas_price);
 
-    const data = serializeMemo(info.data);
+    const data = info.data ? await serializePayload(info.data, malloc, memcpy, create_tx_data) : null;
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -554,7 +556,7 @@ export const phoenix = async (info) =>
   })();
 
 export const moonlight = async (info) =>
-  protocolDriverModule.task(async function ({ malloc, moonlight }, { memcpy }) {
+  protocolDriverModule.task(async function ({ malloc, moonlight, create_tx_data }, { memcpy }) {
     const ptr = Object.create(null);
 
     const seed = new Uint8Array(await info.sender.seed);
@@ -599,7 +601,7 @@ export const moonlight = async (info) =>
     let tx = await malloc(4);
     let hash = await malloc(64);
 
-    const data = serializeMemo(info.data);
+    const data = info.data ? await serializePayload(info.data, malloc, memcpy, create_tx_data) : null;
 
     if (data) {
       ptr.data = await malloc(data.byteLength);
@@ -1035,27 +1037,112 @@ export const withdraw = async (info) =>
     return [tx_buffer, hash];
   })();
 
-function serializeMemo(memo) {
-  if (!memo) {
+/**
+ * Converts string/buffer representations to Uint8Array
+ * @param {string|ArrayBuffer|Uint8Array} input - Input to convert
+ * @returns {Uint8Array|null} Converted Uint8Array or null for invalid input
+ */
+function toUint8Array(input) {
+    if (typeof input === 'string') {
+        return new TextEncoder().encode(input);
+    }
+    if (input instanceof ArrayBuffer) {
+        return input.byteLength ? new Uint8Array(input) : null;
+    }
+    if (input instanceof Uint8Array) {
+        return input.length ? input : null;
+    }
     return null;
-  }
+}
 
-  let buffer = null;
-  if (typeof memo === "string") {
-    buffer = new TextEncoder().encode(memo);
-  } else if (memo instanceof ArrayBuffer) {
-    buffer = new Uint8Array(memo);
-  } else if (memo instanceof Uint8Array) {
-    buffer = memo;
-  }
+/**
+ * Extracts pointers to a given buffer and its length
+ * @param {any} ptr_obj - object in which pointers will be set
+ * @param {string} data_ptr_name - name of data pointer attribute to be set
+ * @param {string} len_ptr_name - name of data length pointer attribute to be set
+ * @param {Uint8Array} buffer - data to which pointers will be created
+ * @param {function} malloc - memory allocating function
+ * @param {function} memcpy - memory copying function
+ * @returns {Promise<void>}
+ */
+async function setPointers(ptr_obj, data_ptr_name, len_ptr_name, buffer, malloc, memcpy) {
+    ptr_obj[data_ptr_name] = await malloc(buffer.byteLength);
+    let len = buffer.byteLength;
+    await memcpy(ptr_obj[data_ptr_name], buffer);
 
-  if (!buffer) {
-    return null;
-  }
+    const len_buf = new Uint8Array(4);
+    new DataView(len_buf.buffer).setUint32(0, len, true);
+    ptr_obj[len_ptr_name] = await malloc(4);
+    await memcpy(ptr_obj[len_ptr_name], len_buf);
+}
 
-  const memoBuffer = new Uint8Array(1 + buffer.byteLength);
-  memoBuffer[0] = 3; // Memo type
-  memoBuffer.set(buffer, 1);
+/**
+ * Serializes given payload to rkyv format
+ * @param {any} payload - object containing payload, e.g. memo or contract call data
+ * @param {function} malloc - memory allocating function
+ * @param {function} memcpy - memory copying function
+ * @param {function} create_tx_data - low level function performing the actual serialization
+ * @returns {Promise<Uint8Array<ArrayBuffer>|null>} Buffer containing serialized data
+ */
+async function serializePayload(payload, malloc, memcpy, create_tx_data) {
+    const ptr = Object.create(null);
+    let code;
+    let ret;
 
-  return new Uint8Array(DataBuffer.from(memoBuffer));
+    if ('memo' in payload) {
+        const buffer = toUint8Array(payload.memo);
+        if (!buffer) return null;
+        await setPointers(ptr, "memo", "memo_len", buffer, malloc, memcpy);
+        ret = await malloc(4);
+        ptr.dummy_contract_id = await malloc(32);
+        code = await create_tx_data(
+            null,
+            null,
+            null,
+            null,
+            ptr.dummy_contract_id,
+            ptr.memo_len,
+            ptr.memo,
+            ret
+        )
+    } else if ('fnName' in payload) {
+        // fn_name
+        const fn_name_arg = toUint8Array(payload.fnName);
+        if (!fn_name_arg) return null;
+        await setPointers(ptr, "fn_name", "fn_name_len", fn_name_arg, malloc, memcpy);
+        // fn_args
+        const fn_args_buffer = new Uint8Array(payload.fnArgs);
+        await setPointers(ptr, "fn_args", "fn_args_len", fn_args_buffer, malloc, memcpy);
+        // contract_id
+        const contract_id_buffer = new Uint8Array(payload.contractId);
+        if (contract_id_buffer.byteLength !== CONTRACT_ID_LEN) return null;
+        ptr.contract_id = await malloc(contract_id_buffer.byteLength);
+        await memcpy(ptr.contract_id, contract_id_buffer);
+        ret = await malloc(4);
+        code = await create_tx_data(
+            ptr.fn_name_len,
+            ptr.fn_name,
+            ptr.fn_args_len,
+            ptr.fn_args,
+            ptr.contract_id,
+            null,
+            null,
+            ret
+        )
+    } else return null;
+
+    if (code > 0) throw DriverError.from(code);
+
+    const ret_ptr = new DataView((await memcpy(null, ret, 4)).buffer).getUint32(
+        0,
+        true
+    );
+
+    const ret_len = new DataView((await memcpy(null, ret_ptr, 4)).buffer).getUint32(
+        0,
+        true
+    );
+
+    const ret_buf = await memcpy(null, ret_ptr + 4, ret_len);
+    return new Uint8Array(DataBuffer.from(ret_buf));
 }
