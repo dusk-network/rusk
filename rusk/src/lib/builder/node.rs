@@ -203,14 +203,14 @@ impl RuskNodeBuilder {
         let archive = Archive::create_or_open(self.db_path.clone()).await;
 
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
-        let finality_activation = self
-            .vm_config
-            .feature(crate::node::FEATURE_ABI_PUBLIC_SENDER)
-            .unwrap_or(u64::MAX);
+        let chain_id = self.kadcast.kadcast_id.unwrap_or_default();
+
+        // New diff finality has been activated on mainnet from block 355_000
+        let finality_activation = if chain_id == 1 { 355_000 } else { 0 };
 
         let rusk = Rusk::new(
             self.state_dir,
-            self.kadcast.kadcast_id.unwrap_or_default(),
+            chain_id,
             self.vm_config,
             min_gas_limit,
             self.feeder_call_gas,
