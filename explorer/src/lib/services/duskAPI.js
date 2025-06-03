@@ -197,22 +197,58 @@ const duskAPI = {
   },
 
   /** @returns {Promise<MarketData>} */
-  getMarketData() {
+  async getMarketData() {
     /* eslint-disable camelcase */
 
-    return apiGet("https://api.coingecko.com/api/v3/coins/dusk-network", {
-      community_data: false,
-      developer_data: false,
-      localization: false,
-      market_data: true,
-      sparkline: false,
-      tickers: false,
-    })
-      .then(getKey("market_data"))
-      .then((data) => ({
-        currentPrice: data.current_price,
-        marketCap: data.market_cap,
-      }));
+    try {
+      // Fetch price data and circulating supply
+      const [coinGeckoData, circulatingSupply] = await Promise.all([
+        apiGet("https://api.coingecko.com/api/v3/coins/dusk-network", {
+          community_data: false,
+          developer_data: false,
+          localization: false,
+          market_data: true,
+          sparkline: false,
+          tickers: false,
+        }).then(getKey("market_data")),
+        fetch("/supply")
+          .then(failureToRejection)
+          .then((res) => res.text())
+          .then((supply) => parseFloat(supply))
+          .catch(() => null),
+      ]);
+
+      const currentPrice = coinGeckoData.current_price;
+
+      // Calculate market cap using circulating supply if available, fallback to CoinGecko
+      /** @type {Record<string, number>} */
+      let marketCap;
+      if (
+        circulatingSupply !== null &&
+        !isNaN(circulatingSupply) &&
+        currentPrice?.usd
+      ) {
+        marketCap = {
+          usd: circulatingSupply * currentPrice.usd,
+        };
+        // Add other currencies
+        Object.keys(currentPrice).forEach((currency) => {
+          if (currency !== "usd" && currentPrice[currency]) {
+            marketCap[currency] = circulatingSupply * currentPrice[currency];
+          }
+        });
+      } else {
+        // Fallback to CoinGecko's market cap
+        marketCap = coinGeckoData.market_cap;
+      }
+
+      return {
+        currentPrice,
+        marketCap,
+      };
+    } catch (/** @type {any} */ error) {
+      throw new Error(`Failed to fetch market data: ${error.message}`);
+    }
 
     /* eslint-enable camelcase */
   },

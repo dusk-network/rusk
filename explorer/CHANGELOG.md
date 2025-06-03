@@ -14,6 +14,8 @@ and this project adheres to
 
 ### Changed
 
+- Use supply.dusk.network for circulating supply [#3757]
+
 ### Removed
 
 ### Fixed
@@ -258,6 +260,7 @@ and this project adheres to
 [#3699]: https://github.com/dusk-network/rusk/issues/3699
 [#3720]: https://github.com/dusk-network/rusk/issues/3720
 [#3739]: https://github.com/dusk-network/rusk/issues/3739
+[#3757]: https://github.com/dusk-network/rusk/issues/3757
 
 <!-- VERSIONS -->
 
