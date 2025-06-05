@@ -39,8 +39,10 @@ pub enum TransactionData {
     /// Additional data added to a transaction, that is not a deployment or a
     /// call.
     Memo(Vec<u8>),
-    // BlobTx
-    Blob(Memo, BlobSidecar),
+    // Data for BlobTx
+    // Memo for BlobHashes
+    // Option<BlobSidecar> stripped before minting to block
+    Blob(Memo, Option<BlobSidecar>),
 }
 
 // BlobTx represents an EIP-4844 transaction.

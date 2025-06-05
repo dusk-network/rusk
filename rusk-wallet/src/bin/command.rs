@@ -32,6 +32,9 @@ use crate::{WalletFile, WalletPath};
 #[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Eq, Hash, Clone, Subcommand, Debug)]
 pub(crate) enum Command {
+    // TODO MenuItem::Blob
+    // Command::Blob
+
     /// Create a new wallet
     Create {
         /// Skip wallet mnemonic phrase (useful for headless wallet creation)
@@ -316,6 +319,7 @@ impl Command {
         settings: &Settings,
     ) -> anyhow::Result<RunResult<'a>> {
         match self {
+            // TODO Command::Blob
             Command::Balance { address, spendable } => {
                 let address = address.unwrap_or(wallet.default_address());
                 let addr_idx = wallet.find_index(&address)?;
