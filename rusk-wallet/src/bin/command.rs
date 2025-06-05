@@ -32,8 +32,7 @@ use crate::{WalletFile, WalletPath};
 #[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Eq, Hash, Clone, Subcommand, Debug)]
 pub(crate) enum Command {
-    // TODO MenuItem::Blob
-    // Command::Blob
+    // TODO Command::Blob
 
     /// Create a new wallet
     Create {
