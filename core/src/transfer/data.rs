@@ -39,6 +39,42 @@ pub enum TransactionData {
     /// Additional data added to a transaction, that is not a deployment or a
     /// call.
     Memo(Vec<u8>),
+    // BlobTx
+    Blob(Memo, BlobSidecar),
+}
+
+// BlobTx represents an EIP-4844 transaction.
+// type BlobTx struct {
+//     ChainID    *uint256.Int
+//     Nonce      uint64
+//     GasTipCap  *uint256.Int // a.k.a. maxPriorityFeePerGas
+//     GasFeeCap  *uint256.Int // a.k.a. maxFeePerGas
+//     Gas        uint64
+//     To         common.Address
+//     Value      *uint256.Int
+//     Data       []byte
+//     AccessList AccessList
+//     BlobFeeCap *uint256.Int // a.k.a. maxFeePerBlobGas
+//     BlobHashes []common.Hash
+
+//     // A blob transaction can optionally contain blobs. This field must be set when BlobTx
+//     // is used to create a transaction for signing.
+//     Sidecar *BlobTxSidecar `rlp:"-"`
+
+//     // Signature values
+//     V *uint256.Int
+//     R *uint256.Int
+//     S *uint256.Int
+// }
+// type BlobTxSidecar struct {
+//     Blobs       []kzg4844.Blob       // Blobs needed by the blob pool
+//     Commitments []kzg4844.Commitment // Commitments needed by the blob pool
+//     Proofs      []kzg4844.Proof      // Proofs needed by the blob pool
+// }
+pub struct BlobSidecar {
+    Blobs: Vec<Vec<u8>>, // Blobs needed by the blob pool
+    Commitments: Vec<Vec<u8>>, // Commitments needed by the blob pool
+    Proofs: Vec<Vec<u8>>, // Proofs needed by the blob pool
 }
 
 impl From<ContractCall> for TransactionData {
