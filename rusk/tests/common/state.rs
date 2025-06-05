@@ -166,7 +166,7 @@ pub fn generator_procedure(
     assert_eq!(executed_txs.len(), expected.executed, "all txs accepted");
     assert_eq!(discarded_txs.len(), expected.discarded, "no discarded tx");
 
-    info!("create_state_transition result: {}", transition_result);
+    info!("create_state_transition result: {transition_result}");
 
     let txs: Vec<_> = executed_txs.into_iter().map(|tx| tx.inner).collect();
 
@@ -185,21 +185,13 @@ pub fn generator_procedure(
     )
     .expect("valid block");
 
-    let verify_result =
-        rusk.verify_state_transition(prev_state, &block, &cert_voters)?;
-    info!("verify_state_transition new verification: {verify_result}",);
-
-    let (accept_txs, accept_result, _) =
-        rusk.do_accept_state_transition(prev_state, &block, &cert_voters)?;
+    // Execute, verify, and persist state transition
+    let (accept_txs, _) =
+        rusk.accept_state_transition(prev_state, &block, &cert_voters)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
-    info!("accept block {} with result: {accept_result}", block_height,);
-
-    assert_eq!(
-        accept_result, transition_result,
-        "Transition results should be equal"
-    );
+    info!("accept_state_transition (block {block_height}) result: {transition_result}");
 
     Ok(accept_txs)
 }
@@ -266,13 +258,13 @@ pub fn generator_procedure2(
         prev_state_root: prev_state,
     };
 
-    let (transfer_txs, discarded, execute_result) =
+    let (transfer_txs, discarded, transition_result) =
         rusk.create_state_transition(&transition_data, txs.into_iter())?;
 
     assert_eq!(transfer_txs.len(), expected.executed, "all txs accepted");
     assert_eq!(discarded.len(), expected.discarded, "no discarded tx");
 
-    info!("create_state_transition result: {}", execute_result);
+    info!("create_state_transition result: {transition_result}");
 
     let txs: Vec<_> = transfer_txs.into_iter().map(|tx| tx.inner).collect();
 
@@ -281,8 +273,8 @@ pub fn generator_procedure2(
             height: block_height,
             gas_limit: block_gas_limit,
             generator_bls_pubkey: generator_pubkey_bytes,
-            state_hash: execute_result.state_root,
-            event_bloom: execute_result.event_bloom,
+            state_hash: transition_result.state_root,
+            event_bloom: transition_result.event_bloom,
             failed_iterations,
             ..Default::default()
         },
@@ -291,24 +283,12 @@ pub fn generator_procedure2(
     )
     .expect("valid block");
 
-    let verify_output =
-        rusk.verify_state_transition(prev_state, &block, &cert_voters)?;
-    info!("verify_state_transition new verification: {verify_output}",);
-
-    let (accept_txs, accept_result, _) =
-        rusk.do_accept_state_transition(prev_state, &block, &cert_voters)?;
+    let (accept_txs, _) =
+        rusk.accept_state_transition(prev_state, &block, &cert_voters)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
-    info!(
-        "accept block {} with new verification: {accept_result}",
-        block_height,
-    );
+    info!("accept_state_transition (block {block_height}) result: {transition_result}");
 
-    assert_eq!(
-        accept_result, execute_result,
-        "Verification outputs should be equal"
-    );
-
-    Ok((accept_txs, accept_result.state_root))
+    Ok((accept_txs, transition_result.state_root))
 }

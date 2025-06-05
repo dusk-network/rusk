@@ -18,9 +18,7 @@ use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
 use metrics::gauge;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{
-    to_str, Block, Fault, Hash, Header, SpentTransaction, Transaction,
-};
+use node_data::ledger::{to_str, Block, Fault, Hash, Header, SpentTransaction};
 use node_data::message::{payload, AsyncQueue, ConsensusHeader};
 use node_data::{ledger, Serializable, StepName};
 use tokio::sync::{oneshot, Mutex, RwLock};
@@ -290,16 +288,22 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         &self,
         candidate_header: &Header,
         expected_generator: &PublicKeyBytes,
-    ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
+    ) -> Result<Vec<Voter>, HeaderError> {
         let validator = Validator::new(
             self.db.clone(),
             &self.tip_header,
             &self.provisioners,
         );
 
-        validator
-            .execute_checks(candidate_header, expected_generator, false)
-            .await
+        let (_, cert_voters, _) = validator
+            .verify_block_header_fields(
+                candidate_header,
+                expected_generator,
+                false,
+            )
+            .await?;
+
+        Ok(cert_voters)
     }
 
     async fn validate_faults(
@@ -320,24 +324,20 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         prev_state: [u8; 32],
         blk: &Block,
         cert_voters: &[Voter],
-    ) -> Result<StateTransitionResult, OperationError> {
+    ) -> Result<(), OperationError> {
         let vm = self.vm.read().await;
 
         vm.verify_state_transition(prev_state, blk, cert_voters)
-            .map_err(OperationError::FailedVST)
+            .map_err(OperationError::FailedTransitionVerification)?;
+
+        Ok(())
     }
 
-    async fn new_state_transition(
+    async fn generate_state_transition(
         &self,
         transition_data: StateTransitionData,
-    ) -> Result<
-        (
-            Vec<SpentTransaction>,
-            StateTransitionResult,
-            Vec<Transaction>,
-        ),
-        OperationError,
-    > {
+    ) -> Result<(Vec<SpentTransaction>, StateTransitionResult), OperationError>
+    {
         let vm = self.vm.read().await;
 
         let db = self.db.read().await;
@@ -348,7 +348,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                     vm.create_state_transition(&transition_data, mempool_txs)?;
                 Ok(ret)
             })
-            .map_err(OperationError::FailedEST)?;
+            .map_err(OperationError::FailedTransitionCreation)?;
         let _ = db.update(|m| {
             for t in &discarded_txs {
                 if let Ok(_removed) = m.delete_mempool_tx(t.id(), true) {
@@ -360,7 +360,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             Ok(())
         });
 
-        Ok((executed_txs, transition_result, discarded_txs))
+        Ok((executed_txs, transition_result))
     }
 
     async fn add_step_elapsed_time(
