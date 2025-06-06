@@ -664,6 +664,9 @@ impl Payload {
                 bytes.extend((memo.len() as u64).to_bytes());
                 bytes.extend(memo);
             }
+            Some(TransactionData::Blob(_, _)) => {
+                todo!("Not implemented yet");
+            }
             _ => bytes.push(0),
         }
 
@@ -746,6 +749,9 @@ impl Payload {
             }
             Some(TransactionData::Memo(m)) => {
                 bytes.extend(m);
+            }
+            Some(TransactionData::Blob(_, _)) => {
+                todo!("Not implemented yet");
             }
             None => {}
         }

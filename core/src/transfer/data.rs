@@ -21,6 +21,8 @@ use rkyv::ser::Serializer;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 
+use c_kzg::{Blob, KzgCommitment as Commitment, KzgProof as Proof};
+
 use crate::abi::ContractId;
 use crate::Error;
 
@@ -39,10 +41,19 @@ pub enum TransactionData {
     /// Additional data added to a transaction, that is not a deployment or a
     /// call.
     Memo(Vec<u8>),
-    // Data for BlobTx
-    // Memo for BlobHashes
-    // Option<BlobSidecar> stripped before minting to block
-    Blob(Memo, Option<BlobSidecar>),
+    /// Data for BlobTx
+    /// BlobHashes are the hashes of the blobs that are included in the
+    /// transaction.
+    ///
+    /// NOTE: The type `BlobHashes` is implemented as `Vec<u8>`, the same as in
+    /// `Memo(Vec<u8>)`. This ensures data compatibility, so that when
+    /// reconstructing or repacking a transaction, the data contained in
+    /// `BlobHashes` can be moved to `Memo(Vec<u8>)` without loss or
+    /// conversion. Changing the `TransactionData` type in this way only
+    /// affects the client side and consensus layer, but does NOT affect
+    /// already compiled and deployed system smart contracts.
+    //Option<BlobSidecar> stripped before minting to block
+    Blob(BlobHashes, Option<BlobSidecar>),
 }
 
 // BlobTx represents an EIP-4844 transaction.
@@ -59,8 +70,8 @@ pub enum TransactionData {
 //     BlobFeeCap *uint256.Int // a.k.a. maxFeePerBlobGas
 //     BlobHashes []common.Hash
 
-//     // A blob transaction can optionally contain blobs. This field must be set when BlobTx
-//     // is used to create a transaction for signing.
+//     // A blob transaction can optionally contain blobs. This field must be
+// set when BlobTx     // is used to create a transaction for signing.
 //     Sidecar *BlobTxSidecar `rlp:"-"`
 
 //     // Signature values
@@ -73,11 +84,23 @@ pub enum TransactionData {
 //     Commitments []kzg4844.Commitment // Commitments needed by the blob pool
 //     Proofs      []kzg4844.Proof      // Proofs needed by the blob pool
 // }
+
+/// All the data the transfer-contract needs to perform a contract-call.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
 pub struct BlobSidecar {
-    Blobs: Vec<Vec<u8>>, // Blobs needed by the blob pool
-    Commitments: Vec<Vec<u8>>, // Commitments needed by the blob pool
-    Proofs: Vec<Vec<u8>>, // Proofs needed by the blob pool
+    pub blobs: Vec<Blob>, // Blobs needed by the blob pool
+    pub commitments: Vec<Commitment>, // Commitments needed by the blob pool
+    pub proofs: Vec<Proof>, // Proofs needed by the blob pool
 }
+
+/// All the data the transfer-contract needs to perform a contract-call.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+pub type BlobHashes = Vec<u8>;
+
+/// All the data the transfer-contract needs to perform a contract-call.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+pub type BlobHashes = Vec<u8>;
 
 impl From<ContractCall> for TransactionData {
     fn from(c: ContractCall) -> Self {

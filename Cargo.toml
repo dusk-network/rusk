@@ -164,6 +164,7 @@ version_check = "0.9.5"
 wasm-bindgen = "0.2"
 zeroize = { version = "1.8.1", default-features = false }
 zip = "0.5.13"
+c-kzg = "2.1.1"
 
 [profile.dev.build-override]
 opt-level = 3
