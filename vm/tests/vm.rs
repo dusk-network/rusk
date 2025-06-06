@@ -255,6 +255,25 @@ fn bls_multisig_signature() {
     assert!(!valid, "Multisig Signature verification expected to fail");
 }
 
+#[test]
+fn keccak256() {
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
+
+    let input = hex::decode("ab00ef77dd33ee006d8a5c9b62")
+        .expect("Hex decoding should work");
+
+    let output = session
+        .call::<_, [u8; 32]>(contract_id, "keccak256", &input, POINT_LIMIT)
+        .expect("Querying should succeed")
+        .data;
+
+    assert_eq!(
+        "48299ecd7ccb5655d3be5747703c44137173e1c5ef2ec9e175bffe9e2c5e3eda",
+        hex::encode(output),
+    );
+}
+
 #[derive(Debug, Default)]
 pub struct PlonkTestCircuit {
     pub a: BlsScalar,
