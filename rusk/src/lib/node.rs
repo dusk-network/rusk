@@ -130,9 +130,9 @@ const fn get_block_rewards(
 ///
 /// Considering the target block rate of 10 seconds, we assume a production of
 /// 8640 blocks per day, which corresponds to 12_614_400 blocks per period.
-
-// Returns the block emission for a certain height, following the halving
-// function
+///
+/// Returns the block emission for a certain height, following the halving
+/// function
 pub const fn emission_amount(block_height: u64) -> Dusk {
     match block_height {
         0 => 0,                                     // Genesis

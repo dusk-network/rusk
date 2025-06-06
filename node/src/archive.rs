@@ -43,8 +43,9 @@ impl Archive {
         let path = base_path.as_ref().join(ARCHIVE_FOLDER_NAME);
 
         // Recursively create the archive folder if it doesn't exist already
-        fs::create_dir_all(&path)
-            .expect("creating directory in {path} should not fail");
+        fs::create_dir_all(&path).unwrap_or_else(|_| {
+            panic!("creating directory in {path:?} should not fail")
+        });
         path
     }
 

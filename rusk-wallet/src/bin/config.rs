@@ -54,7 +54,7 @@ impl Config {
                 path.push("config.toml");
 
                 let contents = read_to_string(profile)?
-                    .or(read_to_string(&path)?)
+                    .or(read_to_string(path)?)
                     .unwrap_or_else(|| {
                         include_str!("../../default.config.toml").to_string()
                     });
