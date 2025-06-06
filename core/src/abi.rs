@@ -44,6 +44,8 @@ impl Query {
     pub const VERIFY_BLS: &'static str = "verify_bls";
     /// Host-function name to verify a bls-multisig.
     pub const VERIFY_BLS_MULTISIG: &'static str = "verify_bls_multisig";
+    /// Host-function name to compute the keccak256 hash
+    pub const KECCAK256: &'static str = "keccak256";
 }
 
 #[cfg(feature = "abi")]
@@ -137,6 +139,13 @@ pub(crate) mod host_queries {
         sig: MultisigSignature,
     ) -> bool {
         host_query(Query::VERIFY_BLS_MULTISIG, (msg, keys, sig))
+    }
+
+    /// Compute the keccak256 hash of the given bytes, returning the resulting
+    /// bytes.
+    #[must_use]
+    pub fn keccak256(bytes: Vec<u8>) -> [u8; 32] {
+        host_query(Query::KECCAK256, bytes)
     }
 
     /// Get the chain ID.
