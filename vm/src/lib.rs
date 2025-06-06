@@ -24,13 +24,14 @@ use std::fmt::{self, Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::thread;
 
-use dusk_core::abi::{Metadata, Query};
-use piecrust::{SessionData, VM as PiecrustVM};
-
 use self::host_queries::{
-    host_hash, host_poseidon_hash, host_verify_bls, host_verify_bls_multisig,
-    host_verify_groth16_bn254, host_verify_plonk, host_verify_schnorr,
+    host_hash, host_keccak256, host_poseidon_hash, host_verify_bls,
+    host_verify_bls_multisig, host_verify_groth16_bn254, host_verify_plonk,
+    host_verify_schnorr,
 };
+use dusk_core::abi::{Metadata, Query};
+use hex as _;
+use piecrust::{SessionData, VM as PiecrustVM};
 
 pub(crate) mod cache;
 mod execute;
@@ -258,5 +259,6 @@ impl VM {
             Query::VERIFY_BLS_MULTISIG,
             host_verify_bls_multisig,
         );
+        self.0.register_host_query(Query::KECCAK256, host_keccak256)
     }
 }

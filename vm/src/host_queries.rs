@@ -26,6 +26,7 @@ use dusk_core::BlsScalar;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
+use sha3::{Digest, Keccak256};
 
 use crate::cache;
 
@@ -219,6 +220,19 @@ pub fn verify_bls_multisig(
     akey.verify(&sig, &msg).is_ok()
 }
 
+/// Computes keccak256 hash of a byte vector.
+///
+/// # Arguments
+/// * `bytes` - A vector of bytes representing the input data to be hashed.
+///
+/// # Returns
+/// An array (`[u8; 32]`) representing the keccak256 hash.
+pub fn keccak256(bytes: Vec<u8>) -> [u8; 32] {
+    let mut hasher = Keccak256::new();
+    hasher.update(bytes.as_slice());
+    hasher.finalize().into()
+}
+
 fn wrap_host_query<A, R, F>(arg_buf: &mut [u8], arg_len: u32, closure: F) -> u32
 where
     F: FnOnce(A) -> R,
@@ -296,4 +310,8 @@ pub(crate) fn host_verify_bls_multisig(
     wrap_host_query(arg_buf, arg_len, |(msg, keys, sig)| {
         verify_bls_multisig(msg, keys, sig)
     })
+}
+
+pub(crate) fn host_keccak256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    wrap_host_query(arg_buf, arg_len, keccak256)
 }
