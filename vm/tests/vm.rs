@@ -261,7 +261,7 @@ fn keccak256() {
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let input = hex::decode("ab00ef77dd33ee006d8a5c9b62")
-        .expect("hex decoding should work");
+        .expect("Hex decoding should work");
 
     let output = session
         .call::<_, [u8; 32]>(contract_id, "keccak256", &input, POINT_LIMIT)

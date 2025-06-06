@@ -26,7 +26,7 @@ use dusk_core::BlsScalar;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
-use tiny_keccak::{Hasher, Keccak};
+use sha3::{Digest, Keccak256};
 
 use crate::cache;
 
@@ -228,11 +228,9 @@ pub fn verify_bls_multisig(
 /// # Returns
 /// An array (`[u8; 32]`) representing the keccak256 hash.
 pub fn keccak256(bytes: Vec<u8>) -> [u8; 32] {
-    let mut hasher = Keccak::v256();
+    let mut hasher = Keccak256::new();
     hasher.update(bytes.as_slice());
-    let mut output = [0u8; 32];
-    hasher.finalize(&mut output);
-    output
+    hasher.finalize().into()
 }
 
 fn wrap_host_query<A, R, F>(arg_buf: &mut [u8], arg_len: u32, closure: F) -> u32
