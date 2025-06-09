@@ -32,7 +32,10 @@ use dusk_core::signatures::schnorr::{
 use dusk_core::BlsScalar;
 use dusk_vm::{ContractData, Session, VM};
 use ff::Field;
+use k256::ecdsa::signature::Signer;
+use k256::ecdsa::{Signature, SigningKey};
 use rand::rngs::OsRng;
+use sha3::{Digest, Keccak256};
 
 const POINT_LIMIT: u64 = 0x4000000;
 const CHAIN_ID: u8 = 0xFA;
@@ -272,6 +275,52 @@ fn keccak256() {
         "48299ecd7ccb5655d3be5747703c44137173e1c5ef2ec9e175bffe9e2c5e3eda",
         hex::encode(output),
     );
+}
+
+#[test]
+fn verify_secp256k1() {
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
+
+    let signing_key = SigningKey::random(&mut OsRng);
+    let verifying_key = signing_key.verifying_key();
+    let message = b"test message".to_vec();
+    let message_hash = Keccak256::digest(&message).to_vec();
+    let signature: Signature = signing_key.sign(&message_hash);
+    let mut arg = (
+        message_hash,
+        verifying_key.to_sec1_bytes().to_vec(),
+        signature.to_bytes().to_vec(),
+    );
+
+    let verification_result = session
+        .call::<_, bool>(contract_id, "verify_secp256k1", &arg, POINT_LIMIT)
+        .expect("Querying should succeed")
+        .data;
+
+    assert!(verification_result);
+
+    let bad_message = b"bad test message".to_vec();
+    let bad_message_hash = Keccak256::digest(bad_message).to_vec();
+    arg.0 = bad_message_hash;
+
+    let verification_result = session
+        .call::<_, bool>(contract_id, "verify_secp256k1", &arg, POINT_LIMIT)
+        .expect("Querying should succeed")
+        .data;
+
+    assert!(!verification_result);
+
+    let mut bad_hash = Keccak256::digest(&message).to_vec();
+    bad_hash[0] ^= 0xff;
+    arg.0 = bad_hash;
+
+    let verification_result = session
+        .call::<_, bool>(contract_id, "verify_secp256k1", &arg, POINT_LIMIT)
+        .expect("Querying should succeed")
+        .data;
+
+    assert!(!verification_result);
 }
 
 #[derive(Debug, Default)]
