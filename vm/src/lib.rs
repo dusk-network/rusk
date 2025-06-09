@@ -27,7 +27,7 @@ use std::thread;
 use self::host_queries::{
     host_hash, host_keccak256, host_poseidon_hash, host_verify_bls,
     host_verify_bls_multisig, host_verify_groth16_bn254, host_verify_plonk,
-    host_verify_schnorr,
+    host_verify_schnorr, host_verify_secp256k1,
 };
 use dusk_core::abi::{Metadata, Query};
 use hex as _;
@@ -259,6 +259,10 @@ impl VM {
             Query::VERIFY_BLS_MULTISIG,
             host_verify_bls_multisig,
         );
-        self.0.register_host_query(Query::KECCAK256, host_keccak256)
+        self.0.register_host_query(Query::KECCAK256, host_keccak256);
+        self.0.register_host_query(
+            Query::VERIFY_SECP256K1,
+            host_verify_secp256k1,
+        );
     }
 }

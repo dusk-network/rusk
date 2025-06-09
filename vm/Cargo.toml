@@ -18,7 +18,8 @@ blake3 = { workspace = true }
 dusk-poseidon = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }
 hex = { workspace = true }
-sha3 = {workspace = true }
+sha3 = { workspace = true }
+k256 = { workspace = true, features = ["ecdsa"] }
 
 [dev-dependencies]
 rand = { workspace = true, features = ["getrandom"] }
