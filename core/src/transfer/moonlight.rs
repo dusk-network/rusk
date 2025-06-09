@@ -540,6 +540,58 @@ impl Payload {
 
         bytes
     }
+
+    /// Temporarily solution to create a signature message for the test.
+    #[must_use]
+    pub fn new_signature_message(&self) -> Vec<u8> {
+        let mut bytes = Vec::from([self.chain_id]);
+
+        bytes.extend(self.sender.to_bytes());
+        if self.receiver != self.sender {
+            bytes.extend(self.receiver.to_bytes());
+        }
+        bytes.extend(self.value.to_bytes());
+        bytes.extend(self.deposit.to_bytes());
+        bytes.extend(self.fee.gas_limit.to_bytes());
+        bytes.extend(self.fee.gas_price.to_bytes());
+        if self.fee.refund_address != self.sender {
+            bytes.extend(self.fee.refund_address.to_bytes());
+        }
+        bytes.extend(self.nonce.to_bytes());
+
+        // Convert TransactionData::Blob to TransactionData::Memo for signature
+        // message
+        let data = match &self.data {
+            // Some(TransactionData::Blob(hashes, _)) => {
+            //     Some(TransactionData::Memo(hashes.clone()))
+            // }
+            other => other.clone(),
+        };
+
+        match data {
+            Some(TransactionData::Deploy(d)) => {
+                bytes.extend(&d.bytecode.to_hash_input_bytes());
+                bytes.extend(&d.owner);
+                if let Some(init_args) = &d.init_args {
+                    bytes.extend(init_args);
+                }
+            }
+            Some(TransactionData::Call(c)) => {
+                bytes.extend(c.contract.as_bytes());
+                bytes.extend(c.fn_name.as_bytes());
+                bytes.extend(&c.fn_args);
+            }
+            Some(TransactionData::Memo(m)) => {
+                bytes.extend(m);
+            }
+            Some(TransactionData::Blob(hashes, _)) => {
+                bytes.extend(hashes);
+            }
+            _ => {}
+        }
+
+        bytes
+    }
 }
 
 /// The Fee structure

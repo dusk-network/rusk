@@ -56,6 +56,20 @@ pub enum TransactionData {
     Blob(BlobHashes, Option<BlobSidecar>),
 }
 
+/// Data for either contract call or contract deployment.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[allow(clippy::large_enum_variant)]
+pub enum LegacyTransactionData {
+    /// Data for a contract call.
+    Call(ContractCall),
+    /// Data for a contract deployment.
+    Deploy(ContractDeploy),
+    /// Additional data added to a transaction, that is not a deployment or a
+    /// call.
+    Memo(Vec<u8>),
+}
+
 // BlobTx represents an EIP-4844 transaction.
 // type BlobTx struct {
 //     ChainID    *uint256.Int
@@ -89,17 +103,18 @@ pub enum TransactionData {
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct BlobSidecar {
-    pub blobs: Vec<Blob>, // Blobs needed by the blob pool
-    pub commitments: Vec<Commitment>, // Commitments needed by the blob pool
-    pub proofs: Vec<Proof>, // Proofs needed by the blob pool
+    /// Blobs needed by the blob pool.
+    /// Temporary solution to don't use `c_kzg::Blob` directly.
+    pub blobs: Vec<[u8; 131072usize]>,
+    /// Commitments needed by the blob pool.
+    /// Temporary solution to don't use `c_kzg::Commitment` directly.
+    pub commitments: Vec<[u8; 48usize]>,
+    /// Proofs needed by the blob pool.
+    /// Temporary solution to don't use `c_kzg::Proof` directly.
+    pub proofs: Vec<[u8; 48usize]>,
 }
 
-/// All the data the transfer-contract needs to perform a contract-call.
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-pub type BlobHashes = Vec<u8>;
-
-/// All the data the transfer-contract needs to perform a contract-call.
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+/// A type alias for a vector of blob hashes.
 pub type BlobHashes = Vec<u8>;
 
 impl From<ContractCall> for TransactionData {
