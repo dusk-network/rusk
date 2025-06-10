@@ -1,0 +1,74 @@
+# log_level = 'info'
+# log_type = 'coloured'
+# log_filter = 'dusk_consensus=debug'
+
+[http]
+#listen = true
+#listen_address = '127.0.0.1:8080'
+#cert = <path_of_pem>
+#key = <path_of_key>
+
+# The default max cost for feeder calls is the maximum representable. Put in a
+# a string wrapped number up to u64::MAX
+#feeder_call_gas = "18446744073709551615" 
+
+#ws_sub_channel_cap = 16,
+#ws_event_channel_cap = 1024,
+
+# Custom headers to put into every HTTP response. By default none are added.
+#headers = [["name1", "value1"], ["name2", "value2"]]
+
+[chain]
+genesis_timestamp = '2025-01-07T12:00:00Z'
+#db_path = '/home/user/.dusk/rusk'
+#consensus_keys_path = '/home/user/.dusk/rusk/consensus.keys'
+min_gas_limit = 150000
+
+# Note: changing the vm settings is equivalent to forking the chain.
+[vm]
+generation_timeout = '3s'
+# Note: changing the following settings is equivalent to forking the chain.
+gas_per_deploy_byte = 100
+min_deployment_gas_price = 2_000
+min_deploy_points = 5_000_000
+block_gas_limit = 3_000_000_000
+
+[vm.features]
+ABI_PUBLIC_SENDER = 355_000
+# key = activation_height
+# key = activation_height
+# key = activation_height
+
+[databroker]
+max_inv_entries = 100
+max_ongoing_requests = 1000
+
+[kadcast]
+kadcast_id = 0x1
+public_address = '127.0.0.1:9000'
+# listen_address = '127.0.0.1:9000'
+bootstrapping_nodes = []
+auto_propagate = true
+channel_size = 1000
+recursive_discovery = true
+
+[kadcast.bucket]
+node_ttl = '30s'
+node_evict_after = '5s'
+bucket_ttl = '1h'
+
+[kadcast.network]
+udp_recv_buffer_size = 5000000
+# udp_send_backoff_timeout = '50us'
+udp_send_retry_interval = '5ms'
+udp_send_retry_count = 3
+blocklist_refresh_interval = '10s'
+
+[kadcast.fec.encoder]
+min_repair_packets_per_block = 5
+mtu = 1300
+fec_redundancy = 0.15
+
+[kadcast.fec.decoder]
+cache_ttl = '1m'
+cache_prune_every = '5m'
