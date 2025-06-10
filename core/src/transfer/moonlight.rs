@@ -26,6 +26,8 @@ use crate::transfer::data::{
 };
 use crate::{BlsScalar, Error};
 
+use super::data::BlobData;
+
 /// A Moonlight account's information.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
@@ -274,6 +276,25 @@ impl Transaction {
         Some(stripped_transaction)
     }
 
+    /// Creates a modified clone of this transaction if it contains a Blob,
+    /// clones all fields except for the Blob, where its hash is set as Memo.
+    ///
+    /// Returns none if the transaction is not a Blob transaction.
+    #[must_use]
+    pub fn convert_blob(&self) -> Option<Self> {
+        let data = self.data()?;
+
+        if let TransactionData::Blob(_) = data {
+            let hash = data.signature_message();
+            let memo = TransactionData::Memo(hash);
+            let mut converted_tx = self.clone();
+            converted_tx.payload.data = Some(memo);
+            Some(converted_tx)
+        } else {
+            None
+        }
+    }
+
     /// Serialize a transaction into a byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
@@ -413,6 +434,14 @@ impl Payload {
                 bytes.extend((memo.len() as u64).to_bytes());
                 bytes.extend(memo);
             }
+            Some(TransactionData::Blob(blobs)) => {
+                bytes.push(4);
+                // Maybe we can use u8 as length
+                bytes.extend((blobs.len() as u64).to_bytes());
+                for blob in blobs {
+                    bytes.extend(blob.to_var_bytes());
+                }
+            }
             _ => bytes.push(0),
         }
 
@@ -475,6 +504,15 @@ impl Payload {
                 let memo = buf[..size].to_vec();
                 Some(TransactionData::Memo(memo))
             }
+            4 => {
+                let blobs_len = u8::from_reader(&mut buf)?;
+                let mut blobs = Vec::with_capacity(blobs_len as usize);
+                for _ in 0..blobs_len {
+                    let blob = BlobData::from_buf(&mut buf)?;
+                    blobs.push(blob);
+                }
+                Some(TransactionData::Blob(blobs))
+            }
             _ => {
                 return Err(BytesError::InvalidData);
             }
@@ -513,23 +551,8 @@ impl Payload {
         }
         bytes.extend(self.nonce.to_bytes());
 
-        match &self.data {
-            Some(TransactionData::Deploy(d)) => {
-                bytes.extend(&d.bytecode.to_hash_input_bytes());
-                bytes.extend(&d.owner);
-                if let Some(init_args) = &d.init_args {
-                    bytes.extend(init_args);
-                }
-            }
-            Some(TransactionData::Call(c)) => {
-                bytes.extend(c.contract.as_bytes());
-                bytes.extend(c.fn_name.as_bytes());
-                bytes.extend(&c.fn_args);
-            }
-            Some(TransactionData::Memo(m)) => {
-                bytes.extend(m);
-            }
-            None => {}
+        if let Some(data) = &self.data {
+            bytes.extend(data.signature_message());
         }
 
         bytes

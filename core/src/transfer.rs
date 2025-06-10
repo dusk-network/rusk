@@ -292,6 +292,22 @@ impl Transaction {
         }
     }
 
+    /// Creates a modified clone of this transaction if it contains a Blob,
+    /// clones all fields except for the Blob, where its hash is set as Memo.
+    ///
+    /// Returns none if the transaction is not a Blob transaction.
+    #[must_use]
+    pub fn convert_blob(&self) -> Option<Self> {
+        Some(match self {
+            Transaction::Phoenix(tx) => {
+                Transaction::Phoenix(tx.convert_blob()?)
+            }
+            Transaction::Moonlight(tx) => {
+                Transaction::Moonlight(tx.convert_blob()?)
+            }
+        })
+    }
+
     /// Creates a modified clone of this transaction if it contains data for
     /// deployment, clones all fields except for the bytecode' 'bytes' part.
     /// Returns none if the transaction is not a deployment transaction.

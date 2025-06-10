@@ -37,6 +37,8 @@ pub use phoenix_core::{
 pub const NOTES_TREE_DEPTH: usize = 17;
 /// The arity of the merkle tree of notes stored in the transfer-contract.
 pub use poseidon_merkle::ARITY as NOTES_TREE_ARITY;
+
+use super::data::BlobData;
 /// The merkle tree of notes stored in the transfer-contract.
 pub type NotesTree = poseidon_merkle::Tree<(), NOTES_TREE_DEPTH>;
 /// The merkle opening for a note-hash in the merkle tree of notes.
@@ -440,6 +442,16 @@ impl Transaction {
         }
     }
 
+    /// Return the contract blob data, if there is any.
+    #[must_use]
+    pub fn blob(&self) -> Option<&Vec<BlobData>> {
+        #[allow(clippy::match_wildcard_for_single_variants)]
+        match self.data()? {
+            TransactionData::Blob(ref d) => Some(d),
+            _ => None,
+        }
+    }
+
     /// Returns the memo used with the transaction, if any.
     #[must_use]
     pub fn memo(&self) -> Option<&[u8]> {
@@ -451,7 +463,7 @@ impl Transaction {
 
     /// Returns the transaction data, if it exists.
     #[must_use]
-    fn data(&self) -> Option<&TransactionData> {
+    pub(crate) fn data(&self) -> Option<&TransactionData> {
         self.payload.data.as_ref()
     }
 
@@ -476,6 +488,25 @@ impl Transaction {
         stripped_transaction.payload.data = Some(stripped_deploy);
 
         Some(stripped_transaction)
+    }
+
+    /// Creates a modified clone of this transaction if it contains a Blob,
+    /// clones all fields except for the Blob, where its hash is set as Memo.
+    ///
+    /// Returns none if the transaction is not a Blob transaction.
+    #[must_use]
+    pub fn convert_blob(&self) -> Option<Self> {
+        let data = self.data()?;
+
+        if let TransactionData::Blob(_) = data {
+            let hash = data.signature_message();
+            let memo = TransactionData::Memo(hash);
+            let mut converted_tx = self.clone();
+            converted_tx.payload.data = Some(memo);
+            Some(converted_tx)
+        } else {
+            None
+        }
     }
 
     /// Serialize the `Transaction` into a variable length byte buffer.
@@ -731,23 +762,8 @@ impl Payload {
 
         bytes.extend(self.tx_skeleton.to_hash_input_bytes());
 
-        match &self.data {
-            Some(TransactionData::Deploy(d)) => {
-                bytes.extend(&d.bytecode.to_hash_input_bytes());
-                bytes.extend(&d.owner);
-                if let Some(init_args) = &d.init_args {
-                    bytes.extend(init_args);
-                }
-            }
-            Some(TransactionData::Call(c)) => {
-                bytes.extend(c.contract.as_bytes());
-                bytes.extend(c.fn_name.as_bytes());
-                bytes.extend(&c.fn_args);
-            }
-            Some(TransactionData::Memo(m)) => {
-                bytes.extend(m);
-            }
-            None => {}
+        if let Some(data) = &self.data {
+            bytes.extend(data.signature_message());
         }
 
         bytes
