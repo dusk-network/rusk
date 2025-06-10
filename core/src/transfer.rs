@@ -7,6 +7,7 @@
 //! Types related to Dusk's transfer contract that are shared across the
 //! network.
 
+use data::{BlobData, BlobDataPart};
 #[cfg(feature = "serde")]
 use serde_with::{hex::Hex, serde_as, DisplayFromStr};
 
@@ -292,15 +293,41 @@ impl Transaction {
         }
     }
 
+    /// Returns the Blob used with the transaction, if any.
+    #[must_use]
+    pub fn blob(&self) -> Option<&Vec<BlobData>> {
+        match self {
+            Self::Phoenix(tx) => tx.blob(),
+            Self::Moonlight(tx) => tx.blob(),
+        }
+    }
+
+    /// Remove the blobs data from the transaction, and return them associated
+    /// to their blob hash
+    #[must_use]
+    pub fn take_blobs_data(&mut self) -> Option<Vec<([u8; 32], BlobDataPart)>> {
+        let blob = match self {
+            Self::Phoenix(tx) => tx.blob_mut(),
+            Self::Moonlight(tx) => tx.blob_mut(),
+        }?;
+
+        let ret = blob
+            .iter_mut()
+            .filter_map(|b| b.take_data().map(|d| (b.hash, d)))
+            .collect::<Vec<_>>();
+
+        Some(ret)
+    }
+
     /// Creates a modified clone of this transaction if it contains a Blob,
     /// clones all fields except for the Blob, where its hash is set as Memo.
     ///
     /// Returns none if the transaction is not a Blob transaction.
     #[must_use]
-    pub fn convert_blob(&self) -> Option<Self> {
+    pub fn blob_to_memo(&self) -> Option<Self> {
         Some(match self {
             Transaction::Phoenix(tx) => {
-                Transaction::Phoenix(tx.convert_blob()?)
+                Transaction::Phoenix(tx.blob_to_memo()?)
             }
             Transaction::Moonlight(tx) => {
                 Transaction::Moonlight(tx.convert_blob()?)

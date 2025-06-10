@@ -247,10 +247,36 @@ impl Transaction {
         }
     }
 
+    /// Return the contract blob data, if there is any.
+    #[must_use]
+    pub fn blob(&self) -> Option<&Vec<BlobData>> {
+        #[allow(clippy::match_wildcard_for_single_variants)]
+        match self.data()? {
+            TransactionData::Blob(ref d) => Some(d),
+            _ => None,
+        }
+    }
+
+    /// Return the contract blob data, if there is any.
+    #[must_use]
+    pub fn blob_mut(&mut self) -> Option<&mut Vec<BlobData>> {
+        #[allow(clippy::match_wildcard_for_single_variants)]
+        match self.data_mut()? {
+            TransactionData::Blob(d) => Some(d),
+            _ => None,
+        }
+    }
+
     /// Returns the transaction data, if it exists.
     #[must_use]
     pub fn data(&self) -> Option<&TransactionData> {
         self.payload.data.as_ref()
+    }
+
+    /// Returns the transaction data, if it exists.
+    #[must_use]
+    pub(crate) fn data_mut(&mut self) -> Option<&mut TransactionData> {
+        self.payload.data.as_mut()
     }
 
     /// Creates a modified clone of this transaction if it contains data for

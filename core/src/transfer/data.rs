@@ -133,8 +133,12 @@ pub struct BlobData {
     /// 48-byte elliptic curve point committing to blob
     pub commitment: [u8; 48],
     /// 4096 field elements (each 32 bytes), total 128 KiB
-    pub data: Option<[[u8; 32]; 4096]>,
+    pub data: Option<BlobDataPart>,
 }
+
+/// A type alias for the BLOB data part, which consists of 4096 field elements
+/// (each 32 bytes), total 128 KiB
+pub type BlobDataPart = [[u8; 32]; 4096];
 
 /// All the data the transfer-contract needs to perform a contract-call.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
@@ -408,5 +412,11 @@ impl BlobData {
             commitment,
             data,
         })
+    }
+
+    /// Take the data field, if it exists.
+    #[must_use]
+    pub fn take_data(&mut self) -> Option<[[u8; 32]; 4096]> {
+        self.data.take()
     }
 }

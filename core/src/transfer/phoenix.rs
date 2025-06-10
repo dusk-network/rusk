@@ -452,6 +452,16 @@ impl Transaction {
         }
     }
 
+    /// Return the contract blob data, if there is any.
+    #[must_use]
+    pub fn blob_mut(&mut self) -> Option<&mut Vec<BlobData>> {
+        #[allow(clippy::match_wildcard_for_single_variants)]
+        match self.data_mut()? {
+            TransactionData::Blob(d) => Some(d),
+            _ => None,
+        }
+    }
+
     /// Returns the memo used with the transaction, if any.
     #[must_use]
     pub fn memo(&self) -> Option<&[u8]> {
@@ -465,6 +475,12 @@ impl Transaction {
     #[must_use]
     pub(crate) fn data(&self) -> Option<&TransactionData> {
         self.payload.data.as_ref()
+    }
+
+    /// Returns the transaction data, if it exists.
+    #[must_use]
+    pub(crate) fn data_mut(&mut self) -> Option<&mut TransactionData> {
+        self.payload.data.as_mut()
     }
 
     /// Creates a modified clone of this transaction if it contains data for
@@ -495,7 +511,7 @@ impl Transaction {
     ///
     /// Returns none if the transaction is not a Blob transaction.
     #[must_use]
-    pub fn convert_blob(&self) -> Option<Self> {
+    pub fn blob_to_memo(&self) -> Option<Self> {
         let data = self.data()?;
 
         if let TransactionData::Blob(_) = data {
