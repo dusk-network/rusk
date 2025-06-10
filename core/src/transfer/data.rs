@@ -33,7 +33,7 @@ pub const MAX_MEMO_SIZE: usize = 512;
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 #[allow(clippy::large_enum_variant)]
-pub enum TransactionData {
+pub enum NotLegacyTransactionData {
     /// Data for a contract call.
     Call(ContractCall),
     /// Data for a contract deployment.
@@ -60,7 +60,7 @@ pub enum TransactionData {
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 #[allow(clippy::large_enum_variant)]
-pub enum LegacyTransactionData {
+pub enum TransactionData {
     /// Data for a contract call.
     Call(ContractCall),
     /// Data for a contract deployment.

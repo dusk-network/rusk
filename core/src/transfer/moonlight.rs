@@ -21,8 +21,8 @@ use crate::signatures::bls::{
     Signature as AccountSignature,
 };
 use crate::transfer::data::{
-    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
-    MAX_MEMO_SIZE,
+    ContractBytecode, ContractCall, ContractDeploy, NotLegacyTransactionData,
+    TransactionData, MAX_MEMO_SIZE,
 };
 use crate::{BlsScalar, Error};
 
@@ -44,7 +44,7 @@ pub struct AccountData {
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Transaction {
-    payload: Payload,
+    payload: Payload<TransactionData>,
     signature: AccountSignature,
 }
 
@@ -137,7 +137,7 @@ impl Transaction {
     /// - the payload memo, if given, is too large
     pub fn sign_payload(
         sender_sk: &AccountSecretKey,
-        payload: Payload,
+        payload: Payload<TransactionData>,
     ) -> Result<Self, Error> {
         if let Some(TransactionData::Memo(memo)) = payload.data.as_ref() {
             if memo.len() > MAX_MEMO_SIZE {
@@ -303,7 +303,7 @@ impl Transaction {
         }
         let (payload_buf, new_buf) = buf.split_at(payload_len);
 
-        let payload = Payload::from_slice(payload_buf)?;
+        let payload = Payload::<TransactionData>::from_slice(payload_buf)?;
         buf = new_buf;
 
         let signature = AccountSignature::from_bytes(
@@ -342,7 +342,7 @@ impl Transaction {
 /// The payload for a moonlight transaction.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct Payload {
+pub struct Payload<TData> {
     /// ID of the chain for this transaction to execute on.
     pub chain_id: u8,
     /// Key of the sender of this transaction.
@@ -362,10 +362,10 @@ pub struct Payload {
     /// The current nonce is queryable via the transfer contract.
     pub nonce: u64,
     /// Data to do a contract call, deployment, or insert a memo.
-    pub data: Option<TransactionData>,
+    pub data: Option<TData>,
 }
 
-impl Payload {
+impl Payload<TransactionData> {
     /// Serialize the payload into a byte buffer.
     #[must_use]
     pub fn to_var_bytes(&self) -> Vec<u8> {
@@ -412,9 +412,6 @@ impl Payload {
                 bytes.push(3);
                 bytes.extend((memo.len() as u64).to_bytes());
                 bytes.extend(memo);
-            }
-            Some(TransactionData::Blob(_, _)) => {
-                todo!("Not implemented yet");
             }
             _ => bytes.push(0),
         }
@@ -532,18 +529,152 @@ impl Payload {
             Some(TransactionData::Memo(m)) => {
                 bytes.extend(m);
             }
-            Some(TransactionData::Blob(_, _)) => {
-                todo!("Not implemented yet");
-            }
             None => {}
         }
 
         bytes
     }
+}
+
+impl Payload<NotLegacyTransactionData> {
+    /// Serialize the payload into a byte buffer.
+    #[must_use]
+    pub fn to_var_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::from([self.chain_id]);
+
+        bytes.extend(self.sender.to_bytes());
+        // to save space we only serialize the receiver if it's different from
+        // the sender
+        if self.sender == self.receiver {
+            bytes.push(0);
+        } else {
+            bytes.push(1);
+            bytes.extend(self.receiver.to_bytes());
+        }
+
+        bytes.extend(self.value.to_bytes());
+        bytes.extend(self.deposit.to_bytes());
+
+        // serialize the fee
+        bytes.extend(self.fee.gas_limit.to_bytes());
+        bytes.extend(self.fee.gas_price.to_bytes());
+        // to save space we only serialize the refund-address if it's different
+        // from the sender
+        if self.sender == self.fee.refund_address {
+            bytes.push(0);
+        } else {
+            bytes.push(1);
+            bytes.extend(self.fee.refund_address.to_bytes());
+        }
+
+        bytes.extend(self.nonce.to_bytes());
+
+        let data = match &self.data {
+            Some(NotLegacyTransactionData::Blob(hashes, _)) => {
+                Some(NotLegacyTransactionData::Memo(hashes.clone()))
+            }
+            other => other.clone(),
+        };
+
+        // serialize the contract call, deployment or memo, if present.
+        match data {
+            Some(NotLegacyTransactionData::Call(call)) => {
+                bytes.push(1);
+                bytes.extend(call.to_var_bytes());
+            }
+            Some(NotLegacyTransactionData::Deploy(deploy)) => {
+                bytes.push(2);
+                bytes.extend(deploy.to_var_bytes());
+            }
+            Some(NotLegacyTransactionData::Memo(memo)) => {
+                bytes.push(3);
+                bytes.extend((memo.len() as u64).to_bytes());
+                bytes.extend(memo);
+            }
+            _ => bytes.push(0),
+        }
+
+        bytes
+    }
+
+    /// Deserialize the payload from bytes slice.
+    ///
+    /// # Errors
+    /// Errors when the bytes are not canonical.
+    pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
+        let mut buf = buf;
+
+        let chain_id = u8::from_reader(&mut buf)?;
+        let sender = AccountPublicKey::from_reader(&mut buf)?;
+        let receiver = match u8::from_reader(&mut buf)? {
+            0 => sender,
+            1 => AccountPublicKey::from_reader(&mut buf)?,
+            _ => {
+                return Err(BytesError::InvalidData);
+            }
+        };
+        let value = u64::from_reader(&mut buf)?;
+        let deposit = u64::from_reader(&mut buf)?;
+
+        // deserialize the fee
+        let gas_limit = u64::from_reader(&mut buf)?;
+        let gas_price = u64::from_reader(&mut buf)?;
+        let refund_address = match u8::from_reader(&mut buf)? {
+            0 => sender,
+            1 => AccountPublicKey::from_reader(&mut buf)?,
+            _ => {
+                return Err(BytesError::InvalidData);
+            }
+        };
+        let fee = Fee {
+            gas_limit,
+            gas_price,
+            refund_address,
+        };
+
+        let nonce = u64::from_reader(&mut buf)?;
+
+        // deserialize contract call, deploy data, or memo, if present
+        let data = match u8::from_reader(&mut buf)? {
+            0 => None,
+            1 => Some(NotLegacyTransactionData::Call(
+                ContractCall::from_slice(buf)?,
+            )),
+            2 => Some(NotLegacyTransactionData::Deploy(
+                ContractDeploy::from_slice(buf)?,
+            )),
+            3 => {
+                // we only build for 64-bit so this truncation is impossible
+                #[allow(clippy::cast_possible_truncation)]
+                let size = u64::from_reader(&mut buf)? as usize;
+
+                if buf.len() != size || size > MAX_MEMO_SIZE {
+                    return Err(BytesError::InvalidData);
+                }
+
+                let memo = buf[..size].to_vec();
+                Some(NotLegacyTransactionData::Memo(memo))
+            }
+            _ => {
+                return Err(BytesError::InvalidData);
+            }
+        };
+
+        Ok(Self {
+            chain_id,
+            sender,
+            receiver,
+            value,
+            deposit,
+            fee,
+            nonce,
+            data,
+        })
+    }
 
     /// Temporarily solution to create a signature message for the test.
     #[must_use]
-    pub fn new_signature_message(&self) -> Vec<u8> {
+    pub fn signature_message(&self) -> Vec<u8> {
         let mut bytes = Vec::from([self.chain_id]);
 
         bytes.extend(self.sender.to_bytes());
@@ -559,34 +690,35 @@ impl Payload {
         }
         bytes.extend(self.nonce.to_bytes());
 
-        // Convert TransactionData::Blob to TransactionData::Memo for signature
-        // message
+        // Convert NotLegacyTransactionData::Blob to
+        // NotLegacyTransactionData::Memo for signature message
         let data = match &self.data {
-            // Some(TransactionData::Blob(hashes, _)) => {
-            //     Some(TransactionData::Memo(hashes.clone()))
-            // }
+            Some(NotLegacyTransactionData::Blob(hashes, _)) => {
+                Some(NotLegacyTransactionData::Memo(hashes.clone()))
+            }
             other => other.clone(),
         };
 
         match data {
-            Some(TransactionData::Deploy(d)) => {
+            // match &self.data {
+            Some(NotLegacyTransactionData::Deploy(d)) => {
                 bytes.extend(&d.bytecode.to_hash_input_bytes());
                 bytes.extend(&d.owner);
                 if let Some(init_args) = &d.init_args {
                     bytes.extend(init_args);
                 }
             }
-            Some(TransactionData::Call(c)) => {
+            Some(NotLegacyTransactionData::Call(c)) => {
                 bytes.extend(c.contract.as_bytes());
                 bytes.extend(c.fn_name.as_bytes());
                 bytes.extend(&c.fn_args);
             }
-            Some(TransactionData::Memo(m)) => {
+            Some(NotLegacyTransactionData::Memo(m)) => {
                 bytes.extend(m);
             }
-            Some(TransactionData::Blob(hashes, _)) => {
-                bytes.extend(hashes);
-            }
+            // Some(NotLegacyTransactionData::Blob(hashes, _)) => {
+            //     bytes.extend(hashes);
+            // }
             _ => {}
         }
 
