@@ -133,7 +133,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 future_msgs.lock().await.remove_msgs_by_round(ru.round - 1);
             }
 
-            let sv_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+            let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
 
             let proposal_handler = Arc::new(Mutex::new(
                 proposal::handler::ProposalHandler::new(db.clone()),
@@ -141,14 +141,14 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
             let validation_handler = Arc::new(Mutex::new(
                 validation::handler::ValidationHandler::new(
-                    sv_registry.clone(),
+                    att_registry.clone(),
                     db.clone(),
                 ),
             ));
 
             let ratification_handler = Arc::new(Mutex::new(
                 ratification::handler::RatificationHandler::new(
-                    sv_registry.clone(),
+                    att_registry.clone(),
                 ),
             ));
 
@@ -233,7 +233,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         iter,
                         step_name,
                         executor.clone(),
-                        sv_registry.clone(),
+                        att_registry.clone(),
                     );
 
                     // Execute a phase

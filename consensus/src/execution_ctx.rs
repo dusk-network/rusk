@@ -55,7 +55,7 @@ pub struct ExecutionCtx<'a, T, DB: Database> {
 
     pub client: Arc<T>,
 
-    pub sv_registry: SafeAttestationInfoRegistry,
+    pub att_registry: SafeAttestationInfoRegistry,
 }
 
 impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
@@ -71,7 +71,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         iteration: u8,
         step: StepName,
         client: Arc<T>,
-        sv_registry: SafeAttestationInfoRegistry,
+        att_registry: SafeAttestationInfoRegistry,
     ) -> Self {
         Self {
             iter_ctx,
@@ -83,7 +83,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             iteration,
             step,
             client,
-            sv_registry,
+            att_registry,
             step_start_time: None,
         }
     }
@@ -280,10 +280,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                     // past-iteration Attestations without
                                     // interrupting the step execution
 
-                                    let mut sv_registry =
-                                        self.sv_registry.lock().await;
+                                    let mut att_registry =
+                                        self.att_registry.lock().await;
 
-                                    match sv_registry.get_fail_att(qiter) {
+                                    match att_registry.get_fail_att(qiter) {
                                         None => {
                                             debug!(
                                               event = "Storing Fail Attestation",
@@ -296,7 +296,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                                 .iter_ctx
                                                 .get_generator(qiter);
 
-                                            sv_registry
+                                            att_registry
                                             .set_attestation(
                                               qiter,
                                               att,

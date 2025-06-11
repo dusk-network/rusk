@@ -41,6 +41,12 @@
       <BlocksList data={block} />
     {/each}
   {:else}
-    <BlocksTable data={blocks} />
+    <BlocksTable data={blocks} className="latest-blocks-card__table" />
   {/if}
 </DataCard>
+
+<style>
+  :global(.latest-blocks-card__table .table__body .table__row) {
+    height: 3.4375rem;
+  }
+</style>

@@ -8,23 +8,37 @@ mod history;
 
 pub use history::TransactionHistory;
 
+#[cfg(all(test, feature = "e2e-test"))]
+mod tests;
+
 use std::fmt;
+use std::fs::File;
+use std::io::Write;
 use std::path::PathBuf;
 
+use aes_gcm::AeadCore;
+use aes_gcm::Aes256Gcm;
+use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Subcommand;
 use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::data::ContractCall;
 use dusk_core::BlsScalar;
+use rand::rngs::OsRng;
+use rand::RngCore;
 use rusk_wallet::currency::{Dusk, Lux};
+use rusk_wallet::dat::{self, LATEST_VERSION};
 use rusk_wallet::gas::{
     Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
     DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
 };
-use rusk_wallet::{Address, Error, Profile, Wallet, EPOCH, MAX_PROFILES};
+use rusk_wallet::{
+    Address, Error, Profile, Wallet, EPOCH, IV_SIZE, MAX_PROFILES, SALT_SIZE,
+};
 use wallet_core::BalanceInfo;
 
 use crate::io::prompt;
+use crate::prompt::Prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
 
@@ -198,6 +212,12 @@ pub(crate) enum Command {
         /// first address]
         #[arg(short, long)]
         address: Option<Address>,
+
+        /// Amount of rewards to withdraw from the stake contract. If the
+        /// reward is not provided, all the rewards are withdrawn at
+        /// once
+        #[arg(short, long)]
+        reward: Option<Dusk>,
 
         /// Max amount of gas for this transaction
         #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
@@ -460,6 +480,7 @@ impl Command {
             }
             Command::Withdraw {
                 address,
+                reward,
                 gas_limit,
                 gas_price,
             } => {
@@ -470,10 +491,14 @@ impl Command {
                 let tx = match address {
                     Address::Shielded(_) => {
                         wallet.sync().await?;
-                        wallet.phoenix_stake_withdraw(addr_idx, gas).await
+                        wallet
+                            .phoenix_stake_withdraw(addr_idx, reward, gas)
+                            .await
                     }
                     Address::Public(_) => {
-                        wallet.moonlight_stake_withdraw(addr_idx, gas).await
+                        wallet
+                            .moonlight_stake_withdraw(addr_idx, reward, gas)
+                            .await
                     }
                 }?;
 
@@ -525,18 +550,21 @@ impl Command {
                 let notes = wallet.get_all_notes(profile_idx)?;
                 let address = wallet.public_address(profile_idx)?;
 
-                let mut phoenix_history =
-                    history::transaction_from_notes(settings, notes).await?;
+                let mut history =
+                    history::transaction_from_notes(settings, notes, &address)
+                        .await?;
 
-                if let Ok(mut moonlight_history) =
-                    history::moonlight_history(settings, address).await
-                {
-                    phoenix_history.append(&mut moonlight_history);
-                } else {
-                    tracing::error!("Cannot fetch archive history");
+                match history::moonlight_history(settings, address).await {
+                    Ok(mut moonlight_history) => {
+                        history.append(&mut moonlight_history)
+                    }
+                    Err(err) => tracing::error!(
+                        "Failed to fetch archive history with error: {err}"
+                    ),
                 }
 
-                Ok(RunResult::History(phoenix_history))
+                history.sort_by_key(|th| th.height());
+                Ok(RunResult::History(history))
             }
             Command::Unshield {
                 profile_idx,
@@ -691,6 +719,77 @@ impl Command {
             Command::Settings => Ok(RunResult::Settings()),
         }
     }
+
+    pub(crate) fn run_create(
+        skip_recovery: bool,
+        seed_file: &Option<PathBuf>,
+        password: &Option<String>,
+        wallet_path: &WalletPath,
+        prompter: &dyn Prompt,
+    ) -> anyhow::Result<Wallet<WalletFile>> {
+        // create a new randomly generated mnemonic phrase
+        let mnemonic = Mnemonic::new(MnemonicType::Words12, Language::English);
+        let salt = gen_salt();
+        let iv = gen_iv();
+        // ask user for a password to secure the wallet
+        // latest version is used for dat file
+        let key = prompt::derive_key_from_new_password(
+            password,
+            Some(&salt),
+            dat::FileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+            prompter,
+        )?;
+
+        match (skip_recovery, seed_file) {
+            (_, Some(file)) => {
+                let mut file = File::create(file)?;
+                file.write_all(mnemonic.phrase().as_bytes())?
+            }
+            // skip phrase confirmation if explicitly
+            (false, _) => prompt::confirm_mnemonic_phrase(&mnemonic)?,
+            _ => {}
+        }
+
+        // create wallet
+        let mut w = Wallet::new(mnemonic)?;
+
+        w.save_to(WalletFile {
+            path: wallet_path.clone(),
+            aes_key: key,
+            salt: Some(salt),
+            iv: Some(iv),
+        })?;
+
+        Ok(w)
+    }
+
+    pub fn run_restore_from_seed(
+        wallet_path: &WalletPath,
+        prompter: &dyn Prompt,
+    ) -> anyhow::Result<Wallet<WalletFile>> {
+        // ask user for 12-word mnemonic phrase
+        let phrase = prompt::request_mnemonic_phrase(prompter)?;
+        let salt = gen_salt();
+        let iv = gen_iv();
+        // ask user for a password to secure the wallet, create the latest
+        // wallet file from the seed
+        let key = prompt::derive_key_from_new_password(
+            &None,
+            Some(&salt),
+            dat::FileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+            prompter,
+        )?;
+        // create and store the recovered wallet
+        let mut w = Wallet::new(phrase)?;
+        let path = wallet_path.clone();
+        w.save_to(WalletFile {
+            path,
+            aes_key: key,
+            salt: Some(salt),
+            iv: Some(iv),
+        })?;
+        Ok(w)
+    }
 }
 
 /// Possible results of running a command in interactive mode
@@ -805,4 +904,16 @@ impl fmt::Display for RunResult<'_> {
             Create() | Restore() | Settings() => unreachable!(),
         }
     }
+}
+
+pub(crate) fn gen_salt() -> [u8; SALT_SIZE] {
+    let mut salt = [0; SALT_SIZE];
+    let mut rng = OsRng;
+    rng.fill_bytes(&mut salt);
+    salt
+}
+
+pub(crate) fn gen_iv() -> [u8; IV_SIZE] {
+    let iv = Aes256Gcm::generate_nonce(OsRng);
+    iv.into()
 }

@@ -17,6 +17,7 @@ use crossterm::{
 use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
 
+use inquire::error::InquireResult;
 use inquire::ui::RenderConfig;
 use inquire::validator::Validation;
 use inquire::{
@@ -32,6 +33,24 @@ use rusk_wallet::{
 };
 use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
+
+use crate::command::TransactionHistory;
+
+pub(crate) trait Prompt {
+    /// Prompt the user to enter a password
+    fn create_new_password(&self) -> InquireResult<String> {
+        create_new_password()
+    }
+
+    /// Prompt the user to enter text
+    fn prompt_text(&self, msg: &str) -> InquireResult<String> {
+        Text::new(msg).prompt()
+    }
+}
+
+pub(crate) struct Prompter;
+
+impl Prompt for Prompter {}
 
 pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
     let pwd = Password::new(msg)
@@ -75,10 +94,11 @@ pub(crate) fn derive_key_from_new_password(
     password: &Option<String>,
     salt: Option<&[u8; SALT_SIZE]>,
     file_version: DatFileVersion,
+    prompter: &dyn Prompt,
 ) -> anyhow::Result<Vec<u8>> {
     let pwd = match password.as_ref() {
         Some(p) => p.to_string(),
-        None => create_new_password()?,
+        None => prompter.create_new_password()?,
     };
 
     derive_key(file_version, &pwd, salt)
@@ -107,12 +127,14 @@ where
 }
 
 /// Request the user to input the mnemonic phrase
-pub(crate) fn request_mnemonic_phrase() -> anyhow::Result<String> {
+pub(crate) fn request_mnemonic_phrase(
+    prompter: &dyn Prompt,
+) -> anyhow::Result<String> {
     // let the user input the mnemonic phrase
     let mut attempt = 1;
     loop {
         let phrase =
-            Text::new("Please enter the mnemonic phrase: ").prompt()?;
+            prompter.prompt_text("Please enter the mnemonic phrase: ")?;
 
         match Mnemonic::from_phrase(&phrase, Language::English) {
             Ok(phrase) => break Ok(phrase.to_string()),
@@ -270,6 +292,18 @@ pub(crate) fn request_token_amt(
     request_token(action, min, balance, None).map_err(Error::from)
 }
 
+/// Request positive amount of tokens with a default
+pub(crate) fn request_token_amt_with_default(
+    action: &str,
+    balance: Dusk,
+    default: Dusk,
+) -> Result<Dusk, Error> {
+    let min = MIN_CONVERTIBLE;
+
+    request_token(action, min, balance, Some(default.into()))
+        .map_err(Error::from)
+}
+
 /// Request amount of tokens that can be 0
 pub(crate) fn request_optional_token_amt(
     action: &str,
@@ -405,6 +439,24 @@ pub(crate) fn request_address(
     )
     .with_starting_cursor(current_idx as usize)
     .prompt()?)
+}
+
+pub(crate) fn tx_history_list(
+    history: &[TransactionHistory],
+) -> anyhow::Result<()> {
+    if history.is_empty() {
+        println!("No transactions found");
+        return Ok(());
+    }
+    let header = TransactionHistory::header();
+    let history_str: Vec<String> =
+        history.iter().map(|history| history.to_string()).collect();
+
+    Select::new(header.as_str(), history_str)
+        .with_help_message("↑↓ to move, type to filter")
+        .prompt()?;
+
+    Ok(())
 }
 
 /// Request contract WASM file location

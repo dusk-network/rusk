@@ -306,7 +306,6 @@ test("account memo transfer", async () => {
 });
 
 test("address memo transfer", async () => {
-  const { cleanup } = useAsProtocolDriver(await getLocalWasmBuffer()); // Temporarily needed, while the node doesn't serve the latest WASM.
   const network = await Network.connect("http://localhost:8080/");
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);
@@ -359,5 +358,4 @@ test("address memo transfer", async () => {
   );
 
   await network.disconnect();
-  await cleanup(); // Remove when useAsProtocolDriver is removed.
 });

@@ -14,7 +14,32 @@ and this project adheres to
 
 ### Changed
 
+- Use supply.dusk.network for circulating supply [#3757]
+
 ### Removed
+
+### Fixed
+
+## [1.4.0] - 2025-05-22
+
+### Added
+
+- Add account address copy button (Account page) [#3698]
+- Add value property to Transaction Details [#3699]
+
+### Changed
+
+- Change transaction details arrangement (Transaction Details page) [#3720]
+- Change transaction list to use a single GraphQL query (Account page) [#3739]
+
+## [1.3.3] - 2025-05-05
+
+### Fixed
+
+- Fix transaction type badges get wrapped [#3692]
+- Fix Transaction and Block entries have different row heights (Home page) [#3694]
+
+## [1.3.2] - 2025-04-29
 
 ### Fixed
 
@@ -229,10 +254,20 @@ and this project adheres to
 [#3667]: https://github.com/dusk-network/rusk/issues/3667
 [#3675]: https://github.com/dusk-network/rusk/issues/3675
 [#3676]: https://github.com/dusk-network/rusk/issues/3676
+[#3692]: https://github.com/dusk-network/rusk/issues/3692
+[#3694]: https://github.com/dusk-network/rusk/issues/3694
+[#3698]: https://github.com/dusk-network/rusk/issues/3698
+[#3699]: https://github.com/dusk-network/rusk/issues/3699
+[#3720]: https://github.com/dusk-network/rusk/issues/3720
+[#3739]: https://github.com/dusk-network/rusk/issues/3739
+[#3757]: https://github.com/dusk-network/rusk/issues/3757
 
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.4.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.4.0
+[1.3.3]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.3
+[1.3.2]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.2
 [1.3.1]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.1
 [1.3.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.2.0

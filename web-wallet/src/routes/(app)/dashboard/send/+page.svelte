@@ -45,6 +45,8 @@
     }
   }
 
+  const BEP20_BRIDGE_ADDRESS = import.meta.env.VITE_BEP20_BRIDGE_ADDRESS;
+
   $: [gasSettings, language] = collectSettings($settingsStore);
   $: duskFormatter = createCurrencyFormatter(language, "DUSK", 9);
   $: ({ balance, currentProfile } = $walletStore);
@@ -63,6 +65,7 @@
     {gasLimits}
     {gasSettings}
     availableBalance={spendable}
+    bep20BridgeAddress={BEP20_BRIDGE_ADDRESS}
     on:keyChange={keyChangeHandler}
   />
 </IconHeadingCard>

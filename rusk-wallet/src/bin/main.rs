@@ -10,19 +10,15 @@ mod interactive;
 mod io;
 mod settings;
 
-use aes_gcm::{AeadCore, Aes256Gcm};
+use command::{gen_iv, gen_salt};
 pub(crate) use command::{Command, RunResult};
-use io::prompt::{ask_pwd, derive_key};
+use io::prompt::{ask_pwd, derive_key, Prompter};
 
-use std::fs::{self, File};
-use std::io::Write;
+use std::fs;
 use std::path::PathBuf;
 
-use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Parser;
 use inquire::InquireError;
-use rand::rngs::OsRng;
-use rand::RngCore;
 use rocksdb::ErrorKind;
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{self, FileVersion as DatFileVersion, LATEST_VERSION};
@@ -32,7 +28,6 @@ use rusk_wallet::{
 };
 use tracing::{error, info, warn, Level};
 
-use crate::command::TransactionHistory;
 use crate::settings::{LogFormat, Settings};
 
 use config::Config;
@@ -93,6 +88,7 @@ where
         .connect_with_status(
             settings.state.as_str(),
             settings.prover.as_str(),
+            settings.archiver.as_str(),
             status,
         )
         .await;
@@ -229,44 +225,15 @@ async fn exec() -> anyhow::Result<()> {
             Command::Create {
                 skip_recovery,
                 seed_file,
-            } => {
-                // create a new randomly generated mnemonic phrase
-                let mnemonic =
-                    Mnemonic::new(MnemonicType::Words12, Language::English);
-                let salt = gen_salt();
-                let iv = gen_iv();
-                // ask user for a password to secure the wallet
-                // latest version is used for dat file
-                let key = prompt::derive_key_from_new_password(
-                    password,
-                    Some(&salt),
-                    dat::FileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-                )?;
-
-                match (skip_recovery, seed_file) {
-                    (_, Some(file)) => {
-                        let mut file = File::create(file)?;
-                        file.write_all(mnemonic.phrase().as_bytes())?
-                    }
-                    // skip phrase confirmation if explicitly
-                    (false, _) => prompt::confirm_mnemonic_phrase(&mnemonic)?,
-                    _ => {}
-                }
-
-                // create wallet
-                let mut w = Wallet::new(mnemonic)?;
-
-                w.save_to(WalletFile {
-                    path: wallet_path,
-                    aes_key: key,
-                    salt: Some(salt),
-                    iv: Some(iv),
-                })?;
-
-                w
-            }
+            } => Command::run_create(
+                *skip_recovery,
+                seed_file,
+                password,
+                &wallet_path,
+                &Prompter,
+            )?,
             Command::Restore { file } => {
-                let (mut w, key, salt_and_iv) = match file {
+                match file {
                     Some(file) => {
                         // if we restore and old version file make sure we
                         // know the corrrect version before asking for the
@@ -281,47 +248,27 @@ async fn exec() -> anyhow::Result<()> {
                             file_version,
                         )?;
 
-                        let w = Wallet::from_file(WalletFile {
+                        let mut w = Wallet::from_file(WalletFile {
                             path: file.clone(),
                             aes_key: key.clone(),
                             salt: salt_and_iv.map(|si| si.0),
                             iv: salt_and_iv.map(|si| si.1),
                         })?;
 
-                        (w, key, salt_and_iv)
+                        let (salt, iv) = salt_and_iv
+                            .unwrap_or_else(|| (gen_salt(), gen_iv()));
+                        w.save_to(WalletFile {
+                            path: wallet_path,
+                            aes_key: key,
+                            salt: Some(salt),
+                            iv: Some(iv),
+                        })?;
+                        w
                     }
-                    // Use the latest dat file version when there's no dat file
-                    // provided when restoring the wallet
                     None => {
-                        // ask user for 12-word mnemonic phrase
-                        let phrase = prompt::request_mnemonic_phrase()?;
-                        let salt = gen_salt();
-                        let iv = gen_iv();
-                        // ask user for a password to secure the wallet
-                        let key = prompt::derive_key_from_new_password(
-                            password,
-                            Some(&salt),
-                            dat::FileVersion::RuskBinaryFileFormat(
-                                LATEST_VERSION,
-                            ),
-                        )?;
-                        // create wallet
-                        let w = Wallet::new(phrase)?;
-
-                        (w, key, Some((salt, iv)))
+                        Command::run_restore_from_seed(&wallet_path, &Prompter)?
                     }
-                };
-
-                let (salt, iv) =
-                    salt_and_iv.unwrap_or_else(|| (gen_salt(), gen_iv()));
-                w.save_to(WalletFile {
-                    path: wallet_path,
-                    aes_key: key,
-                    salt: Some(salt),
-                    iv: Some(iv),
-                })?;
-
-                w
+                }
             }
 
             _ => {
@@ -440,7 +387,11 @@ async fn exec() -> anyhow::Result<()> {
                     let tx_id = hex::encode(hash.to_bytes());
 
                     // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(settings.state, status::headless)?;
+                    let gql = GraphQL::new(
+                        settings.state,
+                        settings.archiver,
+                        status::headless,
+                    )?;
                     gql.wait_for(&tx_id).await?;
 
                     println!("{tx_id}");
@@ -451,7 +402,11 @@ async fn exec() -> anyhow::Result<()> {
                     println!("Deploying {contract_id}",);
 
                     // Wait for transaction confirmation from network
-                    let gql = GraphQL::new(settings.state, status::headless)?;
+                    let gql = GraphQL::new(
+                        settings.state,
+                        settings.archiver,
+                        status::headless,
+                    )?;
                     gql.wait_for(&tx_id).await?;
 
                     println!("{tx_id}");
@@ -488,9 +443,8 @@ async fn exec() -> anyhow::Result<()> {
                     println!("{},{}", pub_key.display(), key_pair.display())
                 }
                 RunResult::History(txns) => {
-                    println!("{}", TransactionHistory::header());
-                    for th in txns {
-                        println!("{th}");
+                    if let Err(err) = crate::prompt::tx_history_list(&txns) {
+                        println!("Failed to output transaction history with error {err}");
                     }
                 }
                 RunResult::ContractId(id) => {
@@ -513,16 +467,4 @@ fn save_old_wallet(wallet_path: &WalletPath) -> Result<PathBuf, Error> {
     old_wallet_path.push("wallet.dat.old");
     fs::copy(&wallet_path.wallet, &old_wallet_path)?;
     Ok(old_wallet_path)
-}
-
-fn gen_salt() -> [u8; SALT_SIZE] {
-    let mut salt = [0; SALT_SIZE];
-    let mut rng = OsRng;
-    rng.fill_bytes(&mut salt);
-    salt
-}
-
-fn gen_iv() -> [u8; IV_SIZE] {
-    let iv = Aes256Gcm::generate_nonce(OsRng);
-    iv.into()
 }

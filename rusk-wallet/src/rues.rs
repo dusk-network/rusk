@@ -142,7 +142,12 @@ impl HttpClient {
             let error = String::from_utf8(error.to_vec())
                 .unwrap_or("unparsable error".into());
 
-            let msg = format!("{status}: {error}");
+            let msg = if error.contains("Value spent larger than account holds")
+            {
+                "Balance is not enough to cover the transaction max fees".into()
+            } else {
+                error
+            };
 
             Err(Error::Rusk(msg))
         } else {

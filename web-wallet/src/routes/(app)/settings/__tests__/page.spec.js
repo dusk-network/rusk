@@ -32,10 +32,7 @@ const fireInput = (input, value) =>
   fireEvent.input(input, { target: { value } });
 
 /** @param {HTMLElement} element */
-function asInput(element) {
-  // eslint-disable-next-line no-extra-parens
-  return /** @type {HTMLInputElement} */ (element);
-}
+const asInput = (element) => /** @type {HTMLInputElement} */ (element);
 
 vi.mock("$lib/stores", async (importOriginal) => {
   /** @type {WalletStore} */

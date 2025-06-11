@@ -186,6 +186,11 @@ pub(crate) async fn online(
                 }
             };
 
+            if balance < min_val {
+                println!("The stake must be at least {min_val}, but your balance is only {balance}\n");
+                return Ok(ProfileOp::Stay);
+            }
+
             let owner = match wallet.find_stake_owner_account(stake_pk).await {
                 Ok(account) => account,
                 Err(Error::NotStaked) => {
@@ -259,9 +264,15 @@ pub(crate) async fn online(
             }
 
             let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+            let max_withdraw = wallet.get_stake_reward(profile_idx).await?;
 
             ProfileOp::Run(Box::new(Command::Withdraw {
                 address: Some(addr),
+                reward: Some(prompt::request_token_amt_with_default(
+                    "withdraw rewards",
+                    max_withdraw,
+                    max_withdraw,
+                )?),
                 gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
                 gas_price: prompt::request_gas_price(
                     DEFAULT_PRICE,

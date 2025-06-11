@@ -16,7 +16,7 @@ function decodeHexString(value) {
   let decodedString;
   try {
     decodedString = decoder.decode(bytes);
-  } catch (e) {
+  } catch {
     return value;
   }
 

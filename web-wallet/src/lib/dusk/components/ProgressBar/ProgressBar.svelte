@@ -2,7 +2,6 @@
 
 <script>
   import { tweened } from "svelte/motion";
-  /* eslint-disable import/no-unresolved */
   import { expoOut } from "svelte/easing";
   import { makeClassName } from "$lib/dusk/string";
 

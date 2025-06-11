@@ -597,7 +597,7 @@ exports[`Block Details > should render the Block Details page and query the nece
         class="data-card__content"
       >
         <div
-          class="table-container transactions-table"
+          class="table-container transactions-table latest-transactions-card__table"
         >
           <table
             class="table"

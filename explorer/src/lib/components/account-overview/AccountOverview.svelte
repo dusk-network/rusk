@@ -1,13 +1,13 @@
 <script>
   import { onMount } from "svelte";
-
+  import { CopyButton } from "$lib/dusk/components";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
+  import { createValueFormatter } from "$lib/dusk/value";
   import { addressCharPropertiesDefaults } from "$lib/constants";
   import { OverviewPanelDetailsItem } from "$lib/components";
   import { luxToDusk } from "$lib/dusk/currency";
 
   import "./AccountOverview.css";
-  import { createValueFormatter } from "$lib/dusk/value";
 
   export let accountAddress;
   export let errorFetchingAccountStatus;
@@ -36,21 +36,30 @@
 </script>
 
 <section class="account-overview-panel">
-  <p class="account-overview-panel__header">
-    Account:
-    <b class="account-overview-panel__address">
-      {middleEllipsis(
-        accountAddress,
-        calculateAdaptiveCharCount(
-          screenWidth,
-          minScreenWidth,
-          maxScreenWidth,
-          minCharCount,
-          maxCharCount
-        )
-      )}
-    </b>
-  </p>
+  <div class="account-overview-panel__address-wrapper">
+    <p class="account-overview-panel__header">
+      Account:
+      <b class="account-overview-panel__address">
+        {middleEllipsis(
+          accountAddress,
+          calculateAdaptiveCharCount(
+            screenWidth,
+            minScreenWidth,
+            maxScreenWidth,
+            minCharCount,
+            maxCharCount
+          )
+        )}</b
+      >
+    </p>
+
+    <CopyButton
+      name="Account address"
+      rawValue={accountAddress}
+      variant="secondary"
+    />
+  </div>
+
   <hr class="account-overview-panel__separator" />
   <div class="account-overview-panel__details">
     <OverviewPanelDetailsItem subtitle="Current Balance">
@@ -76,6 +85,12 @@
 </section>
 
 <style lang="postcss">
+  .account-overview-panel__address-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--small-gap);
+  }
+
   :global {
     .account-overview-panel__details {
       letter-spacing: 8%;

@@ -40,9 +40,6 @@
   /** @type {Boolean} */
   export let loading;
 
-  /** @type {String | null} */
-  export let payload;
-
   /** @type {MarketData | null} */
   export let market;
 
@@ -75,7 +72,6 @@
     addressCharPropertiesDefaults;
 
   $: classes = makeClassName(["transaction-details", className]);
-  $: jsonPayload = payload ? JSON.parse(payload) : null;
 </script>
 
 <DataCard
@@ -121,64 +117,6 @@
       >
     </ListItem>
 
-    {#if data.txtype.toLowerCase() === "moonlight" && data.method === "transfer" && jsonPayload?.sender && jsonPayload?.receiver}
-      <ListItem tooltipText="The sender of the transaction">
-        <svelte:fragment slot="term">From</svelte:fragment>
-        <svelte:fragment slot="definition">
-          <AppAnchor
-            className="transaction-details__list-anchor"
-            href="/accounts/?key={jsonPayload.sender}"
-            >{middleEllipsis(
-              jsonPayload.sender,
-              calculateAdaptiveCharCount(
-                screenWidth,
-                minScreenWidth,
-                maxScreenWidth,
-                minCharCount,
-                maxCharCount
-              )
-            )}</AppAnchor
-          >
-          <CopyButton rawValue={jsonPayload.sender} name="Sender's address" />
-        </svelte:fragment>
-      </ListItem>
-      <ListItem tooltipText="The receiver of the transaction">
-        <svelte:fragment slot="term">To</svelte:fragment>
-        <svelte:fragment slot="definition">
-          <AppAnchor
-            className="transaction-details__list-anchor"
-            href="/accounts/?key={jsonPayload.receiver}"
-            >{middleEllipsis(
-              jsonPayload.receiver,
-              calculateAdaptiveCharCount(
-                screenWidth,
-                minScreenWidth,
-                maxScreenWidth,
-                minCharCount,
-                maxCharCount
-              )
-            )}</AppAnchor
-          >
-          <CopyButton
-            rawValue={jsonPayload.receiver}
-            name="Receiver's address"
-          />
-        </svelte:fragment>
-      </ListItem>
-    {/if}
-
-    <!-- STATUS -->
-    <ListItem tooltipText="The transaction status">
-      <svelte:fragment slot="term">Status</svelte:fragment>
-      <svelte:fragment slot="definition"
-        ><TransactionStatus
-          className="transaction-details__status explorer-badge"
-          errorMessage={data.txerror}
-          showErrorTooltip={true}
-        /></svelte:fragment
-      >
-    </ListItem>
-
     <!-- TIMESTAMP -->
     <ListItem tooltipText="The date and time the transaction was created">
       <svelte:fragment slot="term">timestamp</svelte:fragment>
@@ -193,12 +131,85 @@
       >
     </ListItem>
 
+    <!-- FROM -->
+    {#if data.txtype.toLowerCase() === "moonlight" && data.method === "transfer" && data.from}
+      <ListItem tooltipText="The sender of the transaction">
+        <svelte:fragment slot="term">from</svelte:fragment>
+        <svelte:fragment slot="definition">
+          <AppAnchor
+            className="transaction-details__list-anchor"
+            href="/accounts/?key={data.from}"
+            >{middleEllipsis(
+              data.from,
+              calculateAdaptiveCharCount(
+                screenWidth,
+                minScreenWidth,
+                maxScreenWidth,
+                minCharCount,
+                maxCharCount
+              )
+            )}</AppAnchor
+          >
+          <CopyButton rawValue={data.from} name="Sender's address" />
+        </svelte:fragment>
+      </ListItem>
+    {/if}
+
+    <!-- TO -->
+    {#if data.txtype.toLowerCase() === "moonlight" && data.method === "transfer" && data.to}
+      <ListItem tooltipText="The receiver of the transaction">
+        <svelte:fragment slot="term">to</svelte:fragment>
+        <svelte:fragment slot="definition">
+          <AppAnchor
+            className="transaction-details__list-anchor"
+            href="/accounts/?key={data.to}"
+            >{middleEllipsis(
+              data.to,
+              calculateAdaptiveCharCount(
+                screenWidth,
+                minScreenWidth,
+                maxScreenWidth,
+                minCharCount,
+                maxCharCount
+              )
+            )}</AppAnchor
+          >
+          <CopyButton rawValue={data.to} name="Receiver's address" />
+        </svelte:fragment>
+      </ListItem>
+    {/if}
+
+    <!-- AMOUNT -->
+    {#if data.amount}
+      <ListItem tooltipText="The transaction amount">
+        <svelte:fragment slot="term">amount</svelte:fragment>
+        <svelte:fragment slot="definition">
+          <DataGuard data={market?.currentPrice.usd}>
+            {`${feeFormatter(luxToDusk(data.amount))} DUSK (${currencyFormatter(luxToDusk(data.amount) * /** @type {number} */ (market?.currentPrice.usd))})`}
+          </DataGuard>
+          <StaleDataNotice /></svelte:fragment
+        >
+      </ListItem>
+    {/if}
+
     <!-- TYPE -->
     <ListItem tooltipText="The transaction type">
       <svelte:fragment slot="term">type</svelte:fragment>
       <svelte:fragment slot="definition">
         <TransactionType {data} displayTooltips={true} />
       </svelte:fragment>
+    </ListItem>
+
+    <!-- STATUS -->
+    <ListItem tooltipText="The transaction status">
+      <svelte:fragment slot="term">status</svelte:fragment>
+      <svelte:fragment slot="definition"
+        ><TransactionStatus
+          className="transaction-details__status explorer-badge"
+          errorMessage={data.txerror}
+          showErrorTooltip={true}
+        /></svelte:fragment
+      >
     </ListItem>
 
     <!-- TRANSACTION FEE -->
@@ -236,10 +247,10 @@
     </ListItem>
 
     <!-- NONCE -->
-    {#if data.txtype.toLowerCase() === "moonlight" && jsonPayload?.nonce}
+    {#if data.txtype.toLowerCase() === "moonlight" && data.nonce}
       <ListItem tooltipText="The number of transactions sent from this address">
         <svelte:fragment slot="term">nonce</svelte:fragment>
-        <svelte:fragment slot="definition">{jsonPayload.nonce}</svelte:fragment>
+        <svelte:fragment slot="definition">{data.nonce}</svelte:fragment>
       </ListItem>
     {/if}
 
@@ -248,7 +259,6 @@
       <svelte:fragment slot="term">
         <div class="transaction-details__switch-wrapper">
           memo
-
           <Switch
             className="transaction-details__payload-switch"
             onSurface={true}
@@ -274,7 +284,6 @@
       <svelte:fragment slot="term">
         <div class="transaction-details__switch-wrapper">
           payload
-
           <Switch
             className="transaction-details__payload-switch"
             onSurface={true}
@@ -286,8 +295,8 @@
       <svelte:fragment slot="definition">
         {#if isPayloadToggled}
           <Card onSurface={true} className="transaction-details__payload">
-            <pre>{jsonPayload
-                ? JSON.stringify(jsonPayload, null, 2)
+            <pre>{data.payload
+                ? JSON.stringify(data.payload, null, 2)
                 : "---"}</pre>
           </Card>
         {/if}

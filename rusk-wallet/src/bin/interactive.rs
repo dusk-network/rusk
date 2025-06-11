@@ -8,18 +8,18 @@ mod command_menu;
 
 use std::fmt::Display;
 
-use bip39::{Language, Mnemonic, MnemonicType};
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
-use rusk_wallet::dat::{FileVersion as DatFileVersion, LATEST_VERSION};
+use rusk_wallet::dat::FileVersion as DatFileVersion;
 use rusk_wallet::{
     Address, Error, Profile, Wallet, WalletPath, IV_SIZE, MAX_PROFILES,
     SALT_SIZE,
 };
 
 use crate::io::{self, prompt};
+use crate::prompt::Prompter;
 use crate::settings::Settings;
-use crate::{gen_iv, gen_salt, Command, GraphQL, RunResult, WalletFile};
+use crate::{Command, GraphQL, RunResult, WalletFile};
 
 /// Run the interactive UX loop with a loaded wallet
 pub(crate) async fn run_loop(
@@ -87,30 +87,48 @@ pub(crate) async fn run_loop(
             match op {
                 Ok(ProfileOp::Run(cmd)) => {
                     // request confirmation before running
-                    if confirm(&cmd, wallet)? {
+                    if confirm(&cmd, wallet).await? {
                         // run command
                         prompt::hide_cursor()?;
-                        let res = cmd.run(wallet, settings).await?;
-
-                        prompt::show_cursor()?;
-                        // output results
-                        println!("\r{}", res);
-                        if let RunResult::Tx(hash) = res {
-                            let tx_id = hex::encode(hash.to_bytes());
-
-                            // Wait for transaction confirmation
-                            // from network
-                            let gql = GraphQL::new(
-                                settings.state.to_string(),
-                                io::status::interactive,
-                            )?;
-                            gql.wait_for(&tx_id).await?;
-
-                            if let Some(explorer) = &settings.explorer {
-                                let url = format!("{explorer}{tx_id}");
-                                println!("> URL: {url}");
-                                prompt::launch_explorer(url)?;
+                        let res = match cmd.run(wallet, settings).await {
+                            Ok(res) => res,
+                            Err(err) => {
+                                println!("{err}\n");
+                                continue;
                             }
+                        };
+                        prompt::show_cursor()?;
+
+                        // output results
+                        match res {
+                            RunResult::Tx(hash) => {
+                                let tx_id = hex::encode(hash.to_bytes());
+
+                                // Wait for transaction confirmation
+                                // from network
+                                let gql = GraphQL::new(
+                                    settings.state.to_string(),
+                                    settings.archiver.to_string(),
+                                    io::status::interactive,
+                                )?;
+                                gql.wait_for(&tx_id).await?;
+
+                                if let Some(explorer) = &settings.explorer {
+                                    let url = format!("{explorer}{tx_id}");
+                                    println!("> URL: {url}");
+                                    prompt::launch_explorer(url)?;
+                                }
+                            }
+                            RunResult::History(ref history) => {
+                                if let Err(err) =
+                                    crate::prompt::tx_history_list(history)
+                                {
+                                    println!("Failed to output transaction history with error {err}");
+                                }
+
+                                println!();
+                            }
+                            _ => println!("\r{}", res),
                         }
                     }
                 }
@@ -253,52 +271,10 @@ pub(crate) async fn load_wallet(
         }
         // Use the latest binary format when creating a wallet
         MainMenu::Create => {
-            // create a new randomly generated mnemonic phrase
-            let mnemonic =
-                Mnemonic::new(MnemonicType::Words12, Language::English);
-            let salt = gen_salt();
-            let iv = gen_iv();
-            // ask user for a password to secure the wallet
-            let key = prompt::derive_key_from_new_password(
-                password,
-                Some(&salt),
-                DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-            )?;
-            // display the mnemonic phrase
-            prompt::confirm_mnemonic_phrase(&mnemonic)?;
-            // create and store the wallet
-            let mut w = Wallet::new(mnemonic)?;
-            let path = wallet_path.clone();
-            w.save_to(WalletFile {
-                path,
-                aes_key: key,
-                salt: Some(salt),
-                iv: Some(iv),
-            })?;
-            w
+            Command::run_create(false, &None, password, wallet_path, &Prompter)?
         }
         MainMenu::Recover => {
-            // ask user for 12-word mnemonic phrase
-            let phrase = prompt::request_mnemonic_phrase()?;
-            let salt = gen_salt();
-            let iv = gen_iv();
-            // ask user for a password to secure the wallet, create the latest
-            // wallet file from the seed
-            let key = prompt::derive_key_from_new_password(
-                &None,
-                Some(&salt),
-                DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-            )?;
-            // create and store the recovered wallet
-            let mut w = Wallet::new(phrase)?;
-            let path = wallet_path.clone();
-            w.save_to(WalletFile {
-                path,
-                aes_key: key,
-                salt: Some(salt),
-                iv: Some(iv),
-            })?;
-            w
+            Command::run_restore_from_seed(wallet_path, &Prompter)?
         }
         MainMenu::Exit => std::process::exit(0),
     };
@@ -336,12 +312,16 @@ async fn menu_wallet(
 
     let emoji_state = status_emoji(settings.check_state_con().await.is_ok());
     let emoji_prover = status_emoji(settings.check_prover_con().await.is_ok());
+    let emoji_archiver =
+        status_emoji(settings.check_archiver_con().await.is_ok());
 
     let state_status = format!("{} State: {}", emoji_state, settings.state);
     let prover_status = format!("{} Prover: {}", emoji_prover, settings.prover);
+    let archiver_status =
+        format!("{} Archiver: {}", emoji_archiver, settings.archiver);
 
     let menu = format!(
-        "Welcome\n   {state_status}\n   {prover_status}   \nWhat would you like to do?",
+        "Welcome\n   {state_status}\n   {prover_status}\n   {archiver_status}   \nWhat would you like to do?",
     );
 
     // let the user choose an option
@@ -351,7 +331,10 @@ async fn menu_wallet(
 }
 
 /// Request user confirmation for a transfer transaction
-fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
+async fn confirm(
+    cmd: &Command,
+    wallet: &Wallet<WalletFile>,
+) -> anyhow::Result<bool> {
     match cmd {
         Command::Transfer {
             sender,
@@ -420,16 +403,27 @@ fn confirm(cmd: &Command, wallet: &Wallet<WalletFile>) -> anyhow::Result<bool> {
         Command::Withdraw {
             address,
             gas_limit,
+            reward,
             gas_price,
         } => {
             let sender = address.as_ref().ok_or(Error::BadAddress)?;
+            let sender_index = wallet.find_index(sender)?;
             let max_fee = gas_limit * gas_price;
-            let withdraw_from =
-                wallet.public_address(wallet.find_index(sender)?)?;
+            let withdraw_from = wallet.public_address(sender_index)?;
+
+            let total_rewards = wallet.get_stake_reward(sender_index).await?;
+
+            // withdraw all rewards if no amt specified
+            let reward = if let Some(withdraw_reward) = reward {
+                withdraw_reward
+            } else {
+                &total_rewards
+            };
 
             println!("   > Pay with {}", sender.preview());
             println!("   > Withdraw rewards from {}", withdraw_from.preview());
             println!("   > Receive rewards at {}", sender.preview());
+            println!("   > Amount withdrawing {} DUSK", reward);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");

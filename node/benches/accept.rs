@@ -127,7 +127,7 @@ pub fn verify_att(c: &mut Criterion) {
                 let pk = BlsPublicKey::from(&sk);
                 let pk = node_data::bls::PublicKey::new(pk);
                 keys.push((pk.clone(), sk));
-                provisioners.add_member_with_value(pk, 1000000000000)
+                provisioners.add_provisioner_with_value(pk, 1000000000000)
             }
             let tip_header = ledger::Header {
                 seed: [5; 48].into(),

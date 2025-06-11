@@ -7,16 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change withdraw rewards to withdraw partial amount [#2538]
+- Change transaction history fee display to be negative
+- Change transaction history item type to display public/shielded
+- Separate archive node endpoint from state endpoint
+
+### Fixed
+
+- Fix transaction history error when the wallet has no stake [#3734]
+- Fix transaction history fail after shield/unshield conversions [#3600]
+- Fix transaction history fail after stake/unstake [#3712]
+
+## [0.2.0] - 2025-05-07
+
 ### Added
 
 - Add deploy contract output (display the new contractId)
 - Add optional deposit to ContractCall [#3650]
+- Add pagination for transaction history to not pollute the stdout [#3292]
 
 ### Changed
 
 - Change dependency declaration to not require strict equal [#3405]
 - Change key derivation to PBKDF2 and wallet encryption to AES-GCM [#3391]
 - Change default deploy gas limit to be accepted by std mempool
+- Change transaction history error message to a more helpful one [#3707]
 
 ### Removed
 
@@ -30,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix transaction history deserialization [#3598]
 - Fix contract init parsing [#3602]
 - Fix contract call non-interactive parsing [#3602]
+- Fix exit when command errors in interactive mode [#3597], [#3192]
+- Fix out of order transaction history [#3702]
+- Fix empty transaction history error [#3700]
+- Fix insufficient balance to stake error message [#3713]
+- Fix wrong amount in phoenix transaction history [#3704]
 
 ## [0.1.0] - 2025-01-20
 
@@ -64,15 +86,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- Issues -->
+[#3734]: https://github.com/dusk-network/rusk/issues/3734
+[#3713]: https://github.com/dusk-network/rusk/issues/3713
+[#3712]: https://github.com/dusk-network/rusk/issues/3712
+[#3707]: https://github.com/dusk-network/rusk/issues/3707
+[#3704]: https://github.com/dusk-network/rusk/issues/3704
+[#3702]: https://github.com/dusk-network/rusk/issues/3702
+[#3700]: https://github.com/dusk-network/rusk/issues/3700
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
 [#3623]: https://github.com/dusk-network/rusk/issues/3623
 [#3602]: https://github.com/dusk-network/rusk/issues/3602
+[#3600]: https://github.com/dusk-network/rusk/issues/3600
 [#3598]: https://github.com/dusk-network/rusk/issues/3598
+[#3597]: https://github.com/dusk-network/rusk/issues/3597
 [#3593]: https://github.com/dusk-network/rusk/issues/3593
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3394]: https://github.com/dusk-network/rusk/issues/3394
 [#3391]: https://github.com/dusk-network/rusk/issues/3391
+[#3292]: https://github.com/dusk-network/rusk/issues/3292
 [#3263]: https://github.com/dusk-network/rusk/issues/3263
+[#3192]: https://github.com/dusk-network/rusk/issues/3192
 [#2839]: https://github.com/dusk-network/rusk/issues/2839
 [#2768]: https://github.com/dusk-network/rusk/issues/2768
 [#2766]: https://github.com/dusk-network/rusk/issues/2766
@@ -82,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2659]: https://github.com/dusk-network/rusk/issues/2659
 [#2647]: https://github.com/dusk-network/rusk/issues/2647
 [#2566]: https://github.com/dusk-network/rusk/issues/2566
+[#2538]: https://github.com/dusk-network/rusk/issues/2538
 [#2523]: https://github.com/dusk-network/rusk/issues/2523
 [#2489]: https://github.com/dusk-network/rusk/issues/2489
 [#2488]: https://github.com/dusk-network/rusk/issues/2488
@@ -93,5 +127,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2288]: https://github.com/dusk-network/rusk/issues/2288
 
 <!-- Releases -->
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.2.0...HEAD
+[0.2.0]: https://github.com/dusk-network/rusk/compare/rusk-wallet-0.1.0...rusk-wallet-0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/tree/rusk-wallet-0.1.0

@@ -23,7 +23,19 @@ import {
   transformTransaction,
 } from "$lib/chain-info";
 
-import * as gqlQueries from "./gql-queries";
+import {
+  getBlockDetailsQueryInfo,
+  getBlockHashQueryInfo,
+  getBlockQueryInfo,
+  getBlocksQueryInfo,
+  getFullMoonlightAccountHistoryQuery,
+  getLatestChainQueryInfo,
+  getMempoolTx,
+  getTransactionQueryInfo,
+  getTransactionsQueryInfo,
+  searchByHashQueryInfo,
+  transactionFragment,
+} from "./gql-queries";
 import * as base58 from "../utils/encoders/base58";
 
 /** @type {(blocks: GQLBlock[]) => Block[]} */
@@ -130,7 +142,7 @@ const duskAPI = {
    * @returns {Promise<Block>}
    */
   getBlock(id) {
-    return gqlGet(gqlQueries.getBlockQueryInfo(id))
+    return gqlGet(getBlockQueryInfo(id))
       .then(async ({ block }) =>
         setPathIn(
           block,
@@ -146,7 +158,7 @@ const duskAPI = {
    * @returns {Promise<string>}
    */
   getBlockDetails(id) {
-    return gqlGet(gqlQueries.getBlockDetailsQueryInfo(id)).then(
+    return gqlGet(getBlockDetailsQueryInfo(id)).then(
       getPath("block.header.json")
     );
   },
@@ -156,7 +168,7 @@ const duskAPI = {
    * @returns {Promise<string>}
    */
   getBlockHashByHeight(height) {
-    return gqlGet(gqlQueries.getBlockHashQueryInfo(height)).then(({ block }) =>
+    return gqlGet(getBlockHashQueryInfo(height)).then(({ block }) =>
       block ? block.header.hash : ""
     );
   },
@@ -166,7 +178,7 @@ const duskAPI = {
    * @returns {Promise<Block[]>}
    */
   getBlocks(amount) {
-    return gqlGet(gqlQueries.getBlocksQueryInfo(amount))
+    return gqlGet(getBlocksQueryInfo(amount))
       .then(getKey("blocks"))
       .then(transformBlocks);
   },
@@ -176,7 +188,7 @@ const duskAPI = {
    * @returns {Promise<ChainInfo>}
    */
   getLatestChainInfo(amount) {
-    return gqlGet(gqlQueries.getLatestChainQueryInfo(amount)).then(
+    return gqlGet(getLatestChainQueryInfo(amount)).then(
       ({ blocks, transactions }) => ({
         blocks: transformBlocks(blocks),
         transactions: transformTransactions(transactions),
@@ -185,22 +197,58 @@ const duskAPI = {
   },
 
   /** @returns {Promise<MarketData>} */
-  getMarketData() {
+  async getMarketData() {
     /* eslint-disable camelcase */
 
-    return apiGet("https://api.coingecko.com/api/v3/coins/dusk-network", {
-      community_data: false,
-      developer_data: false,
-      localization: false,
-      market_data: true,
-      sparkline: false,
-      tickers: false,
-    })
-      .then(getKey("market_data"))
-      .then((data) => ({
-        currentPrice: data.current_price,
-        marketCap: data.market_cap,
-      }));
+    try {
+      // Fetch price data and circulating supply
+      const [coinGeckoData, circulatingSupply] = await Promise.all([
+        apiGet("https://api.coingecko.com/api/v3/coins/dusk-network", {
+          community_data: false,
+          developer_data: false,
+          localization: false,
+          market_data: true,
+          sparkline: false,
+          tickers: false,
+        }).then(getKey("market_data")),
+        fetch("/supply")
+          .then(failureToRejection)
+          .then((res) => res.text())
+          .then((supply) => parseFloat(supply))
+          .catch(() => null),
+      ]);
+
+      const currentPrice = coinGeckoData.current_price;
+
+      // Calculate market cap using circulating supply if available, fallback to CoinGecko
+      /** @type {Record<string, number>} */
+      let marketCap;
+      if (
+        circulatingSupply !== null &&
+        !isNaN(circulatingSupply) &&
+        currentPrice?.usd
+      ) {
+        marketCap = {
+          usd: circulatingSupply * currentPrice.usd,
+        };
+        // Add other currencies
+        Object.keys(currentPrice).forEach((currency) => {
+          if (currency !== "usd" && currentPrice[currency]) {
+            marketCap[currency] = circulatingSupply * currentPrice[currency];
+          }
+        });
+      } else {
+        // Fallback to CoinGecko's market cap
+        marketCap = coinGeckoData.market_cap;
+      }
+
+      return {
+        currentPrice,
+        marketCap,
+      };
+    } catch (/** @type {any} */ error) {
+      throw new Error(`Failed to fetch market data: ${error.message}`);
+    }
 
     /* eslint-enable camelcase */
   },
@@ -212,7 +260,7 @@ const duskAPI = {
   async getMoonlightAccountTransactions(address) {
     // Gets contract interactions for the given address
     const moonlightData = await gqlGet(
-      gqlQueries.getFullMoonlightAccountHistoryQuery(address)
+      getFullMoonlightAccountHistoryQuery(address)
     );
     if (!moonlightData.fullMoonlightHistory) {
       return [];
@@ -221,33 +269,33 @@ const duskAPI = {
     const transactionIds = moonlightData.fullMoonlightHistory.json.map(
       (/** @type {{ origin: any; }} */ block) => block.origin
     );
-    // Fetches the transaction details for the extracted IDs
-    const results = await Promise.all(
-      transactionIds.map((/** @type {string} */ txnId) =>
-        duskAPI.getTransaction(txnId)
-      )
-    );
-    // Filters out transactions in the mempool
-    const filteredTransactions = results.filter(
-      (transaction) => typeof transaction !== "string"
-    );
-    // Enhance each transaction with 'from' and 'to'
-    const enhancedTransactions = await Promise.all(
-      filteredTransactions.map(async (transaction) => {
-        const details = await duskAPI.getTransactionDetails(transaction.txid);
-        const jsonPayload = JSON.parse(details);
-        return {
-          ...transaction,
-          from: jsonPayload.sender || null,
-          to: jsonPayload.receiver || null,
-        };
-      })
-    );
+    if (transactionIds.length === 0) return [];
+
+    // Build a single GraphQL query with aliases for all txs
+    /**
+     * @param {string[]} ids
+     * @returns {string}
+     */
+    const buildBatchTransactionQuery = (ids) => {
+      const fragment = transactionFragment;
+      const queries = ids.map(
+        (id, idx) => `tx${idx}: tx(hash: "${id}") { ...TransactionInfo }`
+      );
+      return `query {\n${queries.join("\n")}\n}\n${fragment}`;
+    };
+
+    // Batch fetch all transactions in a single query
+    const batchQuery = buildBatchTransactionQuery(transactionIds);
+    const response = await gqlGet({ query: batchQuery });
+    // response is an object: { tx0: {...}, tx1: {...}, ... }
+    const txs = Object.values(response).filter(Boolean);
+    const results = txs.map(transformTransaction);
+
     // Sort transactions by date in descending order (newest first)
-    const sortedTransactions = enhancedTransactions.sort((a, b) => {
-      const dateA = new Date(a.timestamp || a.time || a.date || 0);
-      const dateB = new Date(b.timestamp || b.time || b.date || 0);
-      return dateB.getTime() - dateA.getTime();
+    const sortedTransactions = results.sort((a, b) => {
+      const dateA = a.date instanceof Date ? a.date.getTime() : 0;
+      const dateB = b.date instanceof Date ? b.date.getTime() : 0;
+      return dateB - dateA;
     });
 
     return sortedTransactions;
@@ -286,14 +334,14 @@ const duskAPI = {
 
   /**
    * @param {string} id
-   * @returns {Promise<Transaction | String>}
+   * @returns {Promise<Transaction | string>}
    */
   getTransaction(id) {
-    return gqlGet(gqlQueries.getTransactionQueryInfo(id))
+    return gqlGet(getTransactionQueryInfo(id))
       .then(getKey("tx"))
       .then((tx) => {
         if (tx === null) {
-          return gqlGet(gqlQueries.getMempoolTx(id))
+          return gqlGet(getMempoolTx(id))
             .then(getKey("mempoolTx"))
             .then((mempoolTx) => {
               if (mempoolTx) {
@@ -309,21 +357,11 @@ const duskAPI = {
   },
 
   /**
-   * @param {string} id
-   * @returns {Promise<string>}
-   */
-  getTransactionDetails(id) {
-    return gqlGet(gqlQueries.getTransactionDetailsQueryInfo(id)).then(
-      getPath("tx.tx.json")
-    );
-  },
-
-  /**
    * @param {number} amount
    * @returns {Promise<Transaction[]>}
    */
   getTransactions(amount) {
-    return gqlGet(gqlQueries.getTransactionsQueryInfo(amount))
+    return gqlGet(getTransactionsQueryInfo(amount))
       .then(getKey("transactions"))
       .then(transformTransactions);
   },
@@ -342,12 +380,12 @@ const duskAPI = {
 
     // Case 1: Handle 64-character hexadecimal strings (likely tx or block hashes)
     if (query.length === 64) {
-      searchPromise = gqlGet(gqlQueries.searchByHashQueryInfo(query));
+      searchPromise = gqlGet(searchByHashQueryInfo(query));
     }
 
     // Case 2: Handle numeric strings (likely block heights)
     else if (/^\d+$/.test(query)) {
-      searchPromise = gqlGet(gqlQueries.getBlockHashQueryInfo(+query));
+      searchPromise = gqlGet(getBlockHashQueryInfo(+query));
     }
 
     // Case 3: Handle potential base58-encoded addresses

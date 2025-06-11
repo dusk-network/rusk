@@ -8,10 +8,9 @@
   import { createDataStore } from "$lib/dusk/svelte-stores";
 
   const dataStore = createDataStore(duskAPI.getTransaction);
-  const payloadStore = createDataStore(duskAPI.getTransactionDetails);
   const getTransaction = async () => {
     const id = $page.url.searchParams.get("id");
-    await Promise.allSettled([dataStore.getData(id), payloadStore.getData(id)]);
+    await dataStore.getData(id);
   };
 
   onMount(getTransaction);
@@ -23,7 +22,6 @@
     $navigating.complete.then(getTransaction);
   }
   $: ({ data, error, isLoading } = $dataStore);
-  $: ({ data: payloadData } = $payloadStore);
   $: ({ data: marketData } = $marketDataStore);
 </script>
 
@@ -38,7 +36,6 @@
       {data}
       {error}
       loading={isLoading}
-      payload={payloadData}
       market={marketData}
     />
   {/if}

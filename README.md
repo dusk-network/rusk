@@ -44,7 +44,8 @@ For more information on **running a node for main- or testnet**, see our
 
 # 📃 Table of Contents
 
-- [Prerequisites](#prerequisites)
+- [Repo Overview](#️-overview)
+- [Prerequisites](#-prerequisites)
   - [Setup script](#setup-script)
   - [Rust Installation](#rust-installation)
 - [Build and Tests](#️-build-and-tests)
@@ -56,6 +57,38 @@ For more information on **running a node for main- or testnet**, see our
     - [Run a prover node](#run-a-prover-node)
 - [Contracts compilation](#-contracts-compilation)
 - [Docker support](#-docker-support)
+
+## 🗺️ Overview
+
+#### Code projects
+
+| Name                                  | Description                                                                 |
+| :------------------------------------ | :-------------------------------------------------------------------------- |
+| 🌒 [rusk](/rusk/)                    | Entrypoint for the blockchain node                                          |
+| 🔗 [consensus](/consensus/)          | Implementation of Dusk's succinct attestation consensus                     |
+| 📜 [contracts](/contracts/)          | Dusk genesis contracts                                                      |
+| 🧬 [dusk-core](/core/)               | Core types used for interacting with Dusk and writing smart contracts       |
+| 🌐 [dusk-abi](/core/src/abi.rs)      | Dusk application binary interface to develop smart contracts (part of core) |
+| 🧭 [explorer](/explorer/)            | Dusk's blockchain explorer                                                  |
+| 📊 [node-data](/node-data/)          | Core datatypes for the blockchain node                                      |
+| ⚙️ [dusk-vm](/vm/)                  | The virtual machine to run Dusk smart contracts                             |
+| 🪪 [rusk-profile](/rusk-profile/)    | Utility to generate a genesis state based on a set profile                  |
+| 📨 [rusk-prover](/rusk-prover/)      | Service exposing functionality to remotely prove zero knowledge proofs      |
+| ⬇️ [rusk-recovery](/rusk-recovery/) | Utility to recover the state of a chain                                     |
+| ⌨️ [rusk-wallet](/rusk-wallet/)      | Dusk CLI wallet                                                             |
+| 🔨 [w3sper.js](/w3sper.js/)          | Js SDK to integrate Dusk features into applications                         |
+| ⚙️ [wallet-core](/wallet-core/)     | WASM library providing core logic for Dusk wallet implementations           |
+| 📱 [web-wallet](/web-wallet/)        | Cross platform Dusk wallet                                                  |
+
+
+
+#### Infrastructure & Testing
+
+| Name            | Description                                                |
+| :-------------- | :--------------------------------------------------------- |
+| 📂 examples    | Example data used for local chain spawning and development |
+| 📄 scripts     | Utility scripts                                            |
+| 🔧 test-wallet | Wallet for testing against the specifications              |
 
 ## 📝 Prerequisites
 

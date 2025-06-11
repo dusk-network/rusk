@@ -11,8 +11,9 @@ use dusk_consensus::errors::StateTransitionError;
 use node_data::events::contract::ContractTxEvent;
 use tracing::{debug, info};
 
-use dusk_bytes::DeserializableSlice;
-use dusk_consensus::operations::{CallParams, VerificationOutput, Voter};
+use dusk_consensus::operations::{
+    StateTransitionData, StateTransitionResult, Voter,
+};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
@@ -20,103 +21,102 @@ use dusk_core::stake::StakeData;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
-use node_data::ledger::{Block, Slash, SpentTransaction, Transaction};
+use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
-use super::Rusk;
+use super::{RuesEvent, Rusk};
 pub use config::feature::*;
 pub use config::Config as RuskVmConfig;
 
+use crate::Error as RuskError;
+
 impl VMExecution for Rusk {
-    fn execute_state_transition<I: Iterator<Item = Transaction>>(
+    fn create_state_transition<I: Iterator<Item = Transaction>>(
         &self,
-        params: &CallParams,
-        txs: I,
+        transition_data: &StateTransitionData,
+        mempool_txs: I,
     ) -> Result<
-        (Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput),
+        (
+            Vec<SpentTransaction>,
+            Vec<Transaction>,
+            StateTransitionResult,
+        ),
         StateTransitionError,
     > {
-        let (txs, discarded_txs, verification_output) =
-            self.execute_transactions(params, txs).map_err(|err| {
-                if let crate::Error::TipChanged = err {
-                    StateTransitionError::TipChanged
-                } else {
-                    StateTransitionError::ExecutionError(format!("{err}"))
-                }
-            })?;
-
-        Ok((txs, discarded_txs, verification_output))
+        self.create_state_transition(transition_data, mempool_txs)
     }
 
+    /// Executes a block's state transition and checks its result against the
+    /// block's header
     fn verify_state_transition(
         &self,
-        prev_commit: [u8; 32],
+        prev_state: [u8; 32],
         blk: &Block,
-        voters: &[Voter],
-    ) -> Result<VerificationOutput, StateTransitionError> {
-        let generator = blk.header().generator_bls_pubkey;
-        let generator = BlsPublicKey::from_slice(&generator.0)
-            .map_err(StateTransitionError::InvalidGenerator)?;
+        cert_voters: &[Voter],
+    ) -> Result<(), StateTransitionError> {
+        debug!("Verifying state transition");
 
-        let slashing = Slash::from_block(blk)
-            .map_err(StateTransitionError::InvalidSlash)?;
+        // Execute state transition
+        let (_, transition_result, _, _) =
+            self.execute_state_transition(prev_state, blk, cert_voters)?;
 
-        let (_, verification_output) = self
-            .verify_transactions(
-                prev_commit,
-                blk.header().height,
-                blk.header().hash,
-                blk.header().gas_limit,
-                &generator,
-                blk.txs(),
-                slashing,
-                voters,
-            )
-            .map_err(|inner| {
-                if let crate::Error::TipChanged = inner {
-                    StateTransitionError::TipChanged
-                } else {
-                    StateTransitionError::VerificationError(format!("{inner}"))
-                }
-            })?;
+        // Check result against header
+        check_transition_result(&transition_result, blk.header())?;
 
-        Ok(verification_output)
+        Ok(())
     }
 
-    fn accept(
+    /// Execute and persist a block's state transition.
+    ///
+    /// # Arguments
+    ///
+    /// * `prev_state` - the root of the previous block's state.
+    /// * `blk` - the block defining the state transition.
+    /// * `cert_voters` - list of voters in the Certificate for the previous
+    ///   block. This is used to compute rewards. It is passed as a separate
+    ///   argument for convenience (voters are extracted during the Certificate
+    ///   verification).
+    ///
+    /// # Returns
+    ///
+    /// * Vec<SpentTransaction> - The transactions that were spent.
+    /// * Vec<ContractTxEvent> - All emitted contract events
+    ///
+    /// # Errors
+    ///
+    /// * If the state transition fails verification
+    /// * If the session fails to commit
+    fn accept_state_transition(
         &self,
-        prev_root: [u8; 32],
+        prev_state: [u8; 32],
         blk: &Block,
-        voters: &[Voter],
-    ) -> anyhow::Result<(
-        Vec<SpentTransaction>,
-        VerificationOutput,
-        Vec<ContractTxEvent>,
-    )> {
-        debug!("Received accept request");
-        let generator = blk.header().generator_bls_pubkey;
-        let generator = BlsPublicKey::from_slice(&generator.0)
-            .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
+        cert_voters: &[Voter],
+    ) -> Result<
+        (Vec<SpentTransaction>, Vec<ContractTxEvent>),
+        StateTransitionError,
+    > {
+        debug!("Accepting state transition");
 
-        let slashing = Slash::from_block(blk)?;
+        // Execute state transition
+        let (executed_txs, transition_result, contract_events, session) =
+            self.execute_state_transition(prev_state, blk, cert_voters)?;
 
-        let (txs, verification_output, contract_events) = self
-            .accept_transactions(
-                prev_root,
-                blk.header().height,
-                blk.header().gas_limit,
-                blk.header().hash,
-                generator,
-                blk.txs().clone(),
-                Some(VerificationOutput {
-                    state_root: blk.header().state_hash,
-                    event_bloom: blk.header().event_bloom,
-                }),
-                slashing,
-                voters,
-            )
-            .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
+        // Check result against header
+        check_transition_result(&transition_result, blk.header())?;
 
-        Ok((txs, verification_output, contract_events))
+        // Commit state transition
+        self.commit_session(session).map_err(|err| {
+            StateTransitionError::PersistenceError(format!("{err}"))
+        })?;
+
+        // Send contract events to RUES
+        // NOTE: we do it here and not in accept_block because RuesEvent is part
+        // of the Rusk component
+        for event in contract_events.clone() {
+            let rues_event = RuesEvent::from(event);
+            let _ = self.event_sender.send(rues_event);
+        }
+
+        Ok((executed_txs, contract_events))
     }
 
     fn move_to_commit(&self, commit: [u8; 32]) -> anyhow::Result<()> {
@@ -153,12 +153,12 @@ impl VMExecution for Rusk {
 
                 if !existing_nullifiers.is_empty() {
                     let err =
-                        crate::Error::RepeatingNullifiers(existing_nullifiers);
+                        RuskError::RepeatingNullifiers(existing_nullifiers);
                     return Err(anyhow::anyhow!("Invalid tx: {err}"));
                 }
 
                 if !has_unique_elements(tx_nullifiers) {
-                    let err = crate::Error::DoubleNullifiers;
+                    let err = RuskError::DoubleNullifiers;
                     return Err(anyhow::anyhow!("Invalid tx: {err}"));
                 }
 
@@ -189,7 +189,7 @@ impl VMExecution for Rusk {
                 }
 
                 if tx.nonce() <= account_data.nonce {
-                    let err = crate::Error::RepeatingNonce(
+                    let err = RuskError::RepeatingNonce(
                         (*tx.sender()).into(),
                         tx.nonce(),
                     );
@@ -310,7 +310,10 @@ impl Rusk {
             });
         let mut ret = Provisioners::empty();
         for (pubkey_bls, stake) in provisioners {
-            ret.add_member_with_stake(pubkey_bls, stake);
+            // Only include active provisioners
+            if stake.value() > 0 {
+                ret.add_provisioner(pubkey_bls, stake);
+            }
         }
 
         Ok(ret)
@@ -338,4 +341,28 @@ impl Rusk {
 
         Stake::new(value, stake_amount.eligibility)
     }
+}
+
+/// Check a state transition result against the block header
+fn check_transition_result(
+    transition_result: &StateTransitionResult,
+    header: &Header,
+) -> Result<(), StateTransitionError> {
+    // Check state root
+    if transition_result.state_root != header.state_hash {
+        return Err(StateTransitionError::StateRootMismatch(
+            transition_result.state_root,
+            header.state_hash,
+        ));
+    }
+
+    // Check event bloom
+    if transition_result.event_bloom != header.event_bloom {
+        return Err(StateTransitionError::EventBloomMismatch(
+            Box::new(transition_result.event_bloom),
+            Box::new(header.event_bloom),
+        ));
+    }
+
+    Ok(())
 }
