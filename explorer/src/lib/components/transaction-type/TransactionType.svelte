@@ -63,10 +63,10 @@
 
 <style lang="postcss">
   :global(.transaction-type__method-badge) {
-    width: 8.125rem;
+    min-width: 8.125rem;
   }
 
   :global(.transaction-type__direction-badge) {
-    width: 5.625em;
+    min-width: 5.625em;
   }
 </style>

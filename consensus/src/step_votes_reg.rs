@@ -27,7 +27,7 @@ impl fmt::Display for AttestationInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "att_info: {:?}, validation: (sv:{:?},quorum_reached:{:?}), ratification: (sv:{:?},quorum_reached:{:?})",
+            "att_info: {:?}, validation: (step_votes:{:?},quorum_reached:{:?}), ratification: (step_votes:{:?},quorum_reached:{:?})",
             self.att.result,
             self.att.validation,
             self.quorum_reached_validation,
@@ -51,23 +51,23 @@ impl AttestationInfo {
 
     /// Set attestation stepvotes according to [step]. Store [quorum_reached] to
     /// calculate [AttestationInfo::is_ready]
-    pub(crate) fn set_sv(
+    pub(crate) fn set_step_votes(
         &mut self,
         iter: u8,
-        sv: StepVotes,
+        step_votes: StepVotes,
         step: StepName,
         quorum_reached: bool,
     ) {
         match step {
             StepName::Validation => {
-                self.att.validation = sv;
+                self.att.validation = step_votes;
 
                 if quorum_reached {
                     self.quorum_reached_validation = quorum_reached;
                 }
             }
             StepName::Ratification => {
-                self.att.ratification = sv;
+                self.att.ratification = step_votes;
 
                 if quorum_reached {
                     self.quorum_reached_ratification = quorum_reached;
@@ -168,19 +168,19 @@ impl AttInfoRegistry {
         &mut self,
         iteration: u8,
         vote: &Vote,
-        sv: StepVotes,
+        step_votes: StepVotes,
         step: StepName,
         quorum_reached: bool,
         generator: &PublicKeyBytes,
     ) -> Option<Attestation> {
-        if sv == StepVotes::default() {
+        if step_votes == StepVotes::default() {
             return None;
         }
 
         let iter_atts = self.get_iteration_atts(iteration, generator);
         let att_info = iter_atts.get_or_insert(vote);
 
-        att_info.set_sv(iteration, sv, step, quorum_reached);
+        att_info.set_step_votes(iteration, step_votes, step, quorum_reached);
 
         if att_info.is_ready() {
             return Some(att_info.att);
@@ -214,13 +214,13 @@ impl AttInfoRegistry {
         // reach a quorum
         let validation_quorum = !matches!(vote, Vote::NoQuorum);
 
-        att_info.set_sv(
+        att_info.set_step_votes(
             iteration,
             attestation.validation,
             StepName::Validation,
             validation_quorum,
         );
-        att_info.set_sv(
+        att_info.set_step_votes(
             iteration,
             attestation.ratification,
             StepName::Ratification,

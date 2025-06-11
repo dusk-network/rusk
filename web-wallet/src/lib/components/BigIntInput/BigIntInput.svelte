@@ -37,7 +37,7 @@
       value = BigInt(internalValue);
       checkValidity();
       dispatch("change", value);
-    } catch (error) {
+    } catch {
       internalValue = value.toString();
     }
   }

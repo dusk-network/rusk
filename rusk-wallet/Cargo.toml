@@ -1,6 +1,6 @@
 [package]
 name = "rusk-wallet"
-version = "0.1.1-dev"
+version = "0.2.1-dev"
 edition = "2021"
 autobins = false
 description = "A library providing functionalities to create wallets compatible with Dusk"
@@ -62,3 +62,6 @@ aes-gcm = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+
+[features]
+e2e-test = []

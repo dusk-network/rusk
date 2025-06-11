@@ -8,9 +8,16 @@
 //! The <node-url>/on/gaphql/query if queried with empty bytes returns the
 //! graphql schema
 
-use dusk_core::transfer::Transaction;
+use dusk_core::abi::ContractId;
+use dusk_core::stake::StakeEvent;
+use dusk_core::transfer::phoenix::StealthAddress;
+use dusk_core::transfer::{
+    ConvertEvent, DepositEvent, MoonlightTransactionEvent, Transaction,
+    WithdrawEvent,
+};
 use serde::Deserialize;
 use serde_json::Value;
+use serde_with::hex::Hex;
 use serde_with::{serde_as, DisplayFromStr};
 use tokio::time::{sleep, Duration};
 
@@ -23,7 +30,8 @@ use crate::{Address, Error};
 /// mixed with the wallet logic.
 #[derive(Clone)]
 pub struct GraphQL {
-    client: RuesHttpClient,
+    state_client: RuesHttpClient,
+    archiver_client: RuesHttpClient,
     status: fn(&str),
 }
 
@@ -58,19 +66,64 @@ struct BlockResponse {
     pub block: Option<Block>,
 }
 
+// See `PhoenixTransactionEventSubset` for the reason for this struct
+// and allowing dead code here.
+#[serde_as]
+#[derive(Deserialize, Debug, Clone)]
+#[allow(dead_code)]
+struct NoteAddress {
+    stealth_address: StealthAddress,
+}
+
+// This struct is used instead of the one in `dusk_core::transfer`
+// because of the order-dependent deserialization bug in
+// the `dusk_core::transfer::phoenix::Note` https://github.com/dusk-network/phoenix/issues/274.
+// Dead code is allowed to avoid catch-alls, so that the case in which an
+// unexpected event is received, an appropriate error will be thrown.
+#[serde_as]
+#[derive(serde::Deserialize, Debug)]
+#[allow(dead_code)]
+pub struct PhoenixTransactionEventSubset {
+    /// Notes produced during the transaction.
+    #[serde(rename(deserialize = "notes"))]
+    note_addresses: Vec<NoteAddress>,
+    /// The memo included in the transaction.
+    #[serde_as(as = "Hex")]
+    memo: Vec<u8>,
+    /// Gas spent by the transaction.
+    #[serde_as(as = "DisplayFromStr")]
+    gas_spent: u64,
+    /// Optional gas-refund note if the refund is positive.
+    #[serde(rename(deserialize = "refund_note"))]
+    refund_note_address: Option<NoteAddress>,
+}
+
+/// Deserialized block data in the full moonlight history.
 #[serde_as]
 #[derive(Deserialize, Debug)]
-pub struct BlockData {
-    #[serde_as(as = "DisplayFromStr")]
-    pub gas_spent: u64,
-    pub sender: String,
-    #[serde_as(as = "DisplayFromStr")]
-    pub value: f64,
+#[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
+pub enum BlockData {
+    /// For the moonlight transaction event.
+    MoonlightTransactionEvent(MoonlightTransactionEvent),
+    /// For the PhoenixTransactionEvent.
+    /// In the case where a conversion is made from phoenix to
+    /// moonlight, this appears.
+    PhoenixTransactionEvent(PhoenixTransactionEventSubset),
+    /// For the convert event.
+    ConvertEvent(ConvertEvent),
+    /// For the stake event.
+    StakeEvent(StakeEvent),
+    /// For the deposit event.
+    DepositEvent(DepositEvent),
+    /// For the withdraw event.
+    WithdrawEvent(WithdrawEvent),
 }
 
 #[derive(Deserialize, Debug)]
 pub struct BlockEvents {
     pub data: BlockData,
+    pub target: ContractId,
 }
 
 #[derive(Deserialize, Debug)]
@@ -88,7 +141,7 @@ pub struct MoonlightHistoryJson {
 #[derive(Deserialize, Debug)]
 pub struct FullMoonlightHistory {
     #[serde(rename(deserialize = "fullMoonlightHistory"))]
-    pub full_moonlight_history: MoonlightHistoryJson,
+    pub full_moonlight_history: Option<MoonlightHistoryJson>,
 }
 
 #[derive(Deserialize)]
@@ -111,11 +164,13 @@ impl GraphQL {
     /// This method errors if a TLS backend cannot be initialized, or the
     /// resolver cannot load the system configuration.
     pub fn new<S: Into<String>>(
-        url: S,
+        state_url: S,
+        archiver_url: S,
         status: fn(&str),
     ) -> Result<Self, Error> {
         Ok(Self {
-            client: RuesHttpClient::new(url)?,
+            state_client: RuesHttpClient::new(state_url)?,
+            archiver_client: RuesHttpClient::new(archiver_url)?,
             status,
         })
     }
@@ -152,7 +207,7 @@ impl GraphQL {
     async fn tx_status(&self, tx_id: &str) -> Result<TxStatus, Error> {
         let query =
             "query { tx(hash: \"####\") { id, err }}".replace("####", tx_id);
-        let response = self.query(&query).await?;
+        let response = self.query_state(&query).await?;
         let response = serde_json::from_slice::<SpentTxResponse>(&response)?.tx;
 
         match response {
@@ -174,7 +229,7 @@ impl GraphQL {
         let query = "query { block(height: ####) { transactions {id, raw, gasSpent, err}}}"
             .replace("####", block_height.to_string().as_str());
 
-        let response = self.query(&query).await?;
+        let response = self.query_state(&query).await?;
         let response =
             serde_json::from_slice::<BlockResponse>(&response)?.block;
         let block = response.ok_or(GraphQLError::BlockInfo)?;
@@ -200,7 +255,10 @@ impl GraphQL {
     /// # Errors
     /// This method errors if there was an error while sending the query.
     pub async fn check_connection(&self) -> Result<(), Error> {
-        self.query("").await.map(|_| ())
+        match (self.query_state("").await, self.query_archiver("").await) {
+            (Ok(_), Ok(_)) => Ok(()),
+            (Err(e), _) | (_, Err(e)) => Err(e),
+        }
     }
 
     /// Query the archival node for moonlight transactions given the
@@ -211,14 +269,41 @@ impl GraphQL {
     /// or if the response body is not in JSON format or encoded correctly.
     pub async fn moonlight_history(
         &self,
-        address: Address,
+        public_address: Address,
     ) -> Result<FullMoonlightHistory, Error> {
         let query = format!(
-            r#"query {{ fullMoonlightHistory(address: "{address}") {{ json }} }}"#
+            r#"query {{ fullMoonlightHistory(address: "{public_address}") {{ json }} }}"#
         );
 
         let response = self
-            .query(&query)
+            .query_archiver(&query)
+            .await
+            .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+
+        let response =
+            serde_json::from_slice::<FullMoonlightHistory>(&response)
+                .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
+
+        Ok(response)
+    }
+
+    /// Query the archival node for moonlight transactions of `public_address`
+    /// in the given `block`.
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// or if the response body is not in JSON format or encoded correctly.
+    pub async fn moonlight_history_at_block(
+        &self,
+        public_address: &Address,
+        block: u64,
+    ) -> Result<FullMoonlightHistory, Error> {
+        let query = format!(
+            r#"query {{ fullMoonlightHistory(address: "{public_address}", fromBlock: {block}, toBlock: {block}) {{ json }} }}"#
+        );
+
+        let response = self
+            .query_archiver(&query)
             .await
             .map_err(|err| Error::ArchiveJsonError(err.to_string()))?;
 
@@ -241,7 +326,7 @@ impl GraphQL {
         let query =
             format!(r#"query {{ tx(hash: "{origin}") {{ tx {{ raw }} }} }}"#);
 
-        let response = self.query(&query).await?;
+        let response = self.query_state(&query).await?;
         let json: Value = serde_json::from_slice(&response)?;
 
         let tx = json
@@ -283,13 +368,30 @@ impl From<serde_json::Error> for GraphQLError {
 }
 
 impl GraphQL {
-    /// Call the graphql endpoint of a node
+    /// Call the graphql endpoint of a state node
     ///
     /// # Errors
     /// This method errors if there was an error while sending the query,
     /// or if the response body is not in JSON format.
-    pub async fn query(&self, query: &str) -> Result<Vec<u8>, Error> {
-        self.client
+    pub async fn query_state(&self, query: &str) -> Result<Vec<u8>, Error> {
+        self.query(&self.state_client, query).await
+    }
+
+    /// Call the graphql endpoint of an archiver node
+    ///
+    /// # Errors
+    /// This method errors if there was an error while sending the query,
+    /// or if the response body is not in JSON format.
+    pub async fn query_archiver(&self, query: &str) -> Result<Vec<u8>, Error> {
+        self.query(&self.archiver_client, query).await
+    }
+
+    async fn query(
+        &self,
+        client: &RuesHttpClient,
+        query: &str,
+    ) -> Result<Vec<u8>, Error> {
+        client
             .call("graphql", None, "query", query.as_bytes())
             .await
     }
@@ -302,7 +404,10 @@ async fn test() -> Result<(), Error> {
         status: |s| {
             println!("{s}");
         },
-        client: RuesHttpClient::new(
+        state_client: RuesHttpClient::new(
+            "http://testnet.nodes.dusk.network:9500/graphql",
+        )?,
+        archiver_client: RuesHttpClient::new(
             "http://testnet.nodes.dusk.network:9500/graphql",
         )?,
     };
@@ -333,6 +438,15 @@ async fn deser() -> Result<(), Box<dyn std::error::Error>> {
 
     let block_with_tx = r#"{"block":{"transactions":[{"id":"88e6804989cc2f3fd5bf94dcd39a4e7b7da9a1114d9b8bf4e0515264bc81c50f"}]}}"#;
     serde_json::from_str::<BlockResponse>(block_with_tx).unwrap();
+
+    let empty_full_moonlight_history = r#"{"fullMoonlightHistory":null}"#;
+    serde_json::from_str::<FullMoonlightHistory>(empty_full_moonlight_history)
+        .unwrap();
+
+    let full_moonlight_history =
+        include_str!("./gql/tests/assets/full_moonlight_history.json");
+    serde_json::from_str::<FullMoonlightHistory>(full_moonlight_history)
+        .unwrap();
 
     Ok(())
 }

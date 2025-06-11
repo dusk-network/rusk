@@ -134,7 +134,6 @@
             value={currency}
             on:change={(evt) => {
               settingsStore.update((store) => {
-                // eslint-disable-next-line no-extra-parens
                 const option = /** @type {HTMLInputElement} */ (evt.target);
 
                 store.currency = option.value;

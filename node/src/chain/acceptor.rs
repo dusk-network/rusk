@@ -290,7 +290,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     let blk = db_ext
                         .view(|db| db.block_by_height(height))?
                         .expect("block to be found");
-                    acc.try_accept_block(&blk, false).await?;
+                    acc.accept_block(&blk, false).await?;
                 }
             }
         }
@@ -370,7 +370,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
         }
 
-        let tip_block_voters =
+        let tip_voters =
             self.get_att_voters(provisioners_list.prev(), &tip).await;
 
         self.task.write().await.spawn(
@@ -379,7 +379,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &self.db,
             &self.vm,
             base_timeouts,
-            tip_block_voters,
+            tip_voters,
         );
     }
 
@@ -474,16 +474,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             .current()
                             .clone();
 
-                        let res = verify_att(
+                        match verify_att(
                             &qmsg.att,
                             qmsg.header,
                             cur_seed,
                             &cur_provisioners,
                             None,
                         )
-                        .await;
-
-                        match res {
+                        .await
+                        {
                             Ok(_) => {
                                 // Reroute to Consensus
                                 //
@@ -599,7 +598,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 );
                 match &change {
                     ProvisionerChange::Stake(stake_event) => {
-                        match new_prov.get_member_mut(&account) {
+                        match new_prov.get_provisioner_mut(&account) {
                             Some(stake) if stake.value() == 0 => anyhow::bail!(
                                 "Found an active stake with 0 amount"
                             ),
@@ -613,7 +612,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                                     amount.value,
                                     amount.eligibility,
                                 );
-                                new_prov.add_member_with_stake(account, stake);
+                                new_prov.add_provisioner(account, stake);
                             }
                         }
                     }
@@ -626,10 +625,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     ProvisionerChange::Slash(slash_event)
                     | ProvisionerChange::HardSlash(slash_event) => {
                         let to_slash = new_prov
-                            .get_member_mut(&account)
+                            .get_provisioner_mut(&account)
                             .ok_or(anyhow::anyhow!(
-                                "Slashing a not existing stake"
-                            ))?;
+                            "Slashing a not existing stake"
+                        ))?;
                         to_slash.subtract(slash_event.value);
                         to_slash
                             .change_eligibility(slash_event.next_eligibility);
@@ -712,11 +711,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
     }
 
-    /// Return true if the accepted blocks triggered a rolling finality
-    pub(crate) async fn try_accept_block(
+    /// Verifies a block is a successor of the current tip and accepts it as the
+    /// new tip.
+    ///
+    /// # Arguments
+    ///
+    /// * blk: the block to accept as successor of the tip
+    /// * restart_consensus: `true` if the consensus loop has to be restarted
+    ///   after accepting a block.
+    ///
+    /// # Returns
+    ///
+    /// * `true` if the accepted block triggered rolling finality on a previous
+    ///   block.
+    pub(crate) async fn accept_block(
         &mut self,
         blk: &Block,
-        enable_consensus: bool,
+        restart_consensus: bool,
     ) -> anyhow::Result<bool> {
         let mut events = vec![];
         let mut task = self.task.write().await;
@@ -729,7 +740,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let header_verification_start = std::time::Instant::now();
         // Verify Block Header
-        let (pni, prev_block_voters, tip_block_voters) = verify_block_header(
+        // `cert_voters` and `att_voters` are the voters of the previous-block
+        // Certificate and the `blk` Attestation, respectively
+        let (pni, cert_voters, att_voters) = verify_block_header(
             self.db.clone(),
             &prev_header,
             &provisioners_list,
@@ -755,36 +768,37 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
             let (contract_events, finality) =
                 self.db.read().await.update(|db| {
-                    let (txs, verification_output, contract_events) = vm
-                        .accept(
+                    // Execute, verify, and persist the state_transition
+                    let (spent_txs, contract_events) = vm
+                        .accept_state_transition(
                             prev_header.state_hash,
                             blk,
-                            &prev_block_voters[..],
+                            &cert_voters[..],
                         )?;
 
-                    for spent_tx in txs.iter() {
+                    // Add spent txs to event list
+                    for spent_tx in spent_txs.iter() {
                         events
                             .push(TransactionEvent::Executed(spent_tx).into());
                     }
+
+                    // Stop elapsed time
                     est_elapsed_time = start.elapsed();
 
-                    assert_eq!(
-                        header.state_hash,
-                        verification_output.state_root
-                    );
-                    assert_eq!(
-                        header.event_bloom,
-                        verification_output.event_bloom
-                    );
-
+                    // Check finality for previous blocks and the Consensus
+                    // State label for the accepted block
                     let finality =
                         self.rolling_finality::<DB>(pni, blk, db, &mut events)?;
-
                     let label = finality.0;
-                    // Store block with updated transactions with Error and
-                    // GasSpent
-                    block_size_on_disk =
-                        db.store_block(header, &txs, blk.faults(), label)?;
+
+                    // Store block with spent transactions info (including
+                    // GasSpent and Errors), faults, and consensus status label
+                    block_size_on_disk = db.store_block(
+                        header,
+                        &spent_txs,
+                        blk.faults(),
+                        label,
+                    )?;
 
                     Ok((contract_events, finality))
                 })?;
@@ -966,8 +980,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             histogram!("dusk_future_msg_count").record(f.msg_count() as f64);
         }
 
-        let fsv_bitset = tip.inner().header().att.validation.bitset;
-        let ssv_bitset = tip.inner().header().att.ratification.bitset;
+        let validation_bitset = tip.inner().header().att.validation.bitset;
+        let ratification_bitset = tip.inner().header().att.ratification.bitset;
 
         let duration = start.elapsed();
         info!(
@@ -977,10 +991,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             hash = to_str(&tip.inner().header().hash),
             txs = tip.inner().txs().len(),
             state_hash = to_str(&tip.inner().header().state_hash),
-            fsv_bitset,
-            ssv_bitset,
-            block_time,
             generator = tip.inner().header().generator_bls_pubkey.to_bs58(),
+            validation_bitset,
+            ratification_bitset,
+            block_time,
             dur_ms = duration.as_millis(),
             ?label
         );
@@ -994,7 +1008,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
 
         // Restart Consensus.
-        if enable_consensus {
+        if restart_consensus {
             let base_timeouts = self.adjust_round_base_timeouts().await;
             task.spawn(
                 tip.inner(),
@@ -1002,7 +1016,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 &self.db,
                 &self.vm,
                 base_timeouts,
-                tip_block_voters,
+                att_voters,
             );
         }
 
@@ -1306,7 +1320,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             hash = to_str(&tip.header().hash),
         );
 
-        let tip_block_voters =
+        let tip_voters =
             self.get_att_voters(provisioners_list.prev(), &tip).await;
 
         let base_timeouts = self.adjust_round_base_timeouts().await;
@@ -1316,7 +1330,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &self.db,
             &self.vm,
             base_timeouts,
-            tip_block_voters,
+            tip_voters,
         );
     }
 
@@ -1521,10 +1535,13 @@ async fn broadcast<N: Network>(network: &Arc<RwLock<N>>, msg: &Message) {
     });
 }
 
-/// Performs full verification of block header against prev_block header where
-/// prev_block is usually the blockchain tip
+/// Verifies a block header against its previous block
 ///
-/// Returns the number of Previous Non-Attested Iterations (PNI).
+/// # Returns
+///
+/// * The number of Previous Non-Attested Iterations (PNI)
+/// * The list of voters in the previous-block Certificate
+/// * The list of voters in the current-block Attestation
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     prev_header: &ledger::Header,
@@ -1555,6 +1572,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     // Verify header validity
     let validator = Validator::new(db, prev_header, provisioners);
     validator
-        .execute_checks(header, &expected_generator, check_att)
+        .verify_block_header_fields(header, &expected_generator, check_att)
         .await
 }

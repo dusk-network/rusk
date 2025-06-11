@@ -17,6 +17,7 @@ use crate::Error;
 pub(crate) struct Network {
     pub(crate) state: Url,
     pub(crate) prover: Url,
+    pub(crate) archiver: Option<Url>,
     pub(crate) explorer: Option<Url>,
     pub(crate) network: Option<HashMap<String, Network>>,
 }

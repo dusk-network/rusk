@@ -1,5 +1,4 @@
 <script>
-  /* eslint-disable-next-line import/no-unresolved */
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import Icon from "../Icon/Icon.svelte";

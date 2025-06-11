@@ -54,5 +54,6 @@ type GQLTransaction = {
     isDeploy: boolean;
     memo: string;
     txType: string;
+    json?: string;
   };
 };

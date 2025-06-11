@@ -41,7 +41,7 @@
         migrationContract
       );
       return allowedAmount >= amount;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

@@ -61,8 +61,6 @@ describe("Dashboard Layout", () => {
       fetchMock.mockClear();
     });
 
-    /* eslint-disable no-extra-parens */
-
     it('should return a promise that resolves with the data returned by the "quote" API', async () => {
       const result = /** @type {Record<string, any>} */ (await loadData());
 
@@ -137,8 +135,6 @@ describe("Dashboard Layout", () => {
       await expect(result1.currentPrice).resolves.toStrictEqual({});
       await expect(result2.currentPrice).resolves.toStrictEqual({});
     });
-
-    /* eslint-enable no-extra-parens */
   });
 
   const usdPrice = 0.5;

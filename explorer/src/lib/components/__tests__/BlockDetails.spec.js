@@ -79,7 +79,7 @@ describe("Block Details", () => {
     );
   });
 
-  it("it renders the Block Details component with the payload visible", async () => {
+  it("should render the Block Details component with the payload visible", async () => {
     const { container, getByRole } = render(BlockDetails, baseProps);
 
     await fireEvent.click(getByRole("switch"));

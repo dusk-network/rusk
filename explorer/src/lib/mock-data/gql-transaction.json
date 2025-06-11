@@ -3,11 +3,9 @@
     "blockHash": "3c6e4018cfa86723e50644e33d3990bc27fc794f6b49fbf6290e4d308e07bd2d",
     "blockHeight": 487166,
     "blockTimestamp": 1713249549,
-    "err": null,
     "gasSpent": 290766,
     "id": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
-    "sender": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
-    "receiver": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
+    "err": null,
     "tx": {
       "callData": null,
       "gasLimit": 500000000,
@@ -15,7 +13,8 @@
       "id": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
       "isDeploy": false,
       "memo": "some notes about the transaction",
-      "txType": "Moonlight"
+      "txType": "Moonlight",
+      "json": "{\"type\":\"moonlight\",\"sender\":\"kT5BamV2Xq6JpnoCq9ux7EmYRShdg4W1sLzyGFUqicmZTqxeMWLiTGpBWNhpjiPtKqvWFFmdxVBAjts3oEnZgPfuiyTRwDdASJQjTSy7wNhHdCeKtzExREcXZsmmMRLwKbXj\",\"receiver\":\"mHWZo9qYUhqp2SEmtWN7EuDKFwVrjgdEyzpHdfLB6R9scRAq5EkUQyLB9fBfCGt1wjxfEpFxHq9MBPVVPY3Lk3JKnQLWZzj7UYAR4mGmeGQZwCaeCS8uA63ZPKnGpjiUnj\",\"value\":9812378912731,\"nonce\":156,\"deposit\":0,\"fee\":{\"refund_address\":\"kT5BamV2Xq6JpnoCq9ux7EmYRShdg4W1sLzyGFUqicmZTqxeMWLiTGpBWNhpjiPtKqvWFFmdxVBAjts3oEnZgPfuiyTRwDdASJQjTSy7wNhHdCeKtzExREcXZsmmMRLwKbXj\",\"gas_limit\":\"2500000\",\"gas_price\":\"1\"},\"call\":null,\"is_deploy\":false,\"memo\":null}"
     }
   }
 }

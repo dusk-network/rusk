@@ -60,8 +60,15 @@
   {:else}
     <TransactionsTable
       data={txns}
+      className="latest-transactions-card__table"
       {displayTooltips}
       mode={isOnHomeScreen ? "compact" : "full"}
     />
   {/if}
 </DataCard>
+
+<style>
+  :global(.latest-transactions-card__table .table__body .table__row) {
+    height: 3.4375rem;
+  }
+</style>

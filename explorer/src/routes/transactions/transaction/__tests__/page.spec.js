@@ -12,13 +12,12 @@ const marketDataSettleTime = vi.hoisted(() => {
 
   return 100;
 });
+
 vi.mock("$lib/services", async (importOriginal) => {
   /** @type {import("$lib/services")} */
   const original = await importOriginal();
   const { transformTransaction } = await import("$lib/chain-info");
-  const { apiMarketData, gqlTransaction, gqlTransactionDetails } = await import(
-    "$lib/mock-data"
-  );
+  const { apiMarketData, gqlTransaction } = await import("$lib/mock-data");
   const { current_price: currentPrice, market_cap: marketCap } =
     apiMarketData.market_data;
 
@@ -31,9 +30,6 @@ vi.mock("$lib/services", async (importOriginal) => {
       getTransaction: vi
         .fn()
         .mockResolvedValue(transformTransaction(gqlTransaction.tx)),
-      getTransactionDetails: vi
-        .fn()
-        .mockResolvedValue(gqlTransactionDetails.tx.tx.json),
     },
   };
 });
@@ -49,13 +45,12 @@ describe("Transaction Details", () => {
     vi.doUnmock("$lib/services");
   });
 
-  it("should render the Transaction details page and query the necessary info", async () => {
+  it("should render the Transaction details page", async () => {
     const { container } = render(TransactionDetails);
 
     expect(container.firstChild).toMatchSnapshot();
 
     expect(duskAPI.getTransaction).toHaveBeenCalledTimes(1);
-    expect(duskAPI.getTransactionDetails).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(marketDataSettleTime);
 

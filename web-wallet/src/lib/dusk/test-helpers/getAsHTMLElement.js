@@ -6,9 +6,7 @@
  * @param {String} selector
  * @returns {HTMLElement}
  */
-function getAsHTMLElement(container, selector) {
-  // eslint-disable-next-line no-extra-parens
-  return /** @type {HTMLElement} */ (container.querySelector(selector));
-}
+const getAsHTMLElement = (container, selector) =>
+  /** @type {HTMLElement} */ (container.querySelector(selector));
 
 export default getAsHTMLElement;

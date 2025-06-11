@@ -31,7 +31,7 @@ use crate::user::committee::Committee;
 pub struct ValidationHandler<D: Database> {
     pub(crate) aggr: Aggregator<Validation>,
     pub(crate) candidate: Option<Block>,
-    sv_registry: SafeAttestationInfoRegistry,
+    att_registry: SafeAttestationInfoRegistry,
     curr_iteration: u8,
     pub(crate) db: Arc<Mutex<D>>,
 }
@@ -72,11 +72,11 @@ pub fn verify_stateless(
 
 impl<D: Database> ValidationHandler<D> {
     pub(crate) fn new(
-        sv_registry: SafeAttestationInfoRegistry,
+        att_registry: SafeAttestationInfoRegistry,
         db: Arc<Mutex<D>>,
     ) -> Self {
         Self {
-            sv_registry,
+            att_registry,
             aggr: Aggregator::default(),
             candidate: None,
             curr_iteration: 0,
@@ -98,12 +98,12 @@ impl<D: Database> ValidationHandler<D> {
 
     async fn build_validation_result(
         &self,
-        sv: StepVotes,
+        step_votes: StepVotes,
         vote: Vote,
         quorum: QuorumType,
         consensus_header: &ConsensusHeader,
     ) -> Message {
-        let vr = payload::ValidationResult::new(sv, vote, quorum);
+        let vr = payload::ValidationResult::new(step_votes, vote, quorum);
 
         // In Emergency Mode, we store ValidationResult in case some peer
         // requests it
@@ -171,7 +171,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
             return Err(ConsensusError::InvalidMsgIteration(iteration));
         }
 
-        let (sv, quorum_reached) =
+        let (step_votes, quorum_reached) =
             self.aggr.collect_vote(committee, &p).map_err(|error| {
                 warn!(
                     event = "Cannot collect vote",
@@ -185,10 +185,10 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                 ConsensusError::InvalidVote(p.vote)
             })?;
         // Record result in global round registry
-        _ = self.sv_registry.lock().await.set_step_votes(
+        _ = self.att_registry.lock().await.set_step_votes(
             iteration,
             &p.vote,
-            sv,
+            step_votes,
             StepName::Validation,
             quorum_reached,
             &generator.expect("There must be a valid generator"),
@@ -207,7 +207,12 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
             };
 
             let vrmsg = self
-                .build_validation_result(sv, vote, quorum_type, &p.header())
+                .build_validation_result(
+                    step_votes,
+                    vote,
+                    quorum_type,
+                    &p.header(),
+                )
                 .await;
 
             return Ok(StepOutcome::Ready(vrmsg));
@@ -261,13 +266,13 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
         let collect_vote = self.aggr.collect_vote(committee, &p);
 
         match collect_vote {
-            Ok((sv, validation_quorum_reached)) => {
+            Ok((step_votes, validation_quorum_reached)) => {
                 // We ignore the result since it's not possible to have a full
                 // quorum in the validation phase
-                let _ = self.sv_registry.lock().await.set_step_votes(
+                let _ = self.att_registry.lock().await.set_step_votes(
                     p.header().iteration,
                     &p.vote,
-                    sv,
+                    step_votes,
                     StepName::Validation,
                     validation_quorum_reached,
                     &generator.expect("There must be a valid generator"),
@@ -277,7 +282,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                     // ValidationResult from past iteration is found
                     let vr = self
                         .build_validation_result(
-                            sv,
+                            step_votes,
                             p.vote,
                             QuorumType::Valid,
                             &p.header(),

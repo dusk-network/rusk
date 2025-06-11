@@ -158,7 +158,6 @@
 
     // We consider only "top", "right", "bottom" and "left" for now.
     // The extra parenthesis are needed to force the cast for the type checker.
-    // eslint-disable-next-line no-extra-parens
     const place = /** @type {import("@floating-ui/dom").Side} */ (
       placement.replace(/-.+$/, "")
     );
