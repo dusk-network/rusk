@@ -20,14 +20,28 @@ exports[`Dashboard Layout > should render the dashboard layout 1`] = `
       >
         <div
           aria-expanded="false"
-          aria-haspopup="true"
+          aria-haspopup="menu"
+          aria-label="Select address profile"
           class="address-picker__trigger"
           role="button"
           tabindex="0"
         >
-          <span>
-            Default Profile
+          <span
+            class="address-picker__current-profile"
+          >
+            Profile 1 (Default)
           </span>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default address-picker__chevron"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"
+            />
+          </svg>
+          
         </div>
          
       </div>
@@ -242,14 +256,28 @@ exports[`Dashboard Layout > should render the dashboard layout and show a throbb
     >
       <div
         aria-expanded="false"
-        aria-haspopup="true"
+        aria-haspopup="menu"
+        aria-label="Select address profile"
         class="address-picker__trigger"
         role="button"
         tabindex="0"
       >
-        <span>
-          Default Profile
+        <span
+          class="address-picker__current-profile"
+        >
+          Profile 1 (Default)
         </span>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--default address-picker__chevron"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"
+          />
+        </svg>
+        
       </div>
        
     </div>
@@ -464,14 +492,28 @@ exports[`Dashboard Layout > should render the dashboard layout in the error stat
       >
         <div
           aria-expanded="false"
-          aria-haspopup="true"
+          aria-haspopup="menu"
+          aria-label="Select address profile"
           class="address-picker__trigger"
           role="button"
           tabindex="0"
         >
-          <span>
-            Default Profile
+          <span
+            class="address-picker__current-profile"
+          >
+            Profile 1 (Default)
           </span>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default address-picker__chevron"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"
+            />
+          </svg>
+          
         </div>
          
       </div>
@@ -707,14 +749,28 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
     >
       <div
         aria-expanded="false"
-        aria-haspopup="true"
+        aria-haspopup="menu"
+        aria-label="Select address profile"
         class="address-picker__trigger"
         role="button"
         tabindex="0"
       >
-        <span>
-          Default Profile
+        <span
+          class="address-picker__current-profile"
+        >
+          Profile 1 (Default)
         </span>
+         
+        <svg
+          class="dusk-icon dusk-icon--size--default address-picker__chevron"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"
+          />
+        </svg>
+        
       </div>
        
     </div>
@@ -937,14 +993,28 @@ exports[`Dashboard Layout > should render the dashboard layout in the sync state
       >
         <div
           aria-expanded="false"
-          aria-haspopup="true"
+          aria-haspopup="menu"
+          aria-label="Select address profile"
           class="address-picker__trigger"
           role="button"
           tabindex="0"
         >
-          <span>
-            Default Profile
+          <span
+            class="address-picker__current-profile"
+          >
+            Profile 1 (Default)
           </span>
+           
+          <svg
+            class="dusk-icon dusk-icon--size--default address-picker__chevron"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"
+            />
+          </svg>
+          
         </div>
          
       </div>
