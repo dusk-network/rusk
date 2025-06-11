@@ -21,7 +21,10 @@ use rkyv::ser::Serializer;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 
-use c_kzg::{Blob, KzgCommitment as Commitment, KzgProof as Proof};
+use c_kzg::{
+    Blob as KzgBlob, KzgCommitment, KzgProof, BYTES_PER_BLOB,
+    BYTES_PER_COMMITMENT, BYTES_PER_PROOF,
+};
 
 use crate::abi::ContractId;
 use crate::Error;
@@ -33,7 +36,7 @@ pub const MAX_MEMO_SIZE: usize = 512;
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 #[allow(clippy::large_enum_variant)]
-pub enum NotLegacyTransactionData {
+pub enum TransactionData {
     /// Data for a contract call.
     Call(ContractCall),
     /// Data for a contract deployment.
@@ -54,20 +57,6 @@ pub enum NotLegacyTransactionData {
     /// already compiled and deployed system smart contracts.
     //Option<BlobSidecar> stripped before minting to block
     Blob(BlobHashes, Option<BlobSidecar>),
-}
-
-/// Data for either contract call or contract deployment.
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-#[archive_attr(derive(CheckBytes))]
-#[allow(clippy::large_enum_variant)]
-pub enum TransactionData {
-    /// Data for a contract call.
-    Call(ContractCall),
-    /// Data for a contract deployment.
-    Deploy(ContractDeploy),
-    /// Additional data added to a transaction, that is not a deployment or a
-    /// call.
-    Memo(Vec<u8>),
 }
 
 // BlobTx represents an EIP-4844 transaction.
@@ -99,23 +88,93 @@ pub enum TransactionData {
 //     Proofs      []kzg4844.Proof      // Proofs needed by the blob pool
 // }
 
-/// All the data the transfer-contract needs to perform a contract-call.
-#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct BlobSidecar {
-    /// Blobs needed by the blob pool.
-    /// Temporary solution to don't use `c_kzg::Blob` directly.
-    pub blobs: Vec<[u8; 131072usize]>,
-    /// Commitments needed by the blob pool.
-    /// Temporary solution to don't use `c_kzg::Commitment` directly.
-    pub commitments: Vec<[u8; 48usize]>,
-    /// Proofs needed by the blob pool.
-    /// Temporary solution to don't use `c_kzg::Proof` directly.
-    pub proofs: Vec<[u8; 48usize]>,
-}
-
 /// A type alias for a vector of blob hashes.
 pub type BlobHashes = Vec<u8>;
+
+/// Represents a KZG blob (EIP-4844).
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+#[repr(transparent)]
+pub struct Blob(pub [u8; BYTES_PER_BLOB]);
+
+/// Blob ⇄ KzgBlob
+impl From<Blob> for KzgBlob {
+    fn from(blob: Blob) -> Self {
+        KzgBlob::from_bytes(&blob.0).expect("Invalid blob bytes")
+    }
+}
+
+impl From<KzgBlob> for Blob {
+    fn from(blob: KzgBlob) -> Self {
+        Blob(blob.as_ref().try_into().expect("Invalid blob length"))
+    }
+}
+
+/// Represents a KZG commitment.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Archive, Serialize, Deserialize,
+)]
+#[archive_attr(derive(CheckBytes))]
+#[repr(transparent)]
+pub struct Commitment(pub [u8; BYTES_PER_COMMITMENT]);
+
+/// Commitment ⇄ KzgCommitment
+impl From<Commitment> for KzgCommitment {
+    fn from(commitment: Commitment) -> Self {
+        KzgCommitment::from_bytes(&commitment.0)
+            .expect("Invalid commitment bytes")
+    }
+}
+
+impl From<KzgCommitment> for Commitment {
+    fn from(commitment: KzgCommitment) -> Self {
+        Commitment(
+            commitment
+                .as_ref()
+                .try_into()
+                .expect("Invalid commitment length"),
+        )
+    }
+}
+
+/// Represents a KZG proof.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Archive, Serialize, Deserialize,
+)]
+#[archive_attr(derive(CheckBytes))]
+#[repr(transparent)]
+pub struct Proof(pub [u8; BYTES_PER_PROOF]);
+
+/// Proof ⇄ KzgProof
+impl From<Proof> for KzgProof {
+    fn from(proof: Proof) -> Self {
+        KzgProof::from_bytes(&proof.0).expect("Invalid proof bytes")
+    }
+}
+
+impl From<KzgProof> for Proof {
+    fn from(proof: KzgProof) -> Self {
+        Proof(proof.as_ref().try_into().expect("Invalid proof length"))
+    }
+}
+
+/// A sidecar for blobs, commitments, and proofs used in the blob pool.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+pub struct BlobSidecar {
+    /// Blobs needed by the blob pool.
+    /// Blob is a wrapper around the c_kzg::Blob type.
+    pub blobs: Vec<Blob>,
+    /// Commitments needed by the blob pool.
+    /// Commitment is a wrapper around the c_kzg::Commitment type.
+    pub commitments: Vec<Commitment>,
+    /// Proofs needed by the blob pool.
+    /// Proof is a wrapper around the c_kzg::Proof type.
+    pub proofs: Vec<Proof>,
+}
+
+// impl BlobSidecar {
+//     todo!("Implement BlobSidecar methods");
+// }
 
 impl From<ContractCall> for TransactionData {
     fn from(c: ContractCall) -> Self {

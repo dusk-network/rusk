@@ -27,7 +27,9 @@ use crate::signatures::bls::{
 };
 use crate::{BlsScalar, Error};
 
-use self::data::{ContractCall, ContractDeploy, TransactionData};
+use self::data::{
+    Blob, BlobHashes, ContractCall, ContractDeploy, TransactionData,
+};
 use self::moonlight::Transaction as MoonlightTransaction;
 use self::phoenix::{
     Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -378,11 +380,32 @@ impl Transaction {
             0
         }
     }
-}
 
-impl From<PhoenixTransaction> for Transaction {
-    fn from(tx: PhoenixTransaction) -> Self {
-        Self::Phoenix(tx)
+    /// Returns the blobs of the transaction, if any.
+    #[must_use]
+    pub fn blobs(&self) -> Option<&Vec<Blob>> {
+        match self {
+            Self::Phoenix(_) => None,
+            Self::Moonlight(tx) => tx.blobs(),
+        }
+    }
+
+    /// Returns the hashes of the blobs of the transaction, if any.
+    #[must_use]
+    pub fn blob_hashes(&self) -> Option<&BlobHashes> {
+        match self {
+            Self::Phoenix(_) => None,
+            Self::Moonlight(tx) => tx.blob_hashes(),
+        }
+    }
+
+    /// Chenge the transaction to strip off the blob sidecar, if it exists.
+    #[must_use]
+    pub fn strip_off_blob_sidecar(&self) -> Option<Self> {
+        match self {
+            Self::Phoenix(_) => None,
+            Self::Moonlight(tx) => Some(Self::Moonlight(tx.strip_off_blob_sidecar()?)),
+        }
     }
 }
 

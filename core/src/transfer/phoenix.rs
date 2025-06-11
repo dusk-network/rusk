@@ -747,7 +747,7 @@ impl Payload {
             Some(TransactionData::Memo(m)) => {
                 bytes.extend(m);
             }
-            None => {}
+            _ => {}
         }
 
         bytes
