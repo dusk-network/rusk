@@ -468,7 +468,7 @@ pub unsafe fn phoenix(
 }
 
 #[no_mangle]
-pub unsafe fn moonlight(
+pub unsafe extern "C" fn moonlight(
     seed: &Seed,
     sender_index: u8,
     receiver: *const [u8; BlsPublicKey::SIZE],
