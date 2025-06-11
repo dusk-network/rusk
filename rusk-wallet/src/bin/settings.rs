@@ -48,6 +48,7 @@ pub(crate) struct Logging {
 pub(crate) struct Settings {
     pub(crate) state: Url,
     pub(crate) prover: Url,
+    pub(crate) archiver: Url,
     pub(crate) explorer: Option<Url>,
 
     pub(crate) logging: Logging,
@@ -99,6 +100,12 @@ impl SettingsBuilder {
             .and_then(|value| Url::parse(value).ok())
             .unwrap_or(network.prover);
 
+        let archiver = args
+            .archiver
+            .as_ref()
+            .and_then(|value| Url::parse(value).ok())
+            .unwrap_or_else(|| network.archiver.unwrap_or(state.clone()));
+
         let explorer = network.explorer;
 
         let wallet_dir =
@@ -114,6 +121,7 @@ impl SettingsBuilder {
         Ok(Settings {
             state,
             prover,
+            archiver,
             explorer,
             logging,
             wallet_dir,
@@ -145,6 +153,13 @@ impl Settings {
 
     pub async fn check_prover_con(&self) -> Result<(), Error> {
         RuesHttpClient::new(self.prover.as_ref())?
+            .check_connection()
+            .await
+            .map_err(Error::from)
+    }
+
+    pub async fn check_archiver_con(&self) -> Result<(), Error> {
+        RuesHttpClient::new(self.archiver.as_ref())?
             .check_connection()
             .await
             .map_err(Error::from)

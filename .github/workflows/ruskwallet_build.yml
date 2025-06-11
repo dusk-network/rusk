@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-latest, macos-15, windows-latest, arm-linux]
+        os: [ubuntu-24.04, macos-13, macos-15, windows-latest, arm-linux]
         compiler: [cargo]
         include:
           - os: ubuntu-24.04
@@ -27,7 +27,7 @@ jobs:
             target: linux-arm64
             flags: --target=aarch64-unknown-linux-gnu
             platform: aarch64-unknown-linux-gnu
-          - os: macos-latest
+          - os: macos-13
             target: macos-intel
           - os: macos-15
             target: macos-arm64

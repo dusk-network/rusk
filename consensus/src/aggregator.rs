@@ -301,7 +301,7 @@ mod tests {
             let pubkey_bls =
                 node_data::bls::PublicKey::new(BlsPublicKey::from(&secret_key));
 
-            p.add_member_with_value(pubkey_bls.clone(), 1000 * DUSK);
+            p.add_provisioner_with_value(pubkey_bls.clone(), 1000 * DUSK);
 
             let ru = RoundUpdate::new(
                 pubkey_bls,
@@ -360,8 +360,9 @@ mod tests {
             let vote = vote.clone();
             // Last member's vote should reach the quorum
             if i == winning_index {
-                // (hash, sv) is only returned in case we reach the quorum
-                let (sv, quorum_reached) =
+                // (hash, step_votes) is only returned in case we reach the
+                // quorum
+                let (step_votes, quorum_reached) =
                     a.collect_vote(&c, msg).expect("failed to reach quorum");
 
                 assert!(quorum_reached, "quorum should be reached");
@@ -370,8 +371,8 @@ mod tests {
 
                 // Check expected StepVotes bitset
                 // bitset: 0b00000000000000000000000000000000000000000000000000000000011111
-                println!("bitset: {:#064b}", sv.bitset);
-                assert_eq!(sv.bitset, 31);
+                println!("bitset: {:#064b}", step_votes.bitset);
+                assert_eq!(step_votes.bitset, 31);
 
                 break;
             }

@@ -81,7 +81,7 @@ exports[`Send page > should render the send page 1`] = `
     </div>
      
     <div
-      class="operation svelte-1bs37x"
+      class="operation svelte-rb5xln"
     >
       <div
         class="dusk-wizard"
@@ -158,10 +158,10 @@ exports[`Send page > should render the send page 1`] = `
          
          
         <div
-          class="operation__send svelte-1bs37x"
+          class="operation__send svelte-rb5xln"
         >
           <div
-            class="operation__address-wrapper svelte-1bs37x"
+            class="operation__address-wrapper svelte-rb5xln"
           >
             <p>
               Address
@@ -213,6 +213,7 @@ exports[`Send page > should render the send page 1`] = `
               </span>
             </button>
           </div>
+           
            
         </div>
          

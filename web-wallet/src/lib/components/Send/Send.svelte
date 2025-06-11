@@ -11,7 +11,7 @@
   import { areValidGasSettings } from "$lib/contracts";
   import { getAddressInfo } from "$lib/wallet";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
-  import { makeClassName } from "$lib/dusk/string";
+  import { isValidEvmAddress, makeClassName } from "$lib/dusk/string";
   import { logo } from "$lib/dusk/icons";
   import {
     AnchorButton,
@@ -55,6 +55,9 @@
   /** @type {string} */
   export let publicAddress;
 
+  /** @type {undefined | string} */
+  export let bep20BridgeAddress = undefined;
+
   /** @type {number} */
   let sendAmount = 1;
 
@@ -78,6 +81,9 @@
 
   /** @type {boolean} */
   let isGasValid = false;
+
+  /** @type {boolean} */
+  let isMemoValid = true;
 
   let { gasLimit, gasPrice } = gasSettings;
 
@@ -143,11 +149,16 @@
   // Validate that the total amount is within the user's available balance.
   $: isTotalAmountWithinAvailableBalance = totalAmount <= availableBalance;
 
+  // For BEP20 bridge operations, memo is required and must be a valid EVM address
+  $: isMemoValidForBridge =
+    !isSendingToBep20Bridge || (memo.trim() !== "" && isMemoValid);
+
   $: isNextButtonDisabled = !(
     isSendAmountValid &&
     isGasValid &&
     isTotalAmountWithinAvailableBalance &&
-    isBalanceSufficientForGas
+    isBalanceSufficientForGas &&
+    isMemoValidForBridge
   );
 
   $: addressInfo = getAddressInfo(
@@ -162,9 +173,33 @@
     });
   }
 
+  $: isSendingToBep20Bridge = sendToAddress.trim() === bep20BridgeAddress;
+
+  $: if (isSendingToBep20Bridge) {
+    isMemoShown = true;
+  }
+
+  $: {
+    const trimmedMemo = memo.trim();
+    if (isSendingToBep20Bridge && trimmedMemo !== "") {
+      // If sending to the BEP20 bridge and a memo is provided,
+      // it must be a valid EVM address.
+      isMemoValid = isValidEvmAddress(trimmedMemo);
+    } else {
+      // Otherwise (not sending to BEP20 bridge, or memo is empty),
+      // the memo is not considered invalid from an EVM format perspective.
+      isMemoValid = true;
+    }
+  }
+
   $: sendToAddressTextboxClasses = makeClassName({
     "operation__send-address": true,
     "operation__send-address--invalid": sendToAddress && !addressInfo.isValid,
+  });
+
+  $: sendMemoTextboxClasses = makeClassName({
+    "operation__send-memo": true,
+    "operation__send-memo--invalid": isMemoValid === false,
   });
 </script>
 
@@ -234,6 +269,15 @@
             </p>
           </Banner>
         {/if}
+        {#if isSendingToBep20Bridge}
+          <Banner variant="info" title="BEP20 bridge operation detected">
+            <p>
+              You are sending to the BEP20 bridge address. When using the memo
+              field, please enter a valid EVM address where you want to receive
+              your tokens on the destination network.
+            </p>
+          </Banner>
+        {/if}
       </div>
     </WizardStep>
     <!-- Amount Step -->
@@ -277,7 +321,7 @@
         </div>
 
         <div class="operation__input-wrapper">
-          <p>Memo (optional)</p>
+          <p>Memo{isSendingToBep20Bridge ? "" : " (optional)"}</p>
           <Switch
             on:change={() => {
               if (!isMemoShown) {
@@ -291,10 +335,19 @@
         {#if isMemoShown}
           <Textbox
             required
-            className="operation__send-memo"
+            className={sendMemoTextboxClasses}
             type="multiline"
             bind:value={memo}
           />
+
+          {#if isMemoValid === false}
+            <Banner variant="error" title="Invalid EVM address format">
+              <p>
+                For BEP20 bridge operations, EVM addresses must be 40
+                hexadecimal characters, optionally prefixed with "0x".
+              </p>
+            </Banner>
+          {/if}
         {/if}
 
         <GasSettings
@@ -330,6 +383,14 @@
             <p>
               The amount you are trying to transfer exceeds the spendable
               balance after accounting for gas fees. Please reduce the amount.
+            </p>
+          </Banner>
+        {:else if isSendingToBep20Bridge && memo.trim() === ""}
+          <Banner variant="error" title="Memo required for bridge operation">
+            <p>
+              When sending to the BEP20 bridge, a memo containing a valid EVM
+              address is required to specify where you want to receive your
+              tokens on the destination network.
             </p>
           </Banner>
         {/if}
@@ -499,6 +560,10 @@
 
   :global(.dusk-textbox.operation__send-address--invalid) {
     color: var(--error-color);
+  }
+
+  :global(.dusk-textbox.operation__send-memo--invalid) {
+    border-color: var(--error-color);
   }
 
   :global(.allocate-button) {

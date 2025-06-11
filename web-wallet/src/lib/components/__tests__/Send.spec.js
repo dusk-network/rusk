@@ -27,8 +27,10 @@ describe("Send", () => {
     "zTsZq814KfWUAQujzjBchbMEvqA1FiKBUakMCtAc2zCa74h9YVz4a2roYwS7LHDHeBwS1aap4f3GYhQBrxroYgsBcE4FJdkUbvpSD5LVXY6JRXNgMXgk6ckTPJUFKoHybff";
   const shieldedAddress =
     "47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM";
+  const bep20BridgeAddress = "0x1234567890123456789012345678901234567890"; // Example BEP20 bridge address
   const baseProps = {
     availableBalance: 1_000_000_000_000n,
+    bep20BridgeAddress,
     execute: vi.fn().mockResolvedValue(lastTxId),
     formatter,
     gasLimits: {
@@ -105,6 +107,20 @@ describe("Send", () => {
 
       expect(addressInput).toHaveValue(publicAddress);
       expect(container.firstChild).toMatchSnapshot();
+    });
+
+    it("should display a notice if the address input is the BEP20 bridge address", async () => {
+      const { getByRole, findByText } = render(Send, baseProps);
+      const addressInput = getByRole("textbox");
+
+      await fireEvent.input(addressInput, {
+        target: { value: bep20BridgeAddress },
+      });
+
+      expect(addressInput).toHaveValue(bep20BridgeAddress);
+      expect(
+        await findByText("BEP20 bridge operation detected")
+      ).toBeInTheDocument();
     });
   });
 
@@ -213,6 +229,109 @@ describe("Send", () => {
 
       expect(amountInput).toHaveValue(0);
       expect(nextButton).toBeDisabled();
+    });
+
+    it("should require a valid EVM address in memo if sending to BEP20 bridge", async () => {
+      const { getByRole, findByText, queryByText, container } = render(Send, {
+        ...baseProps,
+        availableBalance: 1_000_000_000_000_000n,
+      });
+      const addressInput = getByRole("textbox");
+      const nextButtonAddressStep = getByRole("button", { name: "Next" });
+
+      await fireEvent.input(addressInput, {
+        target: { value: bep20BridgeAddress },
+      });
+      await fireEvent.click(nextButtonAddressStep);
+
+      const nextButtonAmountStep = getByRole("button", { name: "Next" });
+      const amountInput = getByRole("spinbutton");
+      const memoInput = container.querySelector(".operation__send-memo");
+
+      expect(memoInput).toBeInTheDocument();
+
+      // Banner for required memo should be visible
+      expect(
+        await findByText("Memo required for bridge operation")
+      ).toBeInTheDocument();
+      expect(nextButtonAmountStep).toBeDisabled();
+
+      // Enter an invalid EVM address as memo
+      if (memoInput) {
+        await fireEvent.input(memoInput, { target: { value: "invalid-evm" } });
+        expect(memoInput).toHaveValue("invalid-evm");
+      } else {
+        throw new Error("Memo input not found");
+      }
+      expect(
+        await findByText("Invalid EVM address format")
+      ).toBeInTheDocument();
+      expect(nextButtonAmountStep).toBeDisabled();
+
+      // Enter a valid EVM address as memo
+      const validEvmAddress = "0x9876543210987654321098765432109876543210";
+      if (memoInput) {
+        await fireEvent.input(memoInput, {
+          target: { value: validEvmAddress },
+        });
+        expect(memoInput).toHaveValue(validEvmAddress);
+      } else {
+        throw new Error("Memo input not found");
+      }
+
+      // Error banners should disappear
+      expect(
+        queryByText("Memo required for bridge operation")
+      ).not.toBeInTheDocument();
+      expect(queryByText("Invalid EVM address format")).not.toBeInTheDocument();
+
+      await fireEvent.input(amountInput, { target: { value: "10" } });
+
+      expect(nextButtonAmountStep).toBeEnabled();
+    });
+
+    it("should make memo optional and not require EVM format if not sending to BEP20 bridge", async () => {
+      const { getByRole, queryByText, container } = render(Send, {
+        ...baseProps,
+        availableBalance: 1_000_000_000_000_000n,
+      });
+      const addressInput = getByRole("textbox");
+      const nextButtonAddressStep = getByRole("button", { name: "Next" });
+
+      await fireEvent.input(addressInput, {
+        target: { value: shieldedAddress },
+      });
+      await fireEvent.click(nextButtonAddressStep);
+
+      const nextButtonAmountStep = getByRole("button", { name: "Next" });
+      const amountInput = getByRole("spinbutton");
+      const memoSwitch = getByRole("switch");
+
+      expect(memoSwitch).toBeInTheDocument();
+      expect(
+        queryByText("Memo required for bridge operation")
+      ).not.toBeInTheDocument();
+      expect(queryByText("Invalid EVM address format")).not.toBeInTheDocument();
+
+      await fireEvent.input(amountInput, { target: { value: "10" } });
+      expect(nextButtonAmountStep).toBeEnabled();
+
+      // Show memo field
+      await fireEvent.click(memoSwitch);
+      const memoInput = container.querySelector(".operation__send-memo");
+      expect(memoInput).toBeInTheDocument();
+
+      if (memoInput) {
+        await fireEvent.input(memoInput, {
+          target: { value: "not-an-evm-address" },
+        });
+        expect(memoInput).toHaveValue("not-an-evm-address");
+      } else {
+        throw new Error("Memo input not found");
+      }
+
+      expect(queryByText("Invalid EVM address format")).not.toBeInTheDocument();
+      expect(nextButtonAmountStep).toBeEnabled();
     });
   });
 

@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [1.5.0] - 2025-05-30
+
+### Added
+
+- Add BEP20 address and memo validation [#3746]
+
+### Fixed
+
 - Fix polyfills not being loaded in time on Safari 16.3 [#3570]
 
 ## [1.4.0] - 2025-03-04
@@ -585,10 +593,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3420]: https://github.com/dusk-network/rusk/issues/3420
 [#3486]: https://github.com/dusk-network/rusk/issues/3486
 [#3570]: https://github.com/dusk-network/rusk/issues/3570
+[#3746]: https://github.com/dusk-network/rusk/issues/3746
 
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[1.5.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.5.0
 [1.4.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.2.0

@@ -38,6 +38,10 @@ pub(crate) struct WalletArgs {
     #[arg(long)]
     pub prover: Option<String>,
 
+    /// The archiver server fully qualified URL
+    #[arg(long)]
+    pub archiver: Option<String>,
+
     /// Output log level
     #[arg(long, value_enum, default_value_t = LogLevel::Info)]
     pub log_level: LogLevel,

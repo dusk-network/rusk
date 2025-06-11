@@ -4,13 +4,13 @@ help: ## Display this help screen
 build: ## Build the wallet
 	cargo b --release
 
-install: build
+install: build ## Install the wallet
 	cargo install --path .
 
 clippy: 
 	cargo clippy --all-features --release -- -D warnings
 
-test: build ## Run wallet tests
-	cargo test --release
+test: ## Run wallet tests
+	@../scripts/run-rusk-wallet-tests.sh
 
-.PHONY: build clippy test help 
+.PHONY: build clippy test help install

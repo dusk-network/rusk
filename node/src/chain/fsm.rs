@@ -284,7 +284,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                             hash = to_str(&remote_blk.header().hash),
                         );
 
-                        acc.try_accept_block(&remote_blk, true).await?;
+                        acc.accept_block(&remote_blk, true).await?;
 
                         // Black list the block hash to avoid accepting it
                         // again due to fallback execution

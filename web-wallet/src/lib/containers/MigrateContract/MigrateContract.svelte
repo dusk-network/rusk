@@ -115,7 +115,7 @@
         parsedAmount >= minParsed &&
         parsedAmount <= (connectedWalletBalance ?? 0n)
       );
-    } catch (err) {
+    } catch {
       return false;
     }
   })();
@@ -133,7 +133,7 @@
         await switchChain(wagmiConfig, { chainId: id });
         connectedWalletBalance = await getBalance();
       }
-    } catch (err) {
+    } catch {
       selectedChain =
         $account.chainId === erc20.chainId ? erc20.name : bep20.name;
     }
@@ -171,7 +171,7 @@
         address,
         tokens[network][selectedChain].tokenContract
       );
-    } catch (err) {
+    } catch {
       return 0n;
     }
   }

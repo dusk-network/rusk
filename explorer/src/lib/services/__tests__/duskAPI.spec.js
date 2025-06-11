@@ -72,7 +72,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType } } fragment BlockInfo on Block { header { hash, gasLimit, height, prevBlockHash, seed, stateHash, timestamp, version }, fees, gasSpent, reward, transactions {...TransactionInfo} } query($id: String!) { block(hash: $id) {...BlockInfo} }",
+        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType, json } } fragment BlockInfo on Block { header { hash, gasLimit, height, prevBlockHash, seed, stateHash, timestamp, version }, fees, gasSpent, reward, transactions {...TransactionInfo} } query($id: String!) { block(hash: $id) {...BlockInfo} }",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -189,7 +189,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType } } fragment BlockInfo on Block { header { hash, gasLimit, height, prevBlockHash, seed, stateHash, timestamp, version }, fees, gasSpent, reward, transactions {...TransactionInfo} } query($amount: Int!) { blocks(last: $amount) {...BlockInfo} }",
+        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType, json } } fragment BlockInfo on Block { header { hash, gasLimit, height, prevBlockHash, seed, stateHash, timestamp, version }, fees, gasSpent, reward, transactions {...TransactionInfo} } query($amount: Int!) { blocks(last: $amount) {...BlockInfo} }",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -214,7 +214,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType } } fragment BlockInfo on Block { header { hash, gasLimit, height, prevBlockHash, seed, stateHash, timestamp, version }, fees, gasSpent, reward, transactions {...TransactionInfo} } query($amount: Int!) { blocks(last: $amount) {...BlockInfo}, transactions(last: $amount) {...TransactionInfo} }",
+        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType, json } } fragment BlockInfo on Block { header { hash, gasLimit, height, prevBlockHash, seed, stateHash, timestamp, version }, fees, gasSpent, reward, transactions {...TransactionInfo} } query($amount: Int!) { blocks(last: $amount) {...BlockInfo}, transactions(last: $amount) {...TransactionInfo} }",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -228,19 +228,57 @@ describe("duskAPI", () => {
   });
 
   it("should expose a method to retrieve the market data", async () => {
-    fetchSpy.mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData));
+    const mockSupply = "456000000";
+
+    fetchSpy
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData))
+      .mockResolvedValueOnce(new Response(mockSupply, { status: 200 }));
+
+    /** @type {Record<string, number>} */
+    const expectedMarketCap = {};
+    Object.keys(mockData.apiMarketData.market_data.current_price).forEach(
+      (currency) => {
+        expectedMarketCap[currency] =
+          parseFloat(mockSupply) *
+          /** @type {Record<string, number>} */ (
+            mockData.apiMarketData.market_data.current_price
+          )[currency];
+      }
+    );
 
     await expect(duskAPI.getMarketData()).resolves.toStrictEqual({
       currentPrice: mockData.apiMarketData.market_data.current_price,
-      marketCap: mockData.apiMarketData.market_data.market_cap,
+      marketCap: expectedMarketCap,
     });
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
       new URL(
         "https://api.coingecko.com/api/v3/coins/dusk-network?community_data=false&developer_data=false&localization=false&market_data=true&sparkline=false&tickers=false"
       ),
       apiGetOptions
     );
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, "/supply");
+  });
+
+  it("should fallback to CoinGecko market cap when supply endpoint fails", async () => {
+    fetchSpy
+      .mockResolvedValueOnce(makeOKResponse(mockData.apiMarketData))
+      .mockRejectedValueOnce(new Error("Supply endpoint unavailable"));
+
+    await expect(duskAPI.getMarketData()).resolves.toStrictEqual({
+      currentPrice: mockData.apiMarketData.market_data.current_price,
+      marketCap: mockData.apiMarketData.market_data.market_cap,
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      new URL(
+        "https://api.coingecko.com/api/v3/coins/dusk-network?community_data=false&developer_data=false&localization=false&market_data=true&sparkline=false&tickers=false"
+      ),
+      apiGetOptions
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, "/supply");
   });
 
   it("should expose a method to retrieve the node locations", async () => {
@@ -349,31 +387,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType } } query($id: String!) { tx(hash: $id) {...TransactionInfo} }",
-        "headers": {
-          "Accept": "application/json",
-          "Accept-Charset": "utf-8",
-          "Connection": "Keep-Alive",
-          "Content-Type": "application/json",
-          "Rusk-gqlvar-id": ""some-id"",
-        },
-        "method": "POST",
-      }
-    `);
-  });
-
-  it("should expose a method to retrieve the details of a single transaction", async () => {
-    fetchSpy.mockResolvedValueOnce(
-      makeOKResponse(mockData.gqlTransactionDetails)
-    );
-
-    await expect(duskAPI.getTransactionDetails(fakeID)).resolves.toBe(
-      mockData.gqlTransactionDetails.tx.tx.json
-    );
-    expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
-    expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
-      {
-        "body": "query($id: String!) { tx(hash: $id) { tx { json } } }",
+        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType, json } } query($id: String!) { tx(hash: $id) { ...TransactionInfo tx { json } } }",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
@@ -396,7 +410,7 @@ describe("duskAPI", () => {
     expect(fetchSpy.mock.calls[0][0]).toStrictEqual(gqlExpectedURL);
     expect(fetchSpy.mock.calls[0][1]).toMatchInlineSnapshot(`
       {
-        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType } } query($amount: Int!) { transactions(last: $amount) {...TransactionInfo} }",
+        "body": "fragment TransactionInfo on SpentTransaction { blockHash, blockHeight, blockTimestamp, err, gasSpent, id, tx { callData { contractId, data, fnName }, gasLimit, gasPrice, id, isDeploy, memo, txType, json } } query($amount: Int!) { transactions(last: $amount) {...TransactionInfo} }",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",

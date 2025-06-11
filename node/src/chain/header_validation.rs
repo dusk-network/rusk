@@ -18,7 +18,6 @@ use dusk_consensus::errors::{
 };
 use dusk_consensus::operations::Voter;
 use dusk_consensus::quorum::verifiers;
-use dusk_consensus::quorum::verifiers::QuorumResult;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_core::signatures::bls::{
@@ -27,7 +26,7 @@ use dusk_core::signatures::bls::{
 use dusk_core::stake::EPOCH;
 use hex;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Fault, InvalidFault, Seed, Signature};
+use node_data::ledger::{Fault, InvalidFault, Seed};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger, StepName};
@@ -66,30 +65,37 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
     }
 
-    /// Executes check points to make sure a candidate header is fully valid
+    /// Verifies all header fields except state root and event bloom
     ///
-    /// * `disable_winner_att_check` - disables the check of the winning
-    /// attestation
+    /// # Arguments
     ///
-    /// Returns a tuple containing:
-    ///   - the number of Previous Non-Attested Iterations (PNI)
-    ///   - previous block voters
-    ///   - current block voters (if not `disable_winner_att_check`)
-    pub async fn execute_checks(
+    /// * `header` - the block header to verify
+    /// * `expected_generator` - the generator extracted by the Deterministic
+    ///   Sortition algorithm
+    /// * `check_attestation` - `true` if the Attestation has to be verified
+    ///   (this should be `false` for Candidate headers, for which no
+    ///   Attestation has been yet produced)
+    ///
+    /// # Returns
+    ///
+    /// * the number of Previous Non-Attested Iterations (PNI)
+    /// * the voters of the previous block Certificate
+    /// * the voters of current block Attestation (if `check_attestation` is
+    ///   `true`)
+    pub async fn verify_block_header_fields(
         &self,
         header: &ledger::Header,
         expected_generator: &PublicKeyBytes,
         check_attestation: bool,
     ) -> Result<(u8, Vec<Voter>, Vec<Voter>), HeaderError> {
-        let generator =
-            self.verify_block_generator(header, expected_generator)?;
-        self.verify_basic_fields(header, &generator).await?;
+        self.verify_block_header_basic_fields(header, expected_generator)
+            .await?;
 
-        let prev_block_voters = self.verify_prev_block_cert(header).await?;
+        let cert_voters = self.verify_prev_block_cert(header).await?;
 
-        let mut block_voters = vec![];
+        let mut att_voters = vec![];
         if check_attestation {
-            (_, _, block_voters) = verify_att(
+            att_voters = verify_att(
                 &header.att,
                 header.to_consensus_header(),
                 self.prev_header.seed,
@@ -100,7 +106,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         let pni = self.verify_failed_iterations(header).await?;
-        Ok((pni, prev_block_voters, block_voters))
+        Ok((pni, cert_voters, att_voters))
     }
 
     fn verify_block_generator(
@@ -144,31 +150,32 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         Ok(generator)
     }
 
-    /// Verifies any non-attestation field
-    async fn verify_basic_fields(
+    /// Performs sanity checks for basic fields of the block header
+    async fn verify_block_header_basic_fields(
         &self,
-        candidate_block: &'a ledger::Header,
-        generator: &MultisigPublicKey,
+        header: &'a ledger::Header,
+        expected_generator: &PublicKeyBytes,
     ) -> Result<(), HeaderError> {
-        if candidate_block.version != BLOCK_HEADER_VERSION {
+        let generator =
+            self.verify_block_generator(header, expected_generator)?;
+
+        if header.version != BLOCK_HEADER_VERSION {
             return Err(HeaderError::UnsupportedVersion);
         }
 
-        if candidate_block.hash == [0u8; 32] {
+        if header.hash == [0u8; 32] {
             return Err(HeaderError::EmptyHash);
         }
 
-        if candidate_block.height != self.prev_header.height + 1 {
+        if header.height != self.prev_header.height + 1 {
             return Err(HeaderError::MismatchHeight(
-                candidate_block.height,
+                header.height,
                 self.prev_header.height,
             ));
         }
 
         // Ensure rule of minimum block time is addressed
-        if candidate_block.timestamp
-            < self.prev_header.timestamp + *MINIMUM_BLOCK_TIME
-        {
+        if header.timestamp < self.prev_header.timestamp + *MINIMUM_BLOCK_TIME {
             return Err(HeaderError::BlockTimeLess);
         }
 
@@ -179,8 +186,8 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         // is higher than the maximum time needed to run all round iterations.
         // This guarantees the network has enough time to actually produce a
         // block, if possible.
-        if is_emergency_block(candidate_block.iteration)
-            && candidate_block.timestamp
+        if is_emergency_block(header.iteration)
+            && header.timestamp
                 < self.prev_header.timestamp
                     + MIN_EMERGENCY_BLOCK_TIME.as_secs()
         {
@@ -189,13 +196,11 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 
         let local_time = get_current_timestamp();
 
-        if candidate_block.timestamp > local_time + MARGIN_TIMESTAMP {
-            return Err(HeaderError::BlockTimeHigher(
-                candidate_block.timestamp,
-            ));
+        if header.timestamp > local_time + MARGIN_TIMESTAMP {
+            return Err(HeaderError::BlockTimeHigher(header.timestamp));
         }
 
-        if candidate_block.prev_block_hash != self.prev_header.hash {
+        if header.prev_block_hash != self.prev_header.hash {
             return Err(HeaderError::PrevBlockHash);
         }
 
@@ -204,7 +209,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             .db
             .read()
             .await
-            .view(|db| db.block_exists(&candidate_block.hash))
+            .view(|db| db.block_exists(&header.hash))
             .map_err(|e| {
                 HeaderError::Storage(
                     "error checking Ledger::get_block_exists",
@@ -217,7 +222,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         // Verify seed field
-        self.verify_seed_field(candidate_block.seed.inner(), generator)?;
+        self.verify_seed_field(header.seed.inner(), &generator)?;
 
         Ok(())
     }
@@ -267,7 +272,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             .ok_or(HeaderError::Generic("Header not found"))
             .map(|h| h.seed)?;
 
-        let (_, _, voters) = verify_att(
+        let voters = verify_att(
             &candidate_block.prev_block_cert,
             self.prev_header.to_consensus_header(),
             prev_block_seed,
@@ -421,10 +426,10 @@ pub async fn verify_faults<DB: database::DB>(
 pub async fn verify_att(
     att: &ledger::Attestation,
     consensus_header: ConsensusHeader,
-    curr_seed: Signature,
-    curr_eligible_provisioners: &Provisioners,
+    seed: Seed,
+    eligible_provisioners: &Provisioners,
     expected_result: Option<RatificationResult>,
-) -> Result<(QuorumResult, QuorumResult, Vec<Voter>), AttestationError> {
+) -> Result<Vec<Voter>, AttestationError> {
     // Check expected result
     if let Some(expected) = expected_result {
         match (att.result, expected) {
@@ -453,35 +458,35 @@ pub async fn verify_att(
         }
     }
 
-    let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
+    let committee_set = RwLock::new(CommitteeSet::new(eligible_provisioners));
     let vote = att.result.vote();
 
-    // Verify validation
-    let (val_result, validation_voters) = verifiers::verify_step_votes(
+    // Verify Validation votes
+    let validation_voters = verifiers::verify_step_votes(
         &consensus_header,
         vote,
         &att.validation,
-        &committee,
-        curr_seed,
+        &committee_set,
+        seed,
         StepName::Validation,
     )
     .await
     .map_err(|s| AttestationError::InvalidVotes(StepName::Validation, s))?;
 
-    // Verify ratification
-    let (rat_result, ratification_voters) = verifiers::verify_step_votes(
+    // Verify Ratification votes
+    let ratification_voters = verifiers::verify_step_votes(
         &consensus_header,
         vote,
         &att.ratification,
-        &committee,
-        curr_seed,
+        &committee_set,
+        seed,
         StepName::Ratification,
     )
     .await
     .map_err(|s| AttestationError::InvalidVotes(StepName::Ratification, s))?;
 
     let voters = merge_voters(validation_voters, ratification_voters);
-    Ok((val_result, rat_result, voters))
+    Ok(voters)
 }
 
 /// Merges two Vec<Voter>, summing up the usize values if the PublicKey is

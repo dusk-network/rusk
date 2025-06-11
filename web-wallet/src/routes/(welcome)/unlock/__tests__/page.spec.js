@@ -27,12 +27,10 @@ import loginInfoStorage from "$lib/services/loginInfoStorage";
 import UnlockWallet from "../+page.svelte";
 
 /** @param {HTMLElement} container */
-function getTextInput(container) {
-  // eslint-disable-next-line no-extra-parens
-  return /** @type {HTMLInputElement} */ (
+const getTextInput = (container) =>
+  /** @type {HTMLInputElement} */ (
     container.querySelector("[type='password']")
   );
-}
 
 describe("Unlock Wallet", async () => {
   const mnemonic = generateMnemonic();

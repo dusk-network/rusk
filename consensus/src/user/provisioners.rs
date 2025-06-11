@@ -21,13 +21,11 @@ use crate::user::stake::Stake;
 pub const DUSK: u64 = dusk(1.0);
 
 #[derive(Clone, Debug)]
-pub struct Provisioners {
-    members: BTreeMap<PublicKey, Stake>,
-}
+pub struct Provisioners(BTreeMap<PublicKey, Stake>);
 
 impl Provisioners {
     pub fn iter(&self) -> impl Iterator<Item = (&PublicKey, &Stake)> {
-        self.members.iter()
+        self.0.iter()
     }
 }
 
@@ -105,27 +103,21 @@ impl ContextProvisioners {
 
 impl Provisioners {
     pub fn empty() -> Self {
-        Self {
-            members: BTreeMap::default(),
-        }
+        Self(BTreeMap::default())
     }
 
     /// Adds a provisioner with stake.
     ///
     /// If the provisioner already exists, no action is performed.
-    pub fn add_member_with_stake(
-        &mut self,
-        pubkey_bls: PublicKey,
-        stake: Stake,
-    ) {
-        self.members.entry(pubkey_bls).or_insert_with(|| stake);
+    pub fn add_provisioner(&mut self, pubkey_bls: PublicKey, stake: Stake) {
+        self.0.entry(pubkey_bls).or_insert_with(|| stake);
     }
 
-    pub fn get_member_mut(
+    pub fn get_provisioner_mut(
         &mut self,
         pubkey_bls: &PublicKey,
     ) -> Option<&mut Stake> {
-        self.members.get_mut(pubkey_bls)
+        self.0.get_mut(pubkey_bls)
     }
 
     pub fn replace_stake(
@@ -133,7 +125,7 @@ impl Provisioners {
         pubkey_bls: PublicKey,
         stake: Stake,
     ) -> Option<Stake> {
-        self.members.insert(pubkey_bls, stake)
+        self.0.insert(pubkey_bls, stake)
     }
 
     /// Subtract `amount` from a staker, returning the stake left
@@ -145,28 +137,33 @@ impl Provisioners {
         pubkey_bls: &PublicKey,
         amount: u64,
     ) -> Option<u64> {
-        let stake = self.members.get_mut(pubkey_bls)?;
+        let stake = self.0.get_mut(pubkey_bls)?;
         if stake.value() < amount {
             None
         } else {
             stake.subtract(amount);
             let left = stake.value();
             if left == 0 {
-                self.members.remove(pubkey_bls);
+                self.0.remove(pubkey_bls);
             }
             Some(left)
         }
     }
 
     pub fn remove_stake(&mut self, pubkey_bls: &PublicKey) -> Option<Stake> {
-        self.members.remove(pubkey_bls)
+        self.0.remove(pubkey_bls)
     }
 
-    /// Adds a new member with reward=0 and elibile_since=0.
+    /// Adds a provisioner with a stake of value `value`
+    /// `reward` and `elibile_since` are set to 0.
     ///
-    /// Useful for implementing unit tests.
-    pub fn add_member_with_value(&mut self, pubkey_bls: PublicKey, value: u64) {
-        self.add_member_with_stake(pubkey_bls, Stake::from_value(value));
+    /// This function is used for unit tests.
+    pub fn add_provisioner_with_value(
+        &mut self,
+        pubkey_bls: PublicKey,
+        value: u64,
+    ) {
+        self.add_provisioner(pubkey_bls, Stake::from_value(value));
     }
 
     // Returns a pair of count of all provisioners and count of eligible
@@ -174,14 +171,14 @@ impl Provisioners {
     pub fn get_provisioners_info(&self, round: u64) -> (usize, usize) {
         let eligible_len = self.eligibles(round).count();
 
-        (self.members.len(), eligible_len)
+        (self.0.len(), eligible_len)
     }
 
     pub fn eligibles(
         &self,
         round: u64,
     ) -> impl Iterator<Item = (&PublicKey, &Stake)> {
-        self.members.iter().filter(move |(_, m)| {
+        self.0.iter().filter(move |(_, m)| {
             m.is_eligible(round) && m.value() >= DEFAULT_MINIMUM_STAKE
         })
     }
@@ -189,47 +186,55 @@ impl Provisioners {
     /// Runs the deterministic sortition algorithm which determines the
     /// committee members for a given round, step and seed.
     ///
-    /// Returns a vector of provisioners public keys.
+    /// Returns the committee as a list of the extracted provisioners public
+    /// keys, where keys can have repetitions.
     pub(crate) fn create_committee(
         &self,
         cfg: &sortition::Config,
     ) -> Vec<PublicKey> {
         let committee_credits = cfg.committee_credits();
-        let mut extracted: Vec<PublicKey> =
+        // List of the extracted members.
+        // Note: members extracted multiple times will appear multiple times in
+        // the list
+        let mut committee: Vec<PublicKey> =
             Vec::with_capacity(committee_credits);
 
-        let mut comm = CommitteeGenerator::from_provisioners(
-            self,
-            cfg.round(),
-            cfg.exclusion(),
-        );
+        let mut comm_gen =
+            CommitteeGenerator::new(self, cfg.round(), cfg.exclusion());
 
-        let mut total_weight = comm.total_weight().into();
+        let mut eligible_weight = comm_gen.eligible_weight().into();
 
-        while extracted.len() != committee_credits {
-            let counter = extracted.len() as u32;
+        if eligible_weight == BigInt::ZERO {
+            panic!("No stakes available. Cannot run consensus");
+        }
 
-            // 1. Compute n ← H(seed ∣∣ step ∣∣ counter)
-            let hash = sortition::create_sortition_hash(cfg, counter);
+        while committee.len() != committee_credits {
+            let credit_index = committee.len() as u32;
 
-            // 2. Compute d ← n mod s
+            // Compute sortition hash
+            // hash = H(seed ∣∣ step ∣∣ index)
+            let hash = sortition::create_sortition_hash(cfg, credit_index);
+
+            // Compute sortition score
+            // score = hash % eligible_weight
             let score =
-                sortition::generate_sortition_score(hash, &total_weight);
+                sortition::generate_sortition_score(hash, &eligible_weight);
 
-            // NB: The public key can be extracted multiple times per committee.
-            let (pk, subtracted_stake) =
-                comm.extract_and_subtract_member(score);
-            // append the public key to the committee set.
-            extracted.push(pk);
+            // Extract the committee member.
+            // Note: eligible provisioners can be extracted multiple times for
+            // the same committee
+            let (prov_pk, prov_weight) = comm_gen.extract_member(score);
+            // Add the extracted member to the committee
+            committee.push(prov_pk);
 
-            if total_weight > subtracted_stake {
-                total_weight -= subtracted_stake;
+            if eligible_weight > prov_weight {
+                eligible_weight -= prov_weight;
             } else {
                 break;
             }
         }
 
-        extracted
+        committee
     }
 
     pub fn get_generator(
@@ -258,74 +263,95 @@ impl Provisioners {
 
 #[derive(Default)]
 struct CommitteeGenerator<'a> {
-    members: BTreeMap<&'a PublicKey, Stake>,
+    // Provisioners eligible for the committee
+    eligibles: BTreeMap<&'a PublicKey, Stake>,
 }
 
 impl<'a> CommitteeGenerator<'a> {
-    fn from_provisioners(
+    /// Creates a [`CommitteeGenerator`] from the provisioner set.
+    ///
+    /// # Arguments
+    /// * `provisioners` - the current list of provisioners
+    /// * `round` - the round of the extraction (to determine eligibility)
+    /// * `exclusion_list` - list of provisioners to exclude from extraction
+    fn new(
         provisioners: &'a Provisioners,
         round: u64,
-        exclusion: &Vec<PublicKeyBytes>,
+        exclusion_list: &Vec<PublicKeyBytes>,
     ) -> Self {
-        let eligibles = provisioners
+        // Get provisioners eligible at round `round`
+        let eligible_set: Vec<_> = provisioners
             .eligibles(round)
-            .map(|(p, stake)| (p, stake.clone()));
+            .map(|(pk, stake)| (pk, stake.clone()))
+            .collect();
 
-        let members = match exclusion.len() {
-            0 => BTreeMap::from_iter(eligibles),
-            _ => {
-                let eligibles = eligibles.filter(|(p, _)| {
-                    !exclusion.iter().any(|excluded| excluded == p.bytes())
-                });
-                BTreeMap::from_iter(eligibles)
+        let num_eligibles = eligible_set.len();
+        let eligible_set = eligible_set.into_iter();
+
+        // Set `eligibles` to  the eligible set minus the exclusion list
+        let eligibles = if num_eligibles > 1 {
+            let eligible_iter = eligible_set;
+            match exclusion_list.len() {
+                0 => BTreeMap::from_iter(eligible_iter),
+                _ => {
+                    let filtered_eligibles = eligible_iter.filter(|(p, _)| {
+                        !exclusion_list
+                            .iter()
+                            .any(|excluded| excluded == p.bytes())
+                    });
+                    BTreeMap::from_iter(filtered_eligibles)
+                }
             }
+        } else {
+            // If only one provisioner is eligible, we always include it
+            BTreeMap::from_iter(eligible_set)
         };
 
-        if members.is_empty() {
-            // This is the edge case when there is only 1 active provisioner.
-            // Handling it just for single node cluster scenario
-            let eligibles = provisioners
-                .eligibles(round)
-                .map(|(p, stake)| (p, stake.clone()));
-
-            let members = BTreeMap::from_iter(eligibles);
-
-            debug_assert!(
-                !members.is_empty(),
-                "No provisioners are eligible for the committee"
-            );
-
-            Self { members }
-        } else {
-            Self { members }
-        }
+        Self { eligibles }
     }
 
-    /// Sums up the total weight of all stakes
-    fn total_weight(&self) -> u64 {
-        self.members.values().map(|m| m.value()).sum()
+    /// Sums up the total weight of all eligible provisioners
+    fn eligible_weight(&self) -> u64 {
+        self.eligibles.values().map(|m| m.value()).sum()
     }
 
-    fn extract_and_subtract_member(
-        &mut self,
-        mut score: BigInt,
-    ) -> (PublicKey, BigInt) {
-        if self.members.is_empty() {
-            panic!("Cannot extract member from an empty committee");
+    /// Extracts a member from `eligibles` given a Sortition score.
+    ///
+    /// At the beginning of the extraction, each provisioner has a weight equal
+    /// to its stake. Each time a provisioner is extracted, its weight is
+    /// reduced by 1 DUSK to decrease its probability of being extracted.
+    ///
+    /// # Arguments
+    /// * `score` - the Sortition score for the extraction
+    ///
+    /// # Output
+    /// * The extracted stake [`PublicKey`]
+    /// * The remaining stake weight after the extraction
+    fn extract_member(&mut self, mut score: BigInt) -> (PublicKey, BigInt) {
+        if self.eligibles.is_empty() {
+            panic!("No eligible provisioners to extract for the committee");
         }
 
         loop {
-            for (&pk, stake) in self.members.iter_mut() {
-                let total_stake = BigInt::from(stake.value());
-                if total_stake >= score {
-                    // Subtract 1 DUSK from the value extracted and rebalance
-                    // accordingly.
-                    let subtracted_stake = BigInt::from(stake.subtract(DUSK));
+            // Loop over eligible provisioners
+            for (&provisioner, provisioner_weight) in self.eligibles.iter_mut()
+            {
+                // Set the initial provisioner's weight to the stake's value
+                let weight = BigInt::from(provisioner_weight.value());
 
-                    return (pk.clone(), subtracted_stake);
+                // If the provisioner's weight is higher than the score, extract
+                // the provisioner and reduce its weight
+                if weight >= score {
+                    // Subtract 1 DUSK from the extracted stake's weight
+                    let new_weight =
+                        BigInt::from(provisioner_weight.subtract(DUSK));
+
+                    return (provisioner.clone(), new_weight);
                 }
 
-                score -= total_stake;
+                // Otherwise, decrease the score and move to the next
+                // provisioner
+                score -= weight;
             }
         }
     }
