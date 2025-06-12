@@ -205,13 +205,17 @@ const claimRewards = async (amount, gas) =>
 const getTransactionsHistory = async () => transactions;
 
 /** @type {WalletStoreServices["init"]} */
-async function init(profileGenerator, syncFromBlock) {
-  const currentProfile = await profileGenerator.default;
+async function init(profileGeneratorInstance, syncFromBlock) {
+  // Create two profiles by default
+  const currentProfile = await profileGeneratorInstance.default;
+  const secondProfile = await profileGeneratorInstance.next();
+  const profiles = [currentProfile, secondProfile];
+
   const cachedBalance = await treasury.getCachedBalance(currentProfile);
   const cachedStakeInfo = await treasury.getCachedStakeInfo(currentProfile);
   const minimumStake = await bookkeeper.minimumStake;
 
-  treasury.setProfiles([currentProfile]);
+  treasury.setProfiles(profiles);
 
   set({
     ...initialState,
@@ -219,7 +223,7 @@ async function init(profileGenerator, syncFromBlock) {
     currentProfile,
     initialized: true,
     minimumStake,
-    profiles: [currentProfile],
+    profiles,
     stakeInfo: cachedStakeInfo,
   });
 

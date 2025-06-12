@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add support for profile switching [#2083]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -503,6 +505,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#2014]: https://github.com/dusk-network/rusk/issues/2014
 [#2071]: https://github.com/dusk-network/rusk/issues/2071
 [#2075]: https://github.com/dusk-network/rusk/issues/2075
+[#2083]: https://github.com/dusk-network/rusk/issues/2083
 [#2110]: https://github.com/dusk-network/rusk/issues/2110
 [#2118]: https://github.com/dusk-network/rusk/issues/2118
 [#2175]: https://github.com/dusk-network/rusk/issues/2175

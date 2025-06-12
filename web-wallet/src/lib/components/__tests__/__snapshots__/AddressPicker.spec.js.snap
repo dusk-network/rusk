@@ -6,14 +6,28 @@ exports[`AddressPicker > renders the AddressPicker component 1`] = `
 >
   <div
     aria-expanded="false"
-    aria-haspopup="true"
+    aria-haspopup="menu"
+    aria-label="Select address profile"
     class="address-picker__trigger"
     role="button"
     tabindex="0"
   >
-    <span>
-      Default Profile
+    <span
+      class="address-picker__current-profile"
+    >
+      Profile 1 (Default)
     </span>
+     
+    <svg
+      class="dusk-icon dusk-icon--size--default address-picker__chevron"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"
+      />
+    </svg>
+    
   </div>
    
 </div>
@@ -25,14 +39,28 @@ exports[`AddressPicker > should be able to render the component if the current p
 >
   <div
     aria-expanded="false"
-    aria-haspopup="true"
+    aria-haspopup="menu"
+    aria-label="Select address profile"
     class="address-picker__trigger"
     role="button"
     tabindex="0"
   >
-    <span>
-      Default Profile
+    <span
+      class="address-picker__current-profile"
+    >
+      No profile selected
     </span>
+     
+    <svg
+      class="dusk-icon dusk-icon--size--default address-picker__chevron"
+      role="graphics-symbol"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"
+      />
+    </svg>
+    
   </div>
    
 </div>

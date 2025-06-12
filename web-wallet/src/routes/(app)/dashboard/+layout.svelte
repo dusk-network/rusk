@@ -61,6 +61,13 @@
     networkStatusIconPath = mdiLink;
     syncStatusLabel = `Dusk ${networkName}`;
   }
+
+  /**
+   * @param {Profile} profile
+   */
+  function setCurrentProfile(profile) {
+    walletStore.setCurrentProfile(profile);
+  }
 </script>
 
 <svelte:window
@@ -77,7 +84,11 @@
   >
     <h2 class="sr-only">Dashboard</h2>
 
-    <AddressPicker {currentProfile} {profiles} />
+    <AddressPicker
+      {currentProfile}
+      {profiles}
+      on:setCurrentProfile={(event) => setCurrentProfile(event.detail.profile)}
+    />
 
     <Balance
       fiatCurrency={currency}
