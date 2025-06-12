@@ -22,9 +22,11 @@ use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 
 use c_kzg::{
-    Blob as KzgBlob, KzgCommitment, KzgProof, BYTES_PER_BLOB,
-    BYTES_PER_COMMITMENT, BYTES_PER_PROOF,
+    ethereum_kzg_settings, Blob as KzgBlob, KzgCommitment, KzgProof,
+    KzgSettings, BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_PROOF,
 };
+
+use blake3::Hasher;
 
 use crate::abi::ContractId;
 use crate::Error;
@@ -172,9 +174,110 @@ pub struct BlobSidecar {
     pub proofs: Vec<Proof>,
 }
 
-// impl BlobSidecar {
-//     todo!("Implement BlobSidecar methods");
-// }
+impl BlobSidecar {
+    /// Creates a new `BlobSidecar` with the provided blobs.
+    pub fn new(blobs: Vec<Blob>) -> Self {
+        let mut blob_sidecar = Self {
+            blobs,
+            commitments: Vec::new(),
+            proofs: Vec::new(),
+        };
+
+        let precompute = 0; // @TODO: Default precompute value
+        let eth_settings = ethereum_kzg_settings(precompute);
+
+        blob_sidecar
+            .fill_commitments(&eth_settings)
+            .expect("Failed to fill commitments");
+        blob_sidecar
+            .fill_proofs(&eth_settings)
+            .expect("Failed to fill proofs");
+
+        blob_sidecar
+    }
+
+    ///Calculate Commitments for All Blobs and Save at Self.comMitments
+    pub fn fill_commitments(
+        &mut self,
+        kzg: &KzgSettings,
+    ) -> Result<(), String> {
+        self.commitments.clear();
+        for blob in &self.blobs {
+            let kzg_blob = KzgBlob::from_bytes(&blob.0)
+                .map_err(|e| format!("Invalid blob: {e:?}"))?;
+            let commitment = kzg
+                .blob_to_kzg_commitment(&kzg_blob)
+                .map_err(|e| format!("Commitment error: {e:?}"))?;
+            self.commitments.push(Commitment::from(commitment));
+        }
+        Ok(())
+    }
+
+    /// Calculate the Prufes for all Blobs (using the appropriate Commitment)
+    /// and save in self.profs
+    pub fn fill_proofs(&mut self, kzg: &KzgSettings) -> Result<(), String> {
+        self.proofs.clear();
+        for (blob, commitment) in self.blobs.iter().zip(self.commitments.iter())
+        {
+            let kzg_blob = KzgBlob::from_bytes(&blob.0)
+                .map_err(|e| format!("Invalid blob: {e:?}"))?;
+            let kzg_commitment = KzgCommitment::from_bytes(&commitment.0)
+                .map_err(|e| format!("Invalid commitment: {e:?}"))?;
+            let proof = kzg
+                .compute_blob_kzg_proof(&kzg_blob, &kzg_commitment.to_bytes())
+                .map_err(|e| format!("Proof error: {e:?}"))?;
+            self.proofs.push(Proof::from(proof));
+        }
+        Ok(())
+    }
+
+    /// Returns Blob_hashes (Hashes of Every Blob)
+    pub fn blob_hashes(&self) -> Vec<u8> {
+        let mut hashes = Vec::with_capacity(self.blobs.len() * 32);
+        for blob in &self.blobs {
+            let hash = Hasher::new().update(&blob.0).finalize();
+            hashes.extend_from_slice(hash.as_bytes());
+        }
+        hashes
+    }
+
+    /// Verifies the proof for a blob using the commitment
+    pub fn verify_proof(
+        &self,
+        kzg: &KzgSettings,
+        index: usize,
+    ) -> Result<bool, String> {
+        let blob = self.blobs.get(index).ok_or("No such blob")?;
+        let commitment =
+            self.commitments.get(index).ok_or("No such commitment")?;
+        let proof = self.proofs.get(index).ok_or("No such proof")?;
+
+        let kzg_blob = KzgBlob::from_bytes(&blob.0)
+            .map_err(|e| format!("Invalid blob: {e:?}"))?;
+        let kzg_commitment = KzgCommitment::from_bytes(&commitment.0)
+            .map_err(|e| format!("Invalid commitment: {e:?}"))?;
+        let kzg_proof = KzgProof::from_bytes(&proof.0)
+            .map_err(|e| format!("Invalid proof: {e:?}"))?;
+
+        kzg.verify_blob_kzg_proof(
+            &kzg_blob,
+            &kzg_commitment.to_bytes(),
+            &kzg_proof.to_bytes(),
+        )
+        .map_err(|e| format!("Verify error: {e:?}"))
+    }
+
+    /// Verifies all proofs for the blobs in this sidecar.
+    pub fn verify_proofs(&self, kzg: &KzgSettings) -> Result<bool, String> {
+        for (index, _) in self.blobs.iter().enumerate() {
+            if !self.verify_proof(kzg, index)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+}
 
 impl From<ContractCall> for TransactionData {
     fn from(c: ContractCall) -> Self {

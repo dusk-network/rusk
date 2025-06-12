@@ -23,6 +23,7 @@ bytecheck = { workspace = true }
 rand = { workspace = true }
 ff = { workspace = true }
 c-kzg = { workspace = true }
+blake3 = { workspace = true }
 
 # plonk dependencies
 dusk-plonk = { workspace = true, features = ["rkyv-impl", "alloc"], optional = true }
