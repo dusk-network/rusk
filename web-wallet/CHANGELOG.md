@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add support for profile switching [#2083]
-
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -18,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
+
+## [1.6.0] - 2025-06-13
+
+### Added
+
+- Add support for profile switching [#2083]
 
 ## [1.5.0] - 2025-05-30
 
@@ -601,6 +605,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/web-wallet
+[1.6.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.6.0
 [1.5.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.5.0
 [1.4.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/tree/web-wallet-v1.3.0
