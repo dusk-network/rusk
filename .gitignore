@@ -3,3 +3,5 @@ deno.lock
 **/*.rs.bk
 .rusk
 .vscode
+.idea
+*.h
