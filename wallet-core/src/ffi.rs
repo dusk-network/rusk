@@ -123,7 +123,7 @@ pub unsafe extern "C" fn generate_profile(
 /// Filter all notes and their block height that are owned by the given keys,
 /// mapped to their nullifiers.
 #[no_mangle]
-pub unsafe fn map_owned(
+pub unsafe extern "C" fn map_owned(
     seed: &Seed,
     indexes: *const u8,
     notes_ptr: *const u8,
@@ -236,7 +236,7 @@ pub unsafe extern "C" fn accounts_into_raw(
 /// Calculate the balance info for the phoenix address at the given index for
 /// the given seed.
 #[no_mangle]
-pub unsafe fn balance(
+pub unsafe extern "C" fn balance(
     seed: &Seed,
     index: u8,
     notes_ptr: *const u8,
@@ -259,7 +259,7 @@ pub unsafe fn balance(
 
 /// Pick the notes to be used in a transaction from an owned notes list.
 #[no_mangle]
-pub unsafe fn pick_notes(
+pub unsafe extern "C" fn pick_notes(
     seed: &Seed,
     index: u8,
     value: *const u64,
@@ -284,7 +284,7 @@ pub unsafe fn pick_notes(
 
 /// Gets the bookmark from the given note.
 #[no_mangle]
-pub unsafe fn bookmarks(
+pub unsafe extern "C" fn bookmarks(
     notes_ptr: *const u8,
     bookmarks_ptr: *mut *mut u8,
 ) -> ErrorCode {
@@ -327,7 +327,7 @@ impl Prove for NoOpProver {
 }
 
 #[no_mangle]
-pub unsafe fn into_proven(
+pub unsafe extern "C" fn into_proven(
     tx_ptr: *const u8,
     proof_ptr: *const u8,
     proven_ptr: *mut *mut u8,
@@ -365,7 +365,7 @@ pub unsafe fn into_proven(
 }
 
 #[no_mangle]
-pub unsafe fn phoenix(
+pub unsafe extern "C" fn phoenix(
     rng: &[u8; 32],
     seed: &Seed,
     sender_index: u8,
@@ -543,7 +543,7 @@ pub unsafe extern "C" fn moonlight(
 }
 
 #[no_mangle]
-pub unsafe fn phoenix_to_moonlight(
+pub unsafe extern "C" fn phoenix_to_moonlight(
     rng: &[u8; 32],
     seed: &Seed,
     profile_index: u8,
@@ -634,7 +634,7 @@ pub unsafe fn phoenix_to_moonlight(
 }
 
 #[no_mangle]
-pub unsafe fn moonlight_to_phoenix(
+pub unsafe extern "C" fn moonlight_to_phoenix(
     rng: &[u8; 32],
     seed: &Seed,
     profile_index: u8,
@@ -688,7 +688,7 @@ pub unsafe fn moonlight_to_phoenix(
 }
 
 #[no_mangle]
-pub unsafe fn moonlight_stake(
+pub unsafe extern "C" fn moonlight_stake(
     seed: &Seed,
     sender_index: u8,
     stake_value: *const u64,
@@ -749,7 +749,7 @@ pub unsafe fn moonlight_stake(
 }
 
 #[no_mangle]
-pub unsafe fn moonlight_unstake(
+pub unsafe extern "C" fn moonlight_unstake(
     rng: &[u8; 32],
     seed: &Seed,
     sender_index: u8,
@@ -819,7 +819,7 @@ pub unsafe fn moonlight_unstake(
 }
 
 #[no_mangle]
-pub unsafe fn moonlight_stake_reward(
+pub unsafe extern "C" fn moonlight_stake_reward(
     rng: &[u8; 32],
     seed: &Seed,
     sender_index: u8,
@@ -934,8 +934,13 @@ pub unsafe fn create_tx_data(
     };
     let len = bytes.len().to_le_bytes();
 
+    #[cfg(target_family = "wasm")]
     let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
     let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
 
     *rkyv_ptr = ptr;
 
