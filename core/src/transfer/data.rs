@@ -77,10 +77,9 @@ impl TransactionData {
                 // can still verify it after being converted with `blob_to_memo`
                 let mut hasher = Sha256::new();
                 for blob in blobs {
-                    hasher.update(blob.hash);
-                    hasher.update(blob.commitment);
+                    hasher.update(blob.to_hash_input_bytes());
                 }
-                bytes.extend(hasher.finalize().to_vec());
+                bytes.extend(hasher.finalize());
             }
         }
 
@@ -439,7 +438,9 @@ impl BlobData {
     /// Provides contribution bytes for an external hash.
     #[must_use]
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
-        self.hash.to_vec()
+        let mut to_hash = self.hash.to_vec();
+        to_hash.extend_from_slice(&self.commitment);
+        to_hash
     }
 
     /// Serializes this object into a variable length buffer
