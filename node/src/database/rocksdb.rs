@@ -126,7 +126,7 @@ impl Backend {
         let ledger_blobs_cf = self
             .rocksdb
             .cf_handle(CF_LEDGER_BLOBS)
-            .expect("CF_METADATA column family must exist");
+            .expect("CF_LEDGER_BLOBS column family must exist");
 
         DBTransaction::<'_, OptimisticTransactionDB> {
             inner,

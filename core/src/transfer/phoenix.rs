@@ -699,7 +699,6 @@ impl Payload {
         // serialize the transaction data, if present.
         match &self.data {
             Some(t) => {
-                bytes.push(1);
                 bytes.extend(t.to_var_bytes());
             }
             _ => bytes.push(0),
