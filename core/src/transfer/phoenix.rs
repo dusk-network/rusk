@@ -696,20 +696,11 @@ impl Payload {
         // serialize the fee
         bytes.extend(self.fee.to_bytes());
 
-        // serialize the contract call, deployment or memo, if present.
+        // serialize the transaction data, if present.
         match &self.data {
-            Some(TransactionData::Call(call)) => {
+            Some(t) => {
                 bytes.push(1);
-                bytes.extend(call.to_var_bytes());
-            }
-            Some(TransactionData::Deploy(deploy)) => {
-                bytes.push(2);
-                bytes.extend(deploy.to_var_bytes());
-            }
-            Some(TransactionData::Memo(memo)) => {
-                bytes.push(3);
-                bytes.extend((memo.len() as u64).to_bytes());
-                bytes.extend(memo);
+                bytes.extend(t.to_var_bytes());
             }
             _ => bytes.push(0),
         }
@@ -737,28 +728,7 @@ impl Payload {
         let fee = Fee::from_reader(&mut buf)?;
 
         // deserialize contract call, deploy data, or memo, if present
-        let data = match u8::from_reader(&mut buf)? {
-            0 => None,
-            1 => Some(TransactionData::Call(ContractCall::from_slice(buf)?)),
-            2 => {
-                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
-            }
-            3 => {
-                // we only build for 64-bit so this truncation is impossible
-                #[allow(clippy::cast_possible_truncation)]
-                let size = u64::from_reader(&mut buf)? as usize;
-
-                if buf.len() != size || size > MAX_MEMO_SIZE {
-                    return Err(BytesError::InvalidData);
-                }
-
-                let memo = buf[..size].to_vec();
-                Some(TransactionData::Memo(memo))
-            }
-            _ => {
-                return Err(BytesError::InvalidData);
-            }
-        };
+        let data = TransactionData::from_slice(buf)?;
 
         Ok(Self {
             chain_id,

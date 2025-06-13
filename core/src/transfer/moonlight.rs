@@ -445,28 +445,10 @@ impl Payload {
 
         bytes.extend(self.nonce.to_bytes());
 
-        // serialize the contract call, deployment or memo, if present.
+        // serialize the transaction data, if present.
         match &self.data {
-            Some(TransactionData::Call(call)) => {
-                bytes.push(1);
-                bytes.extend(call.to_var_bytes());
-            }
-            Some(TransactionData::Deploy(deploy)) => {
-                bytes.push(2);
-                bytes.extend(deploy.to_var_bytes());
-            }
-            Some(TransactionData::Memo(memo)) => {
-                bytes.push(3);
-                bytes.extend((memo.len() as u64).to_bytes());
-                bytes.extend(memo);
-            }
-            Some(TransactionData::Blob(blobs)) => {
-                bytes.push(4);
-                // Maybe we can use u8 as length
-                bytes.extend((blobs.len() as u64).to_bytes());
-                for blob in blobs {
-                    bytes.extend(blob.to_var_bytes());
-                }
+            Some(t) => {
+                bytes.extend(t.to_var_bytes());
             }
             _ => bytes.push(0),
         }
@@ -512,37 +494,7 @@ impl Payload {
         let nonce = u64::from_reader(&mut buf)?;
 
         // deserialize contract call, deploy data, or memo, if present
-        let data = match u8::from_reader(&mut buf)? {
-            0 => None,
-            1 => Some(TransactionData::Call(ContractCall::from_slice(buf)?)),
-            2 => {
-                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
-            }
-            3 => {
-                // we only build for 64-bit so this truncation is impossible
-                #[allow(clippy::cast_possible_truncation)]
-                let size = u64::from_reader(&mut buf)? as usize;
-
-                if buf.len() != size || size > MAX_MEMO_SIZE {
-                    return Err(BytesError::InvalidData);
-                }
-
-                let memo = buf[..size].to_vec();
-                Some(TransactionData::Memo(memo))
-            }
-            4 => {
-                let blobs_len = u8::from_reader(&mut buf)?;
-                let mut blobs = Vec::with_capacity(blobs_len as usize);
-                for _ in 0..blobs_len {
-                    let blob = BlobData::from_buf(&mut buf)?;
-                    blobs.push(blob);
-                }
-                Some(TransactionData::Blob(blobs))
-            }
-            _ => {
-                return Err(BytesError::InvalidData);
-            }
-        };
+        let data = TransactionData::from_slice(buf)?;
 
         Ok(Self {
             chain_id,

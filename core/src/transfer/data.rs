@@ -86,6 +86,81 @@ impl TransactionData {
 
         bytes
     }
+
+    /// Serialize a `TransactionData` into a variable length byte buffer.
+    #[must_use]
+    pub fn to_var_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        // serialize the contract call, deployment or memo, if present.
+        match &self {
+            TransactionData::Call(call) => {
+                bytes.push(1);
+                bytes.extend(call.to_var_bytes());
+            }
+            TransactionData::Deploy(deploy) => {
+                bytes.push(2);
+                bytes.extend(deploy.to_var_bytes());
+            }
+            TransactionData::Memo(memo) => {
+                bytes.push(3);
+                bytes.extend((memo.len() as u64).to_bytes());
+                bytes.extend(memo);
+            }
+            TransactionData::Blob(blobs) => {
+                bytes.push(4);
+                // Maybe we can use u8 as length
+                bytes.extend((blobs.len() as u64).to_bytes());
+                for blob in blobs {
+                    bytes.extend(blob.to_var_bytes());
+                }
+            }
+        }
+
+        bytes
+    }
+
+    /// Deserialize the optional `TransactionData` from bytes slice.
+    ///
+    /// # Errors
+    /// Errors when the bytes are not canonical.
+    pub fn from_slice(buf: &[u8]) -> Result<Option<Self>, BytesError> {
+        let mut buf = buf;
+
+        // deserialize contract call, deploy data, or memo, if present
+        let data = match u8::from_reader(&mut buf)? {
+            0 => None,
+            1 => Some(TransactionData::Call(ContractCall::from_slice(buf)?)),
+            2 => {
+                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
+            }
+            3 => {
+                // we only build for 64-bit so this truncation is impossible
+                #[allow(clippy::cast_possible_truncation)]
+                let size = u64::from_reader(&mut buf)? as usize;
+
+                if buf.len() != size || size > MAX_MEMO_SIZE {
+                    return Err(BytesError::InvalidData);
+                }
+
+                let memo = buf[..size].to_vec();
+                Some(TransactionData::Memo(memo))
+            }
+            4 => {
+                let blobs_len = u8::from_reader(&mut buf)?;
+                let mut blobs = Vec::with_capacity(blobs_len as usize);
+                for _ in 0..blobs_len {
+                    let blob = BlobData::from_buf(&mut buf)?;
+                    blobs.push(blob);
+                }
+                Some(TransactionData::Blob(blobs))
+            }
+            _ => {
+                return Err(BytesError::InvalidData);
+            }
+        };
+
+        Ok(data)
+    }
 }
 
 impl From<ContractCall> for TransactionData {
