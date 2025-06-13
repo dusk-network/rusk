@@ -1,0 +1,10 @@
+[package]
+name = "transaction_data_test"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+bincode = "1.3"

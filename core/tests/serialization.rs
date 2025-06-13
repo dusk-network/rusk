@@ -4,16 +4,22 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![cfg(feature = "serde")]
+
+use serde::{Deserialize, Serialize};
+
 use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
 use dusk_core::transfer::data::{
     ContractBytecode, ContractCall, ContractDeploy, TransactionData,
 };
+use dusk_core::transfer::moonlight::{Fee, Payload};
 use dusk_core::transfer::phoenix::{
     Note, NoteTreeItem, NotesTree, Prove, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, TxCircuitVec,
 };
+
 use dusk_core::transfer::Transaction;
 use dusk_core::{BlsScalar, Error, JubJubScalar};
 use ff::Field;

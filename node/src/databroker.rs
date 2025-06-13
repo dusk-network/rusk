@@ -190,6 +190,7 @@ impl DataBrokerSrv {
         let this_peer = *network.read().await.public_addr();
 
         match &msg.payload {
+            // TODO: Handle GetBlob
             // Handle GetBlocks requests
             Payload::GetBlocks(m) => {
                 let msg = Self::handle_get_blocks(db, m, conf.max_inv_entries)

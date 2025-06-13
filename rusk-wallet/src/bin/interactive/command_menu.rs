@@ -98,6 +98,7 @@ pub(crate) async fn online(
     let select = select?;
 
     let res = match select {
+        // TODO MenuItem::Blob 
         MenuItem::Transfer => {
             let rcvr = prompt::request_rcvr_addr("recipient")?;
 
