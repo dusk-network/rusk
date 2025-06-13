@@ -22,11 +22,11 @@ pub enum Error {
     PhoenixCircuit(String),
     /// The transaction circuit prover wasn't found or couldn't be created.
     PhoenixProver(String),
-    /// Dusk-bytes InvalidData error
+    /// Dusk-bytes `InvalidData` error
     InvalidData,
-    /// Dusk-bytes BadLength error
+    /// Dusk-bytes `BadLength` error
     BadLength(usize, usize),
-    /// Dusk-bytes InvalidChar error
+    /// Dusk-bytes `InvalidChar` error
     InvalidChar(char, usize),
     /// Rkyv serialization.
     Rkyv(String),
