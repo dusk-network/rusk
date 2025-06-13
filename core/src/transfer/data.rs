@@ -20,6 +20,7 @@ use rkyv::ser::serializers::{
 use rkyv::ser::Serializer;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::abi::ContractId;
 use crate::Error;
@@ -39,6 +40,126 @@ pub enum TransactionData {
     /// Additional data added to a transaction, that is not a deployment or a
     /// call.
     Memo(Vec<u8>),
+    /// Data for blob storage together with contract call.    
+    Blob(Vec<BlobData>),
+}
+
+impl TransactionData {
+    /// Return input bytes to hash the `TransactionData`.
+    ///
+    /// Note: The result of this function is *only* meant to be used as an input
+    /// for hashing and *cannot* be used to deserialize the payload again.
+    #[must_use]
+    pub fn signature_message(&self) -> Vec<u8> {
+        let mut bytes = vec![];
+
+        #[allow(clippy::match_same_arms)]
+        match &self {
+            TransactionData::Deploy(d) => {
+                bytes.extend(&d.bytecode.to_hash_input_bytes());
+                bytes.extend(&d.owner);
+                if let Some(init_args) = &d.init_args {
+                    bytes.extend(init_args);
+                }
+            }
+            TransactionData::Call(c) => {
+                bytes.extend(c.contract.as_bytes());
+                bytes.extend(c.fn_name.as_bytes());
+                bytes.extend(&c.fn_args);
+            }
+            TransactionData::Memo(m) => {
+                bytes.extend(m);
+            }
+            TransactionData::Blob(blobs) => {
+                // Hash the blobs and extend the signature_message with the
+                // result, using the same serialization format used by
+                // TransactionData::Memo, so that the legacy transfer contract
+                // can still verify it after being converted with `blob_to_memo`
+                let mut hasher = Sha256::new();
+                for blob in blobs {
+                    hasher.update(blob.to_hash_input_bytes());
+                }
+                bytes.extend(hasher.finalize());
+            }
+        }
+
+        bytes
+    }
+
+    /// Serialize a `TransactionData` into a variable length byte buffer.
+    #[must_use]
+    pub fn to_var_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        // serialize the contract call, deployment or memo, if present.
+        match &self {
+            TransactionData::Call(call) => {
+                bytes.push(1);
+                bytes.extend(call.to_var_bytes());
+            }
+            TransactionData::Deploy(deploy) => {
+                bytes.push(2);
+                bytes.extend(deploy.to_var_bytes());
+            }
+            TransactionData::Memo(memo) => {
+                bytes.push(3);
+                bytes.extend((memo.len() as u64).to_bytes());
+                bytes.extend(memo);
+            }
+            TransactionData::Blob(blobs) => {
+                bytes.push(4);
+                // Maybe we can use u8 as length
+                bytes.extend((blobs.len() as u64).to_bytes());
+                for blob in blobs {
+                    bytes.extend(blob.to_var_bytes());
+                }
+            }
+        }
+
+        bytes
+    }
+
+    /// Deserialize the optional `TransactionData` from bytes slice.
+    ///
+    /// # Errors
+    /// Errors when the bytes are not canonical.
+    pub fn from_slice(buf: &[u8]) -> Result<Option<Self>, BytesError> {
+        let mut buf = buf;
+
+        // deserialize contract call, deploy data, or memo, if present
+        let data = match u8::from_reader(&mut buf)? {
+            0 => None,
+            1 => Some(TransactionData::Call(ContractCall::from_slice(buf)?)),
+            2 => {
+                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
+            }
+            3 => {
+                // we only build for 64-bit so this truncation is impossible
+                #[allow(clippy::cast_possible_truncation)]
+                let size = u64::from_reader(&mut buf)? as usize;
+
+                if buf.len() != size || size > MAX_MEMO_SIZE {
+                    return Err(BytesError::InvalidData);
+                }
+
+                let memo = buf[..size].to_vec();
+                Some(TransactionData::Memo(memo))
+            }
+            4 => {
+                let blobs_len = u8::from_reader(&mut buf)?;
+                let mut blobs = Vec::with_capacity(blobs_len as usize);
+                for _ in 0..blobs_len {
+                    let blob = BlobData::from_buf(&mut buf)?;
+                    blobs.push(blob);
+                }
+                Some(TransactionData::Blob(blobs))
+            }
+            _ => {
+                return Err(BytesError::InvalidData);
+            }
+        };
+
+        Ok(data)
+    }
 }
 
 impl From<ContractCall> for TransactionData {
@@ -78,6 +199,22 @@ pub struct ContractDeploy {
     /// Nonce for contract id uniqueness and vanity
     pub nonce: u64,
 }
+
+/// Data used to identify BLOB data
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct BlobData {
+    /// Hash of the blob
+    pub hash: [u8; 32],
+    /// 48-byte elliptic curve point committing to blob
+    pub commitment: [u8; 48],
+    /// 4096 field elements (each 32 bytes), total 128 KiB
+    pub data: Option<BlobDataPart>,
+}
+
+/// A type alias for the BLOB data part, which consists of 4096 field elements
+/// (each 32 bytes), total 128 KiB
+pub type BlobDataPart = [[u8; 32]; 4096];
 
 /// All the data the transfer-contract needs to perform a contract-call.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
@@ -285,7 +422,7 @@ impl ContractBytecode {
         bytes
     }
 
-    /// Deserialize from a bytes buffer.
+    /// Deserializes from a bytes buffer.
     /// Resets buffer to a position after the bytes read.
     ///
     /// # Errors
@@ -294,5 +431,70 @@ impl ContractBytecode {
         let hash = crate::read_arr::<32>(buf)?;
         let bytes = crate::read_vec(buf)?;
         Ok(Self { hash, bytes })
+    }
+}
+
+impl BlobData {
+    /// Provides contribution bytes for an external hash.
+    #[must_use]
+    pub fn to_hash_input_bytes(&self) -> Vec<u8> {
+        let mut to_hash = self.hash.to_vec();
+        to_hash.extend_from_slice(&self.commitment);
+        to_hash
+    }
+
+    /// Serializes this object into a variable length buffer
+    #[must_use]
+    pub fn to_var_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend(self.hash);
+        bytes.extend(self.commitment);
+        if let Some(data) = &self.data {
+            bytes.push(1u8);
+            // We can remove the len if we are going to use fixed size
+            bytes.extend((data.len() as u64).to_bytes());
+            for d in data {
+                bytes.extend(d);
+            }
+        } else {
+            bytes.push(0u8);
+        }
+        bytes
+    }
+
+    /// Deserializes from a bytes buffer.
+    /// Resets buffer to a position after the bytes read.
+    ///
+    /// # Errors
+    /// Errors when the bytes are not available.
+    pub fn from_buf(buf: &mut &[u8]) -> Result<Self, BytesError> {
+        let hash = crate::read_arr(buf)?;
+        let commitment = crate::read_arr(buf)?;
+
+        let data = match u8::from_reader(buf)? {
+            0 => None,
+            1 => {
+                // We can remove the len if we are going to use fixed size
+                let _data_len = u64::from_reader(buf)?;
+                let mut data = [[0u8; 32]; 4096];
+                for d in &mut data {
+                    *d = crate::read_arr(buf)?;
+                }
+                Some(data)
+            }
+            _ => return Err(BytesError::InvalidData),
+        };
+
+        Ok(Self {
+            hash,
+            commitment,
+            data,
+        })
+    }
+
+    /// Take the data field, if it exists.
+    #[must_use]
+    pub fn take_data(&mut self) -> Option<[[u8; 32]; 4096]> {
+        self.data.take()
     }
 }

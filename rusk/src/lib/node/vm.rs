@@ -206,7 +206,9 @@ impl VMExecution for Rusk {
                     PreverificationResult::Valid
                 };
 
-                match crate::verifier::verify_signature(tx) {
+                match crate::verifier::verify_signature(
+                    tx.convert_blob().as_ref().unwrap_or(tx),
+                ) {
                     Ok(true) => Ok(result),
                     Ok(false) => Err(anyhow::anyhow!("Invalid signature")),
                     Err(e) => {

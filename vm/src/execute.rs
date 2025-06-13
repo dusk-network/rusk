@@ -74,13 +74,15 @@ pub fn execute(
             .set_meta(Metadata::PUBLIC_SENDER, tx.moonlight_sender().copied());
     }
 
+    let stripped_tx = tx.blob_to_memo().or(tx.strip_off_bytecode());
+
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session
         .call::<_, Result<Vec<u8>, ContractError>>(
             TRANSFER_CONTRACT,
             "spend_and_execute",
-            tx.strip_off_bytecode().as_ref().unwrap_or(tx),
+            stripped_tx.as_ref().unwrap_or(tx),
             tx.gas_limit(),
         )
         .map_err(|e| {

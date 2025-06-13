@@ -391,14 +391,13 @@ fn check_tx_serialization(
     // its serialized size has to be within the same 64Kib limit.
     const SCRATCH_BUF_BYTES: usize = 1024;
     const ARGBUF_LEN: usize = 64 * 1024;
-    let stripped_tx = tx.strip_off_bytecode();
-    let tx = stripped_tx.as_ref().unwrap_or(tx);
+    let stripped_tx = tx.strip_off_bytecode().or(tx.blob_to_memo());
     let mut sbuf = [0u8; SCRATCH_BUF_BYTES];
     let mut buffer = [0u8; ARGBUF_LEN];
     let scratch = BufferScratch::new(&mut sbuf);
     let ser = BufferSerializer::new(&mut buffer);
     let mut ser = CompositeSerializer::new(ser, scratch, Infallible);
-    if let Err(err) = ser.serialize_value(tx) {
+    if let Err(err) = ser.serialize_value(stripped_tx.as_ref().unwrap_or(tx)) {
         match err {
             CompositeSerializerError::SerializerError(err) => match err {
                 BufferSerializerError::Overflow { .. } => {
