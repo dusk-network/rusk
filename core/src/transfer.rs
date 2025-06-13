@@ -7,7 +7,6 @@
 //! Types related to Dusk's transfer contract that are shared across the
 //! network.
 
-use data::{BlobData, BlobDataPart};
 #[cfg(feature = "serde")]
 use serde_with::{hex::Hex, serde_as, DisplayFromStr};
 
@@ -28,7 +27,9 @@ use crate::signatures::bls::{
 };
 use crate::{BlsScalar, Error};
 
-use self::data::{ContractCall, ContractDeploy, TransactionData};
+use self::data::{
+    BlobData, BlobDataPart, ContractCall, ContractDeploy, TransactionData,
+};
 use self::moonlight::Transaction as MoonlightTransaction;
 use self::phoenix::{
     Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -302,8 +303,15 @@ impl Transaction {
         }
     }
 
-    /// Remove the blobs data from the transaction, and return them associated
-    /// to their blob hash
+    /// Extracts and removes the blob data from the transaction, if any, and
+    /// returns it as a vector of tuples containing the blob hash and the
+    /// corresponding data part.
+    ///
+    /// This function mutably accesses the blob storage within the transaction,
+    /// clears the stored data, and returns the extracted parts while
+    /// preserving their hashes.
+    ///
+    /// Returns `None` if there are no blobs present in the transaction.
     #[must_use]
     pub fn take_blobs_data(&mut self) -> Option<Vec<([u8; 32], BlobDataPart)>> {
         let blob = match self {

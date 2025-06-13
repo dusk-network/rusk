@@ -71,8 +71,10 @@ impl TransactionData {
                 bytes.extend(m);
             }
             TransactionData::Blob(blobs) => {
-                // Let's hash the blobs and use the hash as Memo for tx
-                // signature
+                // Hash the blobs and extend the signature_message with the
+                // result, using the same serialization format used by
+                // TransactionData::Memo, so that the legacy transfer contract
+                // can still verify it after being converted with `blob_to_memo`
                 let mut hasher = Sha256::new();
                 for blob in blobs {
                     hasher.update(blob.hash);
@@ -124,7 +126,7 @@ pub struct ContractDeploy {
     pub nonce: u64,
 }
 
-/// Data for used to identify a BLOB data
+/// Data used to identify BLOB data
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct BlobData {
@@ -346,7 +348,7 @@ impl ContractBytecode {
         bytes
     }
 
-    /// Deserialize from a bytes buffer.
+    /// Deserializes from a bytes buffer.
     /// Resets buffer to a position after the bytes read.
     ///
     /// # Errors
@@ -384,7 +386,7 @@ impl BlobData {
         bytes
     }
 
-    /// Deserialize from a bytes buffer.
+    /// Deserializes from a bytes buffer.
     /// Resets buffer to a position after the bytes read.
     ///
     /// # Errors
