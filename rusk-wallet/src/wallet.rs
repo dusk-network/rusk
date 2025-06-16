@@ -587,13 +587,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::NotDirectory);
         }
 
-        let (pk, sk) = self.provisioner_keys(profile_idx)?;
+        let (pk, mut sk) = self.provisioner_keys(profile_idx)?;
         let path = PathBuf::from(dir);
         let filename = filename.unwrap_or(profile_idx.to_string());
 
-        Ok(node_data::bls::save_consensus_keys(
+        let keys_paths = node_data::bls::save_consensus_keys(
             &path, &filename, &pk, &sk, pwd,
-        )?)
+        )?;
+
+        sk.zeroize();
+        
+        Ok(keys_paths)
     }
 
     /// Return the index of the address passed, returns an error if the address
