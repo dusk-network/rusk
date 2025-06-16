@@ -193,11 +193,10 @@ pub fn save_consensus_keys(
     let bytes = pk.to_bytes();
     fs::write(path.with_extension("cpk"), bytes)?;
 
-    let bls = BlsKeyPair {
+    let mut bls = BlsKeyPair {
         public_key_bls: pk.to_bytes().to_vec(),
         secret_key_bls: sk.to_bytes().to_vec(),
     };
-    let json = serde_json::to_string(&bls)?;
 
     let mut bytes = json.as_bytes().to_vec();
     let aes_key = hash_sha256(pwd);
