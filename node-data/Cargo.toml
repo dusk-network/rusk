@@ -27,6 +27,7 @@ bs58 = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
+zeroize = { workspace = true }
 
 # faker feature dependencies
 fake = { workspace = true, features = ['derive'], optional = true }
