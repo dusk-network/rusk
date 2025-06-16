@@ -7,6 +7,9 @@
 //! Extra data that may be sent with the `data` field of either transaction
 //! type.
 
+#[cfg(feature = "serde")]
+use serde_with::{hex::Hex, serde_as};
+
 use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{format, vec};
@@ -230,8 +233,11 @@ pub struct ContractDeploy {
 /// sidecar.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BlobData {
-    /// Versioned hash of the KZG commitment (Keccak256(0x01 ++ commitment))
+    /// Versioned hash of the KZG commitment: 0x01 ‖ SHA256(commitment)[1..]
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     pub hash: [u8; 32],
 
     /// Optional sidecar containing the full blob, commitment, and proof.
@@ -244,13 +250,19 @@ pub struct BlobData {
 /// proof.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BlobSidecar {
     /// KZG commitment to the blob (compressed G₁ point, 48 bytes)
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     pub commitment: [u8; 48],
 
     /// KZG proof for evaluation correctness (compressed G₁ point, 48 bytes)
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     pub proof: [u8; 48],
+
     /// Blob data: 4096 field elements, each 32 bytes (128 KiB total)
+    #[cfg_attr(feature = "serde", serde_as(as = "[Hex; 4096]"))]
     pub data: BlobDataPart,
 }
 
