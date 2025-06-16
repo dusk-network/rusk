@@ -294,6 +294,17 @@ impl Transaction<'_> {
         })
     }
 
+    pub async fn blob_hashes(&self) -> Option<Vec<String>> {
+        let hashes = self
+            .0
+            .inner
+            .blob()?
+            .iter()
+            .map(|blob| hex::encode(blob.hash))
+            .collect();
+        Some(hashes)
+    }
+
     pub async fn is_deploy(&self) -> bool {
         self.0.inner.deploy().is_some()
     }
