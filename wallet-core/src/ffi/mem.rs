@@ -14,12 +14,14 @@ use rkyv::{check_archived_root, Archive, Deserialize};
 
 use crate::ffi::error::ErrorCode;
 
-/// The alignment of the memory allocated by the FFI.
+#[cfg(target_family = "wasm")]
+/// The alignment of the memory allocated by the FFI for WASM.
 ///
 /// This is 1 because we're not allocating any complex data structures, and
 /// just interacting with the memory directly.
 const ALIGNMENT: usize = 1;
 
+#[cfg(target_family = "wasm")]
 /// Allocates a buffer of `len` bytes on the WASM memory.
 #[no_mangle]
 pub fn malloc(len: u32) -> u32 {
@@ -30,12 +32,46 @@ pub fn malloc(len: u32) -> u32 {
     }
 }
 
+#[cfg(target_family = "wasm")]
 /// Frees a previously allocated buffer on the WASM memory.
 #[no_mangle]
 pub fn free(ptr: u32, len: u32) {
     unsafe {
         let layout = Layout::from_size_align_unchecked(len as usize, ALIGNMENT);
         dealloc(ptr as _, layout);
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+// Standard system alignment for non-WASM environment.
+const ALIGNMENT: usize = std::mem::size_of::<usize>();
+
+#[cfg(not(target_family = "wasm"))]
+/// Allocates a buffer of `len` bytes on the system memory.
+pub extern "C" fn allocate(len: usize) -> *mut u8 {
+    unsafe {
+        let layout = Layout::from_size_align_unchecked(len as usize, ALIGNMENT);
+        let ptr = alloc(layout);
+        ptr
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[no_mangle]
+pub extern "C" fn deallocate(ptr: *mut u8, len: u32) {
+    if ptr.is_null() {
+        return;
+    }
+
+    let size = len as usize;
+
+    let layout = match Layout::from_size_align(size, 8) {
+        Ok(layout) => layout,
+        Err(_) => return,
+    };
+
+    unsafe {
+        dealloc(ptr, layout);
     }
 }
 
