@@ -477,6 +477,9 @@ impl ContractBytecode {
 }
 
 impl BlobData {
+    /// Version of the KZG commitment hash used in versioned blob hashes.
+    pub const VERSIONED_HASH_VERSION_KZG: u8 = 0x01;
+
     /// Provides contribution bytes for an external hash.
     #[must_use]
     pub fn to_hash_input_bytes(&self) -> Vec<u8> {
@@ -518,6 +521,18 @@ impl BlobData {
     #[must_use]
     pub fn take_sidecar(&mut self) -> Option<BlobSidecar> {
         self.data.take()
+    }
+
+    /// Computes the versioned blob hash from a 48-byte KZG commitment.
+    ///
+    /// This follows the EIP-4844 definition: 0x01 ‖ SHA256(commitment)[1..]
+    #[must_use]
+    pub fn hash_from_commitment(commitment: &[u8]) -> [u8; 32] {
+        let digest = Sha256::digest(commitment);
+        let mut out = [0u8; 32];
+        out[0] = Self::VERSIONED_HASH_VERSION_KZG;
+        out[1..].copy_from_slice(&digest[1..]);
+        out
     }
 }
 
