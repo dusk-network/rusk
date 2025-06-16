@@ -33,6 +33,7 @@ use crate::database::Mempool;
 
 const CF_LEDGER_HEADER: &str = "cf_ledger_header";
 const CF_LEDGER_TXS: &str = "cf_ledger_txs";
+const CF_LEDGER_BLOBS: &str = "cf_ledger_blobs";
 const CF_LEDGER_FAULTS: &str = "cf_ledger_faults";
 const CF_LEDGER_HEIGHT: &str = "cf_ledger_height";
 const CF_CANDIDATES: &str = "cf_candidates";
@@ -122,6 +123,11 @@ impl Backend {
             .cf_handle(CF_METADATA)
             .expect("CF_METADATA column family must exist");
 
+        let ledger_blobs_cf = self
+            .rocksdb
+            .cf_handle(CF_LEDGER_BLOBS)
+            .expect("CF_LEDGER_BLOBS column family must exist");
+
         DBTransaction::<'_, OptimisticTransactionDB> {
             inner,
             candidates_cf,
@@ -134,6 +140,7 @@ impl Backend {
             spending_id_cf,
             fees_cf,
             ledger_height_cf,
+            ledger_blobs_cf,
             metadata_cf,
             cumulative_inner_size: RefCell::new(0),
         }
@@ -198,6 +205,10 @@ impl DB for Backend {
             ),
             ColumnFamilyDescriptor::new(
                 CF_LEDGER_HEIGHT,
+                blocks_cf_opts.clone(),
+            ),
+            ColumnFamilyDescriptor::new(
+                CF_LEDGER_BLOBS,
                 blocks_cf_opts.clone(),
             ),
             ColumnFamilyDescriptor::new(CF_CANDIDATES, blocks_cf_opts.clone()),
@@ -291,6 +302,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
     ledger_faults_cf: &'db ColumnFamily,
     ledger_txs_cf: &'db ColumnFamily,
     ledger_height_cf: &'db ColumnFamily,
+    ledger_blobs_cf: &'db ColumnFamily,
 
     // Mempool column families
     mempool_cf: &'db ColumnFamily,
@@ -336,7 +348,18 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             // store all block transactions
             for tx in txs {
                 let mut d = vec![];
-                tx.write(&mut d)?;
+                if tx.inner.inner.blob().is_some() {
+                    let mut strip_tx = tx.clone();
+                    if let Some(blobs) = strip_tx.inner.inner.strip_blobs() {
+                        for (hash, sidecar) in blobs.into_iter() {
+                            let sidecar_bytes = sidecar.to_var_bytes();
+                            self.store_blob_data(&hash, sidecar_bytes)?;
+                        }
+                    }
+                    strip_tx.write(&mut d)?;
+                } else {
+                    tx.write(&mut d)?;
+                }
                 self.put_cf(cf, tx.inner.id(), d)?;
             }
         }
@@ -442,6 +465,15 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
 
         Ok(faults)
+    }
+
+    fn blob_data_by_hash(&self, hash: &[u8; 32]) -> Result<Option<Vec<u8>>> {
+        Ok(self.inner.get_cf(self.ledger_blobs_cf, hash)?)
+    }
+
+    fn store_blob_data(&self, hash: &[u8; 32], data: Vec<u8>) -> Result<()> {
+        self.inner.put_cf(self.ledger_blobs_cf, hash, data)?;
+        Ok(())
     }
 
     fn block(&self, hash: &[u8]) -> Result<Option<Block>> {
