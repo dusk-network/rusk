@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use clap::{arg, Parser};
 
 use crate::settings::{LogFormat, LogLevel};
+use crate::zeroizing_bytes::ZeroizingBytes;
 use crate::Command;
 
 #[derive(Parser, Debug)]
@@ -27,8 +28,8 @@ pub(crate) struct WalletArgs {
     pub network: Option<String>,
 
     /// Set the password for wallet's creation
-    #[arg(long, env = "RUSK_WALLET_PWD")]
-    pub password: Option<String>,
+    #[arg(long, env = "RUSK_WALLET_PWD", value_parser = clap::value_parser!(ZeroizingBytes))]
+    pub password: Option<ZeroizingBytes>,
 
     /// The state server fully qualified URL
     #[arg(long)]
