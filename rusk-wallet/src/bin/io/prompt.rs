@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::borrow::Borrow;
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -35,10 +36,11 @@ use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
 
 use crate::command::TransactionHistory;
+use crate::zeroizing_bytes::ZeroizingBytes;
 
 pub(crate) trait Prompt {
     /// Prompt the user to enter a password
-    fn create_new_password(&self) -> InquireResult<String> {
+    fn create_new_password(&self) -> InquireResult<ZeroizingBytes> {
         create_new_password()
     }
 
@@ -52,17 +54,17 @@ pub(crate) struct Prompter;
 
 impl Prompt for Prompter {}
 
-pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
+pub(crate) fn ask_pwd(msg: &str) -> Result<ZeroizingBytes, InquireError> {
     let pwd = Password::new(msg)
         .with_display_toggle_enabled()
         .without_confirmation()
         .with_display_mode(PasswordDisplayMode::Masked)
         .prompt();
 
-    pwd
+    pwd.map(ZeroizingBytes::from)
 }
 
-pub(crate) fn create_new_password() -> Result<String, InquireError> {
+pub(crate) fn create_new_password() -> Result<ZeroizingBytes, InquireError> {
     let pwd = Password::new("Password:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Hidden)
@@ -70,19 +72,18 @@ pub(crate) fn create_new_password() -> Result<String, InquireError> {
         .with_custom_confirmation_error_message("The passwords doesn't match")
         .prompt();
 
-    pwd
+    pwd.map(ZeroizingBytes::from)
 }
 
 /// Request the user to authenticate with a password and return the derived key
 pub(crate) fn derive_key_from_password(
     msg: &str,
-    password: &Option<String>,
+    password: &Option<ZeroizingBytes>,
     salt: Option<&[u8; SALT_SIZE]>,
     file_version: DatFileVersion,
-) -> anyhow::Result<Vec<u8>> {
+) -> anyhow::Result<ZeroizingBytes> {
     let pwd = match password.as_ref() {
-        Some(p) => p.to_string(),
-
+        Some(p) => p.clone(),
         None => ask_pwd(msg)?,
     };
 
@@ -91,13 +92,13 @@ pub(crate) fn derive_key_from_password(
 
 /// Request the user to create a wallet password and return the derived key
 pub(crate) fn derive_key_from_new_password(
-    password: &Option<String>,
+    password: &Option<ZeroizingBytes>,
     salt: Option<&[u8; SALT_SIZE]>,
     file_version: DatFileVersion,
     prompter: &dyn Prompt,
-) -> anyhow::Result<Vec<u8>> {
+) -> anyhow::Result<ZeroizingBytes> {
     let pwd = match password.as_ref() {
-        Some(p) => p.to_string(),
+        Some(p) => p.clone(),
         None => prompter.create_new_password()?,
     };
 
@@ -155,28 +156,29 @@ pub(crate) fn request_mnemonic_phrase(
 
 pub(crate) fn derive_key(
     file_version: DatFileVersion,
-    pwd: &str,
+    pwd: &ZeroizingBytes,
     salt: Option<&[u8; SALT_SIZE]>,
-) -> anyhow::Result<Vec<u8>> {
+) -> anyhow::Result<ZeroizingBytes> {
     match file_version {
         DatFileVersion::RuskBinaryFileFormat(version) => {
             if version_without_pre_higher(version) >= (0, 0, 2, 0) {
                 let salt = salt
                     .ok_or_else(|| anyhow::anyhow!("Couldn't find the salt"))?;
                 Ok(pbkdf2::pbkdf2_hmac_array::<Sha256, SALT_SIZE>(
-                    pwd.as_bytes(),
+                    pwd.borrow(),
                     salt,
                     PBKDF2_ROUNDS,
                 )
                 .to_vec())
             } else {
                 let mut hasher = Sha256::new();
-                hasher.update(pwd.as_bytes());
+                hasher.update(Borrow::<[u8]>::borrow(pwd));
                 Ok(hasher.finalize().to_vec())
             }
         }
-        _ => Ok(blake3::hash(pwd.as_bytes()).as_bytes().to_vec()),
+        _ => Ok(blake3::hash(pwd.borrow()).as_bytes().to_vec()),
     }
+    .map(ZeroizingBytes::from)
 }
 
 /// Request a directory

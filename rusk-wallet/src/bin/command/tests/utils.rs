@@ -19,6 +19,7 @@ use url::Url;
 use super::*;
 use crate::command::history::TransactionDirection;
 use crate::settings::{LogLevel, Logging};
+use crate::zeroizing_bytes::ZeroizingBytes;
 use crate::{connect, status, LogFormat};
 
 #[derive(Default)]
@@ -29,8 +30,8 @@ struct FakePrompter {
 impl Prompt for FakePrompter {
     fn create_new_password(
         &self,
-    ) -> anyhow::Result<String, inquire::InquireError> {
-        Ok("password".to_string())
+    ) -> anyhow::Result<ZeroizingBytes, inquire::InquireError> {
+        Ok(ZeroizingBytes::from("password".to_string()))
     }
 
     fn prompt_text(&self, _msg: &str) -> inquire::error::InquireResult<String> {

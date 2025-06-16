@@ -9,11 +9,14 @@ mod config;
 mod interactive;
 mod io;
 mod settings;
+mod zeroizing_bytes;
 
 use command::{gen_iv, gen_salt};
 pub(crate) use command::{Command, RunResult};
 use io::prompt::{ask_pwd, derive_key, Prompter};
+use zeroizing_bytes::ZeroizingBytes;
 
+use std::borrow::Borrow;
 use std::fs;
 use std::path::PathBuf;
 
@@ -36,7 +39,7 @@ use io::{prompt, status, WalletArgs};
 #[derive(Debug, Clone)]
 pub(crate) struct WalletFile {
     path: WalletPath,
-    aes_key: Vec<u8>,
+    aes_key: ZeroizingBytes,
     salt: Option<[u8; SALT_SIZE]>,
     iv: Option<[u8; IV_SIZE]>,
 }
@@ -47,7 +50,7 @@ impl SecureWalletFile for WalletFile {
     }
 
     fn aes_key(&self) -> &[u8] {
-        &self.aes_key
+        self.aes_key.borrow()
     }
 
     fn salt(&self) -> Option<&[u8; SALT_SIZE]> {
@@ -295,13 +298,11 @@ async fn exec() -> anyhow::Result<()> {
 
     let file_version = wallet.get_file_version()?;
 
-    let password = &settings.password;
-
     if file_version.is_old() {
         let salt = gen_salt();
         let iv = gen_iv();
         let pwd = match password.as_ref() {
-            Some(p) => p.to_string(),
+            Some(p) => p.clone(),
             None => ask_pwd("Updating your wallet data file, please enter your wallet password ")?,
         };
 

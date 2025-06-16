@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add deploy contract output (display the new contractId)
 - Add optional deposit to ContractCall [#3650]
 - Add pagination for transaction history to not pollute the stdout [#3292]
+- Add zeroization for passwords and AES keys to prevent data leaks [#3687]
 
 ### Changed
 
@@ -99,6 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3704]: https://github.com/dusk-network/rusk/issues/3704
 [#3702]: https://github.com/dusk-network/rusk/issues/3702
 [#3700]: https://github.com/dusk-network/rusk/issues/3700
+[#3687]: https://github.com/dusk-network/rusk/issues/3687
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
 [#3623]: https://github.com/dusk-network/rusk/issues/3623
 [#3602]: https://github.com/dusk-network/rusk/issues/3602
