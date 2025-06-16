@@ -166,7 +166,7 @@ fn read_from_file(
         )
     })?;
 
-    let aes_key = hash_sha256(pwd);
+    let aes_key = hash_sha256(pwd.as_bytes());
 
     let bytes = decrypt(&ciphertext[..], &aes_key)
         .map_err(|e| anyhow::anyhow!("Invalid consensus keys password {e}"))?;
@@ -188,7 +188,7 @@ pub fn save_consensus_keys(
     filename: &str,
     pk: &BlsPublicKey,
     sk: &BlsSecretKey,
-    pwd: &str,
+    pwd: &[u8],
 ) -> Result<(PathBuf, PathBuf), ConsensusKeysError> {
     let path = path.join(filename);
     let bytes = pk.to_bytes();
@@ -211,9 +211,9 @@ pub fn save_consensus_keys(
     Ok((path.with_extension("keys"), path.with_extension("cpk")))
 }
 
-fn hash_sha256(pwd: &str) -> Vec<u8> {
+fn hash_sha256(pwd: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
-    hasher.update(pwd.as_bytes());
+    hasher.update(pwd);
     hasher.finalize().to_vec()
 }
 
@@ -280,7 +280,7 @@ mod tests {
         let pk = BlsPublicKey::from(&sk);
         let pwd = "password";
 
-        save_consensus_keys(dir.path(), "consensus", &pk, &sk, pwd)?;
+        save_consensus_keys(dir.path(), "consensus", &pk, &sk, pwd.as_bytes())?;
         let keys_path = dir.path().join("consensus.keys");
         let (loaded_sk, loaded_pk) = load_keys(
             keys_path
