@@ -7,7 +7,6 @@ help: ## Display this help screen
 test:
 	cargo test --release
 
-
 wasm: ## Build the WASM files
 	@cargo wasm
 
@@ -17,5 +16,8 @@ clippy: ## Run clippy
 
 doc: ## Run doc gen
 	@cargo doc --release
+
+headers: ## Generate C headers
+	@cbindgen --crate dusk-wallet-core --output wallet-core.h --config cbindgen.toml
 
 .PHONY: all help test
