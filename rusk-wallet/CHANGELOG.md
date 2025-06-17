@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add config to change the default wallet directory [#3775]
+
 ### Changed
 
 - Change withdraw rewards to withdraw partial amount [#2538]
@@ -86,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- Issues -->
+[#3775]: https://github.com/dusk-network/rusk/issues/3775
 [#3734]: https://github.com/dusk-network/rusk/issues/3734
 [#3713]: https://github.com/dusk-network/rusk/issues/3713
 [#3712]: https://github.com/dusk-network/rusk/issues/3712
