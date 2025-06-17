@@ -29,7 +29,7 @@ enum MenuItem {
     Transfer,
     Stake,
     Unstake,
-    Withdraw,
+    ClaimRewards,
     ContractDeploy,
     ContractCall,
     Unshield,
@@ -47,7 +47,7 @@ impl Display for MenuItem {
             MenuItem::Transfer => write!(f, "Transfer Dusk"),
             MenuItem::Stake => write!(f, "Stake"),
             MenuItem::Unstake => write!(f, "Unstake"),
-            MenuItem::Withdraw => write!(f, "Withdraw Stake Reward"),
+            MenuItem::ClaimRewards => write!(f, "Claim Stake Rewards"),
             MenuItem::ContractDeploy => write!(f, "Deploy a Contract"),
             MenuItem::ContractCall => write!(f, "Call a Contract"),
             MenuItem::Unshield => {
@@ -81,7 +81,7 @@ pub(crate) async fn online(
         MenuItem::StakeInfo,
         MenuItem::Stake,
         MenuItem::Unstake,
-        MenuItem::Withdraw,
+        MenuItem::ClaimRewards,
         MenuItem::ContractCall,
         MenuItem::ContractDeploy,
         MenuItem::CalculateContractId,
@@ -244,7 +244,7 @@ pub(crate) async fn online(
                 )?,
             }))
         }
-        MenuItem::Withdraw => {
+        MenuItem::ClaimRewards => {
             let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
@@ -255,7 +255,7 @@ pub(crate) async fn online(
             if check_min_gas_balance(
                 balance,
                 DEFAULT_LIMIT_STAKE,
-                "a stake reward withdrawal transaction",
+                "a stake reward claim transaction",
             )
             .is_err()
             {
@@ -265,10 +265,10 @@ pub(crate) async fn online(
             let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
             let max_withdraw = wallet.get_stake_reward(profile_idx).await?;
 
-            ProfileOp::Run(Box::new(Command::Withdraw {
+            ProfileOp::Run(Box::new(Command::ClaimRewards {
                 address: Some(addr),
                 reward: Some(prompt::request_token_amt_with_default(
-                    "withdraw rewards",
+                    "claim rewards",
                     max_withdraw,
                     max_withdraw,
                 )?),

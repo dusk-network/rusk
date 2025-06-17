@@ -31,7 +31,7 @@ SUBCOMMANDS:
     shield                   Convert public DUSK to shielded Dusk
     stake                    Stake DUSK
     unstake                  Unstake DUSK
-    withdraw                 Withdraw accumulated rewards for a stake key
+    claim-rewards            Claim accumulated stake rewards
     contract-deploy          Deploy a contract
     stake-info               Check your stake information
     contract-call            Call a contract

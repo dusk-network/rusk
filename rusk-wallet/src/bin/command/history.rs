@@ -8,6 +8,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
+use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::withdraw::WithdrawReceiver;
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use dusk_core::{dusk, from_dusk};
@@ -31,22 +32,33 @@ impl TransactionHistory {
     pub fn header() -> String {
         format!(
             "{: ^9} | {: ^64} | {: ^8} | {: ^17} | {: ^12} | {: ^8}\n",
-            "BLOCK", "TX_ID", "METHOD", "AMOUNT", "FEE", "BALANCE_TYPE"
+            "BLOCK", "TX_ID", "ACTION", "AMOUNT", "FEE", "BALANCE_TYPE"
         )
     }
 
     pub fn height(&self) -> u64 {
         self.height
     }
+
+    pub(crate) fn action(&self) -> &str {
+        match self.tx.call() {
+            None => "transfer",
+            Some(call) => {
+                if call.contract == STAKE_CONTRACT && call.fn_name == "withdraw"
+                {
+                    "claim-reward"
+                } else {
+                    &call.fn_name
+                }
+            }
+        }
+    }
 }
 
 impl Display for TransactionHistory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let dusk = self.amount / dusk(1.0) as f64;
-        let contract = match self.tx.call() {
-            None => "transfer",
-            Some(call) => &call.fn_name,
-        };
+        let action = self.action();
 
         let fee = match self.direction {
             TransactionDirection::In => format!("{: >12.9}", ""),
@@ -63,7 +75,7 @@ impl Display for TransactionHistory {
 
         writeln!(
             f,
-            "{height: >9} | {tx_id} | {contract: ^8} | {dusk: >+17.9} | {fee} | {bal_type}",
+            "{height: >9} | {tx_id} | {action: ^8} | {dusk: >+17.9} | {fee} | {bal_type}",
         )
     }
 }
@@ -163,7 +175,7 @@ pub(crate) async fn transaction_from_notes(
             if let Some(th) = outgoing_tx {
                 // Outgoing txs found, this should be the change or any
                 // other output created by the tx result
-                // (like withdraw or unstake)
+                // (like claim rewards or unstake)
                 th.amount += note_amount;
             } else {
                 // No outgoing txs found, this note should either belong to a

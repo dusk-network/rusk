@@ -10,7 +10,7 @@
 //! interfacing with the Dusk Network.
 //!
 //! Clients can use `Wallet` to create their Dusk wallet, send transactions
-//! through the network of their choice, stake and withdraw rewards, etc.
+//! through the network of their choice, stake and claim rewards, etc.
 
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
