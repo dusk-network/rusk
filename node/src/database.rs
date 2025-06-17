@@ -57,6 +57,10 @@ pub trait DB: Send + Sync + 'static {
 
 /// Implements both read-write and read-only transactions to DB.
 
+// TODO: BlobSidecar storage (for BlobTransactions included in blocks)
+pub trait BlobSidecars {
+}
+
 pub trait Ledger {
     /// Read-write transactions
     /// Returns disk footprint of the committed transaction
@@ -143,6 +147,7 @@ pub trait ConsensusStorage {
     fn count_validation_results(&self) -> usize;
 }
 
+// TODO: BlobSidecar storage (for BlobTransactions in Mempool)
 pub trait Mempool {
     /// Adds a transaction to the mempool with a timestamp.
     fn store_mempool_tx(

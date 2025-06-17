@@ -21,8 +21,8 @@ use crate::signatures::bls::{
     Signature as AccountSignature,
 };
 use crate::transfer::data::{
-    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
-    MAX_MEMO_SIZE,
+    Blob, BlobHashes, ContractBytecode, ContractCall, ContractDeploy,
+    TransactionData, MAX_MEMO_SIZE,
 };
 use crate::{BlsScalar, Error};
 
@@ -337,6 +337,42 @@ impl Transaction {
     pub fn hash(&self) -> BlsScalar {
         BlsScalar::hash_to_scalar(&self.to_hash_input_bytes())
     }
+
+    /// Returns the blob hashes used with the transaction, if any.
+    #[must_use]
+    pub fn blob_hashes(&self) -> Option<&BlobHashes> {
+        match self.data()? {
+            TransactionData::Blob(hashes, _) => Some(hashes),
+            _ => None,
+        }
+    }
+
+    /// Returns the blobs used with the transaction, if any.
+    #[must_use]
+    pub fn blobs(&self) -> Option<&Vec<Blob>> {
+        match self.data()? {
+            TransactionData::Blob(_, blob_sidecar) => {
+                blob_sidecar.as_ref().map(|b| &b.blobs)
+            }
+            _ => None,
+        }
+    }
+
+    /// Chenges the transaction to strip off the blob sidecar
+     #[must_use]
+    pub fn strip_off_blob_sidecar(&self) -> Option<Self> {
+        let blob_hashes = self.blob_hashes()?;
+
+        let stripped_data = TransactionData::Blob(blob_hashes.clone(), None);
+
+        let mut stripped_transaction = self.clone();
+        stripped_transaction.payload.data = Some(stripped_data);
+
+        // @TODO: Maybe add a logic to replace the memo if it not equal to the
+        // blob hashes.
+
+        Some(stripped_transaction)
+    }
 }
 
 /// The payload for a moonlight transaction.
@@ -398,8 +434,15 @@ impl Payload {
 
         bytes.extend(self.nonce.to_bytes());
 
+        let data = match &self.data {
+            Some(TransactionData::Blob(hashes, _)) => {
+                Some(TransactionData::Memo(hashes.clone()))
+            }
+            other => other.clone(),
+        };
+
         // serialize the contract call, deployment or memo, if present.
-        match &self.data {
+        match data {
             Some(TransactionData::Call(call)) => {
                 bytes.push(1);
                 bytes.extend(call.to_var_bytes());
@@ -513,7 +556,14 @@ impl Payload {
         }
         bytes.extend(self.nonce.to_bytes());
 
-        match &self.data {
+        let data = match &self.data {
+            Some(TransactionData::Blob(hashes, _)) => {
+                Some(TransactionData::Memo(hashes.clone()))
+            }
+            other => other.clone(),
+        };
+
+        match data {
             Some(TransactionData::Deploy(d)) => {
                 bytes.extend(&d.bytecode.to_hash_input_bytes());
                 bytes.extend(&d.owner);
@@ -529,7 +579,7 @@ impl Payload {
             Some(TransactionData::Memo(m)) => {
                 bytes.extend(m);
             }
-            None => {}
+            _ => {}
         }
 
         bytes
