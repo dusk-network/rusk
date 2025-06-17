@@ -47,11 +47,13 @@ pub struct StrippedTxHistoryItem {
     pub direction: TransactionDirection,
     pub amount: f64,
     pub fee: u64,
+    pub action: String,
 }
 
 impl Into<StrippedTxHistoryItem> for TransactionHistory {
     fn into(self) -> StrippedTxHistoryItem {
         StrippedTxHistoryItem {
+            action: self.action().to_string(),
             direction: self.direction,
             amount: self.amount,
             fee: self.fee,

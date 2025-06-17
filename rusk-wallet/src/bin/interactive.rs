@@ -424,7 +424,7 @@ async fn confirm(
             prompt::ask_confirm()
         }
 
-        Command::Withdraw {
+        Command::ClaimRewards {
             address,
             gas_limit,
             reward,
@@ -433,21 +433,21 @@ async fn confirm(
             let sender = address.as_ref().ok_or(Error::BadAddress)?;
             let sender_index = wallet.find_index(sender)?;
             let max_fee = gas_limit * gas_price;
-            let withdraw_from = wallet.public_address(sender_index)?;
+            let claim_from = wallet.public_address(sender_index)?;
 
             let total_rewards = wallet.get_stake_reward(sender_index).await?;
 
-            // withdraw all rewards if no amt specified
-            let reward = if let Some(withdraw_reward) = reward {
-                withdraw_reward
+            // claim all rewards if no amt specified
+            let reward = if let Some(claim_reward) = reward {
+                claim_reward
             } else {
                 &total_rewards
             };
 
             println!("   > Pay with {}", sender.preview());
-            println!("   > Withdraw rewards from {}", withdraw_from.preview());
+            println!("   > Claim rewards from {}", claim_from.preview());
             println!("   > Receive rewards at {}", sender.preview());
-            println!("   > Amount withdrawing {} DUSK", reward);
+            println!("   > Amount claiming {} DUSK", reward);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
