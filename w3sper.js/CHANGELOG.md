@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add possibility to retrieve the unshielded transaction history [#3427]
+- Add support for transaction payload carrying contract call data [#3750]
+
 ### Changed
 
 ### Removed
@@ -52,6 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3460]: https://github.com/dusk-network/rusk/issues/3460
 [#3568]: https://github.com/dusk-network/rusk/issues/3568
 [#3582]: https://github.com/dusk-network/rusk/issues/3582
+[#3427]: https://github.com/dusk-network/rusk/issues/3427
+[#3750]: https://github.com/dusk-network/rusk/issues/3750
 
 <!-- VERSIONS -->
 
