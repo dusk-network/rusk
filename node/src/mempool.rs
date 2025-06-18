@@ -43,6 +43,12 @@ pub enum TxAcceptanceError {
     AlreadyExistsInMempool,
     #[error("this transaction exists in the ledger")]
     AlreadyExistsInLedger,
+    #[error("Transaction blob is missing data")]
+    BlobMissing,
+    #[error("No blobs provided")]
+    BlobEmpty,
+    #[error("Transaction has too many blobs: {0}")]
+    BlobTooMany(usize),
     #[error("this transaction's spendId exists in the mempool")]
     SpendIdExistsInMempool,
     #[error("this transaction is invalid {0}")]
@@ -237,6 +243,7 @@ impl MempoolSrv {
         }
 
         if tx.inner.deploy().is_some() {
+            // TODO: Remove this duplicated code in favor of vm::deploy_check
             let vm = vm.read().await;
             let min_deployment_gas_price = vm.min_deployment_gas_price();
             if tx.gas_price() < min_deployment_gas_price {
@@ -251,6 +258,26 @@ impl MempoolSrv {
                 .deploy_charge(gas_per_deploy_byte, vm.min_deploy_points());
             if tx.inner.gas_limit() < deploy_charge {
                 return Err(TxAcceptanceError::GasLimitTooLow(deploy_charge));
+            }
+        } else if let Some(blobs) = tx.inner.blob() {
+            // TODO: Move this to vm::blob_check to perform the same checks
+            // while executing a tx directly from within a Block
+            match blobs.len() {
+                0 => Err(TxAcceptanceError::BlobEmpty),
+                n if n > 6 => Err(TxAcceptanceError::BlobTooMany(n)),
+                _n => {
+                    // TODO: Add checks for gas price and gas limit
+                    Ok(())
+                }
+            }?;
+            for blob in blobs {
+                match &blob.data {
+                    Some(_data) => {
+                        // TODO: Add checks for commitment and hash verification
+                        Ok(())
+                    }
+                    None => Err(TxAcceptanceError::BlobMissing),
+                }?;
             }
         } else {
             let vm = vm.read().await;
@@ -391,14 +418,13 @@ fn check_tx_serialization(
     // its serialized size has to be within the same 64Kib limit.
     const SCRATCH_BUF_BYTES: usize = 1024;
     const ARGBUF_LEN: usize = 64 * 1024;
-    let stripped_tx = tx.strip_off_bytecode();
-    let tx = stripped_tx.as_ref().unwrap_or(tx);
+    let stripped_tx = tx.strip_off_bytecode().or(tx.blob_to_memo());
     let mut sbuf = [0u8; SCRATCH_BUF_BYTES];
     let mut buffer = [0u8; ARGBUF_LEN];
     let scratch = BufferScratch::new(&mut sbuf);
     let ser = BufferSerializer::new(&mut buffer);
     let mut ser = CompositeSerializer::new(ser, scratch, Infallible);
-    if let Err(err) = ser.serialize_value(tx) {
+    if let Err(err) = ser.serialize_value(stripped_tx.as_ref().unwrap_or(tx)) {
         match err {
             CompositeSerializerError::SerializerError(err) => match err {
                 BufferSerializerError::Overflow { .. } => {

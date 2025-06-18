@@ -27,7 +27,9 @@ use crate::signatures::bls::{
 };
 use crate::{BlsScalar, Error};
 
-use self::data::{ContractCall, ContractDeploy, TransactionData};
+use self::data::{
+    BlobData, BlobSidecar, ContractCall, ContractDeploy, TransactionData,
+};
 use self::moonlight::Transaction as MoonlightTransaction;
 use self::phoenix::{
     Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
@@ -290,6 +292,56 @@ impl Transaction {
             Self::Phoenix(tx) => tx.memo(),
             Self::Moonlight(tx) => tx.memo(),
         }
+    }
+
+    /// Returns the Blob used with the transaction, if any.
+    #[must_use]
+    pub fn blob(&self) -> Option<&Vec<BlobData>> {
+        match self {
+            Self::Phoenix(tx) => tx.blob(),
+            Self::Moonlight(tx) => tx.blob(),
+        }
+    }
+
+    /// Extracts and removes the blob sidecar from the transaction, if any, and
+    /// returns it as a vector of tuples containing the blob hash and the
+    /// corresponding blob sidecar.
+    ///
+    /// This function mutably accesses the blob storage within the transaction,
+    /// clears the stored data, and returns the extracted parts while
+    /// preserving their hashes.
+    ///
+    /// Returns `None` if there are no blobs present in the transaction.
+    #[must_use]
+    pub fn strip_blobs(&mut self) -> Option<Vec<([u8; 32], BlobSidecar)>> {
+        let blob = match self {
+            Self::Phoenix(tx) => tx.blob_mut(),
+            Self::Moonlight(tx) => tx.blob_mut(),
+        }?;
+
+        let ret = blob
+            .iter_mut()
+            .filter_map(|b| b.take_sidecar().map(|d| (b.hash, d)))
+            .collect::<Vec<_>>();
+
+        Some(ret)
+    }
+
+    /// Creates a modified clone of this transaction if it contains a Blob,
+    /// clones all fields except for the Blob, whose versioned hashes are set as
+    /// Memo.
+    ///
+    /// Returns none if the transaction is not a Blob transaction.
+    #[must_use]
+    pub fn blob_to_memo(&self) -> Option<Self> {
+        Some(match self {
+            Transaction::Phoenix(tx) => {
+                Transaction::Phoenix(tx.blob_to_memo()?)
+            }
+            Transaction::Moonlight(tx) => {
+                Transaction::Moonlight(tx.blob_to_memo()?)
+            }
+        })
     }
 
     /// Creates a modified clone of this transaction if it contains data for
