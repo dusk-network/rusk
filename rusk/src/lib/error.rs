@@ -55,6 +55,8 @@ pub enum Error {
     InvalidCreditsCount(u64, usize),
     /// Memo too large
     MemoTooLarge(usize),
+    /// Blob related errors
+    Blob(String),
 }
 
 impl std::error::Error for Error {}
@@ -104,6 +106,7 @@ impl From<dusk_core::Error> for Error {
             }
             ExecErr::Rkyv(e) => Self::Transaction(ExecErr::Rkyv(e)),
             ExecErr::MemoTooLarge(size) => Self::MemoTooLarge(size),
+            ExecErr::Blob(e) => Self::Blob(e),
         }
     }
 }
@@ -174,6 +177,9 @@ impl fmt::Display for Error {
             }
             Error::MemoTooLarge(size) => {
                 write!(f, "The memo size {size} is too large")
+            }
+            Error::Blob(e) => {
+                write!(f, "Blob error: {e}")
             }
         }
     }

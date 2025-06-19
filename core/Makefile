@@ -9,7 +9,7 @@ test:
 	cargo test --release --no-run
 			
 clippy: ## Run clippy
-	@cargo clippy --release --features serde -- -D warnings
+	@cargo clippy --release --features serde,kzg -- -D warnings
 	@cargo clippy --no-default-features --release -- -D warnings
 
 doc: ## Run doc gen

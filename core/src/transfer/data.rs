@@ -7,6 +7,9 @@
 //! Extra data that may be sent with the `data` field of either transaction
 //! type.
 
+#[cfg(feature = "kzg")]
+mod kzg_blob;
+
 #[cfg(feature = "serde")]
 use serde_with::{hex::Hex, serde_as};
 
@@ -215,6 +218,12 @@ impl From<String> for TransactionData {
     }
 }
 
+impl From<Vec<BlobData>> for TransactionData {
+    fn from(blobs: Vec<BlobData>) -> Self {
+        TransactionData::Blob(blobs)
+    }
+}
+
 /// Data for performing a contract deployment
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
@@ -262,13 +271,14 @@ pub struct BlobSidecar {
     pub proof: [u8; 48],
 
     /// Blob data: 4096 field elements, each 32 bytes (128 KiB total)
-    #[cfg_attr(feature = "serde", serde_as(as = "[Hex; 4096]"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     pub data: BlobDataPart,
 }
 
+const BYTES_PER_BLOB: usize = 4096 * 32;
 /// A type alias for the BLOB data part, which consists of 4096 field elements
 /// (each 32 bytes), total 128 KiB
-pub type BlobDataPart = [[u8; 32]; 4096];
+pub type BlobDataPart = [u8; BYTES_PER_BLOB];
 
 /// All the data the transfer-contract needs to perform a contract-call.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
@@ -555,9 +565,7 @@ impl BlobSidecar {
         let mut bytes = Vec::new();
         bytes.extend(self.commitment);
         bytes.extend(self.proof);
-        for d in self.data {
-            bytes.extend(d);
-        }
+        bytes.extend(self.data);
         bytes
     }
 
@@ -569,10 +577,7 @@ impl BlobSidecar {
     pub fn from_buf(buf: &mut &[u8]) -> Result<Self, BytesError> {
         let commitment = crate::read_arr(buf)?;
         let proof = crate::read_arr(buf)?;
-        let mut data = [[0u8; 32]; 4096];
-        for d in &mut data {
-            *d = crate::read_arr(buf)?;
-        }
+        let data = crate::read_arr(buf)?;
 
         Ok(Self {
             commitment,
