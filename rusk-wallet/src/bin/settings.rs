@@ -8,6 +8,7 @@ use std::fmt;
 use std::path::PathBuf;
 
 use rusk_wallet::{Error, RuesHttpClient};
+use serde::Deserialize;
 use tracing::Level;
 use url::Url;
 
@@ -134,6 +135,8 @@ impl Settings {
     pub fn args(args: WalletArgs) -> Result<SettingsBuilder, Error> {
         let wallet_dir = if let Some(path) = &args.wallet_dir {
             path.clone()
+        } else if let Some(path) = get_wallet_dir_config_from_exe_dir() {
+            path
         } else {
             let mut path = dirs::home_dir().ok_or(Error::OsNotSupported)?;
             path.push(".dusk");
@@ -164,6 +167,23 @@ impl Settings {
             .await
             .map_err(Error::from)
     }
+}
+
+#[derive(Deserialize, Debug)]
+struct WalletDirConfig {
+    wallet_dir: PathBuf,
+}
+
+fn get_wallet_dir_config_from_exe_dir() -> Option<PathBuf> {
+    let mut path = std::env::current_exe().ok()?;
+    path.pop();
+    let config_path = path.join("config.toml");
+    if !config_path.exists() {
+        return None;
+    }
+    let contents = std::fs::read_to_string(config_path).ok()?;
+    let wallet_dir_config: WalletDirConfig = toml::from_str(&contents).ok()?;
+    Some(wallet_dir_config.wallet_dir)
 }
 
 impl From<&LogLevel> for Level {

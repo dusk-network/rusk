@@ -74,6 +74,9 @@ directory:
 - The wallet directory (provided via the `--wallet-dir` argument, defaults to `$HOME/.dusk/rusk-wallet/`)
 - The global configuration folder (`$HOME/.config/rusk-wallet/`)
 
+The default wallet directory can also be changed by setting `wallet_dir = ...` in a `config.toml` file located in the same
+directory as the `rusk-wallet` binary.
+
 Having the `config.toml` in the global configuration folder is useful in case of multiple wallets (each one with its own wallet directory) that shares the same settings.
 
 If a `config.toml` exists in both locations, the one found in the specified wallet directory will be used.
