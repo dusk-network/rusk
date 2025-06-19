@@ -30,6 +30,8 @@ pub enum Error {
     InvalidChar(char, usize),
     /// Rkyv serialization.
     Rkyv(String),
+    /// Blob KZG related.
+    Blob(String),
     /// The provided memo is too large. Contains the memo size used. The max
     /// size is [`MAX_MEMO_SIZE`].
     ///
