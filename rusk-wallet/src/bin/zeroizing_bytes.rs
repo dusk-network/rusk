@@ -15,6 +15,7 @@ pub struct ZeroizingVec<T: Zeroize>(Vec<T>);
 
 impl<T: Zeroize> Drop for ZeroizingVec<T> {
     fn drop(&mut self) {
+        println!("Pointer of dropped value: {:?}", self as *const Self);
         self.0.zeroize();
         assert!(self.0.is_empty(), "Zeroization failed");
     }
@@ -79,5 +80,38 @@ mod tests {
         let vec = RefCell::take(&vec);
         let vec = ManuallyDrop::into_inner(vec);
         assert_eq!(vec, vec![1i32, 2, 3]);
+    }
+    
+    #[test]
+    fn zeroize_drop() {
+        use super::Zeroize;
+        use super::ZeroizingBytes;
+
+        let mut bytes: ZeroizingBytes = vec![1, 2, 3].into();
+        let ptr: *const ZeroizingBytes = &bytes;
+        println!("Pointer of value: {:?}", ptr);
+
+        let mut other_bytes: ZeroizingBytes = vec![1, 2, 3].into();
+        let other_ptr: *const ZeroizingBytes = &other_bytes;
+
+        // drop should call zeroize
+        drop(bytes);
+        //unsafe { core::ptr::drop_in_place(&mut bytes); }
+        //core::mem::forget(bytes);
+
+        // calling zeroize before drop should be superfluous
+        other_bytes.zeroize();
+        drop(other_bytes);
+
+        unsafe {
+            let stored_mem: &ZeroizingBytes =
+                &core::slice::from_raw_parts(ptr, 3)[0];
+            let other_stored_mem: &ZeroizingBytes =
+                &core::slice::from_raw_parts(other_ptr, 3)[0];
+            // this assertion should pass but doesn't:
+            // the memory that has been zeroized manually is set to the empty
+            // vec, the other is not
+            assert_eq!(*stored_mem, *other_stored_mem);
+        };
     }
 }
