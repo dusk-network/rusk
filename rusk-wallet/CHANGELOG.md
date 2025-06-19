@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add config to change the default wallet directory [#3775]
+- Add support for blob transaction
 
 ### Changed
 
