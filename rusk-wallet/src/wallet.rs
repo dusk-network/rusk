@@ -580,20 +580,24 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         profile_idx: u8,
         dir: &Path,
         filename: Option<String>,
-        pwd: &str,
+        pwd: &[u8],
     ) -> Result<(PathBuf, PathBuf), Error> {
         // we're expecting a directory here
         if !dir.is_dir() {
             return Err(Error::NotDirectory);
         }
 
-        let (pk, sk) = self.provisioner_keys(profile_idx)?;
+        let (pk, mut sk) = self.provisioner_keys(profile_idx)?;
         let path = PathBuf::from(dir);
         let filename = filename.unwrap_or(profile_idx.to_string());
 
-        Ok(node_data::bls::save_consensus_keys(
+        let keys_paths = node_data::bls::save_consensus_keys(
             &path, &filename, &pk, &sk, pwd,
-        )?)
+        )?;
+
+        sk.zeroize();
+
+        Ok(keys_paths)
     }
 
     /// Return the index of the address passed, returns an error if the address

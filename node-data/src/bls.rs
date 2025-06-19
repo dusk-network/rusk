@@ -23,6 +23,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::base64::Base64;
 use serde_with::serde_as;
 use sha2::{Digest, Sha256};
+use zeroize::Zeroize;
 
 pub const PUBLIC_BLS_SIZE: usize = BlsPublicKey::SIZE;
 
@@ -165,7 +166,7 @@ fn read_from_file(
         )
     })?;
 
-    let aes_key = hash_sha256(pwd);
+    let aes_key = hash_sha256(pwd.as_bytes());
 
     let bytes = decrypt(&ciphertext[..], &aes_key)
         .map_err(|e| anyhow::anyhow!("Invalid consensus keys password {e}"))?;
@@ -187,30 +188,32 @@ pub fn save_consensus_keys(
     filename: &str,
     pk: &BlsPublicKey,
     sk: &BlsSecretKey,
-    pwd: &str,
+    pwd: &[u8],
 ) -> Result<(PathBuf, PathBuf), ConsensusKeysError> {
     let path = path.join(filename);
     let bytes = pk.to_bytes();
     fs::write(path.with_extension("cpk"), bytes)?;
 
-    let bls = BlsKeyPair {
+    let mut bls = BlsKeyPair {
         public_key_bls: pk.to_bytes().to_vec(),
         secret_key_bls: sk.to_bytes().to_vec(),
     };
-    let json = serde_json::to_string(&bls)?;
 
-    let mut bytes = json.as_bytes().to_vec();
+    let mut bytes = serde_json::to_vec(&bls)?;
     let aes_key = hash_sha256(pwd);
-    bytes = encrypt(&bytes, &aes_key)?;
+    let encrypted_bytes = encrypt(&bytes, &aes_key)?;
 
-    fs::write(path.with_extension("keys"), bytes)?;
+    fs::write(path.with_extension("keys"), encrypted_bytes)?;
+
+    bls.secret_key_bls.zeroize();
+    bytes.zeroize();
 
     Ok((path.with_extension("keys"), path.with_extension("cpk")))
 }
 
-fn hash_sha256(pwd: &str) -> Vec<u8> {
+fn hash_sha256(pwd: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
-    hasher.update(pwd.as_bytes());
+    hasher.update(pwd);
     hasher.finalize().to_vec()
 }
 
@@ -277,7 +280,7 @@ mod tests {
         let pk = BlsPublicKey::from(&sk);
         let pwd = "password";
 
-        save_consensus_keys(dir.path(), "consensus", &pk, &sk, pwd)?;
+        save_consensus_keys(dir.path(), "consensus", &pk, &sk, pwd.as_bytes())?;
         let keys_path = dir.path().join("consensus.keys");
         let (loaded_sk, loaded_pk) = load_keys(
             keys_path
