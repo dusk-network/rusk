@@ -3,3 +3,12 @@ deno.lock
 **/*.rs.bk
 .rusk
 .vscode
+
+# Ignore IDE specific files
+.idea
+
+# Ignore macOS specific files
+.DS_Store
+
+# Ignore C  headers
+*.h
