@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix transaction history error when the wallet has no stake [#3734]
 - Fix transaction history fail after shield/unshield conversions [#3600]
 - Fix transaction history fail after stake/unstake [#3712]
+- Fix zeroize calls for secret keys to ensure they are executed on early returns from functions [#3687]
 
 ## [0.2.0] - 2025-05-07
 
@@ -98,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3704]: https://github.com/dusk-network/rusk/issues/3704
 [#3702]: https://github.com/dusk-network/rusk/issues/3702
 [#3700]: https://github.com/dusk-network/rusk/issues/3700
+[#3687]: https://github.com/dusk-network/rusk/issues/3687
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
 [#3623]: https://github.com/dusk-network/rusk/issues/3623
 [#3602]: https://github.com/dusk-network/rusk/issues/3602
