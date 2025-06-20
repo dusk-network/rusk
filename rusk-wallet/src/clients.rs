@@ -233,6 +233,8 @@ impl State {
             })
             .collect();
 
+        sk.zeroize();
+
         // pick up to MAX_INPUT_NOTES input-notes that cover the tx-cost
         let tx_input_notes = pick_notes(&vk, cached_notes.into(), tx_cost);
         if tx_input_notes.is_empty() {
@@ -247,8 +249,6 @@ impl State {
 
             tx_input.push((note_leaf.note.clone(), opening, *nullifier));
         }
-
-        sk.zeroize();
 
         Ok(tx_input)
     }
