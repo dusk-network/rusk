@@ -8,6 +8,7 @@ mod history;
 
 use dusk_core::transfer::data::BlobData;
 pub use history::TransactionHistory;
+use zeroize::Zeroize;
 
 #[cfg(all(test, feature = "e2e-test"))]
 mod tests;
@@ -572,7 +573,7 @@ impl Command {
                 name,
                 export_pwd,
             } => {
-                let pwd = match export_pwd {
+                let mut pwd = match export_pwd {
                     Some(pwd) => pwd,
                     None => match settings.password.as_ref() {
                         Some(p) => p.to_string(),
@@ -584,12 +585,16 @@ impl Command {
 
                 let profile_idx = profile_idx.unwrap_or_default();
 
-                let (pub_key, key_pair) = wallet.export_provisioner_keys(
+                let res = wallet.export_provisioner_keys(
                     profile_idx,
                     &dir,
                     name,
                     &pwd,
-                )?;
+                );
+
+                pwd.zeroize();
+
+                let (pub_key, key_pair) = res?;
 
                 Ok(RunResult::ExportedKeys(pub_key, key_pair))
             }
@@ -854,7 +859,8 @@ impl Command {
             aes_key: key,
             salt: Some(salt),
             iv: Some(iv),
-        })?;
+        })
+        .inspect_err(|_| w.close())?;
 
         Ok(w)
     }
@@ -883,7 +889,8 @@ impl Command {
             aes_key: key,
             salt: Some(salt),
             iv: Some(iv),
-        })?;
+        })
+        .inspect_err(|_| w.close())?;
         Ok(w)
     }
 }
