@@ -242,6 +242,7 @@ mod tests {
     // the `unused_crate_dependencies` lint complains for dev-dependencies that
     // are only used in integration tests, so adding this work-around here
     use ff as _;
+    use hex as _;
     use once_cell as _;
     use rand::rngs::StdRng;
     use rand::{RngCore, SeedableRng};

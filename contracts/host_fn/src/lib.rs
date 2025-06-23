@@ -79,6 +79,19 @@ impl HostFnTest {
         abi::verify_bls_multisig(msg, keys, sig)
     }
 
+    pub fn keccak256(&self, bytes: Vec<u8>) -> [u8; 32] {
+        abi::keccak256(bytes)
+    }
+
+    pub fn verify_secp256k1(
+        &self,
+        msg: Vec<u8>,
+        pk: Vec<u8>,
+        sig: Vec<u8>,
+    ) -> bool {
+        abi::verify_secp256k1(msg, pk, sig)
+    }
+
     pub fn chain_id(&self) -> u8 {
         abi::chain_id()
     }
@@ -134,6 +147,18 @@ unsafe fn verify_bls(arg_len: u32) -> u32 {
 unsafe fn verify_bls_multisig(arg_len: u32) -> u32 {
     abi::wrap_call(arg_len, |(msg, keys, sig)| {
         STATE.verify_bls_multisig(msg, keys, sig)
+    })
+}
+
+#[no_mangle]
+unsafe fn keccak256(arg_len: u32) -> u32 {
+    abi::wrap_call(arg_len, |bytes| STATE.keccak256(bytes))
+}
+
+#[no_mangle]
+unsafe fn verify_secp256k1(arg_len: u32) -> u32 {
+    abi::wrap_call(arg_len, |(msg, pk, sig)| {
+        STATE.verify_secp256k1(msg, pk, sig)
     })
 }
 
