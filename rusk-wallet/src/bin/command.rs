@@ -740,7 +740,8 @@ impl Command {
                 let address = address.unwrap_or(wallet.default_address());
                 address.public_key().map_err(|_| {
                     Error::Blob(
-                        "Blob is unsupported for Shielded Address".to_string(),
+                        "Blob is unsupported for Shielded Addresses"
+                            .to_string(),
                     )
                 })?;
                 let addr_idx = wallet.find_index(&address)?;
@@ -752,7 +753,7 @@ impl Command {
                         std::fs::read(path.as_path()).map_err(|e| {
                             Error::Blob(format!("Invalid path {path:?}: {e:?}"))
                         })?;
-                    if &blob[0..2] == b"0x" {
+                    if blob.starts_with(b"0x") {
                         blob = hex::decode(&blob[2..]).map_err(|e| {
                             Error::Blob(format!(
                                 "Invalid hex in {path:?}: {e:?}"
