@@ -24,8 +24,6 @@ use std::fmt::{self, Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::thread;
 
-use hex as _;
-
 use dusk_core::abi::{Metadata, Query};
 use piecrust::{SessionData, VM as PiecrustVM};
 
