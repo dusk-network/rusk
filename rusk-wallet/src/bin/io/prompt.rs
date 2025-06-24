@@ -248,7 +248,7 @@ fn request_token(
     min: Dusk,
     balance: Dusk,
     default: Option<f64>,
-) -> Result<Dusk, Error> {
+) -> anyhow::Result<Dusk> {
     // Checks if the value is larger than the given min and smaller than the
     // min of the balance and `MAX_CONVERTIBLE`.
     let validator = move |value: &f64| {
@@ -283,17 +283,18 @@ fn request_token(
         render_config: RenderConfig::default(),
     };
 
-    amount_prompt.prompt()?.try_into()
+    let amount: Dusk = amount_prompt.prompt()?.try_into()?;
+    Ok(amount)
 }
 
 /// Request a positive amount of tokens
 pub(crate) fn request_token_amt(
     action: &str,
     balance: Dusk,
-) -> Result<Dusk, Error> {
+) -> anyhow::Result<Dusk> {
     let min = MIN_CONVERTIBLE;
 
-    request_token(action, min, balance, None).map_err(Error::from)
+    request_token(action, min, balance, None)
 }
 
 /// Request positive amount of tokens with a default
@@ -301,21 +302,20 @@ pub(crate) fn request_token_amt_with_default(
     action: &str,
     balance: Dusk,
     default: Dusk,
-) -> Result<Dusk, Error> {
+) -> anyhow::Result<Dusk> {
     let min = MIN_CONVERTIBLE;
 
     request_token(action, min, balance, Some(default.into()))
-        .map_err(Error::from)
 }
 
 /// Request amount of tokens that can be 0
 pub(crate) fn request_optional_token_amt(
     action: &str,
     balance: Dusk,
-) -> Result<Dusk, Error> {
+) -> anyhow::Result<Dusk> {
     let min = Dusk::from(0);
 
-    request_token(action, min, balance, None).map_err(Error::from)
+    request_token(action, min, balance, None)
 }
 
 /// Request amount of tokens that can't be lower than the `min` argument and
@@ -323,8 +323,8 @@ pub(crate) fn request_optional_token_amt(
 pub(crate) fn request_stake_token_amt(
     balance: Dusk,
     min: Dusk,
-) -> Result<Dusk, Error> {
-    request_token("stake", min, balance, None).map_err(Error::from)
+) -> anyhow::Result<Dusk> {
+    request_token("stake", min, balance, None)
 }
 
 /// Request gas limit
@@ -347,7 +347,7 @@ pub(crate) fn request_gas_limit(default_gas_limit: u64) -> anyhow::Result<u64> {
 pub(crate) fn request_gas_price(
     min_gas_price: Lux,
     mempool_gas_prices: MempoolGasPrices,
-) -> Result<Lux, Error> {
+) -> anyhow::Result<Lux> {
     let default_gas_price = if mempool_gas_prices.average > min_gas_price {
         mempool_gas_prices.average
     } else {
