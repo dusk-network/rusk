@@ -123,7 +123,15 @@ pub(crate) async fn run_loop(
                                 if let Err(err) =
                                     crate::prompt::tx_history_list(history)
                                 {
-                                    println!("Failed to output transaction history with error {err}");
+                                    match err.downcast_ref::<InquireError>() {
+                                        Some(InquireError::OperationInterrupted) => {
+                                            return Err(err);
+                                        },
+                                        Some(InquireError::OperationCanceled) => {
+                                            continue;
+                                        },
+                                        _ => println!("Failed to output transaction history with error {err}"),
+                                    }
                                 }
 
                                 println!();

@@ -444,7 +444,10 @@ async fn exec() -> anyhow::Result<()> {
                 }
                 RunResult::History(txns) => {
                     if let Err(err) = crate::prompt::tx_history_list(&txns) {
-                        println!("Failed to output transaction history with error {err}");
+                        match err.downcast_ref::<InquireError>() {
+                            Some(InquireError::OperationInterrupted | InquireError::OperationCanceled) => (),
+                            _ => println!("Failed to output transaction history with error {err}"),
+                        }
                     }
                 }
                 RunResult::ContractId(id) => {

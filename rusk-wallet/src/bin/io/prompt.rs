@@ -18,7 +18,7 @@ use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
 
 use inquire::error::InquireResult;
-use inquire::ui::RenderConfig;
+use inquire::ui::{RenderConfig, Styled};
 use inquire::validator::Validation;
 use inquire::{
     Confirm, CustomType, InquireError, Password, PasswordDisplayMode, Select,
@@ -453,7 +453,13 @@ pub(crate) fn tx_history_list(
         history.iter().map(|history| history.to_string()).collect();
 
     Select::new(header.as_str(), history_str)
-        .with_help_message("↑↓ to move, type to filter")
+        .with_help_message(
+            "↑↓ to move, type to filter, esc to go back, ctrl+c to exit",
+        )
+        .with_render_config(
+            RenderConfig::default()
+                .with_canceled_prompt_indicator(Styled::new(" ")),
+        )
         .prompt()?;
 
     Ok(())
