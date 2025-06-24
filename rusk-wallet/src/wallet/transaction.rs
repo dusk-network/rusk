@@ -513,7 +513,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// # Errors
     /// This method will error if the wallet is not connected to the network or
     /// if the `sender_idx` doesn't exist within the wallet.
-    pub async fn phoenix_stake_withdraw(
+    pub async fn phoenix_claim_rewards(
         &self,
         sender_idx: u8,
         reward_amt: Option<Dusk>,
@@ -535,8 +535,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let available_reward = self.get_stake_reward(sender_idx).await?;
 
-        let reward_amt_withdrawn = match reward_amt {
-            // if user specified an amount to withdraw we check if it's
+        let reward_amt_claimed = match reward_amt {
+            // if user specified an amount to claim, we check if it's
             // available
             Some(reward_amt) => {
                 if reward_amt > available_reward {
@@ -544,21 +544,21 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 }
                 *reward_amt
             }
-            // withdraw all the reward if no amt specified to withdraw
+            // claim all the rewards if no amt specified
             None => *available_reward,
         };
 
         let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
-        let withdraw = phoenix_stake_reward(
+        let claim_rewards = phoenix_stake_reward(
             &mut rng,
             &sender_sk,
             &stake_sk,
             &stake_owner_sk,
             inputs,
             root,
-            reward_amt_withdrawn,
+            reward_amt_claimed,
             gas.limit,
             gas.price,
             chain_id,
@@ -569,8 +569,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         stake_sk.zeroize();
         stake_owner_sk.zeroize();
 
-        let withdraw = state.prove(withdraw).await?;
-        state.propagate(withdraw).await
+        let claim_rewards = state.prove(claim_rewards).await?;
+        state.propagate(claim_rewards).await
     }
 
     /// Withdraws accumulated staking reward to a public account.
@@ -578,7 +578,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// # Errors
     /// This method will error if the wallet is not connected to the network or
     /// if the `sender_idx` doesn't exist within the wallet.
-    pub async fn moonlight_stake_withdraw(
+    pub async fn moonlight_claim_rewards(
         &self,
         sender_idx: u8,
         reward_amt: Option<Dusk>,
@@ -592,8 +592,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let chain_id = state.fetch_chain_id().await?;
         let available_reward = self.get_stake_reward(sender_idx).await?;
 
-        let reward_amt_withdrawn = match reward_amt {
-            // if user specified an amount to withdraw we check if it's
+        let reward_amt_claimed = match reward_amt {
+            // if user specified an amount to claim we check if it's
             // available
             Some(reward_amt) => {
                 if reward_amt > available_reward {
@@ -601,7 +601,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 }
                 *reward_amt
             }
-            // withdraw all the reward if no amt specified to withdraw
+            // claim all the reward if no amt specified
             None => *available_reward,
         };
 
@@ -611,12 +611,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let stake_owner_idx = self.find_stake_owner_idx(stake_pk).await?;
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
-        let withdraw = moonlight_stake_reward(
+        let claim_rewards = moonlight_stake_reward(
             &mut rng,
             &sender_sk,
             &sender_sk,
             &stake_owner_sk,
-            reward_amt_withdrawn,
+            reward_amt_claimed,
             gas.limit,
             gas.price,
             nonce,
@@ -626,7 +626,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         sender_sk.zeroize();
         stake_owner_sk.zeroize();
 
-        state.propagate(withdraw).await
+        state.propagate(claim_rewards).await
     }
 
     /// Converts Dusk from a shielded account to a public account.
