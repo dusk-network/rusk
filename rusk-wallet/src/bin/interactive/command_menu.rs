@@ -89,7 +89,9 @@ pub(crate) async fn online(
         MenuItem::Back,
     ];
 
-    let select = Select::new("What would you like to do?", cmd_menu).prompt();
+    let select = Select::new("What would you like to do?", cmd_menu)
+        .with_help_message(&format!("↑↓ to move, enter to select, type to filter, esc to go back, ctrl+c to exit"))
+        .prompt();
 
     if let Err(InquireError::OperationCanceled) = select {
         return Ok(ProfileOp::Back);
