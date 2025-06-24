@@ -90,7 +90,10 @@ pub(crate) async fn run_loop(
                         let res = match cmd.run(wallet, settings).await {
                             Ok(res) => res,
                             Err(err) => {
-                                println!("{err}\n");
+                                match err.downcast_ref::<InquireError>() {
+                                    Some(InquireError::OperationCanceled) => (),
+                                    _ => println!("{err}\n"),
+                                }
                                 continue;
                             }
                         };
@@ -489,7 +492,7 @@ impl<'a> Display for ProfileSelect<'a> {
                 profile.public_account_preview(),
             ),
             ProfileSelect::New => write!(f, "Create a new profile"),
-            ProfileSelect::Back => write!(f, "Back"),
+            ProfileSelect::Exit => write!(f, "Exit"),
         }
     }
 }
