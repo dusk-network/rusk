@@ -64,10 +64,10 @@ async fn main() -> anyhow::Result<()> {
     if let Err(err) = exec().await {
         // display the error message (if any)
         match err.downcast_ref::<InquireError>() {
-            Some(InquireError::OperationInterrupted) => {
-                // TODO: Handle this error properly
-                // See also https://github.com/dusk-network/wallet-cli/issues/104
-            }
+            Some(
+                InquireError::OperationInterrupted
+                | InquireError::OperationCanceled,
+            ) => (),
             _ => eprintln!("{err}"),
         };
         // give cursor back to the user
