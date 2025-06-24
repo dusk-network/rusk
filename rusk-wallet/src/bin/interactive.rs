@@ -10,11 +10,8 @@ use std::fmt::Display;
 
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
-use rusk_wallet::dat::FileVersion as DatFileVersion;
-use rusk_wallet::{
-    Address, Error, Profile, Wallet, WalletPath, IV_SIZE, MAX_PROFILES,
-    SALT_SIZE,
-};
+use rusk_wallet::dat;
+use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
 
 use crate::io::{self, prompt};
 use crate::prompt::Prompter;
@@ -231,63 +228,76 @@ enum ProfileOp {
     Stay,
 }
 
-type Salt = [u8; SALT_SIZE];
-type Iv = [u8; IV_SIZE];
-
 /// Allows the user to load a wallet interactively
 pub(crate) async fn load_wallet(
     wallet_path: &WalletPath,
     settings: &Settings,
-    file_version_and_salt_iv: Result<
-        (DatFileVersion, Option<(Salt, Iv)>),
-        Error,
-    >,
 ) -> anyhow::Result<Wallet<WalletFile>> {
     let wallet_found =
         wallet_path.inner().exists().then(|| wallet_path.clone());
 
     let password = &settings.password;
 
-    // display main menu
-    let wallet = match menu_wallet(wallet_found, settings).await? {
-        MainMenu::Load(path) => {
-            let (file_version, salt_and_iv) = file_version_and_salt_iv?;
-            let mut attempt = 1;
-            loop {
-                let key = prompt::derive_key_from_password(
-                    "Please enter your wallet password",
-                    password,
-                    salt_and_iv.map(|si| si.0).as_ref(),
-                    file_version,
-                )?;
-                match Wallet::from_file(WalletFile {
-                    path: path.clone(),
-                    aes_key: key,
-                    salt: salt_and_iv.map(|si| si.0),
-                    iv: salt_and_iv.map(|si| si.1),
-                }) {
-                    Ok(wallet) => break wallet,
-                    Err(_) if attempt > 2 => {
-                        Err(Error::AttemptsExhausted)?;
-                    }
-                    Err(_) => {
-                        println!("Invalid password, please try again");
-                        attempt += 1;
+    loop {
+        // display main menu
+        let wallet = match menu_wallet(wallet_found.as_ref(), settings).await? {
+            MainMenu::Load(path) => {
+                let (file_version, salt_and_iv) =
+                    dat::read_file_version_and_salt_iv(wallet_path)?;
+                let mut attempt = 1;
+                loop {
+                    let key = prompt::derive_key_from_password(
+                        "Please enter your wallet password",
+                        password,
+                        salt_and_iv.map(|si| si.0).as_ref(),
+                        file_version,
+                    );
+                    let key = match key {
+                        Ok(key) => key,
+                        Err(err) => break Err(err),
+                    };
+                    match Wallet::from_file(WalletFile {
+                        path: path.clone(),
+                        aes_key: key,
+                        salt: salt_and_iv.map(|si| si.0),
+                        iv: salt_and_iv.map(|si| si.1),
+                    }) {
+                        Ok(wallet) => break Ok(wallet),
+                        Err(_) if attempt > 2 => {
+                            Err(Error::AttemptsExhausted)?;
+                        }
+                        Err(_) => {
+                            println!("Invalid password, please try again");
+                            attempt += 1;
+                        }
                     }
                 }
             }
-        }
-        // Use the latest binary format when creating a wallet
-        MainMenu::Create => {
-            Command::run_create(false, &None, password, wallet_path, &Prompter)?
-        }
-        MainMenu::Recover => {
-            Command::run_restore_from_seed(wallet_path, &Prompter)?
-        }
-        MainMenu::Exit => std::process::exit(0),
-    };
+            // Use the latest binary format when creating a wallet
+            MainMenu::Create => Command::run_create(
+                false,
+                &None,
+                password,
+                wallet_path,
+                &Prompter,
+            ),
+            MainMenu::Recover => {
+                Command::run_restore_from_seed(wallet_path, &Prompter)
+            }
+            MainMenu::Exit => std::process::exit(0),
+        };
 
-    Ok(wallet)
+        match wallet {
+            Ok(wallet) => return Ok(wallet),
+            Err(err) => match err.downcast_ref::<InquireError>() {
+                Some(InquireError::OperationCanceled) => {
+                    println!();
+                    continue;
+                }
+                _ => return Err(err),
+            },
+        };
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -301,14 +311,14 @@ enum MainMenu {
 /// Allows the user to load an existing wallet, recover a lost one
 /// or create a new one.
 async fn menu_wallet(
-    wallet_found: Option<WalletPath>,
+    wallet_found: Option<&WalletPath>,
     settings: &Settings,
 ) -> anyhow::Result<MainMenu> {
     // create the wallet menu
     let mut menu_items = Vec::new();
 
     if let Some(wallet_path) = wallet_found {
-        menu_items.push(MainMenu::Load(wallet_path));
+        menu_items.push(MainMenu::Load(wallet_path.clone()));
         menu_items.push(MainMenu::Create);
         menu_items.push(MainMenu::Recover);
     } else {

@@ -205,21 +205,11 @@ async fn exec() -> anyhow::Result<()> {
         return Ok(());
     };
 
-    let file_version_and_salt_iv =
-        dat::read_file_version_and_salt_iv(&wallet_path);
-
     // get our wallet ready
     let mut wallet: Wallet<WalletFile> = match cmd {
         // if `cmd` is `None` we are in interactive mode and need to load the
         // wallet from file
-        None => {
-            interactive::load_wallet(
-                &wallet_path,
-                &settings,
-                file_version_and_salt_iv,
-            )
-            .await?
-        }
+        None => interactive::load_wallet(&wallet_path, &settings).await?,
         // else we check if we need to replace the wallet and then load it
         Some(ref cmd) => match cmd {
             Command::Create {
@@ -273,7 +263,8 @@ async fn exec() -> anyhow::Result<()> {
 
             _ => {
                 // Grab the file version for a random command
-                let (file_version, salt_and_iv) = file_version_and_salt_iv?;
+                let (file_version, salt_and_iv) =
+                    dat::read_file_version_and_salt_iv(&wallet_path)?;
 
                 // load wallet from file
                 let key = prompt::derive_key_from_password(
