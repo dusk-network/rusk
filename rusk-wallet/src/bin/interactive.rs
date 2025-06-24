@@ -84,7 +84,20 @@ pub(crate) async fn run_loop(
             match op {
                 Ok(ProfileOp::Run(cmd)) => {
                     // request confirmation before running
-                    if confirm(&cmd, wallet).await? {
+                    let should_run = match confirm(&cmd, wallet).await {
+                        Ok(run) => run,
+                        Err(err) => {
+                            match err.downcast_ref::<InquireError>() {
+                                Some(InquireError::OperationInterrupted) => {
+                                    return Err(err);
+                                }
+                                Some(InquireError::OperationCanceled) => (),
+                                _ => println!("{err}\n"),
+                            };
+                            continue;
+                        }
+                    };
+                    if should_run {
                         // run command
                         prompt::hide_cursor()?;
                         let res = match cmd.run(wallet, settings).await {
