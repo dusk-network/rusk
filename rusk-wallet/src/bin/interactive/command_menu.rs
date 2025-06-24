@@ -90,7 +90,7 @@ pub(crate) async fn online(
     ];
 
     let select = Select::new("What would you like to do?", cmd_menu)
-        .with_help_message(&format!("↑↓ to move, enter to select, type to filter, esc to go back, ctrl+c to exit"))
+        .with_help_message("↑↓ to move, enter to select, type to filter, esc to go back, ctrl+c to exit")
         .prompt();
 
     if let Err(InquireError::OperationCanceled) = select {
@@ -448,9 +448,16 @@ pub(crate) fn offline(
     let cmd_menu = vec![MenuItem::Export];
 
     let select = Select::new("[OFFLINE] What would you like to do?", cmd_menu)
-        .prompt()?;
+        .with_help_message(
+            "↑↓ to move, enter to select, esc to go back, ctrl+c to exit",
+        )
+        .prompt();
 
-    let res = match select {
+    if let Err(InquireError::OperationCanceled) = select {
+        return Ok(ProfileOp::Back);
+    }
+
+    let res = match select? {
         MenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
             profile_idx: Some(profile_idx),
             name: None,
