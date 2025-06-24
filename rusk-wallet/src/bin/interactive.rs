@@ -154,7 +154,7 @@ pub(crate) async fn run_loop(
 enum ProfileSelect<'a> {
     Index(u8, &'a Profile),
     New,
-    Back,
+    Exit,
 }
 
 async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
@@ -175,7 +175,7 @@ async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
 
             Ok(profile_idx)
         }
-        ProfileSelect::Back => Err(InquireError::OperationCanceled.into()),
+        ProfileSelect::Exit => Err(InquireError::OperationInterrupted.into()),
     }
 }
 
@@ -198,25 +198,10 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
         menu_items.push(ProfileSelect::New);
     }
 
-    menu_items.push(ProfileSelect::Back);
+    menu_items.push(ProfileSelect::Exit);
 
-    let mut select = Select::new("Your Profiles", menu_items);
-
-    // UNWRAP: Its okay to unwrap because the default help message
-    // is provided by inquire Select struct
-    let mut msg = Select::<ProfileSelect>::DEFAULT_HELP_MESSAGE
-        .unwrap()
-        .to_owned();
-
-    if let Some(rx) = &wallet.state()?.sync_rx {
-        if let Ok(status) = rx.try_recv() {
-            msg = format!("Sync Status: {status}");
-        } else {
-            msg = "Waiting for Sync to complete..".to_string();
-        }
-    }
-
-    select = select.with_help_message(&msg);
+    let select = Select::new("Your Profiles", menu_items)
+        .with_help_message("↑↓ to move, enter to select, ctrl+c to exit");
 
     Ok(select.prompt()?)
 }
