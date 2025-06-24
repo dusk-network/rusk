@@ -9,6 +9,7 @@ use std::env;
 use std::net::TcpStream;
 use std::time::Duration;
 
+use inquire::Text;
 use rusk_wallet::GraphQL;
 use serde::Deserialize;
 use tempfile::{tempdir, TempDir};
@@ -33,7 +34,10 @@ impl Prompt for FakePrompter {
         Ok("password".to_string())
     }
 
-    fn prompt_text(&self, _msg: &str) -> inquire::error::InquireResult<String> {
+    fn prompt_text(
+        &self,
+        _text_prompt: Text,
+    ) -> inquire::error::InquireResult<String> {
         return Ok(self.text_answer.clone());
     }
 }
