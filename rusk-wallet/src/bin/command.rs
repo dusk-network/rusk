@@ -821,7 +821,8 @@ impl Command {
             aes_key: key,
             salt: Some(salt),
             iv: Some(iv),
-        })?;
+        })
+        .inspect_err(|_| w.close())?;
 
         Ok(w)
     }
@@ -850,7 +851,8 @@ impl Command {
             aes_key: key,
             salt: Some(salt),
             iv: Some(iv),
-        })?;
+        })
+        .inspect_err(|_| w.close())?;
         Ok(w)
     }
 }

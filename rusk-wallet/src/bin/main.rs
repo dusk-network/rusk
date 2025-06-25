@@ -4,6 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+// This feature has been stabilized since 1.76.0.
+// It can just be removed when the toolchain is updated.
+#![feature(result_option_inspect)]
+
 mod command;
 mod config;
 mod interactive;
@@ -262,7 +266,8 @@ async fn exec() -> anyhow::Result<()> {
                             aes_key: key,
                             salt: Some(salt),
                             iv: Some(iv),
-                        })?;
+                        })
+                        .inspect_err(|_| w.close())?;
                         w
                     }
                     None => {
@@ -298,42 +303,8 @@ async fn exec() -> anyhow::Result<()> {
     let password = &settings.password;
 
     if file_version.is_old() {
-        let salt = gen_salt();
-        let iv = gen_iv();
-        let pwd = match password.as_ref() {
-            Some(p) => p.to_string(),
-            None => ask_pwd("Updating your wallet data file, please enter your wallet password ")?,
-        };
-
-        let old_wallet_file = wallet
-            .file()
-            .clone()
-            .expect("wallet file should never be none");
-
-        let old_key = derive_key(file_version, &pwd, old_wallet_file.salt())?;
-        // Is the password correct?
-        Wallet::from_file(WalletFile {
-            aes_key: old_key,
-            ..old_wallet_file.clone()
-        })?;
-
-        let old_wallet_path = save_old_wallet(&old_wallet_file.path)?;
-
-        let key = derive_key(
-            DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-            &pwd,
-            Some(&salt),
-        )?;
-        wallet.save_to(WalletFile {
-            path: old_wallet_file.path,
-            aes_key: key,
-            salt: Some(salt),
-            iv: Some(iv),
-        })?;
-        println!(
-            "Update successful. Old wallet data file is saved at {}",
-            old_wallet_path.display()
-        );
+        update_wallet_file(&mut wallet, password, file_version)
+            .inspect_err(|_| wallet.close())?;
     }
 
     // set our status callback
@@ -349,12 +320,21 @@ async fn exec() -> anyhow::Result<()> {
         // if there is no command we are in interactive mode and need to run the
         // interactive loop
         None => {
-            wallet.register_sync()?;
-            interactive::run_loop(&mut wallet, &settings).await?;
+            wallet.register_sync().inspect_err(|_| wallet.close())?;
+            interactive::run_loop(&mut wallet, &settings)
+                .await
+                .inspect_err(|_| wallet.close())?;
         }
         // else we run the given command and print the result
         Some(cmd) => {
-            match cmd.run(&mut wallet, &settings).await? {
+            let run_result = match cmd.run(&mut wallet, &settings).await {
+                Ok(r) => r,
+                Err(err) => {
+                    wallet.close();
+                    return Err(err);
+                }
+            };
+            match run_result {
                 RunResult::PhoenixBalance(balance, spendable) => {
                     if spendable {
                         println!("{}", Dusk::from(balance.spendable));
@@ -391,8 +371,11 @@ async fn exec() -> anyhow::Result<()> {
                         settings.state,
                         settings.archiver,
                         status::headless,
-                    )?;
-                    gql.wait_for(&tx_id).await?;
+                    )
+                    .inspect_err(|_| wallet.close())?;
+                    gql.wait_for(&tx_id)
+                        .await
+                        .inspect_err(|_| wallet.close())?;
 
                     println!("{tx_id}");
                 }
@@ -406,8 +389,11 @@ async fn exec() -> anyhow::Result<()> {
                         settings.state,
                         settings.archiver,
                         status::headless,
-                    )?;
-                    gql.wait_for(&tx_id).await?;
+                    )
+                    .inspect_err(|_| wallet.close())?;
+                    gql.wait_for(&tx_id)
+                        .await
+                        .inspect_err(|_| wallet.close())?;
 
                     println!("{tx_id}");
                 }
@@ -457,6 +443,51 @@ async fn exec() -> anyhow::Result<()> {
     }
 
     wallet.close();
+
+    Ok(())
+}
+
+fn update_wallet_file(
+    wallet: &mut Wallet<WalletFile>,
+    password: &Option<String>,
+    file_version: DatFileVersion,
+) -> Result<(), anyhow::Error> {
+    let salt = gen_salt();
+    let iv = gen_iv();
+    let pwd = match password.as_ref() {
+        Some(p) => p.to_string(),
+        None => ask_pwd("Updating your wallet data file, please enter your wallet password ")?,
+    };
+
+    let old_wallet_file = wallet
+        .file()
+        .clone()
+        .expect("wallet file should never be none");
+
+    let old_key = derive_key(file_version, &pwd, old_wallet_file.salt())?;
+    // Is the password correct?
+    Wallet::from_file(WalletFile {
+        aes_key: old_key,
+        ..old_wallet_file.clone()
+    })?;
+
+    let old_wallet_path = save_old_wallet(&old_wallet_file.path)?;
+
+    let key = derive_key(
+        DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+        &pwd,
+        Some(&salt),
+    )?;
+    wallet.save_to(WalletFile {
+        path: old_wallet_file.path,
+        aes_key: key,
+        salt: Some(salt),
+        iv: Some(iv),
+    })?;
+    println!(
+        "Update successful. Old wallet data file is saved at {}",
+        old_wallet_path.display()
+    );
 
     Ok(())
 }
