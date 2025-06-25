@@ -23,6 +23,7 @@ bytecheck = { workspace = true }
 rand = { workspace = true }
 ff = { workspace = true }
 sha2 = { workspace = true }
+c-kzg = { workspace = true, optional = true }
 
 # plonk dependencies
 dusk-plonk = { workspace = true, features = ["rkyv-impl", "alloc"], optional = true }
@@ -58,6 +59,9 @@ zk = [
     "plonk",
     "groth16",
 ]
+
+# Enables kzg support
+kzg = ["c-kzg"]
 
 plonk = [
     "dusk-plonk",

@@ -161,6 +161,9 @@ pub enum Error {
     /// Invalid environment variable value
     #[error("Invalid environment variable value {0}")]
     InvalidEnvVar(String),
+    /// Error while processing blob data
+    #[error("Error while processing blob data: {0}")]
+    Blob(String),
     /// Conversion error
     #[error("Conversion error: {0}")]
     Conversion(String),
@@ -212,6 +215,7 @@ impl From<dusk_core::Error> for Error {
             }
             dusk_core::Error::Rkyv(_) => Self::Rkyv,
             dusk_core::Error::MemoTooLarge(m) => Self::MemoTooLarge(m),
+            dusk_core::Error::Blob(s) => Self::Blob(s),
         }
     }
 }
