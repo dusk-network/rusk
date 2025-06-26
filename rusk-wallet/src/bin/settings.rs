@@ -14,6 +14,7 @@ use url::Url;
 
 use crate::config::Network;
 use crate::io::WalletArgs;
+use crate::zeroizing_bytes::ZeroizingBytes;
 
 #[derive(clap::ValueEnum, Debug, Clone)]
 pub(crate) enum LogFormat {
@@ -55,7 +56,7 @@ pub(crate) struct Settings {
     pub(crate) logging: Logging,
 
     pub(crate) wallet_dir: PathBuf,
-    pub(crate) password: Option<String>,
+    pub(crate) password: Option<ZeroizingBytes>,
 }
 
 pub(crate) struct SettingsBuilder {

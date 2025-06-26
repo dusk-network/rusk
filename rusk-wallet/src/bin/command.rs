@@ -12,6 +12,7 @@ pub use history::TransactionHistory;
 #[cfg(all(test, feature = "e2e-test"))]
 mod tests;
 
+use std::borrow::Borrow;
 use std::fmt;
 use std::fs::File;
 use std::io::Write;
@@ -41,6 +42,7 @@ use wallet_core::BalanceInfo;
 use crate::io::prompt;
 use crate::prompt::Prompt;
 use crate::settings::Settings;
+use crate::zeroizing_bytes::ZeroizingBytes;
 use crate::{WalletFile, WalletPath};
 
 /// Commands that can be run against the Dusk wallet
@@ -336,8 +338,8 @@ pub(crate) enum Command {
         name: Option<String>,
 
         /// Password for the exported keys [default: env(RUSK_WALLET_PWD)]
-        #[arg(short, long, env = "RUSK_WALLET_EXPORT_PWD")]
-        export_pwd: Option<String>,
+        #[arg(short, long, env = "RUSK_WALLET_EXPORT_PWD", value_parser = clap::value_parser!(ZeroizingBytes))]
+        export_pwd: Option<ZeroizingBytes>,
     },
 
     /// Show current settings
@@ -542,7 +544,7 @@ impl Command {
                 let pwd = match export_pwd {
                     Some(pwd) => pwd,
                     None => match settings.password.as_ref() {
-                        Some(p) => p.to_string(),
+                        Some(p) => p.clone(),
                         None => prompt::ask_pwd(
                             "Provide a password for your provisioner keys",
                         )?,
@@ -555,7 +557,7 @@ impl Command {
                     profile_idx,
                     &dir,
                     name,
-                    &pwd,
+                    pwd.borrow(),
                 )?;
 
                 Ok(RunResult::ExportedKeys(pub_key, key_pair))
@@ -786,7 +788,7 @@ impl Command {
     pub(crate) fn run_create(
         skip_recovery: bool,
         seed_file: &Option<PathBuf>,
-        password: &Option<String>,
+        password: &Option<ZeroizingBytes>,
         wallet_path: &WalletPath,
         prompter: &dyn Prompt,
     ) -> anyhow::Result<Wallet<WalletFile>> {
