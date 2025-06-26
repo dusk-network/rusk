@@ -52,12 +52,18 @@ pub(crate) struct Prompter;
 
 impl Prompt for Prompter {}
 
+pub(crate) const GO_BACK_HELP: &str = "esc to go back";
+pub(crate) const EXIT_HELP: &str = "ctrl+c to exit";
+pub(crate) const MOVE_HELP: &str = "↑↓ to move";
+pub(crate) const SELECT_HELP: &str = "enter to select";
+pub(crate) const FILTER_HELP: &str = "type to filter";
+
 pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
     let pwd = Password::new(msg)
         .with_display_toggle_enabled()
         .without_confirmation()
         .with_display_mode(PasswordDisplayMode::Masked)
-        .with_help_message("esc to go back, ctrl+c to exit")
+        .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", "))
         .prompt();
 
     pwd
@@ -69,7 +75,7 @@ pub(crate) fn create_new_password() -> Result<String, InquireError> {
         .with_display_mode(PasswordDisplayMode::Hidden)
         .with_custom_confirmation_message("Confirm password: ")
         .with_custom_confirmation_error_message("The passwords doesn't match")
-        .with_help_message("esc to go back, ctrl+c to exit")
+        .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", "))
         .prompt();
 
     pwd
@@ -137,7 +143,7 @@ pub(crate) fn request_mnemonic_phrase(
     loop {
         let phrase = prompter.prompt_text(
             Text::new("Please enter the mnemonic phrase: ")
-                .with_help_message("esc to go back, ctrl+c to exit"),
+                .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", ")),
         )?;
 
         match Mnemonic::from_phrase(&phrase, Language::English) {
@@ -458,7 +464,7 @@ pub(crate) fn tx_history_list(
 
     Select::new(header.as_str(), history_str)
         .with_help_message(
-            "↑↓ to move, type to filter, esc to go back, ctrl+c to exit",
+            &[MOVE_HELP, FILTER_HELP, GO_BACK_HELP, EXIT_HELP].join(", "),
         )
         .with_render_config(
             RenderConfig::default()

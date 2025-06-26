@@ -13,6 +13,7 @@ use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat;
 use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
 
+use crate::io::prompt::{EXIT_HELP, MOVE_HELP, SELECT_HELP};
 use crate::io::{self, prompt};
 use crate::prompt::Prompter;
 use crate::settings::Settings;
@@ -216,8 +217,9 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
 
     menu_items.push(ProfileSelect::Exit);
 
-    let select = Select::new("Your Profiles", menu_items)
-        .with_help_message("↑↓ to move, enter to select, ctrl+c to exit");
+    let help_msg = &[MOVE_HELP, SELECT_HELP, EXIT_HELP].join(", ");
+    let select =
+        Select::new("Your Profiles", menu_items).with_help_message(help_msg);
 
     Ok(select.prompt()?)
 }
