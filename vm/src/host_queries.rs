@@ -24,8 +24,13 @@ use dusk_core::signatures::schnorr::{
 };
 use dusk_core::BlsScalar;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
+use k256::{
+    ecdsa::{signature::Verifier as K256Verifier, Signature, VerifyingKey},
+    PublicKey,
+};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
+use sha3::{Digest, Keccak256};
 
 use crate::cache;
 
@@ -219,6 +224,40 @@ pub fn verify_bls_multisig(
     akey.verify(&sig, &msg).is_ok()
 }
 
+/// Computes keccak256 hash of a byte vector.
+///
+/// # Arguments
+/// * `bytes` - A vector of bytes representing the input data to be hashed.
+///
+/// # Returns
+/// An array (`[u8; 32]`) representing the keccak256 hash.
+pub fn keccak256(bytes: Vec<u8>) -> [u8; 32] {
+    let mut hasher = Keccak256::new();
+    hasher.update(bytes.as_slice());
+    hasher.finalize().into()
+}
+
+/// Verifies secp256k1 signature.
+///
+/// # Arguments
+/// * `msg` - A vector of bytes representing the original message.
+/// * `pk` - A vector of bytes representing the signer's public key, encoded as
+///          Elliptic-Curve-Point-to-Octet-String described in SEC 1: Elliptic Curve
+///          Cryptography (Version 2.0) section 2.3.3 (page 10)
+///          (http://www.secg.org/sec1-v2.pdf).
+/// * `sig` - A vector of bytes representing the signature to be verified.
+///
+/// # Returns
+/// A boolean indicating whether the signature is valid.
+pub fn verify_secp256k1(msg: Vec<u8>, pk: Vec<u8>, sig: Vec<u8>) -> bool {
+    let signature =
+        Signature::from_slice(sig.as_slice()).expect("signature must be valid");
+    let public_key = PublicKey::from_sec1_bytes(pk.as_slice())
+        .expect("public key must be valid");
+    let verifying_key = VerifyingKey::from(public_key);
+    verifying_key.verify(msg.as_slice(), &signature).is_ok()
+}
+
 fn wrap_host_query<A, R, F>(arg_buf: &mut [u8], arg_len: u32, closure: F) -> u32
 where
     F: FnOnce(A) -> R,
@@ -295,5 +334,15 @@ pub(crate) fn host_verify_bls_multisig(
 ) -> u32 {
     wrap_host_query(arg_buf, arg_len, |(msg, keys, sig)| {
         verify_bls_multisig(msg, keys, sig)
+    })
+}
+
+pub(crate) fn host_keccak256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    wrap_host_query(arg_buf, arg_len, keccak256)
+}
+
+pub(crate) fn host_verify_secp256k1(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    wrap_host_query(arg_buf, arg_len, |(msg, keys, sig)| {
+        verify_secp256k1(msg, keys, sig)
     })
 }

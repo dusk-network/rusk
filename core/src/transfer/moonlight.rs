@@ -21,7 +21,7 @@ use crate::signatures::bls::{
     Signature as AccountSignature,
 };
 use crate::transfer::data::{
-    ContractBytecode, ContractCall, ContractDeploy, TransactionData,
+    BlobData, ContractBytecode, ContractCall, ContractDeploy, TransactionData,
     MAX_MEMO_SIZE,
 };
 use crate::{BlsScalar, Error};
@@ -245,10 +245,36 @@ impl Transaction {
         }
     }
 
+    /// Return the blob data, if there is any.
+    #[must_use]
+    pub fn blob(&self) -> Option<&Vec<BlobData>> {
+        #[allow(clippy::match_wildcard_for_single_variants)]
+        match self.data()? {
+            TransactionData::Blob(ref d) => Some(d),
+            _ => None,
+        }
+    }
+
+    /// Return the mutable blob data, if there is any.
+    #[must_use]
+    pub fn blob_mut(&mut self) -> Option<&mut Vec<BlobData>> {
+        #[allow(clippy::match_wildcard_for_single_variants)]
+        match self.data_mut()? {
+            TransactionData::Blob(d) => Some(d),
+            _ => None,
+        }
+    }
+
     /// Returns the transaction data, if it exists.
     #[must_use]
     pub fn data(&self) -> Option<&TransactionData> {
         self.payload.data.as_ref()
+    }
+
+    /// Returns the transaction data, if it exists.
+    #[must_use]
+    pub(crate) fn data_mut(&mut self) -> Option<&mut TransactionData> {
+        self.payload.data.as_mut()
     }
 
     /// Creates a modified clone of this transaction if it contains data for
@@ -272,6 +298,26 @@ impl Transaction {
         stripped_transaction.payload.data = Some(stripped_deploy);
 
         Some(stripped_transaction)
+    }
+
+    /// Creates a modified clone of this transaction if it contains a Blob,
+    /// clones all fields except for the Blob, whose versioned hashes are set as
+    /// Memo.
+    ///
+    /// Returns none if the transaction is not a Blob transaction.
+    #[must_use]
+    pub fn blob_to_memo(&self) -> Option<Self> {
+        let data = self.data()?;
+
+        if let TransactionData::Blob(_) = data {
+            let hash = data.signature_message();
+            let memo = TransactionData::Memo(hash);
+            let mut converted_tx = self.clone();
+            converted_tx.payload.data = Some(memo);
+            Some(converted_tx)
+        } else {
+            None
+        }
     }
 
     /// Serialize a transaction into a byte buffer.
@@ -398,23 +444,8 @@ impl Payload {
 
         bytes.extend(self.nonce.to_bytes());
 
-        // serialize the contract call, deployment or memo, if present.
-        match &self.data {
-            Some(TransactionData::Call(call)) => {
-                bytes.push(1);
-                bytes.extend(call.to_var_bytes());
-            }
-            Some(TransactionData::Deploy(deploy)) => {
-                bytes.push(2);
-                bytes.extend(deploy.to_var_bytes());
-            }
-            Some(TransactionData::Memo(memo)) => {
-                bytes.push(3);
-                bytes.extend((memo.len() as u64).to_bytes());
-                bytes.extend(memo);
-            }
-            _ => bytes.push(0),
-        }
+        // serialize the transaction data, if present.
+        bytes.extend(TransactionData::option_to_var_bytes(self.data.as_ref()));
 
         bytes
     }
@@ -456,29 +487,8 @@ impl Payload {
 
         let nonce = u64::from_reader(&mut buf)?;
 
-        // deserialize contract call, deploy data, or memo, if present
-        let data = match u8::from_reader(&mut buf)? {
-            0 => None,
-            1 => Some(TransactionData::Call(ContractCall::from_slice(buf)?)),
-            2 => {
-                Some(TransactionData::Deploy(ContractDeploy::from_slice(buf)?))
-            }
-            3 => {
-                // we only build for 64-bit so this truncation is impossible
-                #[allow(clippy::cast_possible_truncation)]
-                let size = u64::from_reader(&mut buf)? as usize;
-
-                if buf.len() != size || size > MAX_MEMO_SIZE {
-                    return Err(BytesError::InvalidData);
-                }
-
-                let memo = buf[..size].to_vec();
-                Some(TransactionData::Memo(memo))
-            }
-            _ => {
-                return Err(BytesError::InvalidData);
-            }
-        };
+        // deserialize optional transaction data
+        let data = TransactionData::from_slice(buf)?;
 
         Ok(Self {
             chain_id,
@@ -513,23 +523,8 @@ impl Payload {
         }
         bytes.extend(self.nonce.to_bytes());
 
-        match &self.data {
-            Some(TransactionData::Deploy(d)) => {
-                bytes.extend(&d.bytecode.to_hash_input_bytes());
-                bytes.extend(&d.owner);
-                if let Some(init_args) = &d.init_args {
-                    bytes.extend(init_args);
-                }
-            }
-            Some(TransactionData::Call(c)) => {
-                bytes.extend(c.contract.as_bytes());
-                bytes.extend(c.fn_name.as_bytes());
-                bytes.extend(&c.fn_args);
-            }
-            Some(TransactionData::Memo(m)) => {
-                bytes.extend(m);
-            }
-            None => {}
+        if let Some(data) = &self.data {
+            bytes.extend(data.signature_message());
         }
 
         bytes

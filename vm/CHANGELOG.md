@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add support for `TransactionData::Blob`
+- Add `keccak256` and `verify_secp256k1` host query functions [#3774]
+
 ## [1.3.0] - 2025-04-17
 
 ### Changed
@@ -44,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add vm to interact with Dusk network [#3235]
 
 <!-- Issues -->
+[#3774]: https://github.com/dusk-network/rusk/issues/3774
 [#3235]: https://github.com/dusk-network/rusk/issues/3235
 [#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#3405]: https://github.com/dusk-network/rusk/issues/3405

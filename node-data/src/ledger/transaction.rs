@@ -86,14 +86,22 @@ impl Transaction {
     /// Computes the hash digest of the entire transaction data.
     ///
     /// This method returns the Sha3 256 digest of the entire
-    /// transaction in its serialized form
+    /// transaction in its serialized form. If the transaction is a blob
+    /// transaction, the sidecar is stripped
     ///
     /// The digest hash is currently only being used in the merkle tree.
     ///
     /// ### Returns
     /// An array of 32 bytes representing the hash of the transaction.
     pub fn digest(&self) -> [u8; 32] {
-        sha3::Sha3_256::digest(self.inner.to_var_bytes()).into()
+        let tx_bytes = self.inner.blob_to_memo().map_or_else(
+            || self.inner.to_var_bytes(),
+            |mut blob_tx| {
+                let _ = blob_tx.strip_blobs();
+                blob_tx.to_var_bytes()
+            },
+        );
+        sha3::Sha3_256::digest(tx_bytes).into()
     }
 
     /// Computes the transaction ID.

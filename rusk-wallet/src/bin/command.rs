@@ -6,6 +6,7 @@
 
 mod history;
 
+use dusk_core::transfer::data::BlobData;
 pub use history::TransactionHistory;
 
 #[cfg(all(test, feature = "e2e-test"))]
@@ -299,6 +300,25 @@ pub(crate) enum Command {
         /// Nonce used for the deploy transaction
         #[arg(short, long)]
         deploy_nonce: u64,
+    },
+
+    /// Send a Blob transaction
+    Blob {
+        /// Address that pays the gas for the blob transaction [default: first]
+        #[arg(short, long)]
+        address: Option<Address>,
+
+        /// Paths to the files containing the blob data
+        #[arg(long, required = true)]
+        blobs: Vec<PathBuf>,
+
+        /// Max amount of gas for this transaction
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        gas_price: Lux,
     },
 
     /// Export BLS provisioner key-pair
@@ -710,6 +730,52 @@ impl Command {
                     wallet.get_contract_id(profile_idx, &code, deploy_nonce)?;
 
                 Ok(RunResult::ContractId(contract_id))
+            }
+            Self::Blob {
+                address,
+                blobs,
+                gas_limit,
+                gas_price,
+            } => {
+                let address = address.unwrap_or(wallet.default_address());
+                address.public_key().map_err(|_| {
+                    Error::Blob(
+                        "Blob is unsupported for Shielded Addresses"
+                            .to_string(),
+                    )
+                })?;
+                let addr_idx = wallet.find_index(&address)?;
+                let gas = Gas::new(gas_limit).with_price(gas_price);
+
+                let mut tx_blobs = vec![];
+                for path in blobs {
+                    let mut blob =
+                        std::fs::read(path.as_path()).map_err(|e| {
+                            Error::Blob(format!("Invalid path {path:?}: {e:?}"))
+                        })?;
+                    if blob.starts_with(b"0x") {
+                        blob = hex::decode(&blob[2..]).map_err(|e| {
+                            Error::Blob(format!(
+                                "Invalid hex in {path:?}: {e:?}"
+                            ))
+                        })?;
+                    }
+
+                    let blob = BlobData::from_datapart(&blob, None)
+                        .map_err(|e| Error::Blob(format!("{e}")))?;
+                    tx_blobs.push(blob);
+                }
+
+                let tx = wallet
+                    .moonlight_execute(
+                        addr_idx,
+                        Dusk::from(0),
+                        Dusk::from(0),
+                        gas,
+                        Some(tx_blobs),
+                    )
+                    .await?;
+                Ok(RunResult::Tx(tx.hash()))
             }
             Command::Create { .. } => Ok(RunResult::Create()),
             Command::Restore { .. } => Ok(RunResult::Restore()),

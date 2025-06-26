@@ -7,18 +7,16 @@ USAGE:
     rusk-wallet [OPTIONS] [SUBCOMMAND]
 
 OPTIONS:
-    -w, --wallet-dir <WALLET_PATH> Directory to store user data [default: `$HOME/.dusk/rusk-wallet`]
+    -w, --wallet-dir <WALLET_DIR>  Directory to store user data [default: `$HOME/.dusk/rusk-wallet`]
     -n, --network <NETWORK>        Network to connect to
-        --password <PASSWORD>      Set the password for wallet's creation [env:
-                                   RUSK_WALLET_PWD=password]
+        --password <PASSWORD>      Set the password for wallet's creation [env: RUSK_WALLET_PWD=password]
         --state <STATE>            The state server fully qualified URL
         --prover <PROVER>          The prover server fully qualified URL
-        --log-level <LOG_LEVEL>    Output log level [default: info] [possible values: trace, debug,
-                                   info, warn, error]
-        --log-type <LOG_TYPE>      Logging output type [default: coloured] [possible values: json,
-                                   plain, coloured]
-    -h, --help                     Print help information
-    -V, --version                  Print version information
+        --archiver <ARCHIVER>      The archiver server fully qualified URL
+        --log-level <LOG_LEVEL>    Output log level [default: info] [possible values: trace, debug, info, warn, error]
+        --log-type <LOG_TYPE>      Logging output type [default: coloured] [possible values: json, plain, coloured]
+    -h, --help                     Print help (see more with '--help')
+    -V, --version                  Print version
 
 SUBCOMMANDS:
     create                   Create a new wallet
@@ -27,15 +25,16 @@ SUBCOMMANDS:
     profiles                 List your existing profiles and generate new ones
     history                  Show address transaction history
     transfer                 Send DUSK through the network
-    unshield                 Convert shielded DUSK to public Dusk
-    shield                   Convert public DUSK to shielded Dusk
+    unshield                 Convert shielded DUSK to public DUSK
+    shield                   Convert public DUSK to shielded DUSK
+    stake-info               Check your stake information
     stake                    Stake DUSK
     unstake                  Unstake DUSK
     withdraw                 Withdraw accumulated rewards for a stake key
-    contract-deploy          Deploy a contract
-    stake-info               Check your stake information
     contract-call            Call a contract
+    contract-deploy          Deploy a contract
     calculate-contract-id    Calculate a contract id
+    blob                     Send a Blob transaction
     export                   Export BLS provisioner key-pair
     settings                 Show current settings
     help                     Print this message or the help of the given subcommand(s)
@@ -73,6 +72,9 @@ directory:
 
 - The wallet directory (provided via the `--wallet-dir` argument, defaults to `$HOME/.dusk/rusk-wallet/`)
 - The global configuration folder (`$HOME/.config/rusk-wallet/`)
+
+The default wallet directory can also be changed by setting `wallet_dir = ...` in a `config.toml` file located in the same
+directory as the `rusk-wallet` binary.
 
 Having the `config.toml` in the global configuration folder is useful in case of multiple wallets (each one with its own wallet directory) that shares the same settings.
 

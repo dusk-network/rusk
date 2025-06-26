@@ -10,6 +10,7 @@ pub mod graphql;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use dusk_core::transfer::data::{BlobData, BlobSidecar};
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_vm::execute;
 use node::database::rocksdb::MD_HASH_KEY;
@@ -62,6 +63,9 @@ impl HandleRequest for RuskNode {
             ("network", _, "peers_location") => true,
             ("node", _, "info") => true,
             ("blocks", _, "gas-price") => true,
+            ("blobs", Some(_), "commitment") => true,
+            ("blobs", Some(_), "hash") => true,
+
             _ => false,
         }
     }
@@ -97,6 +101,20 @@ impl HandleRequest for RuskNode {
                     .parse::<usize>()
                     .unwrap_or(usize::MAX);
                 self.get_gas_price(max_transactions).await
+            }
+
+            ("blobs", Some(commitment), "commitment") => {
+                let commitment = hex::decode(commitment)
+                    .map_err(|_| anyhow::anyhow!("Invalid hex"))?;
+                let hash = BlobData::hash_from_commitment(&commitment);
+                self.blob_by_hash(&hash, request.is_json()).await
+            }
+            ("blobs", Some(hash), "hash") => {
+                let hash = hex::decode(hash)
+                    .map_err(|_| anyhow::anyhow!("Invalid hex"))?
+                    .try_into()
+                    .map_err(|_| anyhow::anyhow!("Invalid hash length"))?;
+                self.blob_by_hash(&hash, request.is_json()).await
             }
             _ => anyhow::bail!("Unsupported"),
         }
@@ -290,6 +308,30 @@ impl RuskNode {
             }),
         };
         Ok(ResponseData::new(resp))
+    }
+
+    async fn blob_by_hash(
+        &self,
+        hash: &[u8; 32],
+        as_json: bool,
+    ) -> anyhow::Result<ResponseData> {
+        let blob = self.db().read().await.view(|t| {
+            t.blob_data_by_hash(hash)?.ok_or(anyhow::anyhow!(
+                "Blob with versioned hash {} not found",
+                hex::encode(hash)
+            ))
+        })?;
+        let response = if as_json {
+            let sidecar =
+                BlobSidecar::from_buf(&mut &blob[..]).map_err(|e| {
+                    anyhow::anyhow!("Failed to parse blob sidecar: {e:?}")
+                })?;
+            let json = serde_json::to_value(sidecar)?;
+            ResponseData::new(json)
+        } else {
+            ResponseData::new(blob)
+        };
+        Ok(response)
     }
 }
 
