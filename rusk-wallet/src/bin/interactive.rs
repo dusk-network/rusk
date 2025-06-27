@@ -10,12 +10,10 @@ use std::fmt::Display;
 
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
-use rusk_wallet::dat::FileVersion as DatFileVersion;
-use rusk_wallet::{
-    Address, Error, Profile, Wallet, WalletPath, IV_SIZE, MAX_PROFILES,
-    SALT_SIZE,
-};
+use rusk_wallet::dat;
+use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
 
+use crate::io::prompt::{EXIT_HELP, MOVE_HELP, SELECT_HELP};
 use crate::io::{self, prompt};
 use crate::prompt::Prompter;
 use crate::settings::Settings;
@@ -87,13 +85,29 @@ pub(crate) async fn run_loop(
             match op {
                 Ok(ProfileOp::Run(cmd)) => {
                     // request confirmation before running
-                    if confirm(&cmd, wallet).await? {
+                    let should_run = match confirm(&cmd, wallet).await {
+                        Ok(run) => run,
+                        Err(err) => {
+                            match err.downcast_ref::<InquireError>() {
+                                Some(InquireError::OperationInterrupted) => {
+                                    return Err(err);
+                                }
+                                Some(InquireError::OperationCanceled) => (),
+                                _ => println!("{err}\n"),
+                            };
+                            continue;
+                        }
+                    };
+                    if should_run {
                         // run command
                         prompt::hide_cursor()?;
                         let res = match cmd.run(wallet, settings).await {
                             Ok(res) => res,
                             Err(err) => {
-                                println!("{err}\n");
+                                match err.downcast_ref::<InquireError>() {
+                                    Some(InquireError::OperationCanceled) => (),
+                                    _ => println!("{err}\n"),
+                                }
                                 continue;
                             }
                         };
@@ -123,7 +137,15 @@ pub(crate) async fn run_loop(
                                 if let Err(err) =
                                     crate::prompt::tx_history_list(history)
                                 {
-                                    println!("Failed to output transaction history with error {err}");
+                                    match err.downcast_ref::<InquireError>() {
+                                        Some(InquireError::OperationInterrupted) => {
+                                            return Err(err);
+                                        },
+                                        Some(InquireError::OperationCanceled) => {
+                                            continue;
+                                        },
+                                        _ => println!("Failed to output transaction history with error {err}"),
+                                    }
                                 }
 
                                 println!();
@@ -149,7 +171,7 @@ pub(crate) async fn run_loop(
 enum ProfileSelect<'a> {
     Index(u8, &'a Profile),
     New,
-    Back,
+    Exit,
 }
 
 async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
@@ -170,7 +192,7 @@ async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
 
             Ok(profile_idx)
         }
-        ProfileSelect::Back => Err(InquireError::OperationCanceled.into()),
+        ProfileSelect::Exit => Err(InquireError::OperationInterrupted.into()),
     }
 }
 
@@ -193,25 +215,11 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
         menu_items.push(ProfileSelect::New);
     }
 
-    menu_items.push(ProfileSelect::Back);
+    menu_items.push(ProfileSelect::Exit);
 
-    let mut select = Select::new("Your Profiles", menu_items);
-
-    // UNWRAP: Its okay to unwrap because the default help message
-    // is provided by inquire Select struct
-    let mut msg = Select::<ProfileSelect>::DEFAULT_HELP_MESSAGE
-        .unwrap()
-        .to_owned();
-
-    if let Some(rx) = &wallet.state()?.sync_rx {
-        if let Ok(status) = rx.try_recv() {
-            msg = format!("Sync Status: {status}");
-        } else {
-            msg = "Waiting for Sync to complete..".to_string();
-        }
-    }
-
-    select = select.with_help_message(&msg);
+    let help_msg = &[MOVE_HELP, SELECT_HELP, EXIT_HELP].join(", ");
+    let select =
+        Select::new("Your Profiles", menu_items).with_help_message(help_msg);
 
     Ok(select.prompt()?)
 }
@@ -223,63 +231,76 @@ enum ProfileOp {
     Stay,
 }
 
-type Salt = [u8; SALT_SIZE];
-type Iv = [u8; IV_SIZE];
-
 /// Allows the user to load a wallet interactively
 pub(crate) async fn load_wallet(
     wallet_path: &WalletPath,
     settings: &Settings,
-    file_version_and_salt_iv: Result<
-        (DatFileVersion, Option<(Salt, Iv)>),
-        Error,
-    >,
 ) -> anyhow::Result<Wallet<WalletFile>> {
     let wallet_found =
         wallet_path.inner().exists().then(|| wallet_path.clone());
 
     let password = &settings.password;
 
-    // display main menu
-    let wallet = match menu_wallet(wallet_found, settings).await? {
-        MainMenu::Load(path) => {
-            let (file_version, salt_and_iv) = file_version_and_salt_iv?;
-            let mut attempt = 1;
-            loop {
-                let key = prompt::derive_key_from_password(
-                    "Please enter your wallet password",
-                    password,
-                    salt_and_iv.map(|si| si.0).as_ref(),
-                    file_version,
-                )?;
-                match Wallet::from_file(WalletFile {
-                    path: path.clone(),
-                    aes_key: key,
-                    salt: salt_and_iv.map(|si| si.0),
-                    iv: salt_and_iv.map(|si| si.1),
-                }) {
-                    Ok(wallet) => break wallet,
-                    Err(_) if attempt > 2 => {
-                        Err(Error::AttemptsExhausted)?;
-                    }
-                    Err(_) => {
-                        println!("Invalid password, please try again");
-                        attempt += 1;
+    loop {
+        // display main menu
+        let wallet = match menu_wallet(wallet_found.as_ref(), settings).await? {
+            MainMenu::Load(path) => {
+                let (file_version, salt_and_iv) =
+                    dat::read_file_version_and_salt_iv(wallet_path)?;
+                let mut attempt = 1;
+                loop {
+                    let key = prompt::derive_key_from_password(
+                        "Please enter your wallet password",
+                        password,
+                        salt_and_iv.map(|si| si.0).as_ref(),
+                        file_version,
+                    );
+                    let key = match key {
+                        Ok(key) => key,
+                        Err(err) => break Err(err),
+                    };
+                    match Wallet::from_file(WalletFile {
+                        path: path.clone(),
+                        aes_key: key,
+                        salt: salt_and_iv.map(|si| si.0),
+                        iv: salt_and_iv.map(|si| si.1),
+                    }) {
+                        Ok(wallet) => break Ok(wallet),
+                        Err(_) if attempt > 2 => {
+                            Err(Error::AttemptsExhausted)?;
+                        }
+                        Err(_) => {
+                            println!("Invalid password, please try again");
+                            attempt += 1;
+                        }
                     }
                 }
             }
-        }
-        // Use the latest binary format when creating a wallet
-        MainMenu::Create => {
-            Command::run_create(false, &None, password, wallet_path, &Prompter)?
-        }
-        MainMenu::Recover => {
-            Command::run_restore_from_seed(wallet_path, &Prompter)?
-        }
-        MainMenu::Exit => std::process::exit(0),
-    };
+            // Use the latest binary format when creating a wallet
+            MainMenu::Create => Command::run_create(
+                false,
+                &None,
+                password,
+                wallet_path,
+                &Prompter,
+            ),
+            MainMenu::Recover => {
+                Command::run_restore_from_seed(wallet_path, &Prompter)
+            }
+            MainMenu::Exit => std::process::exit(0),
+        };
 
-    Ok(wallet)
+        match wallet {
+            Ok(wallet) => return Ok(wallet),
+            Err(err) => match err.downcast_ref::<InquireError>() {
+                Some(InquireError::OperationCanceled) => {
+                    println!();
+                    continue;
+                }
+                _ => return Err(err),
+            },
+        };
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -293,14 +314,14 @@ enum MainMenu {
 /// Allows the user to load an existing wallet, recover a lost one
 /// or create a new one.
 async fn menu_wallet(
-    wallet_found: Option<WalletPath>,
+    wallet_found: Option<&WalletPath>,
     settings: &Settings,
 ) -> anyhow::Result<MainMenu> {
     // create the wallet menu
     let mut menu_items = Vec::new();
 
     if let Some(wallet_path) = wallet_found {
-        menu_items.push(MainMenu::Load(wallet_path));
+        menu_items.push(MainMenu::Load(wallet_path.clone()));
         menu_items.push(MainMenu::Create);
         menu_items.push(MainMenu::Recover);
     } else {
@@ -486,7 +507,7 @@ impl<'a> Display for ProfileSelect<'a> {
                 profile.public_account_preview(),
             ),
             ProfileSelect::New => write!(f, "Create a new profile"),
-            ProfileSelect::Back => write!(f, "Back"),
+            ProfileSelect::Exit => write!(f, "Exit"),
         }
     }
 }

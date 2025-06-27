@@ -19,6 +19,9 @@ use rusk_wallet::{
 };
 
 use super::ProfileOp;
+use crate::io::prompt::{
+    EXIT_HELP, FILTER_HELP, GO_BACK_HELP, MOVE_HELP, SELECT_HELP,
+};
 use crate::settings::Settings;
 use crate::{prompt, Command, WalletFile};
 
@@ -89,7 +92,12 @@ pub(crate) async fn online(
         MenuItem::Back,
     ];
 
-    let select = Select::new("What would you like to do?", cmd_menu).prompt();
+    let select = Select::new("What would you like to do?", cmd_menu)
+        .with_help_message(
+            &[MOVE_HELP, SELECT_HELP, FILTER_HELP, GO_BACK_HELP, EXIT_HELP]
+                .join(", "),
+        )
+        .prompt();
 
     if let Err(InquireError::OperationCanceled) = select {
         return Ok(ProfileOp::Back);
@@ -446,9 +454,16 @@ pub(crate) fn offline(
     let cmd_menu = vec![MenuItem::Export];
 
     let select = Select::new("[OFFLINE] What would you like to do?", cmd_menu)
-        .prompt()?;
+        .with_help_message(
+            &[MOVE_HELP, SELECT_HELP, GO_BACK_HELP, EXIT_HELP].join(", "),
+        )
+        .prompt();
 
-    let res = match select {
+    if let Err(InquireError::OperationCanceled) = select {
+        return Ok(ProfileOp::Back);
+    }
+
+    let res = match select? {
         MenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
             profile_idx: Some(profile_idx),
             name: None,

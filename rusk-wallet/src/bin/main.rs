@@ -64,10 +64,10 @@ async fn main() -> anyhow::Result<()> {
     if let Err(err) = exec().await {
         // display the error message (if any)
         match err.downcast_ref::<InquireError>() {
-            Some(InquireError::OperationInterrupted) => {
-                // TODO: Handle this error properly
-                // See also https://github.com/dusk-network/wallet-cli/issues/104
-            }
+            Some(
+                InquireError::OperationInterrupted
+                | InquireError::OperationCanceled,
+            ) => (),
             _ => eprintln!("{err}"),
         };
         // give cursor back to the user
@@ -205,21 +205,11 @@ async fn exec() -> anyhow::Result<()> {
         return Ok(());
     };
 
-    let file_version_and_salt_iv =
-        dat::read_file_version_and_salt_iv(&wallet_path);
-
     // get our wallet ready
     let mut wallet: Wallet<WalletFile> = match cmd {
         // if `cmd` is `None` we are in interactive mode and need to load the
         // wallet from file
-        None => {
-            interactive::load_wallet(
-                &wallet_path,
-                &settings,
-                file_version_and_salt_iv,
-            )
-            .await?
-        }
+        None => interactive::load_wallet(&wallet_path, &settings).await?,
         // else we check if we need to replace the wallet and then load it
         Some(ref cmd) => match cmd {
             Command::Create {
@@ -273,7 +263,8 @@ async fn exec() -> anyhow::Result<()> {
 
             _ => {
                 // Grab the file version for a random command
-                let (file_version, salt_and_iv) = file_version_and_salt_iv?;
+                let (file_version, salt_and_iv) =
+                    dat::read_file_version_and_salt_iv(&wallet_path)?;
 
                 // load wallet from file
                 let key = prompt::derive_key_from_password(
@@ -444,7 +435,10 @@ async fn exec() -> anyhow::Result<()> {
                 }
                 RunResult::History(txns) => {
                     if let Err(err) = crate::prompt::tx_history_list(&txns) {
-                        println!("Failed to output transaction history with error {err}");
+                        match err.downcast_ref::<InquireError>() {
+                            Some(InquireError::OperationInterrupted | InquireError::OperationCanceled) => (),
+                            _ => println!("Failed to output transaction history with error {err}"),
+                        }
                     }
                 }
                 RunResult::ContractId(id) => {

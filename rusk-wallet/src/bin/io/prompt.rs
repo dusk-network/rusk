@@ -18,7 +18,7 @@ use anyhow::Result;
 use bip39::{ErrorKind, Language, Mnemonic};
 
 use inquire::error::InquireResult;
-use inquire::ui::RenderConfig;
+use inquire::ui::{RenderConfig, Styled};
 use inquire::validator::Validation;
 use inquire::{
     Confirm, CustomType, InquireError, Password, PasswordDisplayMode, Select,
@@ -43,8 +43,8 @@ pub(crate) trait Prompt {
     }
 
     /// Prompt the user to enter text
-    fn prompt_text(&self, msg: &str) -> InquireResult<String> {
-        Text::new(msg).prompt()
+    fn prompt_text(&self, text_prompt: Text) -> InquireResult<String> {
+        text_prompt.prompt()
     }
 }
 
@@ -52,11 +52,18 @@ pub(crate) struct Prompter;
 
 impl Prompt for Prompter {}
 
+pub(crate) const GO_BACK_HELP: &str = "esc to go back";
+pub(crate) const EXIT_HELP: &str = "ctrl+c to exit";
+pub(crate) const MOVE_HELP: &str = "↑↓ to move";
+pub(crate) const SELECT_HELP: &str = "enter to select";
+pub(crate) const FILTER_HELP: &str = "type to filter";
+
 pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
     let pwd = Password::new(msg)
         .with_display_toggle_enabled()
         .without_confirmation()
         .with_display_mode(PasswordDisplayMode::Masked)
+        .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", "))
         .prompt();
 
     pwd
@@ -68,6 +75,7 @@ pub(crate) fn create_new_password() -> Result<String, InquireError> {
         .with_display_mode(PasswordDisplayMode::Hidden)
         .with_custom_confirmation_message("Confirm password: ")
         .with_custom_confirmation_error_message("The passwords doesn't match")
+        .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", "))
         .prompt();
 
     pwd
@@ -133,8 +141,10 @@ pub(crate) fn request_mnemonic_phrase(
     // let the user input the mnemonic phrase
     let mut attempt = 1;
     loop {
-        let phrase =
-            prompter.prompt_text("Please enter the mnemonic phrase: ")?;
+        let phrase = prompter.prompt_text(
+            Text::new("Please enter the mnemonic phrase: ")
+                .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", ")),
+        )?;
 
         match Mnemonic::from_phrase(&phrase, Language::English) {
             Ok(phrase) => break Ok(phrase.to_string()),
@@ -244,7 +254,7 @@ fn request_token(
     min: Dusk,
     balance: Dusk,
     default: Option<f64>,
-) -> Result<Dusk, Error> {
+) -> anyhow::Result<Dusk> {
     // Checks if the value is larger than the given min and smaller than the
     // min of the balance and `MAX_CONVERTIBLE`.
     let validator = move |value: &f64| {
@@ -279,17 +289,18 @@ fn request_token(
         render_config: RenderConfig::default(),
     };
 
-    amount_prompt.prompt()?.try_into()
+    let amount: Dusk = amount_prompt.prompt()?.try_into()?;
+    Ok(amount)
 }
 
 /// Request a positive amount of tokens
 pub(crate) fn request_token_amt(
     action: &str,
     balance: Dusk,
-) -> Result<Dusk, Error> {
+) -> anyhow::Result<Dusk> {
     let min = MIN_CONVERTIBLE;
 
-    request_token(action, min, balance, None).map_err(Error::from)
+    request_token(action, min, balance, None)
 }
 
 /// Request positive amount of tokens with a default
@@ -297,21 +308,20 @@ pub(crate) fn request_token_amt_with_default(
     action: &str,
     balance: Dusk,
     default: Dusk,
-) -> Result<Dusk, Error> {
+) -> anyhow::Result<Dusk> {
     let min = MIN_CONVERTIBLE;
 
     request_token(action, min, balance, Some(default.into()))
-        .map_err(Error::from)
 }
 
 /// Request amount of tokens that can be 0
 pub(crate) fn request_optional_token_amt(
     action: &str,
     balance: Dusk,
-) -> Result<Dusk, Error> {
+) -> anyhow::Result<Dusk> {
     let min = Dusk::from(0);
 
-    request_token(action, min, balance, None).map_err(Error::from)
+    request_token(action, min, balance, None)
 }
 
 /// Request amount of tokens that can't be lower than the `min` argument and
@@ -319,8 +329,8 @@ pub(crate) fn request_optional_token_amt(
 pub(crate) fn request_stake_token_amt(
     balance: Dusk,
     min: Dusk,
-) -> Result<Dusk, Error> {
-    request_token("stake", min, balance, None).map_err(Error::from)
+) -> anyhow::Result<Dusk> {
+    request_token("stake", min, balance, None)
 }
 
 /// Request gas limit
@@ -343,7 +353,7 @@ pub(crate) fn request_gas_limit(default_gas_limit: u64) -> anyhow::Result<u64> {
 pub(crate) fn request_gas_price(
     min_gas_price: Lux,
     mempool_gas_prices: MempoolGasPrices,
-) -> Result<Lux, Error> {
+) -> anyhow::Result<Lux> {
     let default_gas_price = if mempool_gas_prices.average > min_gas_price {
         mempool_gas_prices.average
     } else {
@@ -453,7 +463,13 @@ pub(crate) fn tx_history_list(
         history.iter().map(|history| history.to_string()).collect();
 
     Select::new(header.as_str(), history_str)
-        .with_help_message("↑↓ to move, type to filter")
+        .with_help_message(
+            &[MOVE_HELP, FILTER_HELP, GO_BACK_HELP, EXIT_HELP].join(", "),
+        )
+        .with_render_config(
+            RenderConfig::default()
+                .with_canceled_prompt_indicator(Styled::new(" ")),
+        )
         .prompt()?;
 
     Ok(())
