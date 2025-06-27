@@ -117,7 +117,7 @@ hyper = "1.4.1"
 hyper-tungstenite = "0.13"
 hyper-util = "0.1.9"
 inquire = "0.7.5"
-k256 = { version = "0.13", default-features = false }
+k256 = { version = "0.13", default-features = false, features = ["alloc"] }
 konst = "0.3.9"
 lazy_static = "1.5"
 lru = "0.12.4"
