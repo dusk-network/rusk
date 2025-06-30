@@ -160,7 +160,10 @@ pub(crate) async fn run_loop(
                 }
                 Err(e) => match e.downcast_ref::<InquireError>() {
                     Some(InquireError::OperationCanceled) => (),
-                    _ => return Err(e),
+                    Some(InquireError::OperationInterrupted) => {
+                        return Err(e);
+                    }
+                    _ => println!("{e}\n"),
                 },
             };
         }
