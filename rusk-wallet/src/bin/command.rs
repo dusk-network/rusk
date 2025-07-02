@@ -816,6 +816,88 @@ impl Command {
         }
     }
 
+    pub fn max_deduction(&self) -> BalanceDeduction {
+        match self {
+            Command::Shield { amt, .. }
+            | Command::Unshield { amt, .. }
+            | Command::ContractCall { deposit: amt, .. }
+            | Command::Stake { amt, .. }
+            | Command::Transfer { amt, .. } => self.max_fee() + *amt,
+            _ => self.max_fee(),
+        }
+    }
+
+    pub fn max_fee(&self) -> BalanceDeduction {
+        match self {
+            Command::Blob {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Withdraw {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::ClaimRewards {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::ContractDeploy {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::ContractCall {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Stake {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Transfer {
+                sender: address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Unstake {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            } => match address {
+                Some(Address::Public(_)) | None => {
+                    BalanceDeduction::Public(Dusk::from(gas_limit * gas_price))
+                }
+                Some(Address::Shielded(_)) => BalanceDeduction::Shielded(
+                    Dusk::from(gas_limit * gas_price),
+                ),
+            },
+            Command::Shield {
+                gas_limit,
+                gas_price,
+                ..
+            } => BalanceDeduction::Public(Dusk::from(gas_limit * gas_price)),
+            Command::Unshield {
+                gas_limit,
+                gas_price,
+                ..
+            } => BalanceDeduction::Shielded(Dusk::from(gas_limit * gas_price)),
+            _ => BalanceDeduction::Public(Dusk::from(0)),
+        }
+    }
+
     pub(crate) fn run_create(
         skip_recovery: bool,
         seed_file: &Option<PathBuf>,
@@ -885,6 +967,29 @@ impl Command {
             iv: Some(iv),
         })?;
         Ok(w)
+    }
+}
+
+/// An amount to be deducted from the user's balance
+pub enum BalanceDeduction {
+    /// A deduction from the user's public balance
+    Public(Dusk),
+    /// A deduction from the user's shielded balance
+    Shielded(Dusk),
+}
+
+impl std::ops::Add<Dusk> for BalanceDeduction {
+    type Output = BalanceDeduction;
+
+    fn add(self, other: Dusk) -> Self::Output {
+        match self {
+            BalanceDeduction::Public(amount) => {
+                BalanceDeduction::Public(amount + other)
+            }
+            BalanceDeduction::Shielded(amount) => {
+                BalanceDeduction::Shielded(amount + other)
+            }
+        }
     }
 }
 
