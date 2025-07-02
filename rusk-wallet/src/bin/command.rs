@@ -205,7 +205,8 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Withdraw accumulated rewards for a stake key
+    /// [DEPRECATED] Use `claim-rewards` instead
+    #[command(hide = true)]
     Withdraw {
         /// Address from which to make the withdraw request [default:
         /// first address]
@@ -214,6 +215,28 @@ pub(crate) enum Command {
 
         /// Amount of rewards to withdraw from the stake contract. If the
         /// reward is not provided, all the rewards are withdrawn at
+        /// once
+        #[arg(short, long)]
+        reward: Option<Dusk>,
+
+        /// Max amount of gas for this transaction
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
+    /// Claim accumulated stake rewards
+    ClaimRewards {
+        /// Address from which to make the claim rewards request [default:
+        /// first address]
+        #[arg(short, long)]
+        address: Option<Address>,
+
+        /// Amount of rewards to claim from the stake contract. If the
+        /// reward is not provided, all the rewards are claimed at
         /// once
         #[arg(short, long)]
         reward: Option<Dusk>,
@@ -355,6 +378,7 @@ impl Command {
         wallet: &'a mut Wallet<WalletFile>,
         settings: &Settings,
     ) -> anyhow::Result<RunResult<'a>> {
+        let is_withdraw = matches!(self, Command::Withdraw { .. });
         match self {
             Command::Balance { address, spendable } => {
                 let address = address.unwrap_or(wallet.default_address());
@@ -500,7 +524,16 @@ impl Command {
                 reward,
                 gas_limit,
                 gas_price,
+            }
+            | Command::ClaimRewards {
+                address,
+                reward,
+                gas_limit,
+                gas_price,
             } => {
+                if is_withdraw {
+                    println!("`withdraw` is deprecated. Please use `claim_rewards` instead.");
+                }
                 let address = address.unwrap_or(wallet.default_address());
                 let addr_idx = wallet.find_index(&address)?;
 
@@ -509,12 +542,12 @@ impl Command {
                     Address::Shielded(_) => {
                         wallet.sync().await?;
                         wallet
-                            .phoenix_stake_withdraw(addr_idx, reward, gas)
+                            .phoenix_claim_rewards(addr_idx, reward, gas)
                             .await
                     }
                     Address::Public(_) => {
                         wallet
-                            .moonlight_stake_withdraw(addr_idx, reward, gas)
+                            .moonlight_claim_rewards(addr_idx, reward, gas)
                             .await
                     }
                 }?;

@@ -24,7 +24,7 @@ pub const DEFAULT_LIMIT_DEPLOYMENT: u64 =
 /// The default gas limit for contract calls
 pub const DEFAULT_LIMIT_CALL: u64 = 2_000_000_000;
 
-/// The default gas limit for stake/unstake/withdraw calls
+/// The default gas limit for stake/unstake/claim-rewards actions
 pub const DEFAULT_LIMIT_STAKE: u64 = 50_000_000;
 
 /// The gas cost per deployed byte

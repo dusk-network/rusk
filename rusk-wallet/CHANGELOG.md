@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change transaction history fee display to be negative
 - Change transaction history item type to display public/shielded
 - Separate archive node endpoint from state endpoint
+- Change withdraw command to claim rewards [#3077]
 
 ### Fixed
 
@@ -94,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Issues -->
 [#3792]: https://github.com/dusk-network/rusk/issues/3792
 [#3775]: https://github.com/dusk-network/rusk/issues/3775
+[#3077]: https://github.com/dusk-network/rusk/issues/3077
 [#3734]: https://github.com/dusk-network/rusk/issues/3734
 [#3713]: https://github.com/dusk-network/rusk/issues/3713
 [#3712]: https://github.com/dusk-network/rusk/issues/3712

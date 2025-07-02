@@ -30,7 +30,7 @@ SUBCOMMANDS:
     stake-info               Check your stake information
     stake                    Stake DUSK
     unstake                  Unstake DUSK
-    withdraw                 Withdraw accumulated rewards for a stake key
+    claim-rewards            Claim accumulated stake rewards
     contract-call            Call a contract
     contract-deploy          Deploy a contract
     calculate-contract-id    Calculate a contract id
