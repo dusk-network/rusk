@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add config to change the default wallet directory [#3775]
 - Add support for blob transaction
+- Add check to ensure the wallet can cover max fee in interactive mode [#3695]
 
 ### Changed
 
@@ -104,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3704]: https://github.com/dusk-network/rusk/issues/3704
 [#3702]: https://github.com/dusk-network/rusk/issues/3702
 [#3700]: https://github.com/dusk-network/rusk/issues/3700
+[#3695]: https://github.com/dusk-network/rusk/issues/3695
 [#3687]: https://github.com/dusk-network/rusk/issues/3687
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
 [#3623]: https://github.com/dusk-network/rusk/issues/3623
