@@ -952,3 +952,39 @@ pub unsafe fn create_tx_data(
 
     ErrorCode::Ok
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn create_blob_tx_data(
+    input_ptr: *const u8,
+    rkyv_ptr: *mut *mut u8,
+) -> ErrorCode {
+    let buffer = mem::read_buffer(input_ptr);
+
+    let tx_data = match TransactionData::from_slice(buffer) {
+        Ok(td) => td.unwrap(),
+        Err(e) => {
+            return Err(ErrorCode::DeserializationError)?;
+        }
+    };
+
+    let bytes = match rkyv::to_bytes::<_, 131203>(&tx_data) {
+        Ok(v) => v.to_vec(),
+        Err(_) => return ErrorCode::ArchivingError,
+    };
+    let len = bytes.len().to_le_bytes();
+
+    #[cfg(target_family = "wasm")]
+    let ptr = mem::malloc(4 + bytes.len() as u32);
+    #[cfg(target_family = "wasm")]
+    let ptr = ptr as *mut u8;
+
+    #[cfg(not(target_family = "wasm"))]
+    let ptr = mem::allocate(4 + bytes.len());
+
+    *rkyv_ptr = ptr;
+
+    ptr::copy_nonoverlapping(len.as_ptr(), ptr, 4);
+    ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.add(4), bytes.len());
+
+    ErrorCode::Ok
+}
