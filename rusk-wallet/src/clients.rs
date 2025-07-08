@@ -21,6 +21,8 @@ use dusk_core::transfer::Transaction;
 use dusk_core::BlsScalar;
 use dusk_core::Error as ExecutionCoreError;
 use flume::Receiver;
+use futures::executor::block_on;
+use tokio::sync::Notify;
 use tokio::task::JoinHandle;
 use tokio::time::{sleep, Duration};
 use wallet_core::keys::{
@@ -69,7 +71,7 @@ pub struct State {
     prover: RuesHttpClient,
     store: LocalStore,
     pub sync_rx: Option<Receiver<String>>,
-    sync_join_handle: Option<JoinHandle<()>>,
+    sync_shutdown: Option<(Arc<Notify>, JoinHandle<()>)>,
 }
 
 impl State {
@@ -104,7 +106,7 @@ impl State {
             prover,
             status,
             client,
-            sync_join_handle: None,
+            sync_shutdown: None,
         })
     }
 
@@ -137,24 +139,33 @@ impl State {
         let cache = self.cache();
         let status = self.status;
         let client = self.client.clone();
-        let store = self.store.clone();
+        let mut store = self.store.clone();
+        let shutdown = Arc::new(Notify::new());
+        let shutdown_signal = shutdown.clone();
 
         status("Starting Sync..");
 
         let handle = tokio::spawn(async move {
+            tracing::debug!("Starting background sync loop");
             loop {
-                let _ = sync_tx.send("Syncing..".to_string());
+                tokio::select! {
+                    biased;
+                    () = shutdown_signal.notified() => break,
+                    () = sleep(Duration::from_secs(SYNC_INTERVAL_SECONDS)) => {
+                        let _ = sync_tx.send("Syncing..".to_string());
 
-                let _ = match sync_db(&client, &cache, &store, status).await {
-                    Ok(()) => sync_tx.send("Syncing Complete".to_string()),
-                    Err(e) => sync_tx.send(format!("Error during sync:.. {e}")),
-                };
-
-                sleep(Duration::from_secs(SYNC_INTERVAL_SECONDS)).await;
+                        let _ = match sync_db(&client, &cache, &store, status).await {
+                            Ok(()) => sync_tx.send("Syncing Complete".to_string()),
+                            Err(e) => sync_tx.send(format!("Error during sync:.. {e}")),
+                        };
+                    }
+                }
             }
+            store.inner_mut().zeroize();
+            tracing::debug!("Background sync loop stopped");
         });
 
-        self.sync_join_handle = Some(handle);
+        self.sync_shutdown = Some((shutdown, handle));
     }
 
     pub async fn sync(&self) -> Result<(), Error> {
@@ -225,13 +236,16 @@ impl State {
         // fetch the cached unspent notes
         let cached_notes: Vec<_> = self
             .cache()
-            .notes(&pk)?
+            .notes(&pk)
+            .inspect_err(|_| sk.zeroize())?
             .into_iter()
             .map(|note_leaf| {
                 let nullifier = note_leaf.note.gen_nullifier(&sk);
                 (nullifier, note_leaf)
             })
             .collect();
+
+        sk.zeroize();
 
         // pick up to MAX_INPUT_NOTES input-notes that cover the tx-cost
         let tx_input_notes = pick_notes(&vk, cached_notes.into(), tx_cost);
@@ -247,8 +261,6 @@ impl State {
 
             tx_input.push((note_leaf.note.clone(), opening, *nullifier));
         }
-
-        sk.zeroize();
 
         Ok(tx_input)
     }
@@ -437,8 +449,11 @@ impl State {
         let store = &mut self.store;
 
         // if there's sync handle we abort it
-        if let Some(x) = self.sync_join_handle.as_ref() {
-            x.abort();
+        if let Some((shutdown, handle)) = self.sync_shutdown.take() {
+            shutdown.notify_one();
+            if let Err(e) = block_on(handle) {
+                eprintln!("Error while closing sync handle: {e}");
+            }
         }
 
         store.inner_mut().zeroize();

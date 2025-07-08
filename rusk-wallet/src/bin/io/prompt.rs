@@ -33,6 +33,7 @@ use rusk_wallet::{
 };
 use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
+use zeroize::Zeroize;
 
 use crate::command::TransactionHistory;
 
@@ -88,13 +89,15 @@ pub(crate) fn derive_key_from_password(
     salt: Option<&[u8; SALT_SIZE]>,
     file_version: DatFileVersion,
 ) -> anyhow::Result<Vec<u8>> {
-    let pwd = match password.as_ref() {
+    let mut pwd = match password.as_ref() {
         Some(p) => p.to_string(),
 
         None => ask_pwd(msg)?,
     };
 
-    derive_key(file_version, &pwd, salt)
+    let key = derive_key(file_version, &pwd, salt);
+    pwd.zeroize();
+    key
 }
 
 /// Request the user to create a wallet password and return the derived key
@@ -104,12 +107,14 @@ pub(crate) fn derive_key_from_new_password(
     file_version: DatFileVersion,
     prompter: &dyn Prompt,
 ) -> anyhow::Result<Vec<u8>> {
-    let pwd = match password.as_ref() {
+    let mut pwd = match password.as_ref() {
         Some(p) => p.to_string(),
         None => prompter.create_new_password()?,
     };
 
-    derive_key(file_version, &pwd, salt)
+    let key = derive_key(file_version, &pwd, salt);
+    pwd.zeroize();
+    key
 }
 
 /// Display the mnemonic phrase to the user and ask for confirmation

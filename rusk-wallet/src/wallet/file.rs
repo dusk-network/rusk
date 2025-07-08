@@ -16,6 +16,8 @@ pub trait Secure {
     fn path(&self) -> &WalletPath;
     /// Returns the hashed password
     fn aes_key(&self) -> &[u8];
+    /// Zeroizes the aes key
+    fn zeroize_aes_key(&mut self);
     /// Returns the seed used to hash the password
     fn salt(&self) -> Option<&[u8; SALT_SIZE]>;
     /// Returns the IV used to encrypt/decrypt wallet data

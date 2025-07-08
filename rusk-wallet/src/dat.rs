@@ -10,6 +10,7 @@ use std::fs;
 use std::io::Read;
 
 use wallet_core::Seed;
+use zeroize::Zeroize;
 
 use crate::crypto::{decrypt_aes_cbc, decrypt_aes_gcm};
 use crate::{Error, WalletPath, IV_SIZE, SALT_SIZE};
@@ -107,6 +108,7 @@ pub(crate) fn get_seed_and_address(
             let seed = bytes[..]
                 .try_into()
                 .map_err(|_| Error::WalletFileCorrupted)?;
+            bytes.zeroize();
 
             Ok((seed, 1))
         }
@@ -115,26 +117,29 @@ pub(crate) fn get_seed_and_address(
 
             let result: Result<(Seed, u8), Error> = match (major, minor) {
                 (1, 0) => {
-                    let content = decrypt_aes_cbc(&bytes, aes_key)?;
-                    let buff = &content[..];
+                    let mut content = decrypt_aes_cbc(&bytes, aes_key)?;
 
-                    let seed = buff
+                    let seed = content[..]
                         .try_into()
                         .map_err(|_| Error::WalletFileCorrupted)?;
+
+                    content.zeroize();
 
                     Ok((seed, 1))
                 }
                 (2, 0) => {
-                    let content = decrypt_aes_cbc(&bytes, aes_key)?;
-                    let buff = &content[..];
+                    let mut content = decrypt_aes_cbc(&bytes, aes_key)?;
 
                     // extract seed
-                    let seed = buff
+                    let seed = content[..]
                         .try_into()
                         .map_err(|_| Error::WalletFileCorrupted)?;
+                    let count = content[0];
+
+                    content.zeroize();
 
                     // extract addresses count
-                    Ok((seed, buff[0]))
+                    Ok((seed, count))
                 }
                 _ => Err(Error::UnknownFileVersion(major, minor)),
             };
@@ -155,14 +160,14 @@ pub(crate) fn get_seed_and_address(
                 };
 
             if let Some(rest) = rest {
-                let content = if use_aes_gcm {
+                let mut content = if use_aes_gcm {
                     let iv = iv.ok_or(Error::WalletFileCorrupted)?;
                     decrypt_aes_gcm(rest, aes_key, iv)?
                 } else {
                     decrypt_aes_cbc(rest, aes_key)?
                 };
 
-                if let Some(seed_buff) = content.get(0..65) {
+                let res = if let Some(seed_buff) = content.get(0..65) {
                     let seed = seed_buff[0..64]
                         .try_into()
                         .map_err(|_| Error::WalletFileCorrupted)?;
@@ -172,7 +177,11 @@ pub(crate) fn get_seed_and_address(
                     Ok((seed, count[0]))
                 } else {
                     Err(Error::WalletFileCorrupted)
-                }
+                };
+
+                content.zeroize();
+
+                res
             } else {
                 Err(Error::WalletFileCorrupted)
             }

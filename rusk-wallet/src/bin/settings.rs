@@ -11,6 +11,7 @@ use rusk_wallet::{Error, RuesHttpClient};
 use serde::Deserialize;
 use tracing::Level;
 use url::Url;
+use zeroize::Zeroize;
 
 use crate::config::Network;
 use crate::io::WalletArgs;
@@ -69,13 +70,14 @@ impl SettingsBuilder {
     }
 
     pub fn network(self, network: Network) -> Result<Settings, Error> {
-        let args = self.args;
+        let mut args = self.args;
 
         let network = match (args.network, network.clone().network) {
             (Some(label), Some(mut networks)) => {
                 let r = networks.remove(&label);
                 // err if specified network is not in the list
                 if r.is_none() {
+                    args.password.zeroize();
                     return Err(Error::BadAddress);
                 }
 
@@ -83,6 +85,7 @@ impl SettingsBuilder {
             }
             // err if no networks are specified but argument is
             (Some(_), None) => {
+                args.password.zeroize();
                 return Err(Error::BadAddress);
             }
             (_, _) => None,

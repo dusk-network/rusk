@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change transaction history item type to display public/shielded
 - Separate archive node endpoint from state endpoint
 - Change withdraw command to claim rewards [#3077]
+- Ensure zeroize is called for secret info [#3687]
 
 ### Fixed
 
@@ -103,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3704]: https://github.com/dusk-network/rusk/issues/3704
 [#3702]: https://github.com/dusk-network/rusk/issues/3702
 [#3700]: https://github.com/dusk-network/rusk/issues/3700
+[#3687]: https://github.com/dusk-network/rusk/issues/3687
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
 [#3623]: https://github.com/dusk-network/rusk/issues/3623
 [#3602]: https://github.com/dusk-network/rusk/issues/3602

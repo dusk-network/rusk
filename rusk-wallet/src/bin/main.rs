@@ -4,6 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+// This feature has been stabilized since 1.76.0.
+// It can just be removed when the toolchain is updated.
+#![feature(result_option_inspect)]
+
 mod command;
 mod config;
 mod interactive;
@@ -13,6 +17,7 @@ mod settings;
 use command::{gen_iv, gen_salt};
 pub(crate) use command::{Command, RunResult};
 use io::prompt::{ask_pwd, derive_key, Prompter};
+use zeroize::Zeroize;
 
 use std::fs;
 use std::path::PathBuf;
@@ -48,6 +53,10 @@ impl SecureWalletFile for WalletFile {
 
     fn aes_key(&self) -> &[u8] {
         &self.aes_key
+    }
+
+    fn zeroize_aes_key(&mut self) {
+        self.aes_key.zeroize();
     }
 
     fn salt(&self) -> Option<&[u8; SALT_SIZE]> {
@@ -124,9 +133,7 @@ where
 
             }
 
-            // Exit because we cannot proceed because of db error
-            // wallet is already closed
-            std::process::exit(1);
+            return Err(anyhow::anyhow!("Wallet cannot proceed will now exit"));
         },
         Err(ref e) => warn!("[OFFLINE MODE]: Unable to connect to Rusk, limited functionality available: {e}"),
         _ => {}
@@ -142,24 +149,26 @@ async fn exec() -> anyhow::Result<()> {
     let cmd = args.command.clone();
 
     // Get the initial settings from the args
-    let settings_builder = Settings::args(args)?;
+    let mut settings_builder = Settings::args(args)?;
 
     // Obtain the wallet dir from the settings
     let wallet_dir = settings_builder.wallet_dir().clone();
 
-    fs::create_dir_all(wallet_dir.as_path())?;
+    fs::create_dir_all(wallet_dir.as_path())
+        .inspect_err(|_| settings_builder.args.password.zeroize())?;
 
     // prepare wallet path
     let mut wallet_path =
         WalletPath::from(wallet_dir.as_path().join("wallet.dat"));
 
     // load configuration (or use default)
-    let cfg = Config::load(&wallet_dir)?;
+    let cfg = Config::load(&wallet_dir)
+        .inspect_err(|_| settings_builder.args.password.zeroize())?;
 
     wallet_path.set_network_name(settings_builder.args.network.clone());
 
     // Finally complete the settings by setting the network
-    let settings = settings_builder
+    let mut settings = settings_builder
         .network(cfg.network)
         .map_err(|_| rusk_wallet::Error::NetworkNotFound)?;
 
@@ -198,133 +207,29 @@ async fn exec() -> anyhow::Result<()> {
 
     let is_headless = cmd.is_some();
 
-    let password = &settings.password;
-
     if let Some(Command::Settings) = cmd {
         println!("{}", &settings);
+        settings.password.zeroize();
         return Ok(());
     };
 
     // get our wallet ready
-    let mut wallet: Wallet<WalletFile> = match cmd {
-        // if `cmd` is `None` we are in interactive mode and need to load the
-        // wallet from file
-        None => interactive::load_wallet(&wallet_path, &settings).await?,
-        // else we check if we need to replace the wallet and then load it
-        Some(ref cmd) => match cmd {
-            Command::Create {
-                skip_recovery,
-                seed_file,
-            } => Command::run_create(
-                *skip_recovery,
-                seed_file,
-                password,
-                &wallet_path,
-                &Prompter,
-            )?,
-            Command::Restore { file } => {
-                match file {
-                    Some(file) => {
-                        // if we restore and old version file make sure we
-                        // know the corrrect version before asking for the
-                        // password
-                        let (file_version, salt_and_iv) =
-                            dat::read_file_version_and_salt_iv(file)?;
+    let mut wallet: Wallet<WalletFile> =
+        get_wallet(&cmd, &settings, &wallet_path)
+            .await
+            .inspect_err(|_| settings.password.zeroize())?;
 
-                        let key = prompt::derive_key_from_password(
-                            "Please enter wallet password",
-                            password,
-                            salt_and_iv.map(|si| si.0).as_ref(),
-                            file_version,
-                        )?;
-
-                        let mut w = Wallet::from_file(WalletFile {
-                            path: file.clone(),
-                            aes_key: key.clone(),
-                            salt: salt_and_iv.map(|si| si.0),
-                            iv: salt_and_iv.map(|si| si.1),
-                        })?;
-
-                        let (salt, iv) = salt_and_iv
-                            .unwrap_or_else(|| (gen_salt(), gen_iv()));
-                        w.save_to(WalletFile {
-                            path: wallet_path,
-                            aes_key: key,
-                            salt: Some(salt),
-                            iv: Some(iv),
-                        })?;
-                        w
-                    }
-                    None => {
-                        Command::run_restore_from_seed(&wallet_path, &Prompter)?
-                    }
-                }
-            }
-
-            _ => {
-                // Grab the file version for a random command
-                let (file_version, salt_and_iv) =
-                    dat::read_file_version_and_salt_iv(&wallet_path)?;
-
-                // load wallet from file
-                let key = prompt::derive_key_from_password(
-                    "Please enter wallet password",
-                    password,
-                    salt_and_iv.map(|si| si.0).as_ref(),
-                    file_version,
-                )?;
-
-                Wallet::from_file(WalletFile {
-                    path: wallet_path,
-                    aes_key: key,
-                    salt: salt_and_iv.map(|si| si.0),
-                    iv: salt_and_iv.map(|si| si.1),
-                })?
-            }
-        },
-    };
-
-    let file_version = wallet.get_file_version()?;
-
-    let password = &settings.password;
+    let file_version = wallet.get_file_version().inspect_err(|_| {
+        wallet.close();
+        settings.password.zeroize();
+    })?;
 
     if file_version.is_old() {
-        let salt = gen_salt();
-        let iv = gen_iv();
-        let pwd = match password.as_ref() {
-            Some(p) => p.to_string(),
-            None => ask_pwd("Updating your wallet data file, please enter your wallet password ")?,
-        };
-
-        let old_wallet_file = wallet
-            .file()
-            .clone()
-            .expect("wallet file should never be none");
-
-        let old_key = derive_key(file_version, &pwd, old_wallet_file.salt())?;
-        // Is the password correct?
-        Wallet::from_file(WalletFile {
-            aes_key: old_key,
-            ..old_wallet_file.clone()
-        })?;
-
-        let old_wallet_path = save_old_wallet(&old_wallet_file.path)?;
-
-        let key = derive_key(
-            DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
-            &pwd,
-            Some(&salt),
-        )?;
-        wallet.save_to(WalletFile {
-            path: old_wallet_file.path,
-            aes_key: key,
-            salt: Some(salt),
-            iv: Some(iv),
-        })?;
-        println!(
-            "Update successful. Old wallet data file is saved at {}",
-            old_wallet_path.display()
-        );
+        update_wallet_file(&mut wallet, &settings.password, file_version)
+            .inspect_err(|_| {
+                wallet.close();
+                settings.password.zeroize();
+            })?;
     }
 
     // set our status callback
@@ -333,19 +238,38 @@ async fn exec() -> anyhow::Result<()> {
         false => status::interactive,
     };
 
-    wallet = connect(wallet, &settings, status_cb).await?;
+    wallet = connect(wallet, &settings, status_cb)
+        .await
+        .inspect_err(|_| {
+            settings.password.zeroize();
+        })?;
 
+    let res = run_command_or_enter_loop(&mut wallet, &settings, cmd).await;
+
+    wallet.close();
+    settings.password.zeroize();
+
+    res?;
+
+    Ok(())
+}
+
+async fn run_command_or_enter_loop(
+    wallet: &mut Wallet<WalletFile>,
+    settings: &Settings,
+    cmd: Option<Command>,
+) -> anyhow::Result<()> {
     // run command
     match cmd {
         // if there is no command we are in interactive mode and need to run the
         // interactive loop
         None => {
             wallet.register_sync()?;
-            interactive::run_loop(&mut wallet, &settings).await?;
+            interactive::run_loop(wallet, settings).await?;
         }
         // else we run the given command and print the result
         Some(cmd) => {
-            match cmd.run(&mut wallet, &settings).await? {
+            match cmd.run(wallet, settings).await? {
                 RunResult::PhoenixBalance(balance, spendable) => {
                     if spendable {
                         println!("{}", Dusk::from(balance.spendable));
@@ -379,8 +303,8 @@ async fn exec() -> anyhow::Result<()> {
 
                     // Wait for transaction confirmation from network
                     let gql = GraphQL::new(
-                        settings.state,
-                        settings.archiver,
+                        settings.state.clone(),
+                        settings.archiver.clone(),
                         status::headless,
                     )?;
                     gql.wait_for(&tx_id).await?;
@@ -394,8 +318,8 @@ async fn exec() -> anyhow::Result<()> {
 
                     // Wait for transaction confirmation from network
                     let gql = GraphQL::new(
-                        settings.state,
-                        settings.archiver,
+                        settings.state.clone(),
+                        settings.archiver.clone(),
                         status::headless,
                     )?;
                     gql.wait_for(&tx_id).await?;
@@ -448,9 +372,139 @@ async fn exec() -> anyhow::Result<()> {
                 RunResult::Create() | RunResult::Restore() => {}
             }
         }
-    }
+    };
+    Ok(())
+}
 
-    wallet.close();
+async fn get_wallet(
+    cmd: &Option<Command>,
+    settings: &Settings,
+    wallet_path: &WalletPath,
+) -> anyhow::Result<Wallet<WalletFile>> {
+    let password = &settings.password;
+    let wallet = match cmd {
+        // if `cmd` is `None` we are in interactive mode and need to load the
+        // wallet from file
+        None => interactive::load_wallet(wallet_path, settings).await?,
+        // else we check if we need to replace the wallet and then load it
+        Some(ref cmd) => match cmd {
+            Command::Create {
+                skip_recovery,
+                seed_file,
+            } => Command::run_create(
+                *skip_recovery,
+                seed_file,
+                password,
+                wallet_path,
+                &Prompter,
+            )?,
+            Command::Restore { file } => {
+                match file {
+                    Some(file) => {
+                        // if we restore and old version file make sure we
+                        // know the corrrect version before asking for the
+                        // password
+                        let (file_version, salt_and_iv) =
+                            dat::read_file_version_and_salt_iv(file)?;
+
+                        let mut key = prompt::derive_key_from_password(
+                            "Please enter wallet password",
+                            password,
+                            salt_and_iv.map(|si| si.0).as_ref(),
+                            file_version,
+                        )?;
+
+                        let mut w = Wallet::from_file(WalletFile {
+                            path: file.clone(),
+                            aes_key: key.clone(),
+                            salt: salt_and_iv.map(|si| si.0),
+                            iv: salt_and_iv.map(|si| si.1),
+                        })
+                        .inspect_err(|_| key.zeroize())?;
+
+                        let (salt, iv) = salt_and_iv
+                            .unwrap_or_else(|| (gen_salt(), gen_iv()));
+                        w.save_to(WalletFile {
+                            path: wallet_path.clone(),
+                            aes_key: key,
+                            salt: Some(salt),
+                            iv: Some(iv),
+                        })
+                        .inspect_err(|_| w.close())?;
+                        w
+                    }
+                    None => {
+                        Command::run_restore_from_seed(wallet_path, &Prompter)?
+                    }
+                }
+            }
+
+            _ => {
+                // Grab the file version for a random command
+                let (file_version, salt_and_iv) =
+                    dat::read_file_version_and_salt_iv(wallet_path)?;
+
+                // load wallet from file
+                let key = prompt::derive_key_from_password(
+                    "Please enter wallet password",
+                    password,
+                    salt_and_iv.map(|si| si.0).as_ref(),
+                    file_version,
+                )?;
+
+                Wallet::from_file(WalletFile {
+                    path: wallet_path.clone(),
+                    aes_key: key,
+                    salt: salt_and_iv.map(|si| si.0),
+                    iv: salt_and_iv.map(|si| si.1),
+                })?
+            }
+        },
+    };
+    Ok(wallet)
+}
+
+fn update_wallet_file(
+    wallet: &mut Wallet<WalletFile>,
+    password: &Option<String>,
+    file_version: DatFileVersion,
+) -> Result<(), anyhow::Error> {
+    let salt = gen_salt();
+    let iv = gen_iv();
+    let pwd = match password.as_ref() {
+        Some(p) => p.to_string(),
+        None => ask_pwd("Updating your wallet data file, please enter your wallet password ")?,
+    };
+
+    let old_wallet_file = wallet
+        .file()
+        .clone()
+        .expect("wallet file should never be none");
+
+    let old_key = derive_key(file_version, &pwd, old_wallet_file.salt())?;
+    // Is the password correct?
+    Wallet::from_file(WalletFile {
+        aes_key: old_key,
+        ..old_wallet_file.clone()
+    })?;
+
+    let old_wallet_path = save_old_wallet(&old_wallet_file.path)?;
+
+    let key = derive_key(
+        DatFileVersion::RuskBinaryFileFormat(LATEST_VERSION),
+        &pwd,
+        Some(&salt),
+    )?;
+    wallet.save_to(WalletFile {
+        path: old_wallet_file.path,
+        aes_key: key,
+        salt: Some(salt),
+        iv: Some(iv),
+    })?;
+    println!(
+        "Update successful. Old wallet data file is saved at {}",
+        old_wallet_path.display()
+    );
 
     Ok(())
 }

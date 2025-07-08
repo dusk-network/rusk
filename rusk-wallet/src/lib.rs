@@ -14,6 +14,9 @@
 
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
+// This feature has been stabilized since 1.76.0.
+// It can just be removed when the toolchain is updated.
+#![feature(result_option_inspect)]
 
 mod cache;
 mod clients;

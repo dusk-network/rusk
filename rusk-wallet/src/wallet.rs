@@ -91,12 +91,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         if let Ok(mnemonic) = try_mnem {
             // derive the mnemonic seed
-            let seed = Seed::new(&mnemonic, "");
+            let mut seed = Seed::new(&mnemonic, "");
             // Takes the mnemonic seed as bytes
             let seed_bytes = seed
                 .as_bytes()
                 .try_into()
                 .map_err(|_| Error::InvalidMnemonicPhrase)?;
+
+            seed.zeroize();
 
             // Generate the default address at index 0
             let profiles = vec![Profile {
@@ -121,23 +123,29 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     ///
     /// # Errors
     /// This method will error if the provided wallet-file is invalid.
-    pub fn from_file(file: F) -> Result<Self, Error> {
+    pub fn from_file(mut file: F) -> Result<Self, Error> {
         let path = file.path();
-        let key = file.aes_key();
 
         // make sure file exists
         let pb = path.inner().clone();
         if !pb.is_file() {
+            file.zeroize_aes_key();
             return Err(Error::WalletFileMissing);
         }
 
         // attempt to load and decode wallet
-        let bytes = fs::read(&pb)?;
+        let bytes = fs::read(&pb).inspect_err(|_| file.zeroize_aes_key())?;
 
-        let file_version = dat::check_version(bytes.get(0..12))?;
+        let file_version = dat::check_version(bytes.get(0..12))
+            .inspect_err(|_| file.zeroize_aes_key())?;
 
-        let (seed, address_count) =
-            dat::get_seed_and_address(file_version, bytes, key, file.iv())?;
+        let (seed, address_count) = dat::get_seed_and_address(
+            file_version,
+            bytes,
+            file.aes_key(),
+            file.iv(),
+        )
+        .inspect_err(|_| file.zeroize_aes_key())?;
 
         // return early if its legacy
         if let DatFileVersion::Legacy = file_version {
@@ -207,7 +215,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 payload.push(self.profiles.len() as u8);
 
                 // encrypt the payload
-                let encrypted_payload = encrypt(&payload, f.aes_key(), iv)?;
+                let encrypted_payload = encrypt(&payload, f.aes_key(), iv)
+                    .inspect_err(|_| payload.zeroize())?;
+
+                payload.zeroize();
 
                 let mut content = Vec::with_capacity(
                     header.len()
@@ -587,13 +598,17 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::NotDirectory);
         }
 
-        let (pk, sk) = self.provisioner_keys(profile_idx)?;
+        let (pk, mut sk) = self.provisioner_keys(profile_idx)?;
         let path = PathBuf::from(dir);
         let filename = filename.unwrap_or(profile_idx.to_string());
 
-        Ok(node_data::bls::save_consensus_keys(
+        let paths = node_data::bls::save_consensus_keys(
             &path, &filename, &pk, &sk, pwd,
-        )?)
+        );
+
+        sk.zeroize();
+
+        Ok(paths?)
     }
 
     /// Return the index of the address passed, returns an error if the address
@@ -703,6 +718,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub fn close(&mut self) {
         self.store.inner_mut().zeroize();
 
+        if let Some(file) = &mut self.file {
+            file.zeroize_aes_key();
+        }
+
         // close the state if exists
         if let Some(x) = &mut self.state {
             x.close();
@@ -787,6 +806,10 @@ mod tests {
 
         fn aes_key(&self) -> &[u8] {
             &self.key
+        }
+
+        fn zeroize_aes_key(&mut self) {
+            self.key.zeroize();
         }
 
         fn salt(&self) -> Option<&[u8; SALT_SIZE]> {
