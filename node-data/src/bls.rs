@@ -23,6 +23,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::base64::Base64;
 use serde_with::serde_as;
 use sha2::{Digest, Sha256};
+use zeroize::Zeroize;
 
 pub const PUBLIC_BLS_SIZE: usize = BlsPublicKey::SIZE;
 
@@ -193,17 +194,20 @@ pub fn save_consensus_keys(
     let bytes = pk.to_bytes();
     fs::write(path.with_extension("cpk"), bytes)?;
 
-    let bls = BlsKeyPair {
+    let mut bls = BlsKeyPair {
         public_key_bls: pk.to_bytes().to_vec(),
         secret_key_bls: sk.to_bytes().to_vec(),
     };
-    let json = serde_json::to_string(&bls)?;
+    let bytes = serde_json::to_vec(&bls);
+    bls.secret_key_bls.zeroize();
+    let mut bytes = bytes?;
 
-    let mut bytes = json.as_bytes().to_vec();
-    let aes_key = hash_sha256(pwd);
-    bytes = encrypt(&bytes, &aes_key)?;
+    let mut aes_key = hash_sha256(pwd);
+    let encrypted_bytes = encrypt(&bytes, &aes_key);
+    bytes.zeroize();
+    aes_key.zeroize();
 
-    fs::write(path.with_extension("keys"), bytes)?;
+    fs::write(path.with_extension("keys"), encrypted_bytes?)?;
 
     Ok((path.with_extension("keys"), path.with_extension("cpk")))
 }
