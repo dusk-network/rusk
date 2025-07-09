@@ -10,8 +10,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use aes::Aes256;
+use aes_gcm::aead::Aead;
+use aes_gcm::{AeadCore, Aes256Gcm, Key, KeyInit};
 use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, BlockModeError, Cbc, InvalidKeyIvLength};
+use block_modes::{BlockMode, BlockModeError, Cbc};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
@@ -23,6 +25,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::base64::Base64;
 use serde_with::serde_as;
 use sha2::{Digest, Sha256};
+use tracing::info;
 use zeroize::Zeroize;
 
 pub const PUBLIC_BLS_SIZE: usize = BlsPublicKey::SIZE;
@@ -159,17 +162,32 @@ fn read_from_file(
     path: PathBuf,
     pwd: &str,
 ) -> anyhow::Result<(BlsPublicKey, BlsSecretKey)> {
-    let ciphertext = fs::read(&path).map_err(|e| {
+    let contents = fs::read(&path).map_err(|e| {
         anyhow::anyhow!(
             "{} should be valid consensus keys file {e}",
             path.display()
         )
     })?;
 
-    let aes_key = hash_sha256(pwd);
-
-    let bytes = decrypt(&ciphertext[..], &aes_key)
-        .map_err(|e| anyhow::anyhow!("Invalid consensus keys password {e}"))?;
+    let (bytes, file_format_is_old) = match serde_json::from_slice::<
+        ProvisionerFileContents,
+    >(&contents)
+    {
+        Ok(contents) => {
+            let aes_key = derive_aes_key(pwd, &contents.salt);
+            let bytes = decrypt(&contents.key_pair, &aes_key, &contents.iv).map_err(
+                        |_| anyhow::anyhow!("Failed to decrypt: invalid consensus keys password or the file is corrupted"),
+                    )?;
+            (bytes, false)
+        }
+        Err(_) => {
+            let aes_key = hash_sha256(pwd);
+            let bytes = decrypt_aes_cbc(&contents, &aes_key).map_err(|e| {
+                anyhow::anyhow!("Invalid consensus keys password {e}")
+            })?;
+            (bytes, true)
+        }
+    };
 
     let keys: BlsKeyPair = serde_json::from_slice(&bytes)
         .map_err(|e| anyhow::anyhow!("keys files should contain json {e}"))?;
@@ -180,7 +198,36 @@ fn read_from_file(
     let pk = BlsPublicKey::from_slice(&keys.public_key_bls)
         .map_err(|e| anyhow::anyhow!("pk should be valid {e:?}"))?;
 
+    if file_format_is_old {
+        info!("Your consensus keys are in the old format. Migrating to the new format and saving the old file as {}.old", path.display());
+        save_old_file(&path)?;
+        let keys_filename = path
+            .file_name()
+            .expect("keys file should have a name")
+            .to_str()
+            .expect("keys file should be a valid string");
+        let keys_file_dir = path
+            .parent()
+            .expect("keys file should have a parent directory");
+        let temp_keys_name = format!("{}_new", keys_filename);
+        save_consensus_keys(keys_file_dir, &temp_keys_name, &pk, &sk, pwd)?;
+        fs::rename(
+            keys_file_dir.join(&temp_keys_name).with_extension("keys"),
+            &path,
+        )?;
+        fs::remove_file(
+            keys_file_dir.join(temp_keys_name).with_extension("cpk"),
+        )
+        .expect("The new cpk file should be deleted");
+    }
+
     Ok((pk, sk))
+}
+
+fn save_old_file(path: &Path) -> Result<(), ConsensusKeysError> {
+    let old_path = path.with_extension("keys.old");
+    fs::copy(path, old_path)?;
+    Ok(())
 }
 
 pub fn save_consensus_keys(
@@ -194,28 +241,39 @@ pub fn save_consensus_keys(
     let bytes = pk.to_bytes();
     fs::write(path.with_extension("cpk"), bytes)?;
 
+    let iv = gen_iv();
+    let salt = gen_salt();
     let mut bls = BlsKeyPair {
         public_key_bls: pk.to_bytes().to_vec(),
         secret_key_bls: sk.to_bytes().to_vec(),
     };
-    let bytes = serde_json::to_vec(&bls);
+    let key_pair_plain = serde_json::to_vec(&bls);
     bls.secret_key_bls.zeroize();
-    let mut bytes = bytes?;
+    let mut key_pair_plain = key_pair_plain?;
 
-    let mut aes_key = hash_sha256(pwd);
-    let encrypted_bytes = encrypt(&bytes, &aes_key);
-    bytes.zeroize();
+    let mut aes_key = derive_aes_key(pwd, &salt);
+    let key_pair_enc = encrypt(&key_pair_plain, &aes_key, &iv);
     aes_key.zeroize();
+    key_pair_plain.zeroize();
+    let contents = serde_json::to_vec(&ProvisionerFileContents {
+        salt,
+        iv,
+        key_pair: key_pair_enc?,
+    })?;
 
-    fs::write(path.with_extension("keys"), encrypted_bytes?)?;
+    fs::write(path.with_extension("keys"), contents)?;
 
     Ok((path.with_extension("keys"), path.with_extension("cpk")))
 }
 
-fn hash_sha256(pwd: &str) -> Vec<u8> {
-    let mut hasher = Sha256::new();
-    hasher.update(pwd.as_bytes());
-    hasher.finalize().to_vec()
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+struct ProvisionerFileContents {
+    #[serde_as(as = "Base64")]
+    salt: [u8; SALT_SIZE],
+    #[serde_as(as = "Base64")]
+    iv: [u8; IV_SIZE],
+    key_pair: Vec<u8>,
 }
 
 #[serde_as]
@@ -231,20 +289,17 @@ type Aes256Cbc = Cbc<Aes256, Pkcs7>;
 
 fn encrypt(
     plaintext: &[u8],
-    pwd: &[u8],
-) -> Result<Vec<u8>, ConsensusKeysError> {
-    let mut iv = vec![0; 16];
-    let mut rng = OsRng;
-    rng.fill_bytes(&mut iv);
-
-    let cipher = Aes256Cbc::new_from_slices(pwd, &iv)?;
-    let enc = cipher.encrypt_vec(plaintext);
-
-    let ciphertext = iv.into_iter().chain(enc).collect();
+    key: &[u8],
+    iv: &[u8],
+) -> Result<Vec<u8>, aes_gcm::Error> {
+    let key = Key::<Aes256Gcm>::from_slice(key);
+    let cipher = Aes256Gcm::new(key);
+    let iv = aes_gcm::Nonce::from_slice(iv);
+    let ciphertext = cipher.encrypt(iv, plaintext)?;
     Ok(ciphertext)
 }
 
-fn decrypt(data: &[u8], pwd: &[u8]) -> Result<Vec<u8>, BlockModeError> {
+fn decrypt_aes_cbc(data: &[u8], pwd: &[u8]) -> Result<Vec<u8>, BlockModeError> {
     let iv = &data[..16];
     let enc = &data[16..];
 
@@ -252,16 +307,60 @@ fn decrypt(data: &[u8], pwd: &[u8]) -> Result<Vec<u8>, BlockModeError> {
     cipher.decrypt_vec(enc)
 }
 
+pub(crate) fn decrypt(
+    ciphertext: &[u8],
+    key: &[u8],
+    iv: &[u8],
+) -> Result<Vec<u8>, aes_gcm::Error> {
+    let key = Key::<Aes256Gcm>::from_slice(key);
+    let cipher = Aes256Gcm::new(key);
+    let iv = aes_gcm::Nonce::from_slice(iv);
+    let plaintext = cipher.decrypt(iv, ciphertext)?;
+
+    Ok(plaintext)
+}
+
+const SALT_SIZE: usize = 32;
+const IV_SIZE: usize = 12;
+const PBKDF2_ROUNDS: u32 = 10_000;
+
+fn derive_aes_key(pwd: &str, salt: &[u8]) -> Vec<u8> {
+    pbkdf2::pbkdf2_hmac_array::<Sha256, SALT_SIZE>(
+        pwd.as_bytes(),
+        salt,
+        PBKDF2_ROUNDS,
+    )
+    .to_vec()
+}
+
+fn gen_iv() -> [u8; IV_SIZE] {
+    let iv = Aes256Gcm::generate_nonce(OsRng);
+    iv.into()
+}
+
+fn gen_salt() -> [u8; SALT_SIZE] {
+    let mut salt = [0; SALT_SIZE];
+    let mut rng = OsRng;
+    rng.fill_bytes(&mut salt);
+    salt
+}
+
+fn hash_sha256(pwd: &str) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(pwd.as_bytes());
+    hasher.finalize().to_vec()
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum ConsensusKeysError {
-    #[error("Consensus keys file corrupted")]
-    InvalidKeyIvLength(#[from] InvalidKeyIvLength),
-
     #[error(transparent)]
     Json(#[from] serde_json::Error),
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
+    #[error("Encryption error")]
+    Encryption(#[from] aes_gcm::Error),
 }
 
 #[cfg(test)]
@@ -318,11 +417,18 @@ mod tests {
 
         let pwd = "password".to_string();
         let wallet_gen_keys_path = get_wallet_gen_consensus_keys_path();
+        let temp_dir = tempdir()?;
+        let keys_path = temp_dir.path().join("consensus.keys");
+        fs::copy(&wallet_gen_keys_path, &keys_path)?;
+
         let (loaded_sk, loaded_pk) =
-            load_keys(wallet_gen_keys_path.to_str().unwrap().to_string(), pwd)?;
+            load_keys(keys_path.to_str().unwrap().to_string(), pwd)?;
 
         assert_eq!(loaded_sk, sk);
         assert_eq!(loaded_pk.inner, pk);
+
+        let old_keys_path = temp_dir.path().join("consensus.keys.old");
+        assert!(old_keys_path.exists(), "Old keys path should exist");
 
         Ok(())
     }
