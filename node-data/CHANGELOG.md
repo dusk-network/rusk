@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Ensure zeroize is called for secret info [#3687]
+
 ## [1.3.0] - 2025-04-17
 
 ### Changed
@@ -44,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Types used for interacting with Dusk node 
 
 <!-- Issues -->
+[#3687]: https://github.com/dusk-network/rusk/issues/3687
 [#3503]: https://github.com/dusk-network/rusk/issues/3503]
 [#3464]: https://github.com/dusk-network/rusk/issues/3464
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
