@@ -44,6 +44,8 @@ use crate::prompt::Prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
 
+pub(crate) use self::history::BalanceType;
+
 /// Commands that can be run against the Dusk wallet
 #[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Eq, Hash, Clone, Subcommand, Debug)]
@@ -818,6 +820,112 @@ impl Command {
             Command::Create { .. } => Ok(RunResult::Create()),
             Command::Restore { .. } => Ok(RunResult::Restore()),
             Command::Settings => Ok(RunResult::Settings()),
+        }
+    }
+
+    pub fn max_deduction(&self) -> (BalanceType, Dusk) {
+        match self {
+            Command::Shield { amt, .. }
+            | Command::Unshield { amt, .. }
+            | Command::ContractCall { deposit: amt, .. }
+            | Command::Stake { amt, .. }
+            | Command::Transfer { amt, .. } => {
+                let (bal_type, fee) = self.max_fee();
+                (bal_type, fee + *amt)
+            }
+            Command::Balance { .. }
+            | Command::Blob { .. }
+            | Command::CalculateContractId { .. }
+            | Command::ClaimRewards { .. }
+            | Command::Create { .. }
+            | Command::Restore { .. }
+            | Command::Settings
+            | Command::Export { .. }
+            | Command::History { .. }
+            | Command::Profiles { .. }
+            | Command::Withdraw { .. }
+            | Command::StakeInfo { .. }
+            | Command::Unstake { .. }
+            | Command::ContractDeploy { .. } => self.max_fee(),
+        }
+    }
+
+    pub fn max_fee(&self) -> (BalanceType, Dusk) {
+        match self {
+            Command::Blob {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Withdraw {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::ClaimRewards {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::ContractDeploy {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::ContractCall {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Stake {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Transfer {
+                sender: address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Unstake {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            } => match address {
+                Some(Address::Public(_)) | None => {
+                    (BalanceType::Public, Dusk::from(gas_limit * gas_price))
+                }
+                Some(Address::Shielded(_)) => {
+                    (BalanceType::Shielded, Dusk::from(gas_limit * gas_price))
+                }
+            },
+            Command::Shield {
+                gas_limit,
+                gas_price,
+                ..
+            } => (BalanceType::Public, Dusk::from(gas_limit * gas_price)),
+            Command::Unshield {
+                gas_limit,
+                gas_price,
+                ..
+            } => (BalanceType::Shielded, Dusk::from(gas_limit * gas_price)),
+            Command::Settings
+            | Command::CalculateContractId { .. }
+            | Command::Create { .. }
+            | Command::Restore { .. }
+            | Command::StakeInfo { .. }
+            | Command::Profiles { .. }
+            | Command::Balance { .. }
+            | Command::History { .. }
+            | Command::Export { .. } => (BalanceType::Public, Dusk::from(0)),
         }
     }
 

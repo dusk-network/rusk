@@ -13,6 +13,7 @@ use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat;
 use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
 
+use crate::command::BalanceType;
 use crate::io::prompt::{EXIT_HELP, MOVE_HELP, SELECT_HELP};
 use crate::io::{self, prompt};
 use crate::prompt::Prompter;
@@ -32,58 +33,71 @@ pub(crate) async fn run_loop(
             let profile = &wallet.profiles()[profile_index as usize];
             prompt::hide_cursor()?;
 
-            let op = if !wallet.is_online().await {
-                println!("\r{}", profile.shielded_account_string());
-                println!("{}", profile.public_account_string());
-                println!();
+            let (op, moonlight_bal, phoenix_spendable) =
+                if !wallet.is_online().await {
+                    println!("\r{}", profile.shielded_account_string());
+                    println!("{}", profile.public_account_string());
+                    println!();
 
-                command_menu::offline(profile_index, settings)
-            } else {
-                let is_synced = wallet.is_synced().await?;
-                // get balance for this profile
-                let moonlight_bal =
-                    wallet.get_moonlight_balance(profile_index).await?;
-                let phoenix_bal =
-                    wallet.get_phoenix_balance(profile_index).await?;
-                let phoenix_spendable = phoenix_bal.spendable.into();
-                let phoenix_total: Dusk = phoenix_bal.value.into();
-
-                // display profile information
-                // display shielded balance and keys information
-                println!("{}", profile.shielded_account_string());
-                if is_synced {
-                    println!(
-                        "{0: <16} - Spendable: {phoenix_spendable}",
-                        "Shielded Balance",
-                    );
-                    println!("{0: <16} - Total:     {phoenix_total}", "",);
+                    (command_menu::offline(profile_index, settings), None, None)
                 } else {
-                    println!("Syncing...");
-                }
-                println!();
-                // display public balance and keys information
-                println!("{}", profile.public_account_string());
-                println!(
-                    "{0: <16} - Total:     {moonlight_bal}",
-                    "Public Balance",
-                );
-                println!();
+                    let is_synced = wallet.is_synced().await?;
+                    // get balance for this profile
+                    let moonlight_bal =
+                        wallet.get_moonlight_balance(profile_index).await?;
+                    let phoenix_bal =
+                        wallet.get_phoenix_balance(profile_index).await?;
+                    let phoenix_spendable = phoenix_bal.spendable.into();
+                    let phoenix_total: Dusk = phoenix_bal.value.into();
 
-                command_menu::online(
-                    profile_index,
-                    wallet,
-                    phoenix_spendable,
-                    moonlight_bal,
-                    settings,
-                )
-                .await
-            };
+                    // display profile information
+                    // display shielded balance and keys information
+                    println!("{}", profile.shielded_account_string());
+                    if is_synced {
+                        println!(
+                            "{0: <16} - Spendable: {phoenix_spendable}",
+                            "Shielded Balance",
+                        );
+                        println!("{0: <16} - Total:     {phoenix_total}", "",);
+                    } else {
+                        println!("Syncing...");
+                    }
+                    println!();
+                    // display public balance and keys information
+                    println!("{}", profile.public_account_string());
+                    println!(
+                        "{0: <16} - Total:     {moonlight_bal}",
+                        "Public Balance",
+                    );
+                    println!();
+
+                    (
+                        command_menu::online(
+                            profile_index,
+                            wallet,
+                            phoenix_spendable,
+                            moonlight_bal,
+                            settings,
+                        )
+                        .await,
+                        Some(moonlight_bal),
+                        Some(phoenix_spendable),
+                    )
+                };
 
             prompt::hide_cursor()?;
 
             // perform operations with this profile
             match op {
                 Ok(ProfileOp::Run(cmd)) => {
+                    if let Some(more_dusk_needed) = needs_more_dusk_to_run(
+                        moonlight_bal,
+                        phoenix_spendable,
+                        cmd.max_deduction(),
+                    ) {
+                        println!("Balance is not enough to cover the transaction max fee. You need {more_dusk_needed} more Dusk.\n");
+                        continue;
+                    }
                     // request confirmation before running
                     let should_run = match confirm(&cmd, wallet).await {
                         Ok(run) => run,
@@ -167,6 +181,22 @@ pub(crate) async fn run_loop(
                 },
             };
         }
+    }
+}
+
+fn needs_more_dusk_to_run(
+    moonlight_bal: Option<Dusk>,
+    phoenix_spendable: Option<Dusk>,
+    max_deduction: (BalanceType, Dusk),
+) -> Option<Dusk> {
+    match (moonlight_bal, phoenix_spendable, max_deduction) {
+        (Some(spendable_amount), _, (BalanceType::Public, to_deduct))
+        | (_, Some(spendable_amount), (BalanceType::Shielded, to_deduct))
+            if spendable_amount < to_deduct =>
+        {
+            Some(to_deduct - spendable_amount)
+        }
+        _ => None,
     }
 }
 
