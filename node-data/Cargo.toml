@@ -12,15 +12,10 @@ edition.workspace = true
 [dependencies]
 dusk-bytes = { workspace = true }
 sha3 = { workspace = true }
-sha2 = { workspace = true }
 rand = { workspace = true, features = ["std_rng", "getrandom"] }
 hex = { workspace = true }
 dusk-core = { workspace = true, features = ["serde"] }
 
-block-modes = { workspace = true }
-aes = { workspace = true }
-aes-gcm = { workspace = true, features = ["std"] }
-pbkdf2 = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true, features = ["hex", "base64"] }
@@ -32,14 +27,12 @@ tracing = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 wallet-fs = { workspace = true }
-zeroize = { workspace = true }
 
 # faker feature dependencies
 fake = { workspace = true, features = ['derive'], optional = true }
 
 [dev-dependencies]
 fake = { workspace = true, features = ['derive'] }
-tempfile = { workspace = true }
 
 [features]
 faker = ["dep:fake"]

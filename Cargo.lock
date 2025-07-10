@@ -1773,29 +1773,23 @@ dependencies = [
 name = "dusk-node-data"
 version = "1.4.1-alpha.1"
 dependencies = [
- "aes 0.7.5",
- "aes-gcm",
  "anyhow",
  "async-channel",
  "base64 0.22.1",
- "block-modes",
  "bs58",
  "chrono",
  "dusk-bytes",
  "dusk-core",
  "fake",
  "hex",
- "pbkdf2 0.12.2",
  "rand 0.8.5",
  "serde",
  "serde_json",
  "serde_with",
- "sha2 0.10.8",
  "sha3",
- "tempfile",
  "thiserror",
  "tracing",
- "zeroize",
+ "wallet-fs",
 ]
 
 [[package]]
