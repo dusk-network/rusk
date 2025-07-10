@@ -4657,7 +4657,6 @@ dependencies = [
  "dirs",
  "dusk-bytes",
  "dusk-core",
- "dusk-node-data",
  "dusk-wallet-core",
  "flume 0.10.14",
  "futures",
@@ -4683,6 +4682,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
+ "wallet-fs",
  "zeroize",
 ]
 

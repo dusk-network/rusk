@@ -616,7 +616,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let path = PathBuf::from(dir);
         let filename = filename.unwrap_or(profile_idx.to_string());
 
-        let paths = node_data::bls::save_consensus_keys(
+        let paths = wallet_fs::provisioner::save_consensus_keys(
             &path, &filename, &pk, &sk, pwd,
         );
 
