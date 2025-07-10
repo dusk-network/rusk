@@ -5824,6 +5824,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "wallet-fs"
+version = "0.1.0-alpha"
+dependencies = [
+ "aes 0.7.5",
+ "aes-gcm",
+ "anyhow",
+ "block-modes",
+ "dusk-bytes",
+ "dusk-core",
+ "pbkdf2 0.12.2",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha2 0.10.8",
+ "tempfile",
+ "thiserror",
+ "tracing",
+ "zeroize",
+]
+
+[[package]]
 name = "want"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
