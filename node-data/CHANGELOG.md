@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add zeroize for secret info [#3687]
+
 ### Changed
 
-- Ensure zeroize is called for secret info [#3687]
+- Change provisioner keys encryption [#3391]
 
 ## [1.3.0] - 2025-04-17
 
@@ -49,8 +53,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Issues -->
 [#3687]: https://github.com/dusk-network/rusk/issues/3687
-[#3503]: https://github.com/dusk-network/rusk/issues/3503]
+[#3503]: https://github.com/dusk-network/rusk/issues/3503
 [#3464]: https://github.com/dusk-network/rusk/issues/3464
+[#3391]: https://github.com/dusk-network/rusk/issues/3391
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
