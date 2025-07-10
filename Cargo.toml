@@ -19,6 +19,7 @@ members = [
     "consensus",
     "node",
     "rusk-wallet",
+    "wallet-fs",
 
 ]
 resolver = "2"
@@ -48,6 +49,7 @@ rusk-prover = { version = "1.4.1-alpha.1", path = "./rusk-prover/" }
 rusk-recovery = { version = "1.4.2-alpha.1", path = "./rusk-recovery/" }
 # wallet-core = { version = "1.4.0", package = "dusk-wallet-core" }
 wallet-core = { version = "1.4.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
+wallet-fs = { version = "0.1.0-alpha", path = "./wallet-fs/" }
 
 dusk-data-driver = { version = "0.3.2-alpha.1", path = "./data-drivers/data-driver" }
 # dusk-data-driver = "0.3.1"

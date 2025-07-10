@@ -38,6 +38,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./wallet-core $@
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./rusk-wallet/ $@
+	$(MAKE) -C ./wallet-fs $@
 			
 clippy: ## Run clippy
 	$(MAKE) -C ./core/ $@
@@ -53,6 +54,7 @@ clippy: ## Run clippy
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./rusk-test/ $@
 	$(MAKE) -C ./rusk-wallet/ $@
+	$(MAKE) -C ./wallet-fs $@
 
 doc: ## Run doc gen
 	$(MAKE) -C ./core/ $@
@@ -65,6 +67,7 @@ doc: ## Run doc gen
 	$(MAKE) -C ./rusk-prover/ $@
 	$(MAKE) -C ./rusk-recovery $@
 	$(MAKE) -C ./wallet-core/ $@
+	$(MAKE) -C ./wallet-fs $@
 
 bench: keys wasm  ## Bench Rusk & node
 	$(MAKE) -C ./node bench
