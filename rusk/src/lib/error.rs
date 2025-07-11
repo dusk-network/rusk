@@ -14,14 +14,6 @@ use dusk_vm::Error as VMError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Failed to register a backend for persistence")]
-    BackendRegistrationFailed,
-    /// Failed to restore a network state from disk
-    #[error("Failed to restore a network state")]
-    RestoreFailed,
-    /// Proof verification failure
-    #[error("Proof verification failure")]
-    ProofVerification,
     /// Out of gas in block execution
     #[error("Out of gas")]
     OutOfGas,
@@ -37,15 +29,9 @@ pub enum Error {
     /// Wrong inputs and/or outputs in the transaction verification
     #[error("Expected: 0 < (inputs: {0}) < 5, 0 ≤ (outputs: {1}) < 3")]
     InvalidCircuitArguments(usize, usize),
-    /// Failed to build a Rusk instance
-    #[error("Failed to build a Rusk instance")]
-    BuilderInvalidState,
     /// Failed to fetch opening
     #[error("Failed to fetch opening of position {0}")]
     OpeningPositionNotFound(u64),
-    /// Failed to fetch opening due to undefined Note
-    #[error("Note {0} not found, opening of position")]
-    OpeningNoteUndefined(u64),
     /// Bytes Serialization Errors
     #[error("Serialization Error: {0:?}")]
     Serialization(dusk_bytes::Error),
