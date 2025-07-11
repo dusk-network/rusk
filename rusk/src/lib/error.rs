@@ -4,73 +4,78 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{fmt, io};
+use std::io;
 
 use dusk_bytes::Serializable;
-use dusk_core::{
-    signatures::bls::PublicKey as BlsPublicKey, transfer::phoenix::CoreError,
-    BlsScalar, Error as ExecErr,
-};
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
+use dusk_core::transfer::phoenix::CoreError as PhoenixError;
+use dusk_core::{BlsScalar, Error as ExecErr};
 use dusk_vm::Error as VMError;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Failed to register a backend for persistence
+    #[error("Failed to register a backend for persistence")]
     BackendRegistrationFailed,
     /// Failed to restore a network state from disk
+    #[error("Failed to restore a network state")]
     RestoreFailed,
     /// Proof verification failure
+    #[error("Proof verification failure")]
     ProofVerification,
     /// Out of gas in block execution
+    #[error("Out of gas")]
     OutOfGas,
     /// Repeated nullifier in transaction verification
+    #[error("Nullifiers already spent: {0:?}")]
     RepeatingNullifiers(Vec<BlsScalar>),
     /// Repeated nullifier in the same transaction
+    #[error("Double nullifiers")]
     DoubleNullifiers,
     /// Repeating a nonce that has already been used
+    #[error("Nonce repeat: {} {1}", bs58::encode(.0.to_bytes()).into_string())]
     RepeatingNonce(Box<BlsPublicKey>, u64),
     /// Wrong inputs and/or outputs in the transaction verification
+    #[error("Expected: 0 < (inputs: {0}) < 5, 0 ≤ (outputs: {1}) < 3")]
     InvalidCircuitArguments(usize, usize),
     /// Failed to build a Rusk instance
+    #[error("Failed to build a Rusk instance")]
     BuilderInvalidState,
     /// Failed to fetch opening
+    #[error("Failed to fetch opening of position {0}")]
     OpeningPositionNotFound(u64),
     /// Failed to fetch opening due to undefined Note
+    #[error("Note {0} not found, opening of position")]
     OpeningNoteUndefined(u64),
     /// Bytes Serialization Errors
+    #[error("Serialization Error: {0:?}")]
     Serialization(dusk_bytes::Error),
     /// Originating from transaction-creation
+    #[error("Transaction Error: {0}")]
     Transaction(ExecErr),
     /// Originating from Phoenix.
-    Phoenix(CoreError),
+    #[error("Phoenix Error: {0}")]
+    Phoenix(PhoenixError),
     /// Piecrust VM internal Errors
-    Vm(VMError),
+    #[error("VM Error: {0}")]
+    Vm(#[from] VMError),
     /// IO Errors
-    Io(io::Error),
+    #[error("IO Error: {0}")]
+    Io(#[from] io::Error),
     /// Other
-    Other(Box<dyn std::error::Error>),
+    #[error("Other Error: {0}")]
+    Other(#[from] Box<dyn std::error::Error>),
     /// Commit not found amongst existing commits
+    #[error("Commit not found, id = {}", hex::encode(.0))]
     CommitNotFound([u8; 32]),
     /// Invalid credits count
+    #[error("Invalid credits: H= {0}, credits= {1}")]
     InvalidCreditsCount(u64, usize),
     /// Memo too large
+    #[error("The memo size {0} is too large")]
     MemoTooLarge(usize),
     /// Blob related errors
+    #[error("Blob error: {0}")]
     Blob(String),
-}
-
-impl std::error::Error for Error {}
-
-impl From<Box<dyn std::error::Error>> for Error {
-    fn from(err: Box<dyn std::error::Error>) -> Self {
-        Error::Other(err)
-    }
-}
-
-impl From<VMError> for Error {
-    fn from(err: VMError) -> Self {
-        Error::Vm(err)
-    }
 }
 
 impl From<dusk_core::Error> for Error {
@@ -117,70 +122,8 @@ impl From<dusk_bytes::Error> for Error {
     }
 }
 
-impl From<CoreError> for Error {
-    fn from(pe: CoreError) -> Self {
+impl From<PhoenixError> for Error {
+    fn from(pe: PhoenixError) -> Self {
         Self::Phoenix(pe)
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Error::Io(err)
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Error::BackendRegistrationFailed => {
-                write!(f, "Failed to register a backend for persistence")
-            }
-            Error::RestoreFailed => {
-                write!(f, "Failed to restore a network state")
-            }
-            Error::BuilderInvalidState => {
-                write!(f, "Failed to build a Rusk instance")
-            }
-            Error::OpeningPositionNotFound(pos) => {
-                write!(f, "Failed to fetch opening of position {pos}")
-            }
-            Error::OpeningNoteUndefined(pos) => {
-                write!(f, "Note {pos} not found, opening of position")
-            }
-            Error::Serialization(err) => {
-                write!(f, "Serialization Error: {err:?}")
-            }
-            Error::Vm(err) => write!(f, "VM Error: {err}"),
-            Error::Io(err) => write!(f, "IO Error: {err}"),
-            Error::Transaction(err) => write!(f, "Transaction Error: {err}"),
-            Error::Phoenix(err) => write!(f, "Phoenix error: {err}"),
-            Error::Other(err) => write!(f, "Other error: {err}"),
-            Error::ProofVerification => write!(f, "Proof verification failure"),
-            Error::OutOfGas => write!(f, "Out of gas"),
-            Error::RepeatingNullifiers(n) => {
-                write!(f, "Nullifiers already spent: {n:?}")
-            }
-            Error::DoubleNullifiers => write!(f, "Double nullifiers"),
-            Error::RepeatingNonce(account, nonce) => {
-                let encoded_account =
-                    bs58::encode(&account.to_bytes()).into_string();
-                write!(f, "Nonce repeat: {encoded_account} {nonce}")
-            }
-            Error::InvalidCircuitArguments(inputs_len, outputs_len) => {
-                write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")
-            }
-            Error::CommitNotFound(commit_id) => {
-                write!(f, "Commit not found, id = {}", hex::encode(commit_id),)
-            }
-            Error::InvalidCreditsCount(height, credits) => {
-                write!(f, "Invalid credits: H= {height}, credits= {credits}",)
-            }
-            Error::MemoTooLarge(size) => {
-                write!(f, "The memo size {size} is too large")
-            }
-            Error::Blob(e) => {
-                write!(f, "Blob error: {e}")
-            }
-        }
     }
 }
