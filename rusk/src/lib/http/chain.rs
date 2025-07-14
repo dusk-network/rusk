@@ -19,7 +19,7 @@ use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{self, Ledger, LightBlock, Mempool, Metadata, DB};
 use node::mempool::MempoolSrv;
 use node::vm::VMExecution;
-use node_data::ledger::Transaction;
+use node_data::ledger::{SpendingId, Transaction};
 
 use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,
@@ -345,6 +345,7 @@ impl RuskNode {
         let pk = BlsPublicKey::from_slice(&pk)
             .map_err(|_| anyhow::anyhow!("Invalid bls account"))?;
 
+        let db = self.inner().database();
         let vm = self.inner().vm_handler();
 
         let account = vm
@@ -352,9 +353,33 @@ impl RuskNode {
             .await
             .account(&pk)
             .map_err(|e| anyhow::anyhow!("Cannot query the state {e:?}"))?;
+
+        // Determine the next available nonce not already used in the mempool.
+        // This ensures that any in-flight transactions using sequential nonces
+        // are accounted for.
+        // If the account has no transactions in the mempool, the mempool_nonce
+        // will be `None`, indicating that the next nonce is the same as the
+        // account's current nonce.
+        let mempool_nonce = db
+            .read()
+            .await
+            .view(|t| {
+                let mut next_nonce = account.nonce;
+                loop {
+                    let id = SpendingId::AccountNonce(pk, next_nonce);
+                    if t.mempool_txs_by_spendable_ids(&[id]).is_empty() {
+                        break;
+                    }
+                    next_nonce += 1;
+                }
+                anyhow::Ok((next_nonce > account.nonce).then_some(next_nonce))
+            })
+            .map_err(|e| anyhow::anyhow!("Cannot check the mempool {e}"))?;
+
         Ok(ResponseData::new(json!({
             "balance": account.balance,
             "nonce": account.nonce,
+            "mempool_nonce": mempool_nonce,
         })))
     }
 }
