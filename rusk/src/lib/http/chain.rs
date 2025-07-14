@@ -10,6 +10,8 @@ pub mod graphql;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use dusk_bytes::DeserializableSlice;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::data::{BlobData, BlobSidecar};
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_vm::execute;
@@ -62,6 +64,7 @@ impl HandleRequest for RuskNode {
             ("network", _, "peers") => true,
             ("network", _, "peers_location") => true,
             ("node", _, "info") => true,
+            ("account", Some(_), "status") => true,
             ("blocks", _, "gas-price") => true,
             ("blobs", Some(_), "commitment") => true,
             ("blobs", Some(_), "hash") => true,
@@ -93,6 +96,7 @@ impl HandleRequest for RuskNode {
 
             ("network", _, "peers_location") => self.peers_location().await,
             ("node", _, "info") => self.get_info().await,
+            ("account", Some(pk), "status") => self.get_account(pk).await,
             ("blocks", _, "gas-price") => {
                 let max_transactions = request
                     .data
@@ -332,6 +336,26 @@ impl RuskNode {
             ResponseData::new(blob)
         };
         Ok(response)
+    }
+
+    async fn get_account(&self, pk: &str) -> anyhow::Result<ResponseData> {
+        let pk = bs58::decode(pk)
+            .into_vec()
+            .map_err(|_| anyhow::anyhow!("Invalid bs58 account"))?;
+        let pk = BlsPublicKey::from_slice(&pk)
+            .map_err(|_| anyhow::anyhow!("Invalid bls account"))?;
+
+        let vm = self.inner().vm_handler();
+
+        let account = vm
+            .read()
+            .await
+            .account(&pk)
+            .map_err(|e| anyhow::anyhow!("Cannot query the state {e:?}"))?;
+        Ok(ResponseData::new(json!({
+            "balance": account.balance,
+            "nonce": account.nonce,
+        })))
     }
 }
 
