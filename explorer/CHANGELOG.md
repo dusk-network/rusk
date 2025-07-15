@@ -11,10 +11,12 @@ and this project adheres to
 ### Added
 
 - Add Tokens page [#3415]
+- Add support for transactions' blob hashes [#3804]
 
 ### Changed
 
 - Use supply.dusk.network for circulating supply [#3757]
+- The `from` and `to` fields are now always shown in moonlight transactions regardless of the transaction's type [#3804]
 
 ### Removed
 
@@ -261,6 +263,7 @@ and this project adheres to
 [#3720]: https://github.com/dusk-network/rusk/issues/3720
 [#3739]: https://github.com/dusk-network/rusk/issues/3739
 [#3757]: https://github.com/dusk-network/rusk/issues/3757
+[#3804]: https://github.com/dusk-network/rusk/issues/3804
 
 <!-- VERSIONS -->
 

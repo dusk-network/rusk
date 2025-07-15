@@ -1159,6 +1159,7 @@
           "gasSpent": 303163,
           "id": "befe14f664fe1cb95f89b7500cc8a8368b3cd8ab58f4897dd3c0132cbebde004",
           "tx": {
+            "blobHashes": null,
             "callData": null,
             "gasLimit": 500000000,
             "gasPrice": 1,
@@ -1273,6 +1274,7 @@
           "gasSpent": 300422,
           "id": "dd9249849db6143ae4bf3420da9a2bf90b402807f0ef4843d51dd06db35e2a0a",
           "tx": {
+            "blobHashes": null,
             "callData": null,
             "gasLimit": 500000000,
             "gasPrice": 1,
@@ -1403,6 +1405,7 @@
           "gasSpent": 291862,
           "id": "1466ebfcaefcff92b8bb88feb86aab902a73d6062731de52d3f22d502136fc01",
           "tx": {
+            "blobHashes": null,
             "callData": null,
             "gasLimit": 500000000,
             "gasPrice": 1,
@@ -1453,6 +1456,7 @@
           "gasSpent": 290747,
           "id": "15af4e04d4f34b89a77601945aaec5c284ff71ed076ba3e4c7b6db1c7cddb80d",
           "tx": {
+            "blobHashes": null,
             "callData": null,
             "gasLimit": 500000000,
             "gasPrice": 1,

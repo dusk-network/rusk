@@ -47,4 +47,22 @@ describe("Transaction Details", () => {
 
     expect(container.firstChild).toMatchSnapshot();
   });
+
+  it("should be able to render the details when they contain blob hashes", () => {
+    const props = {
+      ...baseProps,
+      data: {
+        ...baseProps.data,
+        blobHashes: [
+          "0261047715f0e937f3ab3d6bdfb1bf1894995f89f64ed19a26a1d59bb2d7b629",
+          "b3d5296139ba0f44912b87a19b47ea7f229131182405d9f082c5fbbeed8c121b",
+          "8f6bce4e1f233d6de022e3ac1ab3a262695991460e9f78eca288fd623083142f",
+        ],
+      },
+    };
+
+    const { container } = render(TransactionDetails, props);
+
+    expect(container.firstChild).toMatchSnapshot();
+  });
 });

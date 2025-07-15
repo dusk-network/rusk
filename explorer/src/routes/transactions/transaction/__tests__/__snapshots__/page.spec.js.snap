@@ -679,13 +679,14 @@ exports[`Transaction Details > should render the Transaction details page 2`] = 
                 tabindex="0"
               />
             </div>
+             
           </div>
         </dt>
          
         <dd
           class="details-list__definition"
         >
-          
+           
         </dd>
       </dl>
     </div>
