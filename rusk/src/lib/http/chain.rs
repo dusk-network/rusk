@@ -338,8 +338,8 @@ impl RuskNode {
         Ok(response)
     }
 
-    async fn get_account(&self, pk: &str) -> anyhow::Result<ResponseData> {
-        let pk = bs58::decode(pk)
+    async fn get_account(&self, pk_str: &str) -> anyhow::Result<ResponseData> {
+        let pk = bs58::decode(pk_str)
             .into_vec()
             .map_err(|_| anyhow::anyhow!("Invalid bs58 account"))?;
         let pk = BlsPublicKey::from_slice(&pk)
@@ -357,14 +357,13 @@ impl RuskNode {
         // Determine the next available nonce not already used in the mempool.
         // This ensures that any in-flight transactions using sequential nonces
         // are accounted for.
-        // If the account has no transactions in the mempool, the mempool_nonce
-        // will be `None`, indicating that the next nonce is the same as the
-        // account's current nonce.
-        let mempool_nonce = db
+        // If the account has no transactions in the mempool, the next_nonce is
+        // the same as the account's current nonce + 1.
+        let next_nonce = db
             .read()
             .await
             .view(|t| {
-                let mut next_nonce = account.nonce;
+                let mut next_nonce = account.nonce + 1;
                 loop {
                     let id = SpendingId::AccountNonce(pk, next_nonce);
                     if t.mempool_txs_by_spendable_ids(&[id]).is_empty() {
@@ -372,14 +371,17 @@ impl RuskNode {
                     }
                     next_nonce += 1;
                 }
-                anyhow::Ok((next_nonce > account.nonce).then_some(next_nonce))
+                anyhow::Ok(next_nonce)
             })
-            .map_err(|e| anyhow::anyhow!("Cannot check the mempool {e}"))?;
+            .unwrap_or_else(|e| {
+                error!("Failed to check the mempool for account {pk_str}: {e}");
+                account.nonce + 1
+            });
 
         Ok(ResponseData::new(json!({
             "balance": account.balance,
             "nonce": account.nonce,
-            "mempool_nonce": mempool_nonce,
+            "next_nonce": next_nonce,
         })))
     }
 }
