@@ -743,6 +743,7 @@ where
             gas_limit,
             gas_price,
             data,
+            None,
         )
     }
 
@@ -757,15 +758,18 @@ where
         gas_limit: u64,
         gas_price: u64,
         data: Option<impl Into<TransactionData>>,
+        nonce: Option<u64>,
     ) -> Result<Transaction, Error<S, SC>> {
         let mut seed = self.store.get_seed().map_err(Error::from_store_err)?;
         let mut sender_sk = derive_bls_sk(&seed, sender_index);
         let sender_account = BlsPublicKey::from(&sender_sk);
 
+        println!("before fetch_account");
         let account = self
             .state
             .fetch_account(&sender_account)
             .map_err(Error::from_state_err)?;
+        println!("after fetch_account");
 
         // technically this check is not necessary, but it's nice to not spam
         // the network with transactions that are unspendable.
@@ -773,7 +777,7 @@ where
         if max_value > account.balance {
             return Err(ExecutionError::InsufficientBalance.into());
         }
-        let nonce = account.nonce + 1;
+        let nonce = nonce.unwrap_or(account.nonce + 1);
 
         let chain_id =
             self.state.fetch_chain_id().map_err(Error::from_state_err)?;
