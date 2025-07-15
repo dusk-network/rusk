@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add zeroize for secret info [#3687]
+- Add serde derive for Block Label
 
 ### Changed
 
