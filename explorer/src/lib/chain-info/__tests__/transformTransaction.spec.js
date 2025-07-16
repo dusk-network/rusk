@@ -8,6 +8,7 @@ describe("transformTransaction", () => {
   const tx = gqlTransaction.tx;
   const expectedTx = {
     amount: 9812378912731,
+    blobHashes: [],
     blockhash:
       "3c6e4018cfa86723e50644e33d3990bc27fc794f6b49fbf6290e4d308e07bd2d",
     blockheight: 487166,
@@ -83,7 +84,7 @@ describe("transformTransaction", () => {
         callData: {
           contractId:
             "0200000000000000000000000000000000000000000000000000000000000000",
-          fnName: "transfer",
+          fnName: "stake",
         },
         isDeploy: true,
       },
@@ -102,6 +103,32 @@ describe("transformTransaction", () => {
 
     expect(transformTransaction(dataA)).toStrictEqual(expected);
     expect(transformTransaction(dataB)).toStrictEqual(expected);
+  });
+
+  it('should set the method to "blob" if the transaction has blob hashes, regardless of the `isDeploy` or the `callData.fnName` fields', () => {
+    const data = {
+      ...tx,
+      tx: {
+        ...tx.tx,
+        blobHashes: [
+          "3656d71948baff2091090423f3b07701223b00d1a10942e44afe644a30865423",
+          "d26d6ebba9bfb0504040eadec111627f9f562c358f40e035ea9011b48ed7b55b",
+        ],
+        callData: {
+          contractId:
+            "0200000000000000000000000000000000000000000000000000000000000000",
+          fnName: "stake",
+        },
+        isDeploy: true,
+      },
+    };
+    const expected = {
+      ...expectedTx,
+      blobHashes: data.tx.blobHashes,
+      method: "blob",
+    };
+
+    expect(transformTransaction(data)).toStrictEqual(expected);
   });
 
   it("should set the success property to `false` if the an error is present and use the message in the `txerror` property", () => {

@@ -55,6 +55,33 @@
   font-family: var(--mono-font-family);
 }
 
+.transaction-details__blob-hashes {
+  list-style-type: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--default-gap);
+}
+
+/**
+ * We need to add a margin conditionally as these components are a bit
+ * odd as the list term has a padding, while the definition doesn't.
+ * If we have more than one li element we need a margin equal to that
+ * padding to have the term and the definition aligned on top.
+ */
+.transaction-details__blob-hashes:has(> li:nth-child(2)) {
+  margin-top: 0.9375rem;
+}
+
+.transaction-details__blob-hash {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--small-gap);
+}
+
+.transaction-details__blob-hash pre {
+  white-space: pre-line;
+}
+
 @media (min-width: 640px) {
   .transaction-details__header-heading {
     text-transform: none;

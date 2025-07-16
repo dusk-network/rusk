@@ -21,6 +21,10 @@
   const transactions = gqlTokenTransactions.map((transaction) => {
     return {
       ...transaction,
+      blobHashes: [
+        "3656d71948baff2091090423f3b07701223b00d1a10942e44afe644a30865423",
+        "d26d6ebba9bfb0504040eadec111627f9f562c358f40e035ea9011b48ed7b55b",
+      ],
       date: new Date(transaction.date),
     };
   });

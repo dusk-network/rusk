@@ -47,6 +47,9 @@
   const currencyFormatter = createCurrencyFormatter("en", "usd", 10);
   const feeFormatter = createFeeFormatter("en");
 
+  const { minScreenWidth, maxScreenWidth, minCharCount, maxCharCount } =
+    addressCharPropertiesDefaults;
+
   /** @type {number} */
   let screenWidth = window.innerWidth;
 
@@ -55,6 +58,19 @@
 
   /** @type {boolean} */
   let isMemoDecoded = false;
+
+  /** @param {string} value */
+  const withMiddleEllipsis = (value) =>
+    middleEllipsis(
+      value,
+      calculateAdaptiveCharCount(
+        screenWidth,
+        minScreenWidth,
+        maxScreenWidth,
+        minCharCount,
+        maxCharCount
+      )
+    );
 
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -67,9 +83,6 @@
 
     return () => resizeObserver.disconnect();
   });
-
-  const { minScreenWidth, maxScreenWidth, minCharCount, maxCharCount } =
-    addressCharPropertiesDefaults;
 
   $: classes = makeClassName(["transaction-details", className]);
 </script>
@@ -90,16 +103,7 @@
         <AppAnchor
           className="transaction-details__list-anchor"
           href="/transactions/transaction?id={data.txid}"
-          >{middleEllipsis(
-            data.txid,
-            calculateAdaptiveCharCount(
-              screenWidth,
-              minScreenWidth,
-              maxScreenWidth,
-              minCharCount,
-              maxCharCount
-            )
-          )}</AppAnchor
+          >{withMiddleEllipsis(data.txid)}</AppAnchor
         >
         <CopyButton rawValue={data.txid} name="Transaction ID" />
       </svelte:fragment>
@@ -132,23 +136,14 @@
     </ListItem>
 
     <!-- FROM -->
-    {#if data.txtype.toLowerCase() === "moonlight" && data.method === "transfer" && data.from}
+    {#if data.txtype.toLowerCase() === "moonlight" && data.from}
       <ListItem tooltipText="The sender of the transaction">
         <svelte:fragment slot="term">from</svelte:fragment>
         <svelte:fragment slot="definition">
           <AppAnchor
             className="transaction-details__list-anchor"
             href="/accounts/?key={data.from}"
-            >{middleEllipsis(
-              data.from,
-              calculateAdaptiveCharCount(
-                screenWidth,
-                minScreenWidth,
-                maxScreenWidth,
-                minCharCount,
-                maxCharCount
-              )
-            )}</AppAnchor
+            >{withMiddleEllipsis(data.from)}</AppAnchor
           >
           <CopyButton rawValue={data.from} name="Sender's address" />
         </svelte:fragment>
@@ -156,23 +151,14 @@
     {/if}
 
     <!-- TO -->
-    {#if data.txtype.toLowerCase() === "moonlight" && data.method === "transfer" && data.to}
+    {#if data.txtype.toLowerCase() === "moonlight" && data.to}
       <ListItem tooltipText="The receiver of the transaction">
         <svelte:fragment slot="term">to</svelte:fragment>
         <svelte:fragment slot="definition">
           <AppAnchor
             className="transaction-details__list-anchor"
             href="/accounts/?key={data.to}"
-            >{middleEllipsis(
-              data.to,
-              calculateAdaptiveCharCount(
-                screenWidth,
-                minScreenWidth,
-                maxScreenWidth,
-                minCharCount,
-                maxCharCount
-              )
-            )}</AppAnchor
+            >{withMiddleEllipsis(data.to)}</AppAnchor
           >
           <CopyButton rawValue={data.to} name="Receiver's address" />
         </svelte:fragment>
@@ -302,5 +288,22 @@
         {/if}
       </svelte:fragment>
     </ListItem>
+
+    {#if data.blobHashes.length}
+      <!-- BLOB HASHES -->
+      <ListItem tooltipText="The list of blob hashes">
+        <svelte:fragment slot="term">Blob hashes</svelte:fragment>
+        <svelte:fragment slot="definition">
+          <ul class="transaction-details__blob-hashes">
+            {#each data.blobHashes as blobHash (blobHash)}
+              <li class="transaction-details__blob-hash">
+                <pre>{withMiddleEllipsis(blobHash)}</pre>
+                <CopyButton rawValue={blobHash} name="Blob hash" />
+              </li>
+            {/each}
+          </ul>
+        </svelte:fragment>
+      </ListItem>
+    {/if}
   </dl>
 </DataCard>

@@ -36,6 +36,7 @@ VITE_RUSK_PATH="" # Optional, set to '/rusk' for dev mode
 VITE_STATS_REFETCH_INTERVAL=1000
 VITE_TRANSACTIONS_LIST_ENTRIES=100
 VITE_FEATURE_TOKENS=true
+VITE_FEATURE_BLOB_HASHES=true # requires node version >= 1.3.1-alpha.1
 ```
 
 ## Environment variables and dev mode
