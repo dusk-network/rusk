@@ -10,6 +10,8 @@ pub mod graphql;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use dusk_bytes::DeserializableSlice;
+use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::data::{BlobData, BlobSidecar};
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_vm::execute;
@@ -17,7 +19,7 @@ use node::database::rocksdb::MD_HASH_KEY;
 use node::database::{self, Ledger, LightBlock, Mempool, Metadata, DB};
 use node::mempool::MempoolSrv;
 use node::vm::VMExecution;
-use node_data::ledger::Transaction;
+use node_data::ledger::{SpendingId, Transaction};
 
 use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,
@@ -62,6 +64,7 @@ impl HandleRequest for RuskNode {
             ("network", _, "peers") => true,
             ("network", _, "peers_location") => true,
             ("node", _, "info") => true,
+            ("account", Some(_), "status") => true,
             ("blocks", _, "gas-price") => true,
             ("blobs", Some(_), "commitment") => true,
             ("blobs", Some(_), "hash") => true,
@@ -93,6 +96,7 @@ impl HandleRequest for RuskNode {
 
             ("network", _, "peers_location") => self.peers_location().await,
             ("node", _, "info") => self.get_info().await,
+            ("account", Some(pk), "status") => self.get_account(pk).await,
             ("blocks", _, "gas-price") => {
                 let max_transactions = request
                     .data
@@ -332,6 +336,53 @@ impl RuskNode {
             ResponseData::new(blob)
         };
         Ok(response)
+    }
+
+    async fn get_account(&self, pk_str: &str) -> anyhow::Result<ResponseData> {
+        let pk = bs58::decode(pk_str)
+            .into_vec()
+            .map_err(|_| anyhow::anyhow!("Invalid bs58 account"))?;
+        let pk = BlsPublicKey::from_slice(&pk)
+            .map_err(|_| anyhow::anyhow!("Invalid bls account"))?;
+
+        let db = self.inner().database();
+        let vm = self.inner().vm_handler();
+
+        let account = vm
+            .read()
+            .await
+            .account(&pk)
+            .map_err(|e| anyhow::anyhow!("Cannot query the state {e:?}"))?;
+
+        // Determine the next available nonce not already used in the mempool.
+        // This ensures that any in-flight transactions using sequential nonces
+        // are accounted for.
+        // If the account has no transactions in the mempool, the next_nonce is
+        // the same as the account's current nonce + 1.
+        let next_nonce = db
+            .read()
+            .await
+            .view(|t| {
+                let mut next_nonce = account.nonce + 1;
+                loop {
+                    let id = SpendingId::AccountNonce(pk, next_nonce);
+                    if t.mempool_txs_by_spendable_ids(&[id]).is_empty() {
+                        break;
+                    }
+                    next_nonce += 1;
+                }
+                anyhow::Ok(next_nonce)
+            })
+            .unwrap_or_else(|e| {
+                error!("Failed to check the mempool for account {pk_str}: {e}");
+                account.nonce + 1
+            });
+
+        Ok(ResponseData::new(json!({
+            "balance": account.balance,
+            "nonce": account.nonce,
+            "next_nonce": next_nonce,
+        })))
     }
 }
 

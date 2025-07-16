@@ -154,12 +154,12 @@ impl VMExecution for Rusk {
                 if !existing_nullifiers.is_empty() {
                     let err =
                         RuskError::RepeatingNullifiers(existing_nullifiers);
-                    return Err(anyhow::anyhow!("Invalid tx: {err}"));
+                    return Err(anyhow::anyhow!("{err}"));
                 }
 
                 if !has_unique_elements(tx_nullifiers) {
                     let err = RuskError::DoubleNullifiers;
-                    return Err(anyhow::anyhow!("Invalid tx: {err}"));
+                    return Err(anyhow::anyhow!("{err}"));
                 }
 
                 match crate::verifier::verify_proof(tx) {
@@ -193,7 +193,7 @@ impl VMExecution for Rusk {
                         (*tx.sender()).into(),
                         tx.nonce(),
                     );
-                    return Err(anyhow::anyhow!("Invalid tx: {err}"));
+                    return Err(anyhow::anyhow!("{err}"));
                 }
 
                 let result = if tx.nonce() > account_data.nonce + 1 {

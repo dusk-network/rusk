@@ -31,24 +31,26 @@ pub(crate) async fn sync_db(
 ) -> Result<(), Error> {
     let seed = store.get_seed();
 
-    let keys: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> = (0
-        ..MAX_PROFILES)
-        .map(|i| {
-            // we know that `i < MAX_PROFILES <= u8::MAX`, so casting to u8 is
-            // safe here
-            #[allow(clippy::cast_possible_truncation)]
-            let i = i as u8;
-            (
-                derive_phoenix_sk(seed, i),
-                derive_phoenix_vk(seed, i),
-                derive_phoenix_pk(seed, i),
-            )
-        })
-        .collect();
+    let mut keys: Vec<(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)> =
+        (0..MAX_PROFILES)
+            .map(|i| {
+                // we know that `i < MAX_PROFILES <= u8::MAX`, so casting to u8
+                // is safe here
+                #[allow(clippy::cast_possible_truncation)]
+                let i = i as u8;
+                (
+                    derive_phoenix_sk(seed, i),
+                    derive_phoenix_vk(seed, i),
+                    derive_phoenix_pk(seed, i),
+                )
+            })
+            .collect();
 
     status("Getting cached note position...");
 
-    let last_pos = cache.last_pos()?;
+    let last_pos = cache.last_pos().inspect_err(|_| {
+        zeroize_secret_keys(&mut keys);
+    })?;
     let pos_to_search = last_pos.map(|p| p + 1).unwrap_or_default();
     let mut last_pos = last_pos.unwrap_or_default();
 
@@ -66,7 +68,8 @@ pub(crate) async fn sync_db(
             &req,
             true,
         )
-        .await?
+        .await
+        .inspect_err(|_| zeroize_secret_keys(&mut keys))?
         .bytes_stream();
 
     status("Connection established...");
@@ -79,13 +82,16 @@ pub(crate) async fn sync_db(
     let mut note_data = Vec::new();
 
     while let Some(http_chunk) = stream.next().await {
-        buffer.extend_from_slice(&http_chunk?);
+        buffer.extend_from_slice(
+            &http_chunk.inspect_err(|_| zeroize_secret_keys(&mut keys))?,
+        );
 
         let mut leaf_chunk = buffer.chunks_exact(TREE_LEAF);
 
         for leaf_bytes in leaf_chunk.by_ref() {
-            let NoteLeaf { block_height, note } =
-                rkyv::from_bytes(leaf_bytes).map_err(|_| Error::Rkyv)?;
+            let NoteLeaf { block_height, note } = rkyv::from_bytes(leaf_bytes)
+                .map_err(|_| Error::Rkyv)
+                .inspect_err(|_| zeroize_secret_keys(&mut keys))?;
 
             last_pos = std::cmp::max(last_pos, *note.pos());
 
@@ -95,31 +101,43 @@ pub(crate) async fn sync_db(
         buffer = leaf_chunk.remainder().to_vec();
     }
 
-    for (sk, vk, pk) in &keys {
+    let mut err = Ok(());
+    'outer: for (sk, vk, pk) in &keys {
         let pk_bs58 = bs58::encode(pk.to_bytes()).into_string();
         for (block_height, note) in &note_data {
             if vk.owns(note.stealth_address()) {
                 let nullifier = note.gen_nullifier(sk);
-                let spent =
+                let result =
                     fetch_existing_nullifiers_remote(client, &[nullifier])
-                        .await?
-                        .first()
-                        .is_some();
-
-                let note = (note.clone(), nullifier);
-
-                if spent {
-                    cache.insert_spent(&pk_bs58, *block_height, note)?;
-                } else {
-                    cache.insert(&pk_bs58, *block_height, note)?;
+                        .await
+                        .and_then(|fetch_res| {
+                            let spent = fetch_res.first().is_some();
+                            let note = (note.clone(), nullifier);
+                            if spent {
+                                cache.insert_spent(
+                                    &pk_bs58,
+                                    *block_height,
+                                    note,
+                                )?;
+                            } else {
+                                cache.insert(&pk_bs58, *block_height, note)?;
+                            }
+                            Ok(())
+                        });
+                if result.is_err() {
+                    err = result;
+                    break 'outer;
                 }
             }
         }
     }
 
+    zeroize_secret_keys(&mut keys);
+    err?;
+
     // Remove spent nullifiers from live notes
     // zerorize all the secret keys
-    for (mut sk, _, pk) in keys {
+    for (_, _, pk) in keys {
         let nullifiers: Vec<BlsScalar> = cache.unspent_notes_id(&pk)?;
 
         if !nullifiers.is_empty() {
@@ -129,8 +147,6 @@ pub(crate) async fn sync_db(
 
             cache.spend_notes(&pk, existing.as_slice())?;
         }
-
-        sk.zeroize();
     }
 
     // insert last post after the notes has been inserted
@@ -138,6 +154,14 @@ pub(crate) async fn sync_db(
     cache.insert_last_pos(last_pos)?;
 
     Ok(())
+}
+
+fn zeroize_secret_keys(
+    keys: &mut [(PhoenixSecretKey, PhoenixViewKey, PhoenixPublicKey)],
+) {
+    for (sk, _, _) in keys.iter_mut() {
+        sk.zeroize();
+    }
 }
 
 /// Asks the node to return the nullifiers that already exist from the given

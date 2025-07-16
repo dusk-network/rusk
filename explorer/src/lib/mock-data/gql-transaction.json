@@ -7,6 +7,7 @@
     "id": "4877687c2dbf154248d3ddee9ba0d81e3431f39056f82a46819da041d4ac0e04",
     "err": null,
     "tx": {
+      "blobHashes": null,
       "callData": null,
       "gasLimit": 500000000,
       "gasPrice": 1,

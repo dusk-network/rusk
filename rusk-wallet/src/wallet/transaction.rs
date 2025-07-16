@@ -58,7 +58,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let mut rng = StdRng::from_entropy();
         let amt = *amt;
 
-        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
         let refund_pk = self.shielded_key(sender_idx)?;
 
         let tx_cost = amt + gas.limit * gas.price;
@@ -71,6 +70,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
+
+        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
 
         let tx = phoenix(
             &mut rng,
@@ -87,11 +88,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             chain_id,
             memo,
             &Prover,
-        )?;
+        );
 
         sender_sk.zeroize();
 
-        let tx = state.prove(tx).await?;
+        let tx = state.prove(tx?).await?;
         state.propagate(tx).await
     }
 
@@ -118,13 +119,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             return Err(Error::NotEnoughGas);
         }
 
-        let mut sender_sk = self.derive_bls_sk(sender_idx);
         let sender_pk = self.public_key(sender_idx)?;
         let amt = *amt;
 
         let state = self.state()?;
         let nonce = state.fetch_account(sender_pk).await?.nonce + 1;
         let chain_id = state.fetch_chain_id().await?;
+
+        let mut sender_sk = self.derive_bls_sk(sender_idx);
 
         let tx = moonlight(
             &sender_sk,
@@ -136,11 +138,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             nonce,
             chain_id,
             memo,
-        )?;
+        );
 
         sender_sk.zeroize();
 
-        state.propagate(tx).await
+        state.propagate(tx?).await
     }
 
     /// Executes a generic contract call, paying gas with a shielded account.
@@ -164,7 +166,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let deposit = *deposit;
 
         let mut rng = StdRng::from_entropy();
-        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
         // in a contract execution or deployment, the sender and receiver are
         // the same
         let receiver_pk = self.shielded_key(sender_idx)?;
@@ -179,6 +180,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
+
+        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
 
         let tx = phoenix(
             &mut rng,
@@ -195,11 +198,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             chain_id,
             Some(data),
             &Prover,
-        )?;
+        );
 
         sender_sk.zeroize();
 
-        let tx = state.prove(tx).await?;
+        let tx = state.prove(tx?).await?;
         state.propagate(tx).await
     }
 
@@ -225,7 +228,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
         let deposit = *deposit;
 
-        let mut sender_sk = self.derive_bls_sk(sender_idx);
         let sender = self.public_key(sender_idx)?;
 
         let account = state.fetch_account(sender).await?;
@@ -235,6 +237,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let nonce = account.nonce + 1;
 
         let chain_id = state.fetch_chain_id().await?;
+
+        let mut sender_sk = self.derive_bls_sk(sender_idx);
 
         let tx = moonlight(
             &sender_sk,
@@ -246,11 +250,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             nonce,
             chain_id,
             exec,
-        )?;
+        );
 
         sender_sk.zeroize();
 
-        state.propagate(tx).await
+        state.propagate(tx?).await
     }
 
     /// Stakes Dusk using shielded notes.
@@ -279,8 +283,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let mut rng = StdRng::from_entropy();
         let amt = *amt;
-        let mut sender_sk = self.derive_phoenix_sk(profile_idx);
-        let mut stake_sk = self.derive_bls_sk(profile_idx);
 
         let stake_pk = self.public_key(profile_idx)?;
         let stake_owner_idx = match self.find_stake_owner_idx(stake_pk).await {
@@ -297,7 +299,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 return Err(e);
             }
         };
-        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
         let tx_cost = amt + gas.limit * gas.price;
         let inputs = state
@@ -309,6 +310,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
+
+        let mut sender_sk = self.derive_phoenix_sk(profile_idx);
+        let mut stake_sk = self.derive_bls_sk(profile_idx);
+        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
         let stake = phoenix_stake(
             &mut rng,
@@ -322,13 +327,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             chain_id,
             amt,
             &Prover,
-        )?;
+        );
 
         sender_sk.zeroize();
         stake_sk.zeroize();
         stake_owner_sk.zeroize();
 
-        let stake = state.prove(stake).await?;
+        let stake = state.prove(stake?).await?;
         state.propagate(stake).await
     }
 
@@ -356,7 +361,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let state = self.state()?;
         let amt = *amt;
-        let mut stake_sk = self.derive_bls_sk(profile_idx);
         let stake_pk = self.public_key(profile_idx)?;
         let chain_id = state.fetch_chain_id().await?;
         let moonlight_current_nonce =
@@ -376,6 +380,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 return Err(e);
             }
         };
+
+        let mut stake_sk = self.derive_bls_sk(profile_idx);
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
         let stake = moonlight_stake(
@@ -387,12 +393,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             moonlight_current_nonce,
             chain_id,
-        )?;
+        );
 
         stake_sk.zeroize();
         stake_owner_sk.zeroize();
 
-        state.propagate(stake).await
+        state.propagate(stake?).await
     }
 
     /// Unstakes Dusk into shielded notes.
@@ -410,29 +416,35 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let state = self.state()?;
 
-        let mut sender_sk = self.derive_phoenix_sk(profile_idx);
-        let mut stake_sk = self.derive_bls_sk(profile_idx);
-        let stake_pk = BlsPublicKey::from(&stake_sk);
-
-        let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
-        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
-
-        let unstake_value = state
-            .fetch_stake(&stake_pk)
-            .await?
-            .and_then(|s| s.amount)
-            .map(|s| s.total_funds())
-            .unwrap_or_default();
-
-        if unstake_value == 0 {
-            return Err(Error::NotStaked);
-        }
-
         let tx_cost = gas.limit * gas.price;
         let inputs = state.tx_input_notes(profile_idx, tx_cost).await?;
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
+
+        let mut stake_sk = self.derive_bls_sk(profile_idx);
+        let stake_pk = BlsPublicKey::from(&stake_sk);
+
+        let stake_owner_idx = self
+            .find_stake_owner_idx(&stake_pk)
+            .await
+            .inspect_err(|_| stake_sk.zeroize())?;
+
+        let unstake_value = state
+            .fetch_stake(&stake_pk)
+            .await
+            .inspect_err(|_| stake_sk.zeroize())?
+            .and_then(|s| s.amount)
+            .map(|s| s.total_funds())
+            .unwrap_or_default();
+
+        if unstake_value == 0 {
+            stake_sk.zeroize();
+            return Err(Error::NotStaked);
+        }
+
+        let mut sender_sk = self.derive_phoenix_sk(profile_idx);
+        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
         let unstake = phoenix_unstake(
             &mut rng,
@@ -446,13 +458,13 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             chain_id,
             &Prover,
-        )?;
+        );
 
         sender_sk.zeroize();
         stake_sk.zeroize();
         stake_owner_sk.zeroize();
 
-        let unstake = state.prove(unstake).await?;
+        let unstake = state.prove(unstake?).await?;
         state.propagate(unstake).await
     }
 
@@ -469,7 +481,6 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     ) -> Result<Transaction, Error> {
         let mut rng = StdRng::from_entropy();
         let state = self.state()?;
-        let mut stake_sk = self.derive_bls_sk(profile_idx);
 
         let stake_pk = self.public_key(profile_idx)?;
 
@@ -488,7 +499,9 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         }
 
         let stake_owner_idx = self.find_stake_owner_idx(stake_pk).await?;
+
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
+        let mut stake_sk = self.derive_bls_sk(profile_idx);
 
         let unstake = moonlight_unstake(
             &mut rng,
@@ -500,12 +513,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             account_nonce,
             chain_id,
-        )?;
+        );
 
         stake_sk.zeroize();
         stake_owner_sk.zeroize();
 
-        state.propagate(unstake).await
+        state.propagate(unstake?).await
     }
 
     /// Withdraws accumulated staking to a shielded account.
@@ -513,7 +526,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// # Errors
     /// This method will error if the wallet is not connected to the network or
     /// if the `sender_idx` doesn't exist within the wallet.
-    pub async fn phoenix_stake_withdraw(
+    pub async fn phoenix_claim_rewards(
         &self,
         sender_idx: u8,
         reward_amt: Option<Dusk>,
@@ -522,21 +535,16 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let state = self.state()?;
         let mut rng = StdRng::from_entropy();
 
-        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
-        let mut stake_sk = self.derive_bls_sk(sender_idx);
-
         let tx_cost = gas.limit * gas.price;
         let inputs = state.tx_input_notes(sender_idx, tx_cost).await?;
 
         let root = state.fetch_root().await?;
         let chain_id = state.fetch_chain_id().await?;
 
-        let stake_pk = BlsPublicKey::from(&stake_sk);
-
         let available_reward = self.get_stake_reward(sender_idx).await?;
 
-        let reward_amt_withdrawn = match reward_amt {
-            // if user specified an amount to withdraw we check if it's
+        let reward_amt_claimed = match reward_amt {
+            // if user specified an amount to claim, we check if it's
             // available
             Some(reward_amt) => {
                 if reward_amt > available_reward {
@@ -544,33 +552,41 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 }
                 *reward_amt
             }
-            // withdraw all the reward if no amt specified to withdraw
+            // claim all the rewards if no amt specified
             None => *available_reward,
         };
 
-        let stake_owner_idx = self.find_stake_owner_idx(&stake_pk).await?;
-        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
+        let mut stake_sk = self.derive_bls_sk(sender_idx);
+        let stake_pk = BlsPublicKey::from(&stake_sk);
 
-        let withdraw = phoenix_stake_reward(
+        let stake_owner_idx = self
+            .find_stake_owner_idx(&stake_pk)
+            .await
+            .inspect_err(|_| stake_sk.zeroize())?;
+
+        let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
+        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
+
+        let claim_rewards = phoenix_stake_reward(
             &mut rng,
             &sender_sk,
             &stake_sk,
             &stake_owner_sk,
             inputs,
             root,
-            reward_amt_withdrawn,
+            reward_amt_claimed,
             gas.limit,
             gas.price,
             chain_id,
             &Prover,
-        )?;
+        );
 
         sender_sk.zeroize();
         stake_sk.zeroize();
         stake_owner_sk.zeroize();
 
-        let withdraw = state.prove(withdraw).await?;
-        state.propagate(withdraw).await
+        let claim_rewards = state.prove(claim_rewards?).await?;
+        state.propagate(claim_rewards).await
     }
 
     /// Withdraws accumulated staking reward to a public account.
@@ -578,7 +594,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// # Errors
     /// This method will error if the wallet is not connected to the network or
     /// if the `sender_idx` doesn't exist within the wallet.
-    pub async fn moonlight_stake_withdraw(
+    pub async fn moonlight_claim_rewards(
         &self,
         sender_idx: u8,
         reward_amt: Option<Dusk>,
@@ -592,8 +608,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let chain_id = state.fetch_chain_id().await?;
         let available_reward = self.get_stake_reward(sender_idx).await?;
 
-        let reward_amt_withdrawn = match reward_amt {
-            // if user specified an amount to withdraw we check if it's
+        let reward_amt_claimed = match reward_amt {
+            // if user specified an amount to claim we check if it's
             // available
             Some(reward_amt) => {
                 if reward_amt > available_reward {
@@ -601,32 +617,32 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
                 }
                 *reward_amt
             }
-            // withdraw all the reward if no amt specified to withdraw
+            // claim all the reward if no amt specified
             None => *available_reward,
         };
 
-        let mut sender_sk = self.derive_bls_sk(sender_idx);
-
         let stake_pk = self.public_key(sender_idx)?;
         let stake_owner_idx = self.find_stake_owner_idx(stake_pk).await?;
+
+        let mut sender_sk = self.derive_bls_sk(sender_idx);
         let mut stake_owner_sk = self.derive_bls_sk(stake_owner_idx);
 
-        let withdraw = moonlight_stake_reward(
+        let claim_rewards = moonlight_stake_reward(
             &mut rng,
             &sender_sk,
             &sender_sk,
             &stake_owner_sk,
-            reward_amt_withdrawn,
+            reward_amt_claimed,
             gas.limit,
             gas.price,
             nonce,
             chain_id,
-        )?;
+        );
 
         sender_sk.zeroize();
         stake_owner_sk.zeroize();
 
-        state.propagate(withdraw).await
+        state.propagate(claim_rewards?).await
     }
 
     /// Converts Dusk from a shielded account to a public account.
@@ -662,12 +678,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             chain_id,
             &Prover,
-        )?;
+        );
 
         phoenix_sk.zeroize();
         moonlight_sk.zeroize();
 
-        let convert = state.prove(convert).await?;
+        let convert = state.prove(convert?).await?;
         state.propagate(convert).await
     }
 
@@ -702,12 +718,12 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             nonce,
             chain_id,
-        )?;
+        );
 
         phoenix_sk.zeroize();
         moonlight_sk.zeroize();
 
-        state.propagate(convert).await
+        state.propagate(convert?).await
     }
 
     /// Deploys a contract using shielded notes to pay gas.
@@ -732,8 +748,8 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let tx_cost = gas.limit * gas.price;
         let inputs = state.tx_input_notes(sender_idx, tx_cost).await?;
 
-        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
         let owner_pk = self.public_key(sender_idx)?;
+        let mut sender_sk = self.derive_phoenix_sk(sender_idx);
 
         let deploy = phoenix_deployment(
             &mut rng,
@@ -748,11 +764,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             gas.price,
             chain_id,
             &Prover,
-        )?;
+        );
 
         sender_sk.zeroize();
 
-        let deploy = state.prove(deploy).await?;
+        let deploy = state.prove(deploy?).await?;
         state.propagate(deploy).await
     }
 
@@ -787,11 +803,11 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
             moonlight_nonce,
             deploy_nonce,
             chain_id,
-        )?;
+        );
 
         sender_sk.zeroize();
 
-        state.propagate(deploy).await
+        state.propagate(deploy?).await
     }
 
     /// Finds the index of the stake owner account.

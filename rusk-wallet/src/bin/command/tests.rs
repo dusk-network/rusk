@@ -143,12 +143,14 @@ async fn test_history_transfer_convert() {
                 direction: TransactionDirection::In,
                 amount: dusk(2750.0) as f64,
                 fee: txs_info[&rcv_moonlight].gas_spent * gas_price,
+                action: "transfer".to_string(),
             },
             // Receive money from faucet to phoenix address
             StrippedTxHistoryItem {
                 direction: TransactionDirection::In,
                 amount: dusk(2500.0) as f64,
                 fee: txs_info[&rcv_phoenix].gas_spent * gas_price,
+                action: "transfer".to_string(),
             },
             // Send 4000 to other wallet
             StrippedTxHistoryItem {
@@ -156,6 +158,7 @@ async fn test_history_transfer_convert() {
                 amount: -4_000.0,
                 fee: txs_info[&moonlight_trans_to_other_wallet].gas_spent
                     * gas_price,
+                action: "transfer".to_string(),
             },
             // Send 3000 to other wallet
             StrippedTxHistoryItem {
@@ -163,30 +166,35 @@ async fn test_history_transfer_convert() {
                 amount: -3_000.0,
                 fee: txs_info[&phoenix_trans_to_other_wallet].gas_spent
                     * gas_price,
+                action: "transfer".to_string(),
             },
             // Receive converted 2500 from moonlight to phoenix
             StrippedTxHistoryItem {
                 direction: TransactionDirection::In,
                 amount: 2_500.0,
                 fee: 0,
+                action: "convert".to_string(),
             },
             // Convert 2500 from moonlight to phoenix
             StrippedTxHistoryItem {
                 direction: TransactionDirection::Out,
                 amount: -2_500.0,
                 fee: txs_info[&moonlight_to_phoenix].gas_spent * gas_price,
+                action: "convert".to_string(),
             },
             // Convert 5000 from phoenix to moonlight
             StrippedTxHistoryItem {
                 direction: TransactionDirection::Out,
                 amount: -5_000.0,
                 fee: txs_info[&phoenix_to_moonlight].gas_spent * gas_price,
+                action: "convert".to_string(),
             },
             // Receive converted 5000 from phoenix to moonlight
             StrippedTxHistoryItem {
                 direction: TransactionDirection::In,
                 amount: 5_000.0,
                 fee: 0,
+                action: "convert".to_string(),
             },
         ]
     );
@@ -274,36 +282,42 @@ async fn test_history_stake_unstake() {
                 direction: TransactionDirection::In,
                 amount: dusk(1500.0) as f64,
                 fee: txs_info[&rcv_moonlight].gas_spent * gas_price,
+                action: "transfer".to_string(),
             },
             // Receive money from faucet to phoenix address
             StrippedTxHistoryItem {
                 direction: TransactionDirection::In,
                 amount: dusk(1500.0) as f64,
                 fee: txs_info[&rcv_phoenix].gas_spent * gas_price,
+                action: "transfer".to_string(),
             },
             // Stake 1000 dusk with moonlight
             StrippedTxHistoryItem {
                 direction: TransactionDirection::Out,
                 amount: -(dusk(1000.0) as f64),
                 fee: txs_info[&stake_moonlight].gas_spent * gas_price,
+                action: "stake".to_string(),
             },
             // Unstake with moonlight
             StrippedTxHistoryItem {
                 direction: TransactionDirection::Out,
                 amount: dusk(1000.0) as f64,
                 fee: txs_info[&unstake_moonlight].gas_spent * gas_price,
+                action: "unstake".to_string(),
             },
             // Stake 1000 dusk with phoenix
             StrippedTxHistoryItem {
                 direction: TransactionDirection::Out,
                 amount: -(dusk(1000.0) as f64),
                 fee: txs_info[&stake_phoenix].gas_spent * gas_price,
+                action: "stake".to_string(),
             },
             // Unstake with phoenix
             StrippedTxHistoryItem {
                 direction: TransactionDirection::Out,
                 amount: dusk(1000.0) as f64,
                 fee: txs_info[&unstake_phoenix].gas_spent * gas_price,
+                action: "unstake".to_string(),
             },
         ]
     )

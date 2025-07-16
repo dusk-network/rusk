@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add config to change the default wallet directory [#3775]
 - Add support for blob transaction
+- Add check to ensure the wallet can cover max fee in interactive mode [#3695]
 
 ### Changed
 
@@ -18,12 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change transaction history fee display to be negative
 - Change transaction history item type to display public/shielded
 - Separate archive node endpoint from state endpoint
+- Change withdraw command to claim rewards [#3077]
+- Ensure zeroize is called for secret info [#3687]
 
 ### Fixed
 
 - Fix transaction history error when the wallet has no stake [#3734]
 - Fix transaction history fail after shield/unshield conversions [#3600]
 - Fix transaction history fail after stake/unstake [#3712]
+- Fix inconsistent navigation and exiting [#3792]
 
 ## [0.2.0] - 2025-05-07
 
@@ -91,7 +95,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- Issues -->
+[#3792]: https://github.com/dusk-network/rusk/issues/3792
 [#3775]: https://github.com/dusk-network/rusk/issues/3775
+[#3077]: https://github.com/dusk-network/rusk/issues/3077
 [#3734]: https://github.com/dusk-network/rusk/issues/3734
 [#3713]: https://github.com/dusk-network/rusk/issues/3713
 [#3712]: https://github.com/dusk-network/rusk/issues/3712
@@ -99,6 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3704]: https://github.com/dusk-network/rusk/issues/3704
 [#3702]: https://github.com/dusk-network/rusk/issues/3702
 [#3700]: https://github.com/dusk-network/rusk/issues/3700
+[#3695]: https://github.com/dusk-network/rusk/issues/3695
+[#3687]: https://github.com/dusk-network/rusk/issues/3687
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
 [#3623]: https://github.com/dusk-network/rusk/issues/3623
 [#3602]: https://github.com/dusk-network/rusk/issues/3602

@@ -17,6 +17,8 @@ dusk-core = { workspace = true, features = ["serde"] }
 
 block-modes = { workspace = true }
 aes = { workspace = true }
+aes-gcm = { workspace = true, features = ["std"] }
+pbkdf2 = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true, features = ["hex", "base64"] }
@@ -27,6 +29,7 @@ bs58 = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
+zeroize = { workspace = true }
 
 # faker feature dependencies
 fake = { workspace = true, features = ['derive'], optional = true }

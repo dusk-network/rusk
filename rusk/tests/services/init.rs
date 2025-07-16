@@ -48,10 +48,7 @@ const OWNER: [u8; 32] = [1; 32];
 const DEPLOYER_INDEX: u8 = 0;
 const SENDER_INDEX: u8 = 1;
 
-async fn initial_state<P: AsRef<Path>>(
-    dir: P,
-    owner: impl AsRef<[u8]>,
-) -> Result<Rusk> {
+async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let dir = dir.as_ref();
 
     let snapshot = toml::from_str(include_str!("../config/init.toml"))
@@ -181,7 +178,7 @@ pub async fn calling_init_via_tx_fails() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp, OWNER).await?;
+    let rusk = initial_state(&tmp).await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 

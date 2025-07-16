@@ -47,6 +47,7 @@ type GQLTransaction = {
   gasSpent: number;
   id: string;
   tx: {
+    blobHashes: string[] | null;
     callData: GQLCallData | null;
     gasLimit: number;
     gasPrice: number;

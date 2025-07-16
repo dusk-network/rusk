@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add support for `TransactionData::Blob`
+- Add `mempool_nonce` field to `/on/account/status` response
+- Add `status` to GQL block fields
+
+### Changed
+
+- Change block generation to include transactions quickly
+
 
 ## [1.3.0] - 2025-04-17
 

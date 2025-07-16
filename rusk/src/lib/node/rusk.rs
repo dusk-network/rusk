@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 use std::sync::{mpsc, Arc};
 use std::time::Instant;
@@ -23,8 +24,10 @@ use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{
     Reward, RewardReason, StakeData, StakeKeys, STAKE_CONTRACT,
 };
+use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::{
-    moonlight::AccountData, PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
+    Transaction as ProtocolTransaction, PANIC_NONCE_NOT_READY,
+    TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, Dusk};
 use dusk_vm::{execute, CallReceipt, Error as VMError, Session, VM};
@@ -95,7 +98,7 @@ impl Rusk {
     pub fn create_state_transition<I: Iterator<Item = Transaction>>(
         &self,
         transition_data: &StateTransitionData,
-        mempool_txs: I,
+        mut mempool_txs: I,
     ) -> Result<
         (
             Vec<SpentTransaction>,
@@ -138,7 +141,21 @@ impl Rusk {
         // We always write the faults len in a u32
         let mut space_left = transition_data.max_txs_bytes - u32::SIZE;
 
-        for unspent_tx in mempool_txs {
+        // We use the pending list to keep track of transactions whose nonce is
+        // not yet valid but may become valid when the transactions using the
+        // missing nonces are executed.
+        // When a transaction in the pending list becomes valid (wrt the nonce)
+        // it is added to the unblocked list to be processed immediately.
+        // Unblocked transactions have priority over other transactions in the
+        // mempool.
+        let mut pending_txs: BTreeMap<[u8; 193], BTreeMap<u64, Transaction>> =
+            BTreeMap::new();
+
+        let mut unblocked_txs = VecDeque::new();
+
+        while let Some(unspent_tx) =
+            unblocked_txs.pop_front().or_else(|| mempool_txs.next())
+        {
             if let Some(timeout) = self.vm_config.generation_timeout {
                 if started.elapsed() > timeout {
                     info!(
@@ -216,6 +233,40 @@ impl Rusk {
                     gas_left -= gas_spent;
                     let gas_price = unspent_tx.inner.gas_price();
                     dusk_spent += gas_spent * gas_price;
+
+                    if let ProtocolTransaction::Moonlight(tx) =
+                        &unspent_tx.inner
+                    {
+                        // Check if the current transaction unblocks any
+                        // transaction from the same in the pending list.
+                        // All transactions with valid subsequent nonces are
+                        // added to the unblocked list to be processed
+                        // immediately.
+                        let sender = tx.sender().to_raw_bytes();
+                        if let Some(pendings) = pending_txs.get_mut(&sender) {
+                            let mut next_nonce = tx.nonce() + 1;
+
+                            while let Some(next_tx) =
+                                pendings.remove(&next_nonce)
+                            {
+                                let tx_id = hex::encode(next_tx.id());
+                                unblocked_txs.push_back(next_tx);
+                                info!(
+                                    event = "Reinserting transaction",
+                                    reason = "Nonce ready",
+                                    tx_id,
+                                    nonce = next_nonce,
+                                );
+                                next_nonce += 1;
+                            }
+
+                            // Clean up empty map for sender
+                            if pendings.is_empty() {
+                                pending_txs.remove(&sender);
+                            }
+                        }
+                    }
+
                     spent_txs.push(SpentTransaction {
                         inner: unspent_tx,
                         gas_spent,
@@ -224,12 +275,29 @@ impl Rusk {
                     });
                 }
                 Err(VMError::Panic(val)) if val == PANIC_NONCE_NOT_READY => {
-                    // If the transaction panic due to a not yet valid nonce,
-                    // we should not discard the transactions since it can be
-                    // included in future.
+                    // If the transaction panics due to a not yet valid nonce,
+                    // we do not discard it.
+                    // Instead, we add it to a list of pending transactions so
+                    // it can be processed immediately when the nonce become
+                    // valid (i.e., all transactions with
+                    // the missing nonces are executed in this loop).
+                    if let ProtocolTransaction::Moonlight(tx) =
+                        &unspent_tx.inner
+                    {
+                        let nonce = tx.nonce();
+                        pending_txs
+                            .entry(tx.sender().to_raw_bytes())
+                            .or_default()
+                            .insert(tx.nonce(), unspent_tx);
+                        info!(
+                            event = "Skipping transaction",
+                            reason = "Future Nonce",
+                            tx_id,
+                            nonce
+                        );
+                    }
 
-                    // TODO: Try to process the transaction as soon as the
-                    // nonce is unlocked
+                    continue;
                 }
                 Err(error) => {
                     info!(event = "Tx discarded", tx_id, ?error);

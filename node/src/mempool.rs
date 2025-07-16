@@ -324,7 +324,7 @@ impl MempoolSrv {
         // VM Preverify call
         let preverification_data =
             vm.read().await.preverify(tx).map_err(|e| {
-                TxAcceptanceError::VerificationFailed(format!("{e:?}"))
+                TxAcceptanceError::VerificationFailed(format!("{e}"))
             })?;
 
         if let PreverificationResult::FutureNonce {

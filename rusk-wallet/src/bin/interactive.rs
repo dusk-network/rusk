@@ -10,12 +10,11 @@ use std::fmt::Display;
 
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
-use rusk_wallet::dat::FileVersion as DatFileVersion;
-use rusk_wallet::{
-    Address, Error, Profile, Wallet, WalletPath, IV_SIZE, MAX_PROFILES,
-    SALT_SIZE,
-};
+use rusk_wallet::dat;
+use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
 
+use crate::command::BalanceType;
+use crate::io::prompt::{EXIT_HELP, MOVE_HELP, SELECT_HELP};
 use crate::io::{self, prompt};
 use crate::prompt::Prompter;
 use crate::settings::Settings;
@@ -34,66 +33,95 @@ pub(crate) async fn run_loop(
             let profile = &wallet.profiles()[profile_index as usize];
             prompt::hide_cursor()?;
 
-            let op = if !wallet.is_online().await {
-                println!("\r{}", profile.shielded_account_string());
-                println!("{}", profile.public_account_string());
-                println!();
+            let (op, moonlight_bal, phoenix_spendable) =
+                if !wallet.is_online().await {
+                    println!("\r{}", profile.shielded_account_string());
+                    println!("{}", profile.public_account_string());
+                    println!();
 
-                command_menu::offline(profile_index, settings)
-            } else {
-                let is_synced = wallet.is_synced().await?;
-                // get balance for this profile
-                let moonlight_bal =
-                    wallet.get_moonlight_balance(profile_index).await?;
-                let phoenix_bal =
-                    wallet.get_phoenix_balance(profile_index).await?;
-                let phoenix_spendable = phoenix_bal.spendable.into();
-                let phoenix_total: Dusk = phoenix_bal.value.into();
-
-                // display profile information
-                // display shielded balance and keys information
-                println!("{}", profile.shielded_account_string());
-                if is_synced {
-                    println!(
-                        "{0: <16} - Spendable: {phoenix_spendable}",
-                        "Shielded Balance",
-                    );
-                    println!("{0: <16} - Total:     {phoenix_total}", "",);
+                    (command_menu::offline(profile_index, settings), None, None)
                 } else {
-                    println!("Syncing...");
-                }
-                println!();
-                // display public balance and keys information
-                println!("{}", profile.public_account_string());
-                println!(
-                    "{0: <16} - Total:     {moonlight_bal}",
-                    "Public Balance",
-                );
-                println!();
+                    let is_synced = wallet.is_synced().await?;
+                    // get balance for this profile
+                    let moonlight_bal =
+                        wallet.get_moonlight_balance(profile_index).await?;
+                    let phoenix_bal =
+                        wallet.get_phoenix_balance(profile_index).await?;
+                    let phoenix_spendable = phoenix_bal.spendable.into();
+                    let phoenix_total: Dusk = phoenix_bal.value.into();
 
-                command_menu::online(
-                    profile_index,
-                    wallet,
-                    phoenix_spendable,
-                    moonlight_bal,
-                    settings,
-                )
-                .await
-            };
+                    // display profile information
+                    // display shielded balance and keys information
+                    println!("{}", profile.shielded_account_string());
+                    if is_synced {
+                        println!(
+                            "{0: <16} - Spendable: {phoenix_spendable}",
+                            "Shielded Balance",
+                        );
+                        println!("{0: <16} - Total:     {phoenix_total}", "",);
+                    } else {
+                        println!("Syncing...");
+                    }
+                    println!();
+                    // display public balance and keys information
+                    println!("{}", profile.public_account_string());
+                    println!(
+                        "{0: <16} - Total:     {moonlight_bal}",
+                        "Public Balance",
+                    );
+                    println!();
+
+                    (
+                        command_menu::online(
+                            profile_index,
+                            wallet,
+                            phoenix_spendable,
+                            moonlight_bal,
+                            settings,
+                        )
+                        .await,
+                        Some(moonlight_bal),
+                        Some(phoenix_spendable),
+                    )
+                };
 
             prompt::hide_cursor()?;
 
             // perform operations with this profile
             match op {
                 Ok(ProfileOp::Run(cmd)) => {
+                    if let Some(more_dusk_needed) = needs_more_dusk_to_run(
+                        moonlight_bal,
+                        phoenix_spendable,
+                        cmd.max_deduction(),
+                    ) {
+                        println!("Balance is not enough to cover the transaction max fee. You need {more_dusk_needed} more Dusk.\n");
+                        continue;
+                    }
                     // request confirmation before running
-                    if confirm(&cmd, wallet).await? {
+                    let should_run = match confirm(&cmd, wallet).await {
+                        Ok(run) => run,
+                        Err(err) => {
+                            match err.downcast_ref::<InquireError>() {
+                                Some(InquireError::OperationInterrupted) => {
+                                    return Err(err);
+                                }
+                                Some(InquireError::OperationCanceled) => (),
+                                _ => println!("{err}\n"),
+                            };
+                            continue;
+                        }
+                    };
+                    if should_run {
                         // run command
                         prompt::hide_cursor()?;
                         let res = match cmd.run(wallet, settings).await {
                             Ok(res) => res,
                             Err(err) => {
-                                println!("{err}\n");
+                                match err.downcast_ref::<InquireError>() {
+                                    Some(InquireError::OperationCanceled) => (),
+                                    _ => println!("{err}\n"),
+                                }
                                 continue;
                             }
                         };
@@ -123,7 +151,15 @@ pub(crate) async fn run_loop(
                                 if let Err(err) =
                                     crate::prompt::tx_history_list(history)
                                 {
-                                    println!("Failed to output transaction history with error {err}");
+                                    match err.downcast_ref::<InquireError>() {
+                                        Some(InquireError::OperationInterrupted) => {
+                                            return Err(err);
+                                        },
+                                        Some(InquireError::OperationCanceled) => {
+                                            continue;
+                                        },
+                                        _ => println!("Failed to output transaction history with error {err}"),
+                                    }
                                 }
 
                                 println!();
@@ -138,10 +174,29 @@ pub(crate) async fn run_loop(
                 }
                 Err(e) => match e.downcast_ref::<InquireError>() {
                     Some(InquireError::OperationCanceled) => (),
-                    _ => return Err(e),
+                    Some(InquireError::OperationInterrupted) => {
+                        return Err(e);
+                    }
+                    _ => println!("{e}\n"),
                 },
             };
         }
+    }
+}
+
+fn needs_more_dusk_to_run(
+    moonlight_bal: Option<Dusk>,
+    phoenix_spendable: Option<Dusk>,
+    max_deduction: (BalanceType, Dusk),
+) -> Option<Dusk> {
+    match (moonlight_bal, phoenix_spendable, max_deduction) {
+        (Some(spendable_amount), _, (BalanceType::Public, to_deduct))
+        | (_, Some(spendable_amount), (BalanceType::Shielded, to_deduct))
+            if spendable_amount < to_deduct =>
+        {
+            Some(to_deduct - spendable_amount)
+        }
+        _ => None,
     }
 }
 
@@ -149,7 +204,7 @@ pub(crate) async fn run_loop(
 enum ProfileSelect<'a> {
     Index(u8, &'a Profile),
     New,
-    Back,
+    Exit,
 }
 
 async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
@@ -170,7 +225,7 @@ async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
 
             Ok(profile_idx)
         }
-        ProfileSelect::Back => Err(InquireError::OperationCanceled.into()),
+        ProfileSelect::Exit => Err(InquireError::OperationInterrupted.into()),
     }
 }
 
@@ -193,25 +248,11 @@ fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
         menu_items.push(ProfileSelect::New);
     }
 
-    menu_items.push(ProfileSelect::Back);
+    menu_items.push(ProfileSelect::Exit);
 
-    let mut select = Select::new("Your Profiles", menu_items);
-
-    // UNWRAP: Its okay to unwrap because the default help message
-    // is provided by inquire Select struct
-    let mut msg = Select::<ProfileSelect>::DEFAULT_HELP_MESSAGE
-        .unwrap()
-        .to_owned();
-
-    if let Some(rx) = &wallet.state()?.sync_rx {
-        if let Ok(status) = rx.try_recv() {
-            msg = format!("Sync Status: {status}");
-        } else {
-            msg = "Waiting for Sync to complete..".to_string();
-        }
-    }
-
-    select = select.with_help_message(&msg);
+    let help_msg = &[MOVE_HELP, SELECT_HELP, EXIT_HELP].join(", ");
+    let select =
+        Select::new("Your Profiles", menu_items).with_help_message(help_msg);
 
     Ok(select.prompt()?)
 }
@@ -223,63 +264,76 @@ enum ProfileOp {
     Stay,
 }
 
-type Salt = [u8; SALT_SIZE];
-type Iv = [u8; IV_SIZE];
-
 /// Allows the user to load a wallet interactively
 pub(crate) async fn load_wallet(
     wallet_path: &WalletPath,
     settings: &Settings,
-    file_version_and_salt_iv: Result<
-        (DatFileVersion, Option<(Salt, Iv)>),
-        Error,
-    >,
 ) -> anyhow::Result<Wallet<WalletFile>> {
     let wallet_found =
         wallet_path.inner().exists().then(|| wallet_path.clone());
 
     let password = &settings.password;
 
-    // display main menu
-    let wallet = match menu_wallet(wallet_found, settings).await? {
-        MainMenu::Load(path) => {
-            let (file_version, salt_and_iv) = file_version_and_salt_iv?;
-            let mut attempt = 1;
-            loop {
-                let key = prompt::derive_key_from_password(
-                    "Please enter your wallet password",
-                    password,
-                    salt_and_iv.map(|si| si.0).as_ref(),
-                    file_version,
-                )?;
-                match Wallet::from_file(WalletFile {
-                    path: path.clone(),
-                    aes_key: key,
-                    salt: salt_and_iv.map(|si| si.0),
-                    iv: salt_and_iv.map(|si| si.1),
-                }) {
-                    Ok(wallet) => break wallet,
-                    Err(_) if attempt > 2 => {
-                        Err(Error::AttemptsExhausted)?;
-                    }
-                    Err(_) => {
-                        println!("Invalid password, please try again");
-                        attempt += 1;
+    loop {
+        // display main menu
+        let wallet = match menu_wallet(wallet_found.as_ref(), settings).await? {
+            MainMenu::Load(path) => {
+                let (file_version, salt_and_iv) =
+                    dat::read_file_version_and_salt_iv(wallet_path)?;
+                let mut attempt = 1;
+                loop {
+                    let key = prompt::derive_key_from_password(
+                        "Please enter your wallet password",
+                        password,
+                        salt_and_iv.map(|si| si.0).as_ref(),
+                        file_version,
+                    );
+                    let key = match key {
+                        Ok(key) => key,
+                        Err(err) => break Err(err),
+                    };
+                    match Wallet::from_file(WalletFile {
+                        path: path.clone(),
+                        aes_key: key,
+                        salt: salt_and_iv.map(|si| si.0),
+                        iv: salt_and_iv.map(|si| si.1),
+                    }) {
+                        Ok(wallet) => break Ok(wallet),
+                        Err(_) if attempt > 2 => {
+                            Err(Error::AttemptsExhausted)?;
+                        }
+                        Err(_) => {
+                            println!("Invalid password, please try again");
+                            attempt += 1;
+                        }
                     }
                 }
             }
-        }
-        // Use the latest binary format when creating a wallet
-        MainMenu::Create => {
-            Command::run_create(false, &None, password, wallet_path, &Prompter)?
-        }
-        MainMenu::Recover => {
-            Command::run_restore_from_seed(wallet_path, &Prompter)?
-        }
-        MainMenu::Exit => std::process::exit(0),
-    };
+            // Use the latest binary format when creating a wallet
+            MainMenu::Create => Command::run_create(
+                false,
+                &None,
+                password,
+                wallet_path,
+                &Prompter,
+            ),
+            MainMenu::Recover => {
+                Command::run_restore_from_seed(wallet_path, &Prompter)
+            }
+            MainMenu::Exit => std::process::exit(0),
+        };
 
-    Ok(wallet)
+        match wallet {
+            Ok(wallet) => return Ok(wallet),
+            Err(err) => match err.downcast_ref::<InquireError>() {
+                Some(InquireError::OperationCanceled) => {
+                    println!();
+                    continue;
+                }
+                _ => return Err(err),
+            },
+        };
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
@@ -293,14 +347,14 @@ enum MainMenu {
 /// Allows the user to load an existing wallet, recover a lost one
 /// or create a new one.
 async fn menu_wallet(
-    wallet_found: Option<WalletPath>,
+    wallet_found: Option<&WalletPath>,
     settings: &Settings,
 ) -> anyhow::Result<MainMenu> {
     // create the wallet menu
     let mut menu_items = Vec::new();
 
     if let Some(wallet_path) = wallet_found {
-        menu_items.push(MainMenu::Load(wallet_path));
+        menu_items.push(MainMenu::Load(wallet_path.clone()));
         menu_items.push(MainMenu::Create);
         menu_items.push(MainMenu::Recover);
     } else {
@@ -400,7 +454,7 @@ async fn confirm(
             prompt::ask_confirm()
         }
 
-        Command::Withdraw {
+        Command::ClaimRewards {
             address,
             gas_limit,
             reward,
@@ -409,21 +463,21 @@ async fn confirm(
             let sender = address.as_ref().ok_or(Error::BadAddress)?;
             let sender_index = wallet.find_index(sender)?;
             let max_fee = gas_limit * gas_price;
-            let withdraw_from = wallet.public_address(sender_index)?;
+            let claim_from = wallet.public_address(sender_index)?;
 
             let total_rewards = wallet.get_stake_reward(sender_index).await?;
 
-            // withdraw all rewards if no amt specified
-            let reward = if let Some(withdraw_reward) = reward {
-                withdraw_reward
+            // claim all rewards if no amt specified
+            let reward = if let Some(claim_reward) = reward {
+                claim_reward
             } else {
                 &total_rewards
             };
 
             println!("   > Pay with {}", sender.preview());
-            println!("   > Withdraw rewards from {}", withdraw_from.preview());
+            println!("   > Claim rewards from {}", claim_from.preview());
             println!("   > Receive rewards at {}", sender.preview());
-            println!("   > Amount withdrawing {} DUSK", reward);
+            println!("   > Amount claiming {} DUSK", reward);
             println!("   > Max fee = {} DUSK", Dusk::from(max_fee));
             if let Address::Public(_) = sender {
                 println!("   > ALERT: THIS IS A PUBLIC TRANSACTION");
@@ -486,7 +540,7 @@ impl<'a> Display for ProfileSelect<'a> {
                 profile.public_account_preview(),
             ),
             ProfileSelect::New => write!(f, "Create a new profile"),
-            ProfileSelect::Back => write!(f, "Back"),
+            ProfileSelect::Exit => write!(f, "Exit"),
         }
     }
 }

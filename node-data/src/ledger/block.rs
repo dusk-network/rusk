@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use serde::Serialize;
+
 use super::*;
 
 pub type Hash = [u8; 32];
@@ -78,7 +80,7 @@ impl Block {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum Label {
     Accepted(u64),
     Attested(u64),

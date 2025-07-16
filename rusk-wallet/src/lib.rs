@@ -10,10 +10,13 @@
 //! interfacing with the Dusk Network.
 //!
 //! Clients can use `Wallet` to create their Dusk wallet, send transactions
-//! through the network of their choice, stake and withdraw rewards, etc.
+//! through the network of their choice, stake and claim rewards, etc.
 
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
+// This feature has been stabilized since 1.76.0.
+// It can just be removed when the toolchain is updated.
+#![feature(result_option_inspect)]
 
 mod cache;
 mod clients;

@@ -8,6 +8,7 @@ mod history;
 
 use dusk_core::transfer::data::BlobData;
 pub use history::TransactionHistory;
+use zeroize::Zeroize;
 
 #[cfg(all(test, feature = "e2e-test"))]
 mod tests;
@@ -42,6 +43,8 @@ use crate::io::prompt;
 use crate::prompt::Prompt;
 use crate::settings::Settings;
 use crate::{WalletFile, WalletPath};
+
+pub(crate) use self::history::BalanceType;
 
 /// Commands that can be run against the Dusk wallet
 #[allow(clippy::large_enum_variant)]
@@ -205,7 +208,8 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
-    /// Withdraw accumulated rewards for a stake key
+    /// [DEPRECATED] Use `claim-rewards` instead
+    #[command(hide = true)]
     Withdraw {
         /// Address from which to make the withdraw request [default:
         /// first address]
@@ -214,6 +218,28 @@ pub(crate) enum Command {
 
         /// Amount of rewards to withdraw from the stake contract. If the
         /// reward is not provided, all the rewards are withdrawn at
+        /// once
+        #[arg(short, long)]
+        reward: Option<Dusk>,
+
+        /// Max amount of gas for this transaction
+        #[arg(short = 'l', long, default_value_t = DEFAULT_LIMIT_CALL)]
+        gas_limit: u64,
+
+        /// Price you're going to pay for each gas unit (in LUX)
+        #[arg(short = 'p', long, default_value_t = DEFAULT_PRICE)]
+        gas_price: Lux,
+    },
+
+    /// Claim accumulated stake rewards
+    ClaimRewards {
+        /// Address from which to make the claim rewards request [default:
+        /// first address]
+        #[arg(short, long)]
+        address: Option<Address>,
+
+        /// Amount of rewards to claim from the stake contract. If the
+        /// reward is not provided, all the rewards are claimed at
         /// once
         #[arg(short, long)]
         reward: Option<Dusk>,
@@ -355,6 +381,7 @@ impl Command {
         wallet: &'a mut Wallet<WalletFile>,
         settings: &Settings,
     ) -> anyhow::Result<RunResult<'a>> {
+        let is_withdraw = matches!(self, Command::Withdraw { .. });
         match self {
             Command::Balance { address, spendable } => {
                 let address = address.unwrap_or(wallet.default_address());
@@ -500,7 +527,16 @@ impl Command {
                 reward,
                 gas_limit,
                 gas_price,
+            }
+            | Command::ClaimRewards {
+                address,
+                reward,
+                gas_limit,
+                gas_price,
             } => {
+                if is_withdraw {
+                    println!("`withdraw` is deprecated. Please use `claim_rewards` instead.");
+                }
                 let address = address.unwrap_or(wallet.default_address());
                 let addr_idx = wallet.find_index(&address)?;
 
@@ -509,12 +545,12 @@ impl Command {
                     Address::Shielded(_) => {
                         wallet.sync().await?;
                         wallet
-                            .phoenix_stake_withdraw(addr_idx, reward, gas)
+                            .phoenix_claim_rewards(addr_idx, reward, gas)
                             .await
                     }
                     Address::Public(_) => {
                         wallet
-                            .moonlight_stake_withdraw(addr_idx, reward, gas)
+                            .moonlight_claim_rewards(addr_idx, reward, gas)
                             .await
                     }
                 }?;
@@ -539,7 +575,7 @@ impl Command {
                 name,
                 export_pwd,
             } => {
-                let pwd = match export_pwd {
+                let mut pwd = match export_pwd {
                     Some(pwd) => pwd,
                     None => match settings.password.as_ref() {
                         Some(p) => p.to_string(),
@@ -551,12 +587,16 @@ impl Command {
 
                 let profile_idx = profile_idx.unwrap_or_default();
 
-                let (pub_key, key_pair) = wallet.export_provisioner_keys(
+                let res = wallet.export_provisioner_keys(
                     profile_idx,
                     &dir,
                     name,
                     &pwd,
-                )?;
+                );
+
+                pwd.zeroize();
+
+                let (pub_key, key_pair) = res?;
 
                 Ok(RunResult::ExportedKeys(pub_key, key_pair))
             }
@@ -783,6 +823,112 @@ impl Command {
         }
     }
 
+    pub fn max_deduction(&self) -> (BalanceType, Dusk) {
+        match self {
+            Command::Shield { amt, .. }
+            | Command::Unshield { amt, .. }
+            | Command::ContractCall { deposit: amt, .. }
+            | Command::Stake { amt, .. }
+            | Command::Transfer { amt, .. } => {
+                let (bal_type, fee) = self.max_fee();
+                (bal_type, fee + *amt)
+            }
+            Command::Balance { .. }
+            | Command::Blob { .. }
+            | Command::CalculateContractId { .. }
+            | Command::ClaimRewards { .. }
+            | Command::Create { .. }
+            | Command::Restore { .. }
+            | Command::Settings
+            | Command::Export { .. }
+            | Command::History { .. }
+            | Command::Profiles { .. }
+            | Command::Withdraw { .. }
+            | Command::StakeInfo { .. }
+            | Command::Unstake { .. }
+            | Command::ContractDeploy { .. } => self.max_fee(),
+        }
+    }
+
+    pub fn max_fee(&self) -> (BalanceType, Dusk) {
+        match self {
+            Command::Blob {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Withdraw {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::ClaimRewards {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::ContractDeploy {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::ContractCall {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Stake {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Transfer {
+                sender: address,
+                gas_limit,
+                gas_price,
+                ..
+            }
+            | Command::Unstake {
+                address,
+                gas_limit,
+                gas_price,
+                ..
+            } => match address {
+                Some(Address::Public(_)) | None => {
+                    (BalanceType::Public, Dusk::from(gas_limit * gas_price))
+                }
+                Some(Address::Shielded(_)) => {
+                    (BalanceType::Shielded, Dusk::from(gas_limit * gas_price))
+                }
+            },
+            Command::Shield {
+                gas_limit,
+                gas_price,
+                ..
+            } => (BalanceType::Public, Dusk::from(gas_limit * gas_price)),
+            Command::Unshield {
+                gas_limit,
+                gas_price,
+                ..
+            } => (BalanceType::Shielded, Dusk::from(gas_limit * gas_price)),
+            Command::Settings
+            | Command::CalculateContractId { .. }
+            | Command::Create { .. }
+            | Command::Restore { .. }
+            | Command::StakeInfo { .. }
+            | Command::Profiles { .. }
+            | Command::Balance { .. }
+            | Command::History { .. }
+            | Command::Export { .. } => (BalanceType::Public, Dusk::from(0)),
+        }
+    }
+
     pub(crate) fn run_create(
         skip_recovery: bool,
         seed_file: &Option<PathBuf>,
@@ -821,7 +967,8 @@ impl Command {
             aes_key: key,
             salt: Some(salt),
             iv: Some(iv),
-        })?;
+        })
+        .inspect_err(|_| w.close())?;
 
         Ok(w)
     }
@@ -850,7 +997,8 @@ impl Command {
             aes_key: key,
             salt: Some(salt),
             iv: Some(iv),
-        })?;
+        })
+        .inspect_err(|_| w.close())?;
         Ok(w)
     }
 }

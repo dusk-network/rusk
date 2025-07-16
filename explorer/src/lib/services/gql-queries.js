@@ -7,6 +7,7 @@ fragment TransactionInfo on SpentTransaction {
 	gasSpent,
 	id,
   tx {
+    ${import.meta.env.VITE_FEATURE_BLOB_HASHES === "true" ? "blobHashes," : ""}
     callData {
       contractId,
       data,

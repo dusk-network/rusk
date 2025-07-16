@@ -6,8 +6,9 @@
 
 use std::ops::Deref;
 
-use async_graphql::{FieldError, FieldResult, Object, SimpleObject};
+use async_graphql::{FieldError, FieldResult, Json, Object, SimpleObject};
 use node::database::{Ledger, LightBlock, DB};
+use node_data::ledger::Label;
 use serde::{Deserialize, Serialize};
 
 /// Pair of (block height, block hash) of the last block and the last finalized
@@ -82,6 +83,23 @@ impl Block {
     #[graphql(name = "header")]
     pub async fn gql_header(&self) -> Header {
         Header(&self.header)
+    }
+
+    pub async fn status(
+        &self,
+        ctx: &async_graphql::Context<'_>,
+    ) -> FieldResult<Json<Label>> {
+        let db = ctx.data::<super::DBContext>()?.0.read().await;
+
+        Ok(async_graphql::Json(db.view(|t| {
+            t.block_label_by_height(self.header.height)
+                .map_err(|e| FieldError::new(e.to_string()))
+                .and_then(|label| {
+                    label
+                        .map(|(_, label)| label)
+                        .ok_or_else(|| FieldError::new("Label not found"))
+                })
+        })?))
     }
 
     pub async fn transactions(
@@ -295,14 +313,9 @@ impl Transaction<'_> {
     }
 
     pub async fn blob_hashes(&self) -> Option<Vec<String>> {
-        let hashes = self
-            .0
-            .inner
-            .blob()?
-            .iter()
-            .map(|blob| hex::encode(blob.hash))
-            .collect();
-        Some(hashes)
+        self.0.inner.blob().map(|blobs| {
+            blobs.iter().map(|blob| hex::encode(blob.hash)).collect()
+        })
     }
 
     pub async fn is_deploy(&self) -> bool {
