@@ -200,28 +200,40 @@ fn read_from_file(
 
     if file_format_is_old {
         info!("Your consensus keys are in the old format. Migrating to the new format and saving the old file as {}.old", path.display());
-        save_old_file(&path)?;
-        let keys_filename = path
-            .file_name()
-            .expect("keys file should have a name")
-            .to_str()
-            .expect("keys file should be a valid string");
-        let keys_file_dir = path
-            .parent()
-            .expect("keys file should have a parent directory");
-        let temp_keys_name = format!("{}_new", keys_filename);
-        save_consensus_keys(keys_file_dir, &temp_keys_name, &pk, &sk, pwd)?;
-        fs::rename(
-            keys_file_dir.join(&temp_keys_name).with_extension("keys"),
-            &path,
-        )?;
-        fs::remove_file(
-            keys_file_dir.join(temp_keys_name).with_extension("cpk"),
-        )
-        .expect("The new cpk file should be deleted");
+        migrate_file_to_new_format(&path, &pk, &sk, pwd).map_err(|e| {
+            anyhow::anyhow!(
+                "failed to migrate consensus keys to the new format: {e}"
+            )
+        })?;
     }
 
     Ok((pk, sk))
+}
+
+fn migrate_file_to_new_format(
+    path: &Path,
+    pk: &BlsPublicKey,
+    sk: &BlsSecretKey,
+    pwd: &str,
+) -> Result<(), ConsensusKeysError> {
+    save_old_file(path)?;
+    let keys_filename = path
+        .file_name()
+        .expect("keys file should have a name")
+        .to_str()
+        .expect("keys file should be a valid string");
+    let keys_file_dir = path
+        .parent()
+        .expect("keys file should have a parent directory");
+    let temp_keys_name = format!("{}_new", keys_filename);
+    save_consensus_keys(keys_file_dir, &temp_keys_name, pk, sk, pwd)?;
+    fs::rename(
+        keys_file_dir.join(&temp_keys_name).with_extension("keys"),
+        path,
+    )?;
+    fs::remove_file(keys_file_dir.join(temp_keys_name).with_extension("cpk"))
+        .expect("The new cpk file should be deleted");
+    Ok(())
 }
 
 fn save_old_file(path: &Path) -> Result<(), ConsensusKeysError> {
