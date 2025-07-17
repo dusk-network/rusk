@@ -359,7 +359,17 @@ impl MempoolSrv {
             // ensure spend_ids do not exist in the mempool
             for m_tx_id in db.mempool_txs_by_spendable_ids(&spend_ids) {
                 if let Some(m_tx) = db.mempool_tx(m_tx_id)? {
-                    if m_tx.inner.gas_price() < tx.inner.gas_price() {
+                    // If the transaction spendingId is already in the mempool
+                    // (same nonce or same nullifier), we check if it can be
+                    // replaced by the new transaction based on gas price and
+                    // gas limit.
+                    // If the new transaction has a higher gas price or the same
+                    // gas price but a higher gas limit, we replace the old
+                    // transaction with the new one.
+                    if m_tx.inner.gas_price() < tx.inner.gas_price()
+                        || (m_tx.inner.gas_price() == tx.inner.gas_price()
+                            && m_tx.inner.gas_limit() < tx.inner.gas_limit())
+                    {
                         for deleted in db.delete_mempool_tx(m_tx_id, false)? {
                             events.push(TransactionEvent::Removed(deleted));
                             replaced = true;
