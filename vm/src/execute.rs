@@ -37,10 +37,11 @@ pub use config::Config;
 ///    - gas limit should be is smaller than deploy charge plus gas used for
 ///      spending funds
 ///    - transaction's bytecode's bytes are consistent with bytecode's hash
-///    Deployment execution may fail for deployment-specific reasons, such as
-///    for example:
+///    
+///   Deployment execution may fail for deployment-specific reasons, such as:
 ///    - contract already deployed
 ///    - corrupted bytecode
+///    
 ///    If deployment execution fails, the entire gas limit is consumed and error
 ///    is returned.
 ///
@@ -85,9 +86,8 @@ pub fn execute(
             stripped_tx.as_ref().unwrap_or(tx),
             tx.gas_limit(),
         )
-        .map_err(|e| {
+        .inspect_err(|_| {
             clear_session(session, config);
-            e
         })?;
 
     // Deploy if this is a deployment transaction and spend part is successful.

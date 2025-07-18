@@ -277,7 +277,7 @@ impl<'a> CommitteeGenerator<'a> {
     fn new(
         provisioners: &'a Provisioners,
         round: u64,
-        exclusion_list: &Vec<PublicKeyBytes>,
+        exclusion_list: &[PublicKeyBytes],
     ) -> Self {
         // Get provisioners eligible at round `round`
         let eligible_set: Vec<_> = provisioners
