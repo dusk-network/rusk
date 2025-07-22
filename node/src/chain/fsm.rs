@@ -384,10 +384,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 // candidate) we try to fetch the candidate from the DB
                 let res = db.read().await.view(|t| t.candidate(&candidate));
 
-                match res {
-                    Ok(b) => b,
-                    Err(_) => None,
-                }
+                res.unwrap_or_default()
             } else {
                 // INFO: we currently ignore Quorum messages from the past
                 None

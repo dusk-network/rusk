@@ -133,7 +133,6 @@ const SYNC_TIMEOUT: Duration = Duration::from_secs(5);
 /// network efficiently, ensuring that blocks are processed in the correct
 /// order and that network requests are managed effectively to minimize
 /// redundant data and processing.
-
 pub(super) struct OutOfSyncImpl<
     DB: database::DB,
     VM: vm::VMExecution,

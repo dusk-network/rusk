@@ -541,11 +541,10 @@ pub fn phoenix_to_moonlight<R: RngCore + CryptoRng, P: Prove>(
 /// Create a [`Transaction`] to convert Moonlight Dusk into Phoenix Dusk.
 ///
 /// # Note
-/// 1. The ownership of both sender and receiver keys is required, and
-/// enforced by the protocol.
+/// 1. The ownership of both sender and receiver keys is required, and enforced
+///    by the protocol.
 /// 2. `moonlight_nonce` is NOT incremented and should be incremented by the
-///    caller
-/// of this function, if its not done so, rusk will throw 500 error
+///    caller of this function, if its not done so, rusk will throw 500 error
 ///
 /// # Errors
 /// The creation of this transaction doesn't error, but still returns a result

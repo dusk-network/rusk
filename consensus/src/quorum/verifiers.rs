@@ -43,7 +43,7 @@ pub async fn verify_step_votes(
 
     // Verify the aggregated signature is valid and reach the quorum threshold
     let voters = verify_quorum_votes(ch, step, vote, step_votes, &committee)
-        .map_err(|e| {
+        .inspect_err(|e| {
             error!(
                 event = "Invalid StepVotes",
                 reason = %e,
@@ -54,8 +54,6 @@ pub async fn verify_step_votes(
                 seed = to_str(seed.inner()),
                 ?step_votes
             );
-
-            e
         })?;
 
     Ok(voters)

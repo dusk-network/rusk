@@ -56,7 +56,6 @@ pub trait DB: Send + Sync + 'static {
 }
 
 /// Implements both read-write and read-only transactions to DB.
-
 pub trait Ledger {
     /// Read-write transactions
     /// Returns disk footprint of the committed transaction

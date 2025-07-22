@@ -69,7 +69,7 @@ pub enum Error {
     /// The note wasn't found in the note-tree of the transfer-contract
     #[error("Note wasn't found in transfer-contract")]
     NoteNotFound,
-    /// The note couldn't be decrypted with the provided ViewKey
+    /// The note couldn't be decrypted with the provided `ViewKey`
     #[error("Note couldn't be decrypted with the provided ViewKey")]
     WrongViewKey,
     /// Not enough gas to perform this transaction
