@@ -1356,7 +1356,8 @@ dependencies = [
 [[package]]
 name = "crumbles"
 version = "0.3.0"
-source = "git+https://github.com/dusk-network/piecrust.git#c96a4cce4c989fb970548aef057082949b4d2765"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8e75f60d6b7f88bcbb2468fee550a1db73c5c9d0f89526dfbd5d2aa89039636"
 dependencies = [
  "libc",
  "rangemap",
@@ -3844,7 +3845,8 @@ dependencies = [
 [[package]]
 name = "piecrust"
 version = "0.29.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust.git#c96a4cce4c989fb970548aef057082949b4d2765"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57894f133f58658199453145a4a2ce8a81ae0dd7be5c1739b658b1c2da9d3ed0"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -3865,14 +3867,14 @@ dependencies = [
 [[package]]
 name = "piecrust-uplink"
 version = "0.19.0-rc.0"
-source = "git+https://github.com/dusk-network/piecrust.git#c96a4cce4c989fb970548aef057082949b4d2765"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49671c8d75a8c55fc4aff276729ac2e653596e74934fe7c72b592b6b868ad897"
 dependencies = [
  "bytecheck",
  "dlmalloc",
  "hex",
  "rkyv",
  "serde",
- "serde_json",
 ]
 
 [[package]]
