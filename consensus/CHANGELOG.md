@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add blob checks while validating candidate [#3828]
+
+
 ## [1.3.0] - 2025-04-17
 
 ### Fixed
@@ -33,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Issues -->
 [#3543]: https://github.com/dusk-network/rusk/issues/3543
+[#3828]: https://github.com/dusk-network/rusk/issues/3828
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.3.0...HEAD
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.2.0...dusk-consensus-1.3.0

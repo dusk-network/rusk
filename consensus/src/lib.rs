@@ -27,6 +27,7 @@ mod validation;
 
 pub use ratification::step::build_ratification_payload;
 pub use validation::step::build_validation_payload;
+pub use validation::step::validate_blobs;
 
 mod iteration_ctx;
 pub mod merkle;
