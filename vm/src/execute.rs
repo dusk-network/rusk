@@ -69,6 +69,7 @@ pub fn execute(
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     deploy_check(tx, config)?;
+    let blob_min_charge = blob_check(tx, config)?;
 
     if config.with_public_sender {
         let _ = session
@@ -92,6 +93,10 @@ pub fn execute(
 
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(session, tx, config, &mut receipt);
+
+    if blob_min_charge > 0 && receipt.gas_spent < blob_min_charge {
+        receipt.gas_spent = blob_min_charge;
+    }
 
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
@@ -139,6 +144,18 @@ fn deploy_check(tx: &Transaction, config: &Config) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+fn blob_check(tx: &Transaction, config: &Config) -> Result<u64, Error> {
+    let min_charge = tx
+        .blob()
+        .map(|blobs| config.gas_per_blob * blobs.len() as u64)
+        .unwrap_or_default();
+    if tx.gas_limit() < min_charge {
+        Err(Error::Panic("not enough gas for blobs".into()))
+    } else {
+        Ok(min_charge)
+    }
 }
 
 // Contract deployment will fail and charge full gas limit in the

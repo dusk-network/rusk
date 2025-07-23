@@ -10,6 +10,8 @@ pub struct Config {
     /// The amount of gas points charged for each byte in a contract-deployment
     /// bytecode.
     pub gas_per_deploy_byte: u64,
+    /// The amount of gas points charged for each blob in a transaction.
+    pub gas_per_blob: u64,
     /// The minimum gas points charged for a contract deployment.
     pub min_deploy_points: u64,
     /// The minimum gas price set for a contract deployment
@@ -30,6 +32,7 @@ impl Config {
     /// Create a config with all values to default
     pub const DEFAULT: Config = Config {
         gas_per_deploy_byte: 0,
+        gas_per_blob: 0,
         min_deploy_points: 0,
         min_deploy_gas_price: 0,
         with_public_sender: false,
