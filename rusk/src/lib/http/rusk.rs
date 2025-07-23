@@ -65,11 +65,11 @@ impl HandleRequest for Rusk {
                     .map(|v| v.to_string())
                     .ok_or(anyhow::anyhow!(
                         "Payload hash missing in driver upload"
-                    ))?;
+                    ))?.replace("\"", "");
                 let sign =
                     request.header("sign").map(|v| v.to_string()).ok_or(
                         anyhow::anyhow!("Signature missing in driver upload"),
-                    )?;
+                    )?.replace("\"", "");
                 self.upload_driver(
                     &contract_id,
                     hash,
