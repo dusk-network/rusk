@@ -15,7 +15,7 @@ use conf::{
     DEFAULT_DOWNLOAD_REDUNDANCY, DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL,
 };
 use dusk_consensus::config::MAX_BLOCK_SIZE;
-use dusk_core::transfer::data::BlobData;
+use dusk_consensus::errors::BlobError;
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
 use node_data::ledger::{Header, SpendingId, Transaction};
@@ -44,8 +44,8 @@ pub enum TxAcceptanceError {
     AlreadyExistsInMempool,
     #[error("this transaction exists in the ledger")]
     AlreadyExistsInLedger,
-    #[error("Transaction blob is missing data")]
-    BlobMissing,
+    #[error("Transaction blob id {} is missing sidecar", hex::encode(.0))]
+    BlobMissingSidecar([u8; 32]),
     #[error("No blobs provided")]
     BlobEmpty,
     #[error("Transaction has too many blobs: {0}")]
@@ -73,6 +73,19 @@ pub enum TxAcceptanceError {
 impl From<anyhow::Error> for TxAcceptanceError {
     fn from(err: anyhow::Error) -> Self {
         Self::Generic(err)
+    }
+}
+
+impl From<BlobError> for TxAcceptanceError {
+    fn from(err: BlobError) -> Self {
+        match err {
+            BlobError::MissingSidecar(id) => {
+                TxAcceptanceError::BlobMissingSidecar(id)
+            }
+            BlobError::BlobEmpty => TxAcceptanceError::BlobEmpty,
+            BlobError::BlobTooMany(n) => TxAcceptanceError::BlobTooMany(n),
+            BlobError::BlobInvalid(msg) => TxAcceptanceError::BlobInvalid(msg),
+        }
     }
 }
 
@@ -262,41 +275,8 @@ impl MempoolSrv {
             if tx.inner.gas_limit() < deploy_charge {
                 return Err(TxAcceptanceError::GasLimitTooLow(deploy_charge));
             }
-        } else if let Some(blobs) = tx.inner.blob() {
-            // TODO: Move this to vm::blob_check to perform the same checks
-            // while executing a tx directly from within a Block
-            match blobs.len() {
-                0 => Err(TxAcceptanceError::BlobEmpty),
-                n if n > 6 => Err(TxAcceptanceError::BlobTooMany(n)),
-                _n => {
-                    // TODO: Add checks for gas price and gas limit
-                    Ok(())
-                }
-            }?;
-            for blob in blobs {
-                let sidecar =
-                    blob.data.as_ref().ok_or(TxAcceptanceError::BlobMissing)?;
-                let expected_hash =
-                    BlobData::hash_from_commitment(&sidecar.commitment);
-                if expected_hash != blob.hash {
-                    return Err(TxAcceptanceError::BlobInvalid(
-                        "Hash does not match commitment".into(),
-                    ));
-                }
-                let settings = BlobData::eth_kzg_settings(None);
-                let valid_proof =
-                    BlobData::verify_blob_kzg_proof(settings, sidecar)
-                        .map_err(|e| {
-                            TxAcceptanceError::BlobInvalid(format!(
-                                "Cannot verify blob KZG proof: {e}"
-                            ))
-                        })?;
-                if !valid_proof {
-                    return Err(TxAcceptanceError::BlobInvalid(
-                        "KZG proof verification failed".into(),
-                    ));
-                }
-            }
+        } else if tx.inner.blob().is_some() {
+            dusk_consensus::validate_blobs(tx)?;
         } else {
             let vm = vm.read().await;
             let min_gas_limit = vm.min_gas_limit();
