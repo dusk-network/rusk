@@ -58,10 +58,10 @@ export default [
   },
   {
     enabled:
-      import.meta.env.VITE_FEATURE_MIGRATE === "true" &&
+      import.meta.env.VITE_FEATURE_BRIDGE === "true" &&
       import.meta.env.VITE_REOWN_PROJECT_ID !== "",
-    id: "migrate",
-    label: "Migrate",
+    id: "bridge",
+    label: "Bridge",
     operations: [
       {
         disabled: false,
