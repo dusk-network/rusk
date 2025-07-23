@@ -74,7 +74,15 @@ impl Rusk {
         let mut base_commit = [0u8; 32];
         base_commit.copy_from_slice(&base_commit_bytes);
 
-        let vm = Arc::new(VM::new(dir)?);
+        let mut vm = VM::new(dir)?;
+        for (feat, activation) in vm_config.features() {
+            let feat = feat.to_ascii_lowercase();
+            if let Some(hq_name) = feat.strip_prefix("hq_") {
+                vm.with_hq_activation(hq_name, *activation);
+            }
+        }
+
+        let vm = Arc::new(vm);
 
         let tip = Arc::new(RwLock::new(RuskTip {
             current: base_commit,

@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
+use std::collections::{hash_map::Iter, HashMap};
 use std::time::Duration;
 
 use dusk_vm::ExecutionConfig;
@@ -129,6 +129,10 @@ impl Config {
             min_deploy_gas_price: self.min_deployment_gas_price,
             with_public_sender,
         }
+    }
+
+    pub fn features(&self) -> Iter<String, u64> {
+        self.features.iter()
     }
 
     pub fn feature(&self, feature: &str) -> Option<u64> {
