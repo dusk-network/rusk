@@ -30,6 +30,7 @@ impl HandleRequest for Rusk {
             ("contracts", Some(_), _) => true,
             ("driver", Some(_), _) => true,
             ("contract_owner", Some(_), _) => true,
+            ("upload_driver", Some(_), _) => true,
             ("node", _, "provisioners") => true,
             ("node", _, "crs") => true,
             _ => false,
@@ -55,6 +56,13 @@ impl HandleRequest for Rusk {
             }
             ("contract_owner", Some(contract_id), _method) => {
                 self.get_contract_owner(&contract_id)
+            }
+            ("upload_driver", Some(contract_id), _method) => {
+                let hash = request.header("hash").map(|v|v.to_string())
+                    .ok_or(anyhow::anyhow!("Payload hash missing in driver upload"))?;
+                let sign = request.header("sign").map(|v|v.to_string())
+                    .ok_or(anyhow::anyhow!("Signature missing in driver upload"))?;
+                self.upload_driver(&contract_id, hash, sign, request.data.as_bytes())
             }
             ("node", _, "provisioners") => self.get_provisioners(),
 
@@ -136,6 +144,27 @@ impl Rusk {
             }
             Err(_e) => Err(anyhow::anyhow!("Contract owner not found")),
         }
+    }
+
+    fn upload_driver(
+        &self,
+        contract_id: impl AsRef<str>,
+        _hash: impl AsRef<str>,
+        _sign: impl AsRef<str>,
+        _data: impl AsRef<[u8]>,
+    ) -> anyhow::Result<ResponseData> {
+        let contract_id = ContractId::try_from(contract_id.as_ref().to_string())
+            .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
+
+        let _owner = match self.query_metadata(&contract_id) {
+            Ok(metadata) => metadata.owner,
+            _ => return Err(anyhow::anyhow!("Contract owner not found")),
+        };
+
+        // check that owner's signature of hash is correct
+
+        // store data in a driver storage for contract id
+        Ok(ResponseData::new("driver upload ok".to_string()))
     }
 
     fn handle_contract_query(
