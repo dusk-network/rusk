@@ -15,6 +15,7 @@ use conf::{
     DEFAULT_DOWNLOAD_REDUNDANCY, DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL,
 };
 use dusk_consensus::config::MAX_BLOCK_SIZE;
+use dusk_core::transfer::data::BlobData;
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
 use node_data::ledger::{Header, SpendingId, Transaction};
@@ -49,6 +50,8 @@ pub enum TxAcceptanceError {
     BlobEmpty,
     #[error("Transaction has too many blobs: {0}")]
     BlobTooMany(usize),
+    #[error("Invalid blob: {0}")]
+    BlobInvalid(String),
     #[error("this transaction's spendId exists in the mempool")]
     SpendIdExistsInMempool,
     #[error("this transaction is invalid {0}")]
@@ -271,13 +274,28 @@ impl MempoolSrv {
                 }
             }?;
             for blob in blobs {
-                match &blob.data {
-                    Some(_data) => {
-                        // TODO: Add checks for commitment and hash verification
-                        Ok(())
-                    }
-                    None => Err(TxAcceptanceError::BlobMissing),
-                }?;
+                let sidecar =
+                    blob.data.as_ref().ok_or(TxAcceptanceError::BlobMissing)?;
+                let expected_hash =
+                    BlobData::hash_from_commitment(&sidecar.commitment);
+                if expected_hash != blob.hash {
+                    return Err(TxAcceptanceError::BlobInvalid(
+                        "Hash does not match commitment".into(),
+                    ));
+                }
+                let settings = BlobData::eth_kzg_settings(None);
+                let valid_proof =
+                    BlobData::verify_blob_kzg_proof(settings, sidecar)
+                        .map_err(|e| {
+                            TxAcceptanceError::BlobInvalid(format!(
+                                "Cannot verify blob KZG proof: {e}"
+                            ))
+                        })?;
+                if !valid_proof {
+                    return Err(TxAcceptanceError::BlobInvalid(
+                        "KZG proof verification failed".into(),
+                    ));
+                }
             }
         } else {
             let vm = vm.read().await;
