@@ -27,6 +27,7 @@ if [ ! -f "$ARTIFACT_PATH" ]; then
     mkdir -p "$ARTIFACT_DIR"
     curl -L "$ARTIFACT_URL" -o "$ARTIFACT_PATH"
 fi
+curl -C - -L "$ARTIFACT_URL" -o "$ARTIFACT_PATH"
 
 # Unzip the artifact, if it isn't already unzipped
 UNZIPPED_DIR=$ARTIFACT_DIR/unzipped
