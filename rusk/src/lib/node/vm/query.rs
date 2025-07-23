@@ -11,11 +11,27 @@ use std::sync::mpsc;
 
 use bytecheck::CheckBytes;
 use dusk_core::abi::{ContractId, StandardBufSerializer};
+use dusk_vm::ContractMetadata;
+use dusk_vm::Error::ContractDoesNotExist;
 use node::vm::VMExecution;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 
 impl Rusk {
+    pub fn query_metadata(
+        &self,
+        contract_id: &ContractId,
+    ) -> Result<ContractMetadata> {
+        let mut session = self.query_session(None)?;
+        let metadata = session
+            .contract_metadata(contract_id)
+            .ok_or(ContractDoesNotExist(*contract_id))?;
+        Ok(ContractMetadata {
+            contract_id: metadata.contract_id,
+            owner: metadata.owner.clone(),
+        })
+    }
+
     pub fn query_raw<S, V>(
         &self,
         contract_id: ContractId,

@@ -29,6 +29,7 @@ impl HandleRequest for Rusk {
         match request.uri.inner() {
             ("contracts", Some(_), _) => true,
             ("driver", Some(_), _) => true,
+            ("contract_owner", Some(_), _) => true,
             ("node", _, "provisioners") => true,
             ("node", _, "crs") => true,
             _ => false,
@@ -51,6 +52,9 @@ impl HandleRequest for Rusk {
             }
             ("driver", Some(contract_id), method) => {
                 Self::handle_data_driver(contract_id, method, &request.data)
+            }
+            ("contract_owner", Some(contract_id), _method) => {
+                self.get_contract_owner(&contract_id)
             }
             ("node", _, "provisioners") => self.get_provisioners(),
 
@@ -116,6 +120,22 @@ impl Rusk {
             method => anyhow::bail!("Unsupported datadriver method {method}"),
         };
         Ok(result)
+    }
+
+    fn get_contract_owner(
+        &self,
+        contract_id: &str,
+    ) -> anyhow::Result<ResponseData> {
+        let contract_id = ContractId::try_from(contract_id.to_string())
+            .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
+        match self.query_metadata(&contract_id) {
+            Ok(metadata) => {
+                let owner_str = hex::encode(metadata.owner);
+                let result = ResponseData::new(owner_str);
+                Ok(result)
+            }
+            Err(_e) => Err(anyhow::anyhow!("Contract owner not found")),
+        }
     }
 
     fn handle_contract_query(
