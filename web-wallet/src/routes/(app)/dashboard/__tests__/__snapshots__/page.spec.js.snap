@@ -136,14 +136,14 @@ exports[`Dashboard > should render a card when there is an error getting transac
         
         <a
           class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
-          href="migrate"
+          href="bridge"
           role="menuitem"
           tabindex="0"
         >
           <span
             class="dashboard-nav__item-label svelte-1opr8zc"
           >
-            Migrate
+            Bridge
           </span>
            
           <span
@@ -366,14 +366,14 @@ exports[`Dashboard > should render the dashboard page with the transactions afte
         
         <a
           class="dusk-anchor dusk-anchor--on-surface dashboard-nav__item"
-          href="migrate"
+          href="bridge"
           role="menuitem"
           tabindex="0"
         >
           <span
             class="dashboard-nav__item-label svelte-1opr8zc"
           >
-            Migrate
+            Bridge
           </span>
            
           <span
