@@ -29,7 +29,7 @@
       case "allocate":
         icons = [{ path: mdiSync }];
         break;
-      case "migrate":
+      case "bridge":
         icons = [{ path: mdiSwapHorizontal }];
         break;
       case "receive":
