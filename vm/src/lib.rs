@@ -19,12 +19,25 @@ pub use piecrust::{
     Session,
 };
 
+// todo: add pub use of this in piecrust/src/lib.rs line 132
+// remove this declaration
+/// Contract Metadata
+pub struct ContractMetadata {
+    /// Contract ID
+    pub contract_id: ContractId,
+    /// Owner
+    pub owner: Vec<u8>,
+}
+
+unsafe impl Send for ContractMetadata {}
+unsafe impl Sync for ContractMetadata {}
+
 use alloc::vec::Vec;
 use std::fmt::{self, Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::thread;
 
-use dusk_core::abi::{Metadata, Query};
+use dusk_core::abi::{ContractId, Metadata, Query};
 use piecrust::{SessionData, VM as PiecrustVM};
 
 use self::host_queries::{
