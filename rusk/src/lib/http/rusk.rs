@@ -6,9 +6,11 @@
 
 use super::*;
 
+use crate::BlsPublicKey;
 use anyhow::anyhow;
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::abi::ContractId;
+use dusk_core::signatures::bls::Signature;
 use dusk_core::stake::{StakeFundOwner, STAKE_CONTRACT};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_data_driver::ConvertibleContract;
@@ -58,11 +60,22 @@ impl HandleRequest for Rusk {
                 self.get_contract_owner(&contract_id)
             }
             ("upload_driver", Some(contract_id), _method) => {
-                let hash = request.header("hash").map(|v|v.to_string())
-                    .ok_or(anyhow::anyhow!("Payload hash missing in driver upload"))?;
-                let sign = request.header("sign").map(|v|v.to_string())
-                    .ok_or(anyhow::anyhow!("Signature missing in driver upload"))?;
-                self.upload_driver(&contract_id, hash, sign, request.data.as_bytes())
+                let hash = request
+                    .header("hash")
+                    .map(|v| v.to_string())
+                    .ok_or(anyhow::anyhow!(
+                        "Payload hash missing in driver upload"
+                    ))?;
+                let sign =
+                    request.header("sign").map(|v| v.to_string()).ok_or(
+                        anyhow::anyhow!("Signature missing in driver upload"),
+                    )?;
+                self.upload_driver(
+                    &contract_id,
+                    hash,
+                    sign,
+                    request.data.as_bytes(),
+                )
             }
             ("node", _, "provisioners") => self.get_provisioners(),
 
@@ -148,20 +161,38 @@ impl Rusk {
 
     fn upload_driver(
         &self,
-        contract_id: impl AsRef<str>,
-        _hash: impl AsRef<str>,
-        _sign: impl AsRef<str>,
+        contract_id: &str,
+        hash: impl AsRef<str>,
+        sign: impl AsRef<str>,
         _data: impl AsRef<[u8]>,
     ) -> anyhow::Result<ResponseData> {
-        let contract_id = ContractId::try_from(contract_id.as_ref().to_string())
+        let contract_id = ContractId::try_from(contract_id.to_string())
             .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
 
-        let _owner = match self.query_metadata(&contract_id) {
+        let owner = match self.query_metadata(&contract_id) {
             Ok(metadata) => metadata.owner,
             _ => return Err(anyhow::anyhow!("Contract owner not found")),
         };
 
         // check that owner's signature of hash is correct
+        let pk = match BlsPublicKey::from_slice(&owner) {
+            Ok(pk) => pk,
+            Err(_e) => return Err(anyhow::anyhow!("Incorrect signature")), /* todo: error */
+        };
+        let hash = hex::decode(hash.as_ref())?;
+        let sig_bytes = hex::decode(sign.as_ref())?;
+        let mut sig_a = [0u8; 48];
+        sig_a.copy_from_slice(&sig_bytes);
+        let signature = match Signature::from_bytes(&sig_a) {
+            Ok(pk) => pk,
+            Err(e) => return Err(anyhow::anyhow!("Incorrect signature: {e}")),
+        };
+        // pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature)
+        // -> bool {     pk.verify(&sig, &msg).is_ok()
+        // }
+        if !pk.verify(&signature, &hash).is_ok() {
+            return Err(anyhow::anyhow!("Signature incorrect"));
+        }
 
         // store data in a driver storage for contract id
         Ok(ResponseData::new("driver upload ok".to_string()))
