@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add support for `TransactionData::Blob`
 - Add `keccak256` host query function [#3774]
+- Add activaction height for host queries
 
 ## [1.3.0] - 2025-04-17
 

@@ -20,6 +20,7 @@ pub use piecrust::{
 };
 
 use alloc::vec::Vec;
+use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::path::{Path, PathBuf};
 use std::thread;
@@ -43,17 +44,23 @@ pub mod host_queries;
 /// executing smart contracts, and interfacing with host functions. It supports
 /// both persistent and ephemeral sessions for handling transactions, contract
 /// queries and contract deployments.
-pub struct VM(PiecrustVM);
+pub struct VM {
+    inner: PiecrustVM,
+    hq_activation: HashMap<String, u64>,
+}
 
 impl From<PiecrustVM> for VM {
     fn from(piecrust_vm: PiecrustVM) -> Self {
-        VM(piecrust_vm)
+        VM {
+            inner: piecrust_vm,
+            hq_activation: HashMap::new(),
+        }
     }
 }
 
 impl Debug for VM {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
+        self.inner.fmt(f)
     }
 }
 
@@ -111,6 +118,46 @@ impl VM {
         Ok(vm)
     }
 
+    /// Sets the activation height for a specific host query.
+    ///
+    /// This method associates a previously registered host query with a block
+    /// height at which it becomes active. Before this activation height,
+    /// the host query will be excluded from session execution.
+    ///
+    /// **Note:** The specified host query must already be registered in the
+    /// global host queries registry before calling this method.
+    ///
+    /// # Arguments
+    /// * `host_query` - The name of the host query to activate.
+    /// * `activation` - The block height at which the host query becomes
+    ///   active.
+    ///
+    /// # Panics
+    /// This method will panic if the provided `host_query` is not already
+    /// registered in the global host queries registry.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use dusk_vm::VM;
+    /// use dusk_core::abi::Query;
+    ///
+    /// let mut vm = VM::ephemeral().unwrap();
+    /// vm.with_hq_activation(Query::KECCAK256, 100);
+    /// ```
+    pub fn with_hq_activation<S: Into<String>>(
+        &mut self,
+        host_query: S,
+        activation: u64,
+    ) {
+        let host_query = host_query.into();
+        if self.inner.host_queries().get(&host_query).is_none() {
+            panic!(
+                "Host query '{host_query}' must be registered before setting activation"            
+            );
+        }
+        self.hq_activation.insert(host_query, activation);
+    }
+
     /// Creates a new session for transaction execution.
     ///
     /// This method initializes a session with a specific base state commit,
@@ -157,12 +204,22 @@ impl VM {
         chain_id: u8,
         block_height: u64,
     ) -> Result<Session, Error> {
-        self.0.session(
-            SessionData::builder()
-                .base(base)
-                .insert(Metadata::CHAIN_ID, chain_id)?
-                .insert(Metadata::BLOCK_HEIGHT, block_height)?,
-        )
+        let mut builder = SessionData::builder()
+            .base(base)
+            .insert(Metadata::CHAIN_ID, chain_id)?
+            .insert(Metadata::BLOCK_HEIGHT, block_height)?;
+        // If the block height is greater than 0, exclude host queries
+        // that are not yet activated.
+        // We don't want to exclude host queries for block height 0 because it's
+        // used for query sessions
+        if block_height > 0 {
+            for (host_query, &activation) in &self.hq_activation {
+                if block_height < activation {
+                    builder = builder.exclude_hq(host_query.clone());
+                }
+            }
+        }
+        self.inner.session(builder)
     }
 
     /// Initializes a session for setting up the genesis block.
@@ -188,7 +245,7 @@ impl VM {
     /// let genesis_session = vm.genesis_session(CHAIN_ID);
     /// ```
     pub fn genesis_session(&self, chain_id: u8) -> Session {
-        self.0
+        self.inner
             .session(
                 SessionData::builder()
                     .insert(Metadata::CHAIN_ID, chain_id)
@@ -209,7 +266,7 @@ impl VM {
     /// # Returns
     /// A vector of commits.
     pub fn commits(&self) -> Vec<[u8; 32]> {
-        self.0.commits()
+        self.inner.commits()
     }
 
     /// Deletes a specified commit from the VM.
@@ -217,7 +274,7 @@ impl VM {
     /// # Arguments
     /// * `commit` - The commit to be deleted.
     pub fn delete_commit(&self, root: [u8; 32]) -> Result<(), Error> {
-        self.0.delete_commit(root)
+        self.inner.delete_commit(root)
     }
 
     /// Finalizes a specified commit, applying its state changes permanently.
@@ -225,40 +282,41 @@ impl VM {
     /// # Arguments
     /// * `commit` - The commit to be finalized.
     pub fn finalize_commit(&self, root: [u8; 32]) -> Result<(), Error> {
-        self.0.finalize_commit(root)
+        self.inner.finalize_commit(root)
     }
 
     /// Returns the root directory of the VM.
     ///
-    /// This is either the directory passed in by using [`new`], or the
-    /// temporary directory created using [`ephemeral`].
+    /// This is either the directory passed in by using [`Self::new`], or the
+    /// temporary directory created using [`Self::ephemeral`].
     pub fn root_dir(&self) -> &Path {
-        self.0.root_dir()
+        self.inner.root_dir()
     }
 
     /// Returns a reference to the synchronization thread.
     pub fn sync_thread(&self) -> &thread::Thread {
-        self.0.sync_thread()
+        self.inner.sync_thread()
     }
 
     fn register_host_queries(&mut self) {
-        self.0.register_host_query(Query::HASH, host_hash);
-        self.0
+        self.inner.register_host_query(Query::HASH, host_hash);
+        self.inner
             .register_host_query(Query::POSEIDON_HASH, host_poseidon_hash);
-        self.0
+        self.inner
             .register_host_query(Query::VERIFY_PLONK, host_verify_plonk);
-        self.0.register_host_query(
+        self.inner.register_host_query(
             Query::VERIFY_GROTH16_BN254,
             host_verify_groth16_bn254,
         );
-        self.0
+        self.inner
             .register_host_query(Query::VERIFY_SCHNORR, host_verify_schnorr);
-        self.0
+        self.inner
             .register_host_query(Query::VERIFY_BLS, host_verify_bls);
-        self.0.register_host_query(
+        self.inner.register_host_query(
             Query::VERIFY_BLS_MULTISIG,
             host_verify_bls_multisig,
         );
-        self.0.register_host_query(Query::KECCAK256, host_keccak256);
+        self.inner
+            .register_host_query(Query::KECCAK256, host_keccak256);
     }
 }
