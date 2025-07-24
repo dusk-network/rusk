@@ -20,6 +20,9 @@ pub struct Config {
     ///
     /// This field may be deprecated after the feature rollout.
     pub with_public_sender: bool,
+
+    /// Enable the blob processing by the VM
+    pub blob_enable: bool,
 }
 
 impl Default for Config {
@@ -36,5 +39,6 @@ impl Config {
         min_deploy_points: 0,
         min_deploy_gas_price: 0,
         with_public_sender: false,
+        blob_enable: false,
     };
 }

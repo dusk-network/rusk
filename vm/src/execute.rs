@@ -78,6 +78,12 @@ pub fn execute(
         .blob_check(config.gas_per_blob)
         .map_err(|e| Error::Panic(e.legacy_to_string()))?;
 
+    if blob_min_charge.is_some() && !config.blob_enable {
+        return Err(Error::Panic(
+            "Blob processing is not enabled in the VM".into(),
+        ));
+    }
+
     if config.with_public_sender {
         let _ = session
             .set_meta(Metadata::PUBLIC_SENDER, tx.moonlight_sender().copied());

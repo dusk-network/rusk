@@ -134,12 +134,17 @@ impl Config {
             .feature(feature::FEATURE_ABI_PUBLIC_SENDER)
             .map(|activation| block_height >= activation)
             .unwrap_or_default();
+        let blob_enable = self
+            .feature(feature::FEATURE_BLOB)
+            .map(|activation| block_height >= activation)
+            .unwrap_or_default();
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
             min_deploy_points: self.min_deploy_points,
             min_deploy_gas_price: self.min_deployment_gas_price,
             with_public_sender,
+            blob_enable,
         }
     }
 
