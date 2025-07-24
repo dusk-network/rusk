@@ -92,6 +92,9 @@ pub trait VMExecution: Send + Sync + 'static {
     fn min_deployment_gas_price(&self) -> u64;
     fn min_gas_limit(&self) -> u64;
     fn min_deploy_points(&self) -> u64;
+
+    fn gas_per_blob(&self) -> u64;
+    fn blob_activation_height(&self) -> u64;
 }
 
 #[allow(clippy::large_enum_variant)]
