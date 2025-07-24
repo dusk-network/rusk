@@ -145,7 +145,7 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
 
         for tx in candidate.txs().iter() {
             // Validate blobs
-            validate_blobs(tx).map_err(|e| {
+            validate_blob_sidecar(tx).map_err(|e| {
                 OperationError::InvalidBlob(format!(
                     "Failed to validate blobs in transaction {}: {e}",
                     hex::encode(tx.id())
@@ -187,18 +187,15 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
     }
 }
 
-pub fn validate_blobs(tx: &Transaction) -> Result<(), BlobError> {
+/// Validates the blob sidecars of a transaction.
+///
+/// This function checks the following:
+/// - Each blob has a valid KZG proof.
+/// - Each blob's hash matches the commitment in the sidecar.
+///
+/// If the transaction is not a blob transaction, it returns `Ok(())`.
+pub fn validate_blob_sidecar(tx: &Transaction) -> Result<(), BlobError> {
     if let Some(blobs) = tx.inner.blob() {
-        // TODO: Move this to vm::blob_check to perform the same checks
-        // while executing a tx directly from within a Block
-        match blobs.len() {
-            0 => Err(BlobError::BlobEmpty),
-            n if n > 6 => Err(BlobError::BlobTooMany(n)),
-            _n => {
-                // TODO: Add checks for gas price and gas limit
-                Ok(())
-            }
-        }?;
         for blob in blobs {
             let sidecar = blob.data.as_ref().ok_or(BlobError::BlobMissing)?;
             let expected_hash =

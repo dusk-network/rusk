@@ -68,8 +68,15 @@ pub fn execute(
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
-    deploy_check(tx, config)?;
-    let blob_min_charge = blob_check(tx, config)?;
+    tx.deploy_check(
+        config.gas_per_deploy_byte,
+        config.min_deploy_gas_price,
+        config.min_deploy_points,
+    )
+    .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+    let blob_min_charge = tx
+        .blob_check(config.gas_per_blob)
+        .map_err(|e| Error::Panic(e.legacy_to_string()))?;
 
     if config.with_public_sender {
         let _ = session
@@ -94,8 +101,10 @@ pub fn execute(
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(session, tx, config, &mut receipt);
 
-    if blob_min_charge > 0 && receipt.gas_spent < blob_min_charge {
-        receipt.gas_spent = blob_min_charge;
+    if let Some(blob_min_charge) = blob_min_charge {
+        if receipt.gas_spent < blob_min_charge {
+            receipt.gas_spent = blob_min_charge;
+        }
     }
 
     // Ensure all gas is consumed if there's an error in the contract call
@@ -125,36 +134,6 @@ pub fn execute(
 fn clear_session(session: &mut Session, config: &Config) {
     if config.with_public_sender {
         let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
-    }
-}
-
-fn deploy_check(tx: &Transaction, config: &Config) -> Result<(), Error> {
-    if tx.deploy().is_some() {
-        let gas_per_deploy_byte = config.gas_per_deploy_byte;
-        let min_deploy_gas_price = config.min_deploy_gas_price;
-        let deploy_charge =
-            tx.deploy_charge(gas_per_deploy_byte, min_deploy_gas_price);
-
-        if tx.gas_price() < min_deploy_gas_price {
-            return Err(Error::Panic("gas price too low to deploy".into()));
-        }
-        if tx.gas_limit() < deploy_charge {
-            return Err(Error::Panic("not enough gas to deploy".into()));
-        }
-    }
-
-    Ok(())
-}
-
-fn blob_check(tx: &Transaction, config: &Config) -> Result<u64, Error> {
-    let min_charge = tx
-        .blob()
-        .map(|blobs| config.gas_per_blob * blobs.len() as u64)
-        .unwrap_or_default();
-    if tx.gas_limit() < min_charge {
-        Err(Error::Panic("not enough gas for blobs".into()))
-    } else {
-        Ok(min_charge)
     }
 }
 
