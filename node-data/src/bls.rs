@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::base64::Base64;
 use serde_with::serde_as;
 use sha2::{Digest, Sha256};
-use tracing::info;
+use tracing::{error, info};
 use zeroize::Zeroize;
 
 pub const PUBLIC_BLS_SIZE: usize = BlsPublicKey::SIZE;
@@ -200,11 +200,12 @@ fn read_from_file(
 
     if file_format_is_old {
         info!("Your consensus keys are in the old format. Migrating to the new format and saving the old file as {}.old", path.display());
-        migrate_file_to_new_format(&path, &pk, &sk, pwd).map_err(|e| {
-            anyhow::anyhow!(
-                "failed to migrate consensus keys to the new format: {e}"
-            )
-        })?;
+        let _ =
+            migrate_file_to_new_format(&path, &pk, &sk, pwd).inspect_err(|e| {
+                error!(
+                    "failed to migrate consensus keys to the new format: {e}"
+                );
+            });
     }
 
     Ok((pk, sk))
