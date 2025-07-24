@@ -8,11 +8,13 @@ mod events;
 mod rusk;
 mod vm;
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use dusk_core::{dusk, Dusk};
 
+use dusk_core::abi::ContractId;
 use dusk_vm::VM;
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
@@ -44,6 +46,7 @@ pub struct Rusk {
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
     #[cfg(feature = "archive")]
     pub archive: Archive,
+    pub(crate) driver_storage: Arc<RwLock<BTreeMap<ContractId, Vec<u8>>>>,
 }
 
 pub(crate) type Services =

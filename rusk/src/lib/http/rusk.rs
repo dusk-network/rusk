@@ -65,11 +65,15 @@ impl HandleRequest for Rusk {
                     .map(|v| v.to_string())
                     .ok_or(anyhow::anyhow!(
                         "Payload hash missing in driver upload"
-                    ))?.replace("\"", "");
-                let sign =
-                    request.header("sign").map(|v| v.to_string()).ok_or(
-                        anyhow::anyhow!("Signature missing in driver upload"),
-                    )?.replace("\"", "");
+                    ))?
+                    .replace("\"", "");
+                let sign = request
+                    .header("sign")
+                    .map(|v| v.to_string())
+                    .ok_or(anyhow::anyhow!(
+                        "Signature missing in driver upload"
+                    ))?
+                    .replace("\"", "");
                 self.upload_driver(
                     &contract_id,
                     hash,
@@ -164,8 +168,9 @@ impl Rusk {
         contract_id: &str,
         hash: impl AsRef<str>,
         sign: impl AsRef<str>,
-        _data: impl AsRef<[u8]>,
+        data: impl AsRef<[u8]>,
     ) -> anyhow::Result<ResponseData> {
+        const SIGNATURE_LENGTH: usize = 48;
         let contract_id = ContractId::try_from(contract_id.to_string())
             .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
 
@@ -181,20 +186,23 @@ impl Rusk {
         };
         let hash = hex::decode(hash.as_ref())?;
         let sig_bytes = hex::decode(sign.as_ref())?;
-        let mut sig_a = [0u8; 48];
+        if sig_bytes.len() < SIGNATURE_LENGTH {
+            return Err(anyhow::anyhow!("Incorrect signature"));
+        }
+        let mut sig_a = [0u8; SIGNATURE_LENGTH];
         sig_a.copy_from_slice(&sig_bytes);
         let signature = match Signature::from_bytes(&sig_a) {
             Ok(pk) => pk,
             Err(e) => return Err(anyhow::anyhow!("Incorrect signature: {e}")),
         };
-        // pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature)
-        // -> bool {     pk.verify(&sig, &msg).is_ok()
-        // }
         if !pk.verify(&signature, &hash).is_ok() {
             return Err(anyhow::anyhow!("Signature incorrect"));
         }
 
-        // store data in a driver storage for contract id
+        // insert driver code in the driver storage (addressed by the contract
+        // id)
+        let mut driver_storage = self.driver_storage.write();
+        driver_storage.insert(contract_id, data.as_ref().to_vec());
         Ok(ResponseData::new("driver upload ok".to_string()))
     }
 
