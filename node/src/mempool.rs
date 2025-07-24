@@ -280,19 +280,36 @@ impl MempoolSrv {
             let vm = vm.read().await;
 
             // Check deployment tx
-            let min_deployment_gas_price = vm.min_deployment_gas_price();
-            let gas_per_deploy_byte = vm.gas_per_deploy_byte();
-            let min_deploy_points = vm.min_deploy_points();
-            tx.inner.deploy_check(
-                gas_per_deploy_byte,
-                min_deployment_gas_price,
-                min_deploy_points,
-            )?;
+            if tx.inner.deploy().is_some() {
+                let min_deployment_gas_price = vm.min_deployment_gas_price();
+                let gas_per_deploy_byte = vm.gas_per_deploy_byte();
+                let min_deploy_points = vm.min_deploy_points();
+                tx.inner.deploy_check(
+                    gas_per_deploy_byte,
+                    min_deployment_gas_price,
+                    min_deploy_points,
+                )?;
+            }
 
             // Check blob tx
-            let gas_per_blob = vm.gas_per_blob();
-            tx.inner.blob_check(gas_per_blob)?;
-            dusk_consensus::validate_blob_sidecar(tx)?;
+            if tx.inner.blob().is_some() {
+                db.read()
+                    .await
+                    .view(|db| {
+                        db.block_label_by_height(vm.blob_activation_height())
+                    })
+                    .map_err(|e| {
+                        anyhow!("Cannot get blob activation height: {e}")
+                    })?
+                    .ok_or(anyhow!(
+                        "Blobs acceptance will start at block height: {}",
+                        vm.blob_activation_height()
+                    ))?;
+
+                let gas_per_blob = vm.gas_per_blob();
+                tx.inner.blob_check(gas_per_blob)?;
+                dusk_consensus::validate_blob_sidecar(tx)?;
+            }
 
             // Check global minimum gas limit
             let min_gas_limit = vm.min_gas_limit();
