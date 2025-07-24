@@ -46,6 +46,7 @@ rkyv = { workspace = true, features = ["size_32"] }
 bytecheck = { workspace = true }
 dirs = { workspace = true }
 blake3 = { workspace = true }
+sha3 = { workspace = true }
 dusk-transfer-contract-dd = { workspace = true }
 dusk-stake-contract-dd = { workspace = true }
 dusk-data-driver = {workspace = true}

@@ -19,6 +19,7 @@ use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
 use std::sync::mpsc;
 use std::thread;
+use sha3::{Digest, Sha3_256};
 
 use crate::node::Rusk;
 
@@ -197,6 +198,13 @@ impl Rusk {
         };
         if !pk.verify(&signature, &hash).is_ok() {
             return Err(anyhow::anyhow!("Signature incorrect"));
+        }
+        // verify hash
+        let mut hasher = Sha3_256::new();
+        hasher.update(data.as_ref());
+        let hashed_data = hasher.finalize();
+        if hashed_data.to_vec() != hash {
+            return Err(anyhow::anyhow!("Hash incorrect"));
         }
 
         // insert driver code in the driver storage (addressed by the contract
