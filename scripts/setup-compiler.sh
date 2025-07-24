@@ -35,8 +35,6 @@ if [ ! -d "$UNZIPPED_DIR" ]; then
     echo "Extracting compiler..."
     mkdir -p "$UNZIPPED_DIR"
     unzip "$ARTIFACT_PATH" -d "$UNZIPPED_DIR" >> /dev/null
-    # We don't require the source of the compiler itself
-    rm "$UNZIPPED_DIR/rustc-nightly-src.tar.gz"
 fi
 
 # Extract the tarballs, if they aren't already extracted
