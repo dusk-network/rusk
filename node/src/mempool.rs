@@ -15,6 +15,7 @@ use conf::{
     DEFAULT_DOWNLOAD_REDUNDANCY, DEFAULT_EXPIRY_TIME, DEFAULT_IDLE_INTERVAL,
 };
 use dusk_consensus::config::MAX_BLOCK_SIZE;
+use dusk_consensus::errors::BlobError;
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
 use node_data::ledger::{Header, SpendingId, Transaction};
@@ -49,6 +50,8 @@ pub enum TxAcceptanceError {
     BlobEmpty,
     #[error("Transaction has too many blobs: {0}")]
     BlobTooMany(usize),
+    #[error("Invalid blob: {0}")]
+    BlobInvalid(String),
     #[error("this transaction's spendId exists in the mempool")]
     SpendIdExistsInMempool,
     #[error("this transaction is invalid {0}")]
@@ -70,6 +73,17 @@ pub enum TxAcceptanceError {
 impl From<anyhow::Error> for TxAcceptanceError {
     fn from(err: anyhow::Error) -> Self {
         Self::Generic(err)
+    }
+}
+
+impl From<BlobError> for TxAcceptanceError {
+    fn from(err: BlobError) -> Self {
+        match err {
+            BlobError::BlobMissing => TxAcceptanceError::BlobMissing,
+            BlobError::BlobEmpty => TxAcceptanceError::BlobEmpty,
+            BlobError::BlobTooMany(n) => TxAcceptanceError::BlobTooMany(n),
+            BlobError::BlobInvalid(msg) => TxAcceptanceError::BlobInvalid(msg),
+        }
     }
 }
 
@@ -259,26 +273,8 @@ impl MempoolSrv {
             if tx.inner.gas_limit() < deploy_charge {
                 return Err(TxAcceptanceError::GasLimitTooLow(deploy_charge));
             }
-        } else if let Some(blobs) = tx.inner.blob() {
-            // TODO: Move this to vm::blob_check to perform the same checks
-            // while executing a tx directly from within a Block
-            match blobs.len() {
-                0 => Err(TxAcceptanceError::BlobEmpty),
-                n if n > 6 => Err(TxAcceptanceError::BlobTooMany(n)),
-                _n => {
-                    // TODO: Add checks for gas price and gas limit
-                    Ok(())
-                }
-            }?;
-            for blob in blobs {
-                match &blob.data {
-                    Some(_data) => {
-                        // TODO: Add checks for commitment and hash verification
-                        Ok(())
-                    }
-                    None => Err(TxAcceptanceError::BlobMissing),
-                }?;
-            }
+        } else if tx.inner.blob().is_some() {
+            dusk_consensus::validate_blobs(tx)?;
         } else {
             let vm = vm.read().await;
             let min_gas_limit = vm.min_gas_limit();

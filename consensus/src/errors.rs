@@ -83,6 +83,8 @@ pub enum OperationError {
     InvalidFaults(InvalidFault),
     #[error("Block creation failed: {0}")]
     BlockCreation(String),
+    #[error("Invalid blob: {0}")]
+    InvalidBlob(String),
 }
 
 #[derive(Debug, Error)]
@@ -234,4 +236,16 @@ impl From<HeaderError> for OperationError {
     fn from(value: HeaderError) -> Self {
         Self::InvalidHeader(value)
     }
+}
+
+#[derive(Debug, Error)]
+pub enum BlobError {
+    #[error("Transaction blob is missing data")]
+    BlobMissing,
+    #[error("No blobs provided")]
+    BlobEmpty,
+    #[error("Transaction has too many blobs: {0}")]
+    BlobTooMany(usize),
+    #[error("Invalid blob: {0}")]
+    BlobInvalid(String),
 }
