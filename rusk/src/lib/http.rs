@@ -6,6 +6,7 @@
 
 #[cfg(feature = "chain")]
 mod chain;
+mod driver;
 mod event;
 #[cfg(feature = "prover")]
 mod prover;
@@ -16,6 +17,7 @@ mod stream;
 pub(crate) use event::{
     DataType, ExecutionError, MessageResponse as EventResponse,
 };
+pub(crate) use driver::DriverExecutor;
 
 use tokio::task::JoinError;
 use tracing::{debug, info, warn};

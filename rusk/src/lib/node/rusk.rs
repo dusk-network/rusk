@@ -44,6 +44,7 @@ use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::node::{get_block_rewards, RuesEvent, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
+use crate::http::DriverExecutor;
 
 impl Rusk {
     pub fn new<P: AsRef<Path>>(
@@ -101,6 +102,7 @@ impl Rusk {
             #[cfg(feature = "archive")]
             archive,
             driver_storage: Arc::new(RwLock::new(BTreeMap::new())),
+            driver_executor: Arc::new(RwLock::new(DriverExecutor::new())),
         })
     }
 
