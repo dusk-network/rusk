@@ -23,7 +23,7 @@ use parking_lot::RwLock;
 use tokio::sync::broadcast;
 pub use vm::*;
 
-use crate::http::RuesEvent;
+use crate::http::{DriverExecutor, RuesEvent};
 pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
@@ -47,6 +47,7 @@ pub struct Rusk {
     #[cfg(feature = "archive")]
     pub archive: Archive,
     pub(crate) driver_storage: Arc<RwLock<BTreeMap<ContractId, Vec<u8>>>>,
+    pub(crate) driver_executor: Arc<RwLock<DriverExecutor>>,
 }
 
 pub(crate) type Services =
