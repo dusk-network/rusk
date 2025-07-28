@@ -6,8 +6,9 @@
 
 use std::sync::Arc;
 
+use dusk_core::transfer::data::BlobData;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block};
+use node_data::ledger::{to_str, Block, Transaction};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
     AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
@@ -18,7 +19,7 @@ use tracing::{debug, error, info, warn, Instrument};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
-use crate::errors::OperationError;
+use crate::errors::{BlobError, OperationError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::StepOutcome;
 use crate::operations::{Operations, StateRoot};
@@ -142,6 +143,16 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
             .validate_state_transition(prev_state, candidate, &cert_voters)
             .await?;
 
+        for tx in candidate.txs().iter() {
+            // Validate blobs
+            validate_blobs(tx).map_err(|e| {
+                OperationError::InvalidBlob(format!(
+                    "Failed to validate blobs in transaction {}: {e}",
+                    hex::encode(tx.id())
+                ))
+            })?;
+        }
+
         Ok(())
     }
 
@@ -174,6 +185,54 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
             inbound.try_send(msg);
         }
     }
+}
+
+pub fn validate_blobs(tx: &Transaction) -> Result<(), BlobError> {
+    if let Some(blobs) = tx.inner.blob() {
+        match blobs.len() {
+            0 => Err(BlobError::BlobEmpty),
+            n if n > 6 => Err(BlobError::BlobTooMany(n)),
+            _n => {
+                // TODO: Add checks for gas price and gas limit
+                Ok(())
+            }
+        }?;
+
+        for blob in blobs {
+            // Check sidecar is present
+            let sidecar = blob
+                .data
+                .as_ref()
+                .ok_or(BlobError::MissingSidecar(blob.hash))?;
+
+            // Check versioned hash
+            let expected_hash =
+                BlobData::hash_from_commitment(&sidecar.commitment);
+            if expected_hash != blob.hash {
+                return Err(BlobError::BlobInvalid(
+                    "Hash does not match commitment".into(),
+                ));
+            }
+
+            // Check ZKG proof
+            let settings = BlobData::eth_kzg_settings(None);
+            let valid_proof = BlobData::verify_blob_kzg_proof(
+                settings, sidecar,
+            )
+            .map_err(|e| {
+                BlobError::BlobInvalid(format!(
+                    "Cannot verify blob KZG proof: {e}"
+                ))
+            })?;
+            if !valid_proof {
+                return Err(BlobError::BlobInvalid(
+                    "KZG proof verification failed".into(),
+                ));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 pub fn build_validation_payload(
