@@ -14,10 +14,10 @@ mod prover;
 mod rusk;
 mod stream;
 
+pub(crate) use driver::DriverExecutor;
 pub(crate) use event::{
     DataType, ExecutionError, MessageResponse as EventResponse,
 };
-pub(crate) use driver::DriverExecutor;
 
 use tokio::task::JoinError;
 use tracing::{debug, info, warn};

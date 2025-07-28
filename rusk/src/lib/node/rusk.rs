@@ -42,9 +42,9 @@ use tracing::info;
 
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
+use crate::http::DriverExecutor;
 use crate::node::{get_block_rewards, RuesEvent, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
-use crate::http::DriverExecutor;
 
 impl Rusk {
     pub fn new<P: AsRef<Path>>(
