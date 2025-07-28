@@ -17,9 +17,9 @@ use dusk_data_driver::ConvertibleContract;
 use event::RequestData;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
+use sha3::{Digest, Sha3_256};
 use std::sync::mpsc;
 use std::thread;
-use sha3::{Digest, Sha3_256};
 
 use crate::node::Rusk;
 

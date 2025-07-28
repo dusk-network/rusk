@@ -6,26 +6,36 @@
 
 use std::collections::BTreeMap;
 
-use dusk_wasmtime::{Instance, Module, Store};
+use dusk_wasmtime::{Config, Engine, Instance, Module, Store};
 
 use dusk_core::abi::ContractId;
 
+fn config() -> Config {
+    let mut config = Config::new();
+    config.macos_use_mach_ports(false);
+    config
+}
+
 pub struct DriverExecutor {
-    store: Store::<()>,
-    instances: BTreeMap<ContractId, Instance>
+    store: Store<()>,
+    instances: BTreeMap<ContractId, Instance>,
 }
 
 impl DriverExecutor {
     pub fn new() -> Self {
-        let store = Store::<()>::default();
+        let config = config();
+        let engine = Engine::new(&config)
+            .expect("Wasmtime engine configuration should be valid");
+        let store = Store::<()>::new(&engine, ());
         let instances = BTreeMap::new();
-        Self {
-            store,
-            instances,
-        }
+        Self { store, instances }
     }
 
-    pub fn load_bytecode(&mut self, contract_id: &ContractId, bytecode: impl AsRef<[u8]>) -> anyhow::Result<()>{
+    pub fn load_bytecode(
+        &mut self,
+        contract_id: &ContractId,
+        bytecode: impl AsRef<[u8]>,
+    ) -> anyhow::Result<()> {
         let module = Module::new(self.store.engine(), bytecode.as_ref())?;
         let instance = Instance::new(&mut self.store, &module, &[])?;
         self.instances.insert(*contract_id, instance);
@@ -33,7 +43,7 @@ impl DriverExecutor {
     }
 
     pub fn exec() {
-        // let gcd = instance.get_typed_func::<(i32, i32), i32>(&mut store, "gcd")?;
-        // gcd.call(&mut store, (6, 27))?;
+        // let gcd = instance.get_typed_func::<(i32, i32), i32>(&mut store,
+        // "gcd")?; gcd.call(&mut store, (6, 27))?;
     }
 }
