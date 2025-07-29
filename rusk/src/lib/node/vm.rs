@@ -287,6 +287,14 @@ impl VMExecution for Rusk {
     fn min_deploy_points(&self) -> u64 {
         self.vm_config.min_deploy_points
     }
+
+    fn gas_per_blob(&self) -> u64 {
+        self.vm_config.gas_per_blob
+    }
+
+    fn blob_activation_height(&self) -> u64 {
+        self.vm_config.feature(FEATURE_BLOB).unwrap_or(u64::MAX)
+    }
 }
 
 fn has_unique_elements<T>(iter: T) -> bool
