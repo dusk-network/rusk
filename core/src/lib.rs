@@ -25,7 +25,7 @@ pub mod stake;
 pub mod transfer;
 
 mod error;
-pub use error::Error;
+pub use error::{Error, TxPreconditionError};
 
 mod dusk;
 pub use dusk::{dusk, from_dusk, Dusk, LUX};

@@ -22,6 +22,7 @@ use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::abi::ContractId;
+use crate::error::TxPreconditionError;
 use crate::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
@@ -429,6 +430,79 @@ impl Transaction {
         } else {
             0
         }
+    }
+
+    /// Returns the minimum gas charged for a blob transaction deployment.
+    /// If the transaction is not a blob transaction, it returns None.
+    #[must_use]
+    pub fn blob_charge(&self, gas_per_blob: u64) -> Option<u64> {
+        self.blob().map(|blobs| blobs.len() as u64 * gas_per_blob)
+    }
+
+    /// Check if the transaction is a deployment transaction and if it
+    /// meets the minimum requirements for gas price and gas limit.
+    ///
+    /// # Errors
+    /// Returns an error if the transaction is a deployment transaction and
+    /// the gas price is lower than the minimum required gas price or if the
+    /// gas limit is lower than the required deployment charge.
+    pub fn deploy_check(
+        &self,
+        gas_per_deploy_byte: u64,
+        min_deploy_gas_price: u64,
+        min_deploy_points: u64,
+    ) -> Result<(), TxPreconditionError> {
+        if self.deploy().is_some() {
+            let deploy_charge =
+                self.deploy_charge(gas_per_deploy_byte, min_deploy_points);
+
+            if self.gas_price() < min_deploy_gas_price {
+                return Err(TxPreconditionError::DeployLowPrice(
+                    min_deploy_gas_price,
+                ));
+            }
+            if self.gas_limit() < deploy_charge {
+                return Err(TxPreconditionError::DeployLowLimit(deploy_charge));
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Check if the transaction is a blob transaction and if it meets the
+    /// minimum requirements for gas limit.
+    ///
+    /// # Returns
+    /// - `Ok(Some(u64))` the minimum gas amount to charge if the transaction is
+    ///   a blob transaction.
+    /// - `Ok(None)` if the transaction is not a blob transaction.
+    /// - `Err(TxPreconditionError)` in case of an error.
+    ///
+    /// # Errors
+    /// Returns an error if the transaction is a blob transaction and:
+    /// - the gas limit is lower than the minimum charge.
+    /// - the number of blobs is zero or greater than 6.
+    pub fn blob_check(
+        &self,
+        gas_per_blob: u64,
+    ) -> Result<Option<u64>, TxPreconditionError> {
+        if let Some(blobs) = self.blob() {
+            match blobs.len() {
+                0 => Err(TxPreconditionError::BlobEmpty),
+                n if n > 6 => Err(TxPreconditionError::BlobTooMany(n)),
+                _ => Ok(()),
+            }?;
+        } else {
+            return Ok(None);
+        }
+
+        let min_charge = self.blob_charge(gas_per_blob);
+        if let Some(min_charge) = min_charge {
+            if self.gas_limit() < min_charge {
+                return Err(TxPreconditionError::BlobLowLimit(min_charge));
+            }
+        }
+        Ok(min_charge)
     }
 }
 
