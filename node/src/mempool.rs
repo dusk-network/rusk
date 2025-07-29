@@ -16,6 +16,7 @@ use conf::{
 };
 use dusk_consensus::config::MAX_BLOCK_SIZE;
 use dusk_consensus::errors::BlobError;
+use dusk_core::TxPreconditionError;
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
 use node_data::ledger::{Header, SpendingId, Transaction};
@@ -85,6 +86,26 @@ impl From<BlobError> for TxAcceptanceError {
             BlobError::BlobEmpty => TxAcceptanceError::BlobEmpty,
             BlobError::BlobTooMany(n) => TxAcceptanceError::BlobTooMany(n),
             BlobError::BlobInvalid(msg) => TxAcceptanceError::BlobInvalid(msg),
+        }
+    }
+}
+
+impl From<TxPreconditionError> for TxAcceptanceError {
+    fn from(err: TxPreconditionError) -> Self {
+        match err {
+            TxPreconditionError::BlobLowLimit(min) => {
+                TxAcceptanceError::GasLimitTooLow(min)
+            }
+            TxPreconditionError::DeployLowLimit(min) => {
+                TxAcceptanceError::GasLimitTooLow(min)
+            }
+            TxPreconditionError::DeployLowPrice(min) => {
+                TxAcceptanceError::GasPriceTooLow(min)
+            }
+            TxPreconditionError::BlobEmpty => TxAcceptanceError::BlobEmpty,
+            TxPreconditionError::BlobTooMany(n) => {
+                TxAcceptanceError::BlobTooMany(n)
+            }
         }
     }
 }
@@ -258,27 +279,43 @@ impl MempoolSrv {
             return Err(TxAcceptanceError::GasPriceTooLow(1));
         }
 
-        if tx.inner.deploy().is_some() {
-            // TODO: Remove this duplicated code in favor of vm::deploy_check
+        {
+            // Mimic the VM's additional checks for transactions
             let vm = vm.read().await;
-            let min_deployment_gas_price = vm.min_deployment_gas_price();
-            if tx.gas_price() < min_deployment_gas_price {
-                return Err(TxAcceptanceError::GasPriceTooLow(
+
+            // Check deployment tx
+            if tx.inner.deploy().is_some() {
+                let min_deployment_gas_price = vm.min_deployment_gas_price();
+                let gas_per_deploy_byte = vm.gas_per_deploy_byte();
+                let min_deploy_points = vm.min_deploy_points();
+                tx.inner.deploy_check(
+                    gas_per_deploy_byte,
                     min_deployment_gas_price,
-                ));
+                    min_deploy_points,
+                )?;
             }
 
-            let gas_per_deploy_byte = vm.gas_per_deploy_byte();
-            let deploy_charge = tx
-                .inner
-                .deploy_charge(gas_per_deploy_byte, vm.min_deploy_points());
-            if tx.inner.gas_limit() < deploy_charge {
-                return Err(TxAcceptanceError::GasLimitTooLow(deploy_charge));
+            // Check blob tx
+            if tx.inner.blob().is_some() {
+                db.read()
+                    .await
+                    .view(|db| {
+                        db.block_label_by_height(vm.blob_activation_height())
+                    })
+                    .map_err(|e| {
+                        anyhow!("Cannot get blob activation height: {e}")
+                    })?
+                    .ok_or(anyhow!(
+                        "Blobs acceptance will start at block height: {}",
+                        vm.blob_activation_height()
+                    ))?;
+
+                let gas_per_blob = vm.gas_per_blob();
+                tx.inner.blob_check(gas_per_blob)?;
+                dusk_consensus::validate_blob_sidecars(tx)?;
             }
-        } else if tx.inner.blob().is_some() {
-            dusk_consensus::validate_blobs(tx)?;
-        } else {
-            let vm = vm.read().await;
+
+            // Check global minimum gas limit
             let min_gas_limit = vm.min_gas_limit();
             if tx.inner.gas_limit() < min_gas_limit {
                 return Err(TxAcceptanceError::GasLimitTooLow(min_gas_limit));
