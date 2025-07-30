@@ -68,7 +68,21 @@ pub fn execute(
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
-    deploy_check(tx, config)?;
+    tx.deploy_check(
+        config.gas_per_deploy_byte,
+        config.min_deploy_gas_price,
+        config.min_deploy_points,
+    )
+    .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+    let blob_min_charge = tx
+        .blob_check(config.gas_per_blob)
+        .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+
+    if blob_min_charge.is_some() && !config.with_blob {
+        return Err(Error::Panic(
+            "Blob processing is not enabled in the VM".into(),
+        ));
+    }
 
     if config.with_public_sender {
         let _ = session
@@ -92,6 +106,14 @@ pub fn execute(
 
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(session, tx, config, &mut receipt);
+
+    // If this is a blob transaction, ensure the gas spent is at least the
+    // minimum charge.
+    if let Some(blob_min_charge) = blob_min_charge {
+        if receipt.gas_spent < blob_min_charge {
+            receipt.gas_spent = blob_min_charge;
+        }
+    }
 
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
@@ -121,24 +143,6 @@ fn clear_session(session: &mut Session, config: &Config) {
     if config.with_public_sender {
         let _ = session.remove_meta(Metadata::PUBLIC_SENDER);
     }
-}
-
-fn deploy_check(tx: &Transaction, config: &Config) -> Result<(), Error> {
-    if tx.deploy().is_some() {
-        let gas_per_deploy_byte = config.gas_per_deploy_byte;
-        let min_deploy_gas_price = config.min_deploy_gas_price;
-        let deploy_charge =
-            tx.deploy_charge(gas_per_deploy_byte, min_deploy_gas_price);
-
-        if tx.gas_price() < min_deploy_gas_price {
-            return Err(Error::Panic("gas price too low to deploy".into()));
-        }
-        if tx.gas_limit() < deploy_charge {
-            return Err(Error::Panic("not enough gas to deploy".into()));
-        }
-    }
-
-    Ok(())
 }
 
 // Contract deployment will fail and charge full gas limit in the

@@ -6,7 +6,7 @@
 
 //! Error-type for dusk-core.
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use core::fmt;
 
 /// The dusk-core error type.
@@ -74,5 +74,49 @@ impl From<dusk_bytes::Error> for Error {
                 Self::InvalidChar(ch, index)
             }
         }
+    }
+}
+
+/// Error type for checking transaction conditions.
+///
+/// This error is used to indicate that a transaction does not meet the
+/// minimum requirements for deployment or blob gas charges.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TxPreconditionError {
+    /// The gas price is too low to deploy a transaction.
+    DeployLowPrice(u64),
+    /// The gas limit is too low to deploy a transaction.
+    DeployLowLimit(u64),
+    /// The gas limit is too low to cover the blob gas charges.
+    BlobLowLimit(u64),
+    /// No blob attached to the transaction.
+    BlobEmpty,
+    /// Too many blobs attached to the transaction.
+    BlobTooMany(usize),
+}
+
+impl TxPreconditionError {
+    /// Return the implementation of toString to be used inside the VM.
+    ///
+    /// Replacing this with the standard display will break the state root
+    /// backward compatibility
+    #[must_use]
+    pub fn legacy_to_string(&self) -> String {
+        match self {
+            TxPreconditionError::DeployLowPrice(_) => {
+                "gas price too low to deploy"
+            }
+            TxPreconditionError::DeployLowLimit(_) => {
+                "not enough gas to deploy"
+            }
+            TxPreconditionError::BlobLowLimit(_) => "not enough gas for blobs",
+            TxPreconditionError::BlobEmpty => {
+                "no blob attached to the transaction"
+            }
+            TxPreconditionError::BlobTooMany(_) => {
+                "too many blobs in the transaction"
+            }
+        }
+        .to_string()
     }
 }

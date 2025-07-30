@@ -13,6 +13,13 @@ use serde::{Deserialize, Serialize};
 const fn default_gas_per_deploy_byte() -> u64 {
     100
 }
+
+// TODO: This is a temporary value. Change this value to the tuned one as soon
+// as it's rolled out.
+const fn default_gas_per_blob() -> u64 {
+    0
+}
+
 const fn default_min_deploy_points() -> u64 {
     5_000_000
 }
@@ -26,6 +33,10 @@ const fn default_block_gas_limit() -> u64 {
 /// Configuration for the execution of a transaction.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
+    /// The amount of gas points charged for each blob in a transaction
+    #[serde(default = "default_gas_per_blob")]
+    pub gas_per_blob: u64,
+
     /// The amount of gas points charged for each byte in a contract-deployment
     /// bytecode.
     #[serde(default = "default_gas_per_deploy_byte")]
@@ -60,11 +71,13 @@ impl Default for Config {
 
 pub(crate) mod feature {
     pub const FEATURE_ABI_PUBLIC_SENDER: &str = "ABI_PUBLIC_SENDER";
+    pub const FEATURE_BLOB: &str = "BLOB";
 }
 
 impl Config {
     pub fn new() -> Self {
         Self {
+            gas_per_blob: default_gas_per_blob(),
             gas_per_deploy_byte: default_gas_per_deploy_byte(),
             min_deployment_gas_price: default_min_deployment_gas_price(),
             min_deploy_points: default_min_deploy_points(),
@@ -123,11 +136,17 @@ impl Config {
             .feature(feature::FEATURE_ABI_PUBLIC_SENDER)
             .map(|activation| block_height >= activation)
             .unwrap_or_default();
+        let with_blob = self
+            .feature(feature::FEATURE_BLOB)
+            .map(|activation| block_height >= activation)
+            .unwrap_or_default();
         ExecutionConfig {
+            gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
             min_deploy_points: self.min_deploy_points,
             min_deploy_gas_price: self.min_deployment_gas_price,
             with_public_sender,
+            with_blob,
         }
     }
 
