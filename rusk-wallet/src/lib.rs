@@ -28,6 +28,7 @@ pub mod currency;
 pub mod dat;
 pub mod gas;
 
+pub use dusk_core::stake::EPOCH;
 pub use error::Error;
 pub use gql::{BlockData, BlockTransaction, GraphQL};
 pub use rues::HttpClient as RuesHttpClient;
@@ -43,8 +44,6 @@ pub const MAX_FUNCTION_NAME_SIZE: usize = 64;
 pub const MAX_CONVERTIBLE: Dusk = Dusk::MAX;
 /// The smallest amount of Dusk that is possible to convert
 pub const MIN_CONVERTIBLE: Dusk = Dusk::new(1);
-/// The length of an epoch in blocks
-pub const EPOCH: u64 = 2160;
 /// Max addresses the wallet can store
 pub const MAX_PROFILES: usize = get_max_profiles();
 /// Size in bytes of the IV used to encrypt wallet data
