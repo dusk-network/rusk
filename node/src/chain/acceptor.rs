@@ -888,6 +888,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             {
                 let legacy = blk.header().height < self.finality_activation;
 
+                let new_final_block_heights: Vec<_> =
+                    new_finals.keys().cloned().collect();
+
                 let (_, new_final_state) =
                     new_finals.pop_last().expect("new_finals to be not empty");
                 let new_final_state_root = new_final_state.state_root;
@@ -904,6 +907,22 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 };
 
                 vm.finalize_state(new_final_state_root, old_final_state_roots)?;
+
+                /// The initial finalization period in blocks, equivalent to at
+                /// least 7 days: max 6 blocks per min * 60 * 24 * 7
+                pub const INITIAL_FINALIZATION_PERIOD: u64 = 60_480u64;
+
+                let _ = self.db.read().await.update(|db| {
+                    for heigth in new_final_block_heights {
+                        let block_to_delete = heigth - INITIAL_FINALIZATION_PERIOD;
+                        let _ = db.delete_blobs_by_height(block_to_delete).inspect_err(|e| {
+                            warn!("Error while deleting blobs for finalized block {block_to_delete}: {e}");
+                        });
+                    }
+                    Ok(())
+                }).inspect_err(|e| {
+                    warn!("Error while deleting blobs while accepting block {}: {e}", blk.header().height);
+                });
             }
 
             anyhow::Ok((label, finalized))
