@@ -304,6 +304,15 @@ impl Transaction {
         }
     }
 
+    /// Returns the Blob used with the transaction, if any.
+    #[must_use]
+    pub fn blob_mut(&mut self) -> Option<&mut Vec<BlobData>> {
+        match self {
+            Self::Phoenix(tx) => tx.blob_mut(),
+            Self::Moonlight(tx) => tx.blob_mut(),
+        }
+    }
+
     /// Extracts and removes the blob sidecar from the transaction, if any, and
     /// returns it as a vector of tuples containing the blob hash and the
     /// corresponding blob sidecar.
