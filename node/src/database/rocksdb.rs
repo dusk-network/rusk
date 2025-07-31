@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::{io, vec};
 
 use anyhow::Result;
+use dusk_core::transfer::data::BlobSidecar;
 use node_data::ledger::{
     Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
 };
@@ -572,7 +573,24 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
                 let mut txs = vec![];
                 for buf in txs_buffers {
                     let buf = buf?.unwrap();
-                    let tx = SpentTransaction::read(&mut &buf[..])?;
+                    let mut tx = SpentTransaction::read(&mut &buf[..])?;
+                    if let Some(blobs) = tx.inner.inner.blob_mut() {
+                        for blob in blobs {
+                            // Retrieve blob data from the ledger
+                            let sidecar = self
+                                .blob_data_by_hash(&blob.hash)?
+                                .map(|bytes| {
+                                    BlobSidecar::from_buf(&mut &bytes[..])
+                                })
+                                .transpose()
+                                .map_err(|e| {
+                                    anyhow::anyhow!(
+                                        "Failed to parse blob sidecar: {e:?}"
+                                    )
+                                })?;
+                            blob.data = sidecar;
+                        }
+                    }
                     txs.push(tx.inner);
                 }
 
