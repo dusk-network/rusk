@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `mempool_nonce` field to `/on/account/status` response
 - Add `status` to GQL block fields
 - Add activaction height for host queries
+- Add blob config section
 
 ### Changed
 

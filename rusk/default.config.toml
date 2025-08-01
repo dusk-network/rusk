@@ -23,6 +23,13 @@
 #consensus_keys_path = '/home/user/.dusk/rusk/consensus.keys'
 min_gas_limit = 150000
 
+#[blob]
+# In no setting is provided, it fallback to default value according to feature flag:
+# - `archive`: 0 (never expire)
+# - !`archive`: 60480 block (28 epochs -> 7 days)
+
+# expire_after = <#blocks>
+
 # Note: changing the vm settings is equivalent to forking the chain.
 [vm]
 generation_timeout = '3s'

@@ -5,6 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #[cfg(feature = "chain")]
+pub mod blob;
+#[cfg(feature = "chain")]
 pub mod chain;
 #[cfg(feature = "chain")]
 pub mod databroker;
@@ -22,8 +24,8 @@ use std::str::FromStr;
 
 #[cfg(feature = "chain")]
 use self::{
-    chain::ChainConfig, databroker::DataBrokerConfig, kadcast::KadcastConfig,
-    mempool::MempoolConfig, telemetry::TelemetryConfig,
+    blob::BlobConfig, chain::ChainConfig, databroker::DataBrokerConfig,
+    kadcast::KadcastConfig, mempool::MempoolConfig, telemetry::TelemetryConfig,
 };
 
 #[cfg(feature = "chain")]
@@ -67,6 +69,10 @@ pub(crate) struct Config {
     #[cfg(feature = "chain")]
     #[serde(default = "MempoolConfig::default")]
     pub(crate) mempool: MempoolConfig,
+
+    #[cfg(feature = "chain")]
+    #[serde(default = "BlobConfig::default")]
+    pub(crate) blob: BlobConfig,
 }
 
 /// Default log_level.
