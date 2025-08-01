@@ -103,6 +103,7 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     dusk_key: bls::PublicKey,
 
     finality_activation: u64,
+    blob_expire_after: u64,
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
@@ -206,6 +207,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         event_sender: Sender<Event>,
         dusk_key: bls::PublicKey,
         finality_activation: u64,
+        blob_expire_after: u64,
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
         let tip_state_hash = tip.inner().header().state_hash;
@@ -235,6 +237,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             event_sender,
             dusk_key,
             finality_activation,
+            blob_expire_after,
         };
 
         // NB. After restart, state_root returned by VM is always the last
@@ -888,7 +891,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             {
                 let legacy = blk.header().height < self.finality_activation;
 
-                let new_final_block_heights: Vec<_> =
+                let new_final_heights: Vec<_> =
                     new_finals.keys().cloned().collect();
 
                 let (_, new_final_state) =
@@ -908,21 +911,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 vm.finalize_state(new_final_state_root, old_final_state_roots)?;
 
-                /// The initial finalization period in blocks, equivalent to at
-                /// least 7 days: max 6 blocks per min * 60 * 24 * 7
-                pub const INITIAL_FINALIZATION_PERIOD: u64 = 60_480u64;
-
-                let _ = self.db.read().await.update(|db| {
-                    for heigth in new_final_block_heights {
-                        let block_to_delete = heigth - INITIAL_FINALIZATION_PERIOD;
-                        let _ = db.delete_blobs_by_height(block_to_delete).inspect_err(|e| {
-                            warn!("Error while deleting blobs for finalized block {block_to_delete}: {e}");
-                        });
-                    }
-                    Ok(())
-                }).inspect_err(|e| {
-                    warn!("Error while deleting blobs while accepting block {}: {e}", blk.header().height);
-                });
+                if self.blob_expire_after > 0 {
+                    let _ = self.db.read().await.update(|db| {
+                        for height in new_final_heights {
+                            if height < self.blob_expire_after {
+                                // Skip the check for first finalized blocks and prevent underflow error
+                                continue;
+                            }
+                            let expired_block = height - self.blob_expire_after;
+                            let _ = db.delete_blobs_by_height(expired_block).inspect_err(|e| {
+                                warn!("Error while deleting blobs for finalized block {expired_block}: {e}");
+                            });
+                        }
+                        Ok(())
+                    }).inspect_err(|e| {
+                        warn!("Error while deleting blobs while accepting block {}: {e}", blk.header().height);
+                    });
+                }
             }
 
             anyhow::Ok((label, finalized))
