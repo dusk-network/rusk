@@ -892,12 +892,12 @@ pub unsafe extern "C" fn moonlight_stake_reward(
 }
 
 #[no_mangle]
-pub unsafe fn create_tx_data(
+pub unsafe extern "C" fn create_tx_data(
     fn_name_len: *const u32,
     fn_name_buf: *mut u8,
     fn_args_len: *const u32,
     fn_args_buf: *mut u8,
-    contract_id: [u8; 32],
+    contract_id_buf: *mut u8,
     memo_len: *const u32,
     memo_buf: *mut u8,
     rkyv_ptr: *mut *mut u8,
@@ -915,6 +915,9 @@ pub unsafe fn create_tx_data(
             *fn_args_len as usize,
             *fn_args_len as usize,
         );
+
+        let mut contract_id = [0u8; 32];
+        ptr::copy_nonoverlapping(contract_id_buf, contract_id.as_mut_ptr(), 32);
         let contract = ContractId::from_bytes(contract_id);
 
         let contract_call = ContractCall {
@@ -922,6 +925,8 @@ pub unsafe fn create_tx_data(
             fn_args,
             contract,
         };
+        println!("call");
+
         TransactionData::Call(contract_call)
     } else {
         let memo = alloc::vec::Vec::from_raw_parts(
@@ -929,6 +934,8 @@ pub unsafe fn create_tx_data(
             *memo_len as usize,
             *memo_len as usize,
         );
+        println!("memo");
+
         TransactionData::Memo(memo)
     };
     let bytes = match rkyv::to_bytes::<_, 4096>(&tx_data) {
