@@ -47,7 +47,18 @@ pub struct RuskNodeBuilder {
     http: Option<HttpServerConfig>,
 
     command_revert: bool,
+    blob_expire_after: Option<u64>,
 }
+
+#[cfg(not(feature = "archive"))]
+/// The default blob expiration period in blocks, equivalent to at least 7 days:
+/// max 6 blocks per min * 60 * 24 * 7
+pub const DEFAULT_BLOB_EXPIRE_AFTER: u64 = 60_480u64;
+
+#[cfg(feature = "archive")]
+/// The default blob expiration period in blocks for archive nodes is 0, meaning
+/// that blobs never expire
+pub const DEFAULT_BLOB_EXPIRE_AFTER: u64 = 0;
 
 const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
 impl RuskNodeBuilder {
@@ -189,6 +200,14 @@ impl RuskNodeBuilder {
         self
     }
 
+    pub fn with_blob_expire_after(
+        mut self,
+        blob_expire_after: Option<u64>,
+    ) -> Self {
+        self.blob_expire_after = blob_expire_after;
+        self
+    }
+
     /// Build the RuskNode and corresponding services
     pub async fn build_and_run(self) -> anyhow::Result<()> {
         let channel_cap = self
@@ -207,6 +226,9 @@ impl RuskNodeBuilder {
             .vm_config
             .feature(crate::node::FEATURE_ABI_PUBLIC_SENDER)
             .unwrap_or(u64::MAX);
+
+        let blob_expire_after =
+            self.blob_expire_after.unwrap_or(DEFAULT_BLOB_EXPIRE_AFTER);
 
         let rusk = Rusk::new(
             self.state_dir,
@@ -241,6 +263,7 @@ impl RuskNodeBuilder {
             self.genesis_timestamp,
             *crate::DUSK_CONSENSUS_KEY,
             finality_activation,
+            blob_expire_after,
             #[cfg(feature = "archive")]
             archive.clone(),
         );
