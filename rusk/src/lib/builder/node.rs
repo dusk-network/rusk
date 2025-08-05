@@ -51,9 +51,9 @@ pub struct RuskNodeBuilder {
 }
 
 #[cfg(not(feature = "archive"))]
-/// The default blob expiration period in blocks, equivalent to at least 7 days:
-/// max 6 blocks per min * 60 * 24 * 7
-pub const DEFAULT_BLOB_EXPIRE_AFTER: u64 = 60_480u64;
+/// The default blob expiration period in blocks, equivalent to at least 10
+/// days: max 6 blocks per min * 60 * 24 * 10
+pub const DEFAULT_BLOB_EXPIRE_AFTER: u64 = 86_400u64;
 
 #[cfg(feature = "archive")]
 /// The default blob expiration period in blocks for archive nodes is 0, meaning
