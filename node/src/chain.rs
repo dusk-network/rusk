@@ -62,6 +62,7 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     genesis_timestamp: u64,
     dusk_key: BlsPublicKey,
     finality_activation: u64,
+    blob_expire_after: u64,
     #[cfg(feature = "archive")]
     archive: Archive,
 }
@@ -96,6 +97,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             self.event_sender.clone(),
             self.dusk_key,
             self.finality_activation,
+            self.blob_expire_after,
         )
         .await?;
 
@@ -249,6 +251,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         keys_path: String,
         max_inbound_size: usize,
@@ -256,6 +259,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         genesis_timestamp: u64,
         dusk_key: BlsPublicKey,
         finality_activation: u64,
+        blob_expire_after: u64,
         #[cfg(feature = "archive")] archive: Archive,
     ) -> Self {
         info!(
@@ -272,6 +276,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             genesis_timestamp,
             dusk_key,
             finality_activation,
+            blob_expire_after,
             #[cfg(feature = "archive")]
             archive,
         }

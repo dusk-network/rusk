@@ -17,7 +17,7 @@ const fn default_gas_per_deploy_byte() -> u64 {
 // TODO: This is a temporary value. Change this value to the tuned one as soon
 // as it's rolled out.
 const fn default_gas_per_blob() -> u64 {
-    0
+    1_000_000
 }
 
 const fn default_min_deploy_points() -> u64 {

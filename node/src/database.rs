@@ -78,6 +78,16 @@ pub trait Ledger {
 
     fn store_blob_data(&self, hash: &[u8; 32], data: Vec<u8>) -> Result<()>;
     fn blob_data_by_hash(&self, hash: &[u8; 32]) -> Result<Option<Vec<u8>>>;
+    fn store_blobs_height(
+        &self,
+        block_height: u64,
+        blob_hashes: &[[u8; 32]],
+    ) -> Result<()>;
+    fn blobs_by_height(
+        &self,
+        block_height: u64,
+    ) -> Result<Option<Vec<[u8; 32]>>>;
+    fn delete_blobs_by_height(&self, block_height: u64) -> Result<()>;
 
     fn block_exists(&self, hash: &[u8]) -> Result<bool>;
 
