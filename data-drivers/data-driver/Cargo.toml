@@ -14,3 +14,6 @@ bytecheck = { workspace = true }
 # serde support dependencies
 serde = { workspace = true }
 serde_json = { workspace = true }
+
+[features]
+wasm-export = []

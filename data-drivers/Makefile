@@ -9,6 +9,8 @@ help: ## Display this help screen
 
 test: $(SUBDIRS) ## Run all the tests in the subfolder
 
+wasm-pack: $(SUBDIRS) ## Build the data-driver WASM files
+
 wasm: $(SUBDIRS) ## Build the data-driver WASM files
 
 clippy: $(SUBDIRS) ## Run clippy
