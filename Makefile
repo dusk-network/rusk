@@ -20,6 +20,7 @@ wasm: setup-compiler ## Generate the WASM for all the contracts and wallet-core
 
 data-drivers: ## Build the data-driver WASM files
 	$(MAKE) -C ./data-drivers wasm
+	$(MAKE) -C ./data-drivers wasm-pack
 
 contracts: setup-compiler ## Execute the test for all contracts
 	$(MAKE) -j1 -C ./contracts all
