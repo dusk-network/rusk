@@ -38,8 +38,8 @@
     modal,
     wagmiConfig,
     walletDisconnect,
-  } from "$lib/migration/walletConnection";
-  import { getBalanceOfCoin } from "$lib/migration/migration";
+  } from "$lib/web3/walletConnection";
+  import { getBalanceOfCoin } from "$lib/web3/migration";
 
   /** @type {string} */
   export let migrationNetwork;
