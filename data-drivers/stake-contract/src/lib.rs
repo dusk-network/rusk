@@ -16,7 +16,7 @@
 
 extern crate alloc;
 
-#[cfg(target_family = "wasm")]
+#[cfg(all(target_family = "wasm", feature = "wasm-bindgen"))]
 mod bindgen;
 
 use alloc::format;
@@ -136,3 +136,6 @@ impl ConvertibleContract for ContractDriver {
         todo!()
     }
 }
+
+#[cfg(all(target_family = "wasm", feature = "ffi"))]
+dusk_data_driver::generate_wasm_entrypoint!(ContractDriver);

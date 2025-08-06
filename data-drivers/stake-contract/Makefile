@@ -1,3 +1,16 @@
+CRATE_NAME_DASHED := $(shell cargo metadata --no-deps --format-version 1 --manifest-path Cargo.toml | jq -r '.packages[] | select(.manifest_path == "$(realpath Cargo.toml)") | .name')
+CRATE_NAME := $(subst -,_,$(CRATE_NAME_DASHED))
+
+# Detect workspace root so we know where target/ actually lives
+WORKSPACE_ROOT := $(shell cargo metadata --no-deps --format-version 1 --manifest-path Cargo.toml | jq -r '.workspace_root')
+
+WASM_OPT ?= $(shell command -v wasm-opt 2>/dev/null)
+WASM_TARGET = wasm32-unknown-unknown
+WASM_RELEASE_DIR = $(WORKSPACE_ROOT)/target/$(WASM_TARGET)/release
+WASM_FILE = $(WASM_RELEASE_DIR)/$(CRATE_NAME).wasm
+WASM_OPT_FILE = $(WASM_RELEASE_DIR)/$(CRATE_NAME)_opt.wasm
+
+
 all: ## Build the transfer contract
 	@cargo build --release
 
@@ -13,12 +26,26 @@ check: ## Run the Rust check on the project features
 test: ## Perform the contract tests defined in the host module
 	@cargo test --release
 
+
+wasm-pack: ## Build the data-driver WASM files with wasm-pack
+	@wasm-pack build --target nodejs --release --features wasm-bindgen
+
 wasm: ## Build the data-driver WASM files
-	@wasm-pack build --target nodejs --release
+	@if [ -z "$(WASM_OPT)" ]; then \
+		echo "wasm-opt not found. Installing via cargo-binstall with system toolchain..."; \
+		cargo +stable install -f wasm-opt; \
+		WASM_OPT=$$(command -v wasm-opt); \
+	fi
+	@echo "Building WASM for crate: $(CRATE_NAME)"
+	@cargo build --release --features ffi --target $(WASM_TARGET) --manifest-path Cargo.toml
+	@echo "Optimizing with wasm-opt..."
+	@wasm-opt -Oz --strip-debug -o $(WASM_OPT_FILE) $(WASM_FILE)
+	@echo "WASM build complete: $(WASM_OPT_FILE)"
 			
 clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings
-	@cargo clippy --release --target wasm32-unknown-unknown -- -D warnings
+	@cargo clippy --release --target wasm32-unknown-unknown --features wasm-bindgen -- -D warnings
+	@cargo clippy --release --target wasm32-unknown-unknown --features ffi -- -D warnings
 	
 doc: ## Run doc gen
 	@cargo doc --release
