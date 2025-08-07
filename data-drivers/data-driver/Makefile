@@ -8,7 +8,7 @@ help: ## Display this help screen
 
 wasm: ## Noop
 
-wasm-pack: ## Noop
+wasm-js: ## Noop
 
 test: ## Perform the contract tests defined in the host module
 	@cargo test --release
