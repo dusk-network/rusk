@@ -26,35 +26,29 @@ check: ## Run the Rust check on the project features
 test: ## Perform the contract tests defined in the host module
 	@cargo test --release
 
+wasm: FEATURES=ffi ## Build the data-driver WASM file
+wasm: build-wasm
 
-wasm-pack: ## Build the data-driver WASM files with wasm-pack
+wasm-js: FEATURES=ffi,js ## Build the data-driver WASM file (with alloc support for JS)
+wasm-js: build-wasm
+
+# Utility build
+build-wasm:
 	@if [ -z "$(WASM_OPT)" ]; then \
 		echo "wasm-opt not found. Installing via cargo-binstall with system toolchain..."; \
 		cargo +stable install -f wasm-opt; \
 		WASM_OPT=$$(command -v wasm-opt); \
 	fi
 	@echo "Building WASM for crate: $(CRATE_NAME)"
-	@cargo build --release --features ffi,js --target $(WASM_TARGET) --manifest-path Cargo.toml
+	@cargo build --release --features $(FEATURES) --target $(WASM_TARGET) --manifest-path Cargo.toml
 	@echo "Optimizing with wasm-opt..."
 	@wasm-opt -Oz --strip-debug -o $(WASM_OPT_FILE) $(WASM_FILE)
 	@echo "WASM build complete: $(WASM_OPT_FILE)"
 
-wasm: ## Build the data-driver WASM files
-	@if [ -z "$(WASM_OPT)" ]; then \
-		echo "wasm-opt not found. Installing via cargo-binstall with system toolchain..."; \
-		cargo +stable install -f wasm-opt; \
-		WASM_OPT=$$(command -v wasm-opt); \
-	fi
-	@echo "Building WASM for crate: $(CRATE_NAME)"
-	@cargo build --release --features ffi --target $(WASM_TARGET) --manifest-path Cargo.toml
-	@echo "Optimizing with wasm-opt..."
-	@wasm-opt -Oz --strip-debug -o $(WASM_OPT_FILE) $(WASM_FILE)
-	@echo "WASM build complete: $(WASM_OPT_FILE)"
-			
 clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings
-	@cargo clippy --release --target wasm32-unknown-unknown --features wasm-bindgen -- -D warnings
 	@cargo clippy --release --target wasm32-unknown-unknown --features ffi -- -D warnings
+	@cargo clippy --release --target wasm32-unknown-unknown --features ffi,js -- -D warnings
 	
 doc: ## Run doc gen
 	@cargo doc --release

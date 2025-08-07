@@ -16,9 +16,6 @@
 
 extern crate alloc;
 
-#[cfg(all(target_family = "wasm", feature = "wasm-bindgen"))]
-mod bindgen;
-
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
