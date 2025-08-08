@@ -17,6 +17,7 @@ clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings
 	@cargo clippy --release --target wasm32-unknown-unknown -- -D warnings
 	@cargo clippy --release --target wasm32-unknown-unknown --features wasm-export -- -D warnings
+	@cargo clippy --release --target wasm32-unknown-unknown --features wasm-export,alloc -- -D warnings
 	
 doc: ## Run doc gen
 	@cargo doc --release

@@ -17,3 +17,4 @@ serde_json = { workspace = true }
 
 [features]
 wasm-export = []
+alloc = []

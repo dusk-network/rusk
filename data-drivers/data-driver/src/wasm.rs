@@ -8,14 +8,15 @@
 //!
 //! Provides C-compatible functions to interact with the contract driver.
 
-use crate::ConvertibleContract;
+extern crate alloc;
+
+use alloc::format;
 use alloc::string::{String, ToString};
-use alloc::{format, vec::Vec};
+use alloc::vec::Vec;
 use core::cell::UnsafeCell;
-use core::convert::TryFrom;
-use core::ffi::c_char;
-// use core::ffi::c_void;
-use core::{ffi::CStr, ptr, slice};
+use core::{ptr, slice};
+
+use crate::ConvertibleContract;
 
 /// FFI-compatible error codes returned by WASM functions.
 #[repr(i32)]
@@ -97,6 +98,7 @@ where
     F: FnOnce(&dyn ConvertibleContract) -> Result<Vec<u8>, String>,
 {
     let Some(driver) = CONTRACT_DRIVER else {
+        set_last_error("Contract driver not initialized".into());
         return ErrorCode::DriverNotInitialized;
     };
 
@@ -104,7 +106,7 @@ where
         Ok(data) => match write_to_wasm_buffer(&data, out_ptr, out_buf_size) {
             Ok(()) => ErrorCode::Ok,
             Err(e) => {
-                set_last_error("Output buffer too small".to_string());
+                set_last_error("Output buffer too small".into());
                 e
             }
         },
@@ -114,35 +116,6 @@ where
         }
     }
 }
-
-// /// Opaque handle for a `ConvertibleContract` implementor.
-// ///
-// /// Used for FFI to pass a trait object across the WASM/C boundary.
-// #[repr(C)]
-// pub struct ConvertibleContractHandle {
-//     /// Pointer to the data part of the trait object.
-//     pub data: *const c_void,
-//     /// Pointer to the vtable part of the trait object.
-//     pub vtable: *const c_void,
-// }
-
-// /// Initializes the global contract driver instance.
-// ///
-// /// # Safety
-// /// Caller must ensure `handle` is a valid pointer pair to a
-// /// `ConvertibleContract` implementor.
-// #[no_mangle]
-// pub unsafe extern "C" fn init_contract_driver(
-//     handle: ConvertibleContractHandle,
-// ) -> ErrorCode {
-//     if handle.data.is_null() || handle.vtable.is_null() {
-//         return ErrorCode::InvalidInput;
-//     }
-//     let driver: &dyn ConvertibleContract =
-//         core::mem::transmute((handle.data, handle.vtable));
-//     CONTRACT_DRIVER = Some(driver);
-//     ErrorCode::Ok
-// }
 
 /// Retrieves and clears the last error message.
 ///
@@ -167,18 +140,23 @@ pub unsafe extern "C" fn get_last_error(
 /// Caller must ensure that all pointers are valid and null-terminated.
 #[no_mangle]
 pub unsafe extern "C" fn encode_input_fn(
-    fn_name: *const c_char,
-    json: *const c_char,
+    fn_name_ptr: *mut u8,
+    fn_name_size: usize,
+    json_ptr: *mut u8,
+    json_size: usize,
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
     run_wasm_export(out_ptr, out_buf_size, |driver| {
-        let fn_name = CStr::from_ptr(fn_name)
-            .to_str()
-            .map_err(|e| format!("Invalid fn_name: {e}"))?;
-        let json = CStr::from_ptr(json)
-            .to_str()
-            .map_err(|e| format!("Invalid json: {e}"))?;
+        let fn_name_slice =
+            core::slice::from_raw_parts(fn_name_ptr, fn_name_size);
+        let fn_name = core::str::from_utf8(fn_name_slice)
+            .map_err(|e| format!("Invalid fn_name UTF-8: {e}"))?;
+
+        let json_slice = core::slice::from_raw_parts(json_ptr, json_size);
+        let json = core::str::from_utf8(json_slice)
+            .map_err(|e| format!("Invalid json UTF-8: {e}"))?;
+
         driver
             .encode_input_fn(fn_name, json)
             .map_err(|e| format!("{e:?}"))
@@ -192,16 +170,19 @@ pub unsafe extern "C" fn encode_input_fn(
 /// sized.
 #[no_mangle]
 pub unsafe extern "C" fn decode_input_fn(
-    fn_name: *const c_char,
+    fn_name_ptr: *mut u8,
+    fn_name_size: usize,
     rkyv_ptr: *const u8,
     rkyv_len: usize,
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
     run_wasm_export(out_ptr, out_buf_size, |driver| {
-        let fn_name = CStr::from_ptr(fn_name)
-            .to_str()
-            .map_err(|e| format!("Invalid fn_name: {e}"))?;
+        let fn_name_slice =
+            core::slice::from_raw_parts(fn_name_ptr, fn_name_size);
+        let fn_name = core::str::from_utf8(fn_name_slice)
+            .map_err(|e| format!("Invalid fn_name UTF-8: {e}"))?;
+
         let rkyv = slice::from_raw_parts(rkyv_ptr, rkyv_len);
         driver
             .decode_input_fn(fn_name, rkyv)
@@ -217,16 +198,19 @@ pub unsafe extern "C" fn decode_input_fn(
 /// sized.
 #[no_mangle]
 pub unsafe extern "C" fn decode_output_fn(
-    fn_name: *const c_char,
+    fn_name_ptr: *mut u8,
+    fn_name_size: usize,
     rkyv_ptr: *const u8,
     rkyv_len: usize,
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
     run_wasm_export(out_ptr, out_buf_size, |driver| {
-        let fn_name = CStr::from_ptr(fn_name)
-            .to_str()
-            .map_err(|e| format!("Invalid fn_name: {e}"))?;
+        let fn_name_slice =
+            core::slice::from_raw_parts(fn_name_ptr, fn_name_size);
+        let fn_name = core::str::from_utf8(fn_name_slice)
+            .map_err(|e| format!("Invalid fn_name UTF-8: {e}"))?;
+
         let rkyv = slice::from_raw_parts(rkyv_ptr, rkyv_len);
         driver
             .decode_output_fn(fn_name, rkyv)
@@ -242,16 +226,19 @@ pub unsafe extern "C" fn decode_output_fn(
 /// sized.
 #[no_mangle]
 pub unsafe extern "C" fn decode_event(
-    event_name: *const c_char,
+    event_name_ptr: *mut u8,
+    event_name_size: usize,
     rkyv_ptr: *const u8,
     rkyv_len: usize,
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
     run_wasm_export(out_ptr, out_buf_size, |driver| {
-        let event_name = CStr::from_ptr(event_name)
-            .to_str()
-            .map_err(|e| format!("Invalid event_name: {e}"))?;
+        let event_name_slice =
+            core::slice::from_raw_parts(event_name_ptr, event_name_size);
+        let event_name = core::str::from_utf8(event_name_slice)
+            .map_err(|e| format!("Invalid event_name UTF-8: {e}"))?;
+
         let rkyv = slice::from_raw_parts(rkyv_ptr, rkyv_len);
         driver
             .decode_event(event_name, rkyv)
@@ -272,6 +259,21 @@ pub unsafe extern "C" fn get_schema(
 ) -> ErrorCode {
     run_wasm_export(out_ptr, out_buf_size, |driver| {
         Ok(driver.get_schema().into_bytes())
+    })
+}
+
+/// Retrieves the data driver version as a serialized string.
+///
+/// # Safety
+/// Caller must ensure that `out_ptr` points to a valid buffer of at least
+/// `out_buf_size` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn get_version(
+    out_ptr: *mut u8,
+    out_buf_size: usize,
+) -> ErrorCode {
+    run_wasm_export(out_ptr, out_buf_size, |driver| {
+        Ok(driver.get_version().to_string().into_bytes())
     })
 }
 
@@ -305,7 +307,6 @@ macro_rules! generate_wasm_entrypoint {
     };
 }
 
-#[cfg(all(target_family = "wasm", feature = "wasm-export"))]
 /// Safe Rust API for contract implementors.
 ///
 /// # Safety
@@ -313,6 +314,6 @@ macro_rules! generate_wasm_entrypoint {
 pub unsafe fn init_contract_driver(
     driver: &'static dyn ConvertibleContract,
 ) -> ErrorCode {
-    unsafe { CONTRACT_DRIVER = Some(driver) };
+    CONTRACT_DRIVER = Some(driver);
     ErrorCode::Ok
 }
