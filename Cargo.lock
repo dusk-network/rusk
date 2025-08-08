@@ -1927,20 +1927,16 @@ dependencies = [
 name = "dusk-stake-contract-dd"
 version = "0.1.1-alpha.1"
 dependencies = [
- "dlmalloc",
  "dusk-core",
  "dusk-data-driver",
- "wasm-bindgen",
 ]
 
 [[package]]
 name = "dusk-transfer-contract-dd"
 version = "0.1.1-alpha.1"
 dependencies = [
- "dlmalloc",
  "dusk-core",
  "dusk-data-driver",
- "wasm-bindgen",
 ]
 
 [[package]]

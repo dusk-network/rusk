@@ -18,6 +18,12 @@ extern crate alloc;
 
 mod error;
 
+#[cfg(all(target_family = "wasm", feature = "wasm-export"))]
+pub mod wasm;
+
+#[cfg(all(target_family = "wasm", feature = "alloc"))]
+mod mem;
+
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;

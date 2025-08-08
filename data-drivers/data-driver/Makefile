@@ -8,12 +8,16 @@ help: ## Display this help screen
 
 wasm: ## Noop
 
+wasm-js: ## Noop
+
 test: ## Perform the contract tests defined in the host module
 	@cargo test --release
 			
 clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings
 	@cargo clippy --release --target wasm32-unknown-unknown -- -D warnings
+	@cargo clippy --release --target wasm32-unknown-unknown --features wasm-export -- -D warnings
+	@cargo clippy --release --target wasm32-unknown-unknown --features wasm-export,alloc -- -D warnings
 	
 doc: ## Run doc gen
 	@cargo doc --release
