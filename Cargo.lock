@@ -747,9 +747,9 @@ dependencies = [
 
 [[package]]
 name = "bls12_381-bls"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b53eb2c00ecaf0635c278ed7701386a6e83e9b578181ee248ed52f339957b9c"
+checksum = "d4e6b7c24701ff5167f336478ec29dc176455f5396f62b8f0951cc1fdddf249b"
 dependencies = [
  "bs58",
  "bytecheck",
@@ -760,7 +760,6 @@ dependencies = [
  "rayon",
  "rkyv",
  "serde",
- "serde_json",
  "zeroize",
 ]
 
@@ -1688,7 +1687,7 @@ dependencies = [
  "ark-groth16",
  "ark-relations",
  "ark-serialize",
- "bls12_381-bls 0.5.0",
+ "bls12_381-bls 0.5.1",
  "bytecheck",
  "c-kzg",
  "dusk-bls12_381 0.14.2",
