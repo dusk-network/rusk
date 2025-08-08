@@ -28,7 +28,16 @@ test: ## Perform the contract tests defined in the host module
 
 
 wasm-pack: ## Build the data-driver WASM files with wasm-pack
-	@wasm-pack build --target nodejs --release --features wasm-bindgen
+	@if [ -z "$(WASM_OPT)" ]; then \
+		echo "wasm-opt not found. Installing via cargo-binstall with system toolchain..."; \
+		cargo +stable install -f wasm-opt; \
+		WASM_OPT=$$(command -v wasm-opt); \
+	fi
+	@echo "Building WASM for crate: $(CRATE_NAME)"
+	@cargo build --release --features ffi,js --target $(WASM_TARGET) --manifest-path Cargo.toml
+	@echo "Optimizing with wasm-opt..."
+	@wasm-opt -Oz --strip-debug -o $(WASM_OPT_FILE) $(WASM_FILE)
+	@echo "WASM build complete: $(WASM_OPT_FILE)"
 
 wasm: ## Build the data-driver WASM files
 	@if [ -z "$(WASM_OPT)" ]; then \

@@ -22,4 +22,5 @@ dlmalloc = { workspace = true, optional = true }
 
 [features]
 ffi = ["dusk-data-driver/wasm-export"] 
+js = ["dusk-data-driver/wasm-export", "dusk-data-driver/alloc"] 
 wasm-bindgen = ["dep:wasm-bindgen", "dlmalloc/global"]
