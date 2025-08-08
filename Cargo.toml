@@ -61,7 +61,7 @@ dusk-transfer-contract-dd = { version = "0.1.1-alpha.1", path = "./data-drivers/
 dusk-stake-contract-dd = { version = "0.1.1-alpha.1", path = "./data-drivers/stake-contract" }
 
 # Dusk dependencies outside the workspace
-bls12_381-bls = { version = "0.5", default-features = false }
+bls12_381-bls = { version = "0.5.1", default-features = false }
 dusk-bls12_381 = { version = "0.14", default-features = false }
 dusk-bytes = "0.1.7"
 dusk-jubjub = { version = "0.15.0", default-features = false }
