@@ -3,7 +3,10 @@
 <script>
   import { mdiHistory } from "@mdi/js";
 
-  import { Icon } from "$lib/dusk/components";
+  import { account, modal } from "$lib/web3/walletConnection";
+  import { Button, Icon } from "$lib/dusk/components";
+
+  $: ({ isConnected } = $account);
 </script>
 
 <article class="bridge">
@@ -13,6 +16,12 @@
       <Icon path={mdiHistory} />
     </div>
   </header>
+
+  {#if !isConnected}
+    <Button text="CONNECT WALLET" on:click={() => modal.open()} />
+  {:else}
+    <Button text="BRIDGE FUNDS" on:click={() => {}} />
+  {/if}
 </article>
 
 <style lang="postcss">
