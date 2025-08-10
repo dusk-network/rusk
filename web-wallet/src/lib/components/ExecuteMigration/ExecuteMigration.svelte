@@ -10,8 +10,8 @@
   import { isHex } from "viem";
   import { AppAnchor, Banner } from "$lib/components";
   import { Button, Icon } from "$lib/dusk/components";
-  import { account, wagmiConfig } from "$lib/migration/walletConnection";
-  import { migrate } from "$lib/migration/migration";
+  import { account, wagmiConfig } from "$lib/web3/walletConnection";
+  import { migrate } from "$lib/web3/migration";
   import { createDataStore } from "$lib/dusk/svelte-stores";
   import { createEventDispatcher } from "svelte";
   import { walletStore } from "$lib/stores";
