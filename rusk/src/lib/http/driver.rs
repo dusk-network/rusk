@@ -4,11 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::BTreeMap;
+mod wrapped;
 
-use dusk_wasmtime::{Config, Engine, Instance, Module, Store};
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex, RwLock},
+};
 
 use dusk_core::abi::ContractId;
+use dusk_wasmtime::{AsContextMut, Config, Engine, Instance, Module, Store};
+use wrapped::WrappedDataDriver;
 
 fn config() -> Config {
     let mut config = Config::new();
@@ -16,8 +21,11 @@ fn config() -> Config {
     config
 }
 
+pub type SharedDriverExecutor = Arc<Mutex<DriverExecutor>>;
+
+/// Holds the Wasmtime store and instances
 pub struct DriverExecutor {
-    store: Store<()>,
+    store: Arc<RwLock<Store<()>>>,
     instances: BTreeMap<ContractId, Instance>,
 }
 
@@ -28,6 +36,7 @@ impl DriverExecutor {
             .expect("Wasmtime engine configuration should be valid");
         let store = Store::<()>::new(&engine, ());
         let instances = BTreeMap::new();
+        let store = Arc::new(RwLock::new(store));
         Self { store, instances }
     }
 
@@ -36,14 +45,21 @@ impl DriverExecutor {
         contract_id: &ContractId,
         bytecode: impl AsRef<[u8]>,
     ) -> anyhow::Result<()> {
-        let module = Module::new(self.store.engine(), bytecode.as_ref())?;
-        let instance = Instance::new(&mut self.store, &module, &[])?;
+        let mut store = self.store.write().unwrap();
+        let module = Module::new(store.engine(), bytecode.as_ref())?;
+        let instance = Instance::new(store.as_context_mut(), &module, &[])?;
         self.instances.insert(*contract_id, instance);
         Ok(())
     }
 
-    pub fn exec() {
-        // let gcd = instance.get_typed_func::<(i32, i32), i32>(&mut store,
-        // "gcd")?; gcd.call(&mut store, (6, 27))?;
+    pub fn get_driver<'a>(
+        &'a self,
+        contract_id: &ContractId,
+    ) -> Option<WrappedDataDriver<'a>> {
+        let instance = self.instances.get(contract_id)?;
+        Some(WrappedDataDriver {
+            exec: self,
+            id: *contract_id,
+        })
     }
 }
