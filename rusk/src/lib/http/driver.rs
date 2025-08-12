@@ -52,7 +52,46 @@ impl DriverExecutor {
 impl ConvertibleContract for DriverExecutor {
     fn encode_input_fn(&self, fn_name: &str, json: &str) -> Result<Vec<u8>, Error> {
         // gcd.call(&mut store, (6, 27))?;
+
+        // fn_name_ptr: *mut u8,  // alloc
+        // fn_name_size: usize,
+        // json_ptr: *mut u8,     // alloc
+        // json_size: usize,
+        // out_ptr: *mut u8,      // alloc
+        // out_buf_size: usize,
+
         let instance = self.instance.expect("instance should exist in executor");
+
+        // allocate memory for fn_name_size into fn_name_buf
+        let alloc = instance.get_typed_func::<(usize), *mut u8>(&mut store, "alloc")?;
+        let fn_name_buf = alloc.call(&mut store, fn_name_size)?;
+
+        // allocate memory for json_size into json_buf
+        let json_buf = alloc.call(&mut store, json_size)?;
+
+        // allocate memory for out_buf_size into out_buf
+        const OUT_BUF_SIZE: usize = 8192;
+        let out_buf = alloc.call(&mut store, OUT_BUF_SIZE)?;
+
+        // copy fn_name to fn_name_buf
+
+        // copy json_ptr to json_buf
+
+        // call encode_input_fn with the following arguments:
+        // fn_name_buf
+        // fn_name.len()
+        // json_buf
+        // json.len()
+        // out_buf
+        // 8192 - good question, what should it be?
+
+        // dealloc of fn_name_buf
+        // dealloc of json_buf
+
+        // copy the output buffer to vector
+
+        // dealloc of out_buf
+
         let f = instance.get_typed_func::<(i32, i32), i32>(&mut store, "encode_input_fn")?;
         f.call(&mut store, )?;
         Ok(Vec::new())
