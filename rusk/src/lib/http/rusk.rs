@@ -55,7 +55,7 @@ impl HandleRequest for Rusk {
                 )
             }
             ("driver", Some(contract_id), method) => {
-                Self::handle_data_driver(contract_id, method, &request.data)
+                self.handle_data_driver(contract_id, method, &request.data)
             }
             ("contract_owner", Some(contract_id), _method) => {
                 self.get_contract_owner(contract_id)
@@ -86,31 +86,46 @@ impl HandleRequest for Rusk {
 
 impl Rusk {
     fn data_driver<C: TryInto<ContractId>>(
+        &self,
         contract_id: C,
     ) -> anyhow::Result<Option<Box<dyn ConvertibleContract>>> {
         let contract_id = contract_id
             .try_into()
             .map_err(|_| anyhow::anyhow!("Invalid contractId"))?;
 
-        let driver: Option<Box<dyn ConvertibleContract>> = match contract_id {
+        Ok(match contract_id {
             TRANSFER_CONTRACT => {
                 Some(Box::new(dusk_transfer_contract_dd::ContractDriver))
             }
             STAKE_CONTRACT => {
                 Some(Box::new(dusk_stake_contract_dd::ContractDriver))
             }
-            _ => None,
-        };
-        Ok(driver)
+            _ => {
+                let driver_storage = self.driver_storage.read();
+                match driver_storage.get(&contract_id) {
+                    Some(bytecode) => {
+                        let driver_executor = DriverExecutor::from_bytecode(
+                            &contract_id,
+                            bytecode,
+                        )?;
+                        driver_executor.init()?;
+                        Some(Box::new(driver_executor))
+                    }
+                    _ => None,
+                }
+            }
+        })
     }
 
     fn handle_data_driver(
+        &self,
         contract_id: &str,
         method: &str,
         data: &RequestData,
     ) -> anyhow::Result<ResponseData> {
         let (method, target) = method.split_once(':').unwrap_or((method, ""));
-        let driver = Self::data_driver(contract_id.to_string())?
+        let driver = self
+            .data_driver(contract_id.to_string())?
             .ok_or(anyhow::anyhow!("Unsupported contractId {contract_id}"))?;
         let result = match method {
             "decode_event" => ResponseData::new(
@@ -137,7 +152,7 @@ impl Rusk {
             "get_version" => {
                 ResponseData::new(driver.get_version().to_string())
             }
-            method => anyhow::bail!("Unsupported datadriver method {method}"),
+            method => anyhow::bail!("Unsupported data driver method {method}"),
         };
         Ok(result)
     }
@@ -207,7 +222,7 @@ impl Rusk {
 
         let call_arg = if json {
             let json = data.as_string();
-            driver = Self::data_driver(contract_id)?;
+            driver = self.data_driver(contract_id)?;
             driver
                 .as_ref()
                 .ok_or(anyhow::anyhow!("Unsupported contract {contract}"))?
