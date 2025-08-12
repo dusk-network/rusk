@@ -55,7 +55,7 @@ impl HandleRequest for Rusk {
                 )
             }
             ("driver", Some(contract_id), method) => {
-                Self::handle_data_driver(contract_id, method, &request.data)
+                self.handle_data_driver(contract_id, method, &request.data)
             }
             ("contract_owner", Some(contract_id), _method) => {
                 self.get_contract_owner(contract_id)
@@ -86,6 +86,7 @@ impl HandleRequest for Rusk {
 
 impl Rusk {
     fn data_driver<C: TryInto<ContractId>>(
+        &self,
         contract_id: C,
     ) -> anyhow::Result<Option<Box<dyn ConvertibleContract>>> {
         let contract_id = contract_id
@@ -99,18 +100,31 @@ impl Rusk {
             STAKE_CONTRACT => {
                 Some(Box::new(dusk_stake_contract_dd::ContractDriver))
             }
-            _ => None,
+            _ => {
+                let driver_storage = self.driver_storage.read();
+                if let Some(driver) = driver_storage.get(&contract_id) {
+                    let mut driver_executor = self.driver_executor.write();
+                    driver_executor.load_bytecode(&contract_id, driver);
+                    Some(Box::new(driver_executor))
+                    // todo - lifecycle of instances in driver executor
+                    // if we always load, who will remove them
+                    // also, our load may be superfluous if instance for the given contract is there already
+                } else {
+                    return Ok(None); // todo
+                }
+            },
         };
         Ok(driver)
     }
 
     fn handle_data_driver(
+        &self,
         contract_id: &str,
         method: &str,
         data: &RequestData,
     ) -> anyhow::Result<ResponseData> {
         let (method, target) = method.split_once(':').unwrap_or((method, ""));
-        let driver = Self::data_driver(contract_id.to_string())?
+        let driver = self.data_driver(contract_id.to_string())?
             .ok_or(anyhow::anyhow!("Unsupported contractId {contract_id}"))?;
         let result = match method {
             "decode_event" => ResponseData::new(

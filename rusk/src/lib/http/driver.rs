@@ -7,8 +7,10 @@
 use std::collections::BTreeMap;
 
 use dusk_wasmtime::{Config, Engine, Instance, Module, Store};
+use serde_json::Value;
 
 use dusk_core::abi::ContractId;
+use dusk_data_driver::{ConvertibleContract, Error, JsonValue};
 
 fn config() -> Config {
     let mut config = Config::new();
@@ -18,7 +20,7 @@ fn config() -> Config {
 
 pub struct DriverExecutor {
     store: Store<()>,
-    instances: BTreeMap<ContractId, Instance>,
+    instance: Option<Instance>,
 }
 
 impl DriverExecutor {
@@ -27,8 +29,7 @@ impl DriverExecutor {
         let engine = Engine::new(&config)
             .expect("Wasmtime engine configuration should be valid");
         let store = Store::<()>::new(&engine, ());
-        let instances = BTreeMap::new();
-        Self { store, instances }
+        Self { store, instance: None }
     }
 
     pub fn load_bytecode(
@@ -42,8 +43,34 @@ impl DriverExecutor {
         Ok(())
     }
 
-    pub fn exec() {
+    // pub fn exec() {
         // let gcd = instance.get_typed_func::<(i32, i32), i32>(&mut store,
         // "gcd")?; gcd.call(&mut store, (6, 27))?;
+    // }
+}
+
+impl ConvertibleContract for DriverExecutor {
+    fn encode_input_fn(&self, fn_name: &str, json: &str) -> Result<Vec<u8>, Error> {
+        // gcd.call(&mut store, (6, 27))?;
+        let instance = self.instance.expect("instance should exist in executor");
+        let f = instance.get_typed_func::<(i32, i32), i32>(&mut store, "encode_input_fn")?;
+        f.call(&mut store, )?;
+        Ok(Vec::new())
+    }
+
+    fn decode_input_fn(&self, fn_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error> {
+        Ok(JsonValue::Null)
+    }
+
+    fn decode_output_fn(&self, fn_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error> {
+        Ok(JsonValue::Null)
+    }
+
+    fn decode_event(&self, event_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error> {
+        Ok(JsonValue::Null)
+    }
+
+    fn get_schema(&self) -> String {
+        "".to_string()
     }
 }
