@@ -20,10 +20,13 @@ fn config() -> Config {
     config
 }
 
+const OUT_BUF_SIZE: usize = 65536;
+
 #[derive(Clone, Debug)]
 pub struct DriverExecutor {
     store: Arc<RwLock<Store<()>>>,
     instance: Option<Instance>,
+    _contract_id: ContractId,
 }
 
 impl DriverExecutor {
@@ -35,12 +38,13 @@ impl DriverExecutor {
         Self {
             store: Arc::new(RwLock::new(store)),
             instance: None,
+            _contract_id: ContractId::from_bytes([0u8; 32]),
         }
     }
 
     pub fn load_bytecode(
         &mut self,
-        _contract_id: &ContractId,
+        contract_id: &ContractId,
         bytecode: impl AsRef<[u8]>,
     ) -> anyhow::Result<()> {
         let mut store = self.store.write();
@@ -48,10 +52,11 @@ impl DriverExecutor {
         let module = Module::new(store.engine(), bytecode.as_ref())?;
         let instance = Instance::new(store, &module, &[])?;
         self.instance = Some(instance);
+        self._contract_id = *contract_id;
         Ok(())
     }
 
-    pub fn allocate(&self, sz: usize) -> Result<*mut u8, Error> {
+    fn allocate(&self, sz: usize) -> Result<*mut u8, Error> {
         let instance =
             self.instance.expect("instance should exist in executor");
         let mut store = self.store.write();
@@ -66,7 +71,7 @@ impl DriverExecutor {
         Ok(mem as *mut u8)
     }
 
-    pub fn allocate_and_copy(
+    fn allocate_and_copy(
         &self,
         bytes: &[u8],
         sz: usize,
@@ -77,7 +82,7 @@ impl DriverExecutor {
         Ok(mem)
     }
 
-    pub fn deallocate(&self, ptr: *mut u8, sz: usize) -> Result<(), Error> {
+    fn deallocate(&self, ptr: *mut u8, sz: usize) -> Result<(), Error> {
         let instance =
             self.instance.expect("instance should exist in executor");
         let mut store = self.store.write();
@@ -92,7 +97,12 @@ impl DriverExecutor {
     }
 }
 
-fn read_u32_be_and_bytes(p: *const u8) -> (u32, Vec<u8>) {
+// reads from a given memory pointer
+// assumes first 4 bytes hold Big Endian-encoded buffer length, say,
+// 'actual_size' having obtained 'actual_size' in this way, function assumes
+// that the subsequent buffer bytes contain 'actual_size' bytes
+// the bytes are then copied into a vector and returned
+fn read_u32_be_and_bytes(p: *const u8) -> Vec<u8> {
     // SAFETY: We assume p is valid and properly aligned for reading a u32
     // and that there are at least 4 bytes available
     let actual_size =
@@ -114,7 +124,7 @@ fn read_u32_be_and_bytes(p: *const u8) -> (u32, Vec<u8>) {
         );
     }
 
-    (actual_size, v)
+    v
 }
 
 impl ConvertibleContract for DriverExecutor {
@@ -129,7 +139,6 @@ impl ConvertibleContract for DriverExecutor {
         let fn_name_ptr =
             self.allocate_and_copy(fn_name.as_bytes(), fn_name.len())?;
         let json_ptr = self.allocate_and_copy(json.as_bytes(), json.len())?;
-        const OUT_BUF_SIZE: usize = 65536;
         let out_ptr = self.allocate(OUT_BUF_SIZE)?;
 
         let mut store = self.store.write();
@@ -142,7 +151,7 @@ impl ConvertibleContract for DriverExecutor {
             .map_err(|e| {
                 Error::Other(format!("encode_input_fn failed: {e}"))
             })?;
-        let _error_code = f
+        let error_code = f
             .call(
                 &mut store,
                 (
@@ -157,14 +166,18 @@ impl ConvertibleContract for DriverExecutor {
             .map_err(|e| {
                 Error::Other(format!("encode_input_fn failed: {e}"))
             })?;
-        // todo error_code
 
         self.deallocate(fn_name_ptr, fn_name.len())?;
         self.deallocate(json_ptr, json.len())?;
 
-        let (_, out_vector) = read_u32_be_and_bytes(out_ptr);
+        let out_vector = read_u32_be_and_bytes(out_ptr);
         self.deallocate(out_ptr, OUT_BUF_SIZE)?;
-        Ok(out_vector)
+        match error_code {
+            0 => Ok(out_vector),
+            _ => Err(Error::Other(format!(
+                "encode_input_fn failed with: {error_code}"
+            ))),
+        }
     }
 
     fn decode_input_fn(
