@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::BTreeMap;
+use std::ptr;
 
 use dusk_wasmtime::{Config, Engine, Instance, Module, Store};
 use serde_json::Value;
@@ -71,34 +72,47 @@ impl DriverExecutor {
 }
 
 
+fn read_u32_be_and_bytes(p: *const u8) -> (u32, Vec<u8>) {
+    // SAFETY: We assume p is valid and properly aligned for reading a u32
+    // and that there are at least 4 bytes available
+    let actual_size = unsafe { u32::from_be(ptr::read_unaligned(p as *const u32)) };
+
+    // Calculate the start of the data portion (after the u32)
+    let data_ptr = unsafe { p.add(4) };
+
+    let mut v = Vec::with_capacity(actual_size as usize);
+
+    // SAFETY: We assume the memory from data_ptr to data_ptr+actual_size is valid
+    unsafe {
+        v.set_len(actual_size as usize);
+        ptr::copy_nonoverlapping(
+            data_ptr,
+            v.as_mut_ptr(),
+            actual_size as usize
+        );
+    }
+
+    (actual_size, v)
+}
+
 
 impl ConvertibleContract for DriverExecutor {
     fn encode_input_fn(&self, fn_name: &str, json: &str) -> Result<Vec<u8>, Error> {
-        // gcd.call(&mut store, (6, 27))?;
-
-        // fn_name_ptr: *mut u8,  // alloc
-        // fn_name_size: usize,
-        // json_ptr: *mut u8,     // alloc
-        // json_size: usize,
-        // out_ptr: *mut u8,      // alloc
-        // out_buf_size: usize,
-
         let instance = self.instance.expect("instance should exist in executor");
 
         let fn_name_ptr = self.allocate_and_copy(fn_name.as_bytes(), fn_name.len())?;
         let json_ptr = self.allocate_and_copy(json.as_bytes(), json.len())?;
-        const OUT_BUF_SIZE: usize = 8192; // todo: 8192 - good question, what should it be?
+        const OUT_BUF_SIZE: usize = 65536;
         let out_ptr = self.allocate(OUT_BUF_SIZE)?;
 
         let f = instance.get_typed_func::<(*mut u8, usize, *mut u8, usize, *mut u8, usize), i32>(&mut self.store, "encode_input_fn")?;
-        let error_code = f.call(&mut self.store, (fn_name_ptr, fn_name.len(), json_ptr, json.len(), out_ptr, OUT_BUF_SIZE))?;
+        let _error_code = f.call(&mut self.store, (fn_name_ptr, fn_name.len(), json_ptr, json.len(), out_ptr, OUT_BUF_SIZE))?;
+        // todo error_code
 
         self.deallocate(fn_name_ptr, fn_name.len());
         self.deallocate(json_ptr, json.len());
 
-        let out_slice = unsafe { std::slice::from_raw_parts(out_ptr, OUT_BUF_SIZE) };
-        let mut out_vector = Vec::new();
-        out_vector.extend_from_slice(&out_slice);
+        let (_, out_vector) = read_u32_be_and_bytes(out_ptr);
         self.deallocate(out_ptr, OUT_BUF_SIZE);
         Ok(out_vector)
     }
