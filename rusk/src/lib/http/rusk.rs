@@ -104,15 +104,16 @@ impl Rusk {
                 let driver_storage = self.driver_storage.read();
                 if let Some(driver) = driver_storage.get(&contract_id) {
                     let mut driver_executor = self.driver_executor.write();
-                    driver_executor.load_bytecode(&contract_id, driver);
-                    Some(Box::new(driver_executor))
+                    driver_executor.load_bytecode(&contract_id, driver)?;
+                    Some(Box::new(driver_executor.clone()))
                     // todo - lifecycle of instances in driver executor
                     // if we always load, who will remove them
-                    // also, our load may be superfluous if instance for the given contract is there already
+                    // also, our load may be superfluous if instance for the
+                    // given contract is there already
                 } else {
                     return Ok(None); // todo
                 }
-            },
+            }
         };
         Ok(driver)
     }
@@ -124,7 +125,8 @@ impl Rusk {
         data: &RequestData,
     ) -> anyhow::Result<ResponseData> {
         let (method, target) = method.split_once(':').unwrap_or((method, ""));
-        let driver = self.data_driver(contract_id.to_string())?
+        let driver = self
+            .data_driver(contract_id.to_string())?
             .ok_or(anyhow::anyhow!("Unsupported contractId {contract_id}"))?;
         let result = match method {
             "decode_event" => ResponseData::new(
@@ -221,7 +223,7 @@ impl Rusk {
 
         let call_arg = if json {
             let json = data.as_string();
-            driver = Self::data_driver(contract_id)?;
+            driver = self.data_driver(contract_id)?;
             driver
                 .as_ref()
                 .ok_or(anyhow::anyhow!("Unsupported contract {contract}"))?

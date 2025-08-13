@@ -4,11 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::BTreeMap;
+use std::ops::DerefMut;
 use std::ptr;
+use std::sync::Arc;
 
 use dusk_wasmtime::{Config, Engine, Instance, Module, Store};
-use serde_json::Value;
+use parking_lot::RwLock;
 
 use dusk_core::abi::ContractId;
 use dusk_data_driver::{ConvertibleContract, Error, JsonValue};
@@ -19,8 +20,9 @@ fn config() -> Config {
     config
 }
 
+#[derive(Clone, Debug)]
 pub struct DriverExecutor {
-    store: Store<()>,
+    store: Arc<RwLock<Store<()>>>,
     instance: Option<Instance>,
 }
 
@@ -30,102 +32,162 @@ impl DriverExecutor {
         let engine = Engine::new(&config)
             .expect("Wasmtime engine configuration should be valid");
         let store = Store::<()>::new(&engine, ());
-        Self { store, instance: None }
+        Self {
+            store: Arc::new(RwLock::new(store)),
+            instance: None,
+        }
     }
 
     pub fn load_bytecode(
         &mut self,
-        contract_id: &ContractId,
+        _contract_id: &ContractId,
         bytecode: impl AsRef<[u8]>,
     ) -> anyhow::Result<()> {
-        let module = Module::new(self.store.engine(), bytecode.as_ref())?;
-        let instance = Instance::new(&mut self.store, &module, &[])?;
-        self.instances.insert(*contract_id, instance);
+        let mut store = self.store.write();
+        let store = store.deref_mut();
+        let module = Module::new(store.engine(), bytecode.as_ref())?;
+        let instance = Instance::new(store, &module, &[])?;
+        self.instance = Some(instance);
         Ok(())
     }
 
-    // pub fn exec() {
-        // let gcd = instance.get_typed_func::<(i32, i32), i32>(&mut store,
-        // "gcd")?; gcd.call(&mut store, (6, 27))?;
-    // }
-
-    pub fn allocate(&mut self, sz: usize) -> Result<*mut u8, Error> {
-        let instance = self.instance.expect("instance should exist in executor");
-        let alloc = instance.get_typed_func::<(usize), *mut u8>(&mut self.store, "alloc")?;
-        let mem = alloc.call(&mut self.store, sz)?;
-        Ok(mem)
+    pub fn allocate(&self, sz: usize) -> Result<*mut u8, Error> {
+        let instance =
+            self.instance.expect("instance should exist in executor");
+        let mut store = self.store.write();
+        let store = store.deref_mut();
+        let alloc =
+            instance
+                .get_typed_func::<u32, u64>(&mut *store, "alloc")
+                .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
+        let mem = alloc
+            .call(store, sz as u32)
+            .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
+        Ok(mem as *mut u8)
     }
 
-    pub fn allocate_and_copy(&mut self, bytes: &[u8], sz: usize) -> Result<*mut u8, Error> {
+    pub fn allocate_and_copy(
+        &self,
+        bytes: &[u8],
+        sz: usize,
+    ) -> Result<*mut u8, Error> {
         let mem = self.allocate(sz)?;
         let dst_slice = unsafe { std::slice::from_raw_parts_mut(mem, sz) };
         dst_slice.copy_from_slice(&bytes[..sz]);
         Ok(mem)
     }
 
-    pub fn deallocate(&mut self, ptr: *mut u8, sz: usize) -> Result<(), Error> {
-        let instance = self.instance.expect("instance should exist in executor");
-        let dealloc = instance.get_typed_func::<(*mut u8, usize), ()>(&mut self.store, "dealloc")?;
-        dealloc.call(&mut self.store, (ptr, sz))?;
+    pub fn deallocate(&self, ptr: *mut u8, sz: usize) -> Result<(), Error> {
+        let instance =
+            self.instance.expect("instance should exist in executor");
+        let mut store = self.store.write();
+        let mut store = store.deref_mut();
+        let dealloc = instance
+            .get_typed_func::<(u64, u32), ()>(&mut store, "dealloc")
+            .map_err(|e| Error::Other(format!("deallocate failed: {e}")))?;
+        dealloc
+            .call(&mut store, (ptr as u64, sz as u32))
+            .map_err(|e| Error::Other(format!("deallocate failed: {e}")))?;
         Ok(())
     }
 }
 
-
 fn read_u32_be_and_bytes(p: *const u8) -> (u32, Vec<u8>) {
     // SAFETY: We assume p is valid and properly aligned for reading a u32
     // and that there are at least 4 bytes available
-    let actual_size = unsafe { u32::from_be(ptr::read_unaligned(p as *const u32)) };
+    let actual_size =
+        unsafe { u32::from_be(ptr::read_unaligned(p as *const u32)) };
 
     // Calculate the start of the data portion (after the u32)
     let data_ptr = unsafe { p.add(4) };
 
     let mut v = Vec::with_capacity(actual_size as usize);
 
-    // SAFETY: We assume the memory from data_ptr to data_ptr+actual_size is valid
+    // SAFETY: We assume the memory from data_ptr to data_ptr+actual_size is
+    // valid
     unsafe {
         v.set_len(actual_size as usize);
         ptr::copy_nonoverlapping(
             data_ptr,
             v.as_mut_ptr(),
-            actual_size as usize
+            actual_size as usize,
         );
     }
 
     (actual_size, v)
 }
 
-
 impl ConvertibleContract for DriverExecutor {
-    fn encode_input_fn(&self, fn_name: &str, json: &str) -> Result<Vec<u8>, Error> {
-        let instance = self.instance.expect("instance should exist in executor");
+    fn encode_input_fn(
+        &self,
+        fn_name: &str,
+        json: &str,
+    ) -> Result<Vec<u8>, Error> {
+        let instance =
+            self.instance.expect("instance should exist in executor");
 
-        let fn_name_ptr = self.allocate_and_copy(fn_name.as_bytes(), fn_name.len())?;
+        let fn_name_ptr =
+            self.allocate_and_copy(fn_name.as_bytes(), fn_name.len())?;
         let json_ptr = self.allocate_and_copy(json.as_bytes(), json.len())?;
         const OUT_BUF_SIZE: usize = 65536;
         let out_ptr = self.allocate(OUT_BUF_SIZE)?;
 
-        let f = instance.get_typed_func::<(*mut u8, usize, *mut u8, usize, *mut u8, usize), i32>(&mut self.store, "encode_input_fn")?;
-        let _error_code = f.call(&mut self.store, (fn_name_ptr, fn_name.len(), json_ptr, json.len(), out_ptr, OUT_BUF_SIZE))?;
+        let mut store = self.store.write();
+        let mut store = store.deref_mut();
+        let f = instance
+            .get_typed_func::<(u64, u32, u64, u32, u64, u32), u32>(
+                &mut *store,
+                "encode_input_fn",
+            )
+            .map_err(|e| {
+                Error::Other(format!("encode_input_fn failed: {e}"))
+            })?;
+        let _error_code = f
+            .call(
+                &mut store,
+                (
+                    fn_name_ptr as u64,
+                    fn_name.len() as u32,
+                    json_ptr as u64,
+                    json.len() as u32,
+                    out_ptr as u64,
+                    OUT_BUF_SIZE as u32,
+                ),
+            )
+            .map_err(|e| {
+                Error::Other(format!("encode_input_fn failed: {e}"))
+            })?;
         // todo error_code
 
-        self.deallocate(fn_name_ptr, fn_name.len());
-        self.deallocate(json_ptr, json.len());
+        self.deallocate(fn_name_ptr, fn_name.len())?;
+        self.deallocate(json_ptr, json.len())?;
 
         let (_, out_vector) = read_u32_be_and_bytes(out_ptr);
-        self.deallocate(out_ptr, OUT_BUF_SIZE);
+        self.deallocate(out_ptr, OUT_BUF_SIZE)?;
         Ok(out_vector)
     }
 
-    fn decode_input_fn(&self, fn_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error> {
+    fn decode_input_fn(
+        &self,
+        _fn_name: &str,
+        _rkyv: &[u8],
+    ) -> Result<JsonValue, Error> {
         Ok(JsonValue::Null)
     }
 
-    fn decode_output_fn(&self, fn_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error> {
+    fn decode_output_fn(
+        &self,
+        _fn_name: &str,
+        _rkyv: &[u8],
+    ) -> Result<JsonValue, Error> {
         Ok(JsonValue::Null)
     }
 
-    fn decode_event(&self, event_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error> {
+    fn decode_event(
+        &self,
+        _event_name: &str,
+        _rkyv: &[u8],
+    ) -> Result<JsonValue, Error> {
         Ok(JsonValue::Null)
     }
 
