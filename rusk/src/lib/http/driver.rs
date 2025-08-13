@@ -47,7 +47,30 @@ impl DriverExecutor {
         // let gcd = instance.get_typed_func::<(i32, i32), i32>(&mut store,
         // "gcd")?; gcd.call(&mut store, (6, 27))?;
     // }
+
+    pub fn allocate(&mut self, sz: usize) -> Result<*mut u8, Error> {
+        let instance = self.instance.expect("instance should exist in executor");
+        let alloc = instance.get_typed_func::<(usize), *mut u8>(&mut self.store, "alloc")?;
+        let mem = alloc.call(&mut self.store, sz)?;
+        Ok(mem)
+    }
+
+    pub fn allocate_and_copy(&mut self, bytes: &[u8], sz: usize) -> Result<*mut u8, Error> {
+        let mem = self.allocate(sz)?;
+        let dst_slice = unsafe { std::slice::from_raw_parts_mut(mem, sz) };
+        dst_slice.copy_from_slice(&bytes[..sz]);
+        Ok(mem)
+    }
+
+    pub fn deallocate(&mut self, ptr: *mut u8, sz: usize) -> Result<(), Error> {
+        let instance = self.instance.expect("instance should exist in executor");
+        let dealloc = instance.get_typed_func::<(*mut u8, usize), ()>(&mut self.store, "dealloc")?;
+        dealloc.call(&mut self.store, (ptr, sz))?;
+        Ok(())
+    }
 }
+
+
 
 impl ConvertibleContract for DriverExecutor {
     fn encode_input_fn(&self, fn_name: &str, json: &str) -> Result<Vec<u8>, Error> {
@@ -62,39 +85,22 @@ impl ConvertibleContract for DriverExecutor {
 
         let instance = self.instance.expect("instance should exist in executor");
 
-        // allocate memory for fn_name_size into fn_name_buf
-        let alloc = instance.get_typed_func::<(usize), *mut u8>(&mut store, "alloc")?;
-        let fn_name_buf = alloc.call(&mut store, fn_name_size)?;
+        let fn_name_ptr = self.allocate_and_copy(fn_name.as_bytes(), fn_name.len())?;
+        let json_ptr = self.allocate_and_copy(json.as_bytes(), json.len())?;
+        const OUT_BUF_SIZE: usize = 8192; // todo: 8192 - good question, what should it be?
+        let out_ptr = self.allocate(OUT_BUF_SIZE)?;
 
-        // allocate memory for json_size into json_buf
-        let json_buf = alloc.call(&mut store, json_size)?;
+        let f = instance.get_typed_func::<(*mut u8, usize, *mut u8, usize, *mut u8, usize), i32>(&mut self.store, "encode_input_fn")?;
+        let error_code = f.call(&mut self.store, (fn_name_ptr, fn_name.len(), json_ptr, json.len(), out_ptr, OUT_BUF_SIZE))?;
 
-        // allocate memory for out_buf_size into out_buf
-        const OUT_BUF_SIZE: usize = 8192;
-        let out_buf = alloc.call(&mut store, OUT_BUF_SIZE)?;
+        self.deallocate(fn_name_ptr, fn_name.len());
+        self.deallocate(json_ptr, json.len());
 
-        // copy fn_name to fn_name_buf
-
-        // copy json_ptr to json_buf
-
-        // call encode_input_fn with the following arguments:
-        // fn_name_buf
-        // fn_name.len()
-        // json_buf
-        // json.len()
-        // out_buf
-        // 8192 - good question, what should it be?
-
-        // dealloc of fn_name_buf
-        // dealloc of json_buf
-
-        // copy the output buffer to vector
-
-        // dealloc of out_buf
-
-        let f = instance.get_typed_func::<(i32, i32), i32>(&mut store, "encode_input_fn")?;
-        f.call(&mut store, )?;
-        Ok(Vec::new())
+        let out_slice = unsafe { std::slice::from_raw_parts(out_ptr, OUT_BUF_SIZE) };
+        let mut out_vector = Vec::new();
+        out_vector.extend_from_slice(&out_slice);
+        self.deallocate(out_ptr, OUT_BUF_SIZE);
+        Ok(out_vector)
     }
 
     fn decode_input_fn(&self, fn_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error> {
