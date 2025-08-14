@@ -182,10 +182,57 @@ impl ConvertibleContract for DriverExecutor {
 
     fn decode_input_fn(
         &self,
-        _fn_name: &str,
-        _rkyv: &[u8],
+        fn_name: &str,
+        rkyv: &[u8],
     ) -> Result<JsonValue, Error> {
-        Ok(JsonValue::Null)
+        let instance =
+            self.instance.expect("instance should exist in executor");
+
+        let fn_name_ptr =
+            self.allocate_and_copy(fn_name.as_bytes(), fn_name.len())?;
+        let rkyv_ptr = self.allocate_and_copy(rkyv, rkyv.len())?;
+        let out_ptr = self.allocate(OUT_BUF_SIZE)?;
+
+        let mut store = self.store.write();
+        let mut store = store.deref_mut();
+        let f = instance
+            .get_typed_func::<(u64, u32, u64, u32, u64, u32), u32>(
+                &mut *store,
+                "decode_input_fn",
+            )
+            .map_err(|e| {
+                Error::Other(format!("decode_input_fn failed: {e}"))
+            })?;
+        let error_code = f
+            .call(
+                &mut store,
+                (
+                    fn_name_ptr as u64,
+                    fn_name.len() as u32,
+                    rkyv_ptr as u64,
+                    rkyv.len() as u32,
+                    out_ptr as u64,
+                    OUT_BUF_SIZE as u32,
+                ),
+            )
+            .map_err(|e| {
+                Error::Other(format!("decode_input_fn failed: {e}"))
+            })?;
+
+        self.deallocate(fn_name_ptr, fn_name.len())?;
+        self.deallocate(rkyv_ptr, rkyv.len())?;
+
+        let out_vector = read_u32_be_and_bytes(out_ptr);
+        self.deallocate(out_ptr, OUT_BUF_SIZE)?;
+        match error_code {
+            0 => {
+                let v = serde_json::from_slice(&out_vector)?;
+                Ok(v)
+            }
+            _ => Err(Error::Other(format!(
+                "decode_input_fn failed with: {error_code}"
+            ))),
+        }
     }
 
     fn decode_output_fn(

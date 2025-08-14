@@ -106,10 +106,12 @@ impl Rusk {
                     let mut driver_executor = self.driver_executor.write();
                     driver_executor.load_bytecode(&contract_id, driver)?;
                     Some(Box::new(driver_executor.clone()))
-                    // todo - lifecycle of instances in driver executor
-                    // if we always load, who will remove them
-                    // also, our load may be superfluous if instance for the
-                    // given contract is there already
+                    // todo - only one driver executor at a time is not a good
+                    // solution analyse the lifecycle of
+                    // executors and instances so that it
+                    // works reasonably with both extremes:
+                    // 1) repeating contract ids
+                    // 2) lots of non-repeating contract ids
                 } else {
                     return Ok(None); // todo
                 }
