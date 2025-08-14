@@ -105,6 +105,7 @@ impl Rusk {
                 if let Some(driver) = driver_storage.get(&contract_id) {
                     let mut driver_executor = DriverExecutor::new();
                     driver_executor.load_bytecode(&contract_id, driver)?;
+                    driver_executor.init()?;
                     Some(Box::new(driver_executor))
                 } else {
                     return Ok(None); // todo
@@ -149,7 +150,7 @@ impl Rusk {
             "get_version" => {
                 ResponseData::new(driver.get_version().to_string())
             }
-            method => anyhow::bail!("Unsupported datadriver method {method}"),
+            method => anyhow::bail!("Unsupported data driver method {method}"),
         };
         Ok(result)
     }
