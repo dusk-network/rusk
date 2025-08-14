@@ -103,15 +103,9 @@ impl Rusk {
             _ => {
                 let driver_storage = self.driver_storage.read();
                 if let Some(driver) = driver_storage.get(&contract_id) {
-                    let mut driver_executor = self.driver_executor.write();
+                    let mut driver_executor = DriverExecutor::new();
                     driver_executor.load_bytecode(&contract_id, driver)?;
-                    Some(Box::new(driver_executor.clone()))
-                    // todo - only one driver executor at a time is not a good
-                    // solution analyse the lifecycle of
-                    // executors and instances so that it
-                    // works reasonably with both extremes:
-                    // 1) repeating contract ids
-                    // 2) lots of non-repeating contract ids
+                    Some(Box::new(driver_executor))
                 } else {
                     return Ok(None); // todo
                 }
