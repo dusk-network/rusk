@@ -16,6 +16,6 @@ dusk-core = { workspace = true, features = ["serde"] }
 # data-driver dependency
 dusk-data-driver = { workspace = true }
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-wasm-bindgen = { workspace = true }
-dlmalloc = { workspace = true, features = ["global"] }
+[features]
+ffi = ["dusk-data-driver/wasm-export"]
+js = ["ffi", "dusk-data-driver/alloc"]
