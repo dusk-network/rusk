@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add support for `TransactionData::Blob`
+- Add fetch transaction count to archive [#3647]
 
 ### Changed
 
@@ -60,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-node` release
 
 <!-- Issues -->
+[#3647]: https://github.com/dusk-network/rusk/issues/3647
 [#3646]: https://github.com/dusk-network/rusk/issues/3646
 [#3613]: https://github.com/dusk-network/rusk/issues/3613
 [#3491]: https://github.com/dusk-network/rusk/issues/3491
