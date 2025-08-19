@@ -68,6 +68,7 @@ impl HandleRequest for RuskNode {
             ("blocks", _, "gas-price") => true,
             ("blobs", Some(_), "commitment") => true,
             ("blobs", Some(_), "hash") => true,
+            ("stats", _, "account_count") => true,
             ("stats", _, "tx_count") => true,
 
             _ => false,
@@ -122,6 +123,7 @@ impl HandleRequest for RuskNode {
                 self.blob_by_hash(&hash, request.is_json()).await
             }
 
+            ("stats", _, "account_count") => self.get_account_count().await,
             ("stats", _, "tx_count") => self.get_tx_count().await,
 
             _ => anyhow::bail!("Unsupported"),
@@ -390,7 +392,29 @@ impl RuskNode {
         })))
     }
 
-    /// Returns the total number of finalized transactions observed in the 
+    /// Returns the total number of active public accounts recorded in the
+    /// archive node. The response is a JSON object:
+    /// ```json
+    /// { "public_accounts": 12345 }
+    /// ```
+    ///
+    /// # Errors
+    /// Returns an error if the archive feature is not enabled.
+    async fn get_account_count(&self) -> anyhow::Result<ResponseData> {
+        #[cfg(feature = "archive")]
+        {
+            let count = self.archive().fetch_active_accounts().await?;
+            let body = serde_json::json!({ "public_accounts": count });
+            Ok(ResponseData::new(body))
+        }
+
+        #[cfg(not(feature = "archive"))]
+        {
+            anyhow::bail!("The archive feature is required for this endpoint.");
+        }
+    }
+
+    /// Returns the total number of finalized transactions observed in the
     /// archive, split into `public`, `shielded` and `total. The response is
     /// a JSON object:
     /// ```json

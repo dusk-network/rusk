@@ -234,11 +234,9 @@ impl Archive {
         Ok(last_account_id)
     }
 
-    /// Count finalized transfer transactions for the transfer contract, split by topic.
-    /// Returns (moonlight_count, phoenix_count).
-    pub async fn fetch_tx_count(
-        &self,
-    ) -> Result<(u64, u64)> {
+    /// Count finalized transfer transactions for the transfer contract, split
+    /// by topic. Returns (moonlight_count, phoenix_count).
+    pub async fn fetch_tx_count(&self) -> Result<(u64, u64)> {
         let mut conn = self.sqlite_archive.acquire().await?;
 
         let transfer_src = dusk_core::transfer::TRANSFER_CONTRACT.to_string();

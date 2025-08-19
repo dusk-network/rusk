@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `status` to GQL block fields
 - Add activaction height for host queries
 - Add blob config section
+- add `/stats/account_count` endpoint [#3625]
 - add `/stats/tx_count` endpoint [#3625]
 
 ### Changed
