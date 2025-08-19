@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT\n              CAST(COALESCE(SUM(CASE WHEN topic = 'moonlight' THEN 1 ELSE 0 END), 0) AS INTEGER) AS moonlight,\n              CAST(COALESCE(SUM(CASE WHEN topic = 'phoenix'  THEN 1 ELSE 0 END), 0) AS INTEGER) AS phoenix\n            FROM finalized_events\n            WHERE source = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "moonlight",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "phoenix",
+        "ordinal": 1,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "ae0dc62cbb8294c5cf1ce4e209fdb56387e39a5052a25950bde5f4d63b8f1c30"
+}
