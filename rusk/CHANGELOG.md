@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `status` to GQL block fields
 - Add activaction height for host queries
 - Add blob config section
+- add `/stats/tx_count` endpoint [#3625]
 
 ### Changed
 
@@ -389,6 +390,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3625]: https://github.com/dusk-network/rusk/issues/3625
 [#3613]: https://github.com/dusk-network/rusk/issues/3613
 [#3512]: https://github.com/dusk-network/rusk/issues/3512
 [#3470]: https://github.com/dusk-network/rusk/issues/3470

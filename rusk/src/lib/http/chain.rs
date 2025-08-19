@@ -68,6 +68,7 @@ impl HandleRequest for RuskNode {
             ("blocks", _, "gas-price") => true,
             ("blobs", Some(_), "commitment") => true,
             ("blobs", Some(_), "hash") => true,
+            ("stats", _, "tx_count") => true,
 
             _ => false,
         }
@@ -120,10 +121,14 @@ impl HandleRequest for RuskNode {
                     .map_err(|_| anyhow::anyhow!("Invalid hash length"))?;
                 self.blob_by_hash(&hash, request.is_json()).await
             }
+
+            ("stats", _, "tx_count") => self.get_tx_count().await,
+
             _ => anyhow::bail!("Unsupported"),
         }
     }
 }
+
 impl RuskNode {
     async fn handle_gql(
         &self,
@@ -383,6 +388,34 @@ impl RuskNode {
             "nonce": account.nonce,
             "next_nonce": next_nonce,
         })))
+    }
+
+    /// Returns the total number of finalized transactions observed in the 
+    /// archive, split into `public`, `shielded` and `total. The response is
+    /// a JSON object:
+    /// ```json
+    /// { "public": 123, "shielded": 456, "total": 579 }
+    /// ```
+    ///
+    /// # Errors
+    /// Returns an error if the archive feature is not enabled.
+    async fn get_tx_count(&self) -> anyhow::Result<ResponseData> {
+        #[cfg(feature = "archive")]
+        {
+            let (moonlight, phoenix) = self.archive().fetch_tx_count().await?;
+            let total = moonlight + phoenix;
+            let body = serde_json::json!({
+                "public": moonlight,
+                "shielded": phoenix,
+                "total": total
+            });
+            Ok(ResponseData::new(body))
+        }
+
+        #[cfg(not(feature = "archive"))]
+        {
+            anyhow::bail!("The archive feature is required for this endpoint.");
+        }
     }
 }
 
