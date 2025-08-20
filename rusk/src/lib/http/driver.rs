@@ -141,7 +141,7 @@ impl DriverExecutor {
             .map_err(|e| {
                 Error::Other(format!("reading wasm memory failed: {e}"))
             })?;
-        let actual_size = u32::from_be_bytes(actual_size_buf);
+        let actual_size = u32::from_le_bytes(actual_size_buf);
 
         // Calculate the start of the data portion (after the u32)
         let data_ptr = unsafe { p.add(4) };
@@ -170,18 +170,18 @@ impl DriverExecutor {
         let rkyv_ptr = self.allocate_and_copy(rkyv, rkyv.len())?;
         let out_ptr = self.allocate(OUT_BUF_SIZE)?;
 
-        let mut store = self.store.write();
-        let mut store = store.deref_mut();
-        let f = instance
-            .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(
-                &mut *store,
-                decoding_fn_name,
-            )
-            .map_err(|e| {
-                Error::Other(format!("{decoding_fn_name} failed: {e}"))
-            })?;
-        let error_code = f
-            .call(
+        let error_code = {
+            let mut store = self.store.write();
+            let mut store = store.deref_mut();
+            let f = instance
+                .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(
+                    &mut *store,
+                    decoding_fn_name,
+                )
+                .map_err(|e| {
+                    Error::Other(format!("{decoding_fn_name} failed: {e}"))
+                })?;
+            f.call(
                 &mut store,
                 (
                     fn_name_ptr as i32,
@@ -194,7 +194,8 @@ impl DriverExecutor {
             )
             .map_err(|e| {
                 Error::Other(format!("{decoding_fn_name} failed: {e}"))
-            })?;
+            })?
+        };
 
         self.deallocate(fn_name_ptr, fn_name.len())?;
         self.deallocate(rkyv_ptr, rkyv.len())?;
