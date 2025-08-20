@@ -233,6 +233,29 @@ impl Archive {
 
         Ok(last_account_id)
     }
+
+    /// Count finalized transfer transactions for the transfer contract, split
+    /// by topic. Returns (moonlight_count, phoenix_count).
+    pub async fn fetch_tx_count(&self) -> Result<(u64, u64)> {
+        let mut conn = self.sqlite_archive.acquire().await?;
+
+        let transfer_src = dusk_core::transfer::TRANSFER_CONTRACT.to_string();
+
+        let row = sqlx::query!(
+            r#"
+            SELECT
+              CAST(COALESCE(SUM(CASE WHEN topic = 'moonlight' THEN 1 ELSE 0 END), 0) AS INTEGER) AS moonlight,
+              CAST(COALESCE(SUM(CASE WHEN topic = 'phoenix'  THEN 1 ELSE 0 END), 0) AS INTEGER) AS phoenix
+            FROM finalized_events
+            WHERE source = ?
+            "#,
+            transfer_src
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok((row.moonlight as u64, row.phoenix as u64))
+    }
 }
 
 /// Mutating methods for the SQLite Archive
