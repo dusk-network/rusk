@@ -15,3 +15,6 @@ The following command builds the data driver:
 `make wasm-js`
 
 The command will build the driver which will also include memory allocation and de-allocation.
+
+From the root folder this can be achieved by:
+`make data-drivers-js`
