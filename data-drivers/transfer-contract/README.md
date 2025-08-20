@@ -8,3 +8,10 @@ other tasks to the generic data-driver, which is included into this module
 as dependency.
 
 Please refer to data-drivers/data-driver/README.md for more information.
+
+## How to build the Transfer Contract Data Driver
+
+The following command builds the data driver:
+`make wasm-js`
+
+The command will build the driver which will also include memory allocation and de-allocation.
