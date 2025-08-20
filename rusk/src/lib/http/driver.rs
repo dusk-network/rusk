@@ -120,11 +120,11 @@ impl DriverExecutor {
     }
 
     // reads from a given memory pointer
-    // assumes first 4 bytes hold Big Endian-encoded buffer length, say,
+    // assumes first 4 bytes hold little endian-encoded buffer length, say,
     // 'actual_size' having obtained 'actual_size' in this way, function assumes
     // that the subsequent buffer bytes contain 'actual_size' bytes
     // the bytes are then copied into a vector and returned
-    fn read_u32_be_and_bytes(&self, p: *const u8) -> Result<Vec<u8>, Error> {
+    fn read_u32_le_and_bytes(&self, p: *const u8) -> Result<Vec<u8>, Error> {
         let instance =
             self.instance.expect("instance should exist in executor");
         let mut store = self.store.write();
@@ -133,8 +133,6 @@ impl DriverExecutor {
             .get_memory(&mut *store, "memory")
             .ok_or(Error::Other(format!("getting memory failed")))?;
 
-        // SAFETY: We assume p is valid and properly aligned for reading a u32
-        // and that there are at least 4 bytes available
         let mut actual_size_buf = [0u8; 4];
         wasm_memory
             .read(&mut store, p as usize, &mut actual_size_buf)
@@ -143,7 +141,6 @@ impl DriverExecutor {
             })?;
         let actual_size = u32::from_le_bytes(actual_size_buf);
 
-        // Calculate the start of the data portion (after the u32)
         let data_ptr = unsafe { p.add(4) };
 
         let mut buffer = vec![0u8; actual_size as usize];
@@ -200,7 +197,7 @@ impl DriverExecutor {
         self.deallocate(fn_name_ptr, fn_name.len())?;
         self.deallocate(rkyv_ptr, rkyv.len())?;
 
-        let out_vector = self.read_u32_be_and_bytes(out_ptr)?;
+        let out_vector = self.read_u32_le_and_bytes(out_ptr)?;
         self.deallocate(out_ptr, OUT_BUF_SIZE)?;
         match error_code {
             0 => Ok(serde_json::from_slice(&out_vector)?),
@@ -255,7 +252,7 @@ impl ConvertibleContract for DriverExecutor {
         self.deallocate(json_ptr, json.len())?;
         println!("555");
 
-        let out_vector = self.read_u32_be_and_bytes(out_ptr)?;
+        let out_vector = self.read_u32_le_and_bytes(out_ptr)?;
         self.deallocate(out_ptr, OUT_BUF_SIZE)?;
         println!("666");
         match error_code {
