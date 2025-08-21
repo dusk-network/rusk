@@ -81,11 +81,11 @@ impl DriverExecutor {
         bytes: &[u8],
         sz: usize,
     ) -> Result<*mut u8, Error> {
+        let mem = self.allocate(&mut *store, sz)?;
         let wasm_memory = self
             .instance
             .get_memory(&mut *store, "memory")
             .ok_or(Error::Other(format!("getting memory failed")))?;
-        let mem = self.allocate(&mut *store, sz)?;
         wasm_memory
             .write(&mut *store, mem as usize, bytes)
             .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
@@ -123,17 +123,17 @@ impl DriverExecutor {
             .get_memory(&mut *store, "memory")
             .ok_or(Error::Other(format!("getting memory failed")))?;
 
-        let mut actual_size_buf = [0u8; 4];
+        let mut buf_len_buf = [0u8; 4];
         wasm_memory
-            .read(&mut *store, p as usize, &mut actual_size_buf)
+            .read(&mut *store, p as usize, &mut buf_len_buf)
             .map_err(|e| {
                 Error::Other(format!("reading wasm memory failed: {e}"))
             })?;
-        let actual_size = u32::from_le_bytes(actual_size_buf);
+        let buf_len = u32::from_le_bytes(buf_len_buf);
 
         let data_ptr = unsafe { p.add(4) };
 
-        let mut buffer = vec![0u8; actual_size as usize];
+        let mut buffer = vec![0u8; buf_len as usize];
         wasm_memory
             .read(&mut *store, data_ptr as usize, &mut buffer)
             .map_err(|e| {
@@ -187,7 +187,6 @@ impl DriverExecutor {
 
         self.deallocate(&mut store, fn_name_ptr, fn_name.len())?;
         self.deallocate(&mut store, rkyv_ptr, rkyv.len())?;
-
         let out_vector = self.read_u32_le_and_bytes(&mut *store, out_ptr)?;
         self.deallocate(&mut store, out_ptr, OUT_BUF_SIZE)?;
         match error_code {
@@ -244,7 +243,6 @@ impl ConvertibleContract for DriverExecutor {
 
         self.deallocate(&mut store, fn_name_ptr, fn_name.len())?;
         self.deallocate(&mut store, json_ptr, json.len())?;
-
         let out_vector = self.read_u32_le_and_bytes(&mut *store, out_ptr)?;
         self.deallocate(&mut store, out_ptr, OUT_BUF_SIZE)?;
         match error_code {
