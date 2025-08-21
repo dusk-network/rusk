@@ -108,11 +108,11 @@ impl DriverExecutor {
         Ok(())
     }
 
-    // reads from a given memory pointer
-    // assumes first 4 bytes hold little endian-encoded buffer length, say,
-    // 'actual_size' having obtained 'actual_size' in this way, function assumes
-    // that the subsequent buffer bytes contain 'actual_size' bytes
-    // the bytes are then copied into a vector and returned
+    // Reads bytes from a given memory pointer assuming that
+    // first 4 bytes hold little endian-encoded buffer length L.
+    // Subsequent bytes form a buffer of length L
+    //
+    // Returns: vector containing copy of the buffer
     fn read_u32_le_and_bytes(
         &self,
         store: &mut Store<()>,

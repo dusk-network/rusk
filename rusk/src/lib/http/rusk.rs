@@ -93,7 +93,7 @@ impl Rusk {
             .try_into()
             .map_err(|_| anyhow::anyhow!("Invalid contractId"))?;
 
-        let driver: Option<Box<dyn ConvertibleContract>> = match contract_id {
+        Ok(match contract_id {
             TRANSFER_CONTRACT => {
                 Some(Box::new(dusk_transfer_contract_dd::ContractDriver))
             }
@@ -102,20 +102,19 @@ impl Rusk {
             }
             _ => {
                 let driver_storage = self.driver_storage.read();
-                if let Some(driver_bytecode) = driver_storage.get(&contract_id)
-                {
-                    let driver_executor = DriverExecutor::from_bytecode(
-                        &contract_id,
-                        driver_bytecode,
-                    )?;
-                    driver_executor.init()?;
-                    Some(Box::new(driver_executor))
-                } else {
-                    return Ok(None); // todo
+                match driver_storage.get(&contract_id) {
+                    Some(bytecode) => {
+                        let driver_executor = DriverExecutor::from_bytecode(
+                            &contract_id,
+                            bytecode,
+                        )?;
+                        driver_executor.init()?;
+                        Some(Box::new(driver_executor))
+                    }
+                    _ => None,
                 }
             }
-        };
-        Ok(driver)
+        })
     }
 
     fn handle_data_driver(
