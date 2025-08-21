@@ -61,60 +61,58 @@ impl DriverExecutor {
         let mut store = self.store.write();
         let store = store.deref_mut();
         let init = instance.get_typed_func::<(), ()>(&mut *store, "init")?;
-        // .map_err(|e| Error::Other(format!("init failed: {e}")))?;
         init.call(store, ())?;
-        // .map_err(|e| Error::Other(format!("init failed: {e}")))?;
         Ok(())
     }
 
-    fn allocate(&self, sz: usize) -> Result<*mut u8, Error> {
+    fn allocate(
+        &self,
+        store: &mut Store<()>,
+        sz: usize,
+    ) -> Result<*mut u8, Error> {
         let instance =
             self.instance.expect("instance should exist in executor");
-        let mut store = self.store.write();
-        let store = store.deref_mut();
         let alloc =
             instance
                 .get_typed_func::<i32, i32>(&mut *store, "alloc")
                 .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
         let mem = alloc
-            .call(store, sz as i32)
+            .call(&mut *store, sz as i32)
             .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
         Ok(mem as *mut u8)
     }
 
     fn allocate_and_copy(
         &self,
+        store: &mut Store<()>,
         bytes: &[u8],
         sz: usize,
     ) -> Result<*mut u8, Error> {
         let instance =
             self.instance.expect("instance should exist in executor");
-        let wasm_memory = {
-            let mut store = self.store.write();
-            let mut store = store.deref_mut();
-            instance
-                .get_memory(&mut store, "memory")
-                .ok_or(Error::Other(format!("getting memory failed")))?
-        };
-        let mem = self.allocate(sz)?;
-        let mut store = self.store.write();
-        let store = store.deref_mut();
+        let wasm_memory = instance
+            .get_memory(&mut *store, "memory")
+            .ok_or(Error::Other(format!("getting memory failed")))?;
+        let mem = self.allocate(&mut *store, sz)?;
         wasm_memory
-            .write(store, mem as usize, bytes)
+            .write(&mut *store, mem as usize, bytes)
             .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
         Ok(mem)
     }
 
-    fn deallocate(&self, ptr: *mut u8, sz: usize) -> Result<(), Error> {
+    fn deallocate(
+        &self,
+        store: &mut Store<()>,
+        ptr: *mut u8,
+        sz: usize,
+    ) -> Result<(), Error> {
         let instance =
             self.instance.expect("instance should exist in executor");
-        let mut store = self.store.write();
-        let mut store = store.deref_mut();
         let dealloc = instance
-            .get_typed_func::<(i32, i32), ()>(&mut store, "dealloc")
+            .get_typed_func::<(i32, i32), ()>(&mut *store, "dealloc")
             .map_err(|e| Error::Other(format!("deallocate failed: {e}")))?;
         dealloc
-            .call(&mut store, (ptr as i32, sz as i32))
+            .call(&mut *store, (ptr as i32, sz as i32))
             .map_err(|e| Error::Other(format!("deallocate failed: {e}")))?;
         Ok(())
     }
@@ -124,18 +122,20 @@ impl DriverExecutor {
     // 'actual_size' having obtained 'actual_size' in this way, function assumes
     // that the subsequent buffer bytes contain 'actual_size' bytes
     // the bytes are then copied into a vector and returned
-    fn read_u32_le_and_bytes(&self, p: *const u8) -> Result<Vec<u8>, Error> {
+    fn read_u32_le_and_bytes(
+        &self,
+        store: &mut Store<()>,
+        p: *const u8,
+    ) -> Result<Vec<u8>, Error> {
         let instance =
             self.instance.expect("instance should exist in executor");
-        let mut store = self.store.write();
-        let mut store = store.deref_mut();
         let wasm_memory = instance
             .get_memory(&mut *store, "memory")
             .ok_or(Error::Other(format!("getting memory failed")))?;
 
         let mut actual_size_buf = [0u8; 4];
         wasm_memory
-            .read(&mut store, p as usize, &mut actual_size_buf)
+            .read(&mut *store, p as usize, &mut actual_size_buf)
             .map_err(|e| {
                 Error::Other(format!("reading wasm memory failed: {e}"))
             })?;
@@ -145,7 +145,7 @@ impl DriverExecutor {
 
         let mut buffer = vec![0u8; actual_size as usize];
         wasm_memory
-            .read(store, data_ptr as usize, &mut buffer)
+            .read(&mut *store, data_ptr as usize, &mut buffer)
             .map_err(|e| {
                 Error::Other(format!("reading wasm memory failed: {e}"))
             })?;
@@ -161,24 +161,27 @@ impl DriverExecutor {
     ) -> Result<JsonValue, Error> {
         let instance =
             self.instance.expect("instance should exist in executor");
+        let mut store = self.store.write();
+        let mut store = store.deref_mut();
 
-        let fn_name_ptr =
-            self.allocate_and_copy(fn_name.as_bytes(), fn_name.len())?;
-        let rkyv_ptr = self.allocate_and_copy(rkyv, rkyv.len())?;
-        let out_ptr = self.allocate(OUT_BUF_SIZE)?;
+        let fn_name_ptr = self.allocate_and_copy(
+            &mut *store,
+            fn_name.as_bytes(),
+            fn_name.len(),
+        )?;
+        let rkyv_ptr = self.allocate_and_copy(&mut *store, rkyv, rkyv.len())?;
+        let out_ptr = self.allocate(&mut *store, OUT_BUF_SIZE)?;
 
-        let error_code = {
-            let mut store = self.store.write();
-            let mut store = store.deref_mut();
-            let f = instance
-                .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(
-                    &mut *store,
-                    decoding_fn_name,
-                )
-                .map_err(|e| {
-                    Error::Other(format!("{decoding_fn_name} failed: {e}"))
-                })?;
-            f.call(
+        let f = instance
+            .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(
+                &mut *store,
+                decoding_fn_name,
+            )
+            .map_err(|e| {
+                Error::Other(format!("{decoding_fn_name} failed: {e}"))
+            })?;
+        let error_code = f
+            .call(
                 &mut store,
                 (
                     fn_name_ptr as i32,
@@ -191,14 +194,13 @@ impl DriverExecutor {
             )
             .map_err(|e| {
                 Error::Other(format!("{decoding_fn_name} failed: {e}"))
-            })?
-        };
+            })?;
 
-        self.deallocate(fn_name_ptr, fn_name.len())?;
-        self.deallocate(rkyv_ptr, rkyv.len())?;
+        self.deallocate(&mut store, fn_name_ptr, fn_name.len())?;
+        self.deallocate(&mut store, rkyv_ptr, rkyv.len())?;
 
-        let out_vector = self.read_u32_le_and_bytes(out_ptr)?;
-        self.deallocate(out_ptr, OUT_BUF_SIZE)?;
+        let out_vector = self.read_u32_le_and_bytes(&mut *store, out_ptr)?;
+        self.deallocate(&mut store, out_ptr, OUT_BUF_SIZE)?;
         match error_code {
             0 => Ok(serde_json::from_slice(&out_vector)?),
             _ => Err(Error::Other(format!(
@@ -216,24 +218,28 @@ impl ConvertibleContract for DriverExecutor {
     ) -> Result<Vec<u8>, Error> {
         let instance =
             self.instance.expect("instance should exist in executor");
+        let mut store = self.store.write();
+        let mut store = store.deref_mut();
 
-        let fn_name_ptr =
-            self.allocate_and_copy(fn_name.as_bytes(), fn_name.len())?;
-        let json_ptr = self.allocate_and_copy(json.as_bytes(), json.len())?;
-        let out_ptr = self.allocate(OUT_BUF_SIZE)?;
+        let fn_name_ptr = self.allocate_and_copy(
+            &mut *store,
+            fn_name.as_bytes(),
+            fn_name.len(),
+        )?;
+        let json_ptr =
+            self.allocate_and_copy(&mut *store, json.as_bytes(), json.len())?;
+        let out_ptr = self.allocate(&mut *store, OUT_BUF_SIZE)?;
 
-        let error_code = {
-            let mut store = self.store.write();
-            let mut store = store.deref_mut();
-            let f = instance
-                .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(
-                    &mut *store,
-                    "encode_input_fn",
-                )
-                .map_err(|e| {
-                    Error::Other(format!("encode_input_fn failed: {e}"))
-                })?;
-            f.call(
+        let f = instance
+            .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(
+                &mut *store,
+                "encode_input_fn",
+            )
+            .map_err(|e| {
+                Error::Other(format!("encode_input_fn failed: {e}"))
+            })?;
+        let error_code = f
+            .call(
                 &mut store,
                 (
                     fn_name_ptr as i32,
@@ -244,17 +250,15 @@ impl ConvertibleContract for DriverExecutor {
                     OUT_BUF_SIZE as i32,
                 ),
             )
-            .map_err(|e| Error::Other(format!("encode_input_fn failed: {e}")))?
-        };
-        println!("444");
+            .map_err(|e| {
+                Error::Other(format!("encode_input_fn failed: {e}"))
+            })?;
 
-        self.deallocate(fn_name_ptr, fn_name.len())?;
-        self.deallocate(json_ptr, json.len())?;
-        println!("555");
+        self.deallocate(&mut store, fn_name_ptr, fn_name.len())?;
+        self.deallocate(&mut store, json_ptr, json.len())?;
 
-        let out_vector = self.read_u32_le_and_bytes(out_ptr)?;
-        self.deallocate(out_ptr, OUT_BUF_SIZE)?;
-        println!("666");
+        let out_vector = self.read_u32_le_and_bytes(&mut *store, out_ptr)?;
+        self.deallocate(&mut store, out_ptr, OUT_BUF_SIZE)?;
         match error_code {
             0 => Ok(out_vector),
             _ => Err(Error::Other(format!(
