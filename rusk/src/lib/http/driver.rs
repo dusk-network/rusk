@@ -24,45 +24,40 @@ const OUT_BUF_SIZE: usize = 65536;
 #[derive(Clone, Debug)]
 pub struct DriverExecutor {
     store: Arc<RwLock<Store<()>>>,
-    instance: Option<Instance>,
-    _contract_id: ContractId,
+    instance: Instance,
+    contract_id: ContractId,
 }
 
 impl DriverExecutor {
-    pub fn new() -> Self {
+    pub fn from_bytecode(
+        contract_id: &ContractId,
+        bytecode: impl AsRef<[u8]>,
+    ) -> anyhow::Result<Self> {
         let config = config();
         let engine = Engine::new(&config)
             .expect("Wasmtime engine configuration should be valid");
-        let store = Store::<()>::new(&engine, ());
-        Self {
-            store: Arc::new(RwLock::new(store)),
-            instance: None,
-            _contract_id: ContractId::from_bytes([0u8; 32]),
-        }
-    }
-
-    pub fn load_bytecode(
-        &mut self,
-        contract_id: &ContractId,
-        bytecode: impl AsRef<[u8]>,
-    ) -> anyhow::Result<()> {
-        let mut store = self.store.write();
-        let store = store.deref_mut();
+        let mut store = Store::<()>::new(&engine, ());
         let module = Module::new(store.engine(), bytecode.as_ref())?;
-        let instance = Instance::new(store, &module, &[])?;
-        self.instance = Some(instance);
-        self._contract_id = *contract_id;
-        Ok(())
+        let instance = Instance::new(&mut store, &module, &[])?;
+        Ok(Self {
+            store: Arc::new(RwLock::new(store)),
+            instance,
+            contract_id: *contract_id,
+        })
     }
 
     pub fn init(&self) -> anyhow::Result<()> {
-        let instance =
-            self.instance.expect("instance should exist in executor");
         let mut store = self.store.write();
         let store = store.deref_mut();
-        let init = instance.get_typed_func::<(), ()>(&mut *store, "init")?;
+        let init = self
+            .instance
+            .get_typed_func::<(), ()>(&mut *store, "init")?;
         init.call(store, ())?;
         Ok(())
+    }
+
+    pub fn contract_id(&self) -> ContractId {
+        self.contract_id
     }
 
     fn allocate(
@@ -70,12 +65,10 @@ impl DriverExecutor {
         store: &mut Store<()>,
         sz: usize,
     ) -> Result<*mut u8, Error> {
-        let instance =
-            self.instance.expect("instance should exist in executor");
-        let alloc =
-            instance
-                .get_typed_func::<i32, i32>(&mut *store, "alloc")
-                .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
+        let alloc = self
+            .instance
+            .get_typed_func::<i32, i32>(&mut *store, "alloc")
+            .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
         let mem = alloc
             .call(&mut *store, sz as i32)
             .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
@@ -88,9 +81,8 @@ impl DriverExecutor {
         bytes: &[u8],
         sz: usize,
     ) -> Result<*mut u8, Error> {
-        let instance =
-            self.instance.expect("instance should exist in executor");
-        let wasm_memory = instance
+        let wasm_memory = self
+            .instance
             .get_memory(&mut *store, "memory")
             .ok_or(Error::Other(format!("getting memory failed")))?;
         let mem = self.allocate(&mut *store, sz)?;
@@ -106,9 +98,8 @@ impl DriverExecutor {
         ptr: *mut u8,
         sz: usize,
     ) -> Result<(), Error> {
-        let instance =
-            self.instance.expect("instance should exist in executor");
-        let dealloc = instance
+        let dealloc = self
+            .instance
             .get_typed_func::<(i32, i32), ()>(&mut *store, "dealloc")
             .map_err(|e| Error::Other(format!("deallocate failed: {e}")))?;
         dealloc
@@ -127,9 +118,8 @@ impl DriverExecutor {
         store: &mut Store<()>,
         p: *const u8,
     ) -> Result<Vec<u8>, Error> {
-        let instance =
-            self.instance.expect("instance should exist in executor");
-        let wasm_memory = instance
+        let wasm_memory = self
+            .instance
             .get_memory(&mut *store, "memory")
             .ok_or(Error::Other(format!("getting memory failed")))?;
 
@@ -159,8 +149,6 @@ impl DriverExecutor {
         rkyv: &[u8],
         decoding_fn_name: &str,
     ) -> Result<JsonValue, Error> {
-        let instance =
-            self.instance.expect("instance should exist in executor");
         let mut store = self.store.write();
         let mut store = store.deref_mut();
 
@@ -172,7 +160,8 @@ impl DriverExecutor {
         let rkyv_ptr = self.allocate_and_copy(&mut *store, rkyv, rkyv.len())?;
         let out_ptr = self.allocate(&mut *store, OUT_BUF_SIZE)?;
 
-        let f = instance
+        let f = self
+            .instance
             .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(
                 &mut *store,
                 decoding_fn_name,
@@ -216,8 +205,6 @@ impl ConvertibleContract for DriverExecutor {
         fn_name: &str,
         json: &str,
     ) -> Result<Vec<u8>, Error> {
-        let instance =
-            self.instance.expect("instance should exist in executor");
         let mut store = self.store.write();
         let mut store = store.deref_mut();
 
@@ -230,7 +217,8 @@ impl ConvertibleContract for DriverExecutor {
             self.allocate_and_copy(&mut *store, json.as_bytes(), json.len())?;
         let out_ptr = self.allocate(&mut *store, OUT_BUF_SIZE)?;
 
-        let f = instance
+        let f = self
+            .instance
             .get_typed_func::<(i32, i32, i32, i32, i32, i32), i32>(
                 &mut *store,
                 "encode_input_fn",

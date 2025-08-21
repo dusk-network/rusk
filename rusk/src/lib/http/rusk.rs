@@ -102,9 +102,12 @@ impl Rusk {
             }
             _ => {
                 let driver_storage = self.driver_storage.read();
-                if let Some(driver) = driver_storage.get(&contract_id) {
-                    let mut driver_executor = DriverExecutor::new();
-                    driver_executor.load_bytecode(&contract_id, driver)?;
+                if let Some(driver_bytecode) = driver_storage.get(&contract_id)
+                {
+                    let driver_executor = DriverExecutor::from_bytecode(
+                        &contract_id,
+                        driver_bytecode,
+                    )?;
                     driver_executor.init()?;
                     Some(Box::new(driver_executor))
                 } else {
