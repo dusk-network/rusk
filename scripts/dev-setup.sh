@@ -101,7 +101,7 @@ install_rust_and_wasm_pack() {
 
     if ! command -v wasm-pack &> /dev/null; then
         echo "Installing wasm-pack..."
-        cargo install wasm-pack
+        cargo +nightly install wasm-pack
     else
         echo "wasm-pack is already installed."
     fi
