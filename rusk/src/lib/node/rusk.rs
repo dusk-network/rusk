@@ -101,6 +101,7 @@ impl Rusk {
             #[cfg(feature = "archive")]
             archive,
             driver_storage: Arc::new(RwLock::new(BTreeMap::new())),
+            instance_cache: Arc::new(RwLock::new(BTreeMap::new())),
         })
     }
 

@@ -24,6 +24,7 @@ use std::thread;
 use crate::node::Rusk;
 
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
+const DRIVER_STORAGE_SIZE_LIMIT: usize = 1000;
 
 #[async_trait]
 impl HandleRequest for Rusk {
@@ -100,6 +101,20 @@ impl Rusk {
             STAKE_CONTRACT => {
                 Some(Box::new(dusk_stake_contract_dd::ContractDriver))
             }
+            _ => self.get_driver_executor(&contract_id)?,
+        })
+    }
+
+    fn get_driver_executor(
+        &self,
+        contract_id: &ContractId,
+    ) -> anyhow::Result<Option<Box<dyn ConvertibleContract>>> {
+        let maybe_instance = {
+            let instance_cache = self.instance_cache.read();
+            instance_cache.get(&contract_id).map(|i| i.clone())
+        };
+        Ok(match maybe_instance {
+            Some(driver_executor) => Some(Box::new(driver_executor.clone())),
             _ => {
                 let driver_storage = self.driver_storage.read();
                 match driver_storage.get(&contract_id) {
@@ -109,6 +124,9 @@ impl Rusk {
                             bytecode,
                         )?;
                         driver_executor.init()?;
+                        let mut instance_cache = self.instance_cache.write();
+                        instance_cache
+                            .insert(*contract_id, driver_executor.clone());
                         Some(Box::new(driver_executor))
                     }
                     _ => None,
@@ -203,7 +221,12 @@ impl Rusk {
 
         // insert driver code in the storage (addressed by the contractId)
         let mut driver_storage = self.driver_storage.write();
+        if driver_storage.len() >= DRIVER_STORAGE_SIZE_LIMIT {
+            return Err(anyhow::anyhow!("Exceeded driver storage limit"));
+        }
         driver_storage.insert(contract_id, data.as_ref().to_vec());
+        let mut instance_cache = self.instance_cache.write();
+        instance_cache.remove(&contract_id);
         Ok(ResponseData::new("driver upload ok".to_string()))
     }
 
