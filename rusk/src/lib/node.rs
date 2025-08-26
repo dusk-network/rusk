@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod driverstore;
 mod events;
 mod rusk;
 mod vm;
@@ -24,6 +25,7 @@ use tokio::sync::broadcast;
 pub use vm::*;
 
 use crate::http::{DriverExecutor, RuesEvent};
+pub use driverstore::DriverStore;
 pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
@@ -46,7 +48,7 @@ pub struct Rusk {
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
     #[cfg(feature = "archive")]
     pub archive: Archive,
-    pub(crate) driver_storage: Arc<RwLock<BTreeMap<ContractId, Vec<u8>>>>,
+    pub(crate) driver_store: Arc<RwLock<DriverStore>>,
     pub(crate) instance_cache:
         Arc<RwLock<BTreeMap<ContractId, DriverExecutor>>>,
 }
