@@ -26,9 +26,7 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{
-    generator_procedure, ExecuteResult, DEFAULT_MIN_GAS_LIMIT,
-};
+use crate::common::state::{generator_procedure, ExecuteResult, DEFAULT_MIN_GAS_LIMIT, DEFAULT_DRIVER_STORE_LIMIT};
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore, Wallet,
 };
@@ -122,6 +120,7 @@ async fn initial_state<P: AsRef<Path>>(
         sender,
         #[cfg(feature = "archive")]
         archive,
+        DriverStore(None, DEFAULT_DRIVER_STORE_LIMIT)
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)

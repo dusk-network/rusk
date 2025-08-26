@@ -46,6 +46,8 @@ pub struct RuskNodeBuilder {
 
     http: Option<HttpServerConfig>,
 
+    driver_store: DriverStoreConfig,
+
     command_revert: bool,
     blob_expire_after: Option<u64>,
 }
@@ -190,6 +192,11 @@ impl RuskNodeBuilder {
         self
     }
 
+    pub fn with_driver_store(mut self, driver_store_config: DriverStoreConfig) -> Self {
+        self.driver_store = driver_store_config;
+        self
+    }
+
     pub fn with_revert(mut self) -> Self {
         self.command_revert = true;
         self
@@ -239,6 +246,7 @@ impl RuskNodeBuilder {
             rues_sender.clone(),
             #[cfg(feature = "archive")]
             archive.clone(),
+            DriverStore::new(self.driver_store.driver_store_path, self.driver_store.driver_store_limit)
         )
         .map_err(|e| anyhow::anyhow!("Cannot instantiate VM {e}"))?;
         info!("Rusk VM loaded");

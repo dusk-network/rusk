@@ -44,6 +44,8 @@ const GUARDED_METHOD: &str = "owner_reset";
 
 const CHAIN_ID: u8 = 0xFA;
 
+const DEFAULT_DRIVER_STORE_LIMIT: u64 = 1024;
+
 async fn initial_state<P: AsRef<Path>>(
     dir: P,
     owner: impl AsRef<[u8]>,
@@ -93,6 +95,7 @@ async fn initial_state<P: AsRef<Path>>(
         sender,
         #[cfg(feature = "archive")]
         archive,
+        DriverStore::new(None, DEFAULT_DRIVER_STORE_LIMIT)
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)

@@ -18,6 +18,7 @@ pub mod mempool;
 pub mod telemetry;
 
 pub mod http;
+pub mod driverstore;
 
 use std::env;
 use std::str::FromStr;
@@ -62,6 +63,9 @@ pub(crate) struct Config {
     #[serde(default = "HttpConfig::default")]
     pub(crate) http: HttpConfig,
 
+    #[serde(default = "DataDriverConfig::default")]
+    pub(crate) driver_store: DriverStoreConfig,
+
     #[cfg(feature = "chain")]
     #[serde(default = "TelemetryConfig::default")]
     pub(crate) telemetry: TelemetryConfig,
@@ -85,6 +89,7 @@ impl From<&Args> for Config {
     fn from(args: &Args) -> Self {
         let mut rusk_config =
             args.config.as_ref().map_or(Config::default(), |conf_path| {
+                println!("conf_path={:?}", conf_path);
                 let toml = std::fs::read_to_string(conf_path).unwrap();
                 toml::from_str(&toml).unwrap()
             });

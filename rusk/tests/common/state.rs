@@ -37,6 +37,7 @@ use tracing::info;
 
 const CHAIN_ID: u8 = 0xFA;
 pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
+pub const DEFAULT_DRIVER_STORE_LIMIT: u64 = 1024;
 
 // Creates a Rusk initial state in the given directory
 pub async fn new_state<P: AsRef<Path>>(
@@ -77,6 +78,7 @@ pub async fn new_state_with_chainid<P: AsRef<Path>>(
         sender,
         #[cfg(feature = "archive")]
         archive,
+        DriverStore::new(None, DEFAULT_DRIVER_STORE_LIMIT)
     )
     .expect("Instantiating rusk should succeed");
 

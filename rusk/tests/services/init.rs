@@ -48,6 +48,8 @@ const OWNER: [u8; 32] = [1; 32];
 const DEPLOYER_INDEX: u8 = 0;
 const SENDER_INDEX: u8 = 1;
 
+const DEFAULT_DRIVER_STORE_LIMIT: u64 = 1024;
+
 async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let dir = dir.as_ref();
 
@@ -77,6 +79,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
         sender,
         #[cfg(feature = "archive")]
         archive,
+        DriverStore(None, DEFAULT_DRIVER_STORE_LIMIT)
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)
