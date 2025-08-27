@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{path::Path, usize};
 use std::path::PathBuf;
+use std::{path::Path, usize};
 
 #[cfg(feature = "archive")]
 use node::archive::Archive;
@@ -14,7 +14,7 @@ use tempfile::tempdir;
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
-use rusk::node::{RuskVmConfig, driverstore::DriverStore};
+use rusk::node::{driverstore::DriverStore, RuskVmConfig};
 use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state::{self, Snapshot};
 

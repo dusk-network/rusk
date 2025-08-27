@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::fs::File;
-use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
@@ -26,16 +24,7 @@ impl DriverStore {
         &self,
         contract_id: &ContractId,
     ) -> io::Result<Option<Vec<u8>>> {
-        Ok(match self.contract_path(contract_id) {
-            Some(path) => {
-                let mut f = File::open(&path)?;
-                let metadata = fs::metadata(&path)?;
-                let mut buffer = vec![0; metadata.len() as usize];
-                f.read(&mut buffer)?;
-                Some(buffer)
-            }
-            _ => None,
-        })
+        self.contract_path(contract_id).map(fs::read).transpose()
     }
 
     pub fn store_bytecode(
@@ -44,8 +33,7 @@ impl DriverStore {
         bytecode: &[u8],
     ) -> io::Result<()> {
         if let Some(path) = self.contract_path(contract_id) {
-            let mut f = std::fs::File::create(&path)?;
-            f.write_all(bytecode)?;
+            fs::write(path, bytecode)?;
         }
         Ok(())
     }
