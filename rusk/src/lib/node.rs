@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod driverstore;
+pub mod driverstore;
 mod events;
 mod rusk;
 mod vm;
@@ -25,10 +25,10 @@ use tokio::sync::broadcast;
 pub use vm::*;
 
 use crate::http::{DriverExecutor, RuesEvent};
+pub use driverstore::DriverStore;
 pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
-use crate::node::driverstore::DriverStore;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {

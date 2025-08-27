@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::{path::Path, usize};
+use std::path::PathBuf;
 
 #[cfg(feature = "archive")]
 use node::archive::Archive;
@@ -13,7 +14,7 @@ use tempfile::tempdir;
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
-use rusk::node::RuskVmConfig;
+use rusk::node::{RuskVmConfig, driverstore::DriverStore};
 use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state::{self, Snapshot};
 
@@ -37,7 +38,6 @@ use tracing::info;
 
 const CHAIN_ID: u8 = 0xFA;
 pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
-pub const DEFAULT_DRIVER_STORE_LIMIT: u64 = 1024;
 
 // Creates a Rusk initial state in the given directory
 pub async fn new_state<P: AsRef<Path>>(
@@ -78,7 +78,7 @@ pub async fn new_state_with_chainid<P: AsRef<Path>>(
         sender,
         #[cfg(feature = "archive")]
         archive,
-        DriverStore::new(None, DEFAULT_DRIVER_STORE_LIMIT)
+        DriverStore::new(None::<PathBuf>),
     )
     .expect("Instantiating rusk should succeed");
 

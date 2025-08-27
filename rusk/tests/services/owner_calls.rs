@@ -10,7 +10,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
-use rusk::node::RuskVmConfig;
+use rusk::node::{DriverStore, RuskVmConfig};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
@@ -43,8 +43,6 @@ const BOB_INIT_VALUE: u8 = 5;
 const GUARDED_METHOD: &str = "owner_reset";
 
 const CHAIN_ID: u8 = 0xFA;
-
-const DEFAULT_DRIVER_STORE_LIMIT: u64 = 1024;
 
 async fn initial_state<P: AsRef<Path>>(
     dir: P,
@@ -95,7 +93,7 @@ async fn initial_state<P: AsRef<Path>>(
         sender,
         #[cfg(feature = "archive")]
         archive,
-        DriverStore::new(None, DEFAULT_DRIVER_STORE_LIMIT)
+        DriverStore::new(None::<PathBuf>),
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)

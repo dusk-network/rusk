@@ -25,7 +25,9 @@ use tracing::info;
 use {dusk_bytes::Serializable, node::archive::Archive, tracing::debug};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
-use crate::node::{ChainEventStreamer, RuskNode, RuskVmConfig, Services};
+use crate::node::{
+    ChainEventStreamer, DriverStore, RuskNode, RuskVmConfig, Services,
+};
 use crate::{Rusk, VERSION};
 
 #[derive(Default)]
@@ -46,7 +48,7 @@ pub struct RuskNodeBuilder {
 
     http: Option<HttpServerConfig>,
 
-    driver_store: DriverStoreConfig,
+    driver_store_path: PathBuf,
 
     command_revert: bool,
     blob_expire_after: Option<u64>,
@@ -192,8 +194,11 @@ impl RuskNodeBuilder {
         self
     }
 
-    pub fn with_driver_store(mut self, driver_store_config: DriverStoreConfig) -> Self {
-        self.driver_store = driver_store_config;
+    pub fn with_driver_store_path(
+        mut self,
+        driver_store_path: PathBuf,
+    ) -> Self {
+        self.driver_store_path = driver_store_path;
         self
     }
 
@@ -246,7 +251,7 @@ impl RuskNodeBuilder {
             rues_sender.clone(),
             #[cfg(feature = "archive")]
             archive.clone(),
-            DriverStore::new(self.driver_store.driver_store_path, self.driver_store.driver_store_limit)
+            DriverStore::new(Some(self.driver_store_path)),
         )
         .map_err(|e| anyhow::anyhow!("Cannot instantiate VM {e}"))?;
         info!("Rusk VM loaded");

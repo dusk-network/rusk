@@ -18,7 +18,6 @@ pub mod mempool;
 pub mod telemetry;
 
 pub mod http;
-pub mod driverstore;
 
 use std::env;
 use std::str::FromStr;
@@ -62,9 +61,6 @@ pub(crate) struct Config {
 
     #[serde(default = "HttpConfig::default")]
     pub(crate) http: HttpConfig,
-
-    #[serde(default = "DataDriverConfig::default")]
-    pub(crate) driver_store: DriverStoreConfig,
 
     #[cfg(feature = "chain")]
     #[serde(default = "TelemetryConfig::default")]

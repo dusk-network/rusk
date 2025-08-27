@@ -116,8 +116,8 @@ impl Rusk {
         Ok(match maybe_instance {
             Some(driver_executor) => Some(Box::new(driver_executor.clone())),
             _ => {
-                let driver_storage = self.driver_storage.read();
-                match driver_storage.get(&contract_id) {
+                let driver_store = self.driver_store.read();
+                match driver_store.get_bytecode(&contract_id)? {
                     Some(bytecode) => {
                         let driver_executor = DriverExecutor::from_bytecode(
                             &contract_id,
@@ -191,7 +191,7 @@ impl Rusk {
         contract_id: &str,
         hash: impl AsRef<str>,
         sign: impl AsRef<str>,
-        data: impl AsRef<[u8]>,
+        data: &[u8],
     ) -> anyhow::Result<ResponseData> {
         let contract_id = ContractId::try_from(contract_id.to_string())
             .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
@@ -213,18 +213,18 @@ impl Rusk {
 
         // verify hash
         let mut hasher = Sha3_256::new();
-        hasher.update(data.as_ref());
+        hasher.update(data);
         let hashed_data = hasher.finalize();
         if hashed_data.to_vec() != hash {
             return Err(anyhow::anyhow!("Hash incorrect"));
         }
 
         // insert driver code in the storage (addressed by the contractId)
-        let mut driver_storage = self.driver_storage.write();
-        if driver_storage.len() >= DRIVER_STORAGE_SIZE_LIMIT {
+        let mut driver_store = self.driver_store.write();
+        if driver_store.length() >= DRIVER_STORAGE_SIZE_LIMIT {
             return Err(anyhow::anyhow!("Exceeded driver storage limit"));
         }
-        driver_storage.insert(contract_id, data.as_ref().to_vec());
+        driver_store.store_bytecode(&contract_id, data)?;
         let mut instance_cache = self.instance_cache.write();
         instance_cache.remove(&contract_id);
         Ok(ResponseData::new("driver upload ok".to_string()))

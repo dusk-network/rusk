@@ -18,7 +18,7 @@ use dusk_core::transfer::data::{
 use dusk_vm::{gen_contract_id, ContractData, Error as VMError, VM};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
+use rusk::node::{DriverStore, RuskVmConfig};
 use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
@@ -26,7 +26,9 @@ use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, ExecuteResult, DEFAULT_MIN_GAS_LIMIT, DEFAULT_DRIVER_STORE_LIMIT};
+use crate::common::state::{
+    generator_procedure, ExecuteResult, DEFAULT_MIN_GAS_LIMIT,
+};
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore, Wallet,
 };
@@ -120,7 +122,7 @@ async fn initial_state<P: AsRef<Path>>(
         sender,
         #[cfg(feature = "archive")]
         archive,
-        DriverStore(None, DEFAULT_DRIVER_STORE_LIMIT)
+        DriverStore::new(None::<PathBuf>),
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)
