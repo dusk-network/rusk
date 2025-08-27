@@ -85,7 +85,6 @@ impl From<&Args> for Config {
     fn from(args: &Args) -> Self {
         let mut rusk_config =
             args.config.as_ref().map_or(Config::default(), |conf_path| {
-                println!("conf_path={:?}", conf_path);
                 let toml = std::fs::read_to_string(conf_path).unwrap();
                 toml::from_str(&toml).unwrap()
             });
