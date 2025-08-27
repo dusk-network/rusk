@@ -56,8 +56,4 @@ impl DriverStore {
             path.join(&contract_hex)
         })
     }
-
-    pub fn length(&self) -> usize {
-        1 // todo
-    }
 }

@@ -24,7 +24,6 @@ use std::thread;
 use crate::node::Rusk;
 
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
-const DRIVER_STORAGE_SIZE_LIMIT: usize = 1000;
 
 #[async_trait]
 impl HandleRequest for Rusk {
@@ -221,9 +220,6 @@ impl Rusk {
 
         // insert driver code in the storage (addressed by the contractId)
         let mut driver_store = self.driver_store.write();
-        if driver_store.length() >= DRIVER_STORAGE_SIZE_LIMIT {
-            return Err(anyhow::anyhow!("Exceeded driver storage limit"));
-        }
         driver_store.store_bytecode(&contract_id, data)?;
         let mut instance_cache = self.instance_cache.write();
         instance_cache.remove(&contract_id);
