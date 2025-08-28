@@ -85,7 +85,7 @@ impl DriverExecutor {
         let wasm_memory = self
             .instance
             .get_memory(&mut *store, "memory")
-            .ok_or(Error::Other(format!("getting memory failed")))?;
+            .ok_or(Error::Other("getting memory failed".to_string()))?;
         wasm_memory
             .write(&mut *store, mem as usize, bytes)
             .map_err(|e| Error::Other(format!("allocate failed: {e}")))?;
@@ -121,7 +121,7 @@ impl DriverExecutor {
         let wasm_memory = self
             .instance
             .get_memory(&mut *store, "memory")
-            .ok_or(Error::Other(format!("getting memory failed")))?;
+            .ok_or(Error::Other("getting memory failed".to_string()))?;
 
         let mut buf_len_buf = [0u8; 4];
         wasm_memory
@@ -150,7 +150,7 @@ impl DriverExecutor {
         decoding_fn_name: &str,
     ) -> Result<JsonValue, Error> {
         let mut store = self.store.write();
-        let mut store = store.deref_mut();
+        let store = store.deref_mut();
 
         let fn_name_ptr = self.allocate_and_copy(
             &mut *store,
@@ -171,7 +171,7 @@ impl DriverExecutor {
             })?;
         let error_code = f
             .call(
-                &mut store,
+                &mut *store,
                 (
                     fn_name_ptr as i32,
                     fn_name.len() as i32,
@@ -185,10 +185,10 @@ impl DriverExecutor {
                 Error::Other(format!("{decoding_fn_name} failed: {e}"))
             })?;
 
-        self.deallocate(&mut store, fn_name_ptr, fn_name.len())?;
-        self.deallocate(&mut store, rkyv_ptr, rkyv.len())?;
+        self.deallocate(store, fn_name_ptr, fn_name.len())?;
+        self.deallocate(store, rkyv_ptr, rkyv.len())?;
         let out_vector = self.read_u32_le_and_bytes(&mut *store, out_ptr)?;
-        self.deallocate(&mut store, out_ptr, OUT_BUF_SIZE)?;
+        self.deallocate(store, out_ptr, OUT_BUF_SIZE)?;
         match error_code {
             0 => Ok(serde_json::from_slice(&out_vector)?),
             _ => Err(Error::Other(format!(
@@ -205,7 +205,7 @@ impl ConvertibleContract for DriverExecutor {
         json: &str,
     ) -> Result<Vec<u8>, Error> {
         let mut store = self.store.write();
-        let mut store = store.deref_mut();
+        let store = store.deref_mut();
 
         let fn_name_ptr = self.allocate_and_copy(
             &mut *store,
@@ -227,7 +227,7 @@ impl ConvertibleContract for DriverExecutor {
             })?;
         let error_code = f
             .call(
-                &mut store,
+                &mut *store,
                 (
                     fn_name_ptr as i32,
                     fn_name.len() as i32,
@@ -241,10 +241,10 @@ impl ConvertibleContract for DriverExecutor {
                 Error::Other(format!("encode_input_fn failed: {e}"))
             })?;
 
-        self.deallocate(&mut store, fn_name_ptr, fn_name.len())?;
-        self.deallocate(&mut store, json_ptr, json.len())?;
+        self.deallocate(store, fn_name_ptr, fn_name.len())?;
+        self.deallocate(store, json_ptr, json.len())?;
         let out_vector = self.read_u32_le_and_bytes(&mut *store, out_ptr)?;
-        self.deallocate(&mut store, out_ptr, OUT_BUF_SIZE)?;
+        self.deallocate(store, out_ptr, OUT_BUF_SIZE)?;
         match error_code {
             0 => Ok(out_vector),
             _ => Err(Error::Other(format!(

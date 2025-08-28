@@ -111,16 +111,16 @@ impl Rusk {
     ) -> anyhow::Result<Option<Box<dyn ConvertibleContract>>> {
         let maybe_instance = {
             let instance_cache = self.instance_cache.read();
-            instance_cache.get(&contract_id).map(|i| i.clone())
+            instance_cache.get(contract_id).cloned()
         };
         Ok(match maybe_instance {
             Some(driver_executor) => Some(Box::new(driver_executor.clone())),
             _ => {
                 let driver_store = self.driver_store.read();
-                match driver_store.get_bytecode(&contract_id)? {
+                match driver_store.get_bytecode(contract_id)? {
                     Some(bytecode) => {
                         let driver_executor = DriverExecutor::from_bytecode(
-                            &contract_id,
+                            contract_id,
                             bytecode,
                         )?;
                         driver_executor.init()?;

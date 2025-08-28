@@ -14,6 +14,7 @@ mod prover;
 mod rusk;
 mod stream;
 
+#[allow(unused_imports)]
 pub(crate) use driver::DriverExecutor;
 pub(crate) use event::{
     DataType, ExecutionError, MessageResponse as EventResponse,

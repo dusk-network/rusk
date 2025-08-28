@@ -47,6 +47,7 @@ use crate::node::{get_block_rewards, RuesEvent, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
 
 impl Rusk {
+    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         dir: P,
         chain_id: u8,
