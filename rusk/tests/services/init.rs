@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 #[cfg(feature = "archive")]
@@ -17,7 +17,7 @@ use dusk_core::transfer::data::{
 use dusk_vm::gen_contract_id;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
+use rusk::node::{DriverStore, RuskVmConfig};
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state;
 use tokio::sync::broadcast;
@@ -77,6 +77,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
         sender,
         #[cfg(feature = "archive")]
         archive,
+        DriverStore::new(None::<PathBuf>),
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)

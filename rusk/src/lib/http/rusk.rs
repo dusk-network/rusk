@@ -6,21 +6,25 @@
 
 use super::*;
 
+use crate::BlsPublicKey;
 use anyhow::anyhow;
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, ParseHexStr, Serializable};
 use dusk_core::abi::ContractId;
+use dusk_core::signatures::bls::Signature;
 use dusk_core::stake::{StakeFundOwner, STAKE_CONTRACT};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_data_driver::ConvertibleContract;
 use event::RequestData;
 use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
+use sha3::{Digest, Sha3_256};
 use std::sync::mpsc;
 use std::thread;
 
 use crate::node::Rusk;
 
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
+const UPLOAD_DRIVER_RESPONSE: &str = "driver upload ok";
 
 #[async_trait]
 impl HandleRequest for Rusk {
@@ -29,6 +33,8 @@ impl HandleRequest for Rusk {
         match request.uri.inner() {
             ("contracts", Some(_), _) => true,
             ("driver", Some(_), _) => true,
+            ("contract_owner", Some(_), _) => true,
+            ("upload_driver", Some(_), _) => true,
             ("node", _, "provisioners") => true,
             ("node", _, "crs") => true,
             _ => false,
@@ -50,7 +56,26 @@ impl HandleRequest for Rusk {
                 )
             }
             ("driver", Some(contract_id), method) => {
-                Self::handle_data_driver(contract_id, method, &request.data)
+                self.handle_data_driver(contract_id, method, &request.data)
+            }
+            ("contract_owner", Some(contract_id), _method) => {
+                self.get_contract_owner(contract_id)
+            }
+            ("upload_driver", Some(contract_id), _method) => {
+                let hash = request
+                    .header("hash")
+                    .and_then(|v| v.as_str())
+                    .ok_or(anyhow::anyhow!("Payload hash missing"))?;
+                let sign = request
+                    .header("sign")
+                    .and_then(|v| v.as_str())
+                    .ok_or(anyhow::anyhow!("Signature missing"))?;
+                self.upload_driver(
+                    contract_id,
+                    hash,
+                    sign,
+                    request.data.as_bytes(),
+                )
             }
             ("node", _, "provisioners") => self.get_provisioners(),
 
@@ -62,31 +87,63 @@ impl HandleRequest for Rusk {
 
 impl Rusk {
     fn data_driver<C: TryInto<ContractId>>(
+        &self,
         contract_id: C,
     ) -> anyhow::Result<Option<Box<dyn ConvertibleContract>>> {
         let contract_id = contract_id
             .try_into()
             .map_err(|_| anyhow::anyhow!("Invalid contractId"))?;
 
-        let driver: Option<Box<dyn ConvertibleContract>> = match contract_id {
+        Ok(match contract_id {
             TRANSFER_CONTRACT => {
                 Some(Box::new(dusk_transfer_contract_dd::ContractDriver))
             }
             STAKE_CONTRACT => {
                 Some(Box::new(dusk_stake_contract_dd::ContractDriver))
             }
-            _ => None,
+            _ => self.get_driver_executor(&contract_id)?,
+        })
+    }
+
+    fn get_driver_executor(
+        &self,
+        contract_id: &ContractId,
+    ) -> anyhow::Result<Option<Box<dyn ConvertibleContract>>> {
+        let maybe_instance = {
+            let instance_cache = self.instance_cache.read();
+            instance_cache.get(&contract_id).map(|i| i.clone())
         };
-        Ok(driver)
+        Ok(match maybe_instance {
+            Some(driver_executor) => Some(Box::new(driver_executor.clone())),
+            _ => {
+                let driver_store = self.driver_store.read();
+                match driver_store.get_bytecode(&contract_id)? {
+                    Some(bytecode) => {
+                        let driver_executor = DriverExecutor::from_bytecode(
+                            &contract_id,
+                            bytecode,
+                        )?;
+                        driver_executor.init()?;
+                        let mut instance_cache = self.instance_cache.write();
+                        instance_cache
+                            .insert(*contract_id, driver_executor.clone());
+                        Some(Box::new(driver_executor))
+                    }
+                    _ => None,
+                }
+            }
+        })
     }
 
     fn handle_data_driver(
+        &self,
         contract_id: &str,
         method: &str,
         data: &RequestData,
     ) -> anyhow::Result<ResponseData> {
         let (method, target) = method.split_once(':').unwrap_or((method, ""));
-        let driver = Self::data_driver(contract_id.to_string())?
+        let driver = self
+            .data_driver(contract_id.to_string())?
             .ok_or(anyhow::anyhow!("Unsupported contractId {contract_id}"))?;
         let result = match method {
             "decode_event" => ResponseData::new(
@@ -113,9 +170,60 @@ impl Rusk {
             "get_version" => {
                 ResponseData::new(driver.get_version().to_string())
             }
-            method => anyhow::bail!("Unsupported datadriver method {method}"),
+            method => anyhow::bail!("Unsupported data driver method {method}"),
         };
         Ok(result)
+    }
+
+    fn get_contract_owner(
+        &self,
+        contract_id: &str,
+    ) -> anyhow::Result<ResponseData> {
+        let contract_id = ContractId::try_from(contract_id.to_string())
+            .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
+        self.query_metadata(&contract_id)
+            .map(|metadata| ResponseData::new(metadata.owner))
+            .map_err(|e| anyhow::anyhow!("Contract owner not found: {e}"))
+    }
+
+    fn upload_driver(
+        &self,
+        contract_id: &str,
+        hash: impl AsRef<str>,
+        sign: impl AsRef<str>,
+        data: &[u8],
+    ) -> anyhow::Result<ResponseData> {
+        let contract_id = ContractId::try_from(contract_id.to_string())
+            .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
+        let hash = hex::decode(hash.as_ref())?;
+
+        // verify owner's signature
+        let owner = self
+            .query_metadata(&contract_id)
+            .map(|m| m.owner)
+            .map_err(|e| anyhow::anyhow!("Contract owner not found: {e}"))?;
+        let pk = BlsPublicKey::from_slice(&owner).map_err(|e| {
+            anyhow::anyhow!("Invalid owner public key found: {e:?}")
+        })?;
+        let signature = Signature::from_hex_str(sign.as_ref())
+            .map_err(|e| anyhow::anyhow!("Invalid signature: {e}"))?;
+        pk.verify(&signature, &hash).map_err(|e| {
+            anyhow::anyhow!("Signature verification failed: {e}")
+        })?;
+
+        // verify hash
+        let mut hasher = Sha3_256::new();
+        hasher.update(data);
+        let hashed_data = hasher.finalize();
+        if hashed_data.to_vec() != hash {
+            return Err(anyhow::anyhow!("Hash incorrect"));
+        }
+
+        let mut driver_store = self.driver_store.write();
+        driver_store.store_bytecode(&contract_id, data)?;
+        let mut instance_cache = self.instance_cache.write();
+        instance_cache.remove(&contract_id);
+        Ok(ResponseData::new(UPLOAD_DRIVER_RESPONSE.to_string()))
     }
 
     fn handle_contract_query(
@@ -133,7 +241,7 @@ impl Rusk {
 
         let call_arg = if json {
             let json = data.as_string();
-            driver = Self::data_driver(contract_id)?;
+            driver = self.data_driver(contract_id)?;
             driver
                 .as_ref()
                 .ok_or(anyhow::anyhow!("Unsupported contract {contract}"))?

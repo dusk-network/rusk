@@ -4,15 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod driverstore;
 mod events;
 mod rusk;
 mod vm;
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use dusk_core::{dusk, Dusk};
 
+use dusk_core::abi::ContractId;
 use dusk_vm::VM;
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
@@ -21,7 +24,8 @@ use parking_lot::RwLock;
 use tokio::sync::broadcast;
 pub use vm::*;
 
-use crate::http::RuesEvent;
+use crate::http::{DriverExecutor, RuesEvent};
+pub use driverstore::DriverStore;
 pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
@@ -44,6 +48,9 @@ pub struct Rusk {
     pub(crate) event_sender: broadcast::Sender<RuesEvent>,
     #[cfg(feature = "archive")]
     pub archive: Archive,
+    pub(crate) driver_store: Arc<RwLock<DriverStore>>,
+    pub(crate) instance_cache:
+        Arc<RwLock<BTreeMap<ContractId, DriverExecutor>>>,
 }
 
 pub(crate) type Services =
