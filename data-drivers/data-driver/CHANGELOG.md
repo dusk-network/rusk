@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-08-28
+
 ### Added
 
 - Add `alloc` feature
@@ -24,5 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `rkyv_to_json` and `json_to_rkyv` functions for bidirectional serialization.
 - Add support for encoding and decoding function inputs, outputs, and events in RKYV.
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.1.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.2.0...HEAD
+[0.2.0]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.1.0...dusk-data-driver-0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/tree/dusk-data-driver-0.1.0
