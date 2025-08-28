@@ -1,5 +1,3 @@
-
-
 # Data Drivers Overview
 
 In this module, we provide data drivers whose task is to ease communication with Dusk smart contracts
@@ -9,7 +7,7 @@ JavaScript arguments into a form which is understood by Dusk smart contracts,
 and also converting Dusk smart contracts outputs into a form which is understood
 by JavaScript.
 
-Data drivers do not call Dusk smart contracts. A particular data driver is aware of methods of the corresponding 
+Data drivers do not call Dusk smart contracts. A particular data driver is aware of methods of the corresponding
 Dusk smart contract, yet it does not call them.
 
 Each data driver has its assigned Dusk smart contract, yet it is important to
@@ -19,12 +17,12 @@ and of their arguments and outputs.
 # Module data-driver
 
 Module data-driver contains core code to be used by all drivers. It can be thought of as a framework to
-be used by concrete drivers, which are written for particular contracts. 
-Module data-driver makes it easy for the authors of concrete drivers to create a driver. 
+be used by concrete drivers, which are written for particular contracts.
+Module data-driver makes it easy for the authors of concrete drivers to create a driver.
 The authors need just to implement one trait, the complexity is delegated to module data-driver.
 
-Module data-driver provides functionality which make it easy to call drivers from both Rust and JavaScript. 
-In order to achieve that it does not use wasm-bindgen, but rather provides a set methods which are easy to call 
+Module data-driver provides functionality which make it easy to call drivers from both Rust and JavaScript.
+In order to achieve that it does not use wasm-bindgen, but rather provides a set methods which are easy to call
 from modules written in both languages. The methods are declared with no argument mangling, making them callable
 from within any language which supports "C"-like calling conventions.
 
@@ -68,6 +66,7 @@ following parameters:
     out_ptr: *mut u8,
     out_buf_size: usize,
 ```
+
 In order to pass method name, caller must allocate a buffer, copy the name to it, and pass
 a pointer to the buffer and its length. Similarly, with input data and with output data.
 To allocate a buffer, caller needs to use `alloc` method which will return a buffer offset
@@ -88,6 +87,7 @@ There are four methods in this group, so lets consider each one of them in turn:
 ### encode_input_fn
 
 Parameters:
+
 ```
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
@@ -99,16 +99,17 @@ Parameters:
 
 This method accepts method name and a buffer containing arguments in JSON form.
 On return, it fills out the output buffer with output length (first 4 bytes, as a big-endian 32-bit number),
-and then it fills out the subsequent bytes of the buffer with rkyv serialization ready to be used when 
+and then it fills out the subsequent bytes of the buffer with rkyv serialization ready to be used when
 making a call to a given smart contract method.
 Caller needs to read first 4 bytes of the output buffer first to know the returned data length.
 Say, first 4 bytes contained number N. The caller then needs to read the remaining N bytes of rkyv
-serialization returned. Assuming that the method name passed to `encode_input_fn` was M, 
+serialization returned. Assuming that the method name passed to `encode_input_fn` was M,
 the caller can pass the obtained data to smart contract method M as its arguments.
 
 ### decode_input_fn
 
 Parameters:
+
 ```
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
@@ -124,6 +125,7 @@ rkyv serialization string into JSON. Other calling details are the same as in `e
 ### decode_output_fn
 
 Parameters:
+
 ```
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
@@ -139,6 +141,7 @@ rather than input. Other calling details are the same as in `encode_input_fn` an
 ### decode_event
 
 Parameters:
+
 ```
     event_name_ptr: *mut u8,
     event_name_size: usize,
@@ -152,6 +155,7 @@ This method converts event from rkyv-serialized form into JSON. Unlike other arg
 this method accepts event name rather than method name.
 
 All the above methods make it possible to:
+
 - convert JSON arguments to rkyv bytes ready to be used in smart contract method calls
 - convert rkyv bytes returned by smart contract method calls into JSON
 - convert events emitted by smart contract into JSON
@@ -167,15 +171,15 @@ Method get_last_error() allows obtaining detailed error description when ErrorCo
 Method get_schema() should return JSON schema describing all contract calls. This feature is not used yet
 and in current implementation an empty string is returned.
 
-Method get_version() returns versions of the driver. Currently, versioning is up to the discretion of 
+Method get_version() returns versions of the driver. Currently, versioning is up to the discretion of
 driver's author.
 
 ## Trait ConvertibleContract - to be used by drivers' creators
 
 Fortunately, the above functions with their rather complex parameters are to be used only internally, by this module
-(i.e. module data-driver) and by the infrastructure. Regular smart contract authors are dealing 
-only with a much simplified trait named `ConvertibleContract`. The trait is a Rust concept and 
-its methods are to be implemented in Rust, yet thanks to 
+(i.e. module data-driver) and by the infrastructure. Regular smart contract authors are dealing
+only with a much simplified trait named `ConvertibleContract`. The trait is a Rust concept and
+its methods are to be implemented in Rust, yet thanks to
 the architecture enabled by the module data-driver, the driver which implements `ConvertibleContract` and uses
 module data-driver will provide arguments and return values translations to both JavaScript and Rust users.
 
@@ -191,7 +195,7 @@ Smart contract author needs to implement the following methods of trait `Convert
 ```
 
 As you can see, thanks to the fact that the trait is a Rust concept and confined within the the realm
-of a single language, the parameters are much simplified. Module data-driver provides a set of 
+of a single language, the parameters are much simplified. Module data-driver provides a set of
 conversion methods which make implementing the trait ConvertibleContract easy.
 To such helper functions, provided by module data-driver, belong:
 
@@ -200,7 +204,7 @@ To such helper functions, provided by module data-driver, belong:
     rkyv_to_json
     from_rkyv
     json_to_rkyv_u64
-    rkyv_to_json_u64  
+    rkyv_to_json_u64
     json_to_rkyv_pair_u64
     rkyv_to_json_pair_u64
 ```
@@ -291,6 +295,7 @@ In such case, example JSON value could be as follows:
 `tCR9c1pQU1jC5QgmRi3JRb2g1Rhtrc6AxT24VQPtMY3wrsuRrnMBMP6wSoKWXH2opKTeCm5aniEG2HH8ATcUHzeWe6814e8qdECGvLLZvhaRKsi7MJgLAA33PiWZ4b6ptNt`
 
 ### Single object/structural argument
+
 In case of a single object argument of a function, a Rust struct, an example JSON representation could be as follows:
 
 ```
@@ -320,24 +325,29 @@ pub struct Stake {
     signature: DoubleSignature,
 }
 ```
+
 where StakeKeys is:
+
 ```
 pub struct StakeKeys {
     pub account: BlsPublicKey,
     pub owner: StakeFundOwner,
 ```
+
 and DoubleSignature is:
+
 ```
 pub struct DoubleSignature {
     pub account: BlsSignature,
     pub owner: BlsSignature,
 }
 ```
+
 As you can see, JSON representation does not include object name, only its named members.
 
 ### Multiple primitive arguments
 
-In case of multiple primitive elements, say, a function which, for example, accepts two arguments, 
+In case of multiple primitive elements, say, a function which, for example, accepts two arguments,
 say, u64 and u32. An example JSON could look as follows:
 
 `[ 22, 33 ]`
@@ -366,10 +376,11 @@ as above, followed by a u32 number, an example JSON representation could be as f
       "owner": "7kP8oaxopsWi7g6kNGtX3PHVekMF8RKRRx74tqoo1xLmh2zGVN2FmJ5EFg7UJV9stk"
     },
     "value": "4014086097495"
-  }, 
+  },
   33
 ]
 ```
+
 In the above example, we can see JSON representation of a Stake object and a number 33, being passed as two named
 parameters to a smart contract method. Parameter names are ignored in serialization formats, as Dusk smart
 contract methods assume that all input function parameters form a tuple. A tuple is represented as an array in JSON.

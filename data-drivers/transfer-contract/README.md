@@ -1,4 +1,3 @@
-
 # Data Driver for the Transfer Contract
 
 This module provides data-driver implementation for the Transfer Contract.
