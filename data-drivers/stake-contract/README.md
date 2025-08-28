@@ -1,4 +1,3 @@
-
 # Data Driver for the Stake Contract
 
 This module provides data-driver implementation for the Stake Contract.

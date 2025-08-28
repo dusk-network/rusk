@@ -11,8 +11,8 @@ interaction with contracts from both Rust and JavaScript contexts.
 Each folder inside `data-drivers/` is a local package with its own README  
 and focus area:
 
-- `data-driver/`: Utilities to encode & decode arguments.  
-- `stake-contract/`: Library to encode/decode contract inputs/outputs for the stake contract.  
+- `data-driver/`: Utilities to encode & decode arguments.
+- `stake-contract/`: Library to encode/decode contract inputs/outputs for the stake contract.
 - `transfer-contract/`: Library to encode/decode contract inputs/outputs for the transfer contract.
 
 For details on each, see their local README files.
