@@ -58,6 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let state_dir = rusk_profile::get_rusk_state_dir()?;
         info!("Using state from {state_dir:?}");
+        let driver_store_dir = rusk_profile::get_rusk_driver_storage_dir()?;
 
         #[cfg(feature = "ephemeral")]
         let db_path = tempdir.as_ref().map_or_else(
@@ -82,7 +83,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_mempool(config.mempool.into())
             .with_state_dir(state_dir)
             .with_blob_expire_after(config.blob.expire_after)
-            .with_min_gas_limit(config.chain.min_gas_limit());
+            .with_min_gas_limit(config.chain.min_gas_limit())
+            .with_driver_store_path(driver_store_dir);
 
         #[allow(deprecated)]
         {
