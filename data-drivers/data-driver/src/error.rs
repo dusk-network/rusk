@@ -18,6 +18,8 @@ pub enum Error {
     Json(String),
     /// Unsupported
     Unsupported(String),
+    /// Other
+    Other(String),
 }
 
 impl fmt::Display for Error {
