@@ -220,7 +220,11 @@ impl Rusk {
         }
 
         let mut driver_store = self.driver_store.write();
-        driver_store.store_bytecode(&contract_id, data)?;
+        driver_store.store_bytecode_and_signature(
+            &contract_id,
+            data,
+            signature.to_bytes(),
+        )?;
         let mut instance_cache = self.instance_cache.write();
         instance_cache.remove(&contract_id);
         Ok(ResponseData::new(UPLOAD_DRIVER_RESPONSE.to_string()))
