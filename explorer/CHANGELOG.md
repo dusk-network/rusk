@@ -17,8 +17,12 @@ and this project adheres to
 
 - Use supply.dusk.network for circulating supply [#3757]
 - The `from` and `to` fields are now always shown in moonlight transactions regardless of the transaction's type [#3804]
+- Explorer now reads circulating supply from `https://supply.dusk.network/` directly. CORS and cache headers applied via Cloudflare. [#3847]
+- No longer rely on Vite dev proxy for `/supply` during development. [#3847]
 
 ### Removed
+
+- Deleted API URL plumbing (`makeApiUrl`, `ensureTrailingSlash`) and the `apiGet` helper. Removed `VITE_API_ENDPOINT` environment variable. [#3847]
 
 ### Fixed
 
@@ -264,6 +268,7 @@ and this project adheres to
 [#3739]: https://github.com/dusk-network/rusk/issues/3739
 [#3757]: https://github.com/dusk-network/rusk/issues/3757
 [#3804]: https://github.com/dusk-network/rusk/issues/3804
+[#3847]: https://github.com/dusk-network/rusk/issues/3847
 
 <!-- VERSIONS -->
 

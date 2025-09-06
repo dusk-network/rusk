@@ -23,7 +23,6 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.APP_BUILD_INFO": JSON.stringify(APP_BUILD_INFO),
       "import.meta.env.APP_VERSION": JSON.stringify(APP_VERSION),
       "process.env": {
-        API_ENDPOINT: env.VITE_API_ENDPOINT,
         VITE_BLOCKS_LIST_ENTRIES: env.VITE_BLOCKS_LIST_ENTRIES,
         VITE_CHAIN_INFO_ENTRIES: env.VITE_CHAIN_INFO_ENTRIES,
         VITE_FEATURE_BLOB_HASHES: env.VITE_FEATURE_BLOB_HASHES,
@@ -44,11 +43,6 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/rusk/, ""),
           target: "http://localhost:8080/",
         },
-        "/supply": {
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/supply/, ""),
-          target: "https://supply.dusk.network/",
-        },
       },
     },
     test: {
@@ -62,7 +56,6 @@ export default defineConfig(({ mode }) => {
       env: {
         APP_BUILD_INFO: "hash1234 2024-01-12",
         APP_VERSION: "0.0.0",
-        VITE_API_ENDPOINT: "https://api.dusk.network/v1",
         VITE_BLOCKS_LIST_ENTRIES: "100",
         VITE_CHAIN_INFO_ENTRIES: "15",
         VITE_FEATURE_BLOB_HASHES: "true",

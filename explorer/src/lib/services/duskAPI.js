@@ -13,7 +13,7 @@ import {
 } from "lamb";
 
 import { failureToRejection } from "$lib/dusk/http";
-import { makeApiUrl, makeNodeUrl } from "$lib/url";
+import { makeNodeUrl } from "$lib/url";
 
 import {
   addCountAndUnique,
@@ -77,23 +77,6 @@ const gqlGet = (queryInfo) =>
       ...toHeadersVariables(queryInfo.variables),
     },
     method: "POST",
-  })
-    .then(failureToRejection)
-    .then((res) => res.json());
-
-/**
- * @param {string} endpoint
- * @param {Record<string, any>} [params]
- * @returns {Promise<any>}
- */
-const apiGet = (endpoint, params) =>
-  fetch(makeApiUrl(endpoint, params), {
-    headers: {
-      Accept: "application/json",
-      "Accept-Charset": "utf-8",
-      Connection: "Keep-Alive",
-    },
-    method: "GET",
   })
     .then(failureToRejection)
     .then((res) => res.json());
@@ -198,20 +181,31 @@ const duskAPI = {
 
   /** @returns {Promise<MarketData>} */
   async getMarketData() {
-    /* eslint-disable camelcase */
+    const COINGECKO_MARKET_URL = new URL(
+      "https://api.coingecko.com/api/v3/coins/dusk-network" +
+        "?community_data=false" +
+        "&developer_data=false" +
+        "&localization=false" +
+        "&market_data=true" +
+        "&sparkline=false" +
+        "&tickers=false"
+    );
 
     try {
       // Fetch price data and circulating supply
       const [coinGeckoData, circulatingSupply] = await Promise.all([
-        apiGet("https://api.coingecko.com/api/v3/coins/dusk-network", {
-          community_data: false,
-          developer_data: false,
-          localization: false,
-          market_data: true,
-          sparkline: false,
-          tickers: false,
-        }).then(getKey("market_data")),
-        fetch("/supply")
+        fetch(COINGECKO_MARKET_URL, {
+          headers: {
+            Accept: "application/json",
+            "Accept-Charset": "utf-8",
+            Connection: "Keep-Alive",
+          },
+          method: "GET",
+        })
+          .then(failureToRejection)
+          .then((res) => res.json())
+          .then(getKey("market_data")),
+        fetch("https://supply.dusk.network/")
           .then(failureToRejection)
           .then((res) => res.text())
           .then((supply) => parseFloat(supply))
@@ -249,8 +243,6 @@ const duskAPI = {
     } catch (/** @type {any} */ error) {
       throw new Error(`Failed to fetch market data: ${error.message}`);
     }
-
-    /* eslint-enable camelcase */
   },
 
   /**
