@@ -24,7 +24,6 @@ The application defines these variables by reading a local `.env`
 ```
 # *_PATH variables can be empty string, must start with a slash otherwise, must not end with a slash
 
-VITE_API_ENDPOINT="https://api.dusk.network/v1"
 VITE_BASE_PATH="" # Optional, set to '/explorer' when deploying to an 'apps.*' subdomain
 VITE_BLOCKS_LIST_ENTRIES=100
 VITE_CHAIN_INFO_ENTRIES=15

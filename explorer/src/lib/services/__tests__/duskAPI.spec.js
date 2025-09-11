@@ -28,7 +28,6 @@ describe("duskAPI", () => {
 
   /** @type {URL} */
   const gqlExpectedURL = new URL("/on/graphql/query", node);
-  const endpointEnvName = "VITE_API_ENDPOINT";
 
   /** @type {(data: Record<string | number, any> | number) => Response} */
   const makeOKResponse = (data) =>
@@ -258,7 +257,7 @@ describe("duskAPI", () => {
       ),
       apiGetOptions
     );
-    expect(fetchSpy).toHaveBeenNthCalledWith(2, "/supply");
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, "https://supply.dusk.network/");
   });
 
   it("should fallback to CoinGecko market cap when supply endpoint fails", async () => {
@@ -278,7 +277,7 @@ describe("duskAPI", () => {
       ),
       apiGetOptions
     );
-    expect(fetchSpy).toHaveBeenNthCalledWith(2, "/supply");
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, "https://supply.dusk.network/");
   });
 
   it("should expose a method to retrieve the node locations", async () => {
@@ -453,12 +452,7 @@ describe("duskAPI", () => {
       .mockResolvedValueOnce(makeOKResponse(mockData.apiNodeLocations))
       .mockResolvedValueOnce(makeOKResponse(mockData.apiNodeLocations));
 
-    vi.stubEnv(endpointEnvName, "http://example.com");
-
     duskAPI.getNodeLocations();
-
-    vi.stubEnv(endpointEnvName, "http://example.com/");
-
     duskAPI.getNodeLocations();
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
