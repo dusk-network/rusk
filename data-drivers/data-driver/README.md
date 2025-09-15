@@ -28,8 +28,7 @@ from within any language which supports "C"-like calling conventions.
 
 The following methods are provided by module data-driver:
 
-```
-
+```rust
 alloc(size: usize) -> *mut u8
 
 dealloc(ptr: *mut u8, size: usize)
@@ -47,7 +46,6 @@ decode_event(...) -> ErrorCode
 get_schema(...) -> ErrorCode
 
 get_version(...) -> ErrorCode
-
 ```
 
 In the following sections we will describe the above methods grouped by their areas of responsibility.
@@ -58,7 +56,7 @@ Methods `alloc` and `dealloc` are needed for both JavaScript and Rust callers (a
 other languages as well) to pass parameters to other methods. Typical driver method accepts the
 following parameters:
 
-```
+```rust
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
     data_ptr: *mut u8,
@@ -88,7 +86,7 @@ There are four methods in this group, so lets consider each one of them in turn:
 
 Parameters:
 
-```
+```rust
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
     json_ptr: *mut u8,
@@ -110,7 +108,7 @@ the caller can pass the obtained data to smart contract method M as its argument
 
 Parameters:
 
-```
+```rust
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
     rkyv_ptr: *const u8,
@@ -126,7 +124,7 @@ rkyv serialization string into JSON. Other calling details are the same as in `e
 
 Parameters:
 
-```
+```rust
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
     rkyv_ptr: *const u8,
@@ -142,7 +140,7 @@ rather than input. Other calling details are the same as in `encode_input_fn` an
 
 Parameters:
 
-```
+```rust
     event_name_ptr: *mut u8,
     event_name_size: usize,
     rkyv_ptr: *const u8,
@@ -185,7 +183,7 @@ module data-driver will provide arguments and return values translations to both
 
 Smart contract author needs to implement the following methods of trait `ConvertibleContract`:
 
-```
+```rust
     fn encode_input_fn(&self, fn_name: &str, json: &str) -> Result<Vec<u8>, Error>;
     fn decode_input_fn(&self, fn_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error>;
     fn decode_output_fn(&self, fn_name: &str, rkyv: &[u8]) -> Result<JsonValue, Error>;
@@ -213,7 +211,7 @@ Example ConvertibleContract implementation may look as follows:
 (assuming that the contract has only one method `deposit_to` and one event
 `Withdrawal`)
 
-```
+```rust
 impl ConvertibleContract for ContractDriver {
     fn encode_input_fn(
         &self,
@@ -298,26 +296,26 @@ In such case, example JSON value could be as follows:
 
 In case of a single object argument of a function, a Rust struct, an example JSON representation could be as follows:
 
-```
+```json
 {
-    "chain_id": 1,
-    "keys": {
-      "account": "tCR9c1pQU1jC5QgmRi3JRb2g1Rhtrc6AxT24VQPtMY3wrsuRrnMBMP6wSoKWXH2opKTeCm5aniEG2HH8ATcUHzeWe6814e8qdECGvLLZvhaRKsi7MJgLAA33PiWZ4b6ptNt",
-      "owner": {
-        "Account": "tCR9c1pQU1jC5QgmRi3JRb2g1Rhtrc6AxT24VQPtMY3wrsuRrnMBMP6wSoKWXH2opKTeCm5aniEG2HH8ATcUHzeWe6814e8qdECGvLLZvhaRKsi7MJgLAA33PiWZ4b6ptNt"
-      }
-    },
-    "signature": {
-      "account": "7kP8oaxopsWi7g6kNGtX3PHVekMF8RKRRx74tqoo1xLmh2zGVN2FmJ5EFg7UJV9stk",
-      "owner": "7kP8oaxopsWi7g6kNGtX3PHVekMF8RKRRx74tqoo1xLmh2zGVN2FmJ5EFg7UJV9stk"
-    },
-    "value": "4014086097495"
+  "chain_id": 1,
+  "keys": {
+    "account": "tCR9c1pQU1jC5QgmRi3JRb2g1Rhtrc6AxT24VQPtMY3wrsuRrnMBMP6wSoKWXH2opKTeCm5aniEG2HH8ATcUHzeWe6814e8qdECGvLLZvhaRKsi7MJgLAA33PiWZ4b6ptNt",
+    "owner": {
+      "Account": "tCR9c1pQU1jC5QgmRi3JRb2g1Rhtrc6AxT24VQPtMY3wrsuRrnMBMP6wSoKWXH2opKTeCm5aniEG2HH8ATcUHzeWe6814e8qdECGvLLZvhaRKsi7MJgLAA33PiWZ4b6ptNt"
+    }
+  },
+  "signature": {
+    "account": "7kP8oaxopsWi7g6kNGtX3PHVekMF8RKRRx74tqoo1xLmh2zGVN2FmJ5EFg7UJV9stk",
+    "owner": "7kP8oaxopsWi7g6kNGtX3PHVekMF8RKRRx74tqoo1xLmh2zGVN2FmJ5EFg7UJV9stk"
+  },
+  "value": "4014086097495"
 }
 ```
 
 The above JSON structure corresponds to the following Rust struct:
 
-```
+```rust
 pub struct Stake {
     chain_id: u8,
     keys: StakeKeys,
@@ -328,7 +326,7 @@ pub struct Stake {
 
 where StakeKeys is:
 
-```
+```rust
 pub struct StakeKeys {
     pub account: BlsPublicKey,
     pub owner: StakeFundOwner,
@@ -336,7 +334,7 @@ pub struct StakeKeys {
 
 and DoubleSignature is:
 
-```
+```rust
 pub struct DoubleSignature {
     pub account: BlsSignature,
     pub owner: BlsSignature,
@@ -361,7 +359,7 @@ In case smart contract method accepts a mix of structural and primitive argument
 arguments, they are represented in JSON as an array. Assuming we have a function which accepts a struct Stake
 as above, followed by a u32 number, an example JSON representation could be as follows:
 
-```
+```json
 [
   {
     "chain_id": 1,

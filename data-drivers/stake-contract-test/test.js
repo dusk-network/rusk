@@ -1,6 +1,24 @@
 /* eslint-disable no-console */
 /* eslint-disable camelcase */
 /* eslint-disable no-var */
+
+// Stake Contract Data-Driver Examples & Explainers
+//
+// This script demonstrates how to use the data-driver WASM from JavaScript.
+// It highlights the most common tasks you'll do when talking to a Dusk contract:
+//   1) Load the compiled data-driver WASM
+//   2) Inspect driver metadata (schema + version)
+//   3) Encode JSON inputs -> RKYV bytes for a contract call
+//   4) Decode RKYV bytes -> JSON (for inputs, outputs, and events)
+//   5) Handle errors defensively
+//
+// You can run it with: `npm start` (see package.json).
+// Notes:
+// - This script does **not** invoke the on-chain contract. It only (de)serializes
+//   data according to the stake contract's ABI via the data-driver.
+// - The paths assume you've built the WASM via `make data-drivers-js`.
+// - Any base64 printed to the console is just a convenient way to view raw bytes.
+
 import { loadDriverWasm } from "../data-driver/loader.js";
 import { readFile } from "fs/promises";
 
@@ -25,7 +43,12 @@ async function run() {
   console.log("origStakeRkyv:", stake_b64);
   console.log();
   try {
-    console.log("Datadriver Version:", driver.getVersion());
+    // --- Driver metadata ---
+    // Introspect the contract interface from JS for quick validation/UX.
+    const schema = driver.getSchema();
+    const version = driver.getVersion();
+    console.log("getSchema():", JSON.stringify(schema, null, 2));
+    console.log("getVersion():", version);
     console.log();
 
     const stakeJson = driver.decodeInputFn("stake", decodeBase64(stake_b64));
