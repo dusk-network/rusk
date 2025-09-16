@@ -12,16 +12,16 @@ export async function loadDriverWasm(bytes) {
 
   // -- Helpers --
   function allocAndWriteString(str) {
-    const bytes = textEncoder.encode(str);
-    const ptr = exports.alloc(bytes.length);
-    new Uint8Array(memory.buffer, ptr, bytes.length).set(bytes);
-    return [ptr, bytes.length];
+    const strBytes = textEncoder.encode(str);
+    const ptr = exports.alloc(strBytes.length);
+    new Uint8Array(memory.buffer, ptr, strBytes.length).set(strBytes);
+    return [ptr, strBytes.length];
   }
 
-  function allocAndWriteBytes(bytes) {
-    const ptr = exports.alloc(bytes.length);
-    new Uint8Array(memory.buffer, ptr, bytes.length).set(bytes);
-    return [ptr, bytes.length];
+  function allocAndWriteBytes(byteArray) {
+    const ptr = exports.alloc(byteArray.length);
+    new Uint8Array(memory.buffer, ptr, byteArray.length).set(byteArray);
+    return [ptr, byteArray.length];
   }
 
   function readBuffer(ptr, bufSize) {
@@ -66,22 +66,26 @@ export async function loadDriverWasm(bytes) {
   }
 
   return {
-    /** Initializes the contract driver */
-    init: () => exports.init(),
-
-    /** Encodes JSON input into RKYV bytes */
-    encodeInputFn: (fnName, json) => {
-      const [fnPtr, fnLen] = allocAndWriteString(fnName);
-      const [jsonPtr, jsonLen] = allocAndWriteString(json);
+    /** Decodes RKYV event bytes into JSON */
+    decodeEvent: (eventName, rkyvBytes) => {
+      const [eventPtr, eventLen] = allocAndWriteString(eventName);
+      const [rkyvPtr, rkyvLen] = allocAndWriteBytes(rkyvBytes);
 
       const result = runWithOutputBuffer((outPtr, outSize) =>
-        exports.encode_input_fn(fnPtr, fnLen, jsonPtr, jsonLen, outPtr, outSize)
+        exports.decode_event(
+          eventPtr,
+          eventLen,
+          rkyvPtr,
+          rkyvLen,
+          outPtr,
+          outSize
+        )
       );
 
-      exports.dealloc(fnPtr, fnLen);
-      exports.dealloc(jsonPtr, jsonLen);
+      exports.dealloc(eventPtr, eventLen);
+      exports.dealloc(rkyvPtr, rkyvLen);
 
-      return result; // returns Uint8Array
+      return JSON.parse(textDecoder.decode(result));
     },
 
     /** Decodes RKYV input bytes into JSON */
@@ -121,26 +125,19 @@ export async function loadDriverWasm(bytes) {
       return JSON.parse(textDecoder.decode(result));
     },
 
-    /** Decodes RKYV event bytes into JSON */
-    decodeEvent: (eventName, rkyvBytes) => {
-      const [eventPtr, eventLen] = allocAndWriteString(eventName);
-      const [rkyvPtr, rkyvLen] = allocAndWriteBytes(rkyvBytes);
+    /** Encodes JSON input into RKYV bytes */
+    encodeInputFn: (fnName, json) => {
+      const [fnPtr, fnLen] = allocAndWriteString(fnName);
+      const [jsonPtr, jsonLen] = allocAndWriteString(json);
 
       const result = runWithOutputBuffer((outPtr, outSize) =>
-        exports.decode_event(
-          eventPtr,
-          eventLen,
-          rkyvPtr,
-          rkyvLen,
-          outPtr,
-          outSize
-        )
+        exports.encode_input_fn(fnPtr, fnLen, jsonPtr, jsonLen, outPtr, outSize)
       );
 
-      exports.dealloc(eventPtr, eventLen);
-      exports.dealloc(rkyvPtr, rkyvLen);
+      exports.dealloc(fnPtr, fnLen);
+      exports.dealloc(jsonPtr, jsonLen);
 
-      return JSON.parse(textDecoder.decode(result));
+      return result; // returns Uint8Array
     },
 
     /** Returns the contract's JSON schema */
@@ -158,5 +155,8 @@ export async function loadDriverWasm(bytes) {
       );
       return textDecoder.decode(result);
     },
+
+    /** Initializes the contract driver */
+    init: () => exports.init(),
   };
 }
