@@ -18,8 +18,7 @@
 //   data according to the stake contract's ABI via the data-driver.
 // - The paths assume you've built the WASM via `make data-drivers-js`.
 // - Any base64 printed to the console is just a convenient way to view raw bytes.
-
-import { loadDriverWasm } from "../data-driver/loader.js";
+import { loadDriverWasm } from "./data-driver/loader.js";
 import { readFile } from "fs/promises";
 
 function decodeBase64(b64) {
@@ -31,6 +30,7 @@ function encodeBase64(bytes) {
   return Buffer.from(bytes).toString("base64");
 }
 
+/* eslint-disable max-statements */
 async function run() {
   const wasmBytes = await readFile(
     "../../target/wasm32-unknown-unknown/release/dusk_stake_contract_dd_opt.wasm"
