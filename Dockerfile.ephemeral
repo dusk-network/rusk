@@ -1,5 +1,5 @@
 # --- Build stage ---
-FROM rust:latest AS build-stage
+FROM rust:1.82 AS build-stage
 
 WORKDIR /opt/rusk
 ENV RUSK_PROFILE_PATH /.dusk/rusk
@@ -41,7 +41,7 @@ RUN if [ -n "$CARGO_FEATURES" ]; then \
     fi
 
 # --- Run stage ---
-FROM debian:bookworm-slim
+FROM ubuntu:24.04
 
 WORKDIR /opt/rusk
 
