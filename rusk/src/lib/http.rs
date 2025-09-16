@@ -593,15 +593,30 @@ where
     }
 
     #[cfg(feature = "http-wasm")]
-    if path == "/static/drivers/wallet-core.wasm" {
-        let wallet_wasm = include_bytes!("../assets/wallet_core-1.0.1.wasm");
-        let mut response =
-            Response::new(Full::from(wallet_wasm.to_vec()).into());
-        response.headers_mut().append(
-            "Content-Type",
-            HeaderValue::from_static("application/wasm"),
-        );
-        return Ok(response);
+    {
+        // Map request path -> wasm bytes
+        if let Some(wallet_wasm) = match path {
+            "/static/drivers/wallet-core.wasm"
+            | "/static/drivers/wallet-core-1.0.1.wasm" => Some(
+                include_bytes!("../assets/wallet_core-1.0.1.wasm").to_vec(),
+            ),
+            "/static/drivers/wallet-core-1.3.0.wasm" => Some(
+                include_bytes!("../assets/wallet_core-1.3.0.wasm").to_vec(),
+            ),
+            _ => None,
+        } {
+            let mut response = Response::new(Full::from(wallet_wasm).into());
+            let headers = response.headers_mut();
+            headers.append(
+                "Content-Type",
+                HeaderValue::from_static("application/wasm"),
+            );
+            headers.append(
+                "Cache-Control",
+                HeaderValue::from_static("public, max-age=31536000, immutable"),
+            );
+            return Ok(response);
+        }
     }
 
     Err(ExecutionError::Generic(anyhow::anyhow!("Unsupported path")))
