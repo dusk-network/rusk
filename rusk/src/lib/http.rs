@@ -597,16 +597,15 @@ where
         // Map request path -> wasm bytes
         if let Some(wallet_wasm) = match path {
             "/static/drivers/wallet-core.wasm"
-            | "/static/drivers/wallet-core-1.0.1.wasm" => {
-                Some(include_bytes!("../assets/wallet_core-1.0.1.wasm"))
-            }
-            "/static/drivers/wallet-core-1.3.0.wasm" => {
-                Some(include_bytes!("../assets/wallet_core-1.3.0.wasm"))
-            }
+            | "/static/drivers/wallet-core-1.0.1.wasm" => Some(
+                include_bytes!("../assets/wallet_core-1.0.1.wasm").to_vec(),
+            ),
+            "/static/drivers/wallet-core-1.3.0.wasm" => Some(
+                include_bytes!("../assets/wallet_core-1.3.0.wasm").to_vec(),
+            ),
             _ => None,
         } {
-            let mut response =
-                Response::new(Full::from(wallet_wasm.to_vec()).into());
+            let mut response = Response::new(Full::from(wallet_wasm).into());
             let headers = response.headers_mut();
             headers.append(
                 "Content-Type",
