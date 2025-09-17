@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Change `wallet-core` URL to a concrete versioned URL [#3850]
+
 ### Removed
 
 ### Fixed
@@ -57,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3582]: https://github.com/dusk-network/rusk/issues/3582
 [#3427]: https://github.com/dusk-network/rusk/issues/3427
 [#3750]: https://github.com/dusk-network/rusk/issues/3750
+[#3850]: https://github.com/dusk-network/rusk/issues/3850
 
 <!-- VERSIONS -->
 
