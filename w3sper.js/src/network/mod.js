@@ -72,7 +72,7 @@ export class Network extends EventTarget {
   async connect(options = {}) {
     await this.#rues.connect(options);
 
-    ProtocolDriver.load(new URL("/static/drivers/wallet-core.wasm", this.url));
+    ProtocolDriver.load(new URL("/static/drivers/wallet-core-1.3.0.wasm", this.url));
 
     return this;
   }
