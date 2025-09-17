@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+## [1.2.0] - 2025-09-17
+
+### Added
+
 - Add possibility to retrieve the unshielded transaction history [#3427]
 - Add support for transaction payload carrying contract call data [#3750]
 
@@ -64,5 +74,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/w3sper-v.0.1.0...HEAD
+[1.2.0]: https://github.com/dusk-network/rusk/tree/w3sper-v.1.2.0
 [1.1.0]: https://github.com/dusk-network/rusk/tree/w3sper-v.1.1.0
 [1.0.0]: https://github.com/dusk-network/rusk/tree/w3sper-v.0.1.0
