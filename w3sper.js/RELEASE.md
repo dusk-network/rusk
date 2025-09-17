@@ -109,14 +109,22 @@ deno run --allow-net --allow-read src/mod.js
 
 # Check for any linting issues
 deno lint
+```
+
+### 7. Commit, dry-run and push the changes
+
+```bash
+git add .
+git commit -m "w3sper.js: Release v1.2.0"
 
 # Validate JSR package structure
 deno publish --dry-run
+
+git push origin feature-ABC-123
 ```
 
-### 7. Create and Review Pull Request
+### 8. Create and Review Pull Request
 
-- Commit and push the changes
 - Open a PR targeting `main`
 - Copy the changelog section for the new version into the PR description
 - Request code review from team members
@@ -127,7 +135,7 @@ git commit -m "w3sper.js: Release v1.2.0"
 git push origin feature-ABC-123
 ```
 
-### 8. Create Annotated Tag
+### 9. Create Annotated Tag
 
 **Option A: Tag from branch (after approval)**
 
@@ -145,13 +153,13 @@ git tag -a w3sper-v1.2.0 -m "w3sper.js: Release v1.2.0"
 
 **Important note:** Ensure the tag name (`w3sper-v1.2.0`) matches exactly with the entry added to the CHANGELOG.md in step 4.
 
-### 9. Push the Tag
+### 10. Push the Tag
 
 ```bash
 git push origin w3sper-v1.2.0
 ```
 
-### 10. Publish to JSR
+### 11. Publish to JSR
 
 Publish the package to the JavaScript Registry:
 
@@ -168,7 +176,7 @@ deno publish
 
 **Note:** Ensure you have the necessary permissions to publish to the `@dusk` scope on JSR.
 
-### 11. Verify JSR Publication
+### 12. Verify JSR Publication
 
 - Check that the package appears on JSR: https://jsr.io/@dusk/w3sper
 - Verify the version number matches the release
@@ -178,13 +186,13 @@ deno publish
 deno run --allow-net -e "import { /* your exports */ } from 'jsr:@dusk/w3sper@1.2.0'; console.log('Import successful');"
 ```
 
-### 12. Update Documentation
+### 13. Update Documentation
 
 - Verify that README.md examples use the correct version
 - Update any documentation that references version-specific features
 - Check that JSR package page displays correctly
 
-### 13. Integration Testing
+### 14. Integration Testing
 
 Test the published package in real-world scenarios:
 
@@ -192,7 +200,7 @@ Test the published package in real-world scenarios:
 - Verify all exported functions work as expected
 - Test in different Deno runtime environments if applicable
 
-### 14. Announce the Release
+### 15. Announce the Release
 
 - Notify development team about the new release
 - Update any dependent projects that use w3sper.js
