@@ -14,16 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `status` to GQL block fields
 - Add activaction height for host queries
 - Add blob config section
-- add `/stats/account_count` endpoint [#3625]
-- add `/stats/tx_count` endpoint [#3625]
+- Add `/stats/account_count` endpoint [#3625]
+- Add `/stats/tx_count` endpoint [#3625]
+- Add versioned `wallet-core` endpoints in HTTP server [#3850]
 
 ### Changed
 
 - Change block generation to include transactions quickly
-
-
-### Changed
-
 - Update rust toolchain to nightly 2024-07-30 (1.82.0) [#3470]
 
 ## [1.3.0] - 2025-04-17
@@ -391,6 +388,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3850]: https://github.com/dusk-network/rusk/issues/3850
 [#3625]: https://github.com/dusk-network/rusk/issues/3625
 [#3613]: https://github.com/dusk-network/rusk/issues/3613
 [#3512]: https://github.com/dusk-network/rusk/issues/3512
