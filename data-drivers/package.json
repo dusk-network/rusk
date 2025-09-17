@@ -24,7 +24,7 @@
     "format:fix": "prettier . --write",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "start": "cd ./stake-contract-test && node test.js"
+    "start": "node stake-contract-example.js"
   },
   "devDependencies": {
     "@dusk-network/eslint-config": "4.0.1",
