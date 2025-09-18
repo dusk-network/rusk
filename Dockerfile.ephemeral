@@ -1,10 +1,18 @@
 # --- Build stage ---
-FROM rust:1.82 AS build-stage
+FROM ubuntu:24.04 AS build-stage
+
+RUN apt-get update && apt-get install -y unzip curl build-essential openssl libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 WORKDIR /opt/rusk
 ENV RUSK_PROFILE_PATH /.dusk/rusk
+ENV PATH="$PATH:/root/.cargo/bin"
 
 RUN apt-get update && apt-get install -y clang && rm -rf /var/lib/apt/lists/*
+
+# Using this to modify rusk config file before running a node
+RUN cargo install toml-cli --version 0.2.3
 
 COPY . .
 
