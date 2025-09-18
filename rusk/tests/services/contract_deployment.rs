@@ -18,7 +18,7 @@ use dusk_core::transfer::data::{
 use dusk_vm::{gen_contract_id, ContractData, Error as VMError, VM};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
+use rusk::node::{DriverStore, RuskVmConfig};
 use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
@@ -122,6 +122,7 @@ async fn initial_state<P: AsRef<Path>>(
         sender,
         #[cfg(feature = "archive")]
         archive,
+        DriverStore::new(None::<PathBuf>),
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)
