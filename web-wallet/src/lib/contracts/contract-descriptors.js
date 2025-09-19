@@ -44,7 +44,7 @@ export default [
     ],
   },
   {
-    enabled: import.meta.env.VITE_FEATURE_ALLOCATE === "true",
+    enabled: true,
     id: "allocate",
     label: "Allocate",
     operations: [
