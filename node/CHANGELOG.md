@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Change SQLite connection configurations [#3866]
 - Change mempool rule to compare gas limit on equal price
 
 ## [1.3.0] - 2025-04-17
@@ -61,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-node` release
 
 <!-- Issues -->
+[#3866]: https://github.com/dusk-network/rusk/issues/3866
 [#3647]: https://github.com/dusk-network/rusk/issues/3647
 [#3646]: https://github.com/dusk-network/rusk/issues/3646
 [#3613]: https://github.com/dusk-network/rusk/issues/3613

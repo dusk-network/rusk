@@ -10,8 +10,9 @@ use std::path::Path;
 use anyhow::Result;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqliteJournalMode, SqliteSynchronous};
 use sqlx::{Pool, Sqlite};
+use std::time::Duration;
 use tracing::{error, info, warn};
 
 use crate::archive::transformer;
@@ -36,7 +37,15 @@ impl Archive {
         let db_options = SqliteConnectOptions::new()
             // append the database name to the path
             .filename(path.as_ref().join(SQLITEARCHIVE_DB_NAME))
-            .create_if_missing(true);
+            .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Wal)
+            .synchronous(SqliteSynchronous::Full)
+            .busy_timeout(Duration::from_millis(5000))
+            .pragma("foreign_keys", "ON")
+            .pragma("trusted_schema", "OFF")
+            .pragma("temp_store", "MEMORY")
+            .pragma("mmap_size", "536870912")
+            .pragma("cache_size", "-24576");
 
         // Open the database, create it if it doesn't exist
         let archive_db = SqlitePool::connect_with(db_options)
