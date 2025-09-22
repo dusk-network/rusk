@@ -6,13 +6,16 @@
 
 use std::collections::HashSet;
 use std::path::Path;
+use std::time::Duration;
 
 use anyhow::Result;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqliteJournalMode, SqliteSynchronous};
+use sqlx::sqlite::{
+    SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions,
+    SqliteSynchronous,
+};
 use sqlx::{Pool, Sqlite};
-use std::time::Duration;
 use tracing::{error, info, warn};
 
 use crate::archive::transformer;
@@ -21,44 +24,95 @@ use crate::archive::Archive;
 /// The name of the archive SQLite database.
 const SQLITEARCHIVE_DB_NAME: &str = "archive.sqlite3";
 
+// The roles available for SQLite access.
+#[derive(Clone, Copy)]
+pub enum SqliteRole {
+    Writer { max_connections: u32 },
+    Reader { max_connections: u32 },
+}
+
 impl Archive {
+    /// Build the base options (common to both reader and writer).
+    fn base_connect_options<P: AsRef<Path>>(path: P) -> SqliteConnectOptions {
+        SqliteConnectOptions::new()
+            .filename(path.as_ref().join(SQLITEARCHIVE_DB_NAME))
+            .pragma("trusted_schema", "OFF")
+            .pragma("temp_store", "MEMORY")
+            .pragma("mmap_size", "536870912")
+            .pragma("cache_size", "-24576")
+    }
+
+    /// Create the single connection writer pool (WAL, FULL, foreign_keys,
+    /// migrations).
+    pub(super) async fn create_writer_pool<P: AsRef<Path> + std::fmt::Debug>(
+        path: P,
+    ) -> Pool<Sqlite> {
+        Self::create_sqlite_pool(
+            path,
+            SqliteRole::Writer { max_connections: 1 },
+        )
+        .await
+    }
+
+    /// Create the read-only pool for GraphQL/queries (query_only).
+    pub(super) async fn create_reader_pool<P: AsRef<Path> + std::fmt::Debug>(
+        path: P,
+    ) -> Pool<Sqlite> {
+        Self::create_sqlite_pool(
+            path,
+            SqliteRole::Reader {
+                max_connections: 16,
+            },
+        )
+        .await
+    }
+
     /// Create or open the SQLite database.
     ///
     /// # Arguments
     ///
     /// * `path` - The path to the archive folder.
-    pub(super) async fn create_or_open_sqlite<
-        P: AsRef<Path> + std::fmt::Debug,
-    >(
+    /// * `role` - Whether to open a writer (read-write) or reader (read-only)
+    ///   pool.
+    pub async fn create_sqlite_pool<P: AsRef<Path> + std::fmt::Debug>(
         path: P,
+        role: SqliteRole,
     ) -> Pool<Sqlite> {
-        info!("Opening SQLite archive db in {path:?}");
+        let (opts, max_conns, run_migrations) = match role {
+            SqliteRole::Writer { max_connections } => {
+                // Writers need create_if_missing, WAL, FULL, FK, busy_timeout
+                let opts = Self::base_connect_options(&path)
+                    .create_if_missing(true)
+                    .journal_mode(SqliteJournalMode::Wal)
+                    .synchronous(SqliteSynchronous::Full)
+                    .busy_timeout(Duration::from_millis(5_000))
+                    .pragma("foreign_keys", "ON");
+                (opts, max_connections, true)
+            }
+            SqliteRole::Reader { max_connections } => {
+                // Readers should be read-only, query_only
+                let opts = Self::base_connect_options(&path)
+                    .read_only(true)
+                    .pragma("query_only", "ON");
+                (opts, max_connections, false)
+            }
+        };
 
-        let db_options = SqliteConnectOptions::new()
-            // append the database name to the path
-            .filename(path.as_ref().join(SQLITEARCHIVE_DB_NAME))
-            .create_if_missing(true)
-            .journal_mode(SqliteJournalMode::Wal)
-            .synchronous(SqliteSynchronous::Full)
-            .busy_timeout(Duration::from_millis(5000))
-            .pragma("foreign_keys", "ON")
-            .pragma("trusted_schema", "OFF")
-            .pragma("temp_store", "MEMORY")
-            .pragma("mmap_size", "536870912")
-            .pragma("cache_size", "-24576");
-
-        // Open the database, create it if it doesn't exist
-        let archive_db = SqlitePool::connect_with(db_options)
+        let pool = SqlitePoolOptions::new()
+            .max_connections(max_conns)
+            .connect_with(opts)
             .await
             .expect("Failed to open archive database");
 
-        // Run the migrations
-        sqlx::migrate!("./migrations")
-            .run(&archive_db)
-            .await
-            .expect("Failed to run migrations");
+        if run_migrations {
+            // Only the writer runs migrations
+            sqlx::migrate!("./migrations")
+                .run(&pool)
+                .await
+                .expect("Failed to run migrations");
+        }
 
-        archive_db
+        pool
     }
 
     /// Fetch the json string of all vm events from a given block height
@@ -78,7 +132,7 @@ impl Archive {
         &self,
         block_height: i64,
     ) -> Result<Vec<data::ArchivedEvent>> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         // query all events now that we have the block height
         let records = sqlx::query_as!(data::ArchivedEvent,
@@ -108,7 +162,7 @@ impl Archive {
         &self,
         hex_block_hash: &str,
     ) -> Result<Vec<data::ArchivedEvent>> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         let events = sqlx::query_as!(data::ArchivedEvent,
             r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?
@@ -124,7 +178,7 @@ impl Archive {
     /// Fetch all vm events from the last block and return them as a
     /// json string
     pub async fn fetch_json_last_events(&self) -> Result<String> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         // Get the last finalized block height by getting all the events from
         // the largest block height
@@ -145,7 +199,7 @@ impl Archive {
         &self,
         contract_id: &str,
     ) -> Result<Vec<data::ArchivedEvent>> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         let records = sqlx::query_as!(
             data::ArchivedEvent,
@@ -163,7 +217,7 @@ impl Archive {
         &self,
         hex_block_hash: &str,
     ) -> Result<Vec<ContractTxEvent>> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         let unfinalized_events = sqlx::query_as!(data::ArchivedEvent,
             r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?"#,
@@ -183,7 +237,7 @@ impl Archive {
 
     /// Fetch the last finalized block height and block hash
     pub async fn fetch_last_finalized_block(&self) -> Result<(u64, String)> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         let block = sqlx::query!(
                 r#"SELECT block_height, block_hash FROM finalized_blocks WHERE block_height = (SELECT MAX(block_height) FROM finalized_blocks)"#
@@ -200,7 +254,7 @@ impl Archive {
         block_height: i64,
         hex_block_hash: &str,
     ) -> Result<bool> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         let r = sqlx::query!(
                     r#"SELECT block_height FROM finalized_blocks WHERE block_height = ? AND block_hash = ?"#,
@@ -215,7 +269,7 @@ impl Archive {
     /// Gives you the next block height that contains a phoenix event from a
     /// given starting block height
     pub async fn next_phoenix(&self, block_height: i64) -> Result<Option<u64>> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         let r = sqlx::query!(
             r#"SELECT block_height FROM finalized_blocks WHERE block_height > ? AND phoenix_present = 1"#,
@@ -232,7 +286,7 @@ impl Archive {
     }
 
     pub async fn fetch_active_accounts(&self) -> Result<u64> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         let last_account =
             sqlx::query!(r#"SELECT MAX(id) as last_id FROM active_accounts"#)
@@ -246,7 +300,7 @@ impl Archive {
     /// Count finalized transfer transactions for the transfer contract, split
     /// by topic. Returns (moonlight_count, phoenix_count).
     pub async fn fetch_tx_count(&self) -> Result<(u64, u64)> {
-        let mut conn = self.sqlite_archive.acquire().await?;
+        let mut conn = self.sqlite_reader.acquire().await?;
 
         let transfer_src = dusk_core::transfer::TRANSFER_CONTRACT.to_string();
 
@@ -277,7 +331,7 @@ impl Archive {
         block_hash: Hash,
         events: Vec<ContractTxEvent>,
     ) -> Result<()> {
-        let mut tx = self.sqlite_archive.begin().await?;
+        let mut tx = self.sqlite_writer.begin().await?;
 
         let block_height: i64 = block_height as i64;
         let hex_block_hash = hex::encode(block_hash);
@@ -325,7 +379,7 @@ impl Archive {
         current_block_height: u64,
         hex_block_hash: &str,
     ) -> Result<()> {
-        let mut tx = self.sqlite_archive.begin().await?;
+        let mut tx = self.sqlite_writer.begin().await?;
 
         // Get the row for the block with the given hash that got finalized
         let r = sqlx::query!(
@@ -427,7 +481,7 @@ impl Archive {
     ) -> Result<bool> {
         let block_height: i64 = current_block_height as i64;
 
-        let mut tx = self.sqlite_archive.begin().await?;
+        let mut tx = self.sqlite_writer.begin().await?;
 
         sqlx::query!(
             r#"DELETE FROM unfinalized_events WHERE block_hash = ?"#,
@@ -472,7 +526,7 @@ impl Archive {
         &self,
         active_accounts: HashSet<String>,
     ) -> Result<u64> {
-        let mut tx = self.sqlite_archive.begin().await?;
+        let mut tx = self.sqlite_writer.begin().await?;
 
         for account in active_accounts {
             sqlx::query!(
