@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM unfinalized_blocks WHERE block_hash = ?\n                    RETURNING block_height\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "block_height",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "bcbb0d11eb03eb64a816d21949517d3fe9c752282b47dd9eb585ece824a0867e"
+}

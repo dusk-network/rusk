@@ -337,7 +337,9 @@ impl Archive {
         let hex_block_hash = hex::encode(block_hash);
 
         sqlx::query!(
-            r#"INSERT INTO unfinalized_blocks (block_height, block_hash) VALUES (?, ?)"#,
+            r#"INSERT INTO unfinalized_blocks (block_height, block_hash) 
+                VALUES (?, ?)
+                ON CONFLICT(block_height) DO UPDATE SET block_hash = excluded.block_hash"#,
            block_height, hex_block_hash
        ).execute(&mut *tx).await?.rows_affected();
 
@@ -417,8 +419,12 @@ impl Archive {
         // this data to another table
 
         sqlx::query!(
-            r#"INSERT INTO finalized_blocks (block_height, block_hash, phoenix_present) VALUES (?, ?, ?)"#,
-            finalized_block_height, hex_block_hash, phoenix_event_present
+            r#"INSERT INTO finalized_blocks (id, block_height, block_hash, phoenix_present)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(block_height) DO UPDATE SET
+                    block_hash = excluded.block_hash,
+                    phoenix_present = excluded.phoenix_present"#,
+            finalized_block_height, finalized_block_height, hex_block_hash, phoenix_event_present
         ).execute(&mut *tx).await?;
 
         sqlx::query!(
