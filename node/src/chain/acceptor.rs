@@ -829,16 +829,24 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
 
                 // Store all events from this current block in the archive
-                self.archive
-                .store_unfinalized_events(
-                    header.height,
-                    header.hash,
-                    contract_events.clone(),
-                )
-                .await
-                .expect(
-                    "Storing unfinalized events in archive should never fail",
-                );
+                if let Err(err) = self
+                    .archive
+                    .store_unfinalized_events(
+                        header.height,
+                        header.hash,
+                        contract_events.clone(),
+                    )
+                    .await
+                {
+                    // Fail closed: archive might fall behind, but chain
+                    // progresses.
+                    warn!(
+                        height = header.height,
+                        hash = %hex::encode(header.hash),
+                        "archive: failed to persist unfinalized events, continuing without panic: {err}"
+                    );
+                    // TODO: Chain rollback?
+                }
             }
 
             let mut stakes = vec![];
