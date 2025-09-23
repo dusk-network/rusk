@@ -823,6 +823,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             )
                             .await
                         {
+                            // TODO: Panic in the future, rollback if archive
+                            // tip != chain tip
                             error!("Failed to finalize block in archive: {e:?}")
                         }
                     }
@@ -840,14 +842,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 {
                     // Fail closed: archive might fall behind, but chain
                     // progresses.
-                    warn!(
+                    error!(
                         "archive: failed to persist unfinalized events, continuing: {} \
                         (height: {}, hash: {})",
                         err,
                         header.height,
                         hex::encode(header.hash),
                     );
-                    // TODO: Chain rollback?
                 }
             }
 

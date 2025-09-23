@@ -36,10 +36,11 @@ impl Archive {
     fn base_connect_options<P: AsRef<Path>>(path: P) -> SqliteConnectOptions {
         SqliteConnectOptions::new()
             .filename(path.as_ref().join(SQLITEARCHIVE_DB_NAME))
-            .pragma("trusted_schema", "OFF")
-            .pragma("temp_store", "MEMORY")
-            .pragma("mmap_size", "536870912")
-            .pragma("cache_size", "-24576")
+            .pragma("trusted_schema", "OFF") // restrict potentially unsafe functions in schema objects
+            .pragma("temp_store", "MEMORY") // keep temporary tables/indexes in RAM
+            .pragma("mmap_size", "536870912") // enable memory-mapped I/O up to 512 MiB
+            .pragma("cache_size", "-24576") // set page cache to 24 MiB
+                                            // (negative value = KiB)
     }
 
     /// Create the single connection writer pool (WAL, FULL, foreign_keys,
@@ -455,14 +456,30 @@ impl Archive {
         // TODO: We can categorize grouped_events at one point here too and add
         // this data to another table
 
-        sqlx::query!(
+        let existed = sqlx::query_scalar!(
+            r#"SELECT 1 FROM finalized_blocks WHERE id = ? LIMIT 1"#,
+            finalized_block_height
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .is_some();
+
+        let affected = sqlx::query!(
             r#"INSERT INTO finalized_blocks (id, block_height, block_hash, phoenix_present)
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT(block_height) DO UPDATE SET
                     block_hash = excluded.block_hash,
                     phoenix_present = excluded.phoenix_present"#,
             finalized_block_height, finalized_block_height, hex_block_hash, phoenix_event_present
-        ).execute(&mut *tx).await?;
+        ).execute(&mut *tx).await?.rows_affected();
+
+        if existed && affected == 1 {
+            error!(
+                "archive: finalized_blocks upsert used DO UPDATE (unexpected path) for height {} hash {}",
+                finalized_block_height,
+                hex_block_hash
+            );
+        }
 
         sqlx::query!(
             r#"DELETE FROM unfinalized_events WHERE block_hash = ?"#,
