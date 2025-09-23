@@ -212,8 +212,9 @@ impl Archive {
         Ok(records)
     }
 
-    /// Fetch all unfinalized vm events for a block hash using an existing connection.
-    /// This keeps finalize fully atomic and avoids mixing reader + writer pools.
+    /// Fetch all unfinalized vm events for a block hash using an existing
+    /// connection. This keeps finalize fully atomic and avoids mixing
+    /// reader + writer pools.
     pub async fn fetch_unfinalized_events_by_hash<'t>(
         &self,
         conn: &mut SqliteConnection,
@@ -401,8 +402,8 @@ impl Archive {
 
         if already_finalized {
             warn!(
-                hash = %util::truncate_string(hex_block_hash),
-                "archive: finalize called for an already-finalized block; skipping"
+                "archive: finalize called for an already finalized block: {}",
+                util::truncate_string(hex_block_hash)
             );
             // No changes have been made, explicitly rollback immediately
             tx.rollback().await?;
@@ -414,8 +415,18 @@ impl Archive {
             r#"SELECT * FROM unfinalized_blocks WHERE block_hash = ?"#,
             hex_block_hash
         )
-        .fetch_one(&mut *tx)
+        .fetch_optional(&mut *tx)
         .await?;
+
+        let Some(r) = r else {
+            warn!(
+                "archive: finalize called but no unfinalized row found for block: {}",
+                util::truncate_string(hex_block_hash)
+            );
+            tx.rollback().await?;
+            return Ok(());
+        };
+
         let finalized_block_height = r.block_height;
         if finalized_block_height < 0 {
             error!("Block height is negative. This is a bug.");

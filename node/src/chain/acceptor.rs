@@ -841,9 +841,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     // Fail closed: archive might fall behind, but chain
                     // progresses.
                     warn!(
-                        height = header.height,
-                        hash = %hex::encode(header.hash),
-                        "archive: failed to persist unfinalized events, continuing without panic: {err}"
+                        "archive: failed to persist unfinalized events, continuing: {} \
+                        (height: {}, hash: {})",
+                        err,
+                        header.height,
+                        hex::encode(header.hash),
                     );
                     // TODO: Chain rollback?
                 }
