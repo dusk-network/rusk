@@ -16,7 +16,6 @@ use futures::Stream;
 use tokio::spawn;
 use tracing::{error, info};
 
-use dusk_core::abi::ContractId;
 use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeData, STAKE_CONTRACT},
@@ -64,11 +63,6 @@ impl Rusk {
     /// Returns the opening of the transfer tree at the given position.
     pub fn tree_opening(&self, pos: u64) -> Result<Option<NoteOpening>> {
         self.query(TRANSFER_CONTRACT, "opening", &pos)
-    }
-
-    /// Returns the "transparent" balance of the given contract.
-    pub fn contract_balance(&self, contract: ContractId) -> Result<u64> {
-        self.query(TRANSFER_CONTRACT, "contract_balance", &contract)
     }
 
     /// Returns data about the stake of the given key.

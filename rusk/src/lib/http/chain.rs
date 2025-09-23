@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use dusk_bytes::DeserializableSlice;
+use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::data::{BlobData, BlobSidecar};
 use dusk_core::transfer::Transaction as ProtocolTransaction;
@@ -65,6 +66,7 @@ impl HandleRequest for RuskNode {
             ("network", _, "peers_location") => true,
             ("node", _, "info") => true,
             ("account", Some(_), "status") => true,
+            ("contract", Some(_), "status") => true,
             ("blocks", _, "gas-price") => true,
             ("blobs", Some(_), "commitment") => true,
             ("blobs", Some(_), "hash") => true,
@@ -99,6 +101,9 @@ impl HandleRequest for RuskNode {
             ("network", _, "peers_location") => self.peers_location().await,
             ("node", _, "info") => self.get_info().await,
             ("account", Some(pk), "status") => self.get_account(pk).await,
+            ("contract", Some(cid), "status") => {
+                self.get_contract_balance(cid).await
+            }
             ("blocks", _, "gas-price") => {
                 let max_transactions = request
                     .data
@@ -389,6 +394,54 @@ impl RuskNode {
             "balance": account.balance,
             "nonce": account.nonce,
             "next_nonce": next_nonce,
+        })))
+    }
+
+    /// Returns the current balance for a specific smart contract.
+    /// The response is a JSON object:
+    /// ```json
+    /// { "balance": 123456 }
+    /// ```
+    ///
+    /// # Parameters
+    /// * `contract_id_hex` — Hex-encoded 32-byte `ContractId` of the target
+    ///   contract (without a `0x` prefix).
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// * The contract ID is not valid hex or not 32 bytes long.
+    /// * The VM query to the Transfer contract fails.
+    async fn get_contract_balance(
+        &self,
+        contract_id_hex: &str,
+    ) -> anyhow::Result<ResponseData> {
+        // Parse hex `contract_id`
+        let id_raw = hex::decode(contract_id_hex)
+            .map_err(|_| anyhow::anyhow!("Invalid hex for contract ID"))?;
+
+        if id_raw.len() != CONTRACT_ID_BYTES {
+            anyhow::bail!(
+                "Invalid contract ID length: expected {} bytes",
+                CONTRACT_ID_BYTES
+            );
+        }
+
+        let mut id_bytes = [0u8; CONTRACT_ID_BYTES];
+        id_bytes.copy_from_slice(&id_raw);
+        let contract_id = ContractId::from(id_bytes);
+
+        // Query the VM via the Transfer contract
+        let vm = self.inner().vm_handler();
+        let balance =
+            vm.read()
+                .await
+                .contract_balance(&contract_id)
+                .map_err(|e| {
+                    anyhow::anyhow!("Failed to query contract balance {e:?}")
+                })?;
+
+        Ok(ResponseData::new(serde_json::json!({
+            "balance": balance
         })))
     }
 

@@ -295,7 +295,7 @@ pub async fn slash() -> Result<()> {
     info!("Original Root: {:?}", hex::encode(original_root));
 
     let contract_balance = rusk
-        .contract_balance(STAKE_CONTRACT)
+        .contract_balance(&STAKE_CONTRACT)
         .expect("balance to exists");
     let to_slash = wallet.account_public_key(0).unwrap();
     let stake = wallet.get_stake(0).unwrap();
@@ -355,7 +355,7 @@ pub async fn slash() -> Result<()> {
             locked: dusk(2.0)
         })
     );
-    let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
+    let new_balance = rusk.contract_balance(&STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, contract_balance);
 
     generator_procedure(
@@ -405,7 +405,7 @@ pub async fn slash() -> Result<()> {
         })
     );
 
-    let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
+    let new_balance = rusk.contract_balance(&STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, contract_balance);
 
     generator_procedure(
@@ -446,7 +446,7 @@ pub async fn slash() -> Result<()> {
             locked: prev_locked + slashed_amount
         })
     );
-    let new_balance = rusk.contract_balance(STAKE_CONTRACT).unwrap();
+    let new_balance = rusk.contract_balance(&STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, contract_balance);
 
     generator_procedure(
