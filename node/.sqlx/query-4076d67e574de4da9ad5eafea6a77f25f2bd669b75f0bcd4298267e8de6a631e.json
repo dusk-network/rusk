@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO finalized_blocks (id, block_height, block_hash, phoenix_present)\n                VALUES (?, ?, ?, ?)\n                ON CONFLICT(block_height) DO UPDATE SET\n                    block_hash = excluded.block_hash,\n                    phoenix_present = excluded.phoenix_present",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "4076d67e574de4da9ad5eafea6a77f25f2bd669b75f0bcd4298267e8de6a631e"
+}

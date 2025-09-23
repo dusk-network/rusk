@@ -383,6 +383,32 @@ impl Archive {
     ) -> Result<()> {
         let mut tx = self.sqlite_writer.begin().await?;
 
+        // Early-exit safeguard: Skip if this block is already finalized. Even
+        // though inserts are idempotent, rerunning finalize would still
+        // query/delete staging tables and reinsert events, adding
+        // unnecessary locks. Transaction is deferred so this read takes
+        // no write lock (yet).
+        let already_finalized = sqlx::query_scalar!(
+            r#"SELECT EXISTS(
+                SELECT 1 
+                FROM finalized_blocks 
+                WHERE block_hash = ?
+            ) AS "exists!: bool""#,
+            hex_block_hash
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        if already_finalized {
+            warn!(
+                hash = %util::truncate_string(hex_block_hash),
+                "archive: finalize called for an already-finalized block; skipping"
+            );
+            // No changes have been made, explicitly rollback immediately
+            tx.rollback().await?;
+            return Ok(());
+        }
+
         // Get the row for the block with the given hash that got finalized
         let r = sqlx::query!(
             r#"SELECT * FROM unfinalized_blocks WHERE block_hash = ?"#,
