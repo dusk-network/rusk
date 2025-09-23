@@ -15,7 +15,7 @@ use sqlx::sqlite::{
     SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions,
     SqliteSynchronous,
 };
-use sqlx::{Pool, Sqlite};
+use sqlx::{Pool, Sqlite, SqliteConnection};
 use tracing::{error, info, warn};
 
 use crate::archive::transformer;
@@ -212,18 +212,18 @@ impl Archive {
         Ok(records)
     }
 
-    /// Fetch all unfinalized vm events from a given block hash
-    pub async fn fetch_unfinalized_events_by_hash(
+    /// Fetch all unfinalized vm events for a block hash using an existing connection.
+    /// This keeps finalize fully atomic and avoids mixing reader + writer pools.
+    pub async fn fetch_unfinalized_events_by_hash<'t>(
         &self,
+        conn: &mut SqliteConnection,
         hex_block_hash: &str,
     ) -> Result<Vec<ContractTxEvent>> {
-        let mut conn = self.sqlite_reader.acquire().await?;
-
         let unfinalized_events = sqlx::query_as!(data::ArchivedEvent,
             r#"SELECT origin, topic, source, data FROM unfinalized_events WHERE block_hash = ?"#,
             hex_block_hash
         )
-        .fetch_all(&mut *conn)
+        .fetch_all(conn)
         .await?;
 
         let mut contract_tx_events = Vec::new();
@@ -423,7 +423,7 @@ impl Archive {
 
         // Get all the unfinalized events from the block
         let events = self
-            .fetch_unfinalized_events_by_hash(hex_block_hash)
+            .fetch_unfinalized_events_by_hash(&mut tx, hex_block_hash)
             .await?;
 
         /*
