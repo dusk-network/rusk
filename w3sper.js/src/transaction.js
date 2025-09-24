@@ -50,6 +50,11 @@ export class Transfer extends BasicTransfer {
     super(from);
   }
 
+  deposit(deposit) {
+    this[_attributes].deposit = deposit;
+    return this;
+  }
+
   to(value) {
     let builder;
     const identifier = String(value);
