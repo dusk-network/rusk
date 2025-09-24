@@ -823,22 +823,33 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             )
                             .await
                         {
+                            // TODO: Panic in the future, rollback if archive
+                            // tip != chain tip
                             error!("Failed to finalize block in archive: {e:?}")
                         }
                     }
                 }
 
                 // Store all events from this current block in the archive
-                self.archive
-                .store_unfinalized_events(
-                    header.height,
-                    header.hash,
-                    contract_events.clone(),
-                )
-                .await
-                .expect(
-                    "Storing unfinalized events in archive should never fail",
-                );
+                if let Err(err) = self
+                    .archive
+                    .store_unfinalized_events(
+                        header.height,
+                        header.hash,
+                        contract_events.clone(),
+                    )
+                    .await
+                {
+                    // Fail closed: archive might fall behind, but chain
+                    // progresses.
+                    error!(
+                        "archive: failed to persist unfinalized events, continuing: {} \
+                        (height: {}, hash: {})",
+                        err,
+                        header.height,
+                        hex::encode(header.hash),
+                    );
+                }
             }
 
             let mut stakes = vec![];

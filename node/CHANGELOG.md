@@ -9,11 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add separate read/write SQLite connection pools [#3863]
 - Add support for `TransactionData::Blob`
 - Add fetch transaction count to archive [#3647]
 
 ### Changed
 
+- Change SQLite connection configuration [#3866]
+- Improve archive resilience and handle `CHECK(id == block_height)` invariant without panicking [#3865]
 - Change mempool rule to compare gas limit on equal price
 
 ## [1.3.0] - 2025-04-17
@@ -61,6 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-node` release
 
 <!-- Issues -->
+[#3866]: https://github.com/dusk-network/rusk/issues/3866
+[#3865]: https://github.com/dusk-network/rusk/issues/3865
+[#3863]: https://github.com/dusk-network/rusk/issues/3863
 [#3647]: https://github.com/dusk-network/rusk/issues/3647
 [#3646]: https://github.com/dusk-network/rusk/issues/3646
 [#3613]: https://github.com/dusk-network/rusk/issues/3613

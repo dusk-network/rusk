@@ -28,10 +28,12 @@ const ARCHIVE_FOLDER_NAME: &str = "archive";
 /// `moonlight` module.
 #[derive(Debug, Clone)]
 pub struct Archive {
-    // The connection pool to the sqlite database.
+    // Writer pool (single connection) to the SQLite database
+    sqlite_writer: SqlitePool,
+    // Reader pool (read-only) for GraphQL/queries
+    sqlite_reader: SqlitePool,
     // The connection pool can be cloned and stays the same as it is behind an
     // Arc PoolInner. Pool<DB: Database>(pub(crate) Arc<PoolInner<DB>>)
-    sqlite_archive: SqlitePool,
     // The moonlight database.
     moonlight_db: Arc<OptimisticTransactionDB>,
     // last finalized block height known to the archive
@@ -58,12 +60,14 @@ impl Archive {
     pub async fn create_or_open<P: AsRef<Path>>(base_path: P) -> Self {
         let path = Self::archive_folder_path(base_path);
 
-        let sqlite_archive = Self::create_or_open_sqlite(&path).await;
+        let sqlite_writer = Self::create_writer_pool(&path).await;
+        let sqlite_reader = Self::create_reader_pool(&path).await;
         let moonlight_db =
             Self::create_or_open_moonlight_db(&path, ArchiveOptions::default());
 
         let mut self_archive = Self {
-            sqlite_archive,
+            sqlite_writer,
+            sqlite_reader,
             moonlight_db,
             last_finalized_block_height: 0,
         };
