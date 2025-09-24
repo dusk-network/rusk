@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `/stats/account_count` endpoint [#3625]
 - Add `/stats/tx_count` endpoint [#3625]
 - Add versioned `wallet-core` endpoints in HTTP server [#3850]
+- Add `/on/contract:<contract_id>/status` endpoint [#3869]
 
 ### Changed
 
@@ -388,6 +389,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3869]: https://github.com/dusk-network/rusk/issues/3869
 [#3850]: https://github.com/dusk-network/rusk/issues/3850
 [#3625]: https://github.com/dusk-network/rusk/issues/3625
 [#3613]: https://github.com/dusk-network/rusk/issues/3613

@@ -19,7 +19,7 @@ use dusk_consensus::errors::StateTransitionError;
 use dusk_consensus::operations::{
     StateTransitionData, StateTransitionResult, Voter,
 };
-use dusk_core::abi::Event;
+use dusk_core::abi::{ContractId, Event};
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{
     Reward, RewardReason, StakeData, StakeKeys, STAKE_CONTRACT,
@@ -431,6 +431,11 @@ impl Rusk {
     /// Returns an account's information.
     pub fn account(&self, pk: &BlsPublicKey) -> Result<AccountData> {
         self.query(TRANSFER_CONTRACT, "account", pk)
+    }
+
+    /// Returns the balance held by a smart contract by its `ContractId`.
+    pub fn contract_balance(&self, id: &ContractId) -> Result<u64> {
+        self.query(TRANSFER_CONTRACT, "contract_balance", id)
     }
 
     /// Returns an account's information.
