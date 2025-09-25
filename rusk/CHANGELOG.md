@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
+- Add pagination support to GraphQL `finalizedEvents` query. [#3871]
 - Add support for `TransactionData::Blob`
 - Add `mempool_nonce` field to `/on/account/status` response
 - Add `status` to GQL block fields
@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Unbounded `finalizedEvents` GraphQL calls now return the first page by default, large requests are deprecated. [#3871]
 - Change block generation to include transactions quickly
 - Update rust toolchain to nightly 2024-07-30 (1.82.0) [#3470]
 
@@ -389,6 +390,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3871]: https://github.com/dusk-network/rusk/issues/3871
 [#3869]: https://github.com/dusk-network/rusk/issues/3869
 [#3850]: https://github.com/dusk-network/rusk/issues/3850
 [#3625]: https://github.com/dusk-network/rusk/issues/3625

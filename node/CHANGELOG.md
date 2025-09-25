@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add cursor based pagination to `fetch_finalized_events_from_contract` [#3871]
+- Add index on finalized_events (source, id) to do fast pagination [#3871]
 - Add separate read/write SQLite connection pools [#3863]
 - Add support for `TransactionData::Blob`
 - Add fetch transaction count to archive [#3647]
@@ -64,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-node` release
 
 <!-- Issues -->
+[#3871]: https://github.com/dusk-network/rusk/issues/3871
 [#3866]: https://github.com/dusk-network/rusk/issues/3866
 [#3865]: https://github.com/dusk-network/rusk/issues/3865
 [#3863]: https://github.com/dusk-network/rusk/issues/3863

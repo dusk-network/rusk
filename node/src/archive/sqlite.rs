@@ -195,22 +195,58 @@ impl Archive {
         Ok(serde_json::to_string(&events)?)
     }
 
-    /// Get all finalized events from a specific contract
+    /// Return a page of finalized events for a contract, ordered by `id`.
+    ///
+    /// # Arguments
+    ///
+    /// `limit` = max rows (server will clamp)
+    /// `cursor` = return rows with id > cursor, None means from the beginning
     pub async fn fetch_finalized_events_from_contract(
         &self,
         contract_id: &str,
-    ) -> Result<Vec<data::ArchivedEvent>> {
+        limit: i64,
+        cursor: Option<i64>,
+    ) -> Result<(Vec<data::FinalizedEvent>, Option<i64>, bool)> {
         let mut conn = self.sqlite_reader.acquire().await?;
 
-        let records = sqlx::query_as!(
-            data::ArchivedEvent,
-            r#"SELECT origin, topic, source, data FROM finalized_events WHERE source = ?"#,
-            contract_id
+        let effective_limit: i64 = limit.saturating_add(1);
+        let cursor_val: Option<i64> = cursor;
+
+        let mut rows = sqlx::query!(
+            r#"SELECT id, block_height, block_hash, origin, topic, source, data
+                FROM finalized_events
+                WHERE source = ?1
+                AND id > IFNULL(?2, -1)
+                ORDER BY id ASC
+                LIMIT ?3"#,
+            contract_id,
+            cursor_val,
+            effective_limit
         )
         .fetch_all(&mut *conn)
         .await?;
 
-        Ok(records)
+        let has_next = (rows.len() as i64) > limit;
+        if has_next {
+            rows.truncate(limit as usize);
+        }
+
+        let next_cursor: Option<i64> = rows.last().map(|r| r.id);
+
+        let events: Vec<data::FinalizedEvent> = rows
+            .into_iter()
+            .map(|r| data::FinalizedEvent {
+                id: r.id,
+                origin: r.origin,
+                block_height: r.block_height,
+                block_hash: r.block_hash,
+                topic: r.topic,
+                source: r.source,
+                data: r.data,
+            })
+            .collect();
+
+        Ok((events, next_cursor, has_next))
     }
 
     /// Fetch all unfinalized vm events for a block hash using an existing
@@ -621,6 +657,20 @@ mod data {
     };
     use serde::{Deserialize, Serialize};
     use sqlx::FromRow;
+
+    /// Data transfer object for GraphQL pagination
+    #[serde_with::serde_as]
+    #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
+    pub struct FinalizedEvent {
+        pub id: i64,
+        pub block_height: i64,
+        pub block_hash: String,
+        pub origin: String,
+        pub topic: String,
+        pub source: String,
+        #[serde_as(as = "serde_with::hex::Hex")]
+        pub data: Vec<u8>,
+    }
 
     /// Archived ContractTxEvent
     ///
