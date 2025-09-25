@@ -244,14 +244,23 @@ impl Query {
         }
     }
 
-    /// Get all finalized contract events from a specific contract id.
+    /// Get finalized contract events for a given contract ID with cursor based
+    /// pagination.
+    ///
+    /// * **limit** – Optional page size (default: 50, maximum: 200). If
+    ///   omitted, the first page returns up to 50 events.
+    /// * **cursor** – Optional cursor returned from a previous call. When
+    ///   supplied, results begin strictly after that event, else the first page
+    ///   is provided.
     #[cfg(feature = "archive")]
     async fn finalized_events(
         &self,
         ctx: &Context<'_>,
         contract_id: String,
+        limit: Option<i64>,
+        cursor: Option<String>,
     ) -> OptResult<ContractEvents> {
-        finalized_events_by_contractid(ctx, contract_id).await
+        finalized_events_by_contract(ctx, contract_id, limit, cursor).await
     }
 
     /// Check if a given block height matches a given block hash.
