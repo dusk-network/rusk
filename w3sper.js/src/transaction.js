@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-
 export const TRANSFER =
   "0100000000000000000000000000000000000000000000000000000000000000";
 
@@ -51,6 +50,11 @@ export class Transfer extends BasicTransfer {
     super(from);
   }
 
+  deposit(deposit) {
+    this[_attributes].deposit = deposit;
+    return this;
+  }
+
   to(value) {
     let builder;
     const identifier = String(value);
@@ -73,7 +77,7 @@ export class Transfer extends BasicTransfer {
   memo(value) {
     const payload = {
       memo: value,
-    }
+    };
     this[_attributes].payload = payload;
     return this;
   }
@@ -102,7 +106,13 @@ class AccountTransfer extends Transfer {
   async build(network) {
     const sender = this.bookentry.profile;
     const { attributes } = this;
-    const { to, amount: transfer_value, gas, payload } = attributes;
+    const {
+      to,
+      amount: transfer_value,
+      gas,
+      payload,
+      deposit = 0n,
+    } = attributes;
 
     const receiver = base58.decode(to);
 
@@ -130,7 +140,7 @@ class AccountTransfer extends Transfer {
       sender,
       receiver,
       transfer_value,
-      deposit: 0n,
+      deposit,
       gas_limit: gas.limit,
       gas_price: gas.price,
       nonce,
@@ -164,6 +174,7 @@ class AddressTransfer extends Transfer {
       obfuscated: obfuscated_transaction,
       gas,
       payload,
+      deposit = 0n,
     } = attributes;
     const sender = this.bookentry.profile;
     const receiver = base58.decode(to);
@@ -201,7 +212,7 @@ class AddressTransfer extends Transfer {
       root,
       transfer_value,
       obfuscated_transaction,
-      deposit: 0n,
+      deposit,
       gas_limit: gas.limit,
       gas_price: gas.price,
       chainId,
