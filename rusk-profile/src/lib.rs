@@ -145,6 +145,16 @@ pub fn get_rusk_state_dir() -> io::Result<PathBuf> {
         })
 }
 
+pub fn get_rusk_driver_storage_dir() -> io::Result<PathBuf> {
+    get_rusk_profile_dir().map(|p|
+        p.join("drivers")
+    ).and_then(|p| fs::create_dir_all(&p).map(|_| p))
+        .map_err(|e| {
+            warn!("rusk-profile driver storage dir not found and impossible to create: {e}");
+            e
+        })
+}
+
 pub fn to_rusk_state_id_path<P: AsRef<Path>>(dir: P) -> PathBuf {
     let dir = dir.as_ref();
     dir.join("state.id")

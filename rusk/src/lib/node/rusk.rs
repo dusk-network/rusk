@@ -42,10 +42,12 @@ use tracing::info;
 
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
+use crate::node::driverstore::DriverStore;
 use crate::node::{get_block_rewards, RuesEvent, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
 
 impl Rusk {
+    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         dir: P,
         chain_id: u8,
@@ -54,6 +56,7 @@ impl Rusk {
         feeder_gas_limit: u64,
         event_sender: broadcast::Sender<RuesEvent>,
         #[cfg(feature = "archive")] archive: Archive,
+        driver_store: DriverStore,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
@@ -100,6 +103,8 @@ impl Rusk {
             event_sender,
             #[cfg(feature = "archive")]
             archive,
+            driver_store: Arc::new(RwLock::new(driver_store)),
+            instance_cache: Arc::new(RwLock::new(BTreeMap::new())),
         })
     }
 
