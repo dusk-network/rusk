@@ -8,7 +8,7 @@
   },
   "tasks": {
     "test": "deno test --allow-net --allow-read --allow-write --allow-run --allow-import",
-    "wasm": "cd ../wallet-core && cargo wasm",
+    "wasm": "cd ../wallet-core && cargo wasm && cd ../data-drivers && make wasm-js",
     "state": "cd ../rusk && cargo r --release -p dusk-rusk -- recovery state --init ../w3sper.js/tests/assets/genesis.toml -o /tmp/example.state",
     "rusk": "cd ../rusk && RUSK_MINIMUM_BLOCK_TIME=1 DUSK_CONSENSUS_KEYS_PASS=password cargo r --release -p dusk-rusk -- -s /tmp/example.state"
   },
