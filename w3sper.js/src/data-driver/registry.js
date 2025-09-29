@@ -45,18 +45,27 @@ export class DataDriverRegistry {
     if (!loc) throw new Error(`No data‑driver registered for ${key}`);
 
     let bytes;
-    if (typeof loc === "string" || loc instanceof URL) {
-      const res = await this.#fetch(String(loc));
-      bytes = new Uint8Array(await res.arrayBuffer());
-    } else if (loc instanceof Uint8Array) {
-      bytes = loc;
-    } else if (loc instanceof ArrayBuffer) {
-      bytes = new Uint8Array(loc);
-    } else if (typeof loc === "function") {
-      const out = await loc();
-      bytes = out instanceof Uint8Array ? out : new Uint8Array(out);
-    } else {
-      throw new TypeError("Unsupported driver locator type");
+    switch (true) {
+      case typeof loc === "string" || loc instanceof URL:
+        {
+          const res = await this.#fetch(String(loc));
+          bytes = new Uint8Array(await res.arrayBuffer());
+        }
+        break;
+      case loc instanceof Uint8Array:
+        bytes = loc;
+        break;
+      case loc instanceof ArrayBuffer:
+        bytes = new Uint8Array(loc);
+        break;
+      case typeof loc === "function":
+        {
+          const out = await loc();
+          bytes = out instanceof Uint8Array ? out : new Uint8Array(out);
+        }
+        break;
+      default:
+        throw new TypeError("Unsupported driver locator type");
     }
 
     const driver = await loadWasmDataDriver(bytes);

@@ -19,9 +19,7 @@ function jsonWithBigInts(value) {
  *
  * - call.<fn>(args?)            -> JSON, read-only calls
  * - tx.<fn>(args?)              -> Transfer builder (payload prefilled)
- * - send.<fn>(args?, override?) -> executes immediately (returns { hash })
  * - events.<event>.once()/on()  -> decoded events in JSON
- * - rawEvents                   -> raw RUES scope
  * - schema()/version()          -> driver metadata
  *
  * This wrapper class around data-drivers hides JSON <-> RKYV and content-type
@@ -35,17 +33,17 @@ export class Contract {
   #bookentry;
 
   constructor({ contractId, driver, network, bookentry }) {
-    if (typeof contractId === "string") {
-      this.#idHex = contractId.toLowerCase();
-      this.#idBytes = base16.decode(contractId);
-    } else if (contractId instanceof Uint8Array) {
-      this.#idBytes = contractId;
-      this.#idHex = base16.encode(contractId);
-    } else {
-      throw new TypeError("contractId must be hex string or Uint8Array");
-    }
-    if (!this.#idBytes || this.#idBytes.length !== 32) {
-      throw new RangeError("contractId must be 32 bytes");
+    switch (true) {
+      case typeof contractId === "string":
+        this.#idHex = contractId.toLowerCase();
+        this.#idBytes = base16.decode(contractId);
+        break;
+      case contractId instanceof Uint8Array:
+        this.#idBytes = contractId;
+        this.#idHex = base16.encode(contractId);
+        break;
+      default:
+        throw new TypeError("contractId must be hex string or Uint8Array");
     }
 
     this.#driverPromise = Promise.resolve(driver);
@@ -126,75 +124,40 @@ export class Contract {
     });
   }
 
-  get send() {
-    return new Proxy({}, {
-      get: (_t, fnName) => async (args = undefined, overrides = {}) => {
-        const builder = await this.tx[String(fnName)](args);
-        if (overrides.to) builder.to(overrides.to);
-        if (overrides.deposit !== undefined) {
-          builder.deposit(overrides.deposit);
-        }
-        if (overrides.gas) builder.gas(overrides.gas);
-        if (overrides.chain) builder.chain(overrides.chain);
-        if (overrides.memo) builder.memo(overrides.memo);
-        if (!this.#network) {
-          throw new Error("send requires a Network provider");
-        }
-        return this.#network.execute(builder);
-      },
-    });
-  }
-
   get events() {
-    return new Proxy({}, {
-      get: (_t, eventName) => {
-        const name = String(eventName);
-        return {
-          once: async () => {
-            if (!this.#network) {
-              throw new Error("events.once requires a Network provider");
-            }
-            const evt = await this.#network.contracts
-              .withId(this.#idHex).once[name]();
-            const bytes = this.#payloadToBytes(evt);
-            if (bytes) {
-              const driver = await this.#driverPromise;
-              return driver.decodeEvent(name, bytes);
-            }
-            return evt.payload;
-          },
-          on: (handler) => {
-            if (!this.#network) {
-              throw new Error("events.on requires a Network provider");
-            }
-            const stop = this.#network.contracts
-              .withId(this.#idHex).on[name](
-                async (evt) => {
-                  try {
-                    const bytes = this.#payloadToBytes(evt);
-                    if (bytes) {
-                      const driver = await this.#driverPromise;
-                      handler(await driver.decodeEvent(name, bytes));
-                    } else {
-                      handler(evt.payload);
-                    }
-                  } catch (e) {
-                    handler(undefined, e);
-                  }
-                },
-              );
-            return stop;
-          },
-        };
+    const requireNetwork = () => {
+      if (!this.#network) throw new Error("events requires a Network provider");
+      return this.#network.contracts.withId(this.#idHex);
+    };
+
+    const decode = async (name, evt) => {
+      const bytes = this.#payloadToBytes(evt);
+      if (!bytes) return evt.payload;
+      const driver = await this.#driverPromise;
+      return driver.decodeEvent(name, bytes);
+    };
+
+    const apiFor = (name) => ({
+      once: async () => {
+        const contracts = requireNetwork();
+        const evt = await contracts.once[name]();
+        return decode(name, evt);
+      },
+      on: (handler) => {
+        const contracts = requireNetwork();
+        const stop = contracts.on[name](async (evt) => {
+          try {
+            handler(await decode(name, evt));
+          } catch (e) {
+            handler(undefined, e);
+          }
+        });
+        return stop;
       },
     });
-  }
 
-  // Raw RUES scope passthrough
-  get rawEvents() {
-    if (!this.#network) {
-      throw new Error("rawEvents requires a Network provider");
-    }
-    return this.#network.contracts.withId(this.#idHex);
+    return new Proxy({}, {
+      get: (_t, prop) => apiFor(String(prop)),
+    });
   }
 }
