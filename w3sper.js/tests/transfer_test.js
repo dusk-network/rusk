@@ -705,12 +705,14 @@ test("account contract call genesis with deposit", async () => {
     from: users[0].account.toString(),
     hash,
     method: "get_version",
+    // History stream uses "N/A" as the 'to' for this kind of TX
+    to: "N/A"
   };
 
   const evt = await network.transactions.withId(hash).once.executed();
 
-  collectTransfer(baseInfo.from, { ...baseInfo, value: -1n });
-  // collectTransfer(baseInfo.to, { ...baseInfo, value: 1n });
+  // This does not involve an account-to-account transfer, so value can be set to 0
+  collectTransfer(baseInfo.from, { ...baseInfo, value: 0n });
 
   assert.ok(!evt.payload.err, "contract call error");
   assert.ok(evt.payload.gas_spent < GAS_LIMIT, "gas limit reached");

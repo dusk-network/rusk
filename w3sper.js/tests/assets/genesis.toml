@@ -14,6 +14,10 @@ balance = 80_800_000_000_000
 address = 'u7bwZ53tt9s2g3sfbEqxiuXNeGBrzKNNQakAafrELah29dkKakmFf1gDk56vyYocSse7ABnsPxTDddDkMcrmf1Dgd5L3arznA1rWPHH4zsYVZdD4ctAwxMvdKbHkFCgU2Ne'
 balance = 60_060_000_000_000
 
+[[moonlight_account]]
+address = 'rvLto5LztqrvHYzWnG8eeypRaN71KbJWD6PZVt5oehMfKpb1tvQePHrKQvMXH6BBTVGLfYPgxwy69Lbg6wM4T9jyXyLB1wXfxBCxCj15vvCsPhByH6mSsdM313wh4HaPfRv'
+balance = 40_040_000_000_000
+
 [[phoenix_balance]]
 address = '4ZH3oyfTuMHyWD1Rp4e7QKp5yK6wLrWvxHneufAiYBAjvereFvfjtDvTbBcZN5ZCsaoMo49s1LKPTwGpowik6QJG'
 seed = 0xdead_beef

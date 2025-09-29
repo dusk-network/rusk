@@ -6,14 +6,19 @@
 
 import {
   AccountSyncer,
-  AddressSyncer,
   Bookkeeper,
   Contract,
   Network,
   ProfileGenerator,
 } from "../src/mod.js";
+import { assert, test, Treasury } from "./harness.js";
+import * as bip39 from "npm:bip39";
 
-import { assert, seeder, test, Treasury } from "./harness.js";
+// Generate 64 byte seed from the mnemonic.
+export const seeder = async () =>
+  await bip39.mnemonicToSeed(
+    "eyebrow milk fan usage maximum exhibit ski nut wing sell alone great",
+  );
 
 // We'll use the Transfer and Stake contract data-drivers instead of the wallet-core FFI
 const TRANSFER_ID =
@@ -87,23 +92,17 @@ test("contract.tx/send + events.once: transfer.deposit", async () => {
     // Unlike the two prior calls, this is a write/transaction, thus requires a profile and sync.
     // Seed & sync
     const profiles = new ProfileGenerator(seeder);
-    const [u0] = await Promise.all([
-      profiles.default,
-      profiles.next(),
-      profiles.next(),
-    ]);
-    const treasury = new Treasury([u0]);
-    await treasury.update({
-      addresses: new AddressSyncer(network),
-      accounts: new AccountSyncer(network),
-    });
+    const users = [await profiles.default];
+    const accounts = new AccountSyncer(network);
+    const treasury = new Treasury(users);
+    await treasury.update({ accounts });
 
     // Register driver, bind facade to BookEntry (driver auto-fetched as already registered prior)
     network.dataDrivers.register(
       TRANSFER_ID,
       () => readDriverFromTarget(TRANSFER_WASM),
     );
-    const bookentry = new Bookkeeper(treasury).as(u0);
+    const bookentry = new Bookkeeper(treasury).as(users[0]);
     const transfer = bookentry.contract(TRANSFER_ID, network); // driver comes from registry
 
     // Subscribe to decoded 'deposit' before executing
@@ -113,7 +112,7 @@ test("contract.tx/send + events.once: transfer.deposit", async () => {
     const AMOUNT = 2n;
     const builder = await transfer.tx.deposit(Number(AMOUNT));
     const { hash } = await network.execute(
-      builder.to(u0.account).deposit(AMOUNT).gas({ limit: GAS_LIMIT }),
+      builder.to(users[0].account).deposit(AMOUNT).gas({ limit: GAS_LIMIT }),
     );
     assert.ok(typeof hash === "string" && hash.length > 0);
 
