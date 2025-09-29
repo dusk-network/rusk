@@ -670,6 +670,66 @@ test("account contract call transfer", async () => {
   await network.disconnect();
 });
 
+test("account contract call genesis with deposit", async () => {
+  const GAS_LIMIT = 500_000_000n;
+  const METHOD = "get_version";
+  const network = await Network.connect("http://localhost:8080/");
+  const profiles = new ProfileGenerator(seeder);
+  const users = await Promise.all([profiles.default]);
+  const accounts = new AccountSyncer(network);
+  const treasury = new Treasury(users);
+
+  await treasury.update({ accounts });
+
+  const bookkeeper = new Bookkeeper(treasury);
+
+  const payload = {
+    fnName: METHOD,
+    fnArgs: [],
+    contractId: [
+      0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+    ],
+  };
+
+  const transfer = bookkeeper
+    .as(users[0])
+    .transfer(0n)
+    .to(users[0].account)
+    .deposit(1n)
+    .payload(payload)
+    .gas({ limit: GAS_LIMIT });
+
+  const { hash } = await network.execute(transfer);
+  const baseInfo = {
+    from: users[0].account.toString(),
+    hash,
+    method: "get_version",
+    // History stream uses "N/A" as the 'to' for this kind of TX
+    to: "N/A"
+  };
+
+  const evt = await network.transactions.withId(hash).once.executed();
+
+  // This does not involve an account-to-account transfer, so value can be set to 0
+  collectTransfer(baseInfo.from, { ...baseInfo, value: 0n });
+
+  assert.ok(!evt.payload.err, "contract call error");
+  assert.ok(evt.payload.gas_spent < GAS_LIMIT, "gas limit reached");
+
+  const { contract, fn_name } = evt.call();
+
+  assert.equal(
+    contract,
+    "0200000000000000000000000000000000000000000000000000000000000000"
+  );
+  assert.equal(fn_name, METHOD);
+
+  await treasury.update({ accounts });
+
+  await network.disconnect();
+});
+
 test("account transfers history", async () => {
   const network = await Network.connect("http://localhost:8080/");
   const profileGenerator = new ProfileGenerator(seeder);

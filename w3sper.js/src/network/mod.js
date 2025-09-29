@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 import * as ProtocolDriver from "../protocol-driver/mod.js";
+import { DataDriverRegistry } from "../data-driver/registry.js";
 
 import { Rues } from "../rues/mod.js";
 import { Node } from "./components/node.js";
@@ -29,6 +30,7 @@ function makeErrorEventFrom(value) {
 
 export class Network extends EventTarget {
   #rues;
+  dataDrivers;
   node;
   contracts;
   blocks;
@@ -43,6 +45,7 @@ export class Network extends EventTarget {
     super();
 
     this.#rues = new Rues(url, options);
+    this.dataDrivers = new DataDriverRegistry();
     this.node = new Node(this.#rues);
     this.blocks = new Blocks(this.#rues);
     this.contracts = new Contracts(this.#rues);

@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+import * as base16 from "./encoders/b16.js";
 import * as ProtocolDriver from "../src/protocol-driver/mod.js";
 import { Profile, ProfileGenerator } from "./profile.js";
-
+import { Contract } from "./contract.js";
 import {
   ShieldTransfer,
   StakeTransfer,
@@ -57,6 +58,35 @@ class BookEntry {
 
   topup(amount) {
     return new StakeTransfer(this, { topup: true }).amount(amount);
+  }
+
+  /**
+   * Bind a data-driver based contract to this BookEntry (profile).
+   *
+   * Usage:
+   *   // driver auto-fetched from network.dataDrivers if already registered
+   *   const c = bookentry.contract(CONTRACT_ID, network);
+   *
+   *   // or pass a preloaded driver explicitly:
+   *   const c = bookentry.contract(CONTRACT_ID, network, driver);
+   */
+  contract(contractId, network, driver) {
+    if (!network) {
+      throw new Error(
+        "bookentry.contract(contractId, network, [driver]) requires a Network",
+      );
+    }
+    const driverPromise = driver
+      ? Promise.resolve(driver)
+      : network.dataDrivers.get(
+        typeof contractId === "string" ? contractId : base16.encode(contractId),
+      );
+    return new Contract({
+      contractId,
+      driver: driverPromise,
+      network,
+      bookentry: this,
+    });
   }
 }
 

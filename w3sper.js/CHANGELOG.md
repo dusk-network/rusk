@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `deposit` field to the transaction builder to deposit funds into contracts, allowing explicit values to be set instead of default `0n` [#3868]
+- Add data-driver runtime (`src/data-driver/loader.js`, `registry.js`, `mod.js`) for JSON <-> RKYV serialization and WASM driver loading [#3876]
+- Add minimal `Contract` API with `call`, and `tx` methods for driver-backed reads and writes [#3876]
+- Add first-class decoded contract events with `contract.events.<event>.once()/on()` using RUES and automatic driver-based event decoding [#3877]
+
 ### Changed
 
 ### Removed
@@ -70,6 +75,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3427]: https://github.com/dusk-network/rusk/issues/3427
 [#3750]: https://github.com/dusk-network/rusk/issues/3750
 [#3850]: https://github.com/dusk-network/rusk/issues/3850
+[#3868]: https://github.com/dusk-network/rusk/issues/3868
+[#3876]: https://github.com/dusk-network/rusk/issues/3876
+[#3877]: https://github.com/dusk-network/rusk/issues/3877
 
 <!-- VERSIONS -->
 

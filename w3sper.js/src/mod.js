@@ -10,3 +10,5 @@ export * from "./bookkeeper.js";
 export * from "./transaction.js";
 export * as lux from "./lux.js";
 export { useAsProtocolDriver } from "./protocol-driver/mod.js";
+export { Contract } from "./contract.js";
+export * as dataDrivers from "./data-driver/mod.js";
