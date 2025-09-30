@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+## [1.3.0] - 2025-09-30
+
+### Added
+
 - Add `deposit` field to the transaction builder to deposit funds into contracts, allowing explicit values to be set instead of default `0n` [#3868]
 - Add data-driver runtime (`src/data-driver/loader.js`, `registry.js`, `mod.js`) for JSON <-> RKYV serialization and WASM driver loading [#3876]
 - Add minimal `Contract` API with `call`, and `tx` methods for driver-backed reads and writes [#3876]
