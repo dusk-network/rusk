@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::path::PathBuf;
 use std::{path::Path, usize};
 
 #[cfg(feature = "archive")]
@@ -13,7 +14,7 @@ use tempfile::tempdir;
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
-use rusk::node::RuskVmConfig;
+use rusk::node::{driverstore::DriverStore, RuskVmConfig};
 use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state::{self, Snapshot};
 
@@ -77,6 +78,7 @@ pub async fn new_state_with_chainid<P: AsRef<Path>>(
         sender,
         #[cfg(feature = "archive")]
         archive,
+        DriverStore::new(None::<PathBuf>),
     )
     .expect("Instantiating rusk should succeed");
 
