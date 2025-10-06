@@ -490,8 +490,8 @@ async fn handle_request_rues<H: HandleRequest>(
 
         Ok(response.map(Into::into))
     } else if req.method() == Method::POST {
-        let (event, binary_resp) = RuesDispatchEvent::from_request(req).await?;
-        let _is_binary = event.is_binary();
+        let (event, binary_request) =
+            RuesDispatchEvent::from_request(req).await?;
         let mut resp_headers = event.x_headers();
         let (responder, mut receiver) = mpsc::unbounded_channel();
         handle_execution_rues(handler, event, responder).await;
@@ -501,7 +501,8 @@ async fn handle_request_rues<H: HandleRequest>(
             .await
             .expect("An execution should always return a response");
         resp_headers.extend(execution_response.headers.clone());
-        let mut resp = execution_response.into_http(binary_resp)?;
+        let binary_response = binary_request || execution_response.force_binary;
+        let mut resp = execution_response.into_http(binary_response)?;
 
         for (k, v) in resp_headers {
             let k = HeaderName::from_str(&k)?;
@@ -636,18 +637,20 @@ async fn handle_execution_rues<H>(
         .handle_rues(&event)
         .await
         .map(|data| {
-            let (data, mut headers) = data.into_inner();
+            let (data, mut headers, force_binary) = data.into_inner();
             headers.append(&mut event.x_headers());
             EventResponse {
                 data,
                 error: None,
                 headers,
+                force_binary,
             }
         })
         .unwrap_or_else(|e| EventResponse {
             headers: event.x_headers(),
             data: DataType::None,
             error: Some(e.to_string()),
+            force_binary: false,
         });
 
     rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));

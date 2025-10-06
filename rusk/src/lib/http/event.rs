@@ -34,6 +34,8 @@ pub struct MessageResponse {
 
     /// A possible error happening during the contract call.
     pub error: Option<String>,
+
+    pub force_binary: bool,
 }
 
 impl MessageResponse {
@@ -209,6 +211,7 @@ impl From<Vec<u8>> for RequestData {
 pub struct ResponseData {
     data: DataType,
     header: serde_json::Map<String, serde_json::Value>,
+    force_binary: bool,
 }
 
 impl ResponseData {
@@ -216,6 +219,7 @@ impl ResponseData {
         Self {
             data: data.into(),
             header: serde_json::Map::new(),
+            force_binary: false,
         }
     }
 
@@ -238,12 +242,17 @@ impl ResponseData {
 
     pub fn into_inner(
         self,
-    ) -> (DataType, serde_json::Map<String, serde_json::Value>) {
-        (self.data, self.header)
+    ) -> (DataType, serde_json::Map<String, serde_json::Value>, bool) {
+        (self.data, self.header, self.force_binary)
     }
 
     pub fn data(&self) -> &DataType {
         &self.data
+    }
+
+    pub fn with_force_binary(mut self, force: bool) -> Self {
+        self.force_binary = force;
+        self
     }
 }
 
