@@ -35,6 +35,7 @@ impl HandleRequest for Rusk {
             ("driver", Some(_), _) => true,
             ("contract_owner", Some(_), _) => true,
             ("upload_driver", Some(_), _) => true,
+            ("contract", Some(_), _) => true,
             ("node", _, "provisioners") => true,
             ("node", _, "crs") => true,
             _ => false,
@@ -61,12 +62,15 @@ impl HandleRequest for Rusk {
             ("contract_owner", Some(contract_id), _method) => {
                 self.get_contract_owner(contract_id)
             }
-            ("upload_driver", Some(contract_id), _method) => {
+            ("contract", Some(contract_id), "upload_driver") => {
                 let sign = request
                     .header("sign")
                     .and_then(|v| v.as_str())
                     .ok_or(anyhow::anyhow!("Signature missing"))?;
                 self.upload_driver(contract_id, sign, request.data.as_bytes())
+            }
+            ("contract", Some(contract_id), "download_driver") => {
+                self.download_driver(contract_id)
             }
             ("node", _, "provisioners") => self.get_provisioners(),
 
@@ -215,6 +219,21 @@ impl Rusk {
         let mut instance_cache = self.instance_cache.write();
         instance_cache.remove(&contract_id);
         Ok(ResponseData::new(UPLOAD_DRIVER_RESPONSE.to_string()))
+    }
+
+    fn download_driver(
+        &self,
+        contract_id: &str,
+    ) -> anyhow::Result<ResponseData> {
+        let contract_id = ContractId::try_from(contract_id.to_string())
+            .map_err(|_| anyhow::anyhow!("Invalid contract id"))?;
+        let driver_store = self.driver_store.read();
+        Ok(ResponseData::new(
+            driver_store
+                .get_bytecode(&contract_id)
+                .map_err(|_| anyhow::anyhow!("Driver not registered"))?
+                .ok_or_else(|| anyhow::anyhow!("Driver not found"))?,
+        ))
     }
 
     fn handle_contract_query(
