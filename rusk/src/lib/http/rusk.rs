@@ -228,12 +228,13 @@ impl Rusk {
         let contract_id = ContractId::try_from(contract_id.to_string())
             .map_err(|_| anyhow::anyhow!("Invalid contract id"))?;
         let driver_store = self.driver_store.read();
-        Ok(ResponseData::new(
-            driver_store
-                .get_bytecode(&contract_id)
-                .map_err(|_| anyhow::anyhow!("Driver not registered"))?
-                .ok_or_else(|| anyhow::anyhow!("Driver not found"))?,
-        ))
+        let driver_bytecode = driver_store
+            .get_bytecode(&contract_id)
+            .map_err(|_| anyhow::anyhow!("Driver not registered"))?
+            .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+        Ok(ResponseData::new(driver_bytecode)
+            .with_force_binary(true)
+            .with_header("content-type", "application/wasm"))
     }
 
     fn handle_contract_query(
