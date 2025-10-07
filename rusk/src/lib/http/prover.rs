@@ -19,13 +19,13 @@ impl HandleRequest for LocalProver {
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> HttpResult<ResponseData> {
         let data = request.data.as_bytes();
         let response = match request.uri.inner() {
             ("prover", _, "prove") => {
                 LocalProver.prove(data).map_err(|e| anyhow!(e))?
             }
-            _ => anyhow::bail!("Unsupported"),
+            _ => return Err(HttpError::Unsupported),
         };
         Ok(ResponseData::new(response))
     }

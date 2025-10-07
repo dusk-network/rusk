@@ -33,7 +33,7 @@ pub struct MessageResponse {
     pub data: DataType,
 
     /// A possible error happening during the contract call.
-    pub error: Option<String>,
+    pub error: Option<(String, u16)>,
 
     pub force_binary: bool,
 }
@@ -43,10 +43,12 @@ impl MessageResponse {
         self,
         is_binary: bool,
     ) -> anyhow::Result<Response<FullOrStreamBody>> {
-        if let Some(error) = &self.error {
+        if let Some((error, code)) = self.error {
+            let code = hyper::StatusCode::from_u16(code)
+                .unwrap_or(hyper::StatusCode::INTERNAL_SERVER_ERROR);
             return Ok(hyper::Response::builder()
-                .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Full::new(error.to_string().into()).into())?);
+                .status(code)
+                .body(Full::new(error.into()).into())?);
         }
 
         let mut headers = HashMap::new();

@@ -7,6 +7,7 @@
 #[cfg(feature = "chain")]
 mod chain;
 mod driver;
+mod error;
 mod event;
 #[cfg(feature = "prover")]
 mod prover;
@@ -62,9 +63,12 @@ use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
 pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
+pub use error::Error as HttpError;
 
 use self::event::{ResponseData, RuesEventUri, SessionId};
 use self::stream::Listener;
+
+pub type HttpResult<T> = std::result::Result<T, HttpError>;
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 const RUSK_VERSION_STRICT_HEADER: &str = "Rusk-Version-Strict";
@@ -143,7 +147,7 @@ impl HandleRequest for DataSources {
     async fn handle_rues(
         &self,
         event: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> HttpResult<ResponseData> {
         info!("Received event at {}", event.uri);
         event.check_rusk_version()?;
         for h in &self.sources {
@@ -151,7 +155,7 @@ impl HandleRequest for DataSources {
                 return h.handle_rues(event).await;
             }
         }
-        Err(anyhow::anyhow!("unsupported location"))
+        Err(HttpError::Unsupported)
     }
 }
 
@@ -649,7 +653,7 @@ async fn handle_execution_rues<H>(
         .unwrap_or_else(|e| EventResponse {
             headers: event.x_headers(),
             data: DataType::None,
-            error: Some(e.to_string()),
+            error: Some((e.to_string(), e.http_code())),
             force_binary: false,
         });
 
@@ -663,7 +667,7 @@ pub trait HandleRequest: Send + Sync + 'static {
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData>;
+    ) -> HttpResult<ResponseData>;
 }
 
 #[cfg(test)]
@@ -696,7 +700,7 @@ mod tests {
         async fn handle_rues(
             &self,
             request: &RuesDispatchEvent,
-        ) -> anyhow::Result<ResponseData> {
+        ) -> HttpResult<ResponseData> {
             let response = match request.uri.inner() {
                 ("test", _, "stream") => {
                     let (sender, rec) = std::sync::mpsc::channel();
@@ -710,7 +714,7 @@ mod tests {
                 ("test", _, "echo") => {
                     ResponseData::new(request.data.as_bytes().to_vec())
                 }
-                _ => anyhow::bail!("Unsupported"),
+                _ => return Err(HttpError::Unsupported),
             };
             Ok(response)
         }
