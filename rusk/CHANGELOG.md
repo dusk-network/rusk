@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add endpoint to download contact's data driver. [#3884]
 - Add pagination support to GraphQL `finalizedEvents` query. [#3871]
 - Add support for `TransactionData::Blob`
 - Add `mempool_nonce` field to `/on/account/status` response
@@ -390,6 +391,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3884]: https://github.com/dusk-network/rusk/issues/3884
 [#3871]: https://github.com/dusk-network/rusk/issues/3871
 [#3869]: https://github.com/dusk-network/rusk/issues/3869
 [#3850]: https://github.com/dusk-network/rusk/issues/3850
