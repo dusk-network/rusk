@@ -11,13 +11,15 @@ static CACHE: RwLock<(Option<Instant>, Vec<Value>)> =
     RwLock::const_new((None, Vec::new()));
 
 impl RuskNode {
-    pub async fn peers_location(&self) -> anyhow::Result<ResponseData> {
+    pub async fn peers_location(&self) -> HttpResult<ResponseData> {
         let locations = match from_cache().await {
             Some(locations) => locations,
             None => self.update_cache().await?,
         };
 
-        Ok(ResponseData::new(serde_json::to_value(locations)?))
+        Ok(ResponseData::new(serde_json::to_value(locations).map_err(
+            |e| anyhow::anyhow!("cannot encode locations: {e}"),
+        )?))
     }
 
     async fn update_cache(&self) -> anyhow::Result<Vec<Value>> {

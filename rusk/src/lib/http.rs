@@ -7,6 +7,7 @@
 #[cfg(feature = "chain")]
 mod chain;
 mod driver;
+mod error;
 mod event;
 #[cfg(feature = "prover")]
 mod prover;
@@ -62,9 +63,12 @@ use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
 
 pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
+pub use error::Error as HttpError;
 
 use self::event::{ResponseData, RuesEventUri, SessionId};
 use self::stream::Listener;
+
+pub type HttpResult<T> = std::result::Result<T, HttpError>;
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 const RUSK_VERSION_STRICT_HEADER: &str = "Rusk-Version-Strict";
@@ -143,7 +147,7 @@ impl HandleRequest for DataSources {
     async fn handle_rues(
         &self,
         event: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> HttpResult<ResponseData> {
         info!("Received event at {}", event.uri);
         event.check_rusk_version()?;
         for h in &self.sources {
@@ -151,7 +155,7 @@ impl HandleRequest for DataSources {
                 return h.handle_rues(event).await;
             }
         }
-        Err(anyhow::anyhow!("unsupported location"))
+        Err(HttpError::Unsupported)
     }
 }
 
@@ -490,8 +494,8 @@ async fn handle_request_rues<H: HandleRequest>(
 
         Ok(response.map(Into::into))
     } else if req.method() == Method::POST {
-        let (event, binary_resp) = RuesDispatchEvent::from_request(req).await?;
-        let _is_binary = event.is_binary();
+        let (event, binary_request) =
+            RuesDispatchEvent::from_request(req).await?;
         let mut resp_headers = event.x_headers();
         let (responder, mut receiver) = mpsc::unbounded_channel();
         handle_execution_rues(handler, event, responder).await;
@@ -501,7 +505,8 @@ async fn handle_request_rues<H: HandleRequest>(
             .await
             .expect("An execution should always return a response");
         resp_headers.extend(execution_response.headers.clone());
-        let mut resp = execution_response.into_http(binary_resp)?;
+        let binary_response = binary_request || execution_response.force_binary;
+        let mut resp = execution_response.into_http(binary_response)?;
 
         for (k, v) in resp_headers {
             let k = HeaderName::from_str(&k)?;
@@ -636,18 +641,20 @@ async fn handle_execution_rues<H>(
         .handle_rues(&event)
         .await
         .map(|data| {
-            let (data, mut headers) = data.into_inner();
+            let (data, mut headers, force_binary) = data.into_inner();
             headers.append(&mut event.x_headers());
             EventResponse {
                 data,
                 error: None,
                 headers,
+                force_binary,
             }
         })
         .unwrap_or_else(|e| EventResponse {
             headers: event.x_headers(),
             data: DataType::None,
-            error: Some(e.to_string()),
+            error: Some((e.to_string(), e.http_code())),
+            force_binary: false,
         });
 
     rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
@@ -660,7 +667,7 @@ pub trait HandleRequest: Send + Sync + 'static {
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData>;
+    ) -> HttpResult<ResponseData>;
 }
 
 #[cfg(test)]
@@ -693,7 +700,7 @@ mod tests {
         async fn handle_rues(
             &self,
             request: &RuesDispatchEvent,
-        ) -> anyhow::Result<ResponseData> {
+        ) -> HttpResult<ResponseData> {
             let response = match request.uri.inner() {
                 ("test", _, "stream") => {
                     let (sender, rec) = std::sync::mpsc::channel();
@@ -707,7 +714,7 @@ mod tests {
                 ("test", _, "echo") => {
                     ResponseData::new(request.data.as_bytes().to_vec())
                 }
-                _ => anyhow::bail!("Unsupported"),
+                _ => return Err(HttpError::Unsupported),
             };
             Ok(response)
         }

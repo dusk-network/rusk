@@ -34,8 +34,8 @@ impl HandleRequest for Rusk {
             ("contracts", Some(_), _) => true,
             ("driver", Some(_), _) => true,
             ("contract_owner", Some(_), _) => true,
-            ("upload_driver", Some(_), _) => true,
-            ("contract", Some(_), _) => true,
+            ("contract", Some(_), "upload_driver") => true,
+            ("contract", Some(_), "download_driver") => true,
             ("node", _, "provisioners") => true,
             ("node", _, "crs") => true,
             _ => false,
@@ -44,7 +44,7 @@ impl HandleRequest for Rusk {
     async fn handle_rues(
         &self,
         request: &RuesDispatchEvent,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> HttpResult<ResponseData> {
         match request.uri.inner() {
             ("contracts", Some(contract_id), method) => {
                 let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
@@ -66,16 +66,16 @@ impl HandleRequest for Rusk {
                 let sign = request
                     .header("sign")
                     .and_then(|v| v.as_str())
-                    .ok_or(anyhow::anyhow!("Signature missing"))?;
+                    .ok_or(HttpError::invalid_input("Signature missing"))?;
                 self.upload_driver(contract_id, sign, request.data.as_bytes())
             }
             ("contract", Some(contract_id), "download_driver") => {
                 self.download_driver(contract_id)
             }
-            ("node", _, "provisioners") => self.get_provisioners(),
+            ("node", _, "provisioners") => Ok(self.get_provisioners()?),
 
-            ("node", _, "crs") => self.get_crs(),
-            _ => Err(anyhow::anyhow!("Unsupported")),
+            ("node", _, "crs") => Ok(self.get_crs()?),
+            _ => Err(HttpError::Unsupported),
         }
     }
 }
@@ -135,7 +135,7 @@ impl Rusk {
         contract_id: &str,
         method: &str,
         data: &RequestData,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> HttpResult<ResponseData> {
         let (method, target) = method.split_once(':').unwrap_or((method, ""));
         let driver = self
             .data_driver(contract_id.to_string())?
@@ -165,7 +165,11 @@ impl Rusk {
             "get_version" => {
                 ResponseData::new(driver.get_version().to_string())
             }
-            method => anyhow::bail!("Unsupported data driver method {method}"),
+            method => {
+                return Err(HttpError::generic(format!(
+                    "Unsupported data driver method {method}"
+                )))
+            }
         };
         Ok(result)
     }
@@ -173,12 +177,14 @@ impl Rusk {
     fn get_contract_owner(
         &self,
         contract_id: &str,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> HttpResult<ResponseData> {
         let contract_id = ContractId::try_from(contract_id.to_string())
-            .map_err(|_| anyhow::anyhow!("Invalid contract id"))?;
+            .map_err(|_| HttpError::invalid_input("Invalid contract id"))?;
         self.query_metadata(&contract_id)
             .map(|metadata| ResponseData::new(metadata.owner))
-            .map_err(|e| anyhow::anyhow!("Contract owner not found: {e}"))
+            .map_err(|e| {
+                HttpError::generic(format!("Contract owner not found: {e}"))
+            })
     }
 
     fn upload_driver(
@@ -186,9 +192,9 @@ impl Rusk {
         contract_id: &str,
         sig: impl AsRef<str>,
         data: &[u8],
-    ) -> anyhow::Result<ResponseData> {
+    ) -> HttpResult<ResponseData> {
         let contract_id = ContractId::try_from(contract_id.to_string())
-            .map_err(|_| anyhow::anyhow!("Invalid contract id"))?;
+            .map_err(|_| HttpError::invalid_input("Invalid contract id"))?;
 
         // compute hash
         let mut hasher = Sha3_256::new();
@@ -211,29 +217,31 @@ impl Rusk {
         })?;
 
         let mut driver_store = self.driver_store.write();
-        driver_store.store_bytecode_and_signature(
-            &contract_id,
-            data,
-            signature.to_bytes(),
-        )?;
+        driver_store
+            .store_bytecode_and_signature(
+                &contract_id,
+                data,
+                signature.to_bytes(),
+            )
+            .map_err(|e| {
+                anyhow::anyhow!("Cannot store bytecode and signature: {e:?}")
+            })?;
         let mut instance_cache = self.instance_cache.write();
         instance_cache.remove(&contract_id);
         Ok(ResponseData::new(UPLOAD_DRIVER_RESPONSE.to_string()))
     }
 
-    fn download_driver(
-        &self,
-        contract_id: &str,
-    ) -> anyhow::Result<ResponseData> {
+    fn download_driver(&self, contract_id: &str) -> HttpResult<ResponseData> {
         let contract_id = ContractId::try_from(contract_id.to_string())
-            .map_err(|_| anyhow::anyhow!("Invalid contract id"))?;
+            .map_err(|_| HttpError::invalid_input("Invalid contract id"))?;
         let driver_store = self.driver_store.read();
-        Ok(ResponseData::new(
-            driver_store
-                .get_bytecode(&contract_id)
-                .map_err(|_| anyhow::anyhow!("Driver not registered"))?
-                .ok_or_else(|| anyhow::anyhow!("Driver not found"))?,
-        ))
+        let driver_bytecode = driver_store
+            .get_bytecode(&contract_id)
+            .map_err(|_| anyhow::anyhow!("Driver not registered"))?
+            .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+        Ok(ResponseData::new(driver_bytecode)
+            .with_force_binary(true)
+            .with_header("content-type", "application/wasm"))
     }
 
     fn handle_contract_query(
@@ -243,9 +251,9 @@ impl Rusk {
         data: &RequestData,
         feeder: bool,
         json: bool,
-    ) -> anyhow::Result<ResponseData> {
+    ) -> HttpResult<ResponseData> {
         let contract_id = ContractId::try_from(contract.to_string())
-            .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
+            .map_err(|_| HttpError::invalid_input("Invalid contract bytes"))?;
 
         let mut driver = None;
 

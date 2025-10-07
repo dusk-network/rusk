@@ -33,7 +33,9 @@ pub struct MessageResponse {
     pub data: DataType,
 
     /// A possible error happening during the contract call.
-    pub error: Option<String>,
+    pub error: Option<(String, u16)>,
+
+    pub force_binary: bool,
 }
 
 impl MessageResponse {
@@ -41,10 +43,12 @@ impl MessageResponse {
         self,
         is_binary: bool,
     ) -> anyhow::Result<Response<FullOrStreamBody>> {
-        if let Some(error) = &self.error {
+        if let Some((error, code)) = self.error {
+            let code = hyper::StatusCode::from_u16(code)
+                .unwrap_or(hyper::StatusCode::INTERNAL_SERVER_ERROR);
             return Ok(hyper::Response::builder()
-                .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Full::new(error.to_string().into()).into())?);
+                .status(code)
+                .body(Full::new(error.into()).into())?);
         }
 
         let mut headers = HashMap::new();
@@ -209,6 +213,7 @@ impl From<Vec<u8>> for RequestData {
 pub struct ResponseData {
     data: DataType,
     header: serde_json::Map<String, serde_json::Value>,
+    force_binary: bool,
 }
 
 impl ResponseData {
@@ -216,6 +221,7 @@ impl ResponseData {
         Self {
             data: data.into(),
             header: serde_json::Map::new(),
+            force_binary: false,
         }
     }
 
@@ -238,12 +244,17 @@ impl ResponseData {
 
     pub fn into_inner(
         self,
-    ) -> (DataType, serde_json::Map<String, serde_json::Value>) {
-        (self.data, self.header)
+    ) -> (DataType, serde_json::Map<String, serde_json::Value>, bool) {
+        (self.data, self.header, self.force_binary)
     }
 
     pub fn data(&self) -> &DataType {
         &self.data
+    }
+
+    pub fn with_force_binary(mut self, force: bool) -> Self {
+        self.force_binary = force;
+        self
     }
 }
 
