@@ -17,9 +17,7 @@ impl RuskNode {
             None => self.update_cache().await?,
         };
 
-        Ok(ResponseData::new(serde_json::to_value(locations).map_err(
-            |e| anyhow::anyhow!("cannot encode locations: {e}"),
-        )?))
+        Ok(ResponseData::new(serde_json::Value::Array(locations)))
     }
 
     async fn update_cache(&self) -> anyhow::Result<Vec<Value>> {

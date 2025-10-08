@@ -7,7 +7,6 @@
 mod geo;
 pub mod graphql;
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use dusk_bytes::DeserializableSlice;
@@ -98,7 +97,7 @@ impl HandleRequest for RuskNode {
                     request.data.as_string().trim().parse().map_err(|_| {
                         HttpError::invalid_input("invalid amount")
                     })?;
-                self.alive_nodes(amount).await
+                Ok(self.alive_nodes(amount).await)
             }
 
             ("network", _, "peers_location") => self.peers_location().await,
@@ -210,33 +209,27 @@ impl RuskNode {
         Ok(ResponseData::new(DataType::None))
     }
 
-    async fn alive_nodes(&self, amount: usize) -> HttpResult<ResponseData> {
+    async fn alive_nodes(&self, amount: usize) -> ResponseData {
         let nodes = self.network().read().await.alive_nodes(amount).await;
-        let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
-        Ok(ResponseData::new(serde_json::to_value(nodes).map_err(
-            |e| anyhow::anyhow!("cannot encode alive_nodes: {e}"),
-        )?))
+        let nodes: Vec<_> = nodes.iter().map(|n| Value::String(n.to_string()).collect();
+        ResponseData::new(serde_json::Value::Array(nodes))
     }
 
     async fn get_info(&self) -> HttpResult<ResponseData> {
-        let mut info: HashMap<&str, serde_json::Value> = HashMap::new();
-
-        info.insert("version", VERSION.as_str().into());
-        info.insert("version_build", VERSION_BUILD.as_str().into());
-
         let n_conf = self.network().read().await.conf().clone();
-        info.insert("bootstrapping_nodes", n_conf.bootstrapping_nodes.into());
-        info.insert("chain_id", n_conf.kadcast_id.into());
-        info.insert("kadcast_address", n_conf.public_address.into());
-
         let vm_conf = self.inner().vm_handler().read().await.vm_config.clone();
         let vm_conf = serde_json::to_value(vm_conf).unwrap_or_default();
-        info.insert("vm_config", vm_conf);
 
-        Ok(ResponseData::new(
-            serde_json::to_value(&info)
-                .map_err(|e| anyhow::anyhow!("cannot encode info: {e}"))?,
-        ))
+        let info = serde_json::json!({
+            "version": VERSION.as_str(),
+            "version_build": VERSION_BUILD.as_str(),
+            "bootstrapping_nodes": n_conf.bootstrapping_nodes,
+            "chain_id": n_conf.kadcast_id,
+            "kadcast_address": n_conf.public_address,
+            "vm_config": vm_conf,
+        });
+
+        Ok(ResponseData::new(info))
     }
 
     /// Calculates various statistics for gas prices of transactions in the
@@ -300,9 +293,7 @@ impl RuskNode {
             "min": min_gas_price
         });
 
-        Ok(ResponseData::new(serde_json::to_value(stats).map_err(
-            |e| anyhow::anyhow!("cannot encode stats: {e}"),
-        )?))
+        Ok(ResponseData::new(stats))
     }
 
     async fn simulate_tx(&self, tx: &[u8]) -> HttpResult<ResponseData> {
