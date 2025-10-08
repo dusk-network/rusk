@@ -152,14 +152,13 @@ impl VMExecution for Rusk {
                     })?;
 
                 if !existing_nullifiers.is_empty() {
-                    let err =
-                        RuskError::RepeatingNullifiers(existing_nullifiers);
-                    return Err(anyhow::anyhow!("{err}"));
+                    anyhow::bail!(RuskError::RepeatingNullifiers(
+                        existing_nullifiers
+                    ));
                 }
 
                 if !has_unique_elements(tx_nullifiers) {
-                    let err = RuskError::DoubleNullifiers;
-                    return Err(anyhow::anyhow!("{err}"));
+                    anyhow::bail!(RuskError::DoubleNullifiers);
                 }
 
                 match crate::verifier::verify_proof(tx) {
@@ -183,17 +182,14 @@ impl VMExecution for Rusk {
                     .ok_or(anyhow::anyhow!("Value spent will overflow"))?;
 
                 if max_value > account_data.balance {
-                    return Err(anyhow::anyhow!(
-                        "Value spent larger than account holds"
-                    ));
+                    anyhow::bail!("Value spent larger than account holds")
                 }
 
                 if tx.nonce() <= account_data.nonce {
-                    let err = RuskError::RepeatingNonce(
+                    anyhow::bail!(RuskError::RepeatingNonce(
                         (*tx.sender()).into(),
                         tx.nonce(),
-                    );
-                    return Err(anyhow::anyhow!("{err}"));
+                    ));
                 }
 
                 let result = if tx.nonce() > account_data.nonce + 1 {
