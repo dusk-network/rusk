@@ -40,6 +40,16 @@ impl DriverStore {
             .transpose()
     }
 
+    pub fn driver_available(&self, contract_id: &ContractId) -> bool {
+        self.contract_path(contract_id)
+            .map(|path| {
+                fs::exists(&path).unwrap_or(false)
+                    && fs::exists(path.with_extension(SIGNATURE_FILE_EXTENSION))
+                        .unwrap_or(false)
+            })
+            .unwrap_or(false)
+    }
+
     pub fn store_bytecode_and_signature(
         &mut self,
         contract_id: &ContractId,

@@ -16,7 +16,7 @@ use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_data_driver::ConvertibleContract;
 use event::RequestData;
 use rusk_profile::CRS_17_HASH;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
 use std::sync::mpsc;
 use std::thread;
@@ -25,6 +25,14 @@ use crate::node::Rusk;
 
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 const UPLOAD_DRIVER_RESPONSE: &str = "driver upload ok";
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ContractMetadataResponse {
+    owner: String,
+    driver_available: bool,
+    driver_signature: Option<String>,
+    created_at: Option<String>,
+}
 
 #[async_trait]
 impl HandleRequest for Rusk {
@@ -36,6 +44,7 @@ impl HandleRequest for Rusk {
             ("contract_owner", Some(_), _) => true,
             ("contract", Some(_), "upload_driver") => true,
             ("contract", Some(_), "download_driver") => true,
+            ("contract", Some(_), "metadata") => true,
             ("node", _, "provisioners") => true,
             ("node", _, "crs") => true,
             _ => false,
@@ -72,8 +81,10 @@ impl HandleRequest for Rusk {
             ("contract", Some(contract_id), "download_driver") => {
                 self.download_driver(contract_id)
             }
+            ("contract", Some(contract_id), "metadata") => {
+                self.metadata(contract_id)
+            }
             ("node", _, "provisioners") => Ok(self.get_provisioners()?),
-
             ("node", _, "crs") => Ok(self.get_crs()?),
             _ => Err(HttpError::Unsupported),
         }
@@ -242,6 +253,28 @@ impl Rusk {
         Ok(ResponseData::new(driver_bytecode)
             .with_force_binary(true)
             .with_header("content-type", "application/wasm"))
+    }
+
+    fn metadata(&self, contract_id: &str) -> HttpResult<ResponseData> {
+        let contract_id = ContractId::try_from(contract_id.to_string())
+            .map_err(|_| anyhow::anyhow!("Invalid contract id"))?;
+        let owner = self
+            .query_metadata(&contract_id)
+            .map(|metadata| metadata.owner)
+            .unwrap_or_default();
+        let driver_store = self.driver_store.read();
+        let driver_signature =
+            driver_store.get_signature(&contract_id).unwrap_or(None);
+        let driver_available = driver_store.driver_available(&contract_id);
+        let response = ContractMetadataResponse {
+            owner: bs58::encode(&owner).into_string(),
+            driver_available,
+            driver_signature: driver_signature.map(hex::encode),
+            created_at: None,
+        };
+        let response_value = serde_json::to_value(&response)
+            .map_err(|_| anyhow::anyhow!("Metadata conversion error"))?;
+        Ok(ResponseData::new(DataType::Json(response_value)))
     }
 
     fn handle_contract_query(
