@@ -10,6 +10,7 @@ use blake2b_simd::Params;
 use dusk_core::abi::{ContractError, ContractId, Metadata, CONTRACT_ID_BYTES};
 use dusk_core::transfer::data::ContractBytecode;
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use dusk_wasmtime::{Engine, Module};
 use piecrust::{CallReceipt, Error, Session};
 
 pub use config::Config;
@@ -37,11 +38,11 @@ pub use config::Config;
 ///    - gas limit should be is smaller than deploy charge plus gas used for
 ///      spending funds
 ///    - transaction's bytecode's bytes are consistent with bytecode's hash
-///    
+///
 ///   Deployment execution may fail for deployment-specific reasons, such as:
 ///    - contract already deployed
 ///    - corrupted bytecode
-///    
+///
 ///    If deployment execution fails, the entire gas limit is consumed and error
 ///    is returned.
 ///
@@ -74,6 +75,17 @@ pub fn execute(
         config.min_deploy_points,
     )
     .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+
+    if config.disable_wasm64 {
+        if let Some(contract_deploy) = tx.deploy() {
+            if is_wasm64(&contract_deploy.bytecode.bytes)? {
+                return Err(Error::Panic(
+                    "64-bit wasm is not enabled in the VM".into(),
+                ));
+            }
+        }
+    }
+
     let blob_min_charge = tx
         .blob_check(config.gas_per_blob)
         .map_err(|e| Error::Panic(e.legacy_to_string()))?;
@@ -137,6 +149,21 @@ pub fn execute(
     clear_session(session, config);
 
     Ok(receipt)
+}
+
+fn is_wasm64(bytecode: &[u8]) -> Result<bool, Error> {
+    let module = Module::new(&Engine::default(), bytecode).map_err(|e| {
+        Error::Panic(format!(
+            "Problem when checking if bytecode is wasm64: {}",
+            e
+        ))
+    })?;
+    let is_64 = module
+        .exports()
+        .filter_map(|exp| exp.ty().memory().map(|mem_ty| mem_ty.is_64()))
+        .next()
+        .expect("We guarantee the module has one memory");
+    Ok(is_64)
 }
 
 fn clear_session(session: &mut Session, config: &Config) {

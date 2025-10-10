@@ -23,6 +23,9 @@ pub struct Config {
 
     /// Enable the blob processing by the VM
     pub with_blob: bool,
+
+    /// Disable deployment of Wasm64 contracts
+    pub disable_wasm64: bool,
 }
 
 impl Default for Config {
@@ -40,5 +43,6 @@ impl Config {
         min_deploy_gas_price: 0,
         with_public_sender: false,
         with_blob: false,
+        disable_wasm64: false,
     };
 }

@@ -1950,6 +1950,7 @@ dependencies = [
  "dusk-bytes",
  "dusk-core",
  "dusk-poseidon",
+ "dusk-wasmtime",
  "ff",
  "hex",
  "lru",
