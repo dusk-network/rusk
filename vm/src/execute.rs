@@ -11,6 +11,7 @@ use dusk_core::abi::{ContractError, ContractId, Metadata, CONTRACT_ID_BYTES};
 use dusk_core::transfer::data::ContractBytecode;
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use piecrust::{CallReceipt, Error, Session};
+use wasmparser::*;
 
 pub use config::Config;
 
@@ -37,11 +38,11 @@ pub use config::Config;
 ///    - gas limit should be is smaller than deploy charge plus gas used for
 ///      spending funds
 ///    - transaction's bytecode's bytes are consistent with bytecode's hash
-///    
+///
 ///   Deployment execution may fail for deployment-specific reasons, such as:
 ///    - contract already deployed
 ///    - corrupted bytecode
-///    
+///
 ///    If deployment execution fails, the entire gas limit is consumed and error
 ///    is returned.
 ///
@@ -74,6 +75,17 @@ pub fn execute(
         config.min_deploy_points,
     )
     .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+
+    if config.disable_wasm64 {
+        if let Some(contract_deploy) = tx.deploy() {
+            if is_wasm64(&contract_deploy.bytecode.bytes) {
+                return Err(Error::Panic(
+                    "64-bit wasm is not enabled in the VM".into(),
+                ));
+            }
+        }
+    }
+
     let blob_min_charge = tx
         .blob_check(config.gas_per_blob)
         .map_err(|e| Error::Panic(e.legacy_to_string()))?;
@@ -137,6 +149,17 @@ pub fn execute(
     clear_session(session, config);
 
     Ok(receipt)
+}
+
+fn is_wasm64(bytecode: &[u8]) -> bool {
+    for payload in Parser::new(0).parse_all(bytecode).flatten() {
+        if let Payload::MemorySection(section) = payload {
+            return section
+                .into_iter()
+                .any(|memory| memory.map_or(false, |m| m.memory64));
+        }
+    }
+    false
 }
 
 fn clear_session(session: &mut Session, config: &Config) {
