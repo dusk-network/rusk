@@ -72,6 +72,7 @@ impl Default for Config {
 pub(crate) mod feature {
     pub const FEATURE_ABI_PUBLIC_SENDER: &str = "ABI_PUBLIC_SENDER";
     pub const FEATURE_BLOB: &str = "BLOB";
+    pub const FEATURE_DISABLE_WASM64: &str = "DISABLE_WASM64";
 }
 
 impl Config {
@@ -140,6 +141,10 @@ impl Config {
             .feature(feature::FEATURE_BLOB)
             .map(|activation| block_height >= activation)
             .unwrap_or_default();
+        let disable_wasm64 = self
+            .feature(feature::FEATURE_DISABLE_WASM64)
+            .map(|activation| block_height >= activation)
+            .unwrap_or_default();
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
@@ -147,6 +152,7 @@ impl Config {
             min_deploy_gas_price: self.min_deployment_gas_price,
             with_public_sender,
             with_blob,
+            disable_wasm64,
         }
     }
 

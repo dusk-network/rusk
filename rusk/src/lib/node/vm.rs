@@ -295,6 +295,12 @@ impl VMExecution for Rusk {
     fn blob_activation_height(&self) -> u64 {
         self.vm_config.feature(FEATURE_BLOB).unwrap_or(u64::MAX)
     }
+
+    fn disable_wasm64_height(&self) -> u64 {
+        self.vm_config
+            .feature(FEATURE_DISABLE_WASM64)
+            .unwrap_or(u64::MAX)
+    }
 }
 
 fn has_unique_elements<T>(iter: T) -> bool
