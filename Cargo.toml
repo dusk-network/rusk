@@ -164,6 +164,7 @@ tracing-subscriber = "0.3.18"
 tungstenite = "0.21"
 url = "2.5.2"
 version_check = "0.9.5"
+wasmparser = "0.240"
 zeroize = { version = "1.8.1", default-features = false }
 zip = "0.5.13"
 
