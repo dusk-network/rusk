@@ -7,6 +7,7 @@
 use std::ops::Deref;
 
 use async_graphql::{FieldError, FieldResult, Json, Object, SimpleObject};
+use dusk_vm::gen_contract_id;
 use node::database::{Ledger, LightBlock, DB};
 use node_data::ledger::Label;
 use serde::{Deserialize, Serialize};
@@ -320,6 +321,17 @@ impl Transaction<'_> {
 
     pub async fn is_deploy(&self) -> bool {
         self.0.inner.deploy().is_some()
+    }
+
+    pub async fn contract_id(&self) -> Option<String> {
+        self.0.inner.deploy().map(|deploy| {
+            let contract_id = gen_contract_id(
+                &deploy.bytecode.bytes,
+                deploy.nonce,
+                &deploy.owner,
+            );
+            hex::encode(contract_id)
+        })
     }
 
     pub async fn memo(&self) -> Option<String> {
