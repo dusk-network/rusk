@@ -136,7 +136,7 @@ impl RuskNodeBuilder {
         gas_per_deploy_byte: O,
     ) -> Self {
         if let Some(gas_per_deploy_byte) = gas_per_deploy_byte.into() {
-            self.vm_config.gas_per_deploy_byte = gas_per_deploy_byte;
+            self.vm_config.gas_per_deploy_byte = Some(gas_per_deploy_byte);
         }
         self
     }
@@ -147,7 +147,8 @@ impl RuskNodeBuilder {
         min_deployment_gas_price: O,
     ) -> Self {
         if let Some(min_deploy_gas_price) = min_deployment_gas_price.into() {
-            self.vm_config.min_deployment_gas_price = min_deploy_gas_price;
+            self.vm_config.min_deployment_gas_price =
+                Some(min_deploy_gas_price);
         }
         self
     }
@@ -163,7 +164,7 @@ impl RuskNodeBuilder {
         min_deploy_points: O,
     ) -> Self {
         if let Some(min_deploy_points) = min_deploy_points.into() {
-            self.vm_config.min_deploy_points = min_deploy_points;
+            self.vm_config.min_deploy_points = Some(min_deploy_points);
         }
         self
     }
@@ -174,7 +175,7 @@ impl RuskNodeBuilder {
         block_gas_limit: O,
     ) -> Self {
         if let Some(block_gas_limit) = block_gas_limit.into() {
-            self.vm_config.block_gas_limit = block_gas_limit;
+            self.vm_config.block_gas_limit = Some(block_gas_limit);
         }
         self
     }
