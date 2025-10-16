@@ -21,6 +21,7 @@ pub mod http;
 
 use std::env;
 use std::str::FromStr;
+use std::time::Duration;
 
 #[cfg(feature = "chain")]
 use self::{
@@ -86,7 +87,9 @@ impl From<&Args> for Config {
         let mut rusk_config =
             args.config.as_ref().map_or(Config::default(), |conf_path| {
                 let toml = std::fs::read_to_string(conf_path).unwrap();
-                toml::from_str(&toml).unwrap()
+                let cfg = toml::from_str(&toml).unwrap();
+                cfg.set_values_for_the_known_chains();
+                cfg.merge(toml::from_str(&toml).unwrap())
             });
 
         // Overwrite config log-level
@@ -122,6 +125,43 @@ impl From<&Args> for Config {
         }
 
         rusk_config
+    }
+}
+
+// todo: move it to the right place
+const MAINNET: u8 = 1;
+const TESTNET: u8 = 1;
+const DEVNET: u8 = 1;
+
+impl Config {
+    fn set_values_for_the_known_chains(&mut self) {
+        match self.kadcast.into().kadcast_id {
+            MAINNET => {
+                self.vm.gas_per_blob = 0;
+                self.vm.gas_per_deploy_byte = 100;
+                self.vm.min_deploy_points = 5_000_000;
+                self.vm.min_deployment_gas_price = 2_000;
+                self.vm.block_gas_limit = 3_000_000_000;
+                self.vm.generation_timeout = Some(Duration::from_secs(3));
+            },
+            TESTNET => {
+                self.vm.gas_per_blob = 0;
+                self.vm.gas_per_deploy_byte = 100;
+                self.vm.min_deploy_points = 5_000_000;
+                self.vm.min_deployment_gas_price = 2_000;
+                self.vm.block_gas_limit = 3_000_000_000;
+                self.vm.generation_timeout = Some(Duration::from_secs(3));
+            },
+            DEVNET => {
+                self.vm.gas_per_blob = 0;
+                self.vm.gas_per_deploy_byte = 100;
+                self.vm.min_deploy_points = 5_000_000;
+                self.vm.min_deployment_gas_price = 2_000;
+                self.vm.block_gas_limit = 3_000_000_000;
+                self.vm.generation_timeout = Some(Duration::from_secs(3));
+            },
+            _ => {}
+        }
     }
 }
 
