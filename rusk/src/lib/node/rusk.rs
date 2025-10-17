@@ -123,7 +123,10 @@ impl Rusk {
         let started = Instant::now();
 
         let block_height = transition_data.round;
-        let gas_limit = self.vm_config.block_gas_limit;
+        let gas_limit = self
+            .vm_config
+            .block_gas_limit
+            .expect("vm config value should be set");
         let generator = transition_data.generator.inner();
         let slashes = transition_data.slashes.clone();
         let prev_state = transition_data.prev_state_root;

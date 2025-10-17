@@ -87,9 +87,10 @@ impl From<&Args> for Config {
         let mut rusk_config =
             args.config.as_ref().map_or(Config::default(), |conf_path| {
                 let toml = std::fs::read_to_string(conf_path).unwrap();
-                let cfg = toml::from_str(&toml).unwrap();
+                let mut cfg: Config = toml::from_str(&toml).unwrap();
+                #[cfg(feature = "chain")]
                 cfg.set_values_for_the_known_chains();
-                cfg.merge(toml::from_str(&toml).unwrap())
+                cfg
             });
 
         // Overwrite config log-level
@@ -129,37 +130,62 @@ impl From<&Args> for Config {
 }
 
 // todo: move it to the right place
+// as the constants are only used in patterns, we need to declare them
+// as dead code to avoid warnings, should the constants become public
+// this problem will disappear
+#[allow(dead_code)]
 const MAINNET: u8 = 1;
-const TESTNET: u8 = 1;
-const DEVNET: u8 = 1;
+#[allow(dead_code)]
+const TESTNET: u8 = 2;
+#[allow(dead_code)]
+const DEVNET: u8 = 3;
 
 impl Config {
+    #[cfg(feature = "chain")]
     fn set_values_for_the_known_chains(&mut self) {
-        match self.kadcast.into().kadcast_id {
+        // let kadcast_config: kadcast_config::Config = self.kadcast.clone().into();
+        let kadcast_id: u8 = 1;
+        // todo: how to extract kadcast id from KadcastConfig?
+        match kadcast_id {
             MAINNET => {
-                self.vm.gas_per_blob = 0;
-                self.vm.gas_per_deploy_byte = 100;
-                self.vm.min_deploy_points = 5_000_000;
-                self.vm.min_deployment_gas_price = 2_000;
-                self.vm.block_gas_limit = 3_000_000_000;
-                self.vm.generation_timeout = Some(Duration::from_secs(3));
-            },
+                self.vm.gas_per_blob = self.vm.gas_per_blob.or(Some(0));
+                self.vm.gas_per_deploy_byte =
+                    self.vm.gas_per_deploy_byte.or(Some(100));
+                self.vm.min_deploy_points =
+                    self.vm.min_deploy_points.or(Some(5_000_000));
+                self.vm.min_deployment_gas_price =
+                    self.vm.min_deployment_gas_price.or(Some(2_000));
+                self.vm.block_gas_limit =
+                    self.vm.block_gas_limit.or(Some(3_000_000_000));
+                self.vm.generation_timeout =
+                    self.vm.generation_timeout.or(Some(Duration::from_secs(3)));
+            }
             TESTNET => {
-                self.vm.gas_per_blob = 0;
-                self.vm.gas_per_deploy_byte = 100;
-                self.vm.min_deploy_points = 5_000_000;
-                self.vm.min_deployment_gas_price = 2_000;
-                self.vm.block_gas_limit = 3_000_000_000;
-                self.vm.generation_timeout = Some(Duration::from_secs(3));
-            },
+                self.vm.gas_per_blob = self.vm.gas_per_blob.or(Some(0));
+                self.vm.gas_per_deploy_byte =
+                    self.vm.gas_per_deploy_byte.or(Some(100));
+                self.vm.min_deploy_points =
+                    self.vm.min_deploy_points.or(Some(5_000_000));
+                self.vm.min_deployment_gas_price =
+                    self.vm.min_deployment_gas_price.or(Some(2_000));
+                self.vm.block_gas_limit =
+                    self.vm.block_gas_limit.or(Some(3_000_000_000));
+                self.vm.generation_timeout =
+                    self.vm.generation_timeout.or(Some(Duration::from_secs(3)));
+            }
             DEVNET => {
-                self.vm.gas_per_blob = 0;
-                self.vm.gas_per_deploy_byte = 100;
-                self.vm.min_deploy_points = 5_000_000;
-                self.vm.min_deployment_gas_price = 2_000;
-                self.vm.block_gas_limit = 3_000_000_000;
-                self.vm.generation_timeout = Some(Duration::from_secs(3));
-            },
+                self.vm.gas_per_blob = self.vm.gas_per_blob.or(Some(0));
+                self.vm.gas_per_deploy_byte =
+                    self.vm.gas_per_deploy_byte.or(Some(100));
+                self.vm.min_deploy_points =
+                    self.vm.min_deploy_points.or(Some(5_000_000));
+                self.vm.min_deployment_gas_price =
+                    self.vm.min_deployment_gas_price.or(Some(2_000));
+                self.vm.block_gas_limit =
+                    self.vm.block_gas_limit.or(Some(3_000_000_000));
+                self.vm.generation_timeout =
+                    self.vm.generation_timeout.or(Some(Duration::from_secs(3)));
+            }
             _ => {}
         }
     }
