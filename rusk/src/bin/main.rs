@@ -6,6 +6,8 @@
 
 mod args;
 mod config;
+#[cfg(feature = "chain")]
+mod const_config;
 #[cfg(feature = "ephemeral")]
 mod ephemeral;
 mod log;

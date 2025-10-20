@@ -33,6 +33,9 @@ use self::{
 #[cfg(feature = "chain")]
 use rusk::node::RuskVmConfig;
 
+#[cfg(feature = "chain")]
+use crate::const_config::*;
+
 use serde::{Deserialize, Serialize};
 
 use crate::args::Args;
@@ -129,39 +132,6 @@ impl From<&Args> for Config {
     }
 }
 
-// as the constants are only used in patterns, we need to declare them
-// as dead code to avoid warnings
-#[allow(dead_code)]
-const MAINNET: u8 = 1;
-#[allow(dead_code)]
-const TESTNET: u8 = 2;
-#[allow(dead_code)]
-const DEVNET: u8 = 3;
-
-// MAINNET constants
-const MAINNET_GAS_PER_BLOB: u64 = 0;
-const MAINNET_GAS_PER_DEPLOY_BYTE: u64 = 100;
-const MAINNET_MIN_DEPLOY_POINTS: u64 = 5_000_000;
-const MAINNET_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2_000;
-const MAINNET_BLOCK_GAS_LIMIT: u64 = 3_000_000_000;
-const MAINNET_GENERATION_TIMEOUT: u64 = 3;
-
-// TESTNET constants
-const TESTNET_GAS_PER_BLOB: u64 = 0;
-const TESTNET_GAS_PER_DEPLOY_BYTE: u64 = 100;
-const TESTNET_MIN_DEPLOY_POINTS: u64 = 5_000_000;
-const TESTNET_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2_000;
-const TESTNET_BLOCK_GAS_LIMIT: u64 = 3_000_000_000;
-const TESTNET_GENERATION_TIMEOUT: u64 = 3;
-
-// DEVNET constants
-const DEVNET_GAS_PER_BLOB: u64 = 0;
-const DEVNET_GAS_PER_DEPLOY_BYTE: u64 = 100;
-const DEVNET_MIN_DEPLOY_POINTS: u64 = 5_000_000;
-const DEVNET_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2_000;
-const DEVNET_BLOCK_GAS_LIMIT: u64 = 3_000_000_000;
-const DEVNET_GENERATION_TIMEOUT: u64 = 3;
-
 impl Config {
     #[cfg(feature = "chain")]
     fn set_values_for_the_known_chains(&mut self) {
@@ -187,6 +157,11 @@ impl Config {
                     .vm
                     .generation_timeout
                     .or(Some(Duration::from_secs(MAINNET_GENERATION_TIMEOUT)));
+                for (feature, activation) in MAINNET_FEATURES.entries() {
+                    if self.vm.feature(feature).is_none() {
+                        self.vm.with_feature(*feature, *activation)
+                    }
+                }
             }
             Some(TESTNET) => {
                 self.vm.gas_per_blob =
@@ -209,6 +184,11 @@ impl Config {
                     .vm
                     .generation_timeout
                     .or(Some(Duration::from_secs(TESTNET_GENERATION_TIMEOUT)));
+                for (feature, activation) in TESTNET_FEATURES.entries() {
+                    if self.vm.feature(feature).is_none() {
+                        self.vm.with_feature(*feature, *activation)
+                    }
+                }
             }
             Some(DEVNET) => {
                 self.vm.gas_per_blob =
@@ -231,6 +211,11 @@ impl Config {
                     .vm
                     .generation_timeout
                     .or(Some(Duration::from_secs(DEVNET_GENERATION_TIMEOUT)));
+                for (feature, activation) in DEVNET_FEATURES.entries() {
+                    if self.vm.feature(feature).is_none() {
+                        self.vm.with_feature(*feature, *activation)
+                    }
+                }
             }
             _ => {}
         }

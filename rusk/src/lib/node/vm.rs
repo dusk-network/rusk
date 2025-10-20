@@ -271,19 +271,19 @@ impl VMExecution for Rusk {
     fn get_block_gas_limit(&self) -> u64 {
         self.vm_config
             .block_gas_limit
-            .expect("vm configuration item should exist")
+            .expect("vm block-gas-limit configuration item should exist")
     }
 
     fn gas_per_deploy_byte(&self) -> u64 {
         self.vm_config
             .gas_per_deploy_byte
-            .expect("vm configuration item should exist")
+            .expect("vm gas-per-deploy-byte configuration item should exist")
     }
 
     fn min_deployment_gas_price(&self) -> u64 {
         self.vm_config
             .min_deployment_gas_price
-            .expect("vm configuration item should exist")
+            .expect("vm deployment-gas-price configuration item should exist")
     }
 
     fn min_gas_limit(&self) -> u64 {
@@ -293,13 +293,13 @@ impl VMExecution for Rusk {
     fn min_deploy_points(&self) -> u64 {
         self.vm_config
             .min_deploy_points
-            .expect("vm configuration item should exist")
+            .expect("vm deploy-points configuration item should exist")
     }
 
     fn gas_per_blob(&self) -> u64 {
         self.vm_config
             .gas_per_blob
-            .expect("vm configuration item should exist")
+            .expect("vm gas-per-blob configuration item should exist")
     }
 
     fn blob_activation_height(&self) -> u64 {

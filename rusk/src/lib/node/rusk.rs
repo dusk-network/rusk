@@ -126,7 +126,7 @@ impl Rusk {
         let gas_limit = self
             .vm_config
             .block_gas_limit
-            .expect("vm config value should be set");
+            .expect("vm block-gas-limit configuration item should exist");
         let generator = transition_data.generator.inner();
         let slashes = transition_data.slashes.clone();
         let prev_state = transition_data.prev_state_root;
