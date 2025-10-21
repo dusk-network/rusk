@@ -106,6 +106,10 @@ async function init() {
   });
 }
 
+/** @type {NetworkStoreServices["registerDataDriver"]} */
+const registerDataDriver = (id, driver) =>
+  connect().then(() => network.dataDrivers.register(id, driver));
+
 /** @type {NetworkStore} */
 export default {
   checkBlock,
@@ -117,5 +121,6 @@ export default {
   getCurrentBlockHeight,
   getLastFinalizedBlockHeight,
   init,
+  registerDataDriver,
   subscribe,
 };

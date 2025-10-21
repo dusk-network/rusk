@@ -5,6 +5,7 @@ import {
   disconnect,
   getAccount,
   getBalance,
+  http,
   reconnect,
   watchAccount,
 } from "@wagmi/core";
@@ -30,22 +31,58 @@ import { readable } from "svelte/store";
  */
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || "";
 
+const duskEvm = {
+  blockExplorers: {
+    default: {
+      name: "Dusk EVM Explorer",
+      url: "https://explorer.testnet.evm.dusk.network",
+    },
+  },
+  contracts: {
+    L2StandardBridge: {
+      address: "0x4200000000000000000000000000000000000010",
+      blockCreated: 5882,
+    },
+  },
+  id: 310,
+  name: "DuskEVM",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Dusk",
+    symbol: "DUSK",
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://rpc.testnet.evm.dusk.network"],
+    },
+    public: {
+      http: ["rpc.testnet.evm.dusk.network"],
+    },
+  },
+};
+
 /** @typedef {import("@reown/appkit/networks").AppKitNetwork} AppKitNetwork */
 /** @type {[AppKitNetwork, ...AppKitNetwork[]]} */
-const networks = [sepolia, bsc, mainnet];
+const networks = [sepolia, bsc, mainnet, duskEvm];
 
 const wagmiAdapter = new WagmiAdapter({
   networks,
   projectId,
+  transports: {
+    [duskEvm.id]: http(duskEvm.rpcUrls.default.http[0]),
+  },
 });
 
 export const wagmiConfig = wagmiAdapter.wagmiConfig;
+
+console.log("Wagmi Config:", wagmiConfig);
 
 reconnect(wagmiConfig);
 
 // Create the Reown App Kit modal
 export const modal = createAppKit({
   adapters: [wagmiAdapter],
+  defaultNetwork: networks[3],
   features: {
     analytics: false,
     onramp: false,
@@ -60,15 +97,19 @@ export const account = readable(getAccount(wagmiConfig), (set) =>
   watchAccount(wagmiConfig, { onChange: set })
 );
 
-/** @param {`0x${string}`} address */
-export const accountBalance = (address) =>
-  getBalance(wagmiConfig, {
-    address: address,
-    blockTag: "latest",
+/**
+ * @param {`0x${string}`} address
+ * @returns {Promise<import("@wagmi/core").GetBalanceReturnType>} balance as bigint or null if no address provided
+ */
+export async function getAccountBalance(address) {
+  return await getBalance(wagmiConfig, {
+    address,
+    chainId: duskEvm.id,
   });
+}
 
 export async function walletDisconnect() {
-  disconnect(wagmiConfig);
+  await disconnect(wagmiConfig);
   await modal?.disconnect();
 }
 

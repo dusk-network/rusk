@@ -420,6 +420,37 @@ const transfer = async (to, amount, memo, gas) =>
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
 
+/** @type {WalletStoreServices["contractFunctionCall"]} */
+const contractFunctionCall = async (
+  deposit,
+  gas,
+  contractId,
+  contractFunction,
+  contractFunctionArgs,
+  wasmPath
+) =>
+  sync()
+    .then(networkStore.connect)
+    .then(async (network) => {
+      network.dataDrivers.register(contractId, () =>
+        fetch(wasmPath).then((r) => r.arrayBuffer())
+      );
+
+      const profile = unsafeGetCurrentProfile();
+      const bookentry = bookkeeper.as(profile);
+      const contract = bookentry.contract(contractId, network);
+      const events$ = contract.events.deposit.once();
+      const builder = await contract.tx[contractFunction](contractFunctionArgs);
+
+      console.log(events$);
+
+      return await network.execute(
+        builder.to(profile.account).deposit(deposit).gas(gas)
+      );
+    })
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
+
 /** @type {WalletStoreServices["unshield"]} */
 const unshield = async (amount, gas) =>
   sync()
@@ -450,6 +481,7 @@ export default {
   claimRewards,
   clearLocalData,
   clearLocalDataAndInit,
+  contractFunctionCall,
   getTransactionsHistory,
   init,
   reset,
