@@ -420,6 +420,59 @@ const transfer = async (to, amount, memo, gas) =>
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
 
+/** @type {WalletStoreServices["contractFunctionCall"]} */
+const contractFunctionCall = async (
+  deposit,
+  gas,
+  contractId,
+  contractFunction,
+  contractFunctionArgs,
+  wasmPath
+) =>
+  sync()
+    .then(networkStore.connect)
+    .then(async (network) => {
+      network.dataDrivers.register(contractId, () =>
+        fetch(wasmPath).then((r) => r.arrayBuffer())
+      );
+
+      const profile = unsafeGetCurrentProfile();
+      const bookentry = bookkeeper.as(profile);
+      const contract = bookentry.contract(contractId, network);
+      // const events$ = contract.events.deposit.once();
+      const builder = await contract.tx[contractFunction](contractFunctionArgs);
+
+      return await network.execute(
+        builder.to(profile.account).deposit(deposit).gas(gas)
+      );
+    })
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
+
+/** @type {WalletStoreServices["finalizeWithdrawalEvmFunctionCall"]} */
+const finalizeWithdrawalEvmFunctionCall = async (
+  contractId,
+  withdrawalId,
+  wasmPath
+) =>
+  sync()
+    .then(networkStore.connect)
+    .then(async (network) => {
+      network.dataDrivers.register(contractId, () =>
+        fetch(wasmPath).then((r) => r.arrayBuffer())
+      );
+
+      const profile = unsafeGetCurrentProfile();
+      const bookentry = bookkeeper.as(profile);
+      const contract = bookentry.contract(contractId, network);
+      console.log({ withdrawalId });
+      const builder = await contract.tx.finalize_withdrawal(withdrawalId);
+
+      return await network.execute(builder.to(profile.account));
+    })
+    .then(updateCacheAfterTransaction)
+    .then(passThruWithEffects(observeTxRemoval));
+
 /** @type {WalletStoreServices["unshield"]} */
 const unshield = async (amount, gas) =>
   sync()
@@ -444,12 +497,53 @@ const unstake = async (amount, gas) =>
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
 
+/** @type {WalletStoreServices["useContract"]} */
+const useContract = async (contractId, wasmPath) =>
+  networkStore.connect().then(async (network) => {
+    network.dataDrivers.register(contractId, () =>
+      fetch(wasmPath).then((r) => r.arrayBuffer())
+    );
+
+    const profile = unsafeGetCurrentProfile();
+    const bookentry = bookkeeper.as(profile);
+    const contract = bookentry.contract(contractId, network);
+
+    return contract;
+  });
+
+const getEvmTransactions = async (
+  /** @type {any} */ contractId,
+  /** @type {string} */ wasmPath
+) =>
+  sync()
+    .then(networkStore.connect)
+    .then(async () => {
+      const bridgeContract = await useContract(contractId, wasmPath);
+      let pendingWithdrawals = await bridgeContract.call.pending_withdrawals(
+        undefined,
+        {
+          feeder: true,
+        }
+      );
+
+      if (!Array.isArray(pendingWithdrawals[0])) {
+        pendingWithdrawals = [pendingWithdrawals];
+      }
+
+      console.log(pendingWithdrawals);
+
+      return pendingWithdrawals;
+    });
+
 /** @type {WalletStore} */
 export default {
   abortSync,
   claimRewards,
   clearLocalData,
   clearLocalDataAndInit,
+  contractFunctionCall,
+  finalizeWithdrawalEvmFunctionCall,
+  getEvmTransactions,
   getTransactionsHistory,
   init,
   reset,
@@ -461,4 +555,5 @@ export default {
   transfer,
   unshield,
   unstake,
+  useContract,
 };

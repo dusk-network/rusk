@@ -52,6 +52,7 @@ type NetworkStoreServices = {
   getCurrentBlockHeight: () => Promise<bigint>;
   getLastFinalizedBlockHeight: () => Promise<bigint>;
   init: () => Promise<void>;
+  registerDataDriver: (id: string, driver: any) => Promise<DataDriverRegistry>;
 };
 
 type NetworkStore = Readable<NetworkStoreContent> & NetworkStoreServices;
@@ -97,7 +98,26 @@ type WalletStoreServices = {
     syncFromBlock?: bigint
   ) => Promise<void>;
 
+  contractFunctionCall: (
+    amount: bigint,
+    gas: Gas,
+    contractId: string,
+    contractFunction: string,
+    contractFunctionArgs: Object,
+    wasmPath: string
+  ) => Promise<TransactionInfo>;
+
+  useContract: (contractId: string, wasmPath: string) => Promise<any>;
+
   getTransactionsHistory: () => Promise<any>;
+
+  getEvmTransactions: (contractId: string, wasmPath: string) => Promise<any>;
+
+  finalizeWithdrawalEvmFunctionCall: (
+    contractId: string,
+    withdrawalId: bigint,
+    wasmPath: string
+  ) => Promise<any>;
 
   init: (
     profileGenerator: ProfileGenerator,

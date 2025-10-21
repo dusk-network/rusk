@@ -33,7 +33,10 @@ N.B. the current `0.1.2` version of the library has no option to pick the networ
 ```
 # can be empty string, must start with a slash otherwise, must not end with a slash
 VITE_BASE_PATH=""
+VITE_BRIDGE_CONTRACT_ID="" # the ID of the Dusk Bridge contract
+VITE_EVM_BRIDGE_CONTRACT_ADDRESS="" #the address of the EVM Bridge contract
 VITE_FEATURE_ALLOCATE=true
+VITE_FEATURE_BRIDGE=true
 VITE_FEATURE_MIGRATE=true
 VITE_FEATURE_STAKE=true
 VITE_FEATURE_TRANSFER=true
@@ -45,7 +48,7 @@ VITE_GAS_PRICE_DEFAULT=1
 VITE_GAS_PRICE_LOWER=1
 VITE_SYNC_INTERVAL=300000
 VITE_MODE_MAINTENANCE=false
-VITE_REOWN_PROJECT_ID="" # the ID of the Bridge project (as on Reown Cloud)
+VITE_REOWN_PROJECT_ID="" # the ID of the EVM project (as on Reown Cloud)
 VITE_NODE_URL="" # connect to a specific node
 ```
 

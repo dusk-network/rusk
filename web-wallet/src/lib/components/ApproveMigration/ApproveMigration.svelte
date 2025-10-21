@@ -7,8 +7,8 @@
   import { createEventDispatcher } from "svelte";
   import { Button, Icon } from "$lib/dusk/components";
   import { Banner } from "$lib/components";
-  import { account, wagmiConfig } from "$lib/migration/walletConnection";
-  import { allowance, approve } from "$lib/migration/migration";
+  import { account, wagmiConfig } from "$lib/web3/walletConnection";
+  import { allowance, approve } from "$lib/web3/migration";
   import { createDataStore } from "$lib/dusk/svelte-stores";
 
   /** @type {bigint} */
