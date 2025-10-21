@@ -21,6 +21,8 @@ pub mod http;
 
 use std::env;
 use std::str::FromStr;
+#[cfg(feature = "chain")]
+use std::time::Duration;
 
 #[cfg(feature = "chain")]
 use self::{
@@ -30,6 +32,9 @@ use self::{
 
 #[cfg(feature = "chain")]
 use rusk::node::RuskVmConfig;
+
+#[cfg(feature = "chain")]
+use crate::const_config::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -86,7 +91,9 @@ impl From<&Args> for Config {
         let mut rusk_config =
             args.config.as_ref().map_or(Config::default(), |conf_path| {
                 let toml = std::fs::read_to_string(conf_path).unwrap();
-                toml::from_str(&toml).unwrap()
+                let mut cfg: Config = toml::from_str(&toml).unwrap();
+                cfg.set_values_for_the_known_chains();
+                cfg
             });
 
         // Overwrite config log-level
@@ -123,6 +130,98 @@ impl From<&Args> for Config {
 
         rusk_config
     }
+}
+
+impl Config {
+    #[cfg(feature = "chain")]
+    fn set_values_for_the_known_chains(&mut self) {
+        match self.kadcast.kadcast_id() {
+            Some(MAINNET) => {
+                self.vm.gas_per_blob =
+                    self.vm.gas_per_blob.or(Some(MAINNET_GAS_PER_BLOB));
+                self.vm.gas_per_deploy_byte = self
+                    .vm
+                    .gas_per_deploy_byte
+                    .or(Some(MAINNET_GAS_PER_DEPLOY_BYTE));
+                self.vm.min_deploy_points = self
+                    .vm
+                    .min_deploy_points
+                    .or(Some(MAINNET_MIN_DEPLOY_POINTS));
+                self.vm.min_deployment_gas_price = self
+                    .vm
+                    .min_deployment_gas_price
+                    .or(Some(MAINNET_MIN_DEPLOYMENT_GAS_PRICE));
+                self.vm.block_gas_limit =
+                    self.vm.block_gas_limit.or(Some(MAINNET_BLOCK_GAS_LIMIT));
+                self.vm.generation_timeout = self
+                    .vm
+                    .generation_timeout
+                    .or(Some(Duration::from_secs(MAINNET_GENERATION_TIMEOUT)));
+                for (feature, activation) in MAINNET_FEATURES.entries() {
+                    if self.vm.feature(feature).is_none() {
+                        self.vm.with_feature(*feature, *activation)
+                    }
+                }
+            }
+            Some(TESTNET) => {
+                self.vm.gas_per_blob =
+                    self.vm.gas_per_blob.or(Some(TESTNET_GAS_PER_BLOB));
+                self.vm.gas_per_deploy_byte = self
+                    .vm
+                    .gas_per_deploy_byte
+                    .or(Some(TESTNET_GAS_PER_DEPLOY_BYTE));
+                self.vm.min_deploy_points = self
+                    .vm
+                    .min_deploy_points
+                    .or(Some(TESTNET_MIN_DEPLOY_POINTS));
+                self.vm.min_deployment_gas_price = self
+                    .vm
+                    .min_deployment_gas_price
+                    .or(Some(TESTNET_MIN_DEPLOYMENT_GAS_PRICE));
+                self.vm.block_gas_limit =
+                    self.vm.block_gas_limit.or(Some(TESTNET_BLOCK_GAS_LIMIT));
+                self.vm.generation_timeout = self
+                    .vm
+                    .generation_timeout
+                    .or(Some(Duration::from_secs(TESTNET_GENERATION_TIMEOUT)));
+                for (feature, activation) in TESTNET_FEATURES.entries() {
+                    if self.vm.feature(feature).is_none() {
+                        self.vm.with_feature(*feature, *activation)
+                    }
+                }
+            }
+            Some(DEVNET) => {
+                self.vm.gas_per_blob =
+                    self.vm.gas_per_blob.or(Some(DEVNET_GAS_PER_BLOB));
+                self.vm.gas_per_deploy_byte = self
+                    .vm
+                    .gas_per_deploy_byte
+                    .or(Some(DEVNET_GAS_PER_DEPLOY_BYTE));
+                self.vm.min_deploy_points = self
+                    .vm
+                    .min_deploy_points
+                    .or(Some(DEVNET_MIN_DEPLOY_POINTS));
+                self.vm.min_deployment_gas_price = self
+                    .vm
+                    .min_deployment_gas_price
+                    .or(Some(DEVNET_MIN_DEPLOYMENT_GAS_PRICE));
+                self.vm.block_gas_limit =
+                    self.vm.block_gas_limit.or(Some(DEVNET_BLOCK_GAS_LIMIT));
+                self.vm.generation_timeout = self
+                    .vm
+                    .generation_timeout
+                    .or(Some(Duration::from_secs(DEVNET_GENERATION_TIMEOUT)));
+                for (feature, activation) in DEVNET_FEATURES.entries() {
+                    if self.vm.feature(feature).is_none() {
+                        self.vm.with_feature(*feature, *activation)
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    #[cfg(not(feature = "chain"))]
+    fn set_values_for_the_known_chains(&mut self) {}
 }
 
 impl Config {

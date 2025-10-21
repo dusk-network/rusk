@@ -33,4 +33,8 @@ impl KadcastConfig {
             self.0.kadcast_id = Some(network_id)
         };
     }
+
+    pub fn kadcast_id(&self) -> Option<u8> {
+        self.0.kadcast_id
+    }
 }

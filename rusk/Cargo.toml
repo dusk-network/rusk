@@ -52,6 +52,8 @@ dusk-transfer-contract-dd = { workspace = true }
 dusk-stake-contract-dd = { workspace = true }
 dusk-data-driver = {workspace = true}
 dusk-wasmtime = { workspace = true }
+phf = { workspace = true }
+phf_macros = { workspace = true }
 
 dusk-bytes = { workspace = true }
 kadcast = { workspace = true }
