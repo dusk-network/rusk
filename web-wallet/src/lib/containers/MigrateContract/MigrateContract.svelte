@@ -11,7 +11,7 @@
   import { formatUnits, parseUnits } from "viem";
   import { onMount } from "svelte";
   import { tokens } from "./tokenConfig";
-  import { getDecimalSeparator } from "$lib/dusk/number";
+  import { getDecimalSeparator, slashDecimals } from "$lib/dusk/number";
   import {
     calculateAdaptiveCharCount,
     cleanNumberString,
@@ -38,8 +38,8 @@
     modal,
     wagmiConfig,
     walletDisconnect,
-  } from "$lib/migration/walletConnection";
-  import { getBalanceOfCoin } from "$lib/migration/migration";
+  } from "$lib/web3/walletConnection";
+  import { getBalanceOfCoin } from "$lib/web3/migration";
 
   /** @type {string} */
   export let migrationNetwork;
@@ -75,8 +75,6 @@
   const minAmount = "0.000000001";
 
   const ercDecimals = 18;
-
-  const duskDecimals = 9;
 
   /** @type {TokenNames} */
   let selectedChain = erc20.name;
@@ -174,18 +172,6 @@
     } catch {
       return 0n;
     }
-  }
-
-  /**
-   * @param {string} numberAsString
-   * @returns {string}
-   */
-  function slashDecimals(numberAsString) {
-    const separator = numberAsString.includes(".") ? "." : ",";
-    const [integer, decimal] = numberAsString.split(separator);
-    return decimal
-      ? `${integer}${separator}${decimal.slice(0, duskDecimals)}`
-      : numberAsString;
   }
 
   onMount(() => {

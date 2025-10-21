@@ -145,6 +145,7 @@ describe("Wallet store", async () => {
   afterAll(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.clearAllTimers();
   });
 
   describe("Initialization and sync", () => {
@@ -384,8 +385,8 @@ describe("Wallet store", async () => {
         expectedTx = {
           amount,
           gas,
-          memo,
           obfuscated: true,
+          payload: { memo },
           to: toPhoenix,
         };
       } else {
@@ -396,7 +397,7 @@ describe("Wallet store", async () => {
         });
 
         if (isMoonlightTransfer) {
-          expectedTx = { amount, gas, memo, to: toMoonlight };
+          expectedTx = { amount, gas, payload: { memo }, to: toMoonlight };
         } else {
           switch (method) {
             case "stake":
