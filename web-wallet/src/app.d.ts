@@ -13,6 +13,7 @@ type AccountSyncer = import("@dusk/w3sper").AccountSyncer;
 type AddressBalance = import("@dusk/w3sper").AddressBalance;
 type AddressSyncer = import("@dusk/w3sper").AddressSyncer;
 type Bookmark = import("@dusk/w3sper").Bookmark;
+type DataDriverRegistry = import("@dusk/w3sper").DataDriverRegistry;
 type Gas = import("@dusk/w3sper").Gas;
 type Network = import("@dusk/w3sper").Network;
 type Profile = import("@dusk/w3sper").Profile;
