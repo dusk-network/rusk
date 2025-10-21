@@ -137,6 +137,7 @@ describe("Wallet store", async () => {
   };
 
   beforeEach(async () => {
+    vi.useFakeTimers();
     await vi.runOnlyPendingTimersAsync();
     vi.clearAllTimers();
     vi.clearAllMocks();
@@ -145,6 +146,7 @@ describe("Wallet store", async () => {
   afterAll(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.clearAllTimers();
   });
 
   describe("Initialization and sync", () => {
@@ -384,8 +386,8 @@ describe("Wallet store", async () => {
         expectedTx = {
           amount,
           gas,
-          memo,
           obfuscated: true,
+          payload: { memo },
           to: toPhoenix,
         };
       } else {
@@ -396,7 +398,7 @@ describe("Wallet store", async () => {
         });
 
         if (isMoonlightTransfer) {
-          expectedTx = { amount, gas, memo, to: toMoonlight };
+          expectedTx = { amount, gas, payload: { memo }, to: toMoonlight };
         } else {
           switch (method) {
             case "stake":
@@ -628,9 +630,7 @@ describe("Wallet store", async () => {
       vi.useRealTimers();
 
       await walletStore.clearLocalData();
-
       expect(cacheClearSpy).toHaveBeenCalledTimes(1);
-
       vi.useFakeTimers();
     });
 

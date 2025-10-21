@@ -11,8 +11,12 @@ function makeNodeUrl(path = "") {
 
   const subDomains = window.location.hostname.split(".");
   const hostedNodeDomain = subDomains.slice(-2).join(".");
-  const nodeBaseUrl = import.meta.env.VITE_NODE_URL || "";
-  const nodeBasePath = import.meta.env.VITE_RUSK_PATH || "";
+  const nodeBaseUrl = import.meta.env.VITE_NODE_URL
+    ? import.meta.env.VITE_NODE_URL.replace(/\/+$/, "")
+    : "";
+  const nodeBasePath = import.meta.env.VITE_RUSK_PATH
+    ? import.meta.env.VITE_RUSK_PATH.replace(/^\/?/, "/")
+    : "";
 
   /**
    * @param {string} base

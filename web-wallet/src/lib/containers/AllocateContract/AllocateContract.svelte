@@ -2,6 +2,7 @@
 
 <script>
   import { collect, getKey, pick } from "lamb";
+
   import { createCurrencyFormatter } from "$lib/dusk/currency";
   import { gasStore, settingsStore, walletStore } from "$lib/stores";
   import { Allocate } from "$lib/components";

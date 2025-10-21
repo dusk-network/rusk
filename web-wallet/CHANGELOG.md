@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added EVM bridging interface [#3822]
+- Added EVM pending transaction screen [#3826]
+- Added EVM finalize transaction button [#3824]
+- Added EVM balance [#3821]
+
 ### Changed
 
 - Update Transactions list design [#1922]
@@ -601,6 +606,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3486]: https://github.com/dusk-network/rusk/issues/3486
 [#3570]: https://github.com/dusk-network/rusk/issues/3570
 [#3746]: https://github.com/dusk-network/rusk/issues/3746
+[#3821]: https://github.com/dusk-network/rusk/issues/3821
+[#3822]: https://github.com/dusk-network/rusk/issues/3822
+[#3824]: https://github.com/dusk-network/rusk/issues/3824
+[#3826]: https://github.com/dusk-network/rusk/issues/3826
 
 <!-- VERSIONS -->
 

@@ -7,10 +7,12 @@ export { default as ApproveMigration } from "./ApproveMigration/ApproveMigration
 export { default as Banner } from "./Banner/Banner.svelte";
 export { default as Balance } from "./Balance/Balance.svelte";
 export { default as BigIntInput } from "./BigIntInput/BigIntInput.svelte";
+export { default as Bridge } from "./Bridge/Bridge.svelte";
 export { default as ContractOperations } from "./ContractOperations/ContractOperations.svelte";
 export { default as ContractStatusesList } from "./ContractStatusesList/ContractStatusesList.svelte";
 export { default as CopyField } from "./CopyField/CopyField.svelte";
 export { default as DashboardNav } from "./DashboardNav/DashboardNav.svelte";
+export { default as EvmTransactions } from "./EvmTransactions/EvmTransactions.svelte";
 export { default as ExecuteMigration } from "./ExecuteMigration/ExecuteMigration.svelte";
 export { default as ExistingWalletNotice } from "./ExistingWalletNotice/ExistingWalletNotice.svelte";
 export { default as GasControls } from "./GasControls/GasControls.svelte";
