@@ -65,12 +65,25 @@ export class Contract {
     return d.getVersion?.();
   }
 
-  async #encode(fnName, args) {
+  /**
+  * Encode a function's input using the contract's data-driver (JSON -> RKYV).
+  * Returns Uint8Array of RKYV bytes.
+  */
+  async encode(fnName, jsonValue) {
     const driver = await this.#driverPromise;
-    const json = (args === undefined || args === null)
+    const json = (jsonValue === undefined || jsonValue === null)
       ? "null"
-      : jsonWithBigInts(args);
+      : jsonWithBigInts(jsonValue);
     return driver.encodeInputFn(String(fnName), json);
+  }
+
+  /**
+  * Decode an input payload using the contract's data-driver (RKYV -> JSON).
+  * Returns a JSON value (JS object/array/primitive).
+  */
+  async decode(fnName, rkyvBytes) {
+    const loader = await this.#driverPromise;
+    return await loader.decodeInputFn(fnName, rkyvBytes);
   }
 
   #payloadToBytes(evt) {
@@ -97,7 +110,7 @@ export class Contract {
         if (!this.#network) {
           throw new Error("call requires a Network provider");
         }
-        const rkvy = await this.#encode(fnName, args);
+        const rkvy = await this.encode(fnName, args);
         const resp = await this.#network.contracts
           .withId(this.#idHex).call[String(fnName)](rkvy);
         const bytes = new Uint8Array(await resp.arrayBuffer());
@@ -113,7 +126,7 @@ export class Contract {
         if (!this.#bookentry) {
           throw new Error("tx requires a Bookkeeper entry (profile)");
         }
-        const rkvy = await this.#encode(fnName, args);
+        const rkvy = await this.encode(fnName, args);
         const payload = Object.freeze({
           fnName: String(fnName),
           fnArgs: rkvy,

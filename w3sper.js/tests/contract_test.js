@@ -30,6 +30,7 @@ const STAKE_ID =
 const STAKE_WASM = "dusk_stake_contract_dd_opt.wasm";
 const TRANSFER_WASM = "dusk_transfer_contract_dd_opt.wasm";
 
+const NETWORK = "http://localhost:8080/";
 const GAS_LIMIT = 500_000_000n;
 
 // Wrapper function to grab a data-driver from the Rust release folder
@@ -42,7 +43,7 @@ async function readDriverFromTarget(name) {
 }
 
 test("contract.call: stake.get_version", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   try {
     // Add a data-driver to the local registry for easy retrieval/reuse
     network.dataDrivers.register(
@@ -66,7 +67,7 @@ test("contract.call: stake.get_version", async () => {
 });
 
 test("contract.call: transfer.chain_id", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   try {
     network.dataDrivers.register(
       TRANSFER_ID,
@@ -87,7 +88,7 @@ test("contract.call: transfer.chain_id", async () => {
 });
 
 test("contract.tx/send + events.once: transfer.deposit", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   try {
     // Unlike the two prior calls, this is a write/transaction, thus requires a profile and sync.
     // Seed & sync
@@ -134,3 +135,39 @@ test("contract.tx/send + events.once: transfer.deposit", async () => {
     await network.disconnect();
   }
 });
+
+Deno.test("encode_ds_address encodes with driver", async () => {
+  // Dummy value, the underlying contract is not being called
+  const BRIDGE_ID = "0300000000000000000000000000000000000000000000000000000000000000";
+  const WASM_PATH = new URL("./assets/standard_bridge_dd.wasm", import.meta.url).pathname;
+
+  const network   = await Network.connect("https://devnet.nodes.dusk.network/");
+  const wasmBytes = await Deno.readFile(WASM_PATH);
+  network.dataDrivers.register(BRIDGE_ID, () => wasmBytes);
+
+  // No bookentry needed for encode()
+  const bridge = new Contract({
+    contractId: BRIDGE_ID,
+    network,
+    driver: network.dataDrivers.get(BRIDGE_ID),
+  });
+
+  // Pass a dummy PublicKey to be encoded
+  const pkArg =
+    "26brdzqNXEG1jTzCubJAPhks18bSSDY4n21ZW6VLYkCv6bBUdBAZZAbn1Coz1LPBYc4uEekBbzFnZvhL9untGCqRamhZS2cBV51fdZog3qkP3NbMEaqgNMcKEahAFV8t2Cke"
+
+  // Call encode directly, returns Uint8Array RKYV bytes
+  const rkyv = await bridge.encode("encode_ds_address", pkArg);
+
+  console.log("RKYV len:", rkyv.length);
+  console.log("RKYV:", rkyv);
+  if (!(rkyv instanceof Uint8Array)) {
+    throw new Error("encode() did not return bytes");
+  }
+  if (rkyv.length === 0) {
+    throw new Error("encode() returned empty payload");
+  }
+
+  await network.disconnect();
+});
+
