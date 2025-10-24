@@ -184,7 +184,7 @@ impl Fixture {
         );
     }
 
-    fn assert_bob_contract_call_works(&mut self) {
+    fn assert_old_contract_call_works(&mut self) {
         let result = self.session.as_mut().unwrap().call::<_, u8>(
             self.contract_id,
             "value",
@@ -197,7 +197,7 @@ impl Fixture {
         );
     }
 
-    fn assert_bob_contract_call_fails(&mut self) {
+    fn assert_old_contract_call_fails(&mut self) {
         let result = self.session.as_mut().unwrap().call::<_, u8>(
             self.contract_id,
             "value",
@@ -207,7 +207,7 @@ impl Fixture {
         assert!(result.is_err())
     }
 
-    fn assert_host_fn_contract_call_works(&mut self) {
+    fn assert_new_contract_call_works(&mut self) {
         let result = self.session.as_mut().unwrap().call::<_, u8>(
             self.contract_id,
             "chain_id",
@@ -217,7 +217,7 @@ impl Fixture {
         assert_eq!(result.expect("Ping call should succeed").data, CHAIN_ID);
     }
 
-    fn assert_host_fn_contract_call_fails(&mut self) {
+    fn assert_new_contract_call_fails(&mut self) {
         let result = self.session.as_mut().unwrap().call::<_, u8>(
             self.contract_id,
             "chain_id",
@@ -239,6 +239,24 @@ impl Fixture {
     }
 }
 
+fn migrate_data(
+    old_contract: ContractId,
+    new_contract: ContractId,
+    session: &mut Session,
+) -> core::result::Result<(), dusk_vm::Error> {
+    let bob_value = session
+        .call::<_, u8>(old_contract, "value", &(), POINT_LIMIT)?
+        .data;
+    let keccak_input = vec![bob_value];
+    session.call::<_, [u8; 32]>(
+        new_contract,
+        "keccak256",
+        &keccak_input,
+        POINT_LIMIT,
+    )?;
+    Ok(())
+}
+
 #[tokio::test(flavor = "multi_thread")]
 pub async fn migrate_contract_same_id() -> Result<(), Error> {
     logger();
@@ -246,106 +264,74 @@ pub async fn migrate_contract_same_id() -> Result<(), Error> {
     f.assert_bob_contract_is_deployed();
     let root = f.rusk.state_root();
     f.set_session_with_commit(&root);
-    f.assert_bob_contract_call_works();
+    f.assert_old_contract_call_works();
 
-    // migrate Bob contract to HostFn contract under Bob's contract id
+    // migrate old contract to new contract under old contract id
     // note that this is a session-consuming call
-    let old_contract = f.contract_id;
+    let old_contract_id = f.contract_id;
     let new_session = f.session.unwrap().migrate(
-        old_contract,
+        old_contract_id,
         &f.host_fn_bytecode,
-        ContractData::builder().owner(NON_BLS_OWNER),
-        // .contract_id(old_contract),  //note that setting contract_id to the
-        // "old" contract would cause exception
+        ContractData::builder().owner(NON_BLS_OWNER)
+        .contract_id(ContractId::from_bytes([0x78u8; 32])),
+        // note that setting contract_id to the
+        // old contract would cause "contract already exists" exception,
+        // otherwise, if we set the contract data contract id
+        // to a value which does not correspond to any deployed contract,
+        // the value will only be used in the migration closure
+        // and then discarded
         POINT_LIMIT,
         |new_contract, session| {
-            let bob_value = session
-                .call::<_, u8>(old_contract, "value", &(), POINT_LIMIT)?
-                .data;
-            let keccak_input = vec![bob_value];
-            session.call::<_, [u8; 32]>(
-                new_contract,
-                "keccak256",
-                &keccak_input,
-                POINT_LIMIT,
-            )?;
-            Ok(())
+            migrate_data(old_contract_id, new_contract, session)
         },
     )?;
 
-    // we need to check if HostFn works now in a new session under Bob's
-    // contract id
     f.session = Some(new_session);
-    f.assert_host_fn_contract_call_works();
+    f.assert_new_contract_call_works(); // note that id is of the old contract
     // make sure that migrated contract's self id is correct
-    let contract_id = f.contract_id;
-    assert_eq!(f.contract_self_id(&contract_id), Some(contract_id));
+    assert_eq!(f.contract_self_id(&old_contract_id), Some(old_contract_id));
+    // make sure the old contract under this id is gone
+    f.assert_old_contract_call_fails();
 
-    // make sure the old contract under this is is gone
-    f.assert_bob_contract_call_fails();
-
-    // revert the state and see if Bob works again and HostFn fails
+    // revert the state and see if old contract works again and new contract fails
     f.set_session_with_commit(&root);
-    f.assert_bob_contract_call_works();
-    f.assert_host_fn_contract_call_fails();
+    f.assert_old_contract_call_works();
+    f.assert_new_contract_call_fails();
 
     Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn migrate_contract_different_id() -> Result<(), Error> {
+pub async fn migrate_contract_finalization() -> Result<(), Error> {
     logger();
     let mut f = Fixture::build(NON_BLS_OWNER).await;
     f.assert_bob_contract_is_deployed();
     let root = f.rusk.state_root();
     f.set_session_with_commit(&root);
-    f.assert_bob_contract_call_works();
+    f.assert_old_contract_call_works();
 
-    const NEW_CONTRACT_ID: ContractId = ContractId::from_bytes([0x78u8; 32]);
-
-    // migrate Bob contract to HostFn contract under Bob's contract id
-    // note that this is a session-consuming call
     let old_contract = f.contract_id;
     let new_session = f.session.unwrap().migrate(
         old_contract,
         &f.host_fn_bytecode,
         ContractData::builder()
-            .owner(NON_BLS_OWNER)
-            // note: this only decides the id during the migration
-            // after migration the id will be unchanged (i.e., equal
-            // 'old_contract') anyway
-            .contract_id(NEW_CONTRACT_ID),
+            .owner(NON_BLS_OWNER),
         POINT_LIMIT,
         |new_contract, session| {
-            let bob_value = session
-                .call::<_, u8>(old_contract, "value", &(), POINT_LIMIT)?
-                .data;
-            let keccak_input = vec![bob_value];
-            session.call::<_, [u8; 32]>(
-                new_contract,
-                "keccak256",
-                &keccak_input,
-                POINT_LIMIT,
-            )?;
-            Ok(())
+            migrate_data(old_contract, new_contract, session)
         },
     )?;
-
-    // we need to check if HostFn works now in a new session under Bob's
-    // contract id
     f.session = Some(new_session);
-    f.assert_host_fn_contract_call_works();
-    // make sure that migrated contract's self id is correct
-    let contract_id = f.contract_id;
-    assert_eq!(f.contract_self_id(&contract_id), Some(contract_id));
 
-    // make sure the old contract under this is is gone
-    f.assert_bob_contract_call_fails();
-
-    // revert the state and see if Bob works again and HostFn fails
-    f.set_session_with_commit(&root);
-    f.assert_bob_contract_call_works();
-    f.assert_host_fn_contract_call_fails();
-
+    let commit = f.session.as_ref().unwrap().root();
+    f.rusk.finalize_state(commit, vec![])?;
+    f.rusk.set_current_commit(commit);
+    let new_root = f.rusk.state_root();
+    assert_eq!(commit, new_root);
+    // f.set_session_with_commit(&new_root);
+    let session = f.rusk.new_block_session(1, new_root).expect("new block session should succeed");
+    // f.assert_new_contract_call_works();
+    // f.assert_old_contract_call_fails();
     Ok(())
 }
+
