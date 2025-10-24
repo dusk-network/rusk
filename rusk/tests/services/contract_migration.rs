@@ -310,28 +310,64 @@ pub async fn migrate_contract_finalization() -> Result<(), Error> {
     f.set_session_with_commit(&root);
     f.assert_old_contract_call_works();
 
+    let session = f.rusk.new_block_session(0, root).unwrap();
+
     let old_contract = f.contract_id;
-    let new_session = f.session.unwrap().migrate(
+    let new_session = session.migrate(
         old_contract,
         &f.host_fn_bytecode,
-        ContractData::builder()
-            .owner(NON_BLS_OWNER),
+        ContractData::builder().owner(NON_BLS_OWNER),
         POINT_LIMIT,
         |new_contract, session| {
             migrate_data(old_contract, new_contract, session)
         },
     )?;
-    f.session = Some(new_session);
+    // f.session = Some(new_session);
 
-    let commit = f.session.as_ref().unwrap().root();
-    f.rusk.finalize_state(commit, vec![])?;
-    f.rusk.set_current_commit(commit);
-    let new_root = f.rusk.state_root();
-    assert_eq!(commit, new_root);
+    f.rusk.commit_session(new_session)?;
+
+    let to_merge = f.rusk.state_root();
+
+    // advance by 1
+    let s = f.rusk.new_block_session(1, to_merge).unwrap();
+    f.rusk.commit_session(s)?;
+    let to_finalize = f.rusk.state_root();
+
+    // advance by 1 again
+    let s = f.rusk.new_block_session(1, to_finalize).unwrap();
+    f.rusk.commit_session(s)?;
+    let tip = f.rusk.state_root();
+
+    f.rusk.finalize_state(to_finalize, vec![to_merge])?;
+
     // f.set_session_with_commit(&new_root);
-    let session = f.rusk.new_block_session(1, new_root).expect("new block session should succeed");
+    let tip_session = f
+        .rusk
+        .new_block_session(1, tip)
+        .expect("tip session should succeed");
+    let finalized_session = f
+        .rusk
+        .new_block_session(1, to_finalize)
+        .expect_err("finalized session should return an Error");
+
+    //check that tip_merged is
+    // dusk_consensus::errors::StateTransitionError::TipChanged
+    match finalized_session {
+        dusk_consensus::errors::StateTransitionError::TipChanged => {}
+        _ => panic!("Expected TipChanged error"),
+    }
+
+    let merged_session = f
+        .rusk
+        .query_session(Some(to_merge))
+        .expect_err("merged session should return an Error");
+    //check that tip_merged is
+    // dusk_consensus::errors::StateTransitionError::TipChanged
+    match merged_session {
+        Error::Vm(e) => {}
+        e => panic!("Expected SessionError error {e}"),
+    }
     // f.assert_new_contract_call_works();
     // f.assert_old_contract_call_fails();
     Ok(())
 }
-
