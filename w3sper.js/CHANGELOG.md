@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Expose `Contract.encode(fnName, args)` publicly, allowing developers to manually convert JSON inputs to RKYV-encoded bytes for custom or intermediate use cases [#3901]
+- Extend `Contract.call()` to support feeder (streamed) contract queries, adds `{ feeder: true }` option and automatic fallback retry when the node responds with `VM Error: Missing feed` [#3902]
+
 ### Changed
 
 ### Removed
@@ -88,6 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3868]: https://github.com/dusk-network/rusk/issues/3868
 [#3876]: https://github.com/dusk-network/rusk/issues/3876
 [#3877]: https://github.com/dusk-network/rusk/issues/3877
+[#3901]: https://github.com/dusk-network/rusk/issues/3901
+[#3902]: https://github.com/dusk-network/rusk/issues/3902
 
 <!-- VERSIONS -->
 

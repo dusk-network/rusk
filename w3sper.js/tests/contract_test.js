@@ -30,6 +30,7 @@ const STAKE_ID =
 const STAKE_WASM = "dusk_stake_contract_dd_opt.wasm";
 const TRANSFER_WASM = "dusk_transfer_contract_dd_opt.wasm";
 
+const NETWORK = "http://localhost:8080/";
 const GAS_LIMIT = 500_000_000n;
 
 // Wrapper function to grab a data-driver from the Rust release folder
@@ -42,7 +43,7 @@ async function readDriverFromTarget(name) {
 }
 
 test("contract.call: stake.get_version", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   try {
     // Add a data-driver to the local registry for easy retrieval/reuse
     network.dataDrivers.register(
@@ -58,7 +59,6 @@ test("contract.call: stake.get_version", async () => {
 
     // Make a call (read) to the `get_version` function on the stake contract
     const version = await stake.call.get_version();
-    console.log("[version]", version);
     assert.ok(version == 8);
   } finally {
     await network.disconnect();
@@ -66,7 +66,7 @@ test("contract.call: stake.get_version", async () => {
 });
 
 test("contract.call: transfer.chain_id", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   try {
     network.dataDrivers.register(
       TRANSFER_ID,
@@ -79,15 +79,64 @@ test("contract.call: transfer.chain_id", async () => {
     });
 
     const chainId = await transfer.call.chain_id();
-    console.log("[chain_id]", chainId);
     assert.ok(chainId == 0);
   } finally {
     await network.disconnect();
   }
 });
 
+test("contract.call feeder: transfer.sync_accounts", async () => {
+  const network = await Network.connect(NETWORK);
+  try {
+    network.dataDrivers.register(
+      TRANSFER_ID,
+      () => readDriverFromTarget(TRANSFER_WASM),
+    );
+    const transfer = new Contract({
+      contractId: TRANSFER_ID,
+      driver: network.dataDrivers.get(TRANSFER_ID),
+      network,
+    });
+
+    // Pass a number tuple to the transfer contract `sync_accounts` function, and
+    // set `feeder: true` to stream the output.
+    const result = await transfer.call.sync_accounts(["0", "5"], { feeder: true });
+
+    // Validate balances/nonce object of genesis account
+    assert.equal(result[0], { balance: "1001000000000000", nonce: "0" });
+  } finally {
+    await network.disconnect();
+  }
+});
+
+test("contract.encode: transfer.sync_account", async () => {
+  const INPUT = ["0", "5"];
+  const OUTPUT = new Uint8Array([
+    0, 0, 0, 0, 0, 0,
+    0, 0, 5, 0, 0, 0,
+    0, 0, 0, 0
+  ]);
+
+  const network = await Network.connect(NETWORK);
+  try {
+    // Register the genesis transfer driver
+    network.dataDrivers.register(TRANSFER_ID, () => readDriverFromTarget(TRANSFER_WASM));
+    const driver = network.dataDrivers.get(TRANSFER_ID);
+    const transfer = new Contract({ contractId: TRANSFER_ID, driver, network });
+
+    // Encode request body for `sync_account`
+    const rkyv = await transfer.encode("sync_accounts", INPUT);
+
+    assert.ok(rkyv instanceof Uint8Array && rkyv.length > 0, "encode() must return non-empty bytes");
+    assert.equal(rkyv, OUTPUT);
+
+  } finally {
+    await network.disconnect();
+  }
+});
+
 test("contract.tx/send + events.once: transfer.deposit", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   try {
     // Unlike the two prior calls, this is a write/transaction, thus requires a profile and sync.
     // Seed & sync

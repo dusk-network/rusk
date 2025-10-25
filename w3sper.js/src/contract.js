@@ -65,11 +65,15 @@ export class Contract {
     return d.getVersion?.();
   }
 
-  async #encode(fnName, args) {
+  /**
+  * Encode a function's input using the contract's data-driver (JSON -> RKYV).
+  * Returns Uint8Array of RKYV bytes.
+  */
+  async encode(fnName, jsonValue) {
     const driver = await this.#driverPromise;
-    const json = (args === undefined || args === null)
+    const json = (jsonValue === undefined || jsonValue === null)
       ? "null"
-      : jsonWithBigInts(args);
+      : jsonWithBigInts(jsonValue);
     return driver.encodeInputFn(String(fnName), json);
   }
 
@@ -91,15 +95,28 @@ export class Contract {
     return null; // object => already JSON (no bytes to decode)
   }
 
+  /**
+   * Read-only contract call facade.
+   *
+   * Each function on your contract’s ABI becomes a callable member:
+   *
+   * ```js
+   * // Non-feeder call (default)
+   * const chainId = await transfer.call.chain_id();
+   *
+   * // Feeder/streamed call (explicit)
+   * const pending = await bridge.call.pending_withdrawals(undefined, { feeder: true });
+   * ```
+   */
   get call() {
     return new Proxy({}, {
-      get: (_t, fnName) => async (args = undefined) => {
+      get: (_t, fnName) => async (args = undefined, options = undefined) => {
         if (!this.#network) {
           throw new Error("call requires a Network provider");
         }
-        const rkvy = await this.#encode(fnName, args);
+        const rkvy = await this.encode(fnName, args);
         const resp = await this.#network.contracts
-          .withId(this.#idHex).call[String(fnName)](rkvy);
+          .withId(this.#idHex).call[String(fnName)](rkvy, options);
         const bytes = new Uint8Array(await resp.arrayBuffer());
         const driver = await this.#driverPromise;
         return driver.decodeOutputFn(String(fnName), bytes);
@@ -113,7 +130,7 @@ export class Contract {
         if (!this.#bookentry) {
           throw new Error("tx requires a Bookkeeper entry (profile)");
         }
-        const rkvy = await this.#encode(fnName, args);
+        const rkvy = await this.encode(fnName, args);
         const payload = Object.freeze({
           fnName: String(fnName),
           fnArgs: rkvy,

@@ -39,6 +39,7 @@ export class CallableProxy {
     get(target, topic) {
       return async (body, options = {}) => {
         const headers = merge(target[_target].options.headers, options.headers);
+        if (options.feeder === true) headers.set("Rusk-feeder", "true");
         options = { ...target[_target].options, ...options, headers };
 
         const { signal } = options;
@@ -49,12 +50,13 @@ export class CallableProxy {
 
         const eventURL = new URL(target[_target].toURL() + topic);
 
-        const response = await fetch(eventURL, {
+        const doFetch = async () => await fetch(eventURL, {
           method: "POST",
           body,
           headers,
           signal,
         });
+        let response = await doFetch();
 
         // TODO: In case of mismatching rusk versions, the node *should* return a
         // 4xx status code, however currently it always return a 500 no matter what.
@@ -71,9 +73,25 @@ export class CallableProxy {
 
           if (body.startsWith("Mismatched rusk version:")) {
             throw new Error(body);
-          } else {
-            throw new CallError(body);
           }
+
+          // Automatic fallback once to feeder if backend asks for it
+          if (options.feeder !== true && /Missing\s+feed/i.test(body)) {
+            headers.set("Rusk-feeder", "true");
+            response = await doFetch();
+
+            if (!response.ok) {
+              const resp2 = response.clone();
+              const body2 = await resp2.text();
+              if (body2.startsWith("Mismatched rusk version:")) {
+                throw new Error(body2);
+              }
+              throw new CallError(body2);
+            }
+            return response;
+          }
+
+          throw new CallError(body);
         }
 
         return response;
