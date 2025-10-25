@@ -77,15 +77,6 @@ export class Contract {
     return driver.encodeInputFn(String(fnName), json);
   }
 
-  /**
-  * Decode an input payload using the contract's data-driver (RKYV -> JSON).
-  * Returns a JSON value (JS object/array/primitive).
-  */
-  async decode(fnName, rkyvBytes) {
-    const loader = await this.#driverPromise;
-    return await loader.decodeInputFn(fnName, rkyvBytes);
-  }
-
   #payloadToBytes(evt) {
     const p = evt?.payload;
     if (!p) return null;
@@ -104,15 +95,28 @@ export class Contract {
     return null; // object => already JSON (no bytes to decode)
   }
 
+  /**
+   * Read-only contract call facade.
+   *
+   * Each function on your contract’s ABI becomes a callable member:
+   *
+   * ```js
+   * // Non-feeder call (default)
+   * const chainId = await transfer.call.chain_id();
+   *
+   * // Feeder/streamed call (explicit)
+   * const pending = await bridge.call.pending_withdrawals(undefined, { feeder: true });
+   * ```
+   */
   get call() {
     return new Proxy({}, {
-      get: (_t, fnName) => async (args = undefined) => {
+      get: (_t, fnName) => async (args = undefined, options = undefined) => {
         if (!this.#network) {
           throw new Error("call requires a Network provider");
         }
         const rkvy = await this.encode(fnName, args);
         const resp = await this.#network.contracts
-          .withId(this.#idHex).call[String(fnName)](rkvy);
+          .withId(this.#idHex).call[String(fnName)](rkvy, options);
         const bytes = new Uint8Array(await resp.arrayBuffer());
         const driver = await this.#driverPromise;
         return driver.decodeOutputFn(String(fnName), bytes);
