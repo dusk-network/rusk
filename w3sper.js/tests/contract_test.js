@@ -59,7 +59,6 @@ test("contract.call: stake.get_version", async () => {
 
     // Make a call (read) to the `get_version` function on the stake contract
     const version = await stake.call.get_version();
-    console.log("[version]", version);
     assert.ok(version == 8);
   } finally {
     await network.disconnect();
@@ -80,8 +79,57 @@ test("contract.call: transfer.chain_id", async () => {
     });
 
     const chainId = await transfer.call.chain_id();
-    console.log("[chain_id]", chainId);
     assert.ok(chainId == 0);
+  } finally {
+    await network.disconnect();
+  }
+});
+
+test("contract.call feeder: transfer.sync_accounts", async () => {
+  const network = await Network.connect(NETWORK);
+  try {
+    network.dataDrivers.register(
+      TRANSFER_ID,
+      () => readDriverFromTarget(TRANSFER_WASM),
+    );
+    const transfer = new Contract({
+      contractId: TRANSFER_ID,
+      driver: network.dataDrivers.get(TRANSFER_ID),
+      network,
+    });
+
+    // Pass a number tuple to the transfer contract `sync_accounts` function, and
+    // set `feeder: true` to stream the output.
+    const result = await transfer.call.sync_accounts(["0", "5"], { feeder: true });
+
+    // Validate balances/nonce object of genesis account
+    assert.equal(result[0], { balance: "1001000000000000", nonce: "0" });
+  } finally {
+    await network.disconnect();
+  }
+});
+
+test("contract.encode: transfer.sync_account", async () => {
+  const INPUT = ["0", "5"];
+  const OUTPUT = new Uint8Array([
+    0, 0, 0, 0, 0, 0,
+    0, 0, 5, 0, 0, 0,
+    0, 0, 0, 0
+  ]);
+
+  const network = await Network.connect(NETWORK);
+  try {
+    // Register the genesis transfer driver
+    network.dataDrivers.register(TRANSFER_ID, () => readDriverFromTarget(TRANSFER_WASM));
+    const driver = network.dataDrivers.get(TRANSFER_ID);
+    const transfer = new Contract({ contractId: TRANSFER_ID, driver, network });
+
+    // Encode request body for `sync_account`
+    const rkyv = await transfer.encode("sync_accounts", INPUT);
+
+    assert.ok(rkyv instanceof Uint8Array && rkyv.length > 0, "encode() must return non-empty bytes");
+    assert.equal(rkyv, OUTPUT);
+
   } finally {
     await network.disconnect();
   }
@@ -135,39 +183,3 @@ test("contract.tx/send + events.once: transfer.deposit", async () => {
     await network.disconnect();
   }
 });
-
-Deno.test("encode_ds_address encodes with driver", async () => {
-  // Dummy value, the underlying contract is not being called
-  const BRIDGE_ID = "0300000000000000000000000000000000000000000000000000000000000000";
-  const WASM_PATH = new URL("./assets/standard_bridge_dd.wasm", import.meta.url).pathname;
-
-  const network   = await Network.connect("https://devnet.nodes.dusk.network/");
-  const wasmBytes = await Deno.readFile(WASM_PATH);
-  network.dataDrivers.register(BRIDGE_ID, () => wasmBytes);
-
-  // No bookentry needed for encode()
-  const bridge = new Contract({
-    contractId: BRIDGE_ID,
-    network,
-    driver: network.dataDrivers.get(BRIDGE_ID),
-  });
-
-  // Pass a dummy PublicKey to be encoded
-  const pkArg =
-    "26brdzqNXEG1jTzCubJAPhks18bSSDY4n21ZW6VLYkCv6bBUdBAZZAbn1Coz1LPBYc4uEekBbzFnZvhL9untGCqRamhZS2cBV51fdZog3qkP3NbMEaqgNMcKEahAFV8t2Cke"
-
-  // Call encode directly, returns Uint8Array RKYV bytes
-  const rkyv = await bridge.encode("encode_ds_address", pkArg);
-
-  console.log("RKYV len:", rkyv.length);
-  console.log("RKYV:", rkyv);
-  if (!(rkyv instanceof Uint8Array)) {
-    throw new Error("encode() did not return bytes");
-  }
-  if (rkyv.length === 0) {
-    throw new Error("encode() returned empty payload");
-  }
-
-  await network.disconnect();
-});
-
