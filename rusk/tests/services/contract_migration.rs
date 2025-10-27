@@ -272,8 +272,9 @@ pub async fn migrate_contract_same_id() -> Result<(), Error> {
     let new_session = f.session.unwrap().migrate(
         old_contract_id,
         &f.host_fn_bytecode,
-        ContractData::builder().owner(NON_BLS_OWNER)
-        .contract_id(ContractId::from_bytes([0x78u8; 32])),
+        ContractData::builder()
+            .owner(NON_BLS_OWNER)
+            .contract_id(ContractId::from_bytes([0x78u8; 32])),
         // note that setting contract_id to the
         // old contract would cause "contract already exists" exception,
         // otherwise, if we set the contract data contract id
@@ -288,12 +289,13 @@ pub async fn migrate_contract_same_id() -> Result<(), Error> {
 
     f.session = Some(new_session);
     f.assert_new_contract_call_works(); // note that id is of the old contract
-    // make sure that migrated contract's self id is correct
+                                        // make sure that migrated contract's self id is correct
     assert_eq!(f.contract_self_id(&old_contract_id), Some(old_contract_id));
     // make sure the old contract under this id is gone
     f.assert_old_contract_call_fails();
 
-    // revert the state and see if old contract works again and new contract fails
+    // revert the state and see if old contract works again and new contract
+    // fails
     f.set_session_with_commit(&root);
     f.assert_old_contract_call_works();
     f.assert_new_contract_call_fails();
@@ -322,7 +324,6 @@ pub async fn migrate_contract_finalization() -> Result<(), Error> {
             migrate_data(old_contract, new_contract, session)
         },
     )?;
-    // f.session = Some(new_session);
 
     f.rusk.commit_session(new_session)?;
 
@@ -340,34 +341,30 @@ pub async fn migrate_contract_finalization() -> Result<(), Error> {
 
     f.rusk.finalize_state(to_finalize, vec![to_merge])?;
 
-    // f.set_session_with_commit(&new_root);
-    let tip_session = f
+    // move the tip beyond to_finalize
+    let _tip_session = f
         .rusk
         .new_block_session(1, tip)
         .expect("tip session should succeed");
+
+    // check that to_finalize is not the tip any more
     let finalized_session = f
         .rusk
         .new_block_session(1, to_finalize)
-        .expect_err("finalized session should return an Error");
-
-    //check that tip_merged is
-    // dusk_consensus::errors::StateTransitionError::TipChanged
+        .expect_err("finalized session should return an error");
     match finalized_session {
         dusk_consensus::errors::StateTransitionError::TipChanged => {}
         _ => panic!("Expected TipChanged error"),
     }
 
+    // check that to_merge is merged and querying it gives a Vm error
     let merged_session = f
         .rusk
         .query_session(Some(to_merge))
         .expect_err("merged session should return an Error");
-    //check that tip_merged is
-    // dusk_consensus::errors::StateTransitionError::TipChanged
     match merged_session {
         Error::Vm(e) => {}
         e => panic!("Expected SessionError error {e}"),
     }
-    // f.assert_new_contract_call_works();
-    // f.assert_old_contract_call_fails();
     Ok(())
 }
