@@ -513,10 +513,7 @@ impl Rusk {
 
     /// Opens a session for query, setting a block height of zero since this
     /// doesn't affect the result.
-    pub fn query_session(
-        &self,
-        commit: Option<[u8; 32]>,
-    ) -> Result<Session> {
+    pub fn query_session(&self, commit: Option<[u8; 32]>) -> Result<Session> {
         self._session(0, commit)
     }
 
