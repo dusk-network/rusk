@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::ops::DerefMut;
+use std::str::from_utf8;
 use std::sync::Arc;
 
 use dusk_wasmtime::{Config, Engine, Instance, Module, Store};
@@ -20,6 +21,8 @@ fn config() -> Config {
 }
 
 const OUT_BUF_SIZE: usize = 65536;
+const ERROR_BUF_SIZE: usize = 4196;
+const LAST_ERROR_FN: &str = "get_last_error";
 
 #[derive(Clone, Debug)]
 pub struct DriverExecutor {
@@ -191,9 +194,45 @@ impl DriverExecutor {
         self.deallocate(store, out_ptr, OUT_BUF_SIZE)?;
         match error_code {
             0 => Ok(serde_json::from_slice(&out_vector)?),
-            _ => Err(Error::Other(format!(
-                "{decoding_fn_name} failed with: {error_code}"
-            ))),
+            _ => {
+                let error_str = self.call_get_last_error(store)?;
+                Err(Error::Other(format!(
+                    "{decoding_fn_name} failed with: {error_str}"
+                )))
+            }
+        }
+    }
+
+    fn call_get_last_error(
+        &self,
+        store: &mut Store<()>,
+    ) -> Result<String, Error> {
+        let f = self
+            .instance
+            .get_typed_func::<(i32, i32), i32>(&mut *store, LAST_ERROR_FN)
+            .map_err(|e| {
+                Error::Other(format!("{LAST_ERROR_FN} failed: {e}"))
+            })?;
+        let out_ptr = self.allocate(&mut *store, ERROR_BUF_SIZE)?;
+        let error_code = f
+            .call(&mut *store, (out_ptr as i32, ERROR_BUF_SIZE as i32))
+            .map_err(|e| {
+                Error::Other(format!("{LAST_ERROR_FN} failed: {e}"))
+            })?;
+        let out_vector = self.read_u32_le_and_bytes(&mut *store, out_ptr)?;
+        self.deallocate(store, out_ptr, ERROR_BUF_SIZE)?;
+        match error_code {
+            0 => Ok(from_utf8(&out_vector)
+                .map_err(|e| {
+                    Error::Other(format!("{LAST_ERROR_FN} failed: {e}"))
+                })?
+                .to_string()),
+            _ => {
+                let error_str = self.call_get_last_error(store)?;
+                Err(Error::Other(format!(
+                    "{LAST_ERROR_FN} failed with: {error_str}"
+                )))
+            }
         }
     }
 }
@@ -247,9 +286,12 @@ impl ConvertibleContract for DriverExecutor {
         self.deallocate(store, out_ptr, OUT_BUF_SIZE)?;
         match error_code {
             0 => Ok(out_vector),
-            _ => Err(Error::Other(format!(
-                "encode_input_fn failed with: {error_code}"
-            ))),
+            _ => {
+                let error_str = self.call_get_last_error(store)?;
+                Err(Error::Other(format!(
+                    "encode_input_fn failed with: {error_str}"
+                )))
+            }
         }
     }
 
