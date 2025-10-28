@@ -18,9 +18,13 @@
 #[global_allocator]
 static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 
+#[cfg(all(not(target_family = "wasm"), feature = "ffi"))]
+#[global_allocator]
+static GLOBAL: std::alloc::System = std::alloc::System;
+
 extern crate alloc;
 
-#[cfg(target_family = "wasm")]
+#[cfg(any(target_family = "wasm", feature = "ffi"))]
 #[macro_use]
 mod ffi;
 
