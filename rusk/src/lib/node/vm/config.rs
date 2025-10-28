@@ -10,24 +10,24 @@ use std::time::Duration;
 use dusk_vm::ExecutionConfig;
 use serde::{Deserialize, Serialize};
 
-const fn default_gas_per_deploy_byte() -> u64 {
-    100
+const fn default_gas_per_deploy_byte() -> Option<u64> {
+    Some(100)
 }
 
 // TODO: This is a temporary value. Change this value to the tuned one as soon
 // as it's rolled out.
-const fn default_gas_per_blob() -> u64 {
-    1_000_000
+const fn default_gas_per_blob() -> Option<u64> {
+    Some(1_000_000)
 }
 
-const fn default_min_deploy_points() -> u64 {
-    5_000_000
+const fn default_min_deploy_points() -> Option<u64> {
+    Some(5_000_000)
 }
-const fn default_min_deployment_gas_price() -> u64 {
-    2_000
+const fn default_min_deployment_gas_price() -> Option<u64> {
+    Some(2_000)
 }
-const fn default_block_gas_limit() -> u64 {
-    3 * 1_000_000_000
+const fn default_block_gas_limit() -> Option<u64> {
+    Some(3 * 1_000_000_000)
 }
 
 /// Configuration for the execution of a transaction.
@@ -35,24 +35,24 @@ const fn default_block_gas_limit() -> u64 {
 pub struct Config {
     /// The amount of gas points charged for each blob in a transaction
     #[serde(default = "default_gas_per_blob")]
-    pub gas_per_blob: u64,
+    pub gas_per_blob: Option<u64>,
 
     /// The amount of gas points charged for each byte in a contract-deployment
     /// bytecode.
     #[serde(default = "default_gas_per_deploy_byte")]
-    pub gas_per_deploy_byte: u64,
+    pub gas_per_deploy_byte: Option<u64>,
 
     /// The minimum gas points charged for a contract deployment.
     #[serde(default = "default_min_deploy_points")]
-    pub min_deploy_points: u64,
+    pub min_deploy_points: Option<u64>,
 
     /// The minimum gas price set for a contract deployment
     #[serde(default = "default_min_deployment_gas_price")]
-    pub min_deployment_gas_price: u64,
+    pub min_deployment_gas_price: Option<u64>,
 
     /// The maximum amount of gas points that can be used in a block.
     #[serde(default = "default_block_gas_limit")]
-    pub block_gas_limit: u64,
+    pub block_gas_limit: Option<u64>,
 
     /// The timeout for a candidate block generation.
     #[serde(with = "humantime_serde")]
@@ -90,7 +90,7 @@ impl Config {
 
     /// Set the maximum amount of gas points that can be used in a block.
     pub const fn with_block_gas_limit(mut self, block_gas_limit: u64) -> Self {
-        self.block_gas_limit = block_gas_limit;
+        self.block_gas_limit = Some(block_gas_limit);
         self
     }
 
@@ -100,7 +100,7 @@ impl Config {
         mut self,
         gas_per_deploy_byte: u64,
     ) -> Self {
-        self.gas_per_deploy_byte = gas_per_deploy_byte;
+        self.gas_per_deploy_byte = Some(gas_per_deploy_byte);
         self
     }
 
@@ -109,7 +109,7 @@ impl Config {
         mut self,
         min_deploy_points: u64,
     ) -> Self {
-        self.min_deploy_points = min_deploy_points;
+        self.min_deploy_points = Some(min_deploy_points);
         self
     }
 
@@ -118,7 +118,7 @@ impl Config {
         mut self,
         min_deploy_gas_price: u64,
     ) -> Self {
-        self.min_deployment_gas_price = min_deploy_gas_price;
+        self.min_deployment_gas_price = Some(min_deploy_gas_price);
         self
     }
 
@@ -146,10 +146,18 @@ impl Config {
             .map(|activation| block_height >= activation)
             .unwrap_or_default();
         ExecutionConfig {
-            gas_per_blob: self.gas_per_blob,
-            gas_per_deploy_byte: self.gas_per_deploy_byte,
-            min_deploy_points: self.min_deploy_points,
-            min_deploy_gas_price: self.min_deployment_gas_price,
+            gas_per_blob: self
+                .gas_per_blob
+                .expect("VM gas-per-blob configuration item should exist"),
+            gas_per_deploy_byte: self.gas_per_deploy_byte.expect(
+                "VM gas-per-deploy-byte configuration item should exist",
+            ),
+            min_deploy_points: self
+                .min_deploy_points
+                .expect("VM min-deploy-points configuration item should exist"),
+            min_deploy_gas_price: self.min_deployment_gas_price.expect(
+                "VM min-deployment-gas-price configuration item should exist",
+            ),
             with_public_sender,
             with_blob,
             disable_wasm64,

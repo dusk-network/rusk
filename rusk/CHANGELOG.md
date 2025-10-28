@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add static configs for well-known chain ids. [#3894]
 - Add endpoint for obtaining contract's metadata. [#3885]
 - Add endpoint to download contact's data driver. [#3884]
 - Add pagination support to GraphQL `finalizedEvents` query. [#3871]
@@ -392,6 +393,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3894]: https://github.com/dusk-network/rusk/issues/3894
 [#3885]: https://github.com/dusk-network/rusk/issues/3885
 [#3884]: https://github.com/dusk-network/rusk/issues/3884
 [#3871]: https://github.com/dusk-network/rusk/issues/3871
