@@ -368,3 +368,39 @@ pub async fn migrate_contract_finalization() -> Result<(), Error> {
     }
     Ok(())
 }
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn migrate_contract_reversion() -> Result<(), Error> {
+    logger();
+    let mut f = Fixture::build(NON_BLS_OWNER).await;
+    f.assert_bob_contract_is_deployed();
+    let root = f.rusk.state_root();
+    f.set_session_with_commit(&root);
+    f.assert_old_contract_call_works();
+
+    let session = f.rusk.new_block_session(0, root).unwrap();
+
+    let old_contract = f.contract_id;
+    let new_session = session.migrate(
+        old_contract,
+        &f.host_fn_bytecode,
+        ContractData::builder().owner(NON_BLS_OWNER),
+        POINT_LIMIT,
+        |new_contract, session| {
+            migrate_data(old_contract, new_contract, session)
+        },
+    )?;
+
+    f.rusk.commit_session(new_session)?;
+    let reverted = f.rusk.revert(root)?;
+    let s = f.rusk.new_block_session(1, reverted).unwrap();
+    f.rusk.commit_session(s)?;
+    let after_revert = f.rusk.state_root();
+    let s = f.rusk.new_block_session(1, after_revert).unwrap();
+    f.session = Some(s);
+    // both fail after revert
+    f.assert_old_contract_call_fails();
+    f.assert_new_contract_call_fails();
+
+    Ok(())
+}
