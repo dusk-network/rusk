@@ -25,6 +25,8 @@ use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
 use super::{RuesEvent, Rusk};
 pub use config::feature::*;
+pub use config::known::WellKnownConfig as WellKnownVmConfig;
+pub use config::opt::OptionalConfig as RuskOptVmConfig;
 pub use config::Config as RuskVmConfig;
 
 use crate::Error as RuskError;

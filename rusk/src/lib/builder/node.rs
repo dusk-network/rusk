@@ -26,7 +26,8 @@ use {dusk_bytes::Serializable, node::archive::Archive, tracing::debug};
 
 use crate::http::{DataSources, HttpServer, HttpServerConfig};
 use crate::node::{
-    ChainEventStreamer, DriverStore, RuskNode, RuskVmConfig, Services,
+    ChainEventStreamer, DriverStore, RuskNode, RuskOptVmConfig, RuskVmConfig,
+    Services, WellKnownVmConfig,
 };
 use crate::{Rusk, VERSION};
 
@@ -41,7 +42,7 @@ pub struct RuskNodeBuilder {
     db_options: DatabaseOptions,
     max_chain_queue_size: usize,
     genesis_timestamp: u64,
-    vm_config: RuskVmConfig,
+    vm_config: RuskOptVmConfig,
     min_gas_limit: Option<u64>,
     feeder_call_gas: u64,
     state_dir: PathBuf,
@@ -136,7 +137,7 @@ impl RuskNodeBuilder {
         gas_per_deploy_byte: O,
     ) -> Self {
         if let Some(gas_per_deploy_byte) = gas_per_deploy_byte.into() {
-            self.vm_config.gas_per_deploy_byte = gas_per_deploy_byte;
+            self.vm_config.gas_per_deploy_byte = Some(gas_per_deploy_byte);
         }
         self
     }
@@ -147,7 +148,8 @@ impl RuskNodeBuilder {
         min_deployment_gas_price: O,
     ) -> Self {
         if let Some(min_deploy_gas_price) = min_deployment_gas_price.into() {
-            self.vm_config.min_deployment_gas_price = min_deploy_gas_price;
+            self.vm_config.min_deployment_gas_price =
+                Some(min_deploy_gas_price);
         }
         self
     }
@@ -163,7 +165,7 @@ impl RuskNodeBuilder {
         min_deploy_points: O,
     ) -> Self {
         if let Some(min_deploy_points) = min_deploy_points.into() {
-            self.vm_config.min_deploy_points = min_deploy_points;
+            self.vm_config.min_deploy_points = Some(min_deploy_points);
         }
         self
     }
@@ -174,7 +176,7 @@ impl RuskNodeBuilder {
         block_gas_limit: O,
     ) -> Self {
         if let Some(block_gas_limit) = block_gas_limit.into() {
-            self.vm_config.block_gas_limit = block_gas_limit;
+            self.vm_config.block_gas_limit = Some(block_gas_limit);
         }
         self
     }
@@ -207,7 +209,7 @@ impl RuskNodeBuilder {
         self
     }
 
-    pub fn with_vm_config(mut self, vm_config: RuskVmConfig) -> Self {
+    pub fn with_vm_config(mut self, vm_config: RuskOptVmConfig) -> Self {
         self.vm_config = vm_config;
         self
     }
@@ -221,7 +223,7 @@ impl RuskNodeBuilder {
     }
 
     /// Build the RuskNode and corresponding services
-    pub async fn build_and_run(self) -> anyhow::Result<()> {
+    pub async fn build_and_run(mut self) -> anyhow::Result<()> {
         let channel_cap = self
             .http
             .as_ref()
@@ -230,12 +232,17 @@ impl RuskNodeBuilder {
         let (rues_sender, rues_receiver) = broadcast::channel(channel_cap);
         let (node_sender, node_receiver) = mpsc::channel(1000);
 
+        let chain_id = self.kadcast.kadcast_id.unwrap_or_default();
+        let known_conf = WellKnownVmConfig::from_chain_id(chain_id);
+        self.vm_config.inject_network_conf(known_conf);
+
+        let vm_config = RuskVmConfig::try_from(self.vm_config)?;
+
         #[cfg(feature = "archive")]
         let archive = Archive::create_or_open(self.db_path.clone()).await;
 
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
-        let finality_activation = self
-            .vm_config
+        let finality_activation = vm_config
             .feature(crate::node::FEATURE_ABI_PUBLIC_SENDER)
             .unwrap_or(u64::MAX);
 
@@ -245,7 +252,7 @@ impl RuskNodeBuilder {
         let rusk = Rusk::new(
             self.state_dir,
             self.kadcast.kadcast_id.unwrap_or_default(),
-            self.vm_config,
+            vm_config,
             min_gas_limit,
             self.feeder_call_gas,
             rues_sender.clone(),
