@@ -561,11 +561,11 @@ impl Rusk {
         tip.current = commit;
     }
 
-    pub fn commit_session(&self, session: Session) -> Result<()> {
+    pub fn commit_session(&self, session: Session) -> Result<[u8; 32]> {
         let commit = session.commit()?;
         self.set_current_commit(commit);
 
-        Ok(())
+        Ok(commit)
     }
 
     pub(crate) fn set_base_and_merge(

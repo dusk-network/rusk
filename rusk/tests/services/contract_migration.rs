@@ -93,9 +93,10 @@ struct Fixture {
     pub host_fn_bytecode: Vec<u8>,
     pub bob_bytecode: Vec<u8>,
     pub contract_id: ContractId,
-    pub path: PathBuf,
-    pub session: Option<Session>,
 }
+
+const NEW_FN: &str = "chain_id";
+const OLD_FN: &str = "value";
 
 impl Fixture {
     async fn build(owner: impl AsRef<[u8]>) -> Self {
@@ -138,18 +139,14 @@ impl Fixture {
             host_fn_bytecode,
             bob_bytecode,
             contract_id,
-            path,
-            session: None,
         }
     }
 
     pub fn assert_bob_contract_is_deployed(&self) {
         const BOB_ECHO_VALUE: u64 = 775;
-        let commit = self.rusk.state_root();
-        let vm =
-            VM::new(self.path.as_path()).expect("VM creation should succeed");
-        let mut session = vm
-            .session(commit, CHAIN_ID, 0)
+        let mut session = self
+            .rusk
+            .query_session(None)
             .expect("Session creation should succeed");
         let result = session.call::<_, u64>(
             self.contract_id,
@@ -169,73 +166,15 @@ impl Fixture {
         );
     }
 
-    #[allow(dead_code)]
-    pub fn set_session(&mut self) {
-        let commit = self.rusk.state_root();
-        self.set_session_with_commit(&commit)
-    }
+    fn query_tip(&self, fn_name: &str) -> Result<u8, dusk_vm::Error> {
+        let mut session = self
+            .rusk
+            .query_session(None)
+            .expect("Query session should work");
 
-    pub fn set_session_with_commit(&mut self, commit: &[u8; 32]) {
-        let vm =
-            VM::new(self.path.as_path()).expect("VM creation should succeed");
-        self.session = Some(
-            vm.session(*commit, CHAIN_ID, 0)
-                .expect("Session creation should succeed"),
-        );
-    }
-
-    fn assert_old_contract_call_works(&mut self) {
-        let result = self.session.as_mut().unwrap().call::<_, u8>(
-            self.contract_id,
-            "value",
-            &(),
-            u64::MAX,
-        );
-        assert_eq!(
-            result.expect("Value call should succeed").data,
-            BOB_INIT_VALUE
-        );
-    }
-
-    fn assert_old_contract_call_fails(&mut self) {
-        let result = self.session.as_mut().unwrap().call::<_, u8>(
-            self.contract_id,
-            "value",
-            &(),
-            u64::MAX,
-        );
-        assert!(result.is_err())
-    }
-
-    fn assert_new_contract_call_works(&mut self) {
-        let result = self.session.as_mut().unwrap().call::<_, u8>(
-            self.contract_id,
-            "chain_id",
-            &(),
-            u64::MAX,
-        );
-        assert_eq!(result.expect("Ping call should succeed").data, CHAIN_ID);
-    }
-
-    fn assert_new_contract_call_fails(&mut self) {
-        let result = self.session.as_mut().unwrap().call::<_, u8>(
-            self.contract_id,
-            "chain_id",
-            &(),
-            u64::MAX,
-        );
-        assert!(result.is_err())
-    }
-
-    fn contract_self_id(
-        &mut self,
-        contract_id: &ContractId,
-    ) -> Option<ContractId> {
-        self.session
-            .as_mut()
-            .unwrap()
-            .contract_metadata(contract_id)
-            .map(|metadata| metadata.contract_id)
+        let result =
+            session.call::<_, u8>(self.contract_id, fn_name, &(), u64::MAX)?;
+        Ok(result.data)
     }
 }
 
@@ -261,44 +200,52 @@ fn migrate_data(
 pub async fn migrate_contract_same_id() -> Result<(), Error> {
     logger();
     let mut f = Fixture::build(NON_BLS_OWNER).await;
+    let before_migrate = f.rusk.state_root();
+
     f.assert_bob_contract_is_deployed();
-    let root = f.rusk.state_root();
-    f.set_session_with_commit(&root);
-    f.assert_old_contract_call_works();
+    f.query_tip(OLD_FN).expect("old contract should work");
 
     // migrate old contract to new contract under old contract id
     // note that this is a session-consuming call
     let old_contract_id = f.contract_id;
-    let new_session = f.session.unwrap().migrate(
-        old_contract_id,
-        &f.host_fn_bytecode,
-        ContractData::builder()
-            .owner(NON_BLS_OWNER)
-            .contract_id(ContractId::from_bytes([0x78u8; 32])),
-        // note that setting contract_id to the
-        // old contract would cause "contract already exists" exception,
-        // otherwise, if we set the contract data contract id
-        // to a value which does not correspond to any deployed contract,
-        // the value will only be used in the migration closure
-        // and then discarded
-        POINT_LIMIT,
-        |new_contract, session| {
-            migrate_data(old_contract_id, new_contract, session)
-        },
-    )?;
+    let new_root = {
+        let new_session = f.rusk.new_block_session(0, before_migrate).unwrap();
+        let new_session = new_session.migrate(
+            old_contract_id,
+            &f.host_fn_bytecode,
+            ContractData::builder()
+                .owner(NON_BLS_OWNER)
+                .contract_id(ContractId::from_bytes([0x78u8; 32])),
+            // note that setting contract_id to the
+            // old contract would cause "contract already exists" exception,
+            // otherwise, if we set the contract data contract id
+            // to a value which does not correspond to any deployed contract,
+            // the value will only be used in the migration closure
+            // and then discarded
+            POINT_LIMIT,
+            |new_contract, session| {
+                migrate_data(old_contract_id, new_contract, session)
+            },
+        )?;
+        f.rusk.commit_session(new_session)?
+    };
 
-    f.session = Some(new_session);
-    f.assert_new_contract_call_works(); // note that id is of the old contract
-                                        // make sure that migrated contract's self id is correct
-    assert_eq!(f.contract_self_id(&old_contract_id), Some(old_contract_id));
-    // make sure the old contract under this id is gone
-    f.assert_old_contract_call_fails();
+    f.query_tip(NEW_FN).expect("new contract should work");
+    f.query_tip(OLD_FN).expect_err("old contract should fail");
+
+    // note that id is of the old contract
+    // make sure that migrated contract's self id is correct
+    let metadata = f
+        .rusk
+        .query_metadata(&old_contract_id)
+        .expect("metadata query should work");
+    assert_eq!(metadata.contract_id, old_contract_id);
 
     // revert the state and see if old contract works again and new contract
     // fails
-    f.set_session_with_commit(&root);
-    f.assert_old_contract_call_works();
-    f.assert_new_contract_call_fails();
+    f.rusk.revert(before_migrate)?;
+    f.query_tip(NEW_FN).expect_err("new contract should fail");
+    f.query_tip(OLD_FN).expect("old contract should work");
 
     Ok(())
 }
@@ -308,11 +255,9 @@ pub async fn migrate_contract_finalization() -> Result<(), Error> {
     logger();
     let mut f = Fixture::build(NON_BLS_OWNER).await;
     f.assert_bob_contract_is_deployed();
-    let root = f.rusk.state_root();
-    f.set_session_with_commit(&root);
-    f.assert_old_contract_call_works();
+    f.query_tip(OLD_FN).expect("old contract should work");
 
-    let session = f.rusk.new_block_session(0, root).unwrap();
+    let session = f.rusk.new_block_session(0, f.rusk.state_root()).unwrap();
 
     let old_contract = f.contract_id;
     let new_session = session.migrate(
@@ -325,19 +270,15 @@ pub async fn migrate_contract_finalization() -> Result<(), Error> {
         },
     )?;
 
-    f.rusk.commit_session(new_session)?;
-
-    let to_merge = f.rusk.state_root();
+    let to_merge = f.rusk.commit_session(new_session)?;
 
     // advance by 1
     let s = f.rusk.new_block_session(1, to_merge).unwrap();
-    f.rusk.commit_session(s)?;
-    let to_finalize = f.rusk.state_root();
+    let to_finalize = f.rusk.commit_session(s)?;
 
     // advance by 1 again
     let s = f.rusk.new_block_session(1, to_finalize).unwrap();
-    f.rusk.commit_session(s)?;
-    let tip = f.rusk.state_root();
+    let tip = f.rusk.commit_session(s)?;
 
     f.rusk.finalize_state(to_finalize, vec![to_merge])?;
 
@@ -366,6 +307,10 @@ pub async fn migrate_contract_finalization() -> Result<(), Error> {
         Error::Vm(e) => {}
         e => panic!("Expected SessionError error {e}"),
     }
+
+    f.query_tip(NEW_FN).expect("new contract should work");
+    f.query_tip(OLD_FN).expect_err("old contract should fail");
+
     Ok(())
 }
 
@@ -374,11 +319,10 @@ pub async fn migrate_contract_reversion() -> Result<(), Error> {
     logger();
     let mut f = Fixture::build(NON_BLS_OWNER).await;
     f.assert_bob_contract_is_deployed();
-    let root = f.rusk.state_root();
-    f.set_session_with_commit(&root);
-    f.assert_old_contract_call_works();
+    let before_migrate = f.rusk.state_root();
+    f.query_tip(OLD_FN).expect("old contract should work");
 
-    let session = f.rusk.new_block_session(0, root).unwrap();
+    let session = f.rusk.new_block_session(0, before_migrate).unwrap();
 
     let old_contract = f.contract_id;
     let new_session = session.migrate(
@@ -392,15 +336,12 @@ pub async fn migrate_contract_reversion() -> Result<(), Error> {
     )?;
 
     f.rusk.commit_session(new_session)?;
-    let reverted = f.rusk.revert(root)?;
+    let reverted = f.rusk.revert(before_migrate)?;
     let s = f.rusk.new_block_session(1, reverted).unwrap();
     f.rusk.commit_session(s)?;
-    let after_revert = f.rusk.state_root();
-    let s = f.rusk.new_block_session(1, after_revert).unwrap();
-    f.session = Some(s);
-    // both fail after revert
-    f.assert_old_contract_call_fails();
-    f.assert_new_contract_call_fails();
+
+    f.query_tip(NEW_FN).expect_err("new contract should fail");
+    f.query_tip(OLD_FN).expect("old contract should work");
 
     Ok(())
 }
