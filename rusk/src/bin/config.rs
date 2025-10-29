@@ -29,7 +29,7 @@ use self::{
 };
 
 #[cfg(feature = "chain")]
-use rusk::node::RuskVmConfig;
+use rusk::node::RuskOptVmConfig;
 
 use serde::{Deserialize, Serialize};
 
@@ -56,8 +56,8 @@ pub(crate) struct Config {
     pub(crate) chain: ChainConfig,
 
     #[cfg(feature = "chain")]
-    #[serde(default = "RuskVmConfig::default")]
-    pub(crate) vm: RuskVmConfig,
+    #[serde(default = "RuskOptVmConfig::default")]
+    pub(crate) vm: RuskOptVmConfig,
 
     #[serde(default = "HttpConfig::default")]
     pub(crate) http: HttpConfig,
