@@ -4,59 +4,45 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod known;
+pub mod opt;
+
 use std::collections::{hash_map::Iter, HashMap};
 use std::time::Duration;
 
 use dusk_vm::ExecutionConfig;
-use serde::{Deserialize, Serialize};
 
-const fn default_gas_per_deploy_byte() -> u64 {
-    100
-}
+const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
 
 // TODO: This is a temporary value. Change this value to the tuned one as soon
 // as it's rolled out.
-const fn default_gas_per_blob() -> u64 {
-    1_000_000
-}
+const DEFAULT_GAS_PER_BLOB: u64 = 1_000_000;
 
-const fn default_min_deploy_points() -> u64 {
-    5_000_000
-}
-const fn default_min_deployment_gas_price() -> u64 {
-    2_000
-}
-const fn default_block_gas_limit() -> u64 {
-    3 * 1_000_000_000
-}
+const DEFAULT_MIN_DEPLOY_POINTS: u64 = 5_000_000;
+const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2_000;
+const DEFAULT_BLOCK_GAS_LIMIT: u64 = 3 * 1_000_000_000;
 
 /// Configuration for the execution of a transaction.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct Config {
     /// The amount of gas points charged for each blob in a transaction
-    #[serde(default = "default_gas_per_blob")]
     pub gas_per_blob: u64,
 
     /// The amount of gas points charged for each byte in a contract-deployment
     /// bytecode.
-    #[serde(default = "default_gas_per_deploy_byte")]
     pub gas_per_deploy_byte: u64,
 
     /// The minimum gas points charged for a contract deployment.
-    #[serde(default = "default_min_deploy_points")]
     pub min_deploy_points: u64,
 
     /// The minimum gas price set for a contract deployment
-    #[serde(default = "default_min_deployment_gas_price")]
     pub min_deployment_gas_price: u64,
 
     /// The maximum amount of gas points that can be used in a block.
-    #[serde(default = "default_block_gas_limit")]
     pub block_gas_limit: u64,
 
     /// The timeout for a candidate block generation.
     #[serde(with = "humantime_serde")]
-    #[serde(default)]
     pub generation_timeout: Option<Duration>,
 
     /// Set of features to activate
@@ -73,16 +59,17 @@ pub(crate) mod feature {
     pub const FEATURE_ABI_PUBLIC_SENDER: &str = "ABI_PUBLIC_SENDER";
     pub const FEATURE_BLOB: &str = "BLOB";
     pub const FEATURE_DISABLE_WASM64: &str = "DISABLE_WASM64";
+    pub const HQ_KECCAK256: &str = "HQ_KECCAK256";
 }
 
 impl Config {
     pub fn new() -> Self {
         Self {
-            gas_per_blob: default_gas_per_blob(),
-            gas_per_deploy_byte: default_gas_per_deploy_byte(),
-            min_deployment_gas_price: default_min_deployment_gas_price(),
-            min_deploy_points: default_min_deploy_points(),
-            block_gas_limit: default_block_gas_limit(),
+            gas_per_blob: DEFAULT_GAS_PER_BLOB,
+            gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
+            min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+            min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
+            block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
             generation_timeout: None,
             features: HashMap::new(),
         }
