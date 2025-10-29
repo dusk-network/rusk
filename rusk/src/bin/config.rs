@@ -44,34 +44,34 @@ pub(crate) struct Config {
     log_filter: Option<String>,
 
     #[cfg(feature = "chain")]
-    #[serde(default = "DataBrokerConfig::default")]
+    #[serde(default)]
     pub(crate) databroker: DataBrokerConfig,
 
     #[cfg(feature = "chain")]
-    #[serde(default = "KadcastConfig::default")]
+    #[serde(default)]
     pub(crate) kadcast: KadcastConfig,
 
     #[cfg(feature = "chain")]
-    #[serde(default = "ChainConfig::default")]
+    #[serde(default)]
     pub(crate) chain: ChainConfig,
 
     #[cfg(feature = "chain")]
-    #[serde(default = "RuskOptVmConfig::default")]
+    #[serde(default)]
     pub(crate) vm: RuskOptVmConfig,
 
-    #[serde(default = "HttpConfig::default")]
+    #[serde(default)]
     pub(crate) http: HttpConfig,
 
     #[cfg(feature = "chain")]
-    #[serde(default = "TelemetryConfig::default")]
+    #[serde(default)]
     pub(crate) telemetry: TelemetryConfig,
 
     #[cfg(feature = "chain")]
-    #[serde(default = "MempoolConfig::default")]
+    #[serde(default)]
     pub(crate) mempool: MempoolConfig,
 
     #[cfg(feature = "chain")]
-    #[serde(default = "BlobConfig::default")]
+    #[serde(default)]
     pub(crate) blob: BlobConfig,
 }
 

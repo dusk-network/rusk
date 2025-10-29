@@ -23,29 +23,23 @@ use super::{known::WellKnownConfig, Config};
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct OptionalConfig {
     /// The amount of gas points charged for each blob in a transaction
-    #[serde(default)]
     pub gas_per_blob: Option<u64>,
 
     /// The amount of gas points charged for each byte in a contract-deployment
     /// bytecode.
-    #[serde(default)]
     pub gas_per_deploy_byte: Option<u64>,
 
     /// The minimum gas points charged for a contract deployment.
-    #[serde(default)]
     pub min_deploy_points: Option<u64>,
 
     /// The minimum gas price set for a contract deployment
-    #[serde(default)]
     pub min_deployment_gas_price: Option<u64>,
 
     /// The maximum amount of gas points that can be used in a block.
-    #[serde(default)]
     pub block_gas_limit: Option<u64>,
 
     /// The timeout for a candidate block generation.
-    #[serde(with = "humantime_serde")]
-    #[serde(default)]
+    #[serde(default, with = "humantime_serde")]
     pub generation_timeout: Option<Duration>,
 
     /// Set of features to activate
