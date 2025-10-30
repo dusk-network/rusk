@@ -17,7 +17,7 @@
   import { createCurrencyFormatter, duskToLux } from "$lib/dusk/currency";
   import { walletStore, settingsStore } from "$lib/stores";
   import { tokens } from "./tokenConfig";
-  import { executeEvmBridgeDeposit } from "$lib/contracts";
+  // import { executeEvmBridgeDeposit } from "$lib/contracts";
   import wasmPath from "$lib/vendor/standard_bridge_dd_opt.wasm?url";
 
   /** @type {string} */
@@ -224,10 +224,7 @@
                 return hex;
               }
 
-              // const utf8Encode = new TextEncoder();
-              // const publicKey = currentProfile.account.toString();
-              // console.log("Bridging from DuskEVM to DuskDS for account:", publicKey);
-              // const extraDataBytes = Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 96, 184, 161, 179, 178, 146, 226, 193, 40, 106, 178, 119, 149, 71, 229, 22, 220, 85, 240, 160, 222, 126, 15, 79, 90, 238, 228, 35, 225, 66, 75, 115, 22, 85, 191, 151, 47, 252, 140, 185, 41, 1, 137, 201, 26, 122, 202, 217, 205, 20, 55, 169, 162, 222, 142, 100, 161, 184, 160, 124, 188, 169, 38, 207, 19, 197, 48, 107, 28, 245, 74, 39, 17, 93, 145, 212, 247, 19, 34, 15, 118, 176, 87, 15, 129, 254, 215, 238, 220, 187, 177, 3, 113, 12, 14, 109, 39, 0, 0, 0, 0, 0, 0, 0, 193, 200, 235, 67, 154, 136, 10, 23, 196, 200, 144, 32, 2, 19, 169, 108, 233, 84, 14, 97, 43, 63, 170, 59, 240, 5, 23, 106, 46, 21, 46, 142, 226, 41, 72, 221, 62, 208, 104, 11, 13, 59, 244, 174, 71, 30, 112, 8, 7, 235, 120, 0, 0, 248, 222, 83, 25, 122, 239, 32, 182, 89, 196, 54, 114, 144, 39, 4, 5, 186, 83, 76, 50, 62, 225, 72, 239, 97, 5, 12, 110, 0, 131, 23, 40, 52, 3, 206, 92, 196, 205, 146, 17, 80, 62, 49, 20, 132, 2, 92, 54, 161, 213, 48, 109, 144, 93, 16, 2, 240, 170, 46, 246, 17, 28, 8, 81, 176, 40, 136, 178, 55, 111, 244, 209, 195, 79, 170, 142, 95, 27, 104, 188, 206, 161, 199, 101, 37, 175, 182, 54, 22, 229, 236, 13, 31, 198, 111, 7, 180, 101, 248, 32, 37, 48, 200, 205, 147, 141, 41, 171, 11, 4, 1, 186, 10, 5, 100, 137, 184, 138, 125, 1, 8, 1, 181, 126, 183, 209, 156, 53, 238, 94, 146, 234, 195, 157, 152, 169, 178, 72, 18, 25, 0]);    // extraData
+              
               let args = []
               walletStore.useContract(VITE_BRIDGE_CONTRACT_ID, wasmPath).then((contract) => {
                 console.log("contract loaded:", contract);
@@ -235,7 +232,8 @@
                 console.log({args});
               });
               
-              await switchChain(wagmiConfig, { chainId: 310 })
+              await switchChain(wagmiConfig, { chainId: 310 });
+
               const hash = await writeContract(wagmiConfig, {
                 address: VITE_EVM_BRIDGE_CONTRACT_ADDRESS,
                 abi: ABI,
@@ -249,7 +247,8 @@
 
             } else if (originNetwork === "duskDs" && destinationNetwork === "duskEvm") {
               // Deposit from DuskDS to DuskEVM
-              const hash = await executeEvmBridgeDeposit(address, duskToLux(amount), 1n, 2000000n); //FIXME: params
+              // const hash = await executeEvmBridgeDeposit(address, duskToLux(amount), 1n, 2000000n); //FIXME: params
+              const hash = await walletStore.depositEvmFunctionCall(address, duskToLux(amount), VITE_EVM_BRIDGE_CONTRACT_ADDRESS, wasmPath);
 
               console.log("Deposit tx hash:", hash);
             }

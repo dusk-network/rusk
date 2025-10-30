@@ -1,8 +1,9 @@
 import { get, writable } from "svelte/store";
 import { setKey } from "lamb";
-import { Bookkeeper, Bookmark, ProfileGenerator } from "@dusk/w3sper";
+import { Bookkeeper, Bookmark, Gas, ProfileGenerator } from "@dusk/w3sper";
 
 import WalletTreasury from "$lib/wallet-treasury";
+import { hexStringToBytes } from "$lib/dusk/string";
 
 import { transactions } from "$lib/mock-data";
 
@@ -420,27 +421,46 @@ const transfer = async (to, amount, memo, gas) =>
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
 
-/** @type {WalletStoreServices["contractFunctionCall"]} */
-const contractFunctionCall = async (
-  deposit,
-  gas,
-  contractId,
-  contractFunction,
-  contractFunctionArgs,
-  wasmPath
-) =>
+function hexToBytes(hex) {
+  const s = hex.startsWith("0x") ? hex.slice(2) : hex;
+  if (s.length !== 40 || !/^[0-9a-fA-F]+$/.test(s)) {
+    throw new Error("Must be 20-byte hex (40 chars)");
+  }
+  const out = new Array(20);
+  for (let i = 0; i < 20; i++) out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16);
+  return out; // number[]
+}
+
+const depositEvmFunctionCall = (address, amount, contractId, wasmPath) =>
   sync()
     .then(networkStore.connect)
     .then(async (network) => {
       network.dataDrivers.register(contractId, () =>
         fetch(wasmPath).then((r) => r.arrayBuffer())
       );
-
+      console.log({ address, amount, contractId, wasmPath });
+      const gas = new Gas({ limit: Number(2000000n), price: Number(1n) });
+      const fee = BigInt(500000);
+      const deposit = amount + fee;
+      const extraData = Array.from(new Uint8Array());
       const profile = unsafeGetCurrentProfile();
       const bookentry = bookkeeper.as(profile);
       const contract = bookentry.contract(contractId, network);
-      // const events$ = contract.events.deposit.once();
-      const builder = await contract.tx[contractFunction](contractFunctionArgs);
+      address = "0xdCf5Df92dE5B5023Bbc6D90E85976235193c1921";
+      const params = {
+        to: hexToBytes(address),
+        amount: Number(amount),
+        fee: Number(fee),
+        extra_data: extraData,
+      };
+      // const params = {
+      //   amount: Number(3000000000),
+      //   extra_data: String(""),
+      //   fee: Number(500000),
+      //   to: String("0xdCf5Df92dE5B5023Bbc6D90E85976235193c1921"),
+      // };
+      console.log(params);
+      const builder = await contract.tx.deposit(params);
 
       return await network.execute(
         builder.to(profile.account).deposit(deposit).gas(gas)
@@ -448,6 +468,49 @@ const contractFunctionCall = async (
     })
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
+
+// const amount = deposit;
+// const extraData = Array.from(new Uint8Array());
+
+// return walletStore
+//   .contractFunctionCall(
+//     deposit + fee,
+//     new Gas({ limit: Number(gasLimit), price: Number(gasPrice) }),
+//     VITE_BRIDGE_CONTRACT_ID,
+//     "deposit",
+//     [hexToBytes(to), Number(amount), Number(fee), extraData],
+//     wasmPath
+//   )
+//   .then(getKey("hash"));
+
+// /** @type {WalletStoreServices["contractFunctionCall"]} */
+// const contractFunctionCall = async (
+//   deposit,
+//   gas,
+//   contractId,
+//   contractFunction,
+//   contractFunctionArgs,
+//   wasmPath
+// ) =>
+//   sync()
+//     .then(networkStore.connect)
+//     .then(async (network) => {
+//       network.dataDrivers.register(contractId, () =>
+//         fetch(wasmPath).then((r) => r.arrayBuffer())
+//       );
+
+//       const profile = unsafeGetCurrentProfile();
+//       const bookentry = bookkeeper.as(profile);
+//       const contract = bookentry.contract(contractId, network);
+//       // const events$ = contract.events.deposit.once();
+//       const builder = await contract.tx[contractFunction](contractFunctionArgs);
+
+//       return await network.execute(
+//         builder.to(profile.account).deposit(deposit).gas(gas)
+//       );
+//     })
+//     .then(updateCacheAfterTransaction)
+//     .then(passThruWithEffects(observeTxRemoval));
 
 /** @type {WalletStoreServices["finalizeWithdrawalEvmFunctionCall"]} */
 const finalizeWithdrawalEvmFunctionCall = async (
@@ -465,7 +528,7 @@ const finalizeWithdrawalEvmFunctionCall = async (
       const profile = unsafeGetCurrentProfile();
       const bookentry = bookkeeper.as(profile);
       const contract = bookentry.contract(contractId, network);
-      console.log({ withdrawalId });
+      // console.log({ withdrawalId });
       const builder = await contract.tx.finalize_withdrawal(withdrawalId);
 
       return await network.execute(builder.to(profile.account));
@@ -541,7 +604,8 @@ export default {
   claimRewards,
   clearLocalData,
   clearLocalDataAndInit,
-  contractFunctionCall,
+  // contractFunctionCall,
+  depositEvmFunctionCall,
   finalizeWithdrawalEvmFunctionCall,
   getEvmTransactions,
   getTransactionsHistory,
