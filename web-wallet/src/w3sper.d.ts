@@ -235,6 +235,8 @@ declare module "@dusk/w3sper" {
     bookkeeper: Bookkeeper;
     profile: Profile;
 
+    contract(contractId: string, network: Network): Contract;
+
     shield(amount: bigint): ShieldTransfer;
 
     stake(amount: bigint): StakeTransfer;
@@ -410,6 +412,8 @@ declare module "@dusk/w3sper" {
 
     contracts: Contracts;
 
+    dataDrivers: DataDriverRegistry;
+
     node: Node;
 
     transactions: Transactions;
@@ -426,6 +430,16 @@ declare module "@dusk/w3sper" {
       gql?: string,
       options?: Record<string, any>
     ): Promise<Record<string, any>>;
+  }
+
+  class DataDriverRegistry {
+    constructor(fetch: (url: string | URL) => Promise<ArrayBuffer>);
+
+    register(key: string, locator: any): DataDriverRegistry;
+
+    has(key: string): boolean;
+
+    get(key: string): Promise<WebAssembly.Module | null>;
   }
 
   class Node {
@@ -512,5 +526,10 @@ declare module "@dusk/w3sper" {
 
   class WithdrawStakeRewardTransfer extends BasicTransfer {
     build(network: Network): Promise<UnshieldedTransferResult>;
+  }
+
+  class Contract {
+    get events(): any;
+    get tx(): any;
   }
 }

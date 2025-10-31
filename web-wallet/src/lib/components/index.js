@@ -11,6 +11,7 @@ export { default as ContractOperations } from "./ContractOperations/ContractOper
 export { default as ContractStatusesList } from "./ContractStatusesList/ContractStatusesList.svelte";
 export { default as CopyField } from "./CopyField/CopyField.svelte";
 export { default as DashboardNav } from "./DashboardNav/DashboardNav.svelte";
+export { default as EvmTransactions } from "./EvmTransactions/EvmTransactions.svelte";
 export { default as ExecuteMigration } from "./ExecuteMigration/ExecuteMigration.svelte";
 export { default as ExistingWalletNotice } from "./ExistingWalletNotice/ExistingWalletNotice.svelte";
 export { default as GasControls } from "./GasControls/GasControls.svelte";
