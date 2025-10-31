@@ -96,3 +96,26 @@ test("bridge add deposit", async () => {
     await network.disconnect();
   }
 });
+
+test("bridge encode DS address", async () => {
+  const network = await Network.connect("https://devnet.nodes.dusk.network/");
+  try {
+    network.dataDrivers.register(
+      BRIDGE_CONTRACT_ID,
+      () => readDriverFromTarget("standard_bridge_dd_opt.wasm"),
+    );
+    const bridgeContract = new Contract({
+      contractId: BRIDGE_CONTRACT_ID,
+      driver: network.dataDrivers.get(BRIDGE_CONTRACT_ID),
+      network,
+    });
+
+    const DS_ADDRESS = "2681cRrpmrN17r1C1jNKNqAL6xc7mCTNu9qwhtjTVNHiaVioqowCcTcMqXcmYuqpG8c22bPqKWDRfRmzcfSnLLA9GG5jdgBhmoQxSAqaXMUL2Ee5LAGMB5RJycuUcDoHTCwY";
+
+    const encodedExtraData = await bridgeContract.encode("extra_data", DS_ADDRESS);
+    // encodedExtraData is directly passable to `l2bridge.withdraw(...)`
+    console.log(encodedExtraData);
+  } finally {
+    await network.disconnect();
+  }
+});
