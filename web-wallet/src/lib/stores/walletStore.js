@@ -431,40 +431,69 @@ function hexToBytes(hex) {
   return out; // number[]
 }
 
-const depositEvmFunctionCall = (address, amount, contractId, wasmPath) =>
+const depositEvmFunctionCall = async (address, amount, contractId, wasmPath) =>
   sync()
     .then(networkStore.connect)
     .then(async (network) => {
       network.dataDrivers.register(contractId, () =>
         fetch(wasmPath).then((r) => r.arrayBuffer())
       );
+
+      amount = Number(amount);
+
       console.log({ address, amount, contractId, wasmPath });
-      const gas = new Gas({ limit: Number(2000000n), price: Number(1n) });
-      const fee = BigInt(500000);
-      const deposit = amount + fee;
-      const extraData = Array.from(new Uint8Array());
+
       const profile = unsafeGetCurrentProfile();
       const bookentry = bookkeeper.as(profile);
-      const contract = bookentry.contract(contractId, network);
-      address = "0xdCf5Df92dE5B5023Bbc6D90E85976235193c1921";
-      const params = {
-        to: hexToBytes(address),
-        amount: Number(amount),
-        fee: Number(fee),
-        extra_data: extraData,
-      };
-      // const params = {
-      //   amount: Number(3000000000),
-      //   extra_data: String(""),
-      //   fee: Number(500000),
-      //   to: String("0xdCf5Df92dE5B5023Bbc6D90E85976235193c1921"),
-      // };
-      console.log(params);
-      const builder = await contract.tx.deposit(params);
+      const bridgeContract = bookentry.contract(contractId, network);
 
+      const payload = {
+        to: address,
+        amount: amount,
+        fee: 500000,
+        extra_data: "",
+      };
+
+      console.log({ payload });
+      console.log({ bookkeeper });
+      console.log({ bridgeContract });
+      console.log("account:", profile.account.toString());
+
+      const builder = await bridgeContract.tx.deposit(payload);
       return await network.execute(
-        builder.to(profile.account).deposit(deposit).gas(gas)
+        builder
+          .to(profile.account)
+          .deposit(BigInt(2000500000))
+          .gas({ limit: 1_000_000_000n })
       );
+
+      // console.log({ address, amount, contractId, wasmPath });
+      // const gas = new Gas({ limit: Number(2000000n), price: Number(1n) });
+      // const fee = BigInt(500000);
+      // const deposit = amount + fee;
+      // const extraData = Array.from(new Uint8Array());
+
+      // const bookentry = bookkeeper.as(profile);
+      // const contract = bookentry.contract(contractId, network);
+      // address = "0xdCf5Df92dE5B5023Bbc6D90E85976235193c1921";
+      // const params = {
+      //   to: hexToBytes(address),
+      //   amount: Number(amount),
+      //   fee: Number(fee),
+      //   extra_data: extraData,
+      // };
+      // // const params = {
+      // //   amount: Number(3000000000),
+      // //   extra_data: String(""),
+      // //   fee: Number(500000),
+      // //   to: String("0xdCf5Df92dE5B5023Bbc6D90E85976235193c1921"),
+      // // };
+      // console.log(params);
+      // const builder = await contract.tx.deposit(params);
+
+      // return await network.execute(
+      //   builder.to(profile.account).deposit(deposit).gas(gas)
+      // );
     })
     .then(updateCacheAfterTransaction)
     .then(passThruWithEffects(observeTxRemoval));
