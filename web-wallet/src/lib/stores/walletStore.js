@@ -447,10 +447,22 @@ const depositEvmFunctionCall = async (address, amount, contractId, wasmPath) =>
       const bookentry = bookkeeper.as(profile);
       const bridgeContract = bookentry.contract(contractId, network);
 
+      // const payload = {
+      //   to: address,
+      //   amount: amount,
+      //   fee: 500000,
+      //   extra_data: "",
+      // };
+
+      const AMOUNT_TO_BRIDGE = 2_000_000_000;
+      const BRIDGE_FEE = 500_000;
+      const TOTAL_AMOUNT = BigInt(2_000_500_000);
+      const GAS_LIMIT = BigInt(1_000_000);
+
       const payload = {
-        to: address,
-        amount: amount,
-        fee: 500000,
+        to: "0x8943545177806ed17b9f23f0a21ee5948ecaa776",
+        amount: AMOUNT_TO_BRIDGE,
+        fee: BRIDGE_FEE,
         extra_data: "",
       };
 
