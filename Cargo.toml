@@ -96,7 +96,7 @@ bs58 = "0.4"
 bytecheck = { version = "0.6.12", default-features = false }
 c-kzg = "=2.0.0"
 cargo_toml = "0.15.3"
-chrono = "0.4.38"
+chrono = { version = "0.4.42", default-features = false, features = ["clock"] }
 clap = "4.4.18"
 console = "0.12"
 criterion = "0.5.1"
@@ -154,19 +154,19 @@ tempfile = "3.12"
 thiserror = "1.0.64"
 time-util = "0.3.4"
 tiny-bip39 = "0.8.2"
-tokio = "1.40"
+tokio = "1.42.1"
 tokio-rustls = "0.26"
 tokio-stream = "0.1.16"
 tokio-util = "0.7.12"
 toml = "0.7.8"
-tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.2"
 tungstenite = "0.21"
-url = "2.5.2"
+url = "2.5.7"
 version_check = "0.9.5"
 wasmparser = "0.240"
 zeroize = { version = "1.8.1", default-features = false }
-zip = "0.5.13"
+zip = { version = "4.6", default-features = false } # newer versions require rustc 1.83.0
 
 [profile.dev.build-override]
 opt-level = 3
