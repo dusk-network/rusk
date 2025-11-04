@@ -69,7 +69,7 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, 1),
         (HQ_KECCAK256, u64::MAX),
-        (FEATURE_BLOB, 1),
+        (FEATURE_BLOB, u64::MAX),
         (FEATURE_DISABLE_WASM64, u64::MAX),
     ],
 };
