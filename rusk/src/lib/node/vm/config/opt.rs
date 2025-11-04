@@ -48,6 +48,8 @@ pub struct OptionalConfig {
 }
 
 impl OptionalConfig {
+    const ALLOW_OVERRIDE_ENV: &str = "RUSK_ALLOW_CFG_OVERRIDE";
+    const OVERRIDE_INFO: &str = "To allow overrides, set the RUSK_ALLOW_CFG_OVERRIDE environment variable to true.";
     pub fn feature(&self, feature: &str) -> Option<u64> {
         self.features
             .iter()
@@ -110,7 +112,14 @@ impl OptionalConfig {
         for (feature, activation) in &config.features {
             if let Some(v) = self.feature(feature) {
                 if v != *activation {
-                    warn!("[vm].feature {feature} is set to {v} (overriding the well-known network config value of {activation})");
+                    if Self::is_strict() {
+                        panic!(
+                            "[vm].feature {feature} set to {v} (overriding the default config value of {activation}). {}",
+                            Self::OVERRIDE_INFO
+                        );
+                    } else {
+                        warn!("[vm].feature {feature} set to {v} (overriding the default config value of {activation})");
+                    }
                 }
             } else {
                 self.with_feature(*feature, *activation);
@@ -121,7 +130,14 @@ impl OptionalConfig {
             if !config.features.iter().any(|(known_feature, _)| {
                 known_feature.eq_ignore_ascii_case(feature)
             }) {
-                warn!("[vm].feature {feature} is not recognized in the well-known network config");
+                if Self::is_strict() {
+                    panic!(
+                        "[vm].feature {feature} is not recognized in the well-known network config. {}",
+                        Self::OVERRIDE_INFO
+                    );
+                } else {
+                    warn!("[vm].feature {feature} is not recognized in the well-known network config");
+                }
             }
         }
     }
@@ -132,11 +148,25 @@ impl OptionalConfig {
     {
         if let Some(current) = field {
             if *current != config_value {
-                warn!("[vm].{field_name} is set to {current} (overriding the well-known network config value of {config_value})");
+                if Self::is_strict() {
+                    panic!(
+                        "[vm].{field_name} set to {current} (overriding the default config value of {config_value}). {}",
+                            Self::OVERRIDE_INFO
+                    );
+                } else {
+                    warn!("[vm].{field_name} set to {current} (overriding the default config value of {config_value})");
+                }
             }
         } else {
             let _ = field.insert(config_value);
         }
+    }
+
+    fn is_strict() -> bool {
+        let allow_override = std::env::var(Self::ALLOW_OVERRIDE_ENV)
+            .map(|s| s.parse().unwrap_or(false))
+            .unwrap_or(false);
+        !allow_override
     }
 }
 
