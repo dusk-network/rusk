@@ -161,9 +161,12 @@ impl Config {
     ) {
         let feature: String = feature.into();
         // Check for case insensitive key
-        if self.feature(&feature).is_some() {
-            self.features.remove(&feature);
-        }
+        let feature = self
+            .features
+            .keys()
+            .find(|k| k.eq_ignore_ascii_case(&feature))
+            .cloned()
+            .unwrap_or(feature);
         self.features.insert(feature, activation);
     }
 }
