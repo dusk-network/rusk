@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-11-06
+
 ### Added
 
 - Add support for driver storage directory [#3827]
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3827]: https://github.com/dusk-network/rusk/issues/3827
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-profile-1.0.1...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-profile-1.4.0...HEAD
+[1.4.0]: https://github.com/dusk-network/rusk/compare/rusk-profile-1.0.1...rusk-profile-1.4.0
 [1.0.1]: https://github.com/dusk-network/rusk/compare/rusk-profile-1.0.0...rusk-profile-1.0.1
 [0.1.0]: https://github.com/dusk-network/rusk/tree/rusk-profile-1.0.0
