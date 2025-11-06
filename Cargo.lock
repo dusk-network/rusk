@@ -1776,7 +1776,6 @@ dependencies = [
  "fake",
  "hex",
  "humantime-serde",
- "indexmap 2.11.4",
  "kadcast",
  "memory-stats",
  "metrics",
