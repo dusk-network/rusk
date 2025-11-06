@@ -1823,7 +1823,7 @@ dependencies = [
  "dusk-consensus 1.4.0",
  "dusk-core 1.4.0",
  "dusk-node-data 1.4.0",
- "dusk-wallet-core",
+ "dusk-wallet-core 1.4.0",
  "fake",
  "hex",
  "humantime-serde",
@@ -1965,7 +1965,7 @@ dependencies = [
  "dusk-stake-contract-dd",
  "dusk-transfer-contract-dd",
  "dusk-vm 1.4.0",
- "dusk-wallet-core",
+ "dusk-wallet-core 1.4.0",
  "dusk-wasmtime",
  "ff",
  "futures",
@@ -2071,6 +2071,26 @@ dependencies = [
 [[package]]
 name = "dusk-wallet-core"
 version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f68eafa8ccc68368f904889b86bbcf2298cad90c856ce13c0db96649503e2114"
+dependencies = [
+ "blake3",
+ "bytecheck",
+ "dlmalloc",
+ "dusk-bytes",
+ "dusk-core 1.4.0",
+ "ff",
+ "hkdf",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "rkyv",
+ "sha2 0.10.8",
+ "zeroize",
+]
+
+[[package]]
+name = "dusk-wallet-core"
+version = "1.4.1-alpha.1"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -4718,7 +4738,7 @@ dependencies = [
  "dusk-bytes",
  "dusk-core 1.4.0",
  "dusk-node-data 1.4.0",
- "dusk-wallet-core",
+ "dusk-wallet-core 1.4.0",
  "flume 0.10.14",
  "futures",
  "hex",
@@ -5405,7 +5425,7 @@ dependencies = [
  "dusk-bytes",
  "dusk-core 1.4.0",
  "dusk-vm 1.4.0",
- "dusk-wallet-core",
+ "dusk-wallet-core 1.4.0",
  "ff",
  "rand 0.8.5",
  "rkyv",
