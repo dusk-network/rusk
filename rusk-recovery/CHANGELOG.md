@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Remove feature flag to use now stable `lazy_cell` feature
+
 ## [1.3.0] - 2025-04-17
 
 ### Changed
