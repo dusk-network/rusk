@@ -4707,6 +4707,7 @@ dependencies = [
  "console",
  "dirs",
  "hex",
+ "indexmap 2.11.4",
  "serde",
  "sha2 0.10.8",
  "toml",
