@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added support for generic TransactionData into FFI [#3750]
+
 ### Changed
 
 - Changed eip2333 public functions `derive_master_sk`, `derive_child_sk`, `derive_bls_sk` [#3681]
@@ -38,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-wallet-core` release
 
 <!-- Issues -->
+[#3750]: https://github.com/dusk-network/rusk/issues/3750
 [#3681]: https://github.com/dusk-network/rusk/issues/3681
 [#3476]: https://github.com/dusk-network/rusk/issues/3476
 [#3438]: https://github.com/dusk-network/rusk/issues/3438
