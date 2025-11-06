@@ -25,6 +25,7 @@ tracing = { workspace = true, features = ["log"], optional = true }
 serde_derive = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 toml = { workspace = true, optional = true }
+indexmap = { workspace = true, optional = true } # 2.12 requires rustc edition 2024
 bs58 = { workspace = true, optional = true }
 dusk-bytes = { workspace = true, optional = true }
 ff = { workspace = true, optional = true }

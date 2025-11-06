@@ -4760,6 +4760,7 @@ dependencies = [
  "flate2",
  "hex",
  "http_req",
+ "indexmap 2.11.4",
  "rand 0.8.5",
  "reqwest",
  "rusk-profile 1.4.0",
