@@ -1990,6 +1990,7 @@ dependencies = [
  "dusk-poseidon",
  "ff",
  "hex",
+ "indexmap 2.11.4",
  "lru",
  "once_cell",
  "piecrust",
