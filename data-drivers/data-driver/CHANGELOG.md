@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Changed Error declaration to include Other variant [#3827]
+
 ## [0.2.0] - 2025-08-28
 
 ### Added
@@ -25,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ConvertibleContract` trait for seamless conversion between JSON and RKYV formats.
 - Add `rkyv_to_json` and `json_to_rkyv` functions for bidirectional serialization.
 - Add support for encoding and decoding function inputs, outputs, and events in RKYV.
+
+
+<!-- Issues -->
+[#3827]: https://github.com/dusk-network/rusk/issues/3827
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.2.0...HEAD
 [0.2.0]: https://github.com/dusk-network/rusk/compare/dusk-data-driver-0.1.0...dusk-data-driver-0.2.0
