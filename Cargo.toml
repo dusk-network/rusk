@@ -48,8 +48,8 @@ rusk-profile = "1.4.0"
 # rusk-profile = { version = "1.4.1-alpha.1", path = "./rusk-profile/" }
 # rusk-prover = "1.3.0"
 rusk-prover = { version = "1.3.1-alpha.1", path = "./rusk-prover/" }
-# rusk-recovery = "1.3.0"
-rusk-recovery = { version = "1.4.0", path = "./rusk-recovery/" }
+rusk-recovery = "1.4.0"
+# rusk-recovery = { version = "1.4.1-alpha.1", path = "./rusk-recovery/" }
 wallet-core = { version = "1.4.0", package = "dusk-wallet-core" }
 # wallet-core = { version = "1.4.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
 
