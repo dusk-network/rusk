@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change multiple crate versions to newer ones to fix advisory issues. [#3892]
+- Improved error processing in http driver support. [#3897]
 - Unbounded `finalizedEvents` GraphQL calls now return the first page by default, large requests are deprecated. [#3871]
 - Change block generation to include transactions quickly
 - Update rust toolchain to nightly 2024-07-30 (1.82.0) [#3470]
@@ -394,11 +395,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
-<<<<<<< HEAD
-[#3892]: https://github.com/dusk-network/rusk/issues/3892
-=======
+[#3897]: https://github.com/dusk-network/rusk/issues/3897
 [#3894]: https://github.com/dusk-network/rusk/issues/3894
->>>>>>> 891d2e6e1 (rusk: add static configs for well-known chain ids)
+[#3892]: https://github.com/dusk-network/rusk/issues/3892
 [#3885]: https://github.com/dusk-network/rusk/issues/3885
 [#3884]: https://github.com/dusk-network/rusk/issues/3884
 [#3871]: https://github.com/dusk-network/rusk/issues/3871
