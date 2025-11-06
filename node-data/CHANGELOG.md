@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-11-06
+
 ### Added
 
 - Add zeroize for secret info [#3687]
@@ -60,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.3.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.4.0...HEAD
+[1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.3.0...dusk-node-data-1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.2.0...dusk-node-data-1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.1.0...dusk-node-data-1.2.0
 [1.1.0]: https://github.com/dusk-network/rusk/compare/dusk-node-data-1.0.1...dusk-node-data-1.1.0
