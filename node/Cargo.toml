@@ -46,6 +46,7 @@ sqlx = { workspace = true, features = [
 serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, features = ["hex"], optional = true }
 bs58 = { workspace = true, optional = true }
+indexmap = { workspace = true, optional = true } # 2.12 requires rustc edition 2024
 
 [dev-dependencies]
 fake = { workspace = true, features = ['derive'] }
