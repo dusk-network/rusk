@@ -2062,7 +2062,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-stake-contract-dd"
-version = "0.1.1-alpha.1"
+version = "0.3.0"
 dependencies = [
  "dusk-core 1.4.0",
  "dusk-data-driver 0.3.0",
