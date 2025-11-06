@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-11-06
+
 ### Added
 
 - Add support for `TransactionData::Blob`
@@ -66,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#2773]: https://github.com/dusk-network/rusk/issues/2773
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-core-1.3.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-core-1.4.0...HEAD
+[1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.3.0...dusk-core-1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.2.1...dusk-core-1.3.0
 [1.2.1]: https://github.com/dusk-network/rusk/compare/dusk-core-1.1.0...dusk-core-1.2.1
 [1.1.0]: https://github.com/dusk-network/rusk/compare/dusk-core-1.0.0...dusk-core-1.1.0
