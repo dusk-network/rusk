@@ -1,0 +1,66 @@
+# Dusk account
+
+[[moonlight_account]]
+address = 'o1YvWG34EBTwdskfZ7PCvWKRUWKzskVnhJNjZHdau6VaUNpgDxpoSsisK8KGF6FayUi8Lzn4taAvZcHGprQuPsqFGH66SEPDRCbTmKGVwFYX7bEp2rF4wekvoc4dS8ghnKf'
+balance = 699_000_000_000_000
+
+# Faucet wallet
+
+[[moonlight_account]]
+address = 'tUWiZxKqtVrP2uxqUAc593p1T5BW5MhPzjh8D2M32WFYpqjtBLbTAw6VhMN7BKYpaDjcy82GizsQ2pAgmguGTF9Bks3qNCDF3sDrpVWMXTJTWNGWgueHezvopEvUtZUs4mC'
+balance = 9_000_000_000_000_000
+
+# Faucet wallets (Fulvio)
+
+[[moonlight_account]]
+address = 'pR8NnsQ9Le2hyuEgx2fk4RuZTngkz9T7WfkdDKSJmnfRYMmkNUPhFYXNAeatxsYiixgqq4iKfSCVuo7NhFkLgrbn1VTTweLhPXocUQ4rfxMLRajebdCcPxp46ddSVMpu2Nf'
+balance = 75_000_000_000_000_000
+
+[[moonlight_account]]
+address = 'uzUXZAWqhJB1e2czyAPvUk1MaRP4t6CMEQHBGP4ixYem7kphpbW7yF3kkGyMD5agJ7oDH7yQPwcGxgsC1PxrRDAELXMR76eqLcU2ck2oWVYRgxc16yWuCQ8PzHZrs9Qi1Vu'
+balance = 75_000_000_000_000_000
+
+# 5 Dusk network provisioners
+
+[[stake]]
+address = 'pFPEcfxidLvwmFKRQoifrSyWmmVY9UDEThoRFvGXddXRLZ8hB7xfWDYQYwHhTvZvXeL1p5Ygcnsuuxm1X8nHFJH6tEgK3cS76squcFVFSejaKJGMorYZdTup5uscNq6eDU2'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'rvXLHF8DBNwzZ63uSWPki3y7uNgGbdRCrKpouEP9N7awiGBDaP1uzyrtLBDtFbNgw8bPNjbyMsfAsNutZKnuX8JXzMiFvpW9vK4c2zmAmk3RygzwiFGCVJ9KSU7b4bgC1UT'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = 'rdHa4H5p1rVtQyqD5AjDHyr1EGg7yVU1wynqQ9VRqU8Wp7kMcePsSk2tURGzRLnzS36CaKEadpfRGwa3ucvFH5MEGYvF1LAqSQQT3zE1Fx7wQzYsrvDpJ44bBa6dKxN6mTC'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '244Sywxj7PuMHpcPxemaXLcrY5rPgztra6H9Vz8cU1Ro5v23SxKTfVqr2yS7NXAXE1iq59ndn4aMZmYxuzu3Te3e9fokQKTUkYvFxYg2P2E8EEg1gWUbs3AFL2aNx62HQd7r'
+amount = 500_000_000_000_000
+
+[[stake]]
+address = '24bfNr8MDUo5xJBecmeGzXDEraax4Cmbnhjyyt5GaL1Vbe6H48ZSYTpmjRDcFRDFzgzuePAPUNcdGMnBzBQBk4zAMgBCtPsY27tBJtKmB1st6qcmpzRR4Er5imxrzvMRnfWc'
+amount = 500_000_000_000_000
+
+# Dusk network provisioners funds
+
+[[moonlight_account]]
+address = 'pFPEcfxidLvwmFKRQoifrSyWmmVY9UDEThoRFvGXddXRLZ8hB7xfWDYQYwHhTvZvXeL1p5Ygcnsuuxm1X8nHFJH6tEgK3cS76squcFVFSejaKJGMorYZdTup5uscNq6eDU2'
+balance = 100_000_000_000
+
+[[moonlight_account]]
+address = 'rvXLHF8DBNwzZ63uSWPki3y7uNgGbdRCrKpouEP9N7awiGBDaP1uzyrtLBDtFbNgw8bPNjbyMsfAsNutZKnuX8JXzMiFvpW9vK4c2zmAmk3RygzwiFGCVJ9KSU7b4bgC1UT'
+balance = 100_000_000_000
+
+[[moonlight_account]]
+address = 'rdHa4H5p1rVtQyqD5AjDHyr1EGg7yVU1wynqQ9VRqU8Wp7kMcePsSk2tURGzRLnzS36CaKEadpfRGwa3ucvFH5MEGYvF1LAqSQQT3zE1Fx7wQzYsrvDpJ44bBa6dKxN6mTC'
+balance = 100_000_000_000
+
+[[moonlight_account]]
+address = '244Sywxj7PuMHpcPxemaXLcrY5rPgztra6H9Vz8cU1Ro5v23SxKTfVqr2yS7NXAXE1iq59ndn4aMZmYxuzu3Te3e9fokQKTUkYvFxYg2P2E8EEg1gWUbs3AFL2aNx62HQd7r'
+balance = 100_000_000_000
+
+[[moonlight_account]]
+address = '24bfNr8MDUo5xJBecmeGzXDEraax4Cmbnhjyyt5GaL1Vbe6H48ZSYTpmjRDcFRDFzgzuePAPUNcdGMnBzBQBk4zAMgBCtPsY27tBJtKmB1st6qcmpzRR4Er5imxrzvMRnfWc'
+balance = 100_000_000_000
+
