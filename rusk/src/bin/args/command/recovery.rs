@@ -38,7 +38,7 @@ pub enum RecoveryCommand {
 
         /// Create a state applying the init config specified in this file.
         #[clap(short, long, value_parser, env = "RUSK_RECOVERY_INPUT")]
-        init: Option<std::path::PathBuf>,
+        init: std::path::PathBuf,
 
         /// If specified, the generated state is written on this file instead
         /// of save the state in the profile path.
