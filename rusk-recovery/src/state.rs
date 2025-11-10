@@ -34,9 +34,6 @@ pub use snapshot::{GenesisStake, PhoenixBalance, Snapshot};
 
 pub mod tar;
 
-pub const DEFAULT_SNAPSHOT: &str =
-    include_str!("../config/testnet_remote.toml");
-
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 const GENESIS_CHAIN_ID: u8 = 0xFA;
 

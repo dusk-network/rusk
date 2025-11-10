@@ -13,15 +13,12 @@ use rusk_recovery_tools::Theme;
 use tracing::info;
 
 pub fn recovery_state(
-    init: Option<PathBuf>,
+    input: PathBuf,
     force: bool,
     output_file: Option<PathBuf>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let config = match &init {
-        Some(path) => fs::read_to_string(path)
-            .map_err(|_| format!("file {path:?} not found"))?,
-        None => rusk_recovery_tools::state::DEFAULT_SNAPSHOT.into(),
-    };
+    let config = fs::read_to_string(input.as_path())
+        .map_err(|_| format!("file {input:?} not found"))?;
     let init = toml::from_str(&config)?;
 
     let theme = Theme::default();

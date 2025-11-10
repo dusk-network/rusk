@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unbounded `finalizedEvents` GraphQL calls now return the first page by default, large requests are deprecated. [#3871]
 - Change block generation to include transactions quickly
 - Update rust toolchain to nightly 2024-07-30 (1.82.0) [#3470]
+- Change `recovery state --init` field to be required
 
 ## [1.3.0] - 2025-04-17
 
