@@ -59,9 +59,12 @@ const MAINNET_CONFIG: WellKnownConfig = WellKnownConfig {
     ],
 };
 
+/// Estimated testnet block height for 12th November 2025, 09:00 UTC.
+const TESTNET_AT_12_11_2025_AT_09_00_UTC: u64 = 1_814_090;
+
 /// Testnet VM configuration.
 const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
-    gas_per_blob: 0,
+    gas_per_blob: DEFAULT_GAS_PER_BLOB,
     gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
     min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
@@ -69,8 +72,8 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, 1),
         (HQ_KECCAK256, u64::MAX),
-        (FEATURE_BLOB, u64::MAX),
-        (FEATURE_DISABLE_WASM64, u64::MAX),
+        (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
+        (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
     ],
 };
 
@@ -85,7 +88,7 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_ABI_PUBLIC_SENDER, 1),
         (HQ_KECCAK256, 1),
         (FEATURE_BLOB, 1),
-        (FEATURE_DISABLE_WASM64, u64::MAX),
+        (FEATURE_DISABLE_WASM64, 1),
     ],
 };
 
