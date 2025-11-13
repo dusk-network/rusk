@@ -366,6 +366,7 @@ async fn run_command_or_enter_loop(
                 }
                 RunResult::Settings() => {}
                 RunResult::Create() | RunResult::Restore() => {}
+                RunResult::DriverDeployResult(_) => {}
             }
         }
     };

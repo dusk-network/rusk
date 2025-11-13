@@ -6,6 +6,7 @@
 
 use std::time::Duration;
 
+use dusk_core::abi::ContractId;
 use reqwest::{Body, Response};
 use rkyv::Archive;
 
@@ -152,6 +153,54 @@ impl HttpClient {
             Err(Error::Rusk(msg))
         } else {
             Ok(response)
+        }
+    }
+
+    /// Upload the data driver
+    ///
+    /// # Errors
+    /// When signer is not the owner of a contract indicated by owner id
+    /// When signed hash is not a hash of the uploaded bytecode
+    /// When contract is not deployed
+    pub async fn upload_driver(
+        &self,
+        driver_bytecode: impl AsRef<[u8]>,
+        contract_id: &ContractId,
+        signature: impl AsRef<[u8]>,
+    ) -> Result<Vec<u8>, Error> {
+        let uri = &self.uri;
+        let client = reqwest::Client::new();
+        let target = "contract";
+        let entity = hex::encode(contract_id.as_bytes());
+        let entity = if entity.is_empty() {
+            entity.to_string()
+        } else {
+            format!(":{entity}")
+        };
+        let topic = "upload_driver";
+        let rues_prefix = if uri.ends_with('/') { "on" } else { "/on" };
+        let request = client
+            .post(format!("{uri}{rues_prefix}/{target}{entity}/{topic}"))
+            .body(Body::from(driver_bytecode.as_ref().to_vec()))
+            .header("Content-Type", "application/octet-stream")
+            .header("rusk-version", REQUIRED_RUSK_VERSION)
+            .header("sign", hex::encode(signature.as_ref()));
+
+        let response = request.send().await?;
+
+        let status = response.status();
+        if status.is_client_error() || status.is_server_error() {
+            let error = &response.bytes().await?;
+
+            let error = String::from_utf8(error.to_vec())
+                .unwrap_or("unparsable error".into());
+
+            let msg = format!("{status}: {error}");
+
+            Err(Error::Rusk(msg))
+        } else {
+            let data = response.bytes().await?;
+            Ok(data.to_vec())
         }
     }
 }

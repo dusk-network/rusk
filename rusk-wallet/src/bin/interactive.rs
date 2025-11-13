@@ -517,6 +517,19 @@ async fn confirm(
             }
             prompt::ask_confirm()
         }
+        Command::DriverDeploy {
+            code,
+            contract_id,
+            profile_idx,
+        } => {
+            println!("   > Deploy driver code from = {:?}", code);
+            println!("   > Contract Id = {}", hex::encode(contract_id));
+            println!(
+                "   > Profile index = {}",
+                profile_idx.unwrap_or_default()
+            );
+            prompt::ask_confirm()
+        }
         _ => Ok(true),
     }
 }

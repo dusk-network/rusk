@@ -30,6 +30,7 @@ crossterm = { workspace = true }
 futures = { workspace = true }
 blake3 = { workspace = true }
 sha2 = { workspace = true }
+sha3 = { workspace = true }
 toml = { workspace = true }
 open = { workspace = true }
 dirs = { workspace = true }
