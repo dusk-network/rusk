@@ -312,6 +312,13 @@ pub(crate) enum Command {
         gas_price: Lux,
     },
 
+    /// Deploy a driver
+    DriverDeploy {
+        /// Path to the WASM driver code
+        #[arg(short, long)]
+        code: PathBuf,
+    },
+
     /// Calculate a contract id
     CalculateContractId {
         /// Profile index for the public account that will be listed as the
@@ -752,6 +759,10 @@ impl Command {
 
                 Ok(RunResult::DeployTx(tx.hash(), contract_id.into()))
             }
+            Self::DriverDeploy { code } => {
+                let _c = code;
+                Ok(RunResult::DriverDeployResult())
+            }
             Self::CalculateContractId {
                 profile_idx,
                 code,
@@ -846,7 +857,8 @@ impl Command {
             | Command::Withdraw { .. }
             | Command::StakeInfo { .. }
             | Command::Unstake { .. }
-            | Command::ContractDeploy { .. } => self.max_fee(),
+            | Command::ContractDeploy { .. }
+            | Command::DriverDeploy { .. } => self.max_fee(),
         }
     }
 
@@ -925,7 +937,10 @@ impl Command {
             | Command::Profiles { .. }
             | Command::Balance { .. }
             | Command::History { .. }
-            | Command::Export { .. } => (BalanceType::Public, Dusk::from(0)),
+            | Command::Export { .. }
+            | Command::DriverDeploy { .. } => {
+                (BalanceType::Public, Dusk::from(0))
+            }
         }
     }
 
@@ -1018,6 +1033,7 @@ pub enum RunResult<'a> {
     Restore(),
     Settings(),
     History(Vec<TransactionHistory>),
+    DriverDeployResult(),
 }
 
 impl fmt::Display for RunResult<'_> {
@@ -1110,6 +1126,10 @@ impl fmt::Display for RunResult<'_> {
                 for th in txns {
                     writeln!(f, "{th}")?;
                 }
+                Ok(())
+            }
+            DriverDeployResult() => {
+                writeln!(f, "Driver deployed todo")?;
                 Ok(())
             }
             Create() | Restore() | Settings() => unreachable!(),

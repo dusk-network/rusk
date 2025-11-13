@@ -517,6 +517,10 @@ async fn confirm(
             }
             prompt::ask_confirm()
         }
+        Command::DriverDeploy { code } => {
+            println!(" path={:?}", code);
+            prompt::ask_confirm()
+        }
         _ => Ok(true),
     }
 }

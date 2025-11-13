@@ -35,6 +35,7 @@ enum MenuItem {
     ClaimRewards,
     ContractDeploy,
     ContractCall,
+    DriverDeploy,
     Unshield,
     Shield,
     CalculateContractId,
@@ -53,6 +54,7 @@ impl Display for MenuItem {
             MenuItem::ClaimRewards => write!(f, "Claim Stake Rewards"),
             MenuItem::ContractDeploy => write!(f, "Deploy a Contract"),
             MenuItem::ContractCall => write!(f, "Call a Contract"),
+            MenuItem::DriverDeploy => write!(f, "Deploy a Contract's Driver"),
             MenuItem::Unshield => {
                 write!(f, "Convert Shielded Dusk to Public Dusk")
             }
@@ -87,6 +89,7 @@ pub(crate) async fn online(
         MenuItem::ClaimRewards,
         MenuItem::ContractCall,
         MenuItem::ContractDeploy,
+        MenuItem::DriverDeploy,
         MenuItem::CalculateContractId,
         MenuItem::Export,
         MenuItem::Back,
@@ -367,6 +370,12 @@ pub(crate) async fn online(
                     mempool_gas_prices,
                 )?,
             }))
+        }
+        MenuItem::DriverDeploy => {
+            // Request the driver code
+            let code = prompt::request_driver_code()?;
+
+            ProfileOp::Run(Box::new(Command::DriverDeploy { code }))
         }
         MenuItem::History => {
             let profile_idx = Some(profile_idx);
