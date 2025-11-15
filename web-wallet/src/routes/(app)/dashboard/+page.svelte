@@ -4,6 +4,7 @@
   import {
     mdiArrowBottomLeft,
     mdiArrowTopRight,
+    mdiBridge,
     mdiContain,
     mdiDatabaseOutline,
     mdiListBoxOutline,
@@ -31,6 +32,9 @@
         break;
       case "migrate":
         icons = [{ path: mdiSwapHorizontal }];
+        break;
+      case "bridge":
+        icons = [{ path: mdiBridge }];
         break;
       case "receive":
         icons = [{ path: mdiArrowBottomLeft }];

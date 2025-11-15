@@ -1,4 +1,6 @@
 /**
+ * Returns the decimal separator for the current locale.  Typically a comma or a period.
+ *
  * @returns {string}
  */
 const getDecimalSeparator = () => {

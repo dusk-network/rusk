@@ -11,7 +11,7 @@ import {
 import { rejectAfter } from "$lib/dusk/promise";
 import { makeNodeUrl } from "$lib/url";
 
-import wasmPath from "$lib/vendor/dusk_wallet_core.wasm?url";
+import wasmPath from "$lib/vendor/wallet_core-1.3.0.wasm?url";
 
 function getNetworkUrl() {
   if (browser) {
@@ -106,6 +106,10 @@ async function init() {
   });
 }
 
+/** @type {NetworkStoreServices["registerDataDriver"]} */
+const registerDataDriver = (id, driver) =>
+  connect().then(() => network.dataDrivers.register(id, driver));
+
 /** @type {NetworkStore} */
 export default {
   checkBlock,
@@ -117,5 +121,6 @@ export default {
   getCurrentBlockHeight,
   getLastFinalizedBlockHeight,
   init,
+  registerDataDriver,
   subscribe,
 };

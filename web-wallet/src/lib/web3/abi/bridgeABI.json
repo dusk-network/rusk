@@ -1,0 +1,12 @@
+[
+  {
+    "inputs": [
+      { "name": "minGasLimit", "type": "uint32" },
+      { "name": "extraData", "type": "bytes" }
+    ],
+    "name": "bridgeETH",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]
