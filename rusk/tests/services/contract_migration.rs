@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_consensus::operations::StateTransitionData;
+use dusk_core::signatures::bls;
+use node_data::ledger::Transaction;
 use rusk::node::{DriverStore, RuskVmConfig};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -11,12 +14,12 @@ use std::sync::{Arc, RwLock};
 
 use dusk_core::abi::ContractId;
 use dusk_vm::{gen_contract_id, ContractData, Session, VM};
-use rusk::{Error, Result, Rusk};
+use rusk::{Error, Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state;
+use rusk_recovery_tools::state::restore_state;
 use tempfile::tempdir;
 use tokio::sync::broadcast;
 use tracing::info;
-use rusk_recovery_tools::state::restore_state;
 
 use crate::common::logger;
 use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
@@ -106,7 +109,7 @@ impl Fixture {
     async fn build(owner: impl AsRef<[u8]>) -> Self {
         // let tmp =
         //     tempdir().expect("Should be able to create temporary directory");
-        let tmp = PathBuf::from("/Users/miloszm/Downloads/state_11");
+        let tmp = PathBuf::from("/Users/seppia/Downloads/2710477 2/state");
         let rusk = initial_state(&tmp, owner.as_ref())
             .await
             .expect("Initializing should succeed");
@@ -356,7 +359,10 @@ pub async fn test_ab() -> Result<(), Error> {
     logger();
     let mut f = Fixture::build(NON_BLS_OWNER).await;
     println!("root={}", hex::encode(f.rusk.state_root()));
-    let base = hex::decode("6ab0bd65f1b57f6d0efa4bf26b49e11f1e09f1ece008cdcdbe57a044f7b6bdaa").unwrap();
+    let base = hex::decode(
+        "6ab0bd65f1b57f6d0efa4bf26b49e11f1e09f1ece008cdcdbe57a044f7b6bdaa",
+    )
+    .unwrap();
     let mut base_a: [u8; 32] = [0u8; 32];
     base_a.copy_from_slice(&base);
     let mut lock = f.rusk.tip.write();
@@ -366,20 +372,35 @@ pub async fn test_ab() -> Result<(), Error> {
     let mut session = f.rusk.new_block_session(1, base_a).unwrap();
 
     let tx_vec = hex::decode("01a40400000000000001942fc94c5fed7c4925c27361a552b4290b8a1f1d0584671d19f4cb5ac4d13307c3d87b274bb403f2d153bc9f8dcacf3c010ccd7438df51154f5df27e2abc4a8a60490ccc2b79c2fc52d986957376dc47587c1dcdfba97324d84fde01bdfab99600000000000000000000000000000000000094357700000000010000000000000000480200000000000001020000000000000000000000000000000000000000000000000000000000000008000000000000007769746864726177e003000000000000010000000000000046c9885ca608aea8031fa10377eb80583467889a08ea49a87e90c26efcdee5d44cd39429d7863f8ca68507dfd20cc50e82b105a56f8b4cbf9c75657816b93ddd0eefddd5c9f88f1e1ea8f7af067796accb1c8bd727122a92997ebc449889fd0f9f3e87eb0b1d7d4531711291ebdb8673924886da9f9b9bb0502f9ef7b4161e22cb8c0cb0dad6dcd604ce4775d26d750a3a567117b5d12033edbf3aae24d1b0731d504b0fff9418670ca9c628ecd06c3665081fcbb4d044726d628f347c8c47040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000048020000000000000100000000000000dc81efe4d8026b9ec9de7566f884cdef8598dc561d353638788453e6671c37b8d5bbec72e8c5da4be5facf70729d4514dc3adaa5ef8f33abcabdfcc3472cab7d9c65bcbbd3623e4df0bba95d9613535729c338c2cd000bc64856d180746cb908000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000092d67f588500000046c9885ca608aea8031fa10377eb80583467889a08ea49a87e90c26efcdee5d44cd39429d7863f8ca68507dfd20cc50e82b105a56f8b4cbf9c75657816b93ddd0eefddd5c9f88f1e1ea8f7af067796accb1c8bd727122a92997ebc449889fd0f9f3e87eb0b1d7d4531711291ebdb8673924886da9f9b9bb0502f9ef7b4161e22cb8c0cb0dad6dcd604ce4775d26d750a3a567117b5d12033edbf3aae24d1b0731d504b0fff9418670ca9c628ecd06c3665081fcbb4d044726d628f347c8c4704000000000000000067b9cd554bf8edbd949be6472fac0d23ea504d98154e335883f0b9fe8fe2524d1e128ee8ba073d59e9e80c3d46b4430d2e05cb92d6523e012979be49cad0f99443f3f3a4c38ea2845fb11f54906dbd73be5badf19fe405a566c233eaf76dac17000000000000000067b9cd554bf8edbd949be6472fac0d23ea504d98154e335883f0b9fe8fe2524d1e128ee8ba073d59e9e80c3d46b4430d2e05cb92d6523e012979be49cad0f99443f3f3a4c38ea2845fb11f54906dbd73be5badf19fe405a566c233eaf76dac17000000000000000097949b2b47a207f3914f79fc10d18e89931c2875672e1e6811070162963926bc5627b74ec8e8e9945299d02c486d8de2").unwrap();
-
-
+    use rand::SeedableRng;
+    let mut rng = rand::rngs::StdRng::seed_from_u64(64);
+    let mut voters = vec![];
+    for i in 0..10 {
+        let sk = bls::SecretKey::random(&mut rng);
+        let pk = bls::PublicKey::from(&sk);
+        voters.push((node_data::bls::PublicKey::new(pk), i))
+    }
+    let data = StateTransitionData {
+        round: 1,
+        generator: node_data::bls::PublicKey::new(*DUSK_CONSENSUS_KEY),
+        slashes: vec![],
+        cert_voters: voters,
+        max_txs_bytes: 2000,
+        prev_state_root: base_a,
+    };
 
     let transfer_tx = dusk_core::transfer::Transaction::from_slice(&tx_vec)
-        .map_err(|e| anyhow::anyhow!("Invalid transaction: {e:?}")).unwrap();
-    // session.call(dusk_vm::transfer::TRANSFER_CONTRACT, "execute", )
-    let r = dusk_vm::execute(&mut session, &transfer_tx, &dusk_vm::ExecutionConfig::default());
+        .map_err(|e| anyhow::anyhow!("Invalid transaction: {e:?}"))
+        .unwrap();
+    let txs = vec![Transaction::from(transfer_tx)];
+    let r = f.rusk.create_state_transition(&data, txs.into_iter());
     println!("r={:?}", r);
     // let receipt = execute(&mut session, &transfer_tx, &config);
 
-
-
     Ok(())
 }
-// called `Result::unwrap()` on an `Err` value: SessionError("VM Error: No such base commit: 50e0c2334301c64e31a135c839a772a9240814613cd344cc80ff31f33acd46e9")
+// called `Result::unwrap()` on an `Err` value: SessionError("VM Error: No such
+// base commit:
+// 50e0c2334301c64e31a135c839a772a9240814613cd344cc80ff31f33acd46e9")
 
 // r=Err(RuntimeError(wasm trap: out of bounds memory access))
