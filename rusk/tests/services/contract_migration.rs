@@ -9,6 +9,8 @@ use dusk_core::signatures::bls;
 use node_data::ledger::Transaction;
 use rusk::node::{DriverStore, RuskVmConfig};
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
@@ -17,7 +19,7 @@ use dusk_vm::{gen_contract_id, ContractData, Session, VM};
 use rusk::{Error, Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state;
 use rusk_recovery_tools::state::restore_state;
-use tempfile::tempdir;
+use tempfile::{tempdir, TempDir};
 use tokio::sync::broadcast;
 use tracing::info;
 
@@ -100,6 +102,7 @@ struct Fixture {
     pub host_fn_bytecode: Vec<u8>,
     pub bob_bytecode: Vec<u8>,
     pub contract_id: ContractId,
+    pub tmpdir: TempDir,
 }
 
 const NEW_FN: &str = "chain_id";
@@ -107,10 +110,17 @@ const OLD_FN: &str = "value";
 
 impl Fixture {
     async fn build(owner: impl AsRef<[u8]>) -> Self {
-        // let tmp =
-        //     tempdir().expect("Should be able to create temporary directory");
-        let tmp = PathBuf::from("/Users/seppia/Downloads/2710477 2/state");
-        let rusk = initial_state(&tmp, owner.as_ref())
+        let tmpdir: TempDir = tempfile::tempdir().expect("tempdir() to work");
+        let state_dir = tmpdir.path().join("state");
+        let data = include_bytes!("../assets/state.tar.gz");
+
+        let unarchive = rusk_recovery_tools::state::tar::unarchive(
+            &data[..],
+            state_dir.as_path(),
+        )
+        .expect("unarchive should work");
+
+        let rusk = initial_state(state_dir.as_path(), owner.as_ref())
             .await
             .expect("Initializing should succeed");
 
@@ -147,6 +157,7 @@ impl Fixture {
             host_fn_bytecode,
             bob_bytecode,
             contract_id,
+            tmpdir,
         }
     }
 
