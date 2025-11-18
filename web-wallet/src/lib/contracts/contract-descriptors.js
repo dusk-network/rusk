@@ -71,4 +71,19 @@ export default [
       },
     ],
   },
+  {
+    enabled:
+      import.meta.env.VITE_FEATURE_BRIDGE === "true" &&
+      import.meta.env.VITE_REOWN_PROJECT_ID !== "",
+    id: "bridge",
+    label: "Bridge",
+    operations: [
+      {
+        disabled: false,
+        id: "connect",
+        label: "Connect",
+        primary: true,
+      },
+    ],
+  },
 ];

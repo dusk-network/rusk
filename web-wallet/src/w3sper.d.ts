@@ -67,7 +67,6 @@ declare module "@dusk/w3sper" {
   interface AccountTransfer extends Transfer {
     get attributes(): Transfer["attributes"] & {
       chain: ChainValue;
-      memo: Uint8Array | string;
       nonce: bigint;
     };
 
@@ -75,23 +74,18 @@ declare module "@dusk/w3sper" {
 
     chain(value: ChainValue): this;
 
-    memo(value: Uint8Array | string): this;
-
     nonce(value: bigint): this;
   }
 
   interface AddressTransfer extends Transfer {
     get attributes(): Transfer["attributes"] & {
       chain: ChainValue;
-      memo: Uint8Array | string;
       obfuscated: boolean;
     };
 
     build(network: Network): Promise<ShieldedTransferResult>;
 
     chain(value: ChainValue): this;
-
-    memo(value: Uint8Array | string): this;
 
     obfuscated(): this;
   }
@@ -234,6 +228,8 @@ declare module "@dusk/w3sper" {
 
     bookkeeper: Bookkeeper;
     profile: Profile;
+
+    contract(contractId: string, network: Network): Contract;
 
     shield(amount: bigint): ShieldTransfer;
 
@@ -410,6 +406,8 @@ declare module "@dusk/w3sper" {
 
     contracts: Contracts;
 
+    dataDrivers: DataDriverRegistry;
+
     node: Node;
 
     transactions: Transactions;
@@ -426,6 +424,16 @@ declare module "@dusk/w3sper" {
       gql?: string,
       options?: Record<string, any>
     ): Promise<Record<string, any>>;
+  }
+
+  class DataDriverRegistry {
+    constructor(fetch: (url: string | URL) => Promise<ArrayBuffer>);
+
+    register(key: string, locator: any): DataDriverRegistry;
+
+    has(key: string): boolean;
+
+    get(key: string): Promise<WebAssembly.Module | null>;
   }
 
   class Node {
@@ -500,6 +508,10 @@ declare module "@dusk/w3sper" {
     get attributes(): BasicTransfer["attributes"] & { to: string };
 
     to(value: string | Key): AccountTransfer | AddressTransfer;
+
+    memo(value: Uint8Array | string): this;
+
+    deposit(value: bigint): this;
   }
 
   class UnshieldTransfer extends BasicTransfer {
@@ -512,5 +524,80 @@ declare module "@dusk/w3sper" {
 
   class WithdrawStakeRewardTransfer extends BasicTransfer {
     build(network: Network): Promise<UnshieldedTransferResult>;
+  }
+
+  interface ContractDriver {
+    getSchema?(): unknown | Promise<unknown>;
+    getVersion?(): unknown | Promise<unknown>;
+
+    encodeInputFn(
+      fnName: string,
+      json: string
+    ): Uint8Array | Promise<Uint8Array>;
+
+    decodeOutputFn(
+      fnName: string,
+      bytes: Uint8Array
+    ): unknown | Promise<unknown>;
+
+    decodeEvent(name: string, bytes: Uint8Array): unknown | Promise<unknown>;
+  }
+
+  type ContractCallOptions = {
+    feeder?: boolean;
+    [key: string]: unknown;
+  };
+
+  type ContractPayload = Readonly<{
+    fnName: string;
+    fnArgs: Uint8Array;
+    contractId: number[];
+  }>;
+
+  type ContractTransferBuilder = (
+    | Transfer
+    | AccountTransfer
+    | AddressTransfer
+  ) & {
+    payload(p: ContractPayload): ContractTransferBuilder;
+  };
+
+  type ContractConstructorParams = Readonly<{
+    contractId: string | Uint8Array;
+    driver: ContractDriver | Promise<ContractDriver>;
+    network?: Network | null;
+    bookentry?: BookEntry | null;
+  }>;
+
+  class Contract {
+    constructor(params: ContractConstructorParams);
+
+    get id(): string;
+
+    schema(): Promise<unknown>;
+    version(): Promise<unknown>;
+
+    encode(
+      fnName: string | number | symbol,
+      jsonValue?: unknown
+    ): Promise<Uint8Array>;
+
+    readonly call: {
+      [fnName: string]: (
+        args?: unknown,
+        options?: ContractCallOptions
+      ) => Promise<any>;
+    };
+
+    readonly tx: {
+      [fnName: string]: (args?: unknown) => Promise<ContractTransferBuilder>;
+    };
+
+    readonly events: {
+      [eventName: string]: {
+        once(): Promise<unknown>;
+        on(handler: (data?: unknown, error?: unknown) => void): () => void;
+      };
+    };
   }
 }

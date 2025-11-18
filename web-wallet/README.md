@@ -31,9 +31,15 @@ The application defines these variables by reading a local `.env` file containin
 N.B. the current `0.1.2` version of the library has no option to pick the network and uses the `LOCAL_NODE` only. The current testnet address is set in that variable in the example below:
 
 ```
-# can be empty string, must start with a slash otherwise, must not end with a slash
-VITE_BASE_PATH=""
+VITE_BASE_PATH="" # can be empty string, must start with a slash otherwise, must not end with a slash
+VITE_BRIDGE_CONTRACT_ID=""
+VITE_EVM_BRIDGE_CONTRACT_ADDRESS=""
+VITE_EVM_BRIDGE_CONTRACT_BLOCK_CREATED=
+VITE_EVM_BRIDGE_BLOCK_EXPLORER_NAME="Dusk EVM Explorer"
+VITE_EVM_BRIDGE_BLOCK_EXPLORER_URL=""
+VITE_EVM_BRIDGE_RPC_URL=""
 VITE_FEATURE_ALLOCATE=true
+VITE_FEATURE_BRIDGE=true
 VITE_FEATURE_MIGRATE=true
 VITE_FEATURE_STAKE=true
 VITE_FEATURE_TRANSFER=true
@@ -45,7 +51,7 @@ VITE_GAS_PRICE_DEFAULT=1
 VITE_GAS_PRICE_LOWER=1
 VITE_SYNC_INTERVAL=300000
 VITE_MODE_MAINTENANCE=false
-VITE_REOWN_PROJECT_ID="" # the ID of the Bridge project (as on Reown Cloud)
+VITE_REOWN_PROJECT_ID="" # the ID of the EVM project (as on Reown Cloud)
 VITE_NODE_URL="" # connect to a specific node
 ```
 

@@ -1,7 +1,7 @@
 /**
  * Creates a locale aware currency formatter for fiat or DUSK
  *
- * @param {String} locale A BCP 47 language tag
+ * @param {string} locale A BCP 47 language tag
  * @returns {(value: number | bigint) => string}
  */
 const createFormatter = (locale) => {
