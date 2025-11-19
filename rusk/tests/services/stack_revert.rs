@@ -80,7 +80,7 @@ async fn initial_state<P: AsRef<Path>>(
     let archive =
         node::archive::Archive::create_or_open(archive_dir.path()).await;
 
-    let mut vm_config = RuskVmConfig::new();
+    let mut vm_config = RuskVmConfig::new().with_block_gas_limit(10_000_000_000);
     vm_config.with_feature(FEATURE_ABI_PUBLIC_SENDER, 1);
 
     let rusk = Rusk::new(
