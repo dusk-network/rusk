@@ -1351,8 +1351,6 @@ dependencies = [
 [[package]]
 name = "crumbles"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8e75f60d6b7f88bcbb2468fee550a1db73c5c9d0f89526dfbd5d2aa89039636"
 dependencies = [
  "libc",
  "rangemap",
@@ -3977,8 +3975,6 @@ dependencies = [
 [[package]]
 name = "piecrust"
 version = "0.29.0-rc.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d67c8b8f63e6c8511fb707cd104ef3601b2efe63fd181353dbbdc9f67fd79d14"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -3999,8 +3995,6 @@ dependencies = [
 [[package]]
 name = "piecrust-uplink"
 version = "0.19.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49671c8d75a8c55fc4aff276729ac2e653596e74934fe7c72b592b6b868ad897"
 dependencies = [
  "bytecheck",
  "dlmalloc",
