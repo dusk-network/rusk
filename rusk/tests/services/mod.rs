@@ -19,3 +19,4 @@ pub mod phoenix_stake;
 pub mod sequential_nonce;
 pub mod transfer;
 pub mod unspendable;
+pub mod stack_revert;
