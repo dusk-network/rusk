@@ -6,6 +6,8 @@
 
 //! Well-known VM configurations for different chain IDs.
 
+use crate::node::{FEATURE_DISABLE_3RD_PARTY, FEATURE_DISABLE_WASM32};
+
 use super::feature::{
     FEATURE_ABI_PUBLIC_SENDER, FEATURE_BLOB, FEATURE_DISABLE_WASM64,
     HQ_KECCAK256,
@@ -27,7 +29,7 @@ pub struct WellKnownConfig {
     pub min_deploy_points: u64,
     pub min_deployment_gas_price: u64,
     pub block_gas_limit: u64,
-    pub features: [(&'static str, u64); 4],
+    pub features: [(&'static str, u64); 6],
 }
 
 impl WellKnownConfig {
@@ -55,7 +57,9 @@ const MAINNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_ABI_PUBLIC_SENDER, 355_000),
         (HQ_KECCAK256, u64::MAX),
         (FEATURE_BLOB, u64::MAX),
-        (FEATURE_DISABLE_WASM64, u64::MAX),
+        (FEATURE_DISABLE_WASM64, 2_710_376),
+        (FEATURE_DISABLE_WASM32, 2_710_376),
+        (FEATURE_DISABLE_3RD_PARTY, 2_710_376),
     ],
 };
 
@@ -74,6 +78,8 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (HQ_KECCAK256, u64::MAX),
         (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
+        (FEATURE_DISABLE_WASM32, u64::MAX),
+        (FEATURE_DISABLE_3RD_PARTY, u64::MAX),
     ],
 };
 
@@ -89,6 +95,8 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (HQ_KECCAK256, 1),
         (FEATURE_BLOB, 1),
         (FEATURE_DISABLE_WASM64, 1),
+        (FEATURE_DISABLE_WASM32, u64::MAX),
+        (FEATURE_DISABLE_3RD_PARTY, u64::MAX),
     ],
 };
 
@@ -104,5 +112,7 @@ const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (HQ_KECCAK256, 1),
         (FEATURE_BLOB, 1),
         (FEATURE_DISABLE_WASM64, 1),
+        (FEATURE_DISABLE_WASM32, u64::MAX),
+        (FEATURE_DISABLE_3RD_PARTY, u64::MAX),
     ],
 };
