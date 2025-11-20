@@ -1,20 +1,17 @@
-TARGET_DIR:="../../target/dusk"
-
-all: wasm
+all: wasm clippy
 
 wasm: ## Generate the optimized WASM for the contract given
 	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)= -C link-args=-zstack-size=65536" \
-	CARGO_TARGET_DIR=$(TARGET_DIR) \
-    	cargo +dusk build \
+    	cargo build \
     		--release \
     		--color=always \
-    		-Z build-std=core,alloc,panic_abort \
-    		-Z build-std-features=panic_immediate_abort \
+			-Z build-std=core,alloc \
     		--target wasm32-unknown-unknown
 
 test:
 
-clippy: 
+clippy:
+	@cargo clippy -Z build-std=core,alloc --release --target wasm32-unknown-unknown -- -D warnings
 
 doc:
 
