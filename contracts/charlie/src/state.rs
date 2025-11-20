@@ -6,6 +6,8 @@
 
 extern crate alloc;
 
+use alloc::string::String;
+
 use dusk_core::abi;
 use dusk_core::stake::{Stake, Withdraw, WithdrawToContract, STAKE_CONTRACT};
 use dusk_core::transfer::{
@@ -43,6 +45,22 @@ impl Charlie {
             &contract_to_contract,
         )
         .expect("Transferring to stake contract should succeed");
+    }
+
+    pub fn stake_from_contract(&mut self, receive: ReceiveFromContract) {
+        let transfer = ContractToContract {
+            contract: STAKE_CONTRACT,
+            value: receive.value,
+            data: receive.data.clone(),
+            fn_name: String::from("stake_from_contract"),
+        };
+
+        abi::call::<_, ()>(
+            TRANSFER_CONTRACT,
+            "contract_to_contract",
+            &transfer,
+        )
+        .expect("[relayer] Staking to the stake contract should succeed");
     }
 
     pub fn unstake(&mut self, unstake: Withdraw) {
