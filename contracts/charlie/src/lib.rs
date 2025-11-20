@@ -20,6 +20,11 @@ unsafe fn stake(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
+unsafe fn stake_from_contract(arg_len: u32) -> u32 {
+    abi::wrap_call(arg_len, |receive| STATE.stake_from_contract(receive))
+}
+
+#[no_mangle]
 unsafe fn unstake(arg_len: u32) -> u32 {
     abi::wrap_call(arg_len, |withdraw| STATE.unstake(withdraw))
 }
