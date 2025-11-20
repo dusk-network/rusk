@@ -8,6 +8,7 @@ mod config;
 
 use blake2b_simd::Params;
 use dusk_core::abi::{ContractError, ContractId, Metadata, CONTRACT_ID_BYTES};
+use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::data::ContractBytecode;
 use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
 use piecrust::{CallReceipt, Error, Session};
@@ -76,11 +77,28 @@ pub fn execute(
     )
     .map_err(|e| Error::Panic(e.legacy_to_string()))?;
 
-    if config.disable_wasm64 {
-        if let Some(contract_deploy) = tx.deploy() {
-            if is_wasm64(&contract_deploy.bytecode.bytes) {
+    if let Some(contract_deploy) = tx.deploy() {
+        match (config.disable_wasm32, config.disable_wasm64) {
+            (true, true) => Err(Error::Panic(
+                "contract deployment is not enabled in the VM".into(),
+            )),
+            (true, false) if !is_wasm64(&contract_deploy.bytecode.bytes) => {
+                Err(Error::Panic("32-bit wasm is not enabled in the VM".into()))
+            }
+            (false, true) if is_wasm64(&contract_deploy.bytecode.bytes) => {
+                Err(Error::Panic("64-bit wasm is not enabled in the VM".into()))
+            }
+            _ => Ok(()),
+        }?
+    }
+
+    if config.disable_3rd_party {
+        if let Some(call) = tx.call() {
+            if call.contract != TRANSFER_CONTRACT
+                && call.contract != STAKE_CONTRACT
+            {
                 return Err(Error::Panic(
-                    "64-bit wasm is not enabled in the VM".into(),
+                    "3rd party contracts are not enabled in the VM".into(),
                 ));
             }
         }

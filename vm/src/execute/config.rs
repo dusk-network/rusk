@@ -26,6 +26,12 @@ pub struct Config {
 
     /// Disable deployment of Wasm64 contracts
     pub disable_wasm64: bool,
+
+    /// Disable deployment of Wasm32 contracts
+    pub disable_wasm32: bool,
+
+    /// Disable calls to 3rd party contracts
+    pub disable_3rd_party: bool,
 }
 
 impl Default for Config {
@@ -44,5 +50,7 @@ impl Config {
         with_public_sender: false,
         with_blob: false,
         disable_wasm64: false,
+        disable_wasm32: false,
+        disable_3rd_party: false,
     };
 }
