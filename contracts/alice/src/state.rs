@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_core::abi;
+use dusk_core::abi::{self, ContractId};
+use dusk_core::stake::Stake;
 use dusk_core::transfer::{
     withdraw::Withdraw, ContractToAccount, ContractToContract,
     TRANSFER_CONTRACT,
@@ -38,5 +39,31 @@ impl Alice {
     pub fn contract_to_account(&mut self, transfer: ContractToAccount) {
         abi::call::<_, ()>(TRANSFER_CONTRACT, "contract_to_account", &transfer)
             .expect("Transferring to account should succeed");
+    }
+
+    pub fn stake_activate(&mut self, stake: Stake) {
+        use rkyv;
+        const SCRATCH_BUF_BYTES: usize = 256;
+        const CHARLIE_ID: ContractId = ContractId::from_bytes([4; 32]);
+
+        let data = rkyv::to_bytes::<_, SCRATCH_BUF_BYTES>(&stake)
+            .expect("Stake should be rkyv serialized correctly")
+            .to_vec();
+
+        let transfer = ContractToContract {
+            contract: CHARLIE_ID,
+            value: stake.value(),
+            fn_name: "stake_from_contract".into(),
+            data,
+        };
+
+        abi::call::<_, ()>(
+            TRANSFER_CONTRACT,
+            "contract_to_contract",
+            &transfer,
+        )
+        .expect(
+            "Staking to the stake contract via the relayer contract should succeed",
+        );
     }
 }
