@@ -294,6 +294,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         .view(|db| db.block_by_height(height))?
                         .expect("block to be found");
                     acc.accept_block(&blk, false).await?;
+
+                    if height >= 2710376 {
+                        println!("stopping");
+                        break;
+                    }
                 }
             }
         }
