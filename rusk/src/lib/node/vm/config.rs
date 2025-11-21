@@ -59,6 +59,9 @@ pub(crate) mod feature {
     pub const FEATURE_ABI_PUBLIC_SENDER: &str = "ABI_PUBLIC_SENDER";
     pub const FEATURE_BLOB: &str = "BLOB";
     pub const FEATURE_DISABLE_WASM64: &str = "DISABLE_WASM64";
+    pub const FEATURE_DISABLE_WASM32: &str = "DISABLE_WASM32";
+    pub const FEATURE_DISABLE_3RD_PARTY: &str = "DISABLE_3RD_PARTY";
+
     pub const HQ_KECCAK256: &str = "HQ_KECCAK256";
 }
 
@@ -132,6 +135,14 @@ impl Config {
             .feature(feature::FEATURE_DISABLE_WASM64)
             .map(|activation| block_height >= activation)
             .unwrap_or_default();
+        let disable_wasm32 = self
+            .feature(feature::FEATURE_DISABLE_WASM32)
+            .map(|activation| block_height >= activation)
+            .unwrap_or_default();
+        let disable_3rd_party = self
+            .feature(feature::FEATURE_DISABLE_3RD_PARTY)
+            .map(|activation| block_height >= activation)
+            .unwrap_or_default();
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
@@ -140,6 +151,8 @@ impl Config {
             with_public_sender,
             with_blob,
             disable_wasm64,
+            disable_wasm32,
+            disable_3rd_party,
         }
     }
 

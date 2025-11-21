@@ -303,6 +303,18 @@ impl VMExecution for Rusk {
             .feature(FEATURE_DISABLE_WASM64)
             .unwrap_or(u64::MAX)
     }
+
+    fn disable_wasm32_height(&self) -> u64 {
+        self.vm_config
+            .feature(FEATURE_DISABLE_WASM32)
+            .unwrap_or(u64::MAX)
+    }
+
+    fn disable_3rd_party_height(&self) -> u64 {
+        self.vm_config
+            .feature(FEATURE_DISABLE_3RD_PARTY)
+            .unwrap_or(u64::MAX)
+    }
 }
 
 fn has_unique_elements<T>(iter: T) -> bool

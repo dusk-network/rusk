@@ -312,7 +312,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let spin_time = cmp::max(spin_time, tip_ts);
 
-        if spin_time == 0 || get_current_timestamp() > tip_ts {
+        if get_current_timestamp() > spin_time {
             return;
         }
 

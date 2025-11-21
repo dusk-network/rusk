@@ -10,7 +10,7 @@ on:
       runner:
         description: "Choose runner target to build against (JSON array)"
         required: true
-        default: "[\"ubuntu-24.04\", \"macos-15\", \"arm-linux\"]"
+        default: "[\"ubuntu-24.04\", \"ubuntu-22.04\", \"macos-15\", \"arm-linux\"]"
       features:
         description: "Choose features to build (JSON array)"
         required: true
@@ -44,10 +44,13 @@ jobs:
       matrix:
         feature: ${{ fromJson(github.event.inputs.features) }}
         compiler: [cargo]
-        os: [ubuntu-24.04, macos-15, arm-linux]
+        os: [ubuntu-24.04, ubuntu-22.04, macos-15, arm-linux]
         include:
           - os: ubuntu-24.04
             target: linux-x64
+            target_folder: target
+          - os: ubuntu-22.04
+            target: ubuntu22-x64
             target_folder: target
           - os: macos-15
             target: macos-arm64

@@ -16,6 +16,8 @@ use conf::{
 };
 use dusk_consensus::config::MAX_BLOCK_SIZE;
 use dusk_consensus::errors::BlobError;
+use dusk_core::stake::STAKE_CONTRACT;
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::TxPreconditionError;
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
@@ -282,6 +284,35 @@ impl MempoolSrv {
         {
             // Mimic the VM's additional checks for transactions
             let vm = vm.read().await;
+
+            let disable_wasm_32 = vm.disable_wasm32_height() != u64::MAX;
+            let disable_wasm_64 = vm.disable_wasm64_height() != u64::MAX;
+            let disable_3rd_party = vm.disable_3rd_party_height() != u64::MAX;
+
+            if let Some(_contract_deploy) = tx.inner.deploy() {
+                match (disable_wasm_32, disable_wasm_64) {
+                    (true, true) => {
+                        Err(TxAcceptanceError::Generic(anyhow::anyhow!(
+                            "contract deployment is not enabled in the VM"
+                        )))
+                    }
+                    // TODO: We should selectively check both config in the
+                    // future
+                    _ => Ok(()),
+                }?
+            }
+
+            if disable_3rd_party {
+                if let Some(call) = tx.inner.call() {
+                    if call.contract != TRANSFER_CONTRACT
+                        && call.contract != STAKE_CONTRACT
+                    {
+                        Err(TxAcceptanceError::Generic(anyhow::anyhow!(
+                            "3rd party contracts are not enabled in the VM"
+                        )))?;
+                    }
+                }
+            }
 
             // Check deployment tx
             if tx.inner.deploy().is_some() {
