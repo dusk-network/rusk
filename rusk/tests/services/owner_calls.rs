@@ -57,7 +57,7 @@ async fn initial_state<P: AsRef<Path>>(
     let dusk_key = *rusk::DUSK_CONSENSUS_KEY;
     let deploy = state::deploy(dir, &snapshot, dusk_key, |session| {
         let bob_bytecode = include_bytes!(
-            "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+            "../../../target/wasm32-unknown-unknown/release/bob.wasm"
         );
 
         session
@@ -132,7 +132,7 @@ impl Fixture {
         info!("Original Root: {:?}", hex::encode(original_root));
 
         let bob_bytecode = include_bytes!(
-            "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+            "../../../target/wasm32-unknown-unknown/release/bob.wasm"
         )
         .to_vec();
         let contract_id = gen_contract_id(&bob_bytecode, 0u64, owner.as_ref());

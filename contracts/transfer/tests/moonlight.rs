@@ -65,7 +65,7 @@ fn instantiate(moonlight_pk: &AccountPublicKey) -> Session {
         "../../../target/wasm32-unknown-unknown/release/alice.wasm"
     );
     let bob_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
+        "../../../target/wasm32-unknown-unknown/release/bob.wasm"
     );
 
     let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
