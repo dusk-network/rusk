@@ -62,7 +62,7 @@ fn instantiate(moonlight_pk: &AccountPublicKey) -> Session {
         "../../../target/dusk/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let alice_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+        "../../../target/wasm32-unknown-unknown/release/alice.wasm"
     );
     let bob_bytecode = include_bytes!(
         "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
