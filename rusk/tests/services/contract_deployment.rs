@@ -67,7 +67,7 @@ async fn initial_state<P: AsRef<Path>>(
     let dusk_key = *DUSK_CONSENSUS_KEY;
     let deploy = state::deploy(dir, &snapshot, dusk_key, |session| {
         let alice_bytecode = include_bytes!(
-            "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+            "../../../target/wasm32-unknown-unknown/release/alice.wasm"
         );
 
         session
@@ -382,7 +382,7 @@ pub async fn contract_deploy_charge() {
     let f = Fixture::build(false).await;
 
     let alice_bytecode = include_bytes!(
-        "../../../target/dusk/wasm32-unknown-unknown/release/alice.wasm"
+        "../../../target/wasm32-unknown-unknown/release/alice.wasm"
     );
 
     let before_balance = f.wallet_balance();
