@@ -58,14 +58,10 @@ impl Archive {
     /// Create the read-only pool for GraphQL/queries (query_only).
     pub(super) async fn create_reader_pool<P: AsRef<Path> + std::fmt::Debug>(
         path: P,
+        max_connections: u32,
     ) -> Pool<Sqlite> {
-        Self::create_sqlite_pool(
-            path,
-            SqliteRole::Reader {
-                max_connections: 16,
-            },
-        )
-        .await
+        Self::create_sqlite_pool(path, SqliteRole::Reader { max_connections })
+            .await
     }
 
     /// Create or open the SQLite database.

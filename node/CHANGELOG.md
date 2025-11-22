@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add config parameter `reader_max_connections` & make archive node options configurable [#3917]
+
 ## [1.4.0] - 2025-11-06
 
 ### Added
@@ -69,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-node` release
 
 <!-- Issues -->
+[#3917]: https://github.com/dusk-network/rusk/issues/3917
 [#3874]: https://github.com/dusk-network/rusk/issues/3874
 [#3871]: https://github.com/dusk-network/rusk/issues/3871
 [#3866]: https://github.com/dusk-network/rusk/issues/3866
