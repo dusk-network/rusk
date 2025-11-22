@@ -8,6 +8,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use kadcast::config::Config as KadcastConfig;
+#[cfg(feature = "archive")]
+use node::archive::conf::Params as ArchiveParam;
 use node::chain::ChainSrv;
 use node::database::rocksdb;
 use node::database::{DatabaseOptions, DB};
@@ -33,6 +35,8 @@ use crate::{Rusk, VERSION};
 
 #[derive(Default)]
 pub struct RuskNodeBuilder {
+    #[cfg(feature = "archive")]
+    archive: ArchiveParam,
     consensus_keys_path: String,
     databroker: BrokerParam,
     kadcast: KadcastConfig,
@@ -67,6 +71,12 @@ pub const DEFAULT_BLOB_EXPIRE_AFTER: u64 = 0;
 
 const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
 impl RuskNodeBuilder {
+    #[cfg(feature = "archive")]
+    pub fn with_archive(mut self, conf: ArchiveParam) -> Self {
+        self.archive = conf;
+        self
+    }
+
     pub fn with_consensus_keys(mut self, consensus_keys_path: String) -> Self {
         self.consensus_keys_path = consensus_keys_path;
         self
@@ -239,7 +249,11 @@ impl RuskNodeBuilder {
         let vm_config = RuskVmConfig::try_from(self.vm_config)?;
 
         #[cfg(feature = "archive")]
-        let archive = Archive::create_or_open(self.db_path.clone()).await;
+        let archive = Archive::create_or_open_with_conf(
+            self.db_path.clone(),
+            self.archive,
+        )
+        .await;
 
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
         let finality_activation = vm_config

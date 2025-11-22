@@ -86,6 +86,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_min_gas_limit(config.chain.min_gas_limit())
             .with_driver_store_path(driver_store_dir);
 
+        #[cfg(feature = "archive")]
+        {
+            node_builder = node_builder.with_archive(config.archive.into());
+        }
+
         #[allow(deprecated)]
         {
             if let Some(gas_byte) = config.chain.gas_per_deploy_byte() {

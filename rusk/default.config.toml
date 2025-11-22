@@ -2,6 +2,12 @@
 # log_type = 'coloured'
 # log_filter = 'dusk_consensus=debug'
 
+[archive]
+#events_cf_max_write_buffer_size = 1048576  # 1 MiB
+#events_cf_disable_block_cache = false
+#enable_debug = false
+#reader_max_connections = 16
+
 [http]
 #listen = true
 #listen_address = '127.0.0.1:8080'
