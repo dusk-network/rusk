@@ -12,9 +12,12 @@ use rocksdb::OptimisticTransactionDB;
 use sqlx::sqlite::SqlitePool;
 use tracing::debug;
 
+pub mod conf;
 mod moonlight;
 mod sqlite;
 mod transformer;
+
+use conf::Params as ArchiveParams;
 
 pub use moonlight::{MoonlightGroup, Order};
 
@@ -58,12 +61,33 @@ impl Archive {
     /// * `base_path` - The path to the base folder where the archive folder
     ///   resides in or will be created.
     pub async fn create_or_open<P: AsRef<Path>>(base_path: P) -> Self {
+        Self::create_or_open_with_conf(base_path, ArchiveParams::default())
+            .await
+    }
+
+    /// Create or open the archive database with configuration parameters
+    ///
+    /// # Arguments
+    ///
+    /// * `base_path` - The path to the base folder where the archive folder
+    ///   resides in or will be created.
+    /// * `params` - Archive node configuration parameters.
+    pub async fn create_or_open_with_conf<P: AsRef<Path>>(
+        base_path: P,
+        params: ArchiveParams,
+    ) -> Self {
         let path = Self::archive_folder_path(base_path);
 
+        tracing::info!(
+            "Archive::create_or_open_with_conf with conf {}",
+            params
+        );
+
         let sqlite_writer = Self::create_writer_pool(&path).await;
-        let sqlite_reader = Self::create_reader_pool(&path).await;
-        let moonlight_db =
-            Self::create_or_open_moonlight_db(&path, ArchiveOptions::default());
+        let sqlite_reader =
+            Self::create_reader_pool(&path, params.reader_max_connections)
+                .await;
+        let moonlight_db = Self::create_or_open_moonlight_db(&path, params);
 
         let mut self_archive = Self {
             sqlite_writer,
@@ -98,27 +122,5 @@ impl Archive {
     /// specific archive is aware of.
     pub fn last_finalized_block_height(&self) -> u64 {
         self.last_finalized_block_height
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct ArchiveOptions {
-    /// Max write buffer size for moonlight event CF.
-    pub events_cf_max_write_buffer_size: usize,
-
-    /// Block Cache is useful in optimizing DB reads.
-    pub events_cf_disable_block_cache: bool,
-
-    /// Enables a set of flags for collecting DB stats as log data.
-    pub enable_debug: bool,
-}
-
-impl Default for ArchiveOptions {
-    fn default() -> Self {
-        Self {
-            events_cf_max_write_buffer_size: 1024 * 1024, // 1 MiB
-            events_cf_disable_block_cache: false,         // Enable block cache
-            enable_debug: false,
-        }
     }
 }

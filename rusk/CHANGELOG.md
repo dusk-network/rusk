@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update Rusk node builder to pass archive configuration [#3917]
 - Change multiple crate versions to newer ones to fix advisory issues. [#3892]
 - Improved error processing in http driver support. [#3897]
 - Unbounded `finalizedEvents` GraphQL calls now return the first page by default, large requests are deprecated. [#3871]
@@ -396,6 +397,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3917]: https://github.com/dusk-network/rusk/issues/3917
 [#3897]: https://github.com/dusk-network/rusk/issues/3897
 [#3894]: https://github.com/dusk-network/rusk/issues/3894
 [#3892]: https://github.com/dusk-network/rusk/issues/3892

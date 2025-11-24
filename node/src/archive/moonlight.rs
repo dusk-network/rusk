@@ -20,10 +20,11 @@ use rocksdb::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, warn};
 
+use crate::archive::conf::Params as ArchiveParams;
 use crate::archive::transformer::{
     self, EventIdentifier, MoonlightTransferEvents, MoonlightTransferMapping,
 };
-use crate::archive::{Archive, ArchiveOptions};
+use crate::archive::Archive;
 
 /// Subfolder containing the moonlight database.
 const MOONLIGHT_DB_FOLDER_NAME: &str = "moonlight.db";
@@ -99,7 +100,7 @@ impl Archive {
         P: AsRef<Path> + std::fmt::Debug,
     >(
         path: P,
-        archive_opts: ArchiveOptions,
+        archive_opts: ArchiveParams,
     ) -> Arc<OptimisticTransactionDB> {
         info!("Opening moonlight db in {path:?}, {archive_opts:?} ");
 

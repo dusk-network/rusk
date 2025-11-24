@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(feature = "archive")]
+pub mod archive;
 #[cfg(feature = "chain")]
 pub mod blob;
 #[cfg(feature = "chain")]
@@ -22,6 +24,8 @@ pub mod http;
 use std::env;
 use std::str::FromStr;
 
+#[cfg(feature = "archive")]
+use self::archive::ArchiveConfig;
 #[cfg(feature = "chain")]
 use self::{
     blob::BlobConfig, chain::ChainConfig, databroker::DataBrokerConfig,
@@ -42,6 +46,10 @@ pub(crate) struct Config {
     log_level: Option<String>,
     log_type: Option<String>,
     log_filter: Option<String>,
+
+    #[cfg(feature = "archive")]
+    #[serde(default)]
+    pub(crate) archive: ArchiveConfig,
 
     #[cfg(feature = "chain")]
     #[serde(default)]
