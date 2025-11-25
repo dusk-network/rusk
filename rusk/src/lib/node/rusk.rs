@@ -321,19 +321,19 @@ impl Rusk {
             }
         }
 
-        let coinbase_events = reward_and_slash(
-            &mut session,
-            block_height,
-            generator,
-            cert_voters,
-            dusk_spent,
-            slashes,
-        )
-        .map_err(|err| {
-            StateTransitionError::ExecutionError(format!("{err}"))
-        })?;
+        // let coinbase_events = reward_and_slash(
+        //     &mut session,
+        //     block_height,
+        //     generator,
+        //     cert_voters,
+        //     dusk_spent,
+        //     slashes,
+        // )
+        // .map_err(|err| {
+        //     StateTransitionError::ExecutionError(format!("{err}"))
+        // })?;
 
-        event_bloom.add_events(&coinbase_events);
+        // event_bloom.add_events(&coinbase_events);
 
         let state_root = session.root();
 
@@ -504,9 +504,9 @@ impl Rusk {
             return Err(StateTransitionError::TipChanged);
         }
 
-        let _: CallReceipt<()> = session
-            .call(STAKE_CONTRACT, "before_state_transition", &(), u64::MAX)
-            .expect("before_state_transition to success");
+        // let _: CallReceipt<()> = session
+        //     .call(STAKE_CONTRACT, "before_state_transition", &(), u64::MAX)
+        //     .expect("before_state_transition to success");
 
         Ok(session)
     }
