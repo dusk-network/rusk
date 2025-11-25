@@ -10,7 +10,6 @@ use dusk_core::transfer::{
     withdraw::Withdraw, ContractToAccount, ContractToContract,
     TRANSFER_CONTRACT,
 };
-use rkyv;
 
 /// Alice contract.
 #[derive(Debug, Clone)]
@@ -45,6 +44,10 @@ impl Alice {
     pub fn stake_activate(&mut self, stake: Stake) {
         const SCRATCH_BUF_BYTES: usize = 256;
         const CHARLIE_ID: ContractId = ContractId::from_bytes([4; 32]);
+
+        // adding a query to the transfer contract reproduces the wasm trap
+        abi::call::<_, u64>(TRANSFER_CONTRACT, "root", &())
+            .expect("quering the transfer contract should succeed");
 
         let data = rkyv::to_bytes::<_, SCRATCH_BUF_BYTES>(&stake)
             .expect("Stake should be rkyv serialized correctly")
