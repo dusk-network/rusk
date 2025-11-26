@@ -30,7 +30,7 @@ use wallet_core::transaction::{
 };
 
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
+use crate::common::state::{new_state_with_chainid, DEFAULT_MIN_GAS_LIMIT};
 use crate::common::wallet::{
     test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
 };
@@ -44,6 +44,17 @@ const CHARLIE_ID: ContractId = ContractId::from_bytes([4; 32]);
 
 const CHAIN_ID: u8 = 0x01;
 
+// Creates the Rusk initial state from a config toml file
+// async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
+//     let snapshot =
+//         toml::from_str(include_str!("../config/stack_isolated.toml"))
+//             .expect("Cannot deserialize config");
+//     let vm_config = RuskVmConfig::new().with_block_gas_limit(10_000_000_000);
+//
+//     new_state_with_chainid(dir, &snapshot, vm_config, CHAIN_ID).await
+// }
+
+// Creates the Rusk initial state from the given state dir
 async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let dir = dir.as_ref();
 
@@ -90,15 +101,18 @@ const OLD_FN: &str = "value";
 impl Fixture {
     async fn build(/*owner: impl AsRef<[u8]>*/) -> Self {
         let tmpdir: TempDir = tempfile::tempdir().expect("tempdir() to work");
+
+        // uncomment this to create a rusk instance from the `stack_isolated.toml` file
+        // let rusk = initial_state(&tmpdir)
+
+        // uncomment this to create a rusk instance from the `2710377_state.tar.gz` dir
         let state_dir = tmpdir.path().join("state");
         let data = include_bytes!("../assets/2710377_state.tar.gz");
-
         let unarchive = rusk_recovery_tools::state::tar::unarchive(
             &data[..],
             state_dir.as_path(),
         )
         .expect("unarchive should work");
-
         let rusk = initial_state(&state_dir)
             .await
             .expect("Initializing should succeed");
@@ -129,11 +143,14 @@ impl Fixture {
 pub async fn test_isolated() -> Result<(), Error> {
     logger();
 
-    // start rusk instance from state "../assets/2710377_state.tar.gz"
+    //
+    // build rusk instance
+    //
+
     let mut f = Fixture::build().await;
     println!("root={}", hex::encode(f.rusk.state_root()));
 
-    // move rusk to block 2,710,376
+    // move rusk to block 2,710,376 only do this when rusk was build on top of "../assets/2710377_state.tar.gz"
     let base = hex::decode(
         "53de818894cf665f1131edda3c5579ccb8736fd05c993ecb5cd16677974b088b", // Block 2,710,376
     )
@@ -158,7 +175,7 @@ pub async fn test_isolated() -> Result<(), Error> {
     // inject rusk session with the isolated contracts and test accounts
     //
 
-    f.rusk.tip.write().current = base_a;
+    // f.rusk.tip.write().current = base_a;
     let mut session = f
         .rusk
         .new_block_session(1, f.rusk.tip.read().current)
