@@ -6,6 +6,7 @@
 
 import {
   AccountSyncer,
+  AddressSyncer,
   Bookkeeper,
   Contract,
   Network,
@@ -100,7 +101,9 @@ test("contract.call feeder: transfer.sync_accounts", async () => {
 
     // Pass a number tuple to the transfer contract `sync_accounts` function, and
     // set `feeder: true` to stream the output.
-    const result = await transfer.call.sync_accounts(["0", "5"], { feeder: true });
+    const result = await transfer.call.sync_accounts(["0", "5"], {
+      feeder: true,
+    });
 
     // Validate balances/nonce object of genesis account
     assert.equal(result[0], { balance: "1001000000000000", nonce: "0" });
@@ -112,24 +115,42 @@ test("contract.call feeder: transfer.sync_accounts", async () => {
 test("contract.encode: transfer.sync_account", async () => {
   const INPUT = ["0", "5"];
   const OUTPUT = new Uint8Array([
-    0, 0, 0, 0, 0, 0,
-    0, 0, 5, 0, 0, 0,
-    0, 0, 0, 0
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
   ]);
 
   const network = await Network.connect(NETWORK);
   try {
     // Register the genesis transfer driver
-    network.dataDrivers.register(TRANSFER_ID, () => readDriverFromTarget(TRANSFER_WASM));
+    network.dataDrivers.register(
+      TRANSFER_ID,
+      () => readDriverFromTarget(TRANSFER_WASM),
+    );
     const driver = network.dataDrivers.get(TRANSFER_ID);
     const transfer = new Contract({ contractId: TRANSFER_ID, driver, network });
 
     // Encode request body for `sync_account`
     const rkyv = await transfer.encode("sync_accounts", INPUT);
 
-    assert.ok(rkyv instanceof Uint8Array && rkyv.length > 0, "encode() must return non-empty bytes");
+    assert.ok(
+      rkyv instanceof Uint8Array && rkyv.length > 0,
+      "encode() must return non-empty bytes",
+    );
     assert.equal(rkyv, OUTPUT);
-
   } finally {
     await network.disconnect();
   }
@@ -159,7 +180,12 @@ test("contract.tx/send + events.once: transfer.deposit", async () => {
 
     // Execute with matching args <-> deposit
     const AMOUNT = 2n;
-    const builder = await transfer.tx.deposit(Number(AMOUNT));
+    // AMOUNT is used twice on purpose here:
+    // - contract-level: explicitly call transfer.tx.deposit(AMOUNT),
+    //   because we call the deposit function on the transfer contract
+    // - transaction-level: set the to deposit amount carried by the transfer
+    //   transaction itself (required for a valid transfer of funds into the contract)
+    const builder = await transfer.tx.deposit(AMOUNT);
     const { hash } = await network.execute(
       builder.to(users[0].account).deposit(AMOUNT).gas({ limit: GAS_LIMIT }),
     );
@@ -173,13 +199,66 @@ test("contract.tx/send + events.once: transfer.deposit", async () => {
 
     // Get decoded event (driver & bytes hidden by contract facade)
     const decoded = await deposit$;
-    console.log('[decoded event] "deposit" ->', decoded);
-
-    const amt = decoded?.value ?? decoded?.amount;
-    if (amt !== undefined) {
-      assert.equal(BigInt(amt), AMOUNT);
-    }
+    assert.equal(BigInt(decoded.value), AMOUNT);
   } finally {
     await network.disconnect();
   }
 });
+
+test(
+  "contract.tx/send + events.once: transfer.deposit (Phoenix address)",
+  async () => {
+    const network = await Network.connect(NETWORK);
+    try {
+      // Seed & sync
+      const profiles = new ProfileGenerator(seeder);
+      const users = [await profiles.default];
+
+      const accounts = new AccountSyncer(network);
+      const addresses = new AddressSyncer(network);
+      const treasury = new Treasury(users);
+
+      // For Phoenix we need notes synced via AddressSyncer
+      await treasury.update({ addresses, accounts });
+
+      // Register driver, bind facade to BookEntry (driver is auto‑fetched)
+      network.dataDrivers.register(
+        TRANSFER_ID,
+        () => readDriverFromTarget(TRANSFER_WASM),
+      );
+      const bookentry = new Bookkeeper(treasury).as(users[0]);
+      const transfer = bookentry.contract(TRANSFER_ID, network);
+
+      // Subscribe to decoded 'deposit' before executing
+      const deposit$ = transfer.events.deposit.once();
+
+      // Execute with matching args <-> deposit, but via Phoenix (address)
+      const AMOUNT = 2n;
+      // AMOUNT is used twice on purpose here:
+      // - contract-level: explicitly call transfer.tx.deposit(AMOUNT),
+      //   because we call the deposit function on the transfer contract
+      // - transaction-level: set the to deposit amount carried by the transfer
+      //   transaction itself (required for a valid transfer of funds into the contract)
+      const builder = await transfer.tx.deposit(AMOUNT);
+      const { hash } = await network.execute(
+        builder
+          .to(users[0].address)
+          .deposit(AMOUNT)
+          .gas({ limit: GAS_LIMIT }),
+      );
+      assert.ok(typeof hash === "string" && hash.length > 0);
+
+      // Check that the transaction is indeed executed
+      const executed = await network.transactions.withId(hash).once.executed();
+      const call = executed.call();
+      assert.equal(call.contract, TRANSFER_ID);
+      assert.equal(call.fn_name, "deposit");
+
+      // Get decoded event
+      const decoded = await deposit$;
+      assert.equal(BigInt(decoded.value), AMOUNT);
+    } finally {
+      await network.disconnect();
+    }
+  },
+);
