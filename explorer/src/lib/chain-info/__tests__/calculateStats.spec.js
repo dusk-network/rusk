@@ -8,24 +8,16 @@ describe("calculateStats", () => {
   const lastBlockHeight = 1498332;
 
   it("should calculate the stats with the given parameters", () => {
-    const last100BlocksTxs = [
-      { err: null },
-      { err: "some error" },
-      { err: null },
-      { err: "some other error" },
-      { err: null },
-    ];
     const expectedStats = {
       activeProvisioners: 213,
       activeStake: 56732778800000000,
       lastBlock: 1498332,
-      txs100blocks: { failed: 2, transfers: 5 },
       waitingProvisioners: 0,
       waitingStake: 0,
     };
-    expect(
-      calculateStats(hostProvisioners, lastBlockHeight, last100BlocksTxs)
-    ).toStrictEqual(expectedStats);
+    expect(calculateStats(hostProvisioners, lastBlockHeight)).toStrictEqual(
+      expectedStats
+    );
   });
 
   it("should accept an empty array of provisioners and transactions", () => {
@@ -33,13 +25,10 @@ describe("calculateStats", () => {
       activeProvisioners: 0,
       activeStake: 0,
       lastBlock: 1498332,
-      txs100blocks: { failed: 0, transfers: 0 },
       waitingProvisioners: 0,
       waitingStake: 0,
     };
 
-    expect(calculateStats([], lastBlockHeight, [])).toStrictEqual(
-      expectedStats
-    );
+    expect(calculateStats([], lastBlockHeight)).toStrictEqual(expectedStats);
   });
 });

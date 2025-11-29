@@ -6,8 +6,9 @@
   "waitingProvisioners": 34,
   "waitingStake": 2573278329709436,
   "lastBlock": 487596,
-  "txs100blocks": {
-    "transfers": 10,
-    "failed": 0
+  "txCount": {
+    "public": 13742,
+    "shielded": 2621,
+    "total": 16363
   }
 }

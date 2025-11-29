@@ -309,25 +309,22 @@ describe("duskAPI", () => {
 
   it("should expose a method to retrieve the statistics", async () => {
     const lastBlockHeight = 1498332;
-    const last100BlocksTxs = {
-      blocks: [
-        { transactions: [{ err: null }] },
-        { transactions: [] },
-        { transactions: [{ err: "some-error" }] },
-      ],
+    const txCount = {
+      public: 13742,
+      shielded: 2621,
+      total: 16363,
     };
-    const expectedStats = calculateStats(
-      mockData.hostProvisioners,
-      lastBlockHeight,
-      [{ err: null }, { err: "some-error" }]
-    );
+    const expectedStats = {
+      ...calculateStats(mockData.hostProvisioners, lastBlockHeight),
+      txCount,
+    };
 
     fetchSpy
       .mockResolvedValueOnce(makeOKResponse(mockData.hostProvisioners))
       .mockResolvedValueOnce(
         makeOKResponse({ block: { header: { height: lastBlockHeight } } })
       )
-      .mockResolvedValueOnce(makeOKResponse(last100BlocksTxs));
+      .mockResolvedValueOnce(makeOKResponse(txCount));
 
     await expect(duskAPI.getStats()).resolves.toStrictEqual(expectedStats);
 
@@ -361,15 +358,18 @@ describe("duskAPI", () => {
         "method": "POST",
       }
     `);
-    expect(fetchSpy.mock.calls[2][0]).toStrictEqual(gqlExpectedURL);
+    expect(fetchSpy.mock.calls[2][0]).toStrictEqual(
+      new URL(
+        `${import.meta.env.VITE_RUSK_PATH || ""}/on/stats/tx_count`,
+        node.origin
+      )
+    );
     expect(fetchSpy.mock.calls[2][1]).toMatchInlineSnapshot(`
       {
-        "body": "query { blocks(last: 100) { transactions { err } } }",
         "headers": {
           "Accept": "application/json",
           "Accept-Charset": "utf-8",
           "Connection": "Keep-Alive",
-          "Content-Type": "application/json",
         },
         "method": "POST",
       }

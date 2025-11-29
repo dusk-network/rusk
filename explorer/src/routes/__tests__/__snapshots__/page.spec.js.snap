@@ -237,7 +237,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="statistics-panel__statistics-item-title"
             >
-              TX Last 100 Blocks
+              Total Transactions
             </span>
           </div>
            
@@ -1659,7 +1659,7 @@ exports[`home page > should render the home page, start polling for the latest c
             <span
               class="statistics-panel__statistics-item-title"
             >
-              TX Last 100 Blocks
+              Total Transactions
             </span>
           </div>
            

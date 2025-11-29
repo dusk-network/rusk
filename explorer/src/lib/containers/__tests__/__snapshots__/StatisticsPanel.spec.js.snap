@@ -231,7 +231,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          TX Last 100 Blocks
+          Total Transactions
         </span>
       </div>
        
@@ -581,6 +581,9 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
       </div>
       <div
         class="statistics-panel__statistics-item"
+        data-tooltip-id="main-tooltip"
+        data-tooltip-place="top"
+        data-tooltip-text="Public: 13,742, Shielded: 2,621"
       >
         <div
           class="statistics-panel__statistics-item-value-container"
@@ -599,7 +602,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
           <div
             class="statistics-panel__statistics-item-value"
           >
-            10
+            16,363
             
             
              
@@ -609,7 +612,7 @@ exports[`StatisticsPanel > should render the StatisticsPanel, query for the nece
         <span
           class="statistics-panel__statistics-item-title"
         >
-          TX Last 100 Blocks
+          Total Transactions
         </span>
       </div>
        
