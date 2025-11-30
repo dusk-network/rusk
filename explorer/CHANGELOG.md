@@ -12,6 +12,9 @@ and this project adheres to
 
 - Add Tokens page [#3415]
 - Add support for transactions' blob hashes [#3804]
+- Provisioner table now supports sorting across all columns [#3924]
+- Add rank column for provisioners based on active stake [#3924]
+- Display of owner/consensus key separation for each staker [#3925]
 
 ### Changed
 
@@ -269,6 +272,8 @@ and this project adheres to
 [#3757]: https://github.com/dusk-network/rusk/issues/3757
 [#3804]: https://github.com/dusk-network/rusk/issues/3804
 [#3847]: https://github.com/dusk-network/rusk/issues/3847
+[#3924]: https://github.com/dusk-network/rusk/issues/3924
+[#3925]: https://github.com/dusk-network/rusk/issues/3925
 
 <!-- VERSIONS -->
 
