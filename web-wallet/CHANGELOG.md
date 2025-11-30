@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed incorrect DUSK balance formatting in Bridge view [#3927]
+
 ## [1.6.0] - 2025-06-13
 
 ### Added
@@ -610,6 +612,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3822]: https://github.com/dusk-network/rusk/issues/3822
 [#3824]: https://github.com/dusk-network/rusk/issues/3824
 [#3826]: https://github.com/dusk-network/rusk/issues/3826
+[#3927]: https://github.com/dusk-network/rusk/issues/3927
 
 <!-- VERSIONS -->
 
