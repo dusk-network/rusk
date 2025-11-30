@@ -19,6 +19,13 @@ address = 'rvLto5LztqrvHYzWnG8eeypRaN71KbJWD6PZVt5oehMfKpb1tvQePHrKQvMXH6BBTVGLf
 balance = 40_040_000_000_000
 
 [[phoenix_balance]]
+address = '3YD998RpKPTbdxigAVSWJ495heFDh7FjAeQEj9RapH2z5mo7W9THNen7jQMJnj5UmL3RwbcC37sx9txMHjy3Dok2'
+seed = 0xdead_beef
+notes = [
+    42_000_000_000,
+]
+
+[[phoenix_balance]]
 address = '4ZH3oyfTuMHyWD1Rp4e7QKp5yK6wLrWvxHneufAiYBAjvereFvfjtDvTbBcZN5ZCsaoMo49s1LKPTwGpowik6QJG'
 seed = 0xdead_beef
 notes = [
