@@ -18,6 +18,7 @@ and this project adheres to
 
 ### Changed
 
+- Replace "TX last 100 blocks" with total historical transaction count from `/on/stats/tx_count`. [#3626]
 - Use supply.dusk.network for circulating supply [#3757]
 - The `from` and `to` fields are now always shown in moonlight transactions regardless of the transaction's type [#3804]
 - Explorer now reads circulating supply from `https://supply.dusk.network/` directly. CORS and cache headers applied via Cloudflare. [#3847]
@@ -256,6 +257,7 @@ and this project adheres to
 [#3591]: https://github.com/dusk-network/rusk/issues/3591
 [#3612]: https://github.com/dusk-network/rusk/issues/3612
 [#3620]: https://github.com/dusk-network/rusk/issues/3620
+[#3626]: https://github.com/dusk-network/rusk/issues/3626
 [#3639]: https://github.com/dusk-network/rusk/issues/3639
 [#3640]: https://github.com/dusk-network/rusk/issues/3640
 [#3641]: https://github.com/dusk-network/rusk/issues/3641

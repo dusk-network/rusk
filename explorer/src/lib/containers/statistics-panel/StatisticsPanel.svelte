@@ -119,12 +119,20 @@
       },
       {
         approximate: false,
-        attributes: null,
+        attributes: statsData?.txCount
+          ? {
+              "data-tooltip-id": "main-tooltip",
+              "data-tooltip-place": "top",
+              "data-tooltip-text": `Public: ${formatter(
+                statsData.txCount.public
+              )}, Shielded: ${formatter(statsData.txCount.shielded)}`,
+            }
+          : null,
         canBeStale: false,
         compact: true,
-        data: statsData?.txs100blocks.transfers,
+        data: statsData?.txCount?.total,
         icon: mdiSwapVertical,
-        title: "TX Last 100 Blocks",
+        title: "Total Transactions",
       },
     ],
 

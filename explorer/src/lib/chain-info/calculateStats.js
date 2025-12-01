@@ -1,19 +1,6 @@
-import {
-  always,
-  compose,
-  condition,
-  filterWith,
-  getKey,
-  partition,
-} from "lamb";
+import { always, condition, filterWith, partition } from "lamb";
 
 import { arraySumByKey } from "$lib/dusk/array";
-
-/** @type {(txs: Pick<GQLTransaction, "err">[]) => number} */
-const getFailedTxAmount = compose(
-  getKey("length"),
-  filterWith((tx) => tx.err !== null)
-);
 
 /**
  * We take into account only provisioners with
@@ -36,10 +23,9 @@ const sumByAmount = condition(
 /**
  * @param {HostProvisioner[]} provisioners
  * @param {number} lastHeight
- * @param {Pick<GQLTransaction, "err">[]} last100BlocksTxs
  * @returns {Stats}
  */
-function calculateStats(provisioners, lastHeight, last100BlocksTxs) {
+function calculateStats(provisioners, lastHeight) {
   const [activeProvisioners, waitingProvisioners] = partition(
     getValidProvisioners(provisioners),
     (p) => p.eligibility <= lastHeight
@@ -49,10 +35,6 @@ function calculateStats(provisioners, lastHeight, last100BlocksTxs) {
     activeProvisioners: activeProvisioners.length,
     activeStake: sumByAmount(activeProvisioners),
     lastBlock: lastHeight,
-    txs100blocks: {
-      failed: getFailedTxAmount(last100BlocksTxs),
-      transfers: last100BlocksTxs.length,
-    },
     waitingProvisioners: waitingProvisioners.length,
     waitingStake: sumByAmount(waitingProvisioners),
   };

@@ -1,6 +1,4 @@
 import {
-  apply,
-  flatMapWith,
   fromPairs,
   getKey,
   getPath,
@@ -102,14 +100,6 @@ const getLastHeight = () =>
   gqlGet({
     query: "query { block(height: -1) { header { height } } }",
   }).then(getPath("block.header.height"));
-
-/** @type {() => Promise<Pick<GQLTransaction, "err">[]>} */
-const getLast100BlocksTxs = () =>
-  gqlGet({
-    query: "query { blocks(last: 100) { transactions { err } } }",
-  })
-    .then(getKey("blocks"))
-    .then(flatMapWith(getKey("transactions")));
 
 const duskAPI = {
   /**
@@ -313,6 +303,7 @@ const duskAPI = {
   getProvisioners() {
     return nodePost("/on/node/provisioners");
   },
+
   /**
    * @returns {Promise<Stats>}
    */
@@ -320,8 +311,11 @@ const duskAPI = {
     return Promise.all([
       duskAPI.getProvisioners(),
       getLastHeight(),
-      getLast100BlocksTxs(),
-    ]).then(apply(calculateStats));
+      duskAPI.getTxCount(),
+    ]).then(([provisioners, lastHeight, txCount]) => ({
+      ...calculateStats(provisioners, lastHeight),
+      txCount,
+    }));
   },
 
   /**
@@ -356,6 +350,13 @@ const duskAPI = {
     return gqlGet(getTransactionsQueryInfo(amount))
       .then(getKey("transactions"))
       .then(transformTransactions);
+  },
+
+  /**
+   * @returns {Promise<{ public: number; shielded: number; total: number }>}
+   */
+  getTxCount() {
+    return nodePost("/on/stats/tx_count");
   },
 
   /**
