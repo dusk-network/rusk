@@ -2,12 +2,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { slice } from "lamb";
 
-import { hostProvisioners } from "$lib/mock-data";
+import { enrichedProvisioners } from "$lib/mock-data";
 
 import { ProvisionersList } from "..";
 
 describe("Provisioners List", () => {
-  const provisioners = slice(hostProvisioners, 0, 1)[0];
+  const provisioners = slice(enrichedProvisioners, 0, 1)[0];
 
   /** @type {import("svelte").ComponentProps<ProvisionersList>} */
   const baseProps = { data: provisioners };

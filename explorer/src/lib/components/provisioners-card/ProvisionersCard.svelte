@@ -23,18 +23,66 @@
 
   let itemsToDisplay = ITEMS_TO_DISPLAY;
 
-  /** @type {HostProvisioner[]}*/
-  let displayedProvisioner;
+  /**
+   * @typedef {HostProvisioner & {
+   *   rank: number;
+   *   ownerType: string;
+   *   ownerAddress: string;
+   *   hasSeparateOwner: boolean;
+   * }} EnrichedProvisioner
+   */
 
-  $: displayedProvisioner = provisioners
-    ? provisioners.slice(0, itemsToDisplay)
+  /** @param {HostProvisioner} p */
+  const hasActiveStake = (p) =>
+    p.amount !== 0 || p.locked_amt !== 0 || p.eligibility !== 0;
+
+  /**
+   * Reduce callback, filters inactive + enriches owner fields.
+   * @param {EnrichedProvisioner[]} acc
+   * @param {HostProvisioner} p
+   * @returns {EnrichedProvisioner[]}
+   */
+  const toEnrichedProvisioner = (acc, p) => {
+    if (!hasActiveStake(p)) return acc;
+
+    const [ownerType, ownerAddress] = Object.entries(p.owner ?? {})[0] ?? [
+      "",
+      "",
+    ];
+
+    const hasSeparateOwner = Boolean(ownerAddress) && ownerAddress !== p.key;
+
+    acc.push({
+      ...p,
+      hasSeparateOwner,
+      ownerAddress,
+      ownerType,
+      rank: 0,
+    });
+
+    return acc;
+  };
+
+  /** @type {EnrichedProvisioner[]} */
+  $: enrichedProvisioners = Array.isArray(provisioners)
+    ? provisioners
+        .reduce(
+          toEnrichedProvisioner,
+          /** @type {EnrichedProvisioner[]} */ ([])
+        )
+        .toSorted((a, b) => Number(b.amount ?? 0) - Number(a.amount ?? 0))
+        .map((p, index) => ({
+          ...p,
+          rank: index + 1,
+        }))
     : [];
+
+  $: displayedProvisioners = enrichedProvisioners.slice(0, itemsToDisplay);
   $: isLoadMoreDisabled =
-    (provisioners && itemsToDisplay >= provisioners.length) ||
-    (loading && provisioners === null);
+    itemsToDisplay >= enrichedProvisioners.length || (loading && !provisioners);
 
   const loadMoreItems = () => {
-    if (provisioners && itemsToDisplay < provisioners.length) {
+    if (itemsToDisplay < enrichedProvisioners.length) {
       itemsToDisplay += ITEMS_TO_DISPLAY;
     }
   };
@@ -45,7 +93,7 @@
   data={provisioners}
   {error}
   {loading}
-  title="Provisioners — {displayedProvisioner.length} Displayed Items"
+  title="Provisioners — {displayedProvisioners.length} Displayed Items"
   headerButtonDetails={error
     ? undefined
     : {
@@ -56,13 +104,13 @@
 >
   {#if isSmallScreen}
     <div class="data-card__list">
-      {#each displayedProvisioner as provisioner (provisioner)}
+      {#each displayedProvisioners as provisioner (provisioner)}
         <ProvisionersList data={provisioner} displayTooltips={true} />
       {/each}
     </div>
   {:else}
     <ProvisionersTable
-      data={displayedProvisioner}
+      data={displayedProvisioners}
       className="data-card__table"
     />
   {/if}

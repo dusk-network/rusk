@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/svelte";
 import { slice } from "lamb";
-import { hostProvisioners } from "$lib/mock-data";
+import { enrichedProvisioners } from "$lib/mock-data";
 
 import { ProvisionersTable } from "..";
 
 describe("Provisioners Table", () => {
-  const data = slice(hostProvisioners, 0, 10);
+  const data = slice(enrichedProvisioners, 0, 10);
 
   const baseProps = {
     data: data,
