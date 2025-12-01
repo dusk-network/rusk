@@ -30,6 +30,7 @@
   import bridgeABI from "$lib/web3/abi/bridgeABI.json";
   import { logo } from "$lib/dusk/icons";
   import { MESSAGES } from "$lib/constants";
+  import { luxToDusk } from "$lib/dusk/currency";
   import { getDecimalSeparator, slashDecimals } from "$lib/dusk/number";
   import { cleanNumberString } from "$lib/dusk/string";
   import { areValidGasSettings } from "$lib/contracts";
@@ -48,6 +49,14 @@
    * @type {number}
    */
   const EVM_MINIMUM_GAS_LIMIT = 0;
+
+  /**
+   * DuskEVM uses duskEvm.nativeCurrency.decimals (currently 18). DuskDS uses 9 decimals (Lux).
+   * This converts from EVM base units (1e18) to Lux units (1e9) so we can reuse luxToDusk().
+   * @type {bigint}
+   */
+  const EVM_TO_LUX_SCALE_FACTOR =
+    10n ** BigInt(duskEvm.nativeCurrency.decimals - 9);
 
   /** @type {(amount: bigint|number) => string} */
   export let formatter;
@@ -184,12 +193,12 @@
     <dl class="balances">
       <dt class="balances__token">DuskDS</dt>
       <dd class="balances__balance">
-        {formatter(unshieldedBalance)}
+        {formatter(luxToDusk(unshieldedBalance))}
       </dd>
       <dt class="balances__token">DuskEVM</dt>
       <dd class="balances__balance">
         {#if evmDuskBalance}
-          {formatter(evmDuskBalance.value)}
+          {formatter(luxToDusk(evmDuskBalance.value / EVM_TO_LUX_SCALE_FACTOR))}
         {:else}
           <Throbber size={16} />
         {/if}
@@ -288,7 +297,7 @@
             </dt>
             <dd class="review-transaction__value operation__review-amount">
               <span>
-                {`${formatter(parseUnits(amount, 9))} DUSK`}
+                {`${formatter(luxToDusk(parseUnits(amount, 9)))} DUSK`}
               </span>
               <Icon
                 className="dusk-amount__icon"
