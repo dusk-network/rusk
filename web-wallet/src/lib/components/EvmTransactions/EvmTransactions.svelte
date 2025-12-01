@@ -4,9 +4,11 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
 
+  import { goto } from "$lib/navigation";
+
   import { AppAnchorButton } from "$lib/components";
   import { Button, Icon, Suspense, Throbber } from "$lib/dusk/components";
-  import { createTransferFormatter } from "$lib/dusk/currency";
+  import { createTransferFormatter, luxToDusk } from "$lib/dusk/currency";
   import { calculateAdaptiveCharCount, middleEllipsis } from "$lib/dusk/string";
   import { networkStore, walletStore } from "$lib/stores";
   import wasmPath from "$lib/vendor/standard_bridge_dd_opt.wasm?url";
@@ -130,6 +132,7 @@
     <svelte:fragment slot="success-content" let:result={transactions}>
       {#if transactions.length}
         {#each transactions as [txId, tx] (txId)}
+          {@const amount = BigInt(tx.amount)}
           {#if currentProfileAccountAddress && tx?.to?.External === currentProfileAccountAddress}
             <dl class="transactions-list">
               <dt class="transactions-list__term">Block</dt>
@@ -138,7 +141,7 @@
               </dd>
               <dt class="transactions-list__term">Amount</dt>
               <dd class="transactions-list__datum">
-                {transferFormatter(BigInt(tx.amount))}
+                {transferFormatter(luxToDusk(amount))}
                 <span class="transactions-list__ticker">Dusk</span>
               </dd>
               <dt class="transactions-list__term">From</dt>
@@ -160,8 +163,15 @@
                               wasmPath
                             );
                           const hash = getKey("hash")(res);
-                          // eslint-disable-next-line no-console
-                          console.log({ hash }); // Will be removed when #3825 is done.
+                          await goto(
+                            "/dashboard/bridge/transactions/complete",
+                            {
+                              replaceState: true,
+                              state: {
+                                hash,
+                              },
+                            }
+                          );
                         } catch (e) {
                           // eslint-disable-next-line no-console
                           console.error("Finalize failed", e);
@@ -187,7 +197,11 @@
       {:else}
         <div class="transactions-list__empty">
           <Icon path={mdiContain} size="large" />
-          <p>You have no pending withdrawals</p>
+          <p>
+            You have no pending withdrawals. If you have just made a withdrawal,
+            it can take up to 10 minutes to appear here (depending on network
+            usage).
+          </p>
         </div>
       {/if}
     </svelte:fragment>
