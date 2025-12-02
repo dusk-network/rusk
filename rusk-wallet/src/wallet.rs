@@ -20,7 +20,7 @@ use bip39::{Language, Mnemonic, Seed};
 use dusk_bytes::Serializable;
 use dusk_core::abi::CONTRACT_ID_BYTES;
 use dusk_core::signatures::bls::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey, Signature,
 };
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::phoenix::{
@@ -512,6 +512,14 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
     pub(crate) fn derive_bls_sk(&self, index: u8) -> BlsSecretKey {
         let seed = self.store.get_seed();
         derive_bls_sk(seed, index)
+    }
+
+    /// Signs the given message and returns the signature
+    pub fn sign(&self, index: u8, message: &[u8]) -> Signature {
+        let mut sk = self.derive_bls_sk(index);
+        let signature = sk.sign(message);
+        sk.zeroize();
+        signature
     }
 
     /// Returns the public account key for a given index.

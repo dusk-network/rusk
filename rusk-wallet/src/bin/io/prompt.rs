@@ -21,8 +21,8 @@ use inquire::error::InquireResult;
 use inquire::ui::{RenderConfig, Styled};
 use inquire::validator::Validation;
 use inquire::{
-    Confirm, CustomType, InquireError, Password, PasswordDisplayMode, Select,
-    Text,
+    Confirm, CustomType, CustomUserError, InquireError, Password,
+    PasswordDisplayMode, Select, Text,
 };
 use rusk_wallet::dat::version_without_pre_higher;
 use rusk_wallet::{
@@ -480,19 +480,31 @@ pub(crate) fn tx_history_list(
     Ok(())
 }
 
-/// Request contract WASM file location
-pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
-    let validator = |path_str: &str| {
+const WASM_PATH_VALIDATOR: fn(&str) -> Result<Validation, CustomUserError> =
+    |path_str: &str| {
         let path = PathBuf::from(path_str);
         if path.extension().is_some_and(|ext| ext == "wasm") {
             Ok(Validation::Valid)
         } else {
-            Ok(Validation::Invalid("Not a valid directory".into()))
+            Ok(Validation::Invalid("Not a valid WASM path".into()))
         }
     };
 
+/// Request contract WASM file location
+pub(crate) fn request_contract_code() -> anyhow::Result<PathBuf> {
     let q = Text::new("Please Enter location of the WASM contract:")
-        .with_validator(validator)
+        .with_validator(WASM_PATH_VALIDATOR)
+        .prompt()?;
+
+    let p = PathBuf::from(q);
+
+    Ok(p)
+}
+
+/// Request contract's driver WASM file location
+pub(crate) fn request_driver_code() -> anyhow::Result<PathBuf> {
+    let q = Text::new("Please Enter location of the WASM driver:")
+        .with_validator(WASM_PATH_VALIDATOR)
         .prompt()?;
 
     let p = PathBuf::from(q);

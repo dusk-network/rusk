@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod driver_upload;
 mod history;
 
 use dusk_core::transfer::data::BlobData;
@@ -310,6 +311,20 @@ pub(crate) enum Command {
         /// Price you're going to pay for each gas unit (in LUX)
         #[arg(short = 'p', long, default_value_t = MIN_PRICE_DEPLOYMENT)]
         gas_price: Lux,
+    },
+
+    /// Deploy a driver
+    DriverDeploy {
+        /// Profile index for the public account that will be listed as the
+        /// owner of the contract [default: 0]
+        #[arg(long)]
+        profile_idx: Option<u8>,
+        /// Path to the WASM driver code
+        #[arg(short, long)]
+        code: PathBuf,
+        /// Contract id of the driver's contract
+        #[arg(short, long, value_parser = parse_hex)]
+        contract_id: std::vec::Vec<u8>, /* Fully qualify it due to https://github.com/clap-rs/clap/issues/4481#issuecomment-1314475143 */
     },
 
     /// Calculate a contract id
@@ -752,6 +767,25 @@ impl Command {
 
                 Ok(RunResult::DeployTx(tx.hash(), contract_id.into()))
             }
+            Self::DriverDeploy {
+                profile_idx,
+                code,
+                contract_id,
+            } => {
+                let profile_idx = profile_idx.unwrap_or_default();
+                let contract_id_bytes: [u8; CONTRACT_ID_BYTES] = contract_id
+                    .try_into()
+                    .map_err(|_| Error::InvalidContractId)?;
+                let contract_id = ContractId::from_bytes(contract_id_bytes);
+                driver_upload::driver_upload(
+                    &code,
+                    &contract_id,
+                    wallet,
+                    profile_idx,
+                )
+                .await?;
+                Ok(RunResult::DriverDeployResult(contract_id))
+            }
             Self::CalculateContractId {
                 profile_idx,
                 code,
@@ -846,7 +880,8 @@ impl Command {
             | Command::Withdraw { .. }
             | Command::StakeInfo { .. }
             | Command::Unstake { .. }
-            | Command::ContractDeploy { .. } => self.max_fee(),
+            | Command::ContractDeploy { .. }
+            | Command::DriverDeploy { .. } => self.max_fee(),
         }
     }
 
@@ -925,7 +960,10 @@ impl Command {
             | Command::Profiles { .. }
             | Command::Balance { .. }
             | Command::History { .. }
-            | Command::Export { .. } => (BalanceType::Public, Dusk::from(0)),
+            | Command::Export { .. }
+            | Command::DriverDeploy { .. } => {
+                (BalanceType::Public, Dusk::from(0))
+            }
         }
     }
 
@@ -1018,6 +1056,7 @@ pub enum RunResult<'a> {
     Restore(),
     Settings(),
     History(Vec<TransactionHistory>),
+    DriverDeployResult(ContractId),
 }
 
 impl fmt::Display for RunResult<'_> {
@@ -1110,6 +1149,14 @@ impl fmt::Display for RunResult<'_> {
                 for th in txns {
                     writeln!(f, "{th}")?;
                 }
+                Ok(())
+            }
+            DriverDeployResult(contract_id) => {
+                writeln!(
+                    f,
+                    "Driver deployed for contract: {}",
+                    hex::encode(contract_id.to_bytes())
+                )?;
                 Ok(())
             }
             Create() | Restore() | Settings() => unreachable!(),
