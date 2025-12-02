@@ -1351,9 +1351,9 @@ dependencies = [
 
 [[package]]
 name = "crumbles"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8e75f60d6b7f88bcbb2468fee550a1db73c5c9d0f89526dfbd5d2aa89039636"
+checksum = "90e660ac9c1d7549c850b4cbf31c06bd7e452879b55296554d5c85e25a26fefe"
 dependencies = [
  "libc",
  "rangemap",

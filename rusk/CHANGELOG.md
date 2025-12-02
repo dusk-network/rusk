@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Add static configs for well-known chain ids. [#3894]
 - Add endpoint for obtaining contract's metadata. [#3885]
 - Add endpoint to download contact's data driver. [#3884]
@@ -31,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change block generation to include transactions quickly
 - Update rust toolchain to nightly 2024-07-30 (1.82.0) [#3470]
 - Change `recovery state --init` field to be required
+
+### Fixed
+
+- Fix traversal memory revertion (crumbles-0.3.1)
 
 ## [1.3.0] - 2025-04-17
 
@@ -99,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Remove legacy event system 
+- Remove legacy event system
 - Remove archive mpsc channel & archive event forwarding [#3359]
 
 ## [1.0.2] - 2025-01-27
@@ -337,6 +342,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2021-07-15
 
 ### Added
+
 - Prover service implementation [#410]
 
 ### Changed
@@ -417,7 +423,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3422]: https://github.com/dusk-network/rusk/issues/3422
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3341]: https://github.com/dusk-network/rusk/issues/3341
-[#3359]: https://github.com/dusk-network/rusk/issues/3359
 [#3206]: https://github.com/dusk-network/rusk/issues/3206
 [#2773]: https://github.com/dusk-network/rusk/issues/2773
 [#2597]: https://github.com/dusk-network/rusk/issues/2597
@@ -431,18 +436,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1371]: https://github.com/dusk-network/rusk/issues/1371
 [#1257]: https://github.com/dusk-network/rusk/pull/1257
 [#1225]: https://github.com/dusk-network/rusk/issues/1225
-[#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#1144]: https://github.com/dusk-network/rusk/issues/1144
 [#1080]: https://github.com/dusk-network/rusk/issues/1080
 [#970]: https://github.com/dusk-network/rusk/issues/970
 [#931]: https://github.com/dusk-network/rusk/issues/931
-[#401]: https://github.com/dusk-network/rusk/issues/401
 [#369]: https://github.com/dusk-network/rusk/issues/369
 [#327]: https://github.com/dusk-network/rusk/issues/327
 [#307]: https://github.com/dusk-network/rusk/issues/307
 [#292]: https://github.com/dusk-network/rusk/issues/292
 [#290]: https://github.com/dusk-network/rusk/issues/290
-
 
 [Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.3.0...HEAD
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.2.0...dusk-rusk-1.3.0
