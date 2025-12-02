@@ -516,8 +516,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
     /// Signs the given message and returns the signature
     pub fn sign(&self, index: u8, message: &[u8]) -> Signature {
-        let sk = self.derive_bls_sk(index);
-        sk.sign(message)
+        let mut sk = self.derive_bls_sk(index);
+        let signature = sk.sign(message);
+        sk.zeroize();
+        signature
     }
 
     /// Returns the public account key for a given index.
