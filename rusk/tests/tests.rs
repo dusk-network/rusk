@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![feature(lazy_cell)]
 mod common;
 mod services;
 

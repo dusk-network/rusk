@@ -33,7 +33,6 @@ use crate::common::wallet::{
     test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
 };
 
-const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 const POINT_LIMIT: u64 = 0x10000000;
 
 const NON_BLS_OWNER: [u8; 32] = [1; 32];

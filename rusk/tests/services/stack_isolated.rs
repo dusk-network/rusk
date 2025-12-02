@@ -25,9 +25,7 @@ use rusk_recovery_tools::state::restore_state;
 use tempfile::TempDir;
 use tokio::sync::broadcast;
 use tracing::info;
-use wallet_core::transaction::{
-    moonlight, moonlight_stake_reward, moonlight_unstake,
-};
+use wallet_core::transaction::{moonlight, moonlight_stake_reward};
 
 use crate::common::logger;
 use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
@@ -84,16 +82,13 @@ struct Fixture {
     pub tmpdir: TempDir,
 }
 
-const NEW_FN: &str = "chain_id";
-const OLD_FN: &str = "value";
-
 impl Fixture {
     async fn build(/*owner: impl AsRef<[u8]>*/) -> Self {
         let tmpdir: TempDir = tempfile::tempdir().expect("tempdir() to work");
         let state_dir = tmpdir.path().join("state");
         let data = include_bytes!("../assets/2710377_state.tar.gz");
 
-        let unarchive = rusk_recovery_tools::state::tar::unarchive(
+        rusk_recovery_tools::state::tar::unarchive(
             &data[..],
             state_dir.as_path(),
         )
@@ -130,7 +125,7 @@ pub async fn test_isolated() -> Result<(), Error> {
     logger();
 
     // start rusk instance from state "../assets/2710377_state.tar.gz"
-    let mut f = Fixture::build().await;
+    let f = Fixture::build().await;
     println!("root={}", hex::encode(f.rusk.state_root()));
 
     // move rusk to block 2,710,376
@@ -165,7 +160,6 @@ pub async fn test_isolated() -> Result<(), Error> {
         .expect("creating a session should be possible");
 
     // deploy alice
-    let owner = f.wallet.account_secret_key(0);
     let alice_bytecode = include_bytes!(
         "../../../target/wasm32-unknown-unknown/release/alice.wasm"
     );
@@ -321,14 +315,12 @@ pub async fn test_isolated() -> Result<(), Error> {
         NodeTransaction::from(stake_activate_tx),
         NodeTransaction::from(withdraw_tx),
     ];
-    // let txs = vec![Transaction::from(stake_tx)];
 
-    let (spent, discarded, _) = f
+    let (spent, _discarded, _) = f
         .rusk
         .create_state_transition(&data, txs.into_iter())
         .expect("State transition to be executed");
     assert!(spent.len() == 2, "Both txs should be spent");
-    // println!("r={:?}", r);
 
     Ok(())
 }

@@ -9,17 +9,12 @@ use dusk_core::signatures::bls;
 use node_data::ledger::Transaction;
 use rusk::node::{DriverStore, RuskVmConfig, FEATURE_ABI_PUBLIC_SENDER};
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use dusk_core::abi::ContractId;
-use dusk_vm::{gen_contract_id, ContractData, Session, VM};
 use rusk::{Error, Result, Rusk, DUSK_CONSENSUS_KEY};
-use rusk_recovery_tools::state;
 use rusk_recovery_tools::state::restore_state;
-use tempfile::{tempdir, TempDir};
+use tempfile::TempDir;
 use tokio::sync::broadcast;
 use tracing::info;
 
@@ -29,18 +24,9 @@ use crate::common::wallet::{
     test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
 };
 
-const POINT_LIMIT: u64 = 0x10000000;
-
-const NON_BLS_OWNER: [u8; 32] = [1; 32];
-
-const BOB_INIT_VALUE: u8 = 5;
-
 const CHAIN_ID: u8 = 0x01;
 
-async fn initial_state<P: AsRef<Path>>(
-    dir: P,
-    owner: impl AsRef<[u8]>,
-) -> Result<Rusk> {
+async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let dir = dir.as_ref();
 
     // let snapshot =
@@ -106,16 +92,13 @@ struct Fixture {
     pub tmpdir: TempDir,
 }
 
-const NEW_FN: &str = "chain_id";
-const OLD_FN: &str = "value";
-
 impl Fixture {
-    async fn build(owner: impl AsRef<[u8]>) -> Self {
+    async fn build() -> Self {
         let tmpdir: TempDir = tempfile::tempdir().expect("tempdir() to work");
         let state_dir = tmpdir.path().join("state");
         let data = include_bytes!("../assets/2710377_state.tar.gz");
 
-        let unarchive = rusk_recovery_tools::state::tar::unarchive(
+        rusk_recovery_tools::state::tar::unarchive(
             &data[..],
             state_dir.as_path(),
         )
@@ -124,7 +107,7 @@ impl Fixture {
         // let state_dir = Path::new("/Users/seppia/Downloads/2710477 2/state
         // 2");
 
-        let rusk = initial_state(&state_dir, owner.as_ref())
+        let rusk = initial_state(&state_dir)
             .await
             .expect("Initializing should succeed");
 
@@ -153,7 +136,7 @@ impl Fixture {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_mainnet_2710377() -> Result<(), Error> {
     logger();
-    let mut f = Fixture::build(NON_BLS_OWNER).await;
+    let f = Fixture::build().await;
     println!("root={}", hex::encode(f.rusk.state_root()));
     // let base = hex::decode(
     //     "c5870f263709d39e5d8098fb53cbe17856f7d7a0ff47ccd47f5cea3687566bdb",
@@ -196,7 +179,7 @@ pub async fn test_mainnet_2710377() -> Result<(), Error> {
         .map_err(|e| anyhow::anyhow!("Invalid transaction: {e:?}"))
         .unwrap();
     let txs = vec![Transaction::from(activate_tx), Transaction::from(stake_tx)];
-    let (spent, discarded, _) = f
+    let (spent, _discarded, _) = f
         .rusk
         .create_state_transition(&data, txs.into_iter())
         .expect("State transition to be executed");
