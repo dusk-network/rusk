@@ -2,7 +2,6 @@
 
 <script>
   import { onMount } from "svelte";
-  import { ownPairs } from "lamb";
 
   import { Badge, CopyButton } from "$lib/dusk/components";
   import { luxToDusk } from "$lib/dusk/currency";
@@ -12,7 +11,16 @@
 
   import "./ProvisionersList.css";
 
-  /** @type {HostProvisioner} */
+  /**
+   * @typedef {HostProvisioner & {
+   *   rank: number;
+   *   ownerType: string;
+   *   ownerAddress: string;
+   *   hasSeparateOwner: boolean;
+   * }} EnrichedProvisioner
+   */
+
+  /** @type {EnrichedProvisioner} */
   export let data;
 
   /** @type {Boolean} */
@@ -22,7 +30,6 @@
   let screenWidth = window.innerWidth;
 
   const formatter = createValueFormatter("en");
-  const [ownerType, ownerValue] = ownPairs(data.owner)[0];
 
   onMount(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -47,6 +54,14 @@
 </script>
 
 <DetailList className="provisioners-list">
+  <!-- RANKING -->
+  <ListItem tooltipText={displayTooltips ? "Rank by stake size" : ""}>
+    <svelte:fragment slot="term">Rank</svelte:fragment>
+    <svelte:fragment slot="definition">
+      #{data.rank}
+    </svelte:fragment>
+  </ListItem>
+
   <!-- STAKING ADDRESS -->
   <ListItem tooltipText={displayTooltips ? "The staking address used" : ""}>
     <svelte:fragment slot="term">Staking address</svelte:fragment>
@@ -60,16 +75,21 @@
     </svelte:fragment>
   </ListItem>
 
-  <!-- OWNER -->
-  <ListItem tooltipText={displayTooltips ? "The provisioner's owner" : ""}>
-    <svelte:fragment slot="term">Owner</svelte:fragment>
+  <!-- Owner Key -->
+  <ListItem
+    tooltipText={displayTooltips
+      ? "Whether this provisioner uses a separate owner key"
+      : ""}
+  >
+    <svelte:fragment slot="term">Owner Key</svelte:fragment>
     <svelte:fragment slot="definition">
       <Badge
         data-tooltip-id="provisioners-tooltip"
-        data-tooltip-text={ownerType === "Account"
-          ? middleEllipsis(ownerValue, adaptiveCharCount)
-          : ownerValue}
-        text={ownerType}
+        data-tooltip-text={data.hasSeparateOwner
+          ? `Owner: ${middleEllipsis(data.ownerAddress, adaptiveCharCount)}
+Consensus: ${middleEllipsis(data.key, adaptiveCharCount)}`
+          : `Consensus: ${middleEllipsis(data.key, adaptiveCharCount)}`}
+        text={data.hasSeparateOwner ? "Yes" : "No"}
       />
     </svelte:fragment>
   </ListItem>

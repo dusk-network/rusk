@@ -1657,6 +1657,7 @@ exports[`Provisioners Card > should render the \`ProvisionersCard\` component 1`
      
     <button
       class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--default"
+      disabled=""
       type="button"
     >
       <span

@@ -18,11 +18,13 @@ and this project adheres to
 
 ### Changed
 
-- Replace "TX last 100 blocks" with total historical transaction count from `/on/stats/tx_count`. [#3626]
+- Replace "TX last 100 blocks" with total historical transaction count from `/on/stats/tx_count` [#3626]
 - Use supply.dusk.network for circulating supply [#3757]
 - The `from` and `to` fields are now always shown in moonlight transactions regardless of the transaction's type [#3804]
-- Explorer now reads circulating supply from `https://supply.dusk.network/` directly. CORS and cache headers applied via Cloudflare. [#3847]
-- No longer rely on Vite dev proxy for `/supply` during development. [#3847]
+- Explorer now reads circulating supply from `https://supply.dusk.network/` directly. CORS and cache headers applied via Cloudflare [#3847]
+- No longer rely on Vite dev proxy for `/supply` during development [#3847]
+- Hide provisioners with no active or locked stake from the provisioners list [#3930]
+- Change ranking column to take the full provisioner list into account [#3931]
 
 ### Removed
 
@@ -276,6 +278,8 @@ and this project adheres to
 [#3847]: https://github.com/dusk-network/rusk/issues/3847
 [#3924]: https://github.com/dusk-network/rusk/issues/3924
 [#3925]: https://github.com/dusk-network/rusk/issues/3925
+[#3930]: https://github.com/dusk-network/rusk/issues/3930
+[#3931]: https://github.com/dusk-network/rusk/issues/3931
 
 <!-- VERSIONS -->
 

@@ -18,7 +18,16 @@
   /** @type {string | undefined} */
   export let className = undefined;
 
-  /** @type {HostProvisioner[]} */
+  /**
+   * @typedef {HostProvisioner & {
+   *   rank: number;
+   *   ownerType: string;
+   *   ownerAddress: string;
+   *   hasSeparateOwner: boolean;
+   * }} EnrichedProvisioner
+   */
+
+  /** @type {EnrichedProvisioner[]} */
   export let data;
 
   const HASH_CHARS_LENGTH = 10;
@@ -42,15 +51,6 @@
     direction: "desc", // highest stake first
   };
 
-  /** @param {HostProvisioner} p @returns {string} */
-  const getOwnerAddress = (p) => Object.values(p.owner ?? {})[0] ?? "";
-
-  /** @param {HostProvisioner} p @returns {boolean | string} */
-  const hasSeparateOwner = (p) => {
-    const owner = getOwnerAddress(p);
-    return owner && owner !== p.key;
-  };
-
   /** @param {SortDirection} direction @returns {SortDirection} */
   const flipDirection = (direction) => (direction === "asc" ? "desc" : "asc");
 
@@ -65,17 +65,16 @@
     };
   }
 
-  /** @param {HostProvisioner} p @returns {number} */
+  /** @param {EnrichedProvisioner} p @returns {number} */
   const slashes = (p) => (p.faults ?? 0) + (p.hard_faults ?? 0);
 
   /**
    * Map from column -> comparator
-   * @type {Record<string, (a: HostProvisioner, b: HostProvisioner) => number>}
+   * @type {Record<string, (a: EnrichedProvisioner, b: EnrichedProvisioner) => number>}
    */
   const columnComparators = {
     [SortColumn.STAKING_ADDRESS]: (a, b) => a.key.localeCompare(b.key),
-    [SortColumn.OWNER]: (a, b) =>
-      Number(hasSeparateOwner(a)) - Number(hasSeparateOwner(b)),
+    [SortColumn.OWNER]: (a, b) => a.ownerAddress.localeCompare(b.ownerAddress),
     [SortColumn.STAKE]: (a, b) => Number(a.amount) - Number(b.amount),
     [SortColumn.REWARD]: (a, b) => Number(a.reward) - Number(b.reward),
     [SortColumn.SLASHES]: (a, b) => slashes(a) - slashes(b),
@@ -84,8 +83,8 @@
   const defaultComparator = () => 0;
 
   /**
-   * @param {HostProvisioner} a
-   * @param {HostProvisioner} b
+   * @param {EnrichedProvisioner} a
+   * @param {EnrichedProvisioner} b
    * @param {string} column
    * @param {SortDirection} direction
    * @returns {number}
@@ -101,16 +100,9 @@
 
   $: sortArrow = sort.direction === "asc" ? "↑" : "↓";
 
-  $: rankByKey = new Map(
-    data
-      .slice()
-      .sort((a, b) => compare(a, b, SortColumn.STAKE, "desc"))
-      .map((p, index) => [p.key, index + 1])
+  $: sortedData = data.toSorted((a, b) =>
+    compare(a, b, sort.column, sort.direction)
   );
-
-  $: sortedData = data
-    .slice()
-    .sort((a, b) => compare(a, b, sort.column, sort.direction));
 </script>
 
 <Table className={classes}>
@@ -210,13 +202,10 @@
 
   <TableBody>
     {#each sortedData as provisioner (provisioner.key)}
-      {@const ownerAddress = getOwnerAddress(provisioner)}
       {@const consensusAddress = provisioner.key}
-      {@const separate = ownerAddress && ownerAddress !== consensusAddress}
-      {@const rank = rankByKey.get(provisioner.key)}
 
       <TableRow>
-        <TableCell>{rank}</TableCell>
+        <TableCell>{provisioner.rank}</TableCell>
 
         <TableCell>
           <div class="provisioners-table__staking-address-wrapper">
@@ -232,19 +221,17 @@
         <TableCell>
           <Badge
             data-tooltip-id="provisioners-tooltip"
-            data-tooltip-text={separate
+            data-tooltip-text={provisioner.hasSeparateOwner
               ? `Owner: ${middleEllipsis(
-                  ownerAddress,
+                  provisioner.ownerAddress,
                   HASH_CHARS_LENGTH
-                )}\nConsensus: ${middleEllipsis(
-                  consensusAddress,
-                  HASH_CHARS_LENGTH
-                )}`
+                )}
+Consensus: ${middleEllipsis(consensusAddress, HASH_CHARS_LENGTH)}`
               : `Consensus: ${middleEllipsis(
                   consensusAddress,
                   HASH_CHARS_LENGTH
                 )}`}
-            text={separate ? "Yes" : "No"}
+            text={provisioner.hasSeparateOwner ? "Yes" : "No"}
           />
         </TableCell>
 

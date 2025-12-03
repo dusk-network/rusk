@@ -47,6 +47,1332 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            1
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Staking address
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="provisioners-list__staking-address"
+            >
+              n3qToJrMkYCnUkJkFG2a7fEVn...AmwiScS256TCMZZjmEq6aNuj6
+            </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner Key
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="Consensus: n3qToJrMkYCnUkJkFG2a7fEVn...AmwiScS256TCMZZjmEq6aNuj6"
+            >
+              No
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            1,000,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Inactive Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Maturity At
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            0
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            12,178.759788262
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Soft Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Hard Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list provisioners-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            2
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Staking address
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="provisioners-list__staking-address"
+            >
+              s9mQHPDuKiUwomr7k6S3mmeqd...HMfX2f3uis4hi33XxiM4ksRbH
+            </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner Key
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="Owner: 0200000000000000000000000...0000000000000000000000000
+Consensus: s9mQHPDuKiUwomr7k6S3mmeqd...HMfX2f3uis4hi33XxiM4ksRbH"
+            >
+              Yes
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            510,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Inactive Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Maturity At
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            6,480
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            780.152437445
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Soft Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Hard Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list provisioners-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            3
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Staking address
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="provisioners-list__staking-address"
+            >
+              sX4JooVNAFov3Xx9cfZHtRemi...dTyEvw5Cb3UqGEqfCFZMqQhtz
+            </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner Key
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="Owner: 0200000000000000000000000...0000000000000000000000000
+Consensus: sX4JooVNAFov3Xx9cfZHtRemi...dTyEvw5Cb3UqGEqfCFZMqQhtz"
+            >
+              Yes
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            505,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Inactive Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Maturity At
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            38,880
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            2,063.426446466
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Soft Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Hard Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list provisioners-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            4
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Staking address
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="provisioners-list__staking-address"
+            >
+              scRkV9xaMCNTsjEx2mwDABavD...MJoGx6H9faXfyA2XwXrJMpbfo
+            </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner Key
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="Consensus: scRkV9xaMCNTsjEx2mwDABavD...MJoGx6H9faXfyA2XwXrJMpbfo"
+            >
+              No
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            504,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Inactive Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Maturity At
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            15,120
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            5,190.546947071
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Soft Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Hard Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list provisioners-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            5
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -107,7 +1433,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -118,7 +1444,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Owner
+              Owner Key
             </div>
           </dt>
            
@@ -128,9 +1454,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <span
               class="dusk-badge dusk-badge--variant-neutral"
               data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf"
+              data-tooltip-text="Consensus: m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf"
             >
-              Account
+              No
             </span>
           </dd>
            
@@ -338,6 +1664,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            6
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -398,7 +1756,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -409,7 +1767,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Owner
+              Owner Key
             </div>
           </dt>
            
@@ -419,9 +1777,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <span
               class="dusk-badge dusk-badge--variant-neutral"
               data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="m9dVuRgr3CQX5P5Fxh2t68QRh...mZ9qF734nJJhb2f94r33pFQyz"
+              data-tooltip-text="Consensus: m9dVuRgr3CQX5P5Fxh2t68QRh...mZ9qF734nJJhb2f94r33pFQyz"
             >
-              Account
+              No
             </span>
           </dd>
            
@@ -629,7 +1987,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The staking address used"
+                data-tooltip-text="Rank by stake size"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -640,168 +1998,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Staking address
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="provisioners-list__staking-address"
-            >
-              mHGvQ9XdjzuGyixBGrMeeC7Ed...x7H5V95Q3hPxdxHiTfxTvgn7f
-            </span>
-             
-            <div
-              class="dusk-copy-button"
-            >
-              <button
-                aria-label="Copy Address"
-                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-text="Copy to clipboard"
-                type="button"
-              >
-                <svg
-                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                  role="graphics-symbol"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                  />
-                </svg>
-                
-                 
-                
-              </button>
-            </div>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Owner
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-neutral"
-              data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
-            >
-              Contract
-            </span>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Active Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            4,800
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Inactive Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Maturity At
+              Rank
             </div>
           </dt>
            
@@ -809,398 +2006,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             #
-            4,320
+            7
           </dd>
            
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            89.505343279
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Soft slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Soft Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Hard slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Hard Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-        </dl>
-        
-        <dl
-          class="detail-list provisioners-list"
-        >
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staking address used"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Staking address
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="provisioners-list__staking-address"
-            >
-              mLx5HUo5PhsobwgMJhzL9j8TY...eXVk4jmfr3CEHqvBrRgEzoka8
-            </span>
-             
-            <div
-              class="dusk-copy-button"
-            >
-              <button
-                aria-label="Copy Address"
-                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-text="Copy to clipboard"
-                type="button"
-              >
-                <svg
-                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                  role="graphics-symbol"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                  />
-                </svg>
-                
-                 
-                
-              </button>
-            </div>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Owner
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-neutral"
-              data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="mLx5HUo5PhsobwgMJhzL9j8TY...eXVk4jmfr3CEHqvBrRgEzoka8"
-            >
-              Account
-            </span>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Active Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            1,234
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Inactive Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Maturity At
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            #
-            4,320
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            29.633646022
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Soft slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Soft Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Hard slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Hard Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-        </dl>
-        
-        <dl
-          class="detail-list provisioners-list"
-        >
           <dt
             class="details-list__term details-list__term--table"
           >
@@ -1271,7 +2079,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -1282,7 +2090,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Owner
+              Owner Key
             </div>
           </dt>
            
@@ -1292,9 +2100,10 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <span
               class="dusk-badge dusk-badge--variant-neutral"
               data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+              data-tooltip-text="Owner: 0200000000000000000000000...0000000000000000000000000
+Consensus: mTgXDqkyVacn7zCgoJfk7rKMV...nRE4uXaAhpCPPSjgAseybAsfU"
             >
-              Contract
+              Yes
             </span>
           </dd>
            
@@ -1502,7 +2311,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The staking address used"
+                data-tooltip-text="Rank by stake size"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -1513,168 +2322,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Staking address
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="provisioners-list__staking-address"
-            >
-              mUJHMDEBiTUVJU5U76Krb5wwM...LyLvCCdgUnQ74FDFHNxRNhoAA
-            </span>
-             
-            <div
-              class="dusk-copy-button"
-            >
-              <button
-                aria-label="Copy Address"
-                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-text="Copy to clipboard"
-                type="button"
-              >
-                <svg
-                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                  role="graphics-symbol"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                  />
-                </svg>
-                
-                 
-                
-              </button>
-            </div>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Owner
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-neutral"
-              data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
-            >
-              Contract
-            </span>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Active Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            4,800
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Inactive Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Maturity At
+              Rank
             </div>
           </dt>
            
@@ -1682,107 +2330,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             #
-            23,760
+            8
           </dd>
            
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            73.800637305
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Soft slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Soft Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Hard slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Hard Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-        </dl>
-        
-        <dl
-          class="detail-list provisioners-list"
-        >
           <dt
             class="details-list__term details-list__term--table"
           >
@@ -1853,7 +2403,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -1864,7 +2414,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Owner
+              Owner Key
             </div>
           </dt>
            
@@ -1874,9 +2424,10 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <span
               class="dusk-badge dusk-badge--variant-neutral"
               data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+              data-tooltip-text="Owner: 0200000000000000000000000...0000000000000000000000000
+Consensus: mUUpjnXow2LHwm8a65cJsckTe...xrsre7jNbLdDocqSfzQcywzaW"
             >
-              Contract
+              Yes
             </span>
           </dd>
            
@@ -2084,7 +2635,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The staking address used"
+                data-tooltip-text="Rank by stake size"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -2095,168 +2646,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Staking address
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="provisioners-list__staking-address"
-            >
-              mWvq9EWD9b8gQw5uD4GnYaV8W...fsBMoDjbYzTTUxooU7BY2oEDe
-            </span>
-             
-            <div
-              class="dusk-copy-button"
-            >
-              <button
-                aria-label="Copy Address"
-                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-text="Copy to clipboard"
-                type="button"
-              >
-                <svg
-                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                  role="graphics-symbol"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                  />
-                </svg>
-                
-                 
-                
-              </button>
-            </div>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Owner
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-neutral"
-              data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="mWvq9EWD9b8gQw5uD4GnYaV8W...fsBMoDjbYzTTUxooU7BY2oEDe"
-            >
-              Account
-            </span>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Active Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            1,000
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Inactive Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Maturity At
+              Rank
             </div>
           </dt>
            
@@ -2264,107 +2654,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             #
-            8,640
+            9
           </dd>
            
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            1.613840782
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Soft slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Soft Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Hard slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Hard Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-        </dl>
-        
-        <dl
-          class="detail-list provisioners-list"
-        >
           <dt
             class="details-list__term details-list__term--table"
           >
@@ -2435,7 +2727,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -2446,7 +2738,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Owner
+              Owner Key
             </div>
           </dt>
            
@@ -2456,9 +2748,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <span
               class="dusk-badge dusk-badge--variant-neutral"
               data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="mXKJ97xTtrSPzxWHBKPurUpeh...eUPuXjqaC9dp6H7JgkCK2o7x4"
+              data-tooltip-text="Consensus: mXKJ97xTtrSPzxWHBKPurUpeh...eUPuXjqaC9dp6H7JgkCK2o7x4"
             >
-              Account
+              No
             </span>
           </dd>
            
@@ -2666,6 +2958,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            10
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -2726,7 +3050,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -2737,7 +3061,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Owner
+              Owner Key
             </div>
           </dt>
            
@@ -2747,9 +3071,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <span
               class="dusk-badge dusk-badge--variant-neutral"
               data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="mdXsA3Ee1YDt1aTcvUg7AKpzT...epuR9FPWCcJQfDwK8VZPimZ2J"
+              data-tooltip-text="Consensus: mdXsA3Ee1YDt1aTcvUg7AKpzT...epuR9FPWCcJQfDwK8VZPimZ2J"
             >
-              Account
+              No
             </span>
           </dd>
            
@@ -2957,6 +3281,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            11
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -3017,7 +3373,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -3028,7 +3384,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Owner
+              Owner Key
             </div>
           </dt>
            
@@ -3038,9 +3394,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <span
               class="dusk-badge dusk-badge--variant-neutral"
               data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="mdca2ea2KpRZaW6s6NkYAY29w...BPg8MmRfxyBCUVRji7SxM2zBD"
+              data-tooltip-text="Consensus: mdca2ea2KpRZaW6s6NkYAY29w...BPg8MmRfxyBCUVRji7SxM2zBD"
             >
-              Account
+              No
             </span>
           </dd>
            
@@ -3248,6 +3604,38 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            12
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
                 data-tooltip-text="The staking address used"
                 data-tooltip-type="info"
                 role="graphics-symbol"
@@ -3308,7 +3696,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -3319,7 +3707,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Owner
+              Owner Key
             </div>
           </dt>
            
@@ -3329,9 +3717,10 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <span
               class="dusk-badge dusk-badge--variant-neutral"
               data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="0200000000000000000000000000000000000000000000000000000000000000"
+              data-tooltip-text="Owner: 0200000000000000000000000...0000000000000000000000000
+Consensus: mgmcqkk1VFfsa1ko7ydBjhVuM...EWDB1wsvV5avoC2xddxLvEDVP"
             >
-              Contract
+              Yes
             </span>
           </dd>
            
@@ -3539,7 +3928,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The staking address used"
+                data-tooltip-text="Rank by stake size"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -3550,168 +3939,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Staking address
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="provisioners-list__staking-address"
-            >
-              mvft6AXjR1mDtg1Qo3GzGBKZA...CeDJ9pKfJLdjayAfrxEyudvx2
-            </span>
-             
-            <div
-              class="dusk-copy-button"
-            >
-              <button
-                aria-label="Copy Address"
-                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-text="Copy to clipboard"
-                type="button"
-              >
-                <svg
-                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                  role="graphics-symbol"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                  />
-                </svg>
-                
-                 
-                
-              </button>
-            </div>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Owner
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-neutral"
-              data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="mvft6AXjR1mDtg1Qo3GzGBKZA...CeDJ9pKfJLdjayAfrxEyudvx2"
-            >
-              Account
-            </span>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Active Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Inactive Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Maturity At
+              Rank
             </div>
           </dt>
            
@@ -3719,398 +3947,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             #
-            0
+            13
           </dd>
            
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            104,743.439448879
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Soft slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Soft Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Hard slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Hard Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-        </dl>
-        
-        <dl
-          class="detail-list provisioners-list"
-        >
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staking address used"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Staking address
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="provisioners-list__staking-address"
-            >
-              mvsVWvCaiHtugFDx1VmDCX5Ze...eWVgrE1CfbGCaYvcdeSzHCUUb
-            </span>
-             
-            <div
-              class="dusk-copy-button"
-            >
-              <button
-                aria-label="Copy Address"
-                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-text="Copy to clipboard"
-                type="button"
-              >
-                <svg
-                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                  role="graphics-symbol"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                  />
-                </svg>
-                
-                 
-                
-              </button>
-            </div>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Owner
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            <span
-              class="dusk-badge dusk-badge--variant-neutral"
-              data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="mvsVWvCaiHtugFDx1VmDCX5Ze...eWVgrE1CfbGCaYvcdeSzHCUUb"
-            >
-              Account
-            </span>
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Active Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            4,550
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Inactive Stake
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Maturity At
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            #
-            4,320
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="The accumulated reward"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              accumulated reward
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            75.58825915
-             DUSK
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Soft slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Soft Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-           
-          <dt
-            class="details-list__term details-list__term--table"
-          >
-            <div
-              class="details-list__term-layout"
-            >
-              <svg
-                class="dusk-icon dusk-icon--size--default detail-list__help"
-                data-tooltip-id="main-tooltip"
-                data-tooltip-place="top"
-                data-tooltip-text="Hard slashes"
-                data-tooltip-type="info"
-                role="graphics-symbol"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
-                />
-              </svg>
-              
-               
-              Hard Slashes
-            </div>
-          </dt>
-           
-          <dd
-            class="details-list__definition details-list__definition--table"
-          >
-            0
-          </dd>
-        </dl>
-        
-        <dl
-          class="detail-list provisioners-list"
-        >
           <dt
             class="details-list__term details-list__term--table"
           >
@@ -4181,7 +4020,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
                 class="dusk-icon dusk-icon--size--default detail-list__help"
                 data-tooltip-id="main-tooltip"
                 data-tooltip-place="top"
-                data-tooltip-text="The provisioner's owner"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
                 data-tooltip-type="info"
                 role="graphics-symbol"
                 viewBox="0 0 24 24"
@@ -4192,7 +4031,7 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
               </svg>
               
                
-              Owner
+              Owner Key
             </div>
           </dt>
            
@@ -4202,9 +4041,9 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             <span
               class="dusk-badge dusk-badge--variant-neutral"
               data-tooltip-id="provisioners-tooltip"
-              data-tooltip-text="n2DPucZgNznPCfhRfAS8aHQUk...bDNKwS6GhaRRR9f95PUxRwtD1"
+              data-tooltip-text="Consensus: n2DPucZgNznPCfhRfAS8aHQUk...bDNKwS6GhaRRR9f95PUxRwtD1"
             >
-              Account
+              No
             </span>
           </dd>
            
@@ -4333,6 +4172,654 @@ exports[`Provisioners page > should render the Provisioners page with the mobile
             class="details-list__definition details-list__definition--table"
           >
             7,127.318018509
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Soft Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Hard Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list provisioners-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            14
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Staking address
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="provisioners-list__staking-address"
+            >
+              nV71a9Hec6jeXVFkUN6JvgiLD...6cHcvb326rbXNgYA4pNWv4roh
+            </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner Key
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="Owner: 0200000000000000000000000...0000000000000000000000000
+Consensus: nV71a9Hec6jeXVFkUN6JvgiLD...6cHcvb326rbXNgYA4pNWv4roh"
+            >
+              Yes
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Inactive Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Maturity At
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            0
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            6,731.43057271
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Soft slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Soft Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Hard slashes"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Hard Slashes
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+          </dd>
+        </dl>
+        
+        <dl
+          class="detail-list provisioners-list"
+        >
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Rank by stake size"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Rank
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            15
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staking address used"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Staking address
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="provisioners-list__staking-address"
+            >
+              nXqyaSYaTas47KNqNwVtpNyfC...z6tpqYcyaGWjURkQpLqoCPDeD
+            </span>
+             
+            <div
+              class="dusk-copy-button"
+            >
+              <button
+                aria-label="Copy Address"
+                class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-text="Copy to clipboard"
+                type="button"
+              >
+                <svg
+                  class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                  role="graphics-symbol"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  />
+                </svg>
+                
+                 
+                
+              </button>
+            </div>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="Whether this provisioner uses a separate owner key"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Owner Key
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            <span
+              class="dusk-badge dusk-badge--variant-neutral"
+              data-tooltip-id="provisioners-tooltip"
+              data-tooltip-text="Owner: 0200000000000000000000000...0000000000000000000000000
+Consensus: nXqyaSYaTas47KNqNwVtpNyfC...z6tpqYcyaGWjURkQpLqoCPDeD"
+            >
+              Yes
+            </span>
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are being utilized in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Active Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            500,000
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The staked tokens that are not currently being used for block validation or are not participating in the consensus process"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Inactive Stake
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            0
+             DUSK
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The block at which the stake is expected to start participating in the consensus"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              Maturity At
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            #
+            0
+          </dd>
+           
+          <dt
+            class="details-list__term details-list__term--table"
+          >
+            <div
+              class="details-list__term-layout"
+            >
+              <svg
+                class="dusk-icon dusk-icon--size--default detail-list__help"
+                data-tooltip-id="main-tooltip"
+                data-tooltip-place="top"
+                data-tooltip-text="The accumulated reward"
+                data-tooltip-type="info"
+                role="graphics-symbol"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"
+                />
+              </svg>
+              
+               
+              accumulated reward
+            </div>
+          </dt>
+           
+          <dd
+            class="details-list__definition details-list__definition--table"
+          >
+            7,428.022676833
              DUSK
           </dd>
            
@@ -4638,6 +5125,560 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
                 <div
                   class="provisioners-table__staking-address-wrapper"
                 >
+                  n3qToJrMkY...jmEq6aNuj6
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="Consensus: n3qToJrMkY...jmEq6aNuj6"
+                >
+                  No
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Active:
+                </b>
+                 
+                1,000,000
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Inactive:
+                </b>
+                 
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
+                0
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="12,178.759788262 DUSK"
+                  data-tooltip-type="info"
+                >
+                  12,178
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    76
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <b
+                  class="provisioners-table__slash-data-label"
+                >
+                  Soft:
+                </b>
+                 
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-data-label"
+                >
+                  Hard:
+                </b>
+                 
+                0
+              </td>
+              
+               
+            </tr>
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell align-left"
+              >
+                2
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  s9mQHPDuKi...XxiM4ksRbH
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="Owner: 0200000000...0000000000
+Consensus: s9mQHPDuKi...XxiM4ksRbH"
+                >
+                  Yes
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Active:
+                </b>
+                 
+                510,000
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Inactive:
+                </b>
+                 
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
+                6,480
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="780.152437445 DUSK"
+                  data-tooltip-type="info"
+                >
+                  780
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    15
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <b
+                  class="provisioners-table__slash-data-label"
+                >
+                  Soft:
+                </b>
+                 
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-data-label"
+                >
+                  Hard:
+                </b>
+                 
+                0
+              </td>
+              
+               
+            </tr>
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell align-left"
+              >
+                3
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  sX4JooVNAF...fCFZMqQhtz
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="Owner: 0200000000...0000000000
+Consensus: sX4JooVNAF...fCFZMqQhtz"
+                >
+                  Yes
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Active:
+                </b>
+                 
+                505,000
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Inactive:
+                </b>
+                 
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
+                38,880
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="2,063.426446466 DUSK"
+                  data-tooltip-type="info"
+                >
+                  2,063
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    43
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <b
+                  class="provisioners-table__slash-data-label"
+                >
+                  Soft:
+                </b>
+                 
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-data-label"
+                >
+                  Hard:
+                </b>
+                 
+                0
+              </td>
+              
+               
+            </tr>
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell align-left"
+              >
+                4
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
+                  scRkV9xaMC...XwXrJMpbfo
+                   
+                  <div
+                    class="dusk-copy-button"
+                  >
+                    <button
+                      aria-label="Copy Address"
+                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
+                      data-tooltip-id="main-tooltip"
+                      data-tooltip-text="Copy to clipboard"
+                      type="button"
+                    >
+                      <svg
+                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
+                        role="graphics-symbol"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                        />
+                      </svg>
+                      
+                       
+                      
+                    </button>
+                  </div>
+                </div>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <span
+                  class="dusk-badge dusk-badge--variant-neutral"
+                  data-tooltip-id="provisioners-tooltip"
+                  data-tooltip-text="Consensus: scRkV9xaMC...XwXrJMpbfo"
+                >
+                  No
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Active:
+                </b>
+                 
+                504,000
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Inactive:
+                </b>
+                 
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__stake-data-label"
+                >
+                  Maturity At:
+                </b>
+                
+          #
+                15,120
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <span
+                  data-tooltip-id="main-tooltip"
+                  data-tooltip-place="top"
+                  data-tooltip-text="5,190.546947071 DUSK"
+                  data-tooltip-type="info"
+                >
+                  5,190
+                  .
+                  <span
+                    class="decimal-shadow"
+                  >
+                    55
+                  </span>
+                </span>
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <b
+                  class="provisioners-table__slash-data-label"
+                >
+                  Soft:
+                </b>
+                 
+                0
+                 
+                <br />
+                 
+                <b
+                  class="provisioners-table__slash-data-label"
+                >
+                  Hard:
+                </b>
+                 
+                0
+              </td>
+              
+               
+            </tr>
+            
+            <tr
+              class="table__row"
+            >
+              <td
+                class="table__data-cell align-left"
+              >
+                5
+              </td>
+              
+               
+              <td
+                class="table__data-cell align-left"
+              >
+                <div
+                  class="provisioners-table__staking-address-wrapper"
+                >
                   m6dy2gz3jC...tW82FWtnpf
                    
                   <div
@@ -4766,7 +5807,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                2
+                6
               </td>
               
                
@@ -4904,7 +5945,7 @@ exports[`Provisioners page > should render the Provisioners page, start polling 
               <td
                 class="table__data-cell align-left"
               >
-                3
+                7
               </td>
               
                
@@ -5043,7 +6084,7 @@ Consensus: mTgXDqkyVa...gAseybAsfU"
               <td
                 class="table__data-cell align-left"
               >
-                4
+                8
               </td>
               
                
@@ -5182,7 +6223,7 @@ Consensus: mUUpjnXow2...SfzQcywzaW"
               <td
                 class="table__data-cell align-left"
               >
-                5
+                9
               </td>
               
                
@@ -5320,7 +6361,7 @@ Consensus: mUUpjnXow2...SfzQcywzaW"
               <td
                 class="table__data-cell align-left"
               >
-                6
+                10
               </td>
               
                
@@ -5458,7 +6499,7 @@ Consensus: mUUpjnXow2...SfzQcywzaW"
               <td
                 class="table__data-cell align-left"
               >
-                7
+                11
               </td>
               
                
@@ -5596,7 +6637,7 @@ Consensus: mUUpjnXow2...SfzQcywzaW"
               <td
                 class="table__data-cell align-left"
               >
-                8
+                12
               </td>
               
                
@@ -5735,7 +6776,7 @@ Consensus: mgmcqkk1VF...xddxLvEDVP"
               <td
                 class="table__data-cell align-left"
               >
-                9
+                13
               </td>
               
                
@@ -5873,560 +6914,6 @@ Consensus: mgmcqkk1VF...xddxLvEDVP"
               <td
                 class="table__data-cell align-left"
               >
-                10
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <div
-                  class="provisioners-table__staking-address-wrapper"
-                >
-                  mHGvQ9Xdjz...iTfxTvgn7f
-                   
-                  <div
-                    class="dusk-copy-button"
-                  >
-                    <button
-                      aria-label="Copy Address"
-                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                      data-tooltip-id="main-tooltip"
-                      data-tooltip-text="Copy to clipboard"
-                      type="button"
-                    >
-                      <svg
-                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                        role="graphics-symbol"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                        />
-                      </svg>
-                      
-                       
-                      
-                    </button>
-                  </div>
-                </div>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <span
-                  class="dusk-badge dusk-badge--variant-neutral"
-                  data-tooltip-id="provisioners-tooltip"
-                  data-tooltip-text="Owner: 0200000000...0000000000
-Consensus: mHGvQ9Xdjz...iTfxTvgn7f"
-                >
-                  Yes
-                </span>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Active:
-                </b>
-                 
-                4,800
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Inactive:
-                </b>
-                 
-                0
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Maturity At:
-                </b>
-                
-          #
-                4,320
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="89.505343279 DUSK"
-                  data-tooltip-type="info"
-                >
-                  89
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    51
-                  </span>
-                </span>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <b
-                  class="provisioners-table__slash-data-label"
-                >
-                  Soft:
-                </b>
-                 
-                0
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__slash-data-label"
-                >
-                  Hard:
-                </b>
-                 
-                0
-              </td>
-              
-               
-            </tr>
-            
-            <tr
-              class="table__row"
-            >
-              <td
-                class="table__data-cell align-left"
-              >
-                11
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <div
-                  class="provisioners-table__staking-address-wrapper"
-                >
-                  mUJHMDEBiT...FHNxRNhoAA
-                   
-                  <div
-                    class="dusk-copy-button"
-                  >
-                    <button
-                      aria-label="Copy Address"
-                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                      data-tooltip-id="main-tooltip"
-                      data-tooltip-text="Copy to clipboard"
-                      type="button"
-                    >
-                      <svg
-                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                        role="graphics-symbol"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                        />
-                      </svg>
-                      
-                       
-                      
-                    </button>
-                  </div>
-                </div>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <span
-                  class="dusk-badge dusk-badge--variant-neutral"
-                  data-tooltip-id="provisioners-tooltip"
-                  data-tooltip-text="Owner: 0200000000...0000000000
-Consensus: mUJHMDEBiT...FHNxRNhoAA"
-                >
-                  Yes
-                </span>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Active:
-                </b>
-                 
-                4,800
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Inactive:
-                </b>
-                 
-                0
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Maturity At:
-                </b>
-                
-          #
-                23,760
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="73.800637305 DUSK"
-                  data-tooltip-type="info"
-                >
-                  73
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    80
-                  </span>
-                </span>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <b
-                  class="provisioners-table__slash-data-label"
-                >
-                  Soft:
-                </b>
-                 
-                0
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__slash-data-label"
-                >
-                  Hard:
-                </b>
-                 
-                0
-              </td>
-              
-               
-            </tr>
-            
-            <tr
-              class="table__row"
-            >
-              <td
-                class="table__data-cell align-left"
-              >
-                12
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <div
-                  class="provisioners-table__staking-address-wrapper"
-                >
-                  mvsVWvCaiH...cdeSzHCUUb
-                   
-                  <div
-                    class="dusk-copy-button"
-                  >
-                    <button
-                      aria-label="Copy Address"
-                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                      data-tooltip-id="main-tooltip"
-                      data-tooltip-text="Copy to clipboard"
-                      type="button"
-                    >
-                      <svg
-                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                        role="graphics-symbol"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                        />
-                      </svg>
-                      
-                       
-                      
-                    </button>
-                  </div>
-                </div>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <span
-                  class="dusk-badge dusk-badge--variant-neutral"
-                  data-tooltip-id="provisioners-tooltip"
-                  data-tooltip-text="Consensus: mvsVWvCaiH...cdeSzHCUUb"
-                >
-                  No
-                </span>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Active:
-                </b>
-                 
-                4,550
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Inactive:
-                </b>
-                 
-                0
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Maturity At:
-                </b>
-                
-          #
-                4,320
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="75.58825915 DUSK"
-                  data-tooltip-type="info"
-                >
-                  75
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    59
-                  </span>
-                </span>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <b
-                  class="provisioners-table__slash-data-label"
-                >
-                  Soft:
-                </b>
-                 
-                0
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__slash-data-label"
-                >
-                  Hard:
-                </b>
-                 
-                0
-              </td>
-              
-               
-            </tr>
-            
-            <tr
-              class="table__row"
-            >
-              <td
-                class="table__data-cell align-left"
-              >
-                13
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <div
-                  class="provisioners-table__staking-address-wrapper"
-                >
-                  mLx5HUo5Ph...BrRgEzoka8
-                   
-                  <div
-                    class="dusk-copy-button"
-                  >
-                    <button
-                      aria-label="Copy Address"
-                      class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--default dusk-icon-button dusk-copy-button"
-                      data-tooltip-id="main-tooltip"
-                      data-tooltip-text="Copy to clipboard"
-                      type="button"
-                    >
-                      <svg
-                        class="dusk-icon dusk-icon--size--default dusk-button__icon"
-                        role="graphics-symbol"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
-                        />
-                      </svg>
-                      
-                       
-                      
-                    </button>
-                  </div>
-                </div>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <span
-                  class="dusk-badge dusk-badge--variant-neutral"
-                  data-tooltip-id="provisioners-tooltip"
-                  data-tooltip-text="Consensus: mLx5HUo5Ph...BrRgEzoka8"
-                >
-                  No
-                </span>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Active:
-                </b>
-                 
-                1,234
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Inactive:
-                </b>
-                 
-                0
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__stake-data-label"
-                >
-                  Maturity At:
-                </b>
-                
-          #
-                4,320
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <span
-                  data-tooltip-id="main-tooltip"
-                  data-tooltip-place="top"
-                  data-tooltip-text="29.633646022 DUSK"
-                  data-tooltip-type="info"
-                >
-                  29
-                  .
-                  <span
-                    class="decimal-shadow"
-                  >
-                    63
-                  </span>
-                </span>
-              </td>
-              
-               
-              <td
-                class="table__data-cell align-left"
-              >
-                <b
-                  class="provisioners-table__slash-data-label"
-                >
-                  Soft:
-                </b>
-                 
-                0
-                 
-                <br />
-                 
-                <b
-                  class="provisioners-table__slash-data-label"
-                >
-                  Hard:
-                </b>
-                 
-                0
-              </td>
-              
-               
-            </tr>
-            
-            <tr
-              class="table__row"
-            >
-              <td
-                class="table__data-cell align-left"
-              >
                 14
               </td>
               
@@ -6437,7 +6924,7 @@ Consensus: mUJHMDEBiT...FHNxRNhoAA"
                 <div
                   class="provisioners-table__staking-address-wrapper"
                 >
-                  mWvq9EWD9b...oU7BY2oEDe
+                  nV71a9Hec6...A4pNWv4roh
                    
                   <div
                     class="dusk-copy-button"
@@ -6473,9 +6960,10 @@ Consensus: mUJHMDEBiT...FHNxRNhoAA"
                 <span
                   class="dusk-badge dusk-badge--variant-neutral"
                   data-tooltip-id="provisioners-tooltip"
-                  data-tooltip-text="Consensus: mWvq9EWD9b...oU7BY2oEDe"
+                  data-tooltip-text="Owner: 0200000000...0000000000
+Consensus: nV71a9Hec6...A4pNWv4roh"
                 >
-                  No
+                  Yes
                 </span>
               </td>
               
@@ -6489,7 +6977,7 @@ Consensus: mUJHMDEBiT...FHNxRNhoAA"
                   Active:
                 </b>
                  
-                1,000
+                500,000
                  
                 <br />
                  
@@ -6510,7 +6998,7 @@ Consensus: mUJHMDEBiT...FHNxRNhoAA"
                 </b>
                 
           #
-                8,640
+                0
               </td>
               
                
@@ -6520,15 +7008,15 @@ Consensus: mUJHMDEBiT...FHNxRNhoAA"
                 <span
                   data-tooltip-id="main-tooltip"
                   data-tooltip-place="top"
-                  data-tooltip-text="1.613840782 DUSK"
+                  data-tooltip-text="6,731.43057271 DUSK"
                   data-tooltip-type="info"
                 >
-                  1
+                  6,731
                   .
                   <span
                     class="decimal-shadow"
                   >
-                    61
+                    43
                   </span>
                 </span>
               </td>
@@ -6575,7 +7063,7 @@ Consensus: mUJHMDEBiT...FHNxRNhoAA"
                 <div
                   class="provisioners-table__staking-address-wrapper"
                 >
-                  mvft6AXjR1...frxEyudvx2
+                  nXqyaSYaTa...QpLqoCPDeD
                    
                   <div
                     class="dusk-copy-button"
@@ -6611,9 +7099,10 @@ Consensus: mUJHMDEBiT...FHNxRNhoAA"
                 <span
                   class="dusk-badge dusk-badge--variant-neutral"
                   data-tooltip-id="provisioners-tooltip"
-                  data-tooltip-text="Consensus: mvft6AXjR1...frxEyudvx2"
+                  data-tooltip-text="Owner: 0200000000...0000000000
+Consensus: nXqyaSYaTa...QpLqoCPDeD"
                 >
-                  No
+                  Yes
                 </span>
               </td>
               
@@ -6627,7 +7116,7 @@ Consensus: mUJHMDEBiT...FHNxRNhoAA"
                   Active:
                 </b>
                  
-                0
+                500,000
                  
                 <br />
                  
@@ -6658,15 +7147,15 @@ Consensus: mUJHMDEBiT...FHNxRNhoAA"
                 <span
                   data-tooltip-id="main-tooltip"
                   data-tooltip-place="top"
-                  data-tooltip-text="104,743.439448879 DUSK"
+                  data-tooltip-text="7,428.022676833 DUSK"
                   data-tooltip-type="info"
                 >
-                  104,743
+                  7,428
                   .
                   <span
                     class="decimal-shadow"
                   >
-                    44
+                    02
                   </span>
                 </span>
               </td>

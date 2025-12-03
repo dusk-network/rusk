@@ -11,6 +11,24 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="details-list__term-layout"
     >
        
+      Rank
+    </div>
+  </dt>
+   
+  <dd
+    class="details-list__definition details-list__definition--table"
+  >
+    #
+    1
+  </dd>
+   
+  <dt
+    class="details-list__term details-list__term--table"
+  >
+    <div
+      class="details-list__term-layout"
+    >
+       
       Staking address
     </div>
   </dt>
@@ -21,7 +39,7 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
     <span
       class="provisioners-list__staking-address"
     >
-      m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf
+      n3qToJrMkYCnUkJkFG2a7fEVn...AmwiScS256TCMZZjmEq6aNuj6
     </span>
      
     <div
@@ -57,7 +75,7 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
       class="details-list__term-layout"
     >
        
-      Owner
+      Owner Key
     </div>
   </dt>
    
@@ -67,9 +85,9 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
     <span
       class="dusk-badge dusk-badge--variant-neutral"
       data-tooltip-id="provisioners-tooltip"
-      data-tooltip-text="m6dy2gz3jC3ifLpZmdTaZbgcp...uSCne1ti5kgYeNHtW82FWtnpf"
+      data-tooltip-text="Consensus: n3qToJrMkYCnUkJkFG2a7fEVn...AmwiScS256TCMZZjmEq6aNuj6"
     >
-      Account
+      No
     </span>
   </dd>
    
@@ -87,7 +105,7 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
   <dd
     class="details-list__definition details-list__definition--table"
   >
-    500,000
+    1,000,000
      DUSK
   </dd>
    
@@ -141,7 +159,7 @@ exports[`Provisioners List > renders the \`ProvisionersList\` component 1`] = `
   <dd
     class="details-list__definition details-list__definition--table"
   >
-    7,121.257296087
+    12,178.759788262
      DUSK
   </dd>
    
