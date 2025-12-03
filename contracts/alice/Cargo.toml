@@ -8,3 +8,4 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dusk-core = { workspace = true, features = ["abi-dlmalloc"] }
+rkyv = { workspace = true, features = ["size_32", "alloc", "validation"] }

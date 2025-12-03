@@ -45,4 +45,11 @@ mod wasm {
     unsafe fn contract_to_account(arg_len: u32) -> u32 {
         abi::wrap_call(arg_len, |arg| STATE.contract_to_account(arg))
     }
+
+    #[no_mangle]
+    unsafe fn stake_activate(arg_len: u32) -> u32 {
+        abi::wrap_call(arg_len, |arg| {
+            STATE.stake_activate(arg);
+        })
+    }
 }

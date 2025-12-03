@@ -11,7 +11,6 @@ use std::sync::{Arc, RwLock};
 use dusk_bytes::Serializable;
 use dusk_core::transfer::data::TransactionData;
 use rand::prelude::*;
-use rand::rngs::StdRng;
 use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
