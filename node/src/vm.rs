@@ -94,10 +94,10 @@ pub trait VMExecution: Send + Sync + 'static {
     fn min_deploy_points(&self) -> u64;
 
     fn gas_per_blob(&self) -> u64;
-    fn blob_activation_height(&self) -> u64;
-    fn disable_wasm64_height(&self) -> u64;
-    fn disable_wasm32_height(&self) -> u64;
-    fn disable_3rd_party_height(&self) -> u64;
+    fn blob_active(&self, block_height: u64) -> bool;
+    fn wasm64_disabled(&self, block_height: u64) -> bool;
+    fn wasm32_disabled(&self, block_height: u64) -> bool;
+    fn third_party_disabled(&self, block_height: u64) -> bool;
 }
 
 #[allow(clippy::large_enum_variant)]
