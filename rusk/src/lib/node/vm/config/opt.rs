@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::anyhow;
+use dusk_vm::FeatureActivation;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
@@ -44,25 +45,26 @@ pub struct OptionalConfig {
 
     /// Set of features to activate
     #[serde(default)]
-    features: HashMap<String, u64>,
+    features: HashMap<String, FeatureActivation>,
 }
 
 impl OptionalConfig {
     const ALLOW_OVERRIDE_ENV: &str = "RUSK_ALLOW_CFG_OVERRIDE";
     const OVERRIDE_INFO: &str = "To allow overrides, set the RUSK_ALLOW_CFG_OVERRIDE environment variable to true.";
-    pub fn feature(&self, feature: &str) -> Option<u64> {
+    pub fn feature(&self, feature: &str) -> Option<&FeatureActivation> {
         self.features
             .iter()
             .find(|(k, _)| k.eq_ignore_ascii_case(feature))
-            .map(|(_, &v)| v)
+            .map(|(_, v)| v)
     }
 
-    pub fn with_feature<S: Into<String>>(
+    pub fn with_feature<S: Into<String>, F: Into<FeatureActivation>>(
         &mut self,
         feature: S,
-        activation: u64,
+        activation: F,
     ) {
         let feature: String = feature.into();
+        let activation = activation.into();
         // Check for case insensitive key
         let feature = self
             .features
@@ -111,7 +113,7 @@ impl OptionalConfig {
 
         for (feature, activation) in &config.features {
             if let Some(v) = self.feature(feature) {
-                if v != *activation {
+                if v != activation {
                     if Self::is_strict() {
                         panic!(
                             "[vm].feature {feature} set to {v} (overriding the default config value of {activation}). {}",
@@ -122,7 +124,7 @@ impl OptionalConfig {
                     }
                 }
             } else {
-                self.with_feature(*feature, *activation);
+                self.with_feature(*feature, activation.clone());
             }
         }
 

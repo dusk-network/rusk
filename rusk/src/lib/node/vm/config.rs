@@ -10,7 +10,7 @@ pub mod opt;
 use std::collections::{hash_map::Iter, HashMap};
 use std::time::Duration;
 
-use dusk_vm::ExecutionConfig;
+use dusk_vm::{ExecutionConfig, FeatureActivation};
 
 const DEFAULT_GAS_PER_DEPLOY_BYTE: u64 = 100;
 
@@ -46,7 +46,7 @@ pub struct Config {
     pub generation_timeout: Option<Duration>,
 
     /// Set of features to activate
-    features: HashMap<String, u64>,
+    features: HashMap<String, FeatureActivation>,
 }
 
 impl Default for Config {
@@ -125,23 +125,23 @@ impl Config {
     pub fn to_execution_config(&self, block_height: u64) -> ExecutionConfig {
         let with_public_sender: bool = self
             .feature(feature::FEATURE_ABI_PUBLIC_SENDER)
-            .map(|activation| block_height >= activation)
+            .map(|activation| activation.is_active_at(block_height))
             .unwrap_or_default();
         let with_blob = self
             .feature(feature::FEATURE_BLOB)
-            .map(|activation| block_height >= activation)
+            .map(|activation| activation.is_active_at(block_height))
             .unwrap_or_default();
         let disable_wasm64 = self
             .feature(feature::FEATURE_DISABLE_WASM64)
-            .map(|activation| block_height >= activation)
+            .map(|activation| activation.is_active_at(block_height))
             .unwrap_or_default();
         let disable_wasm32 = self
             .feature(feature::FEATURE_DISABLE_WASM32)
-            .map(|activation| block_height >= activation)
+            .map(|activation| activation.is_active_at(block_height))
             .unwrap_or_default();
         let disable_3rd_party = self
             .feature(feature::FEATURE_DISABLE_3RD_PARTY)
-            .map(|activation| block_height >= activation)
+            .map(|activation| activation.is_active_at(block_height))
             .unwrap_or_default();
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
@@ -156,23 +156,24 @@ impl Config {
         }
     }
 
-    pub fn features(&self) -> Iter<String, u64> {
+    pub fn features(&self) -> Iter<String, FeatureActivation> {
         self.features.iter()
     }
 
-    pub fn feature(&self, feature: &str) -> Option<u64> {
+    pub fn feature(&self, feature: &str) -> Option<&FeatureActivation> {
         self.features
             .iter()
             .find(|(k, _)| k.eq_ignore_ascii_case(feature))
-            .map(|(_, &v)| v)
+            .map(|(_, v)| v)
     }
 
-    pub fn with_feature<S: Into<String>>(
+    pub fn with_feature<S: Into<String>, F: Into<FeatureActivation>>(
         &mut self,
         feature: S,
-        activation: u64,
+        activation: F,
     ) {
         let feature: String = feature.into();
+        let activation = activation.into();
         // Check for case insensitive key
         let feature = self
             .features
