@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod config;
+pub mod feature;
 
 use blake2b_simd::Params;
 use dusk_core::abi::{ContractError, ContractId, Metadata, CONTRACT_ID_BYTES};
