@@ -1826,6 +1826,41 @@ dependencies = [
 [[package]]
 name = "dusk-node"
 version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72e1c23c366a1eda7bced1f60497cef1a72edb9acd5b1d681aa67d804b9036ff"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "async-trait",
+ "bs58",
+ "dusk-bytes",
+ "dusk-consensus 1.4.0",
+ "dusk-core 1.4.0",
+ "dusk-node-data 1.4.0",
+ "hex",
+ "humantime-serde",
+ "indexmap 2.11.4",
+ "kadcast",
+ "memory-stats",
+ "metrics",
+ "metrics-exporter-prometheus",
+ "native-tls",
+ "rkyv",
+ "rocksdb",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "smallvec",
+ "sqlx",
+ "thiserror",
+ "time-util",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "dusk-node"
+version = "1.4.2-alpha.1"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1974,7 +2009,7 @@ dependencies = [
  "dusk-consensus 1.4.0",
  "dusk-core 1.4.0",
  "dusk-data-driver 0.3.0",
- "dusk-node",
+ "dusk-node 1.4.1",
  "dusk-node-data 1.4.0",
  "dusk-stake-contract-dd 0.3.0",
  "dusk-transfer-contract-dd 0.3.0",
