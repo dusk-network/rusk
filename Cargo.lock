@@ -1977,7 +1977,7 @@ dependencies = [
  "dusk-node-data 1.4.0",
  "dusk-stake-contract-dd 0.3.0",
  "dusk-transfer-contract-dd 0.3.0",
- "dusk-vm 1.4.1-alpha.1",
+ "dusk-vm 1.4.1",
  "dusk-wallet-core 1.4.0",
  "dusk-wasmtime",
  "ff",
@@ -2082,7 +2082,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-vm"
-version = "1.4.1-alpha.1"
+version = "1.4.1"
 dependencies = [
  "blake2b_simd",
  "blake3",
@@ -4799,7 +4799,7 @@ dependencies = [
  "dusk-bytes",
  "dusk-core 1.4.0",
  "dusk-plonk",
- "dusk-vm 1.4.1-alpha.1",
+ "dusk-vm 1.4.1",
  "ff",
  "flate2",
  "hex",
@@ -5523,7 +5523,7 @@ dependencies = [
  "criterion",
  "dusk-bytes",
  "dusk-core 1.4.0",
- "dusk-vm 1.4.1-alpha.1",
+ "dusk-vm 1.4.1",
  "dusk-wallet-core 1.4.0",
  "ff",
  "rand 0.8.5",
@@ -6026,7 +6026,7 @@ version = "0.10.1"
 dependencies = [
  "dusk-bytes",
  "dusk-core 1.4.0",
- "dusk-vm 1.4.1-alpha.1",
+ "dusk-vm 1.4.1",
  "ff",
  "rand 0.8.5",
  "ringbuffer",
