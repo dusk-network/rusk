@@ -3,6 +3,7 @@ name = "dusk-rusk"
 version = "1.4.0-rc.3"
 edition = "2021"
 autobins = false
+exclude = ["tests/assets/*"]
 
 description = "Rusk is the Dusk Network node implementation"
 repository = "https://github.com/dusk-network/rusk"
