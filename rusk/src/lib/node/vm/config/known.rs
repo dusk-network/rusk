@@ -53,10 +53,14 @@ impl WellKnownConfig {
     }
 }
 
+/// Estimated mainnet block height for 10th December 2025, 09:00 UTC.
+const MAINNET_AT_10_12_2025_AT_09_00_UTC: u64 = 2_873_420;
+
 const MAINNET_SENDER_ACTIVATION_HEIGHT: FeatureActivation =
     FeatureActivation::Height(355_000);
+
 const MAINNET_DISABLED_3D_PARTY_START: u64 = 2_710_376;
-const MAINNET_DISABLED_3D_PARTY_END: u64 = u64::MAX;
+const MAINNET_DISABLED_3D_PARTY_END: u64 = MAINNET_AT_10_12_2025_AT_09_00_UTC;
 static MAINNET_3RD_PARTY_OFF: LazyLock<FeatureActivation> =
     LazyLock::new(|| {
         FeatureActivation::Ranges(vec![(
@@ -64,6 +68,16 @@ static MAINNET_3RD_PARTY_OFF: LazyLock<FeatureActivation> =
             MAINNET_DISABLED_3D_PARTY_END,
         )])
     });
+static MAINNET_DISABLE_WASM_64: LazyLock<FeatureActivation> =
+    LazyLock::new(|| {
+        FeatureActivation::Ranges(vec![(
+            MAINNET_DISABLED_3D_PARTY_START,
+            u64::MAX,
+        )])
+    });
+
+const MAINNET_BLOB_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(MAINNET_AT_10_12_2025_AT_09_00_UTC);
 
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
@@ -76,8 +90,8 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
         features: [
             (FEATURE_ABI_PUBLIC_SENDER, MAINNET_SENDER_ACTIVATION_HEIGHT),
             (HQ_KECCAK256, NEVER),
-            (FEATURE_BLOB, NEVER),
-            (FEATURE_DISABLE_WASM64, MAINNET_3RD_PARTY_OFF.clone()),
+            (FEATURE_BLOB, MAINNET_BLOB_ACTIVATION),
+            (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
         ],
