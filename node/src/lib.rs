@@ -29,8 +29,8 @@ use tokio::sync::RwLock;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
-use native_tls as _; // Required to satisfy unused_crate_dependencies
 use indexmap as _; // Required to satisfy unused_crate_dependencies
+use native_tls as _; // Required to satisfy unused_crate_dependencies
 
 /// Filter is used by Network implementor to filter messages before re-routing
 /// them. It's like the middleware in HTTP pipeline.
