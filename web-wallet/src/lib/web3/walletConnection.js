@@ -38,6 +38,7 @@ const VITE_EVM_BRIDGE_BLOCK_EXPLORER_NAME = import.meta.env
 const VITE_EVM_BRIDGE_BLOCK_EXPLORER_URL = import.meta.env
   .VITE_EVM_BRIDGE_BLOCK_EXPLORER_URL;
 const VITE_EVM_BRIDGE_RPC_URL = import.meta.env.VITE_EVM_BRIDGE_RPC_URL;
+const VITE_EVM_CHAIN_ID = Number(import.meta.env.VITE_EVM_CHAIN_ID);
 
 export const duskEvm = {
   blockExplorers: {
@@ -52,7 +53,7 @@ export const duskEvm = {
       blockCreated: VITE_EVM_BRIDGE_CONTRACT_BLOCK_CREATED,
     },
   },
-  id: 310,
+  id: VITE_EVM_CHAIN_ID,
   name: "DuskEVM",
   nativeCurrency: {
     decimals: 18,
