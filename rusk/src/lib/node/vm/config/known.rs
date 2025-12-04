@@ -6,6 +6,10 @@
 
 //! Well-known VM configurations for different chain IDs.
 
+use std::sync::LazyLock;
+
+use dusk_vm::FeatureActivation;
+
 use crate::node::{FEATURE_DISABLE_3RD_PARTY, FEATURE_DISABLE_WASM32};
 
 use super::feature::{
@@ -21,6 +25,9 @@ pub const MAINNET_ID: u8 = 1;
 pub const TESTNET_ID: u8 = 2;
 pub const DEVNET_ID: u8 = 3;
 
+const GENESIS: FeatureActivation = FeatureActivation::Height(1);
+const NEVER: FeatureActivation = FeatureActivation::Height(u64::MAX);
+
 /// Contains well-known VM configurations for different chain IDs.
 #[derive(Debug, Clone)]
 pub struct WellKnownConfig {
@@ -29,7 +36,7 @@ pub struct WellKnownConfig {
     pub min_deploy_points: u64,
     pub min_deployment_gas_price: u64,
     pub block_gas_limit: u64,
-    pub features: [(&'static str, u64); 6],
+    pub features: [(&'static str, FeatureActivation); 6],
 }
 
 impl WellKnownConfig {
@@ -38,7 +45,7 @@ impl WellKnownConfig {
     /// If the chain ID is not recognized, returns the localnet configuration.
     pub fn from_chain_id(chain_id: u8) -> Self {
         match chain_id {
-            MAINNET_ID => MAINNET_CONFIG,
+            MAINNET_ID => MAINNET_CONFIG.clone(),
             TESTNET_ID => TESTNET_CONFIG,
             DEVNET_ID => DEVNET_CONFIG,
             _ => LOCALNET_CONFIG,
@@ -46,25 +53,39 @@ impl WellKnownConfig {
     }
 }
 
+const MAINNET_SENDER_ACTIVATION_HEIGHT: FeatureActivation =
+    FeatureActivation::Height(355_000);
+const MAINNET_DISABLED_3D_PARTY_START: u64 = 2_710_376;
+const MAINNET_DISABLED_3D_PARTY_END: u64 = u64::MAX;
+static MAINNET_3RD_PARTY_OFF: LazyLock<FeatureActivation> =
+    LazyLock::new(|| {
+        FeatureActivation::Ranges(vec![(
+            MAINNET_DISABLED_3D_PARTY_START,
+            MAINNET_DISABLED_3D_PARTY_END,
+        )])
+    });
+
 /// Mainnet VM configuration.
-const MAINNET_CONFIG: WellKnownConfig = WellKnownConfig {
-    gas_per_blob: 0,
-    gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
-    min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
-    min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
-    block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    features: [
-        (FEATURE_ABI_PUBLIC_SENDER, 355_000),
-        (HQ_KECCAK256, u64::MAX),
-        (FEATURE_BLOB, u64::MAX),
-        (FEATURE_DISABLE_WASM64, 2_710_376),
-        (FEATURE_DISABLE_WASM32, 2_710_376),
-        (FEATURE_DISABLE_3RD_PARTY, 2_710_376),
-    ],
-};
+static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
+    LazyLock::new(|| WellKnownConfig {
+        gas_per_blob: 0,
+        gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
+        min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
+        min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
+        block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+        features: [
+            (FEATURE_ABI_PUBLIC_SENDER, MAINNET_SENDER_ACTIVATION_HEIGHT),
+            (HQ_KECCAK256, NEVER),
+            (FEATURE_BLOB, NEVER),
+            (FEATURE_DISABLE_WASM64, MAINNET_3RD_PARTY_OFF.clone()),
+            (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
+            (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
+        ],
+    });
 
 /// Estimated testnet block height for 12th November 2025, 09:00 UTC.
-const TESTNET_AT_12_11_2025_AT_09_00_UTC: u64 = 1_814_090;
+const TESTNET_AT_12_11_2025_AT_09_00_UTC: FeatureActivation =
+    FeatureActivation::Height(1_814_090);
 
 /// Testnet VM configuration.
 const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
@@ -74,12 +95,12 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
     features: [
-        (FEATURE_ABI_PUBLIC_SENDER, 1),
-        (HQ_KECCAK256, u64::MAX),
+        (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
+        (HQ_KECCAK256, NEVER),
         (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
-        (FEATURE_DISABLE_WASM32, u64::MAX),
-        (FEATURE_DISABLE_3RD_PARTY, u64::MAX),
+        (FEATURE_DISABLE_WASM32, NEVER),
+        (FEATURE_DISABLE_3RD_PARTY, NEVER),
     ],
 };
 
@@ -91,12 +112,12 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
     features: [
-        (FEATURE_ABI_PUBLIC_SENDER, 1),
-        (HQ_KECCAK256, 1),
-        (FEATURE_BLOB, 1),
-        (FEATURE_DISABLE_WASM64, 1),
-        (FEATURE_DISABLE_WASM32, u64::MAX),
-        (FEATURE_DISABLE_3RD_PARTY, u64::MAX),
+        (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
+        (HQ_KECCAK256, GENESIS),
+        (FEATURE_BLOB, GENESIS),
+        (FEATURE_DISABLE_WASM64, GENESIS),
+        (FEATURE_DISABLE_WASM32, NEVER),
+        (FEATURE_DISABLE_3RD_PARTY, NEVER),
     ],
 };
 
@@ -108,11 +129,11 @@ const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
     features: [
-        (FEATURE_ABI_PUBLIC_SENDER, 1),
-        (HQ_KECCAK256, 1),
-        (FEATURE_BLOB, 1),
-        (FEATURE_DISABLE_WASM64, 1),
-        (FEATURE_DISABLE_WASM32, u64::MAX),
-        (FEATURE_DISABLE_3RD_PARTY, u64::MAX),
+        (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
+        (HQ_KECCAK256, GENESIS),
+        (FEATURE_BLOB, GENESIS),
+        (FEATURE_DISABLE_WASM64, GENESIS),
+        (FEATURE_DISABLE_WASM32, NEVER),
+        (FEATURE_DISABLE_3RD_PARTY, NEVER),
     ],
 };

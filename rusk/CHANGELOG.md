@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `/stats/tx_count` endpoint [#3625]
 - Add versioned `wallet-core` endpoints in HTTP server [#3850]
 - Add `/on/contract:<contract_id>/status` endpoint [#3869]
+- Add range support for feature activation
 
 ### Changed
 

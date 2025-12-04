@@ -113,6 +113,8 @@ pub trait Ledger {
 
     fn faults_by_block(&self, start_height: u64) -> Result<Vec<Fault>>;
     fn faults(&self, faults_ids: &[[u8; 32]]) -> Result<Vec<Fault>>;
+
+    fn latest_block(&self) -> Result<LightBlock>;
 }
 
 pub trait ConsensusStorage {

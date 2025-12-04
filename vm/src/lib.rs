@@ -13,6 +13,7 @@
 
 extern crate alloc;
 
+pub use self::execute::feature::Activation as FeatureActivation;
 pub use self::execute::{execute, gen_contract_id, Config as ExecutionConfig};
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
@@ -57,7 +58,7 @@ pub mod host_queries;
 /// queries and contract deployments.
 pub struct VM {
     inner: PiecrustVM,
-    hq_activation: HashMap<String, u64>,
+    hq_activation: HashMap<String, FeatureActivation>,
 }
 
 impl From<PiecrustVM> for VM {
@@ -150,15 +151,16 @@ impl VM {
     /// # Examples
     /// ```rust
     /// use dusk_vm::VM;
+    /// use dusk_vm::FeatureActivation;
     /// use dusk_core::abi::Query;
     ///
     /// let mut vm = VM::ephemeral().unwrap();
-    /// vm.with_hq_activation(Query::KECCAK256, 100);
+    /// vm.with_hq_activation(Query::KECCAK256, FeatureActivation::Height(100));
     /// ```
     pub fn with_hq_activation<S: Into<String>>(
         &mut self,
         host_query: S,
-        activation: u64,
+        activation: FeatureActivation,
     ) {
         let host_query = host_query.into();
         if self.inner.host_queries().get(&host_query).is_none() {
@@ -224,8 +226,8 @@ impl VM {
         // We don't want to exclude host queries for block height 0 because it's
         // used for query sessions
         if block_height > 0 {
-            for (host_query, &activation) in &self.hq_activation {
-                if block_height < activation {
+            for (host_query, activation) in &self.hq_activation {
+                if !activation.is_active_at(block_height) {
                     builder = builder.exclude_hq(host_query.clone());
                 }
             }

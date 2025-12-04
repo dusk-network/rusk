@@ -294,26 +294,32 @@ impl VMExecution for Rusk {
         self.vm_config.gas_per_blob
     }
 
-    fn blob_activation_height(&self) -> u64 {
-        self.vm_config.feature(FEATURE_BLOB).unwrap_or(u64::MAX)
+    fn blob_active(&self, block_height: u64) -> bool {
+        self.vm_config
+            .feature(FEATURE_BLOB)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or(false)
     }
 
-    fn disable_wasm64_height(&self) -> u64 {
+    fn wasm64_disabled(&self, block_height: u64) -> bool {
         self.vm_config
             .feature(FEATURE_DISABLE_WASM64)
-            .unwrap_or(u64::MAX)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or(false)
     }
 
-    fn disable_wasm32_height(&self) -> u64 {
+    fn wasm32_disabled(&self, block_height: u64) -> bool {
         self.vm_config
             .feature(FEATURE_DISABLE_WASM32)
-            .unwrap_or(u64::MAX)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or(false)
     }
 
-    fn disable_3rd_party_height(&self) -> u64 {
+    fn third_party_disabled(&self, block_height: u64) -> bool {
         self.vm_config
             .feature(FEATURE_DISABLE_3RD_PARTY)
-            .unwrap_or(u64::MAX)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or(false)
     }
 }
 

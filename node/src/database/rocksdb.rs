@@ -492,6 +492,14 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
         Ok(faults)
     }
 
+    fn latest_block(&self) -> Result<LightBlock> {
+        let tip_hash = self
+            .op_read(MD_HASH_KEY)?
+            .ok_or(anyhow::anyhow!("Cannot find tip stored in metadata"))?;
+        self.light_block(&tip_hash)?
+            .ok_or(anyhow::anyhow!("Cannot find tip block"))
+    }
+
     fn blob_data_by_hash(&self, hash: &[u8; 32]) -> Result<Option<Vec<u8>>> {
         Ok(self.inner.get_cf(self.ledger_blobs_cf, hash)?)
     }

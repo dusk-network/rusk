@@ -7,7 +7,8 @@ test: build-bench ## Run Rusk tests
 	@cargo test \
 		--release \
 		--features testwallet \
-		-- --nocapture
+		-- --test-threads 8 \
+		--nocapture
 			
 clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings

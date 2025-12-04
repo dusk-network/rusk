@@ -1966,6 +1966,7 @@ dependencies = [
  "piecrust",
  "rand 0.8.5",
  "rkyv",
+ "serde",
  "sha3",
  "wasmparser 0.240.0",
 ]

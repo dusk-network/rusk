@@ -258,6 +258,7 @@ impl RuskNodeBuilder {
         let min_gas_limit = self.min_gas_limit.unwrap_or(DEFAULT_MIN_GAS_LIMIT);
         let finality_activation = vm_config
             .feature(crate::node::FEATURE_ABI_PUBLIC_SENDER)
+            .map(|f| f.unwrap_height())
             .unwrap_or(u64::MAX);
 
         let blob_expire_after =

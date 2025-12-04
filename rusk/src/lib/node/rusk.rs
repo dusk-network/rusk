@@ -81,7 +81,7 @@ impl Rusk {
         for (feat, activation) in vm_config.features() {
             let feat = feat.to_ascii_lowercase();
             if let Some(hq_name) = feat.strip_prefix("hq_") {
-                vm.with_hq_activation(hq_name, *activation);
+                vm.with_hq_activation(hq_name, activation.clone());
             }
         }
 

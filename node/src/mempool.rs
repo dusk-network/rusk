@@ -281,13 +281,23 @@ impl MempoolSrv {
             return Err(TxAcceptanceError::GasPriceTooLow(1));
         }
 
+        let tip_height = db
+            .read()
+            .await
+            .view(|db| db.latest_block())
+            .map_err(|e| {
+                anyhow!("Cannot get tip block height from the database: {e}")
+            })?
+            .header
+            .height;
+
         {
             // Mimic the VM's additional checks for transactions
             let vm = vm.read().await;
 
-            let disable_wasm_32 = vm.disable_wasm32_height() != u64::MAX;
-            let disable_wasm_64 = vm.disable_wasm64_height() != u64::MAX;
-            let disable_3rd_party = vm.disable_3rd_party_height() != u64::MAX;
+            let disable_wasm_32 = vm.wasm32_disabled(tip_height);
+            let disable_wasm_64 = vm.wasm64_disabled(tip_height);
+            let disable_3rd_party = vm.third_party_disabled(tip_height);
 
             if let Some(_contract_deploy) = tx.inner.deploy() {
                 match (disable_wasm_32, disable_wasm_64) {
@@ -328,18 +338,11 @@ impl MempoolSrv {
 
             // Check blob tx
             if tx.inner.blob().is_some() {
-                db.read()
-                    .await
-                    .view(|db| {
-                        db.block_label_by_height(vm.blob_activation_height())
-                    })
-                    .map_err(|e| {
-                        anyhow!("Cannot get blob activation height: {e}")
-                    })?
-                    .ok_or(anyhow!(
-                        "Blobs acceptance will start at block height: {}",
-                        vm.blob_activation_height()
-                    ))?;
+                if !vm.blob_active(tip_height) {
+                    return Err(TxAcceptanceError::Generic(anyhow::anyhow!(
+                        "blobs are not enabled in the VM"
+                    )));
+                }
 
                 let gas_per_blob = vm.gas_per_blob();
                 tx.inner.blob_check(gas_per_blob)?;
