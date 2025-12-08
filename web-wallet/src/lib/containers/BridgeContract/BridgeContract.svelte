@@ -3,10 +3,20 @@
 <script>
   import { onMount } from "svelte";
   import { collect, getKey, pick } from "lamb";
-  import { getBalance, watchBlocks } from "@wagmi/core";
+  import {
+    getBalance,
+    switchChain,
+    watchBlocks,
+    watchChainId,
+  } from "@wagmi/core";
 
   import { Button } from "$lib/dusk/components";
-  import { account, modal, wagmiConfig } from "$lib/web3/walletConnection";
+  import {
+    account,
+    duskEvm,
+    modal,
+    wagmiConfig,
+  } from "$lib/web3/walletConnection";
   import { Bridge } from "$lib/components";
   import { createCurrencyFormatter } from "$lib/dusk/currency";
   import { gasStore, settingsStore, walletStore } from "$lib/stores";
@@ -22,8 +32,24 @@
   /** @type {GetBalanceReturnType | undefined}  */
   let evmDuskBalance;
 
+  /**
+   * @param {number} id
+   */
+  async function switchChainHandler(id) {
+    await switchChain(wagmiConfig, { chainId: id });
+  }
+
   onMount(() => {
-    const unwatch = watchBlocks(wagmiConfig, {
+    if ($account.isConnected && $account.chainId !== duskEvm.id) {
+      switchChainHandler(duskEvm.id);
+    }
+
+    const unwatchChain = watchChainId(wagmiConfig, {
+      async onChange() {
+        await switchChainHandler(duskEvm.id);
+      },
+    });
+    const unwatchBalance = watchBlocks(wagmiConfig, {
       async onBlock() {
         if ($account.isConnected && $account.chainId && $account.address) {
           try {
@@ -41,7 +67,8 @@
     });
 
     return () => {
-      unwatch();
+      unwatchChain();
+      unwatchBalance();
     };
   });
 
