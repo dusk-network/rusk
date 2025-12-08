@@ -1,6 +1,6 @@
-![Build Status](https://github.com/dusk-network/rusk/workflows/Continuous%20integration/badge.svg)
-[![Repository](https://img.shields.io/badge/github-rusk--abi-blueviolet?logo=github)](https://github.com/dusk-network/dusk-vm)
-[![Documentation](https://img.shields.io/badge/docs-rusk--abi-blue?logo=rust)](https://docs.rs/dusk-vm/)
+![Build Status](https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml/badge.svg)
+[![Repository](https://img.shields.io/badge/github-dusk--vm-blueviolet?logo=github)](https://github.com/dusk-network/rusk)
+[![Documentation](https://img.shields.io/badge/docs-dusk--vm-blue?logo=rust)](https://docs.rs/dusk-vm/)
 
 # Dusk VM
 
