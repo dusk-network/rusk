@@ -10,6 +10,7 @@ use dusk_consensus::operations::{
 };
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
 use node_data::events::contract::ContractTxEvent;
@@ -98,6 +99,9 @@ pub trait VMExecution: Send + Sync + 'static {
     fn wasm64_disabled(&self, block_height: u64) -> bool;
     fn wasm32_disabled(&self, block_height: u64) -> bool;
     fn third_party_disabled(&self, block_height: u64) -> bool;
+
+    fn shade_3rd_party(&self, contract_id: ContractId) -> anyhow::Result<()>;
+    fn enable_3rd_party(&self, contract_id: ContractId) -> anyhow::Result<()>;
 }
 
 #[allow(clippy::large_enum_variant)]

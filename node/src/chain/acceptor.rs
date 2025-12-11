@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use core::panic;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{cmp, env};
@@ -20,6 +20,7 @@ use dusk_consensus::errors::{ConsensusError, HeaderError};
 use dusk_consensus::operations::Voter;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_consensus::user::stake::Stake;
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls;
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::stake::{SlashEvent, StakeAmount, StakeEvent};
@@ -104,6 +105,8 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
 
     finality_activation: u64,
     blob_expire_after: u64,
+
+    module_shading: HashMap<ContractId, Vec<(u64, u64)>>,
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
@@ -208,6 +211,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         dusk_key: bls::PublicKey,
         finality_activation: u64,
         blob_expire_after: u64,
+        module_shading: HashMap<ContractId, Vec<(u64, u64)>>,
     ) -> anyhow::Result<Self> {
         let tip_height = tip.inner().header().height;
         let tip_state_hash = tip.inner().header().state_hash;
@@ -238,6 +242,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             dusk_key,
             finality_activation,
             blob_expire_after,
+            module_shading,
         };
 
         // NB. After restart, state_root returned by VM is always the last
@@ -268,6 +273,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
         }
         let ext_db_parent_path = env::var("RUSK_EXT_CHAIN").unwrap_or_default();
+        acc.apply_module_shading(tip_height + 1).await;
 
         if !ext_db_parent_path.is_empty() {
             let opts = DatabaseOptions {
@@ -941,6 +947,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
             }
 
+            let current_height = header.height;
+            for (contract_id, ranges) in self.module_shading.clone().into_iter()
+            {
+                for (first, last) in ranges {
+                    if first == current_height + 1 {
+                        let _ = vm.shade_3rd_party(contract_id).inspect_err(|e| {
+                            warn!("Error while shading contract {contract_id}: {e}");
+                        });
+                    }
+                    if last == current_height + 1 {
+                        let _ =  vm.enable_3rd_party(contract_id).inspect_err(|e| {
+                            warn!("Error while enabling contract {contract_id}: {e}");
+                        });
+                    }
+                }
+            }
+
             anyhow::Ok((label, finalized))
         }?;
 
@@ -1325,6 +1348,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             state_root = hex::encode(blk.header().state_hash)
         );
 
+        let next_height = blk.header().height + 1;
+        self.apply_module_shading(next_height).await;
+
         // Remove the block and event entries for this block from the
         // archive
         #[cfg(feature = "archive")]
@@ -1339,6 +1365,26 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
 
         self.update_tip(&blk, label).await
+    }
+
+    async fn apply_module_shading(&self, next_height: u64) {
+        let vm = self.vm.read().await;
+        for (contract_id, ranges) in self.module_shading.clone().into_iter() {
+            let shaded = ranges.into_iter().any(|(first, last)| {
+                first <= next_height && next_height < last
+            });
+            if shaded {
+                info!("Shading {contract_id}");
+                let _ = vm.shade_3rd_party(contract_id).inspect_err(|e| {
+                warn!("Error while shading contract {contract_id} during revert: {e}");
+            });
+            } else {
+                info!("Enabling {contract_id}");
+                let _ = vm.enable_3rd_party(contract_id).inspect_err(|e| {
+                warn!("Error while enabling contract {contract_id} during revert: {e}");
+            });
+            }
+        }
     }
 
     /// Spawns consensus algorithm after aborting currently running one
