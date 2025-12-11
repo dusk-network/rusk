@@ -32,6 +32,9 @@ pub struct Config {
 
     /// Disable calls to 3rd party contracts
     pub disable_3rd_party: bool,
+
+    /// Minimum gas to charge for any transaction. 0 disables the floor
+    pub min_tx_gas: u64,
 }
 
 impl Default for Config {
@@ -52,5 +55,6 @@ impl Config {
         disable_wasm64: false,
         disable_wasm32: false,
         disable_3rd_party: false,
+        min_tx_gas: 0,
     };
 }

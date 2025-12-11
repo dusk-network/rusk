@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Enforce a per‑transaction minimum gas floor [#3940]
+
 ## [1.4.1] - 2025-12-04
 
 ### Added
@@ -58,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add vm to interact with Dusk network [#3235]
 
 <!-- Issues -->
+[#3940]: https://github.com/dusk-network/rusk/issues/3940
 [#3774]: https://github.com/dusk-network/rusk/issues/3774
 [#3235]: https://github.com/dusk-network/rusk/issues/3235
 [#3341]: https://github.com/dusk-network/rusk/issues/3341

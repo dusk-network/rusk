@@ -69,6 +69,13 @@ pub fn execute(
     tx: &Transaction,
     config: &Config,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
+    // Enforce gas_limit >= min_tx_gas if min_tx_gas feature is enabled
+    if config.min_tx_gas > 0 && tx.gas_limit() < config.min_tx_gas {
+        return Err(Error::Panic(
+            "transaction gas_limit is below the minimum required gas".into(),
+        ));
+    }
+
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     tx.deploy_check(
@@ -149,6 +156,15 @@ pub fn execute(
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
         receipt.gas_spent = receipt.gas_limit;
+    } else if config.min_tx_gas > 0 {
+        // On success, enforce the global per-tx minimum gas floor if the
+        // feature min_tx_gas is enabled
+        use core::cmp::min;
+
+        let floor = min(config.min_tx_gas, receipt.gas_limit);
+        if receipt.gas_spent < floor {
+            receipt.gas_spent = floor;
+        }
     }
 
     // Refund the appropriate amount to the transaction. This call is guaranteed
