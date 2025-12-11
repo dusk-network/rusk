@@ -36,7 +36,7 @@ pub struct WellKnownConfig {
     pub min_deploy_points: u64,
     pub min_deployment_gas_price: u64,
     pub block_gas_limit: u64,
-    pub features: [(&'static str, FeatureActivation); 6],
+    pub features: [(&'static str, FeatureActivation); 7],
 }
 
 impl WellKnownConfig {
@@ -80,8 +80,8 @@ const MAINNET_BLOB_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(MAINNET_AT_10_12_2025_AT_09_00_UTC);
 
 /// Mainnet VM configuration.
-static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
-    LazyLock::new(|| WellKnownConfig {
+static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
+    WellKnownConfig {
         gas_per_blob: 0,
         gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
         min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
@@ -94,8 +94,13 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
             (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
+            (
+                "shade_6fdfdc713a18fc6ca2ad20eb2b4a3305a935ef47d6a872d9a4df8bc9fd9d169e",
+                FeatureActivation::Ranges(vec![(12873529, 12874639)]),
+            ),
         ],
-    });
+    }
+});
 
 /// Estimated testnet block height for 12th November 2025, 09:00 UTC.
 const TESTNET_AT_12_11_2025_AT_09_00_UTC: FeatureActivation =
@@ -115,6 +120,7 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM32, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
+        (FEATURE_DISABLE_3RD_PARTY, NEVER),
     ],
 };
 
@@ -132,6 +138,7 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_DISABLE_WASM64, GENESIS),
         (FEATURE_DISABLE_WASM32, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
+        (FEATURE_DISABLE_3RD_PARTY, NEVER),
     ],
 };
 
@@ -148,6 +155,7 @@ const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_BLOB, GENESIS),
         (FEATURE_DISABLE_WASM64, GENESIS),
         (FEATURE_DISABLE_WASM32, NEVER),
+        (FEATURE_DISABLE_3RD_PARTY, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
     ],
 };
