@@ -38,13 +38,25 @@ impl Activation {
 
     /// Unwraps the activation height.
     ///
-    /// Panics if the activation is of type `ActivationRanges`.
+    /// Panics if the activation is of type `Activation::Ranges`.
     pub fn unwrap_height(&self) -> u64 {
         match self {
             Activation::Height(height) => *height,
             Activation::Ranges(_) => {
-                panic!("Called unwrap_height on ActivationRanges")
+                panic!("Called unwrap_height on Activation::Ranges")
             }
+        }
+    }
+
+    /// Unwraps the activation ranges.
+    ///
+    /// Panics if the activation is of type `Activation::Height`.
+    pub fn unwrap_ranges(&self) -> &[(u64, u64)] {
+        match self {
+            Activation::Height(_) => {
+                panic!("Called unwrap_height on Activation::Height")
+            }
+            Activation::Ranges(ranges) => &ranges[..],
         }
     }
 }

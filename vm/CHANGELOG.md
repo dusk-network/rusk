@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Added
+
+- Add `remove_3rd_party` api
+- Add `recompile_3rd_party` api
+
+## Changed
+
+- Change piecrust version requirement to 0.29.0-rc.3
+
 ## [1.4.1] - 2025-12-04
 
 ### Added
