@@ -20,7 +20,7 @@ use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, new_state};
+use crate::common::state::{generator_procedure, new_state, ExecuteResult};
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore,
 };
@@ -34,6 +34,8 @@ const GAS_LIMIT_0: u64 = 100_000_000;
 const GAS_LIMIT_1: u64 = 300_000_000;
 const GAS_PRICE: u64 = 1;
 const DEPOSIT: u64 = 0;
+const MIN_TX_GAS: u64 = 5_000_000;
+const LOW_GAS_LIMIT: u64 = 1_000_000;
 
 // Creates the Rusk initial state for the tests below
 async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
@@ -130,6 +132,13 @@ fn make_transactions(
         tx_1.gas_spent < GAS_LIMIT_1,
         "Successful transaction should consume less than provided"
     );
+    assert!(
+        tx_1.gas_spent >= MIN_TX_GAS,
+        "Successful transaction should be charged at least MIN_TX_GAS \
+         (got {}, expected >= {})",
+        tx_1.gas_spent,
+        MIN_TX_GAS,
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -169,6 +178,59 @@ pub async fn erroring_tx_charged_full() -> Result<()> {
     // let (_, _, h) = recv.expect("Transaction has not been locally
     // propagated"); assert_eq!(h, 0, "Transaction locally propagated with
     // wrong height");
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn tx_below_min_tx_gas_is_discarded() -> Result<()> {
+    // Setup the logger
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp).await?;
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+    );
+
+    let mut rng = StdRng::seed_from_u64(0xbeef);
+
+    // This is the same call as in make_transactions, but with a gas_limit
+    // that is below the MIN_TX_GAS
+    let contract_call = ContractCall::new(TRANSFER_CONTRACT, "root");
+    let tx_low = wallet
+        .phoenix_execute(
+            &mut rng,
+            SENDER_INDEX_0,
+            LOW_GAS_LIMIT,
+            GAS_PRICE,
+            DEPOSIT,
+            TransactionData::Call(contract_call),
+        )
+        .expect("Making the transaction should succeed");
+
+    // With the MIN_TX_GAS feature active, this tx must be discarded
+    // during block generation
+    let res = generator_procedure(
+        &rusk,
+        &[tx_low],
+        BLOCK_HEIGHT,
+        BLOCK_GAS_LIMIT,
+        vec![],
+        Some(ExecuteResult {
+            executed: 0,
+            discarded: 1,
+        }),
+    );
+
+    res.expect("generator procedure should succeed");
 
     Ok(())
 }
