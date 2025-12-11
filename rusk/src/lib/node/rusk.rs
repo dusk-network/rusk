@@ -433,6 +433,14 @@ impl Rusk {
         }))
     }
 
+    pub fn shade_3rd_party(&self, contract_id: ContractId) -> Result<()> {
+        Ok(self.vm.remove_3rd_party(contract_id)?)
+    }
+
+    pub fn recompile_3rd_party(&self, contract_id: ContractId) -> Result<()> {
+        Ok(self.vm.recompile_3rd_party(contract_id)?)
+    }
+
     /// Returns an account's information.
     pub fn account(&self, pk: &BlsPublicKey) -> Result<AccountData> {
         self.query(TRANSFER_CONTRACT, "account", pk)
@@ -645,7 +653,10 @@ impl Rusk {
             let tx_id = unspent_tx.id();
             let receipt = execute(&mut session, tx, &execution_config)
                 .map_err(|err| {
-                    StateTransitionError::ExecutionError(format!("{err}"))
+                    StateTransitionError::ExecutionError(format!(
+                        "Tx {} is discarded {err}",
+                        hex::encode(tx_id)
+                    ))
                 })?;
 
             event_bloom.add_events(&receipt.events);
@@ -671,13 +682,16 @@ impl Rusk {
                     StateTransitionError::ExecutionError(format!("{err}"))
                 })?;
 
-            spent_txs.push(SpentTransaction {
+            let spent = SpentTransaction {
                 inner: unspent_tx.clone(),
                 gas_spent,
                 block_height,
                 // We're currently ignoring the result of successful calls
                 err: receipt.data.err().map(|e| format!("{e}")),
-            });
+            };
+            info!("Tx executed: gas_spent {gas_spent}, err: {:?}", spent.err);
+
+            spent_txs.push(spent);
         }
 
         // Apply rewards and slashes

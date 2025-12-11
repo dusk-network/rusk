@@ -8,6 +8,7 @@ mod config;
 mod query;
 
 use dusk_consensus::errors::StateTransitionError;
+use dusk_core::abi::ContractId;
 use node_data::events::contract::ContractTxEvent;
 use tracing::{debug, info};
 
@@ -320,6 +321,18 @@ impl VMExecution for Rusk {
             .feature(FEATURE_DISABLE_3RD_PARTY)
             .map(|activation| activation.is_active_at(block_height))
             .unwrap_or(false)
+    }
+
+    fn shade_3rd_party(&self, contract_id: ContractId) -> anyhow::Result<()> {
+        self.shade_3rd_party(contract_id).map_err(|inner| {
+            anyhow::anyhow!("Cannot remove 3rd party: {inner}")
+        })
+    }
+
+    fn enable_3rd_party(&self, contract_id: ContractId) -> anyhow::Result<()> {
+        self.recompile_3rd_party(contract_id).map_err(|inner| {
+            anyhow::anyhow!("Cannot enable 3rd party: {inner}")
+        })
     }
 }
 

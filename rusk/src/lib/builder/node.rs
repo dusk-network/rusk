@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -261,6 +262,16 @@ impl RuskNodeBuilder {
             .map(|f| f.unwrap_height())
             .unwrap_or(u64::MAX);
 
+        let mut module_shading = HashMap::new();
+        for (feat, activation) in vm_config.features() {
+            let feat = feat.to_ascii_lowercase();
+            if let Some(contract_id) = feat.strip_prefix("shade_") {
+                let contract_id = contract_id.to_string().try_into()?;
+                module_shading
+                    .insert(contract_id, activation.unwrap_ranges().to_vec());
+            }
+        }
+
         let blob_expire_after =
             self.blob_expire_after.unwrap_or(DEFAULT_BLOB_EXPIRE_AFTER);
 
@@ -299,6 +310,7 @@ impl RuskNodeBuilder {
             *crate::DUSK_CONSENSUS_KEY,
             finality_activation,
             blob_expire_after,
+            module_shading,
             #[cfg(feature = "archive")]
             archive.clone(),
         );
