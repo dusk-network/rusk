@@ -114,11 +114,9 @@ impl OptionalConfig {
             config.block_gas_limit,
         );
 
-        Self::set_or_warn(
-            "min_tx_gas",
-            &mut self.min_tx_gas,
-            config.min_tx_gas,
-        );
+        if let Some(value) = config.min_tx_gas {
+            Self::set_or_warn("min_tx_gas", &mut self.min_tx_gas, value);
+        }
 
         for (feature, activation) in &config.features {
             if let Some(v) = self.feature(feature) {
@@ -201,9 +199,7 @@ impl TryFrom<OptionalConfig> for Config {
             block_gas_limit: value
                 .block_gas_limit
                 .ok_or(anyhow!("Missing block_gas_limit"))?,
-            min_tx_gas: value
-                .min_tx_gas
-                .ok_or(anyhow!("Missing min_tx_gas"))?,
+            min_tx_gas: value.min_tx_gas,
             generation_timeout: value.generation_timeout,
             features: value.features,
         })

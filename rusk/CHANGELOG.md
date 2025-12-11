@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add TX floor price feature, including for well-known chain ids [#3940]
+- Add TX gas floor feature, including for well-known chain ids [#3940]
 
 ## [1.4.1] - 2025-12-04
 

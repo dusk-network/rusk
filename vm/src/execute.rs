@@ -159,11 +159,8 @@ pub fn execute(
     } else if config.min_tx_gas > 0 {
         // On success, enforce the global per-tx minimum gas floor if the
         // feature min_tx_gas is enabled
-        use core::cmp::min;
-
-        let floor = min(config.min_tx_gas, receipt.gas_limit);
-        if receipt.gas_spent < floor {
-            receipt.gas_spent = floor;
+        if receipt.gas_spent < config.min_tx_gas {
+            receipt.gas_spent = config.min_tx_gas;
         }
     }
 

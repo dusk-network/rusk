@@ -39,7 +39,7 @@ pub struct WellKnownConfig {
     pub min_deploy_points: u64,
     pub min_deployment_gas_price: u64,
     pub block_gas_limit: u64,
-    pub min_tx_gas: u64,
+    pub min_tx_gas: Option<u64>,
     pub features: [(&'static str, FeatureActivation); 7],
 }
 
@@ -83,9 +83,6 @@ static MAINNET_DISABLE_WASM_64: LazyLock<FeatureActivation> =
 const MAINNET_BLOB_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(MAINNET_AT_10_12_2025_AT_09_00_UTC);
 
-const MAINNET_MIN_TX_GAS_ACTIVATION: FeatureActivation =
-    FeatureActivation::Height(3_060_210);
-
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
     LazyLock::new(|| WellKnownConfig {
@@ -94,7 +91,7 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
         min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
         min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
         block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-        min_tx_gas: DEFAULT_MIN_TX_GAS,
+        min_tx_gas: None,
         features: [
             (FEATURE_ABI_PUBLIC_SENDER, MAINNET_SENDER_ACTIVATION_HEIGHT),
             (HQ_KECCAK256, NEVER),
@@ -102,16 +99,13 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
             (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
-            (FEATURE_MIN_TX_GAS, MAINNET_MIN_TX_GAS_ACTIVATION),
+            (FEATURE_MIN_TX_GAS, NEVER),
         ],
     });
 
 /// Estimated testnet block height for 12th November 2025, 09:00 UTC.
 const TESTNET_AT_12_11_2025_AT_09_00_UTC: FeatureActivation =
     FeatureActivation::Height(1_814_090);
-
-const TESTNET_MIN_TX_GAS_ACTIVATION: FeatureActivation =
-    FeatureActivation::Height(2_242_800);
 
 /// Testnet VM configuration.
 const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
@@ -120,7 +114,7 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    min_tx_gas: DEFAULT_MIN_TX_GAS,
+    min_tx_gas: None,
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
         (HQ_KECCAK256, NEVER),
@@ -128,7 +122,7 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM32, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
-        (FEATURE_MIN_TX_GAS, TESTNET_MIN_TX_GAS_ACTIVATION),
+        (FEATURE_MIN_TX_GAS, NEVER),
     ],
 };
 
@@ -139,7 +133,7 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
     min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    min_tx_gas: DEFAULT_MIN_TX_GAS,
+    min_tx_gas: None,
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
         (HQ_KECCAK256, GENESIS),
@@ -147,7 +141,7 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_DISABLE_WASM64, GENESIS),
         (FEATURE_DISABLE_WASM32, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
-        (FEATURE_MIN_TX_GAS, GENESIS),
+        (FEATURE_MIN_TX_GAS, NEVER),
     ],
 };
 
@@ -158,7 +152,7 @@ const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
     min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
-    min_tx_gas: DEFAULT_MIN_TX_GAS,
+    min_tx_gas: Some(DEFAULT_MIN_TX_GAS),
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
         (HQ_KECCAK256, GENESIS),

@@ -325,11 +325,11 @@ impl VMExecution for Rusk {
     fn min_tx_gas(&self, height: u64) -> u64 {
         self.vm_config
             .feature(FEATURE_MIN_TX_GAS)
-            .map(|activation| {
+            .and_then(|activation| {
                 if activation.is_active_at(height) {
                     self.vm_config.min_tx_gas
                 } else {
-                    0
+                    None
                 }
             })
             .unwrap_or(0)
