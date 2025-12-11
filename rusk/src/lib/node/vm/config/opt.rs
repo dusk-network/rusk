@@ -43,6 +43,9 @@ pub struct OptionalConfig {
     #[serde(default, with = "humantime_serde")]
     pub generation_timeout: Option<Duration>,
 
+    /// Minimum gas charged for any transaction.
+    pub min_tx_gas: Option<u64>,
+
     /// Set of features to activate
     #[serde(default)]
     features: HashMap<String, FeatureActivation>,
@@ -110,6 +113,10 @@ impl OptionalConfig {
             &mut self.block_gas_limit,
             config.block_gas_limit,
         );
+
+        if let Some(value) = config.min_tx_gas {
+            Self::set_or_warn("min_tx_gas", &mut self.min_tx_gas, value);
+        }
 
         for (feature, activation) in &config.features {
             if let Some(v) = self.feature(feature) {
@@ -192,6 +199,7 @@ impl TryFrom<OptionalConfig> for Config {
             block_gas_limit: value
                 .block_gas_limit
                 .ok_or(anyhow!("Missing block_gas_limit"))?,
+            min_tx_gas: value.min_tx_gas,
             generation_timeout: value.generation_timeout,
             features: value.features,
         })

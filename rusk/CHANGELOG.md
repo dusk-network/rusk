@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add TX gas floor feature, including for well-known chain ids [#3940]
+
 ## [1.4.1] - 2025-12-04
 
 ### Added
@@ -406,6 +410,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3940]: https://github.com/dusk-network/rusk/issues/3940
 [#3917]: https://github.com/dusk-network/rusk/issues/3917
 [#3897]: https://github.com/dusk-network/rusk/issues/3897
 [#3894]: https://github.com/dusk-network/rusk/issues/3894

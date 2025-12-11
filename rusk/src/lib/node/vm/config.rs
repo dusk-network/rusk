@@ -21,6 +21,7 @@ const DEFAULT_GAS_PER_BLOB: u64 = 1_000_000;
 const DEFAULT_MIN_DEPLOY_POINTS: u64 = 5_000_000;
 const DEFAULT_MIN_DEPLOYMENT_GAS_PRICE: u64 = 2_000;
 const DEFAULT_BLOCK_GAS_LIMIT: u64 = 3 * 1_000_000_000;
+const DEFAULT_MIN_TX_GAS: u64 = 5_000_000;
 
 /// Configuration for the execution of a transaction.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -45,6 +46,9 @@ pub struct Config {
     #[serde(with = "humantime_serde")]
     pub generation_timeout: Option<Duration>,
 
+    /// Optional minimum gas charged for any transaction.
+    pub min_tx_gas: Option<u64>,
+
     /// Set of features to activate
     features: HashMap<String, FeatureActivation>,
 }
@@ -61,6 +65,7 @@ pub(crate) mod feature {
     pub const FEATURE_DISABLE_WASM64: &str = "DISABLE_WASM64";
     pub const FEATURE_DISABLE_WASM32: &str = "DISABLE_WASM32";
     pub const FEATURE_DISABLE_3RD_PARTY: &str = "DISABLE_3RD_PARTY";
+    pub const FEATURE_MIN_TX_GAS: &str = "MIN_TX_GAS";
 
     pub const HQ_KECCAK256: &str = "HQ_KECCAK256";
 }
@@ -73,6 +78,7 @@ impl Config {
             min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
             min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
             block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+            min_tx_gas: None,
             generation_timeout: None,
             features: HashMap::new(),
         }
@@ -121,6 +127,12 @@ impl Config {
         self
     }
 
+    /// Set the minimum gas charged for any transaction.
+    pub const fn with_min_tx_gas(mut self, min_tx_gas: u64) -> Self {
+        self.min_tx_gas = Some(min_tx_gas);
+        self
+    }
+
     /// Create a new `Config` with the given parameters.
     pub fn to_execution_config(&self, block_height: u64) -> ExecutionConfig {
         let with_public_sender: bool = self
@@ -143,11 +155,22 @@ impl Config {
             .feature(feature::FEATURE_DISABLE_3RD_PARTY)
             .map(|activation| activation.is_active_at(block_height))
             .unwrap_or_default();
+        let min_tx_gas = if self
+            .feature(feature::FEATURE_MIN_TX_GAS)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or_default()
+        {
+            self.min_tx_gas.unwrap_or(0)
+        } else {
+            0
+        };
+
         ExecutionConfig {
             gas_per_blob: self.gas_per_blob,
             gas_per_deploy_byte: self.gas_per_deploy_byte,
             min_deploy_points: self.min_deploy_points,
             min_deploy_gas_price: self.min_deployment_gas_price,
+            min_tx_gas,
             with_public_sender,
             with_blob,
             disable_wasm64,

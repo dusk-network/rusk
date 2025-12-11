@@ -321,6 +321,19 @@ impl VMExecution for Rusk {
             .map(|activation| activation.is_active_at(block_height))
             .unwrap_or(false)
     }
+
+    fn min_tx_gas(&self, height: u64) -> u64 {
+        self.vm_config
+            .feature(FEATURE_MIN_TX_GAS)
+            .and_then(|activation| {
+                if activation.is_active_at(height) {
+                    self.vm_config.min_tx_gas
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(0)
+    }
 }
 
 fn has_unique_elements<T>(iter: T) -> bool

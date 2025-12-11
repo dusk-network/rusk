@@ -10,7 +10,9 @@ use std::sync::LazyLock;
 
 use dusk_vm::FeatureActivation;
 
-use crate::node::{FEATURE_DISABLE_3RD_PARTY, FEATURE_DISABLE_WASM32};
+use crate::node::{
+    FEATURE_DISABLE_3RD_PARTY, FEATURE_DISABLE_WASM32, FEATURE_MIN_TX_GAS,
+};
 
 use super::feature::{
     FEATURE_ABI_PUBLIC_SENDER, FEATURE_BLOB, FEATURE_DISABLE_WASM64,
@@ -19,6 +21,7 @@ use super::feature::{
 use super::{
     DEFAULT_BLOCK_GAS_LIMIT, DEFAULT_GAS_PER_BLOB, DEFAULT_GAS_PER_DEPLOY_BYTE,
     DEFAULT_MIN_DEPLOYMENT_GAS_PRICE, DEFAULT_MIN_DEPLOY_POINTS,
+    DEFAULT_MIN_TX_GAS,
 };
 
 pub const MAINNET_ID: u8 = 1;
@@ -36,7 +39,8 @@ pub struct WellKnownConfig {
     pub min_deploy_points: u64,
     pub min_deployment_gas_price: u64,
     pub block_gas_limit: u64,
-    pub features: [(&'static str, FeatureActivation); 6],
+    pub min_tx_gas: Option<u64>,
+    pub features: [(&'static str, FeatureActivation); 7],
 }
 
 impl WellKnownConfig {
@@ -87,6 +91,7 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
         min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
         min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
         block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+        min_tx_gas: None,
         features: [
             (FEATURE_ABI_PUBLIC_SENDER, MAINNET_SENDER_ACTIVATION_HEIGHT),
             (HQ_KECCAK256, NEVER),
@@ -94,6 +99,7 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
             (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
+            (FEATURE_MIN_TX_GAS, NEVER),
         ],
     });
 
@@ -108,6 +114,7 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+    min_tx_gas: None,
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
         (HQ_KECCAK256, NEVER),
@@ -115,6 +122,7 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM32, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
+        (FEATURE_MIN_TX_GAS, NEVER),
     ],
 };
 
@@ -125,6 +133,7 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
     min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+    min_tx_gas: None,
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
         (HQ_KECCAK256, GENESIS),
@@ -132,6 +141,7 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_DISABLE_WASM64, GENESIS),
         (FEATURE_DISABLE_WASM32, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
+        (FEATURE_MIN_TX_GAS, NEVER),
     ],
 };
 
@@ -142,6 +152,7 @@ const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
     min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
     min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
+    min_tx_gas: Some(DEFAULT_MIN_TX_GAS),
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
         (HQ_KECCAK256, GENESIS),
@@ -149,5 +160,6 @@ const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (FEATURE_DISABLE_WASM64, GENESIS),
         (FEATURE_DISABLE_WASM32, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
+        (FEATURE_MIN_TX_GAS, GENESIS),
     ],
 };
