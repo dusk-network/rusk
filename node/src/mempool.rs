@@ -61,7 +61,7 @@ pub enum TxAcceptanceError {
     VerificationFailed(String),
     #[error("gas price lower than minimum {0}")]
     GasPriceTooLow(u64),
-    #[error("gas limit lower than minimum {0}")]
+    #[error("gas limit lower than minimum {0} LUX")]
     GasLimitTooLow(u64),
     #[error("Maximum count of transactions exceeded {0}")]
     MaxTxnCountExceeded(usize),
@@ -349,10 +349,16 @@ impl MempoolSrv {
                 dusk_consensus::validate_blob_sidecars(tx)?;
             }
 
-            // Check global minimum gas limit
-            let min_gas_limit = vm.min_gas_limit();
-            if tx.inner.gas_limit() < min_gas_limit {
-                return Err(TxAcceptanceError::GasLimitTooLow(min_gas_limit));
+            // Check global minimum gas limit and per-tx fee floor
+            let chain_min_gas_limit = vm.min_gas_limit();
+            let min_tx_gas = vm.min_tx_gas(tip_height);
+            let required_gas_limit =
+                core::cmp::max(chain_min_gas_limit, min_tx_gas);
+
+            if tx.inner.gas_limit() < required_gas_limit {
+                return Err(TxAcceptanceError::GasLimitTooLow(
+                    required_gas_limit,
+                ));
             }
         }
 

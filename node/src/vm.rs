@@ -98,6 +98,7 @@ pub trait VMExecution: Send + Sync + 'static {
     fn wasm64_disabled(&self, block_height: u64) -> bool;
     fn wasm32_disabled(&self, block_height: u64) -> bool;
     fn third_party_disabled(&self, block_height: u64) -> bool;
+    fn min_tx_gas(&self, height: u64) -> u64;
 }
 
 #[allow(clippy::large_enum_variant)]

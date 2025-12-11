@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Enforce `min_tx_gas` in mempool preverify, reject TXs where `gas_limit < max(min_gas_limit, min_tx_gas)` [#3940]
+
 ## [1.4.1] - 2025-12-04
 
 ### Added
@@ -76,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-node` release
 
 <!-- Issues -->
+[#3940]: https://github.com/dusk-network/rusk/issues/3940
 [#3917]: https://github.com/dusk-network/rusk/issues/3917
 [#3874]: https://github.com/dusk-network/rusk/issues/3874
 [#3871]: https://github.com/dusk-network/rusk/issues/3871
