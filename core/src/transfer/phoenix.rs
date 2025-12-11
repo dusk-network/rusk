@@ -47,6 +47,7 @@ pub type NoteTreeItem = poseidon_merkle::Item<()>;
 /// A leaf of the merkle tree of notes stored in the transfer-contract.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NoteLeaf {
     /// The height of the block when the note was inserted in the tree.
     pub block_height: u64,

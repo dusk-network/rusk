@@ -1921,7 +1921,7 @@ dependencies = [
  "dusk-node",
  "dusk-node-data",
  "dusk-stake-contract-dd 0.3.0",
- "dusk-transfer-contract-dd 0.3.0",
+ "dusk-transfer-contract-dd",
  "dusk-vm",
  "dusk-wallet-core",
  "dusk-wasmtime",
@@ -1986,16 +1986,6 @@ name = "dusk-stake-contract-dd"
 version = "0.3.1-alpha.1"
 dependencies = [
  "dusk-core 1.4.1-alpha.1",
- "dusk-data-driver 0.3.0",
-]
-
-[[package]]
-name = "dusk-transfer-contract-dd"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce738f97c0e00fe40357b2c7327f21a68adc840a4b5336f4e2bf488849f72fc7"
-dependencies = [
- "dusk-core 1.4.0",
  "dusk-data-driver 0.3.0",
 ]
 

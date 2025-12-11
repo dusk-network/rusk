@@ -23,6 +23,7 @@ use alloc::vec::Vec;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
+use dusk_core::transfer::phoenix::NoteLeaf;
 use dusk_core::transfer::{
     withdraw::Withdraw, ContractToAccount, ContractToAccountEvent,
     ContractToContract, ContractToContractEvent, ConvertEvent, DepositEvent,
@@ -150,7 +151,7 @@ impl ConvertibleContract for ContractDriver {
                 }),
 
             "leaves_from_height" | "leaves_from_pos" | "sync" => {
-                Err(Error::Unsupported("unsupported".into()))
+                rkyv_to_json::<NoteLeaf>(rkyv)
             }
 
             // Unsupported
