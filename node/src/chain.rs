@@ -13,6 +13,7 @@ mod genesis;
 mod header_validation;
 mod metrics;
 
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
@@ -21,6 +22,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use dusk_consensus::config::is_emergency_block;
 use dusk_consensus::errors::ConsensusError;
+use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 pub use header_validation::verify_att;
 use node_data::events::Event;
@@ -63,6 +65,7 @@ pub struct ChainSrv<N: Network, DB: database::DB, VM: vm::VMExecution> {
     dusk_key: BlsPublicKey,
     finality_activation: u64,
     blob_expire_after: u64,
+    module_shading: HashMap<ContractId, Vec<(u64, u64)>>,
     #[cfg(feature = "archive")]
     archive: Archive,
 }
@@ -98,6 +101,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             self.dusk_key,
             self.finality_activation,
             self.blob_expire_after,
+            self.module_shading.clone(),
         )
         .await?;
 
@@ -260,6 +264,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
         dusk_key: BlsPublicKey,
         finality_activation: u64,
         blob_expire_after: u64,
+        module_shading: HashMap<ContractId, Vec<(u64, u64)>>,
         #[cfg(feature = "archive")] archive: Archive,
     ) -> Self {
         info!(
@@ -277,6 +282,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> ChainSrv<N, DB, VM> {
             dusk_key,
             finality_activation,
             blob_expire_after,
+            module_shading,
             #[cfg(feature = "archive")]
             archive,
         }

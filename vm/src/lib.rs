@@ -332,4 +332,20 @@ impl VM {
         self.inner
             .register_host_query(Query::KECCAK256, host_keccak256);
     }
+
+    /// Remove contract
+    pub fn remove_3rd_party(
+        &self,
+        contract_id: ContractId,
+    ) -> Result<(), Error> {
+        self.inner.remove_module(contract_id)
+    }
+
+    /// Recompile contract
+    pub fn recompile_3rd_party(
+        &self,
+        contract_id: ContractId,
+    ) -> Result<(), Error> {
+        self.inner.recompile_module(contract_id)
+    }
 }
