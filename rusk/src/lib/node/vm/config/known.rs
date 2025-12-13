@@ -82,7 +82,7 @@ const MAINNET_BLOB_ACTIVATION: FeatureActivation =
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> =
     LazyLock::new(|| WellKnownConfig {
-        gas_per_blob: 0,
+        gas_per_blob: DEFAULT_GAS_PER_BLOB,
         gas_per_deploy_byte: DEFAULT_GAS_PER_DEPLOY_BYTE,
         min_deploy_points: DEFAULT_MIN_DEPLOY_POINTS,
         min_deployment_gas_price: DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
