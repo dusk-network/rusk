@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2025-12-13
+
 ### Added
 
 - Add support for wasm module shading feature
@@ -453,7 +455,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#292]: https://github.com/dusk-network/rusk/issues/292
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.1...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.2...HEAD
+[1.4.2]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.1...dusk-rusk-1.4.2
 [1.4.1]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.3.0...dusk-rusk-1.4.1
 [1.3.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.2.0...dusk-rusk-1.3.0
 [1.2.0]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.1.1...dusk-rusk-1.2.0
