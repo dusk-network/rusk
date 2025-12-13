@@ -122,7 +122,7 @@ dependencies = [
 name = "alice"
 version = "0.3.0"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "rkyv",
 ]
 
@@ -791,7 +791,7 @@ version = "0.3.0"
 dependencies = [
  "bytecheck",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "rkyv",
 ]
 
@@ -917,7 +917,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "charlie"
 version = "0.3.0"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "rkyv",
 ]
 
@@ -1669,35 +1669,15 @@ dependencies = [
 
 [[package]]
 name = "dusk-consensus"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e2a7946a308cc1c662193d19cda89b9f1014398785ee63251c1da7f798679fc"
-dependencies = [
- "anyhow",
- "async-trait",
- "dusk-bytes",
- "dusk-core 1.4.0",
- "dusk-merkle",
- "dusk-node-data 1.4.0",
- "hex",
- "num-bigint",
- "sha3",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "dusk-consensus"
 version = "1.4.1-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
  "criterion",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "dusk-merkle",
- "dusk-node-data 1.4.0",
+ "dusk-node-data",
  "hex",
  "num-bigint",
  "rand 0.8.5",
@@ -1713,17 +1693,11 @@ version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7972fd42fb3fe67ea5492909f7715f8fe373af98a02943b7e24b5262fbd4678a"
 dependencies = [
- "ark-bn254",
- "ark-groth16",
- "ark-relations",
- "ark-serialize",
  "bls12_381-bls 0.5.1",
  "bytecheck",
- "c-kzg",
  "dusk-bls12_381 0.14.2",
  "dusk-bytes",
  "dusk-jubjub",
- "dusk-plonk",
  "dusk-poseidon",
  "ff",
  "jubjub-schnorr",
@@ -1825,41 +1799,6 @@ dependencies = [
 
 [[package]]
 name = "dusk-node"
-version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "158f4bfdd0155da3af2f57357b065239726f36ec960ebfd645bb7f92dac3d30f"
-dependencies = [
- "anyhow",
- "async-channel",
- "async-trait",
- "bs58",
- "dusk-bytes",
- "dusk-consensus 1.4.0",
- "dusk-core 1.4.0",
- "dusk-node-data 1.4.0",
- "hex",
- "humantime-serde",
- "indexmap 2.11.4",
- "kadcast",
- "memory-stats",
- "metrics",
- "metrics-exporter-prometheus",
- "native-tls",
- "rkyv",
- "rocksdb",
- "serde",
- "serde_json",
- "serde_with",
- "smallvec",
- "sqlx",
- "thiserror",
- "time-util",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "dusk-node"
 version = "1.4.3-alpha.1"
 dependencies = [
  "anyhow",
@@ -1868,10 +1807,10 @@ dependencies = [
  "bs58",
  "criterion",
  "dusk-bytes",
- "dusk-consensus 1.4.0",
- "dusk-core 1.4.0",
- "dusk-node-data 1.4.0",
- "dusk-wallet-core 1.4.0",
+ "dusk-consensus",
+ "dusk-core 1.4.1-alpha.1",
+ "dusk-node-data",
+ "dusk-wallet-core",
  "fake",
  "hex",
  "humantime-serde",
@@ -1898,36 +1837,6 @@ dependencies = [
 
 [[package]]
 name = "dusk-node-data"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "151e90fd009c6d187b3f1de78771c68efce2a9f1cb86188868c110008dc08008"
-dependencies = [
- "aes 0.7.5",
- "aes-gcm",
- "anyhow",
- "async-channel",
- "base64 0.22.1",
- "block-modes",
- "bs58",
- "chrono",
- "dusk-bytes",
- "dusk-core 1.4.0",
- "fake",
- "hex",
- "pbkdf2 0.12.2",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "serde_with",
- "sha2 0.10.8",
- "sha3",
- "thiserror",
- "tracing",
- "zeroize",
-]
-
-[[package]]
-name = "dusk-node-data"
 version = "1.4.1-alpha.1"
 dependencies = [
  "aes 0.7.5",
@@ -1939,7 +1848,7 @@ dependencies = [
  "bs58",
  "chrono",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "fake",
  "hex",
  "pbkdf2 0.12.2",
@@ -2006,15 +1915,15 @@ dependencies = [
  "criterion",
  "dirs",
  "dusk-bytes",
- "dusk-consensus 1.4.0",
- "dusk-core 1.4.0",
+ "dusk-consensus",
+ "dusk-core 1.4.1-alpha.1",
  "dusk-data-driver 0.3.0",
- "dusk-node 1.4.2",
- "dusk-node-data 1.4.0",
+ "dusk-node",
+ "dusk-node-data",
  "dusk-stake-contract-dd 0.3.0",
  "dusk-transfer-contract-dd 0.3.0",
- "dusk-vm 1.4.2",
- "dusk-wallet-core 1.4.0",
+ "dusk-vm",
+ "dusk-wallet-core",
  "dusk-wasmtime",
  "ff",
  "futures",
@@ -2031,9 +1940,9 @@ dependencies = [
  "rand 0.8.5",
  "reqwest",
  "rkyv",
- "rusk-profile 1.4.0",
- "rusk-prover 1.3.0",
- "rusk-recovery 1.4.0",
+ "rusk-profile",
+ "rusk-prover",
+ "rusk-recovery",
  "rustc_tools_util",
  "rustls-pemfile",
  "semver",
@@ -2076,7 +1985,7 @@ dependencies = [
 name = "dusk-stake-contract-dd"
 version = "0.3.1-alpha.1"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "dusk-data-driver 0.3.0",
 ]
 
@@ -2094,27 +2003,8 @@ dependencies = [
 name = "dusk-transfer-contract-dd"
 version = "0.3.1-alpha.1"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "dusk-data-driver 0.3.0",
-]
-
-[[package]]
-name = "dusk-vm"
-version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd41fca330303c0e881bcd4043c6e89e5f06515fa407c45bc6158e65e1552637"
-dependencies = [
- "blake2b_simd",
- "blake3",
- "dusk-bytes",
- "dusk-core 1.4.0",
- "dusk-poseidon",
- "lru",
- "piecrust",
- "rkyv",
- "serde",
- "sha3",
- "wasmparser 0.240.0",
 ]
 
 [[package]]
@@ -2124,7 +2014,7 @@ dependencies = [
  "blake2b_simd",
  "blake3",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "dusk-poseidon",
  "ff",
  "hex",
@@ -2141,33 +2031,13 @@ dependencies = [
 
 [[package]]
 name = "dusk-wallet-core"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f68eafa8ccc68368f904889b86bbcf2298cad90c856ce13c0db96649503e2114"
-dependencies = [
- "blake3",
- "bytecheck",
- "dlmalloc",
- "dusk-bytes",
- "dusk-core 1.4.0",
- "ff",
- "hkdf",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
- "rkyv",
- "sha2 0.10.8",
- "zeroize",
-]
-
-[[package]]
-name = "dusk-wallet-core"
 version = "1.4.1-alpha.1"
 dependencies = [
  "blake3",
  "bytecheck",
  "dlmalloc",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "ff",
  "hex",
  "hkdf",
@@ -2873,7 +2743,7 @@ name = "host_fn"
 version = "0.2.0"
 dependencies = [
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
 ]
 
 [[package]]
@@ -4738,23 +4608,6 @@ dependencies = [
 
 [[package]]
 name = "rusk-profile"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f37ff8ed7398a5442f16e26f8acee801ef5fe42d8982b9cb586cb46f432db9d"
-dependencies = [
- "blake3",
- "console",
- "dirs",
- "hex",
- "serde",
- "sha2 0.10.8",
- "toml",
- "tracing",
- "version_check",
-]
-
-[[package]]
-name = "rusk-profile"
 version = "1.4.1-alpha.1"
 dependencies = [
  "blake3",
@@ -4771,61 +4624,16 @@ dependencies = [
 
 [[package]]
 name = "rusk-prover"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06ec33ea54518b45d9d26ec791ddc6430f96dcf75083e32170c3d87f7082f692"
-dependencies = [
- "dusk-bytes",
- "dusk-core 1.4.0",
- "dusk-plonk",
- "hex",
- "once_cell",
- "rand 0.8.5",
- "rusk-profile 1.4.0",
- "tracing",
-]
-
-[[package]]
-name = "rusk-prover"
 version = "1.4.1-alpha.1"
 dependencies = [
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "dusk-plonk",
  "hex",
  "once_cell",
  "rand 0.8.5",
- "rusk-profile 1.4.0",
+ "rusk-profile",
  "tracing",
-]
-
-[[package]]
-name = "rusk-recovery"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80973ec19f45903a2d32cc586c2ce9cc042773621c9abe1cad4add780301991b"
-dependencies = [
- "bs58",
- "cargo_toml",
- "dusk-bytes",
- "dusk-core 1.4.0",
- "dusk-plonk",
- "dusk-vm 1.4.2",
- "ff",
- "flate2",
- "hex",
- "http_req",
- "rand 0.8.5",
- "reqwest",
- "rusk-profile 1.4.0",
- "serde",
- "serde_derive",
- "tar",
- "tokio",
- "toml",
- "tracing",
- "url",
- "zip",
 ]
 
 [[package]]
@@ -4835,9 +4643,9 @@ dependencies = [
  "bs58",
  "cargo_toml",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
  "dusk-plonk",
- "dusk-vm 1.4.2",
+ "dusk-vm",
  "ff",
  "flate2",
  "hex",
@@ -4845,7 +4653,7 @@ dependencies = [
  "indexmap 2.11.4",
  "rand 0.8.5",
  "reqwest",
- "rusk-profile 1.4.0",
+ "rusk-profile",
  "serde",
  "serde_derive",
  "tar",
@@ -4872,9 +4680,9 @@ dependencies = [
  "crossterm",
  "dirs",
  "dusk-bytes",
- "dusk-core 1.4.0",
- "dusk-node-data 1.4.0",
- "dusk-wallet-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
+ "dusk-node-data",
+ "dusk-wallet-core",
  "flume 0.10.14",
  "futures",
  "hex",
@@ -5560,13 +5368,13 @@ version = "0.8.0"
 dependencies = [
  "criterion",
  "dusk-bytes",
- "dusk-core 1.4.0",
- "dusk-vm 1.4.2",
- "dusk-wallet-core 1.4.0",
+ "dusk-core 1.4.1-alpha.1",
+ "dusk-vm",
+ "dusk-wallet-core",
  "ff",
  "rand 0.8.5",
  "rkyv",
- "rusk-prover 1.3.0",
+ "rusk-prover",
 ]
 
 [[package]]
@@ -6063,14 +5871,14 @@ name = "transfer-contract"
 version = "0.10.1"
 dependencies = [
  "dusk-bytes",
- "dusk-core 1.4.0",
- "dusk-vm 1.4.2",
+ "dusk-core 1.4.1-alpha.1",
+ "dusk-vm",
  "ff",
  "rand 0.8.5",
  "ringbuffer",
  "rkyv",
- "rusk-profile 1.4.0",
- "rusk-prover 1.3.0",
+ "rusk-profile",
+ "rusk-prover",
 ]
 
 [[package]]
