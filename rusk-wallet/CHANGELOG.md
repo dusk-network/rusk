@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Separate archive node endpoint from state endpoint
 - Change withdraw command to claim rewards [#3077]
 - Ensure zeroize is called for secret info [#3687]
+- Change default transfer gas limit to a safer value [#3948]
 
 ### Fixed
 
@@ -95,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 <!-- Issues -->
+[#3948]: https://github.com/dusk-network/rusk/issues/3948
 [#3792]: https://github.com/dusk-network/rusk/issues/3792
 [#3775]: https://github.com/dusk-network/rusk/issues/3775
 [#3077]: https://github.com/dusk-network/rusk/issues/3077
