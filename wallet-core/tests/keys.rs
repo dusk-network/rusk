@@ -6,9 +6,10 @@
 
 use dusk_bytes::Serializable;
 use dusk_wallet_core::keys::{
-    derive_bls_sk, derive_multiple_phoenix_sk, derive_phoenix_pk,
-    derive_phoenix_sk, derive_phoenix_vk,
+    derive_multiple_phoenix_sk, derive_phoenix_pk, derive_phoenix_sk,
+    derive_phoenix_vk,
 };
+use dusk_wallet_core::keys::{eip2333, eip2334, legacy};
 
 const SEED: [u8; 64] = [0; 64];
 const INDEX: u8 = 42;
@@ -76,12 +77,29 @@ fn test_derive_phoenix_vk() {
 }
 
 #[test]
-fn test_derive_bls_sk() {
+fn test_derive_legacy_bls_sk() {
     // it is important that we always derive the same key from a fixed seed
     let sk_bytes = [
         95, 35, 167, 191, 106, 171, 71, 158, 159, 39, 84, 1, 132, 238, 152,
         235, 154, 5, 250, 158, 255, 195, 79, 95, 193, 58, 36, 189, 0, 99, 230,
         86,
     ];
-    assert_eq!(derive_bls_sk(&SEED, INDEX).to_bytes(), sk_bytes);
+    assert_eq!(legacy::derive_bls_sk(&SEED, INDEX).to_bytes(), sk_bytes);
+}
+
+#[test]
+fn test_derive_bls_sk() {
+    let sk_bytes = [
+        9, 195, 91, 35, 193, 184, 186, 70, 226, 2, 37, 105, 147, 84, 27, 127,
+        49, 5, 50, 208, 253, 29, 118, 227, 116, 251, 81, 129, 181, 113, 136,
+        85,
+    ];
+
+    let master_sk =
+        eip2333::derive_master_sk(&SEED).expect("Should always succeed");
+
+    assert_eq!(
+        eip2334::derive_bls_sk(&master_sk, INDEX as u64).to_bytes(),
+        sk_bytes
+    );
 }
