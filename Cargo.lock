@@ -2026,6 +2026,7 @@ dependencies = [
  "rkyv",
  "serde",
  "sha3",
+ "tracing",
  "wasmparser 0.240.0",
 ]
 
