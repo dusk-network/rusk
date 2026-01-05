@@ -27,6 +27,7 @@ use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
+use tracing::warn;
 
 use crate::cache;
 
@@ -95,11 +96,32 @@ pub fn verify_plonk(
     proof: Vec<u8>,
     public_inputs: Vec<BlsScalar>,
 ) -> bool {
-    let verifier = Verifier::try_from_bytes(verifier_data)
-        .expect("Verifier data coming from the contract should be valid");
-    let proof = PlonkProof::from_slice(&proof).expect("Proof should be valid");
+    // Deserialize verifier key
+    let verifier = match Verifier::try_from_bytes(verifier_data) {
+        Ok(v) => v,
+        Err(e) => {
+            warn!("vm: couldn't deserialize plonk verifier: {e:?}");
+            return false;
+        }
+    };
 
-    verifier.verify(&proof, &public_inputs[..]).is_ok()
+    // Deserialize proof
+    let proof = match PlonkProof::from_slice(&proof) {
+        Ok(p) => p,
+        Err(e) => {
+            warn!("vm: couldn't deserialize plonk proof: {e:?}");
+            return false;
+        }
+    };
+
+    // Verify and return boolean result (map errors to false)
+    match verifier.verify(&proof, &public_inputs[..]) {
+        Ok(_) => true,
+        Err(e) => {
+            warn!("vm: plonk verification failed: {e:?}");
+            false
+        }
+    }
 }
 
 /// Verifies a Groth16 zk-SNARK proof over the BN254 curve.
@@ -125,15 +147,39 @@ pub fn verify_groth16_bn254(
     proof: Vec<u8>,
     inputs: Vec<u8>,
 ) -> bool {
-    let pvk = PreparedVerifyingKey::deserialize_uncompressed(&pvk[..])
-        .expect("verifying key must be valid");
-    let proof = Groth16Proof::deserialize_compressed(&proof[..])
-        .expect("proof must be valid");
-    let inputs = G1Projective::deserialize_compressed(&inputs[..])
-        .expect("inputs must be valid");
+    let pvk = match PreparedVerifyingKey::deserialize_uncompressed(&pvk[..]) {
+        Ok(v) => v,
+        Err(e) => {
+            warn!("vm: couldn't deserialize groth16 verifiying key: {e}");
+            return false;
+        }
+    };
 
-    Groth16::<Bn254>::verify_proof_with_prepared_inputs(&pvk, &proof, &inputs)
-        .expect("verifying proof should succeed")
+    let proof = match Groth16Proof::deserialize_compressed(&proof[..]) {
+        Ok(p) => p,
+        Err(e) => {
+            warn!("vm: couldn't deserialize groth16 proof: {e}");
+            return false;
+        }
+    };
+
+    let inputs = match G1Projective::deserialize_compressed(&inputs[..]) {
+        Ok(i) => i,
+        Err(e) => {
+            warn!("vm: couldn't deserialize groth16 inputs: {e}");
+            return false;
+        }
+    };
+
+    match Groth16::<Bn254>::verify_proof_with_prepared_inputs(
+        &pvk, &proof, &inputs,
+    ) {
+        Ok(valid) => valid,
+        Err(e) => {
+            warn!("vm: couldn't verify groth16: {e}");
+            false
+        }
+    }
 }
 
 /// Verifies a Schnorr signature.
@@ -209,13 +255,18 @@ pub fn verify_bls_multisig(
     keys: Vec<BlsPublicKey>,
     sig: MultisigSignature,
 ) -> bool {
-    let len = keys.len();
-    if len < 1 {
-        panic!("must have at least one key");
+    if keys.is_empty() {
+        warn!("vm: bls multisig verification requires at least one key");
+        return false;
     }
 
-    let akey = MultisigPublicKey::aggregate(&keys)
-        .expect("aggregation should succeed");
+    let akey = match MultisigPublicKey::aggregate(&keys) {
+        Ok(k) => k,
+        Err(e) => {
+            warn!("vm: couldn't aggregate bls public-keys due to {e}");
+            return false;
+        }
+    };
 
     akey.verify(&sig, &msg).is_ok()
 }

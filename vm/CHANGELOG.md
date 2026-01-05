@@ -7,14 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix host queries `verify_plonk`, `verify_groth16_bn254` and `verify_bls_multisig` to never panic
+
 ## [1.4.2] - 2025-12-13
 
-## Added
+### Added
 
 - Add `remove_3rd_party` api
 - Add `recompile_3rd_party` api
 
-## Changed
+### Changed
 
 - Change piecrust version requirement to 0.29.0-rc.3
 
