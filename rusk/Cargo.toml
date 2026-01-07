@@ -1,6 +1,6 @@
 [package]
 name = "dusk-rusk"
-version = "1.4.3-alpha.1"
+version = "1.4.3"
 edition = "2021"
 autobins = false
 exclude = ["tests/assets/*"]
