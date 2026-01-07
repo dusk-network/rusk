@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.0] - 2025-11-06
 
+- Add EIP2334 deterministic account hierarchy derivation support [#3572]
 - Added support for generic TransactionData into FFI [#3750]
 
 ### Changed
@@ -42,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First `dusk-wallet-core` release
 
 <!-- Issues -->
+[#3572]: https://github.com/dusk-network/rusk/issues/3572
 [#3750]: https://github.com/dusk-network/rusk/issues/3750
 [#3681]: https://github.com/dusk-network/rusk/issues/3681
 [#3476]: https://github.com/dusk-network/rusk/issues/3476
