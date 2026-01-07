@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change dusk-vm dependency to v1.4.3
+
 ## [1.4.2] - 2025-12-13
 
 ### Added
