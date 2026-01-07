@@ -2100,9 +2100,9 @@ dependencies = [
 
 [[package]]
 name = "dusk-vm"
-version = "1.4.2"
+version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd41fca330303c0e881bcd4043c6e89e5f06515fa407c45bc6158e65e1552637"
+checksum = "9970b6794ad562dadd2949943655defde02fe21090514c0f88729c709c86a31e"
 dependencies = [
  "blake2b_simd",
  "blake3",
@@ -2114,12 +2114,13 @@ dependencies = [
  "rkyv",
  "serde",
  "sha3",
+ "tracing",
  "wasmparser 0.240.0",
 ]
 
 [[package]]
 name = "dusk-vm"
-version = "1.4.3"
+version = "1.4.4-alpha.1"
 dependencies = [
  "blake2b_simd",
  "blake3",
@@ -4811,7 +4812,7 @@ dependencies = [
  "dusk-bytes",
  "dusk-core 1.4.0",
  "dusk-plonk",
- "dusk-vm 1.4.2",
+ "dusk-vm 1.4.3",
  "ff",
  "flate2",
  "hex",
