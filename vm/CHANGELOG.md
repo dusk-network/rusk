@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-01-07
+
 ### Fixed
 
 - Fix host queries `verify_plonk`, `verify_groth16_bn254` and `verify_bls_multisig` to never panic
@@ -79,7 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3437]: https://github.com/dusk-network/rusk/issues/3437
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.4.2...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.4.3...HEAD
+[1.4.3]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.4.2...dusk-vm-1.4.3
 [1.4.2]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.4.1...dusk-vm-1.4.2
 [1.4.1]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.4.0...dusk-vm-1.4.1
 [1.4.0]: https://github.com/dusk-network/rusk/compare/dusk-vm-1.3.0...dusk-vm-1.4.0
