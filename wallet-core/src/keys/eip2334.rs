@@ -53,13 +53,10 @@ pub(crate) fn index_to_path(index: usize) -> String {
 /// This function panics when invariants are violated, which should never
 /// happen.
 #[must_use]
-pub fn derive_bls_sk(master_sk: &BlsSecretKey, index: u64) -> BlsSecretKey {
-    let path = index_to_path(index as usize);
+pub fn derive_bls_sk(master_sk: &BlsSecretKey, index: usize) -> BlsSecretKey {
+    let path = index_to_path(index);
 
-    BlsSecretKey::from(
-        eip2333::derive_bls_sk(master_sk, &path)
-            .expect("Should always succeed"),
-    )
+    eip2333::derive_bls_sk(master_sk, &path).expect("Should always succeed")
 }
 
 /// Generates the [`BlsSecretKey`] & [`BlsPublicKey`] pair from the given master
@@ -74,14 +71,12 @@ pub fn derive_bls_sk(master_sk: &BlsSecretKey, index: u64) -> BlsSecretKey {
 #[must_use]
 pub fn derive_bls_key_pair(
     master_sk: &BlsSecretKey,
-    index: u64,
+    index: usize,
 ) -> (BlsSecretKey, BlsPublicKey) {
-    let path = index_to_path(index as usize);
+    let path = index_to_path(index);
 
-    let sk = BlsSecretKey::from(
-        eip2333::derive_bls_sk(master_sk, &path)
-            .expect("Should always succeed"),
-    );
+    let sk = eip2333::derive_bls_sk(master_sk, &path)
+        .expect("Should always succeed");
     let pk = BlsPublicKey::from(&sk);
 
     (sk, pk)
@@ -92,6 +87,7 @@ pub fn derive_bls_key_pair(
 /// When generating a new key pair, the [`derive_bls_key_pair`] function is
 /// preferred to be used, as it generates both the secret and public key at
 /// once.
+#[must_use]
 pub fn derive_bls_pk(sk: &BlsSecretKey) -> BlsPublicKey {
     BlsPublicKey::from(sk)
 }
