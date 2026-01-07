@@ -885,6 +885,9 @@ fn withdraw_to_moonlight<R: RngCore + CryptoRng>(
 /// # Errors
 /// The creation of this transaction doesn't error, but still returns a result
 /// for the sake of API consistency.
+///
+/// # Panics
+/// This function will panic if the provided seed is smaller than 32 bytes.
 pub fn legacy_to_eip_migration(
     seed: &Seed,
     index: u8,
@@ -900,9 +903,9 @@ pub fn legacy_to_eip_migration(
     // public key based on the new EIP-2333 method to send the funds to
     let mut eip_master_sk = keys::eip2333::derive_master_sk(seed)
         .expect("Expect seed to be larger than 32 bytes");
-    let (mut _s, eip_2333_moonlight_receiver_pk) =
-        keys::eip2334::derive_bls_key_pair(&eip_master_sk, index as u64);
-    _s.zeroize();
+    let (mut sk, eip_2333_moonlight_receiver_pk) =
+        keys::eip2334::derive_bls_key_pair(&eip_master_sk, index as usize);
+    sk.zeroize();
     eip_master_sk.zeroize();
 
     let deposit = 0;

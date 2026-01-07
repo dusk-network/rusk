@@ -99,7 +99,7 @@ fn test_derive_bls_sk() {
         eip2333::derive_master_sk(&SEED).expect("Should always succeed");
 
     assert_eq!(
-        eip2334::derive_bls_sk(&master_sk, INDEX as u64).to_bytes(),
+        eip2334::derive_bls_sk(&master_sk, INDEX as usize).to_bytes(),
         sk_bytes
     );
 }
