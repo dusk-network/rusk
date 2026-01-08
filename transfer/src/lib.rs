@@ -6,4 +6,6 @@
 
 mod error;
 
+mod tree;
+
 mod verifier_data;
