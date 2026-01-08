@@ -29,6 +29,7 @@ members = [
     "node",
     "rusk-wallet",
 
+    "stake",
     "transfer"
 
 ]
@@ -55,6 +56,7 @@ rusk-recovery = { version = "1.4.1-alpha.1", path = "./rusk-recovery/" }
 # wallet-core = { version = "1.4.0", package = "dusk-wallet-core" }
 wallet-core = { version = "1.4.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
 
+stake = { version = "0.1", path = "./stake", package = "stake" }
 transfer = { version = "0.1", path = "./transfer", package = "transfer" }
 
 dusk-data-driver = "0.3.0"

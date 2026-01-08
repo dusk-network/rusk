@@ -1,0 +1,17 @@
+[package]
+name = "stake"
+version = "0.0.1"
+edition = "2021"
+
+repository = "https://github.com/dusk-network/rusk"
+description = "Dusk protocol transfer functionality"
+license = "MPL-2.0"
+exclude = [".github/workflows/ci.yml", ".gitignore"]
+
+[dependencies]
+dusk-core = { workspace = true }
+dusk-vm = { workspace = true }
+ringbuffer = { workspace = true }
+
+[build-dependencies]
+rusk-profile = { workspace = true }

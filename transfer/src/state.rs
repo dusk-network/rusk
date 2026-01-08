@@ -186,6 +186,10 @@ impl TransferState {
 
         self.mint_withdrawal("mint", &mint);
 
+        // Note: here we need a broadcast::Sender object and send the event via the sender
+        // the sender belongs to a context in which the function is executed
+        // this particular function "mint" can only be called from the stake contract so
+        // this needs to be a stake contract context
         abi::emit(MINT_TOPIC, WithdrawEvent::from(mint));
     }
 
