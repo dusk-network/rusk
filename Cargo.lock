@@ -5873,6 +5873,7 @@ version = "0.0.1"
 dependencies = [
  "dusk-core 1.4.1-alpha.1",
  "dusk-vm",
+ "ringbuffer",
  "rusk-profile",
 ]
 

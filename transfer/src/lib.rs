@@ -6,6 +6,10 @@
 
 mod error;
 
+mod state;
+
+mod transitory;
+
 mod tree;
 
 mod verifier_data;

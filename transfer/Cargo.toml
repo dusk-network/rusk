@@ -11,6 +11,7 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 [dependencies]
 dusk-core = { workspace = true }
 dusk-vm = { workspace = true }
+ringbuffer = { workspace = true }
 
 [build-dependencies]
 rusk-profile = { workspace = true }
