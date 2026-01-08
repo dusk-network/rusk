@@ -5868,6 +5868,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "transfer"
+version = "0.0.1"
+dependencies = [
+ "dusk-core 1.4.1-alpha.1",
+ "rusk-profile",
+]
+
+[[package]]
 name = "transfer-contract"
 version = "0.10.1"
 dependencies = [
