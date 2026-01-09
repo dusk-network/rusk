@@ -39,6 +39,7 @@ use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
 use tracing::info;
+use stake::StakeState;
 
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
@@ -105,6 +106,7 @@ impl Rusk {
             archive,
             driver_store: Arc::new(RwLock::new(driver_store)),
             instance_cache: Arc::new(RwLock::new(BTreeMap::new())),
+            stake_state: Arc::new(RwLock::new(StakeState::new()))
         })
     }
 
