@@ -5,3 +5,5 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod state;
+
+pub use state::StakeState;

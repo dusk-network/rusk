@@ -13,3 +13,5 @@ mod transitory;
 mod tree;
 
 mod verifier_data;
+
+pub use state::TransferState;

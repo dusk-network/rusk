@@ -191,7 +191,8 @@ impl TransferState {
         // function is executed this particular function "mint" can only
         // be called from the stake contract so this needs to be a stake
         // contract context
-        abi::emit(MINT_TOPIC, WithdrawEvent::from(mint));
+        // todo: implement
+        // abi::emit(MINT_TOPIC, WithdrawEvent::from(mint));
     }
 
     /// Mint more Dusk to be owned by a contract.
@@ -210,6 +211,7 @@ impl TransferState {
         // the best would be to make sure that this function is only visible
         // to the stake code (former contract)
         //
+        // todo: implement
         // const PANIC_MSG: &str = "Can only be called by the stake contract";
         // let caller = abi::caller().expect(PANIC_MSG);
         // assert_eq!(caller, STAKE_CONTRACT, "{PANIC_MSG}");
@@ -225,15 +227,17 @@ impl TransferState {
             data: mint.data,
         };
 
-        abi::call::<_, ()>(mint.contract, &mint.fn_name, &receive)
-            .expect("Calling receiver should succeed");
+        // todo: implement
+        // abi::call::<_, ()>(mint.contract, &mint.fn_name, &receive)
+        //     .expect("Calling receiver should succeed");
 
         let mint_event = ContractToContractEvent {
             sender: STAKE_CONTRACT,
             receiver: mint.contract,
             value: mint.value,
         };
-        abi::emit(MINT_CONTRACT_TOPIC, mint_event);
+        // todo: implement
+        // abi::emit(MINT_CONTRACT_TOPIC, mint_event);
     }
 
     /// Withdraw from a contract's balance to a Phoenix note or a Moonlight
@@ -250,11 +254,13 @@ impl TransferState {
     pub fn withdraw(&mut self, withdraw: Withdraw) {
         let contract = withdraw.contract();
 
-        let caller = abi::caller()
-            .expect("A withdrawal must happen in the context of a transaction");
-        if *contract != caller {
-            panic!("The \"withdraw\" function can only be called by the specified contract.");
-        }
+        // todo: implement
+        // let caller = abi::caller()
+        //     .expect("A withdrawal must happen in the context of a transaction");
+        // if *contract != caller {
+        //     panic!("The \"withdraw\" function can only be called by the specified contract.");
+        // }
+        // todo: end
 
         let value = withdraw.value();
 
@@ -267,7 +273,8 @@ impl TransferState {
 
         self.mint_withdrawal("withdraw", &withdraw);
 
-        abi::emit(WITHDRAW_TOPIC, WithdrawEvent::from(withdraw));
+        // todo: implement
+        // abi::emit(WITHDRAW_TOPIC, WithdrawEvent::from(withdraw));
     }
 
     /// Takes the deposit addressed to this contract, and immediately withdraws
@@ -284,11 +291,13 @@ impl TransferState {
     pub fn convert(&mut self, convert: Withdraw) {
         // since each transaction only has, at maximum, a single contract call,
         // this check impliest that this is the first contract call.
-        let caller = abi::caller()
-            .expect("A conversion must happen in the context of a transaction");
-        if caller != TRANSFER_CONTRACT {
-            panic!("Only the first contract call can be a conversion");
-        }
+        // todo: implement
+        // let caller = abi::caller()
+        //     .expect("A conversion must happen in the context of a transaction");
+        // if caller != TRANSFER_CONTRACT {
+        //     panic!("Only the first contract call can be a conversion");
+        // }
+        // todo: end
 
         if *convert.contract() != TRANSFER_CONTRACT {
             panic!("The conversion must target the transfer contract");
@@ -324,10 +333,11 @@ impl TransferState {
                 self.mint_withdrawal("convert", &convert);
                 deposit.set_taken();
 
-                abi::emit(
-                    CONVERT_TOPIC,
-                    ConvertEvent::from_withdraw_and_sender(sender, &convert),
-                );
+                // todo: implement
+                // abi::emit(
+                //     CONVERT_TOPIC,
+                //     ConvertEvent::from_withdraw_and_sender(sender, &convert),
+                // );
             }
             Deposit::None => panic!("There is no deposit in the transaction"),
             // Since this is the first contract call, it is impossible for the
@@ -346,8 +356,9 @@ impl TransferState {
     /// This function will panic if there is no deposit on the state or the
     /// caller-id doesn't match the contract-id stored for the deposit.
     pub fn deposit(&mut self, value: u64) {
-        let caller = abi::caller()
-            .expect("A deposit must happen in the context of a transaction");
+        // todo: implement
+        let caller = TRANSFER_CONTRACT; //abi::caller()
+            //.expect("A deposit must happen in the context of a transaction");
 
         let deposit = transitory::deposit_info_mut();
         match deposit {
@@ -376,14 +387,15 @@ impl TransferState {
                 self.add_contract_balance(deposit_contract, deposit_value);
                 deposit.set_taken();
 
-                abi::emit(
-                    DEPOSIT_TOPIC,
-                    DepositEvent {
-                        sender,
-                        value: deposit_value,
-                        receiver: deposit_contract,
-                    },
-                );
+                // todo: implement
+                // abi::emit(
+                //     DEPOSIT_TOPIC,
+                //     DepositEvent {
+                //         sender,
+                //         value: deposit_value,
+                //         receiver: deposit_contract,
+                //     },
+                // );
             }
             Deposit::Taken { .. } => {
                 panic!("The deposit has already been taken")
@@ -409,8 +421,9 @@ impl TransferState {
     /// receiving contract fails, or if the sending contract doesn't have enough
     /// funds.
     pub fn contract_to_contract(&mut self, transfer: ContractToContract) {
-        let sender_contract = abi::caller()
-            .expect("A transfer to a contract must happen in the context of a transaction");
+        // todo: implement
+        let sender_contract = TRANSFER_CONTRACT; //abi::caller()
+            // .expect("A transfer to a contract must happen in the context of a transaction");
 
         if sender_contract == TRANSFER_CONTRACT {
             panic!("Cannot be called directly by the transfer contract");
@@ -438,17 +451,19 @@ impl TransferState {
             data: transfer.data,
         };
 
-        abi::call::<_, ()>(transfer.contract, &transfer.fn_name, &receive)
-            .expect("Calling receiver should succeed");
+        // todo: implement
+        // abi::call::<_, ()>(transfer.contract, &transfer.fn_name, &receive)
+        //     .expect("Calling receiver should succeed");
 
-        abi::emit(
-            CONTRACT_TO_CONTRACT_TOPIC,
-            ContractToContractEvent {
-                sender: sender_contract,
-                receiver: transfer.contract,
-                value: transfer.value,
-            },
-        );
+        // todo: implement
+        // abi::emit(
+        //     CONTRACT_TO_CONTRACT_TOPIC,
+        //     ContractToContractEvent {
+        //         sender: sender_contract,
+        //         receiver: transfer.contract,
+        //         value: transfer.value,
+        //     },
+        // );
     }
 
     /// Transfer funds from a contract balance to a Moonlight account.
@@ -461,8 +476,9 @@ impl TransferState {
     /// is called by the transfer contract itself, or if the calling contract
     /// doesn't have enough funds.
     pub fn contract_to_account(&mut self, transfer: ContractToAccount) {
-        let sender_contract = abi::caller()
-            .expect("A transfer to an account must happen in the context of a transaction");
+        // todo: implement
+        let sender_contract = TRANSFER_CONTRACT; //abi::caller()
+            // .expect("A transfer to an account must happen in the context of a transaction");
 
         if sender_contract == TRANSFER_CONTRACT {
             panic!("Cannot be called directly by the transfer contract");
@@ -485,14 +501,15 @@ impl TransferState {
         *sender_balance -= transfer.value;
         account.balance += transfer.value;
 
-        abi::emit(
-            CONTRACT_TO_ACCOUNT_TOPIC,
-            ContractToAccountEvent {
-                sender: sender_contract,
-                receiver: transfer.account,
-                value: transfer.value,
-            },
-        );
+        // todo: implement
+        // abi::emit(
+        //     CONTRACT_TO_ACCOUNT_TOPIC,
+        //     ContractToAccountEvent {
+        //         sender: sender_contract,
+        //         receiver: transfer.account,
+        //         value: transfer.value,
+        //     },
+        // );
     }
 
     /// The top level transaction execution function.
@@ -532,7 +549,8 @@ impl TransferState {
 
         match tx.call() {
             Some(call) => {
-                abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
+                // todo: implement
+                Ok(Vec::new()) //abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
             }
             None => Ok(Vec::new()),
         }
@@ -571,7 +589,8 @@ impl TransferState {
         }
 
         // append the output notes to the phoenix-notes tree
-        let block_height = abi::block_height();
+        // todo: implement
+        let block_height = 0; //abi::block_height();
         for note in self
             .tree
             .extend_notes(block_height, phoenix_tx.outputs().clone())
@@ -702,16 +721,17 @@ impl TransferState {
                 // tree and the refund-note will be None
                 let refund_note = self.push_note_current_height(remainder_note);
 
-                abi::emit(
-                    PHOENIX_TOPIC,
-                    PhoenixTransactionEvent {
-                        nullifiers: tx.nullifiers().to_vec(),
-                        notes,
-                        memo,
-                        gas_spent,
-                        refund_note,
-                    },
-                );
+                // todo: implement
+                // abi::emit(
+                //     PHOENIX_TOPIC,
+                //     PhoenixTransactionEvent {
+                //         nullifiers: tx.nullifiers().to_vec(),
+                //         notes,
+                //         memo,
+                //         gas_spent,
+                //         refund_note,
+                //     },
+                // );
             }
             Transaction::Moonlight(tx) => {
                 let remaining_gas = tx.gas_limit() - gas_spent;
@@ -732,17 +752,18 @@ impl TransferState {
                         None
                     };
 
-                abi::emit(
-                    MOONLIGHT_TOPIC,
-                    MoonlightTransactionEvent {
-                        sender: *tx.sender(),
-                        receiver: tx.receiver().copied(),
-                        value: tx.value(),
-                        memo,
-                        gas_spent,
-                        refund_info,
-                    },
-                );
+                // todo: implement
+                // abi::emit(
+                //     MOONLIGHT_TOPIC,
+                //     MoonlightTransactionEvent {
+                //         sender: *tx.sender(),
+                //         receiver: tx.receiver().copied(),
+                //         value: tx.value(),
+                //         memo,
+                //         gas_spent,
+                //         refund_info,
+                //     },
+                // );
             }
         }
     }
@@ -751,7 +772,8 @@ impl TransferState {
     /// height.
     pub fn leaves_from_height(&self, height: u64) {
         for leaf in self.tree.leaves(height) {
-            abi::feed(leaf.clone());
+            // todo: implement
+            // abi::feed(leaf.clone());
         }
     }
 
@@ -770,11 +792,13 @@ impl TransferState {
 
         if count_limit == 0 {
             for leaf in iter {
-                abi::feed(leaf.clone());
+                // todo: implement
+                // abi::feed(leaf.clone());
             }
         } else {
             for leaf in iter.take(count_limit as usize) {
-                abi::feed(leaf.clone());
+                // todo: implement
+                // abi::feed(leaf.clone());
             }
         }
     }
@@ -783,11 +807,13 @@ impl TransferState {
         let iter = self.nullifiers.iter().skip(from as usize);
         if count_limit == 0 {
             for n in iter {
-                abi::feed(*n);
+                // todo: implement
+                // abi::feed(*n);
             }
         } else {
             for n in iter.take(count_limit as usize) {
-                abi::feed(*n);
+                // todo: implement
+                // abi::feed(*n);
             }
         }
     }
@@ -797,11 +823,13 @@ impl TransferState {
 
         if count_limit == 0 {
             for (contract, balance) in iter {
-                abi::feed((*contract, *balance));
+                // todo: implement
+                // abi::feed((*contract, *balance));
             }
         } else {
             for (contract, balance) in iter.take(count_limit as usize) {
-                abi::feed((*contract, *balance));
+                // todo: implement
+                // abi::feed((*contract, *balance));
             }
         }
     }
@@ -811,11 +839,13 @@ impl TransferState {
 
         if count_limit == 0 {
             for (key, account) in iter {
-                abi::feed((account.clone(), *key));
+                // todo: implement
+                // abi::feed((account.clone(), *key));
             }
         } else {
             for (key, account) in iter.take(count_limit as usize) {
-                abi::feed((account.clone(), *key));
+                // todo: implement
+                // abi::feed((account.clone(), *key));
             }
         }
     }
@@ -926,12 +956,15 @@ impl TransferState {
     }
 
     fn push_note_current_height(&mut self, note: Note) -> Option<Note> {
-        let block_height = abi::block_height();
+        // todo: implement
+        let block_height = 0; //abi::block_height();
         self.push_note(block_height, note)
     }
 
     pub fn chain_id(&self) -> u8 {
-        abi::chain_id()
+        // todo: implement
+        // abi::chain_id()
+        0
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "stake"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 
 repository = "https://github.com/dusk-network/rusk"
@@ -13,6 +13,7 @@ dusk-core = { workspace = true }
 dusk-vm = { workspace = true }
 ringbuffer = { workspace = true }
 dusk-bytes = { workspace = true }
+rkyv = { workspace = true, features = ["size_32"] }
 
 [build-dependencies]
 rusk-profile = { workspace = true }

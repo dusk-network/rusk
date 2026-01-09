@@ -29,6 +29,8 @@ pub use driverstore::DriverStore;
 pub(crate) use events::ChainEventStreamer;
 #[cfg(feature = "archive")]
 use node::archive::Archive;
+use stake::StakeState;
+use transfer::TransferState;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RuskTip {
@@ -51,6 +53,8 @@ pub struct Rusk {
     pub(crate) driver_store: Arc<RwLock<DriverStore>>,
     pub(crate) instance_cache:
         Arc<RwLock<BTreeMap<ContractId, DriverExecutor>>>,
+    // pub(crate) transfer_state: Arc<RwLock<TransferState>>,
+    // pub(crate) stake_state: Arc<RwLock<StakeState>>,
 }
 
 pub(crate) type Services =

@@ -1950,6 +1950,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "sha3",
+ "stake",
  "tempfile",
  "thiserror",
  "tokio",
@@ -1958,6 +1959,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+ "transfer",
  "tungstenite",
  "zeroize",
 ]
@@ -5365,12 +5367,13 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "stake"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "dusk-bytes",
  "dusk-core 1.4.1-alpha.1",
  "dusk-vm",
  "ringbuffer",
+ "rkyv",
  "rusk-profile",
 ]
 
@@ -5880,7 +5883,7 @@ dependencies = [
 
 [[package]]
 name = "transfer"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "dusk-core 1.4.1-alpha.1",
  "dusk-vm",

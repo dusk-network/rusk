@@ -78,6 +78,9 @@ node = { workspace = true, optional = true }
 dusk-consensus = { workspace = true, optional = true }
 node-data = { workspace = true, optional = true }
 
+## transfer and stake dependencies
+transfer = { workspace = true }
+stake = { workspace = true }
 
 ## GraphQL deps
 async-graphql = { workspace = true }

@@ -116,10 +116,13 @@ impl StakeState {
 
         // make call to transfer contract to transfer balance from the user to
         // this contract
-        let _: () = abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
-            .expect("Depositing funds into contract should succeed");
+        // todo: implement
+        // let _: () = abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
+        //     .expect("Depositing funds into contract should succeed");
 
-        let block_height = abi::block_height();
+        // todo: implement
+        // let block_height = abi::block_height();
+        let block_height = 0; // todo
         // update the state accordingly
         let stake_event = match &mut loaded_stake.amount {
             Some(amount) => {
@@ -139,7 +142,8 @@ impl StakeState {
                 StakeEvent::new(*keys, value)
             }
         };
-        abi::emit("stake", stake_event);
+        // todo: implement
+        // abi::emit("stake", stake_event);
 
         let key = keys.account.to_bytes();
         self.previous_block_state
@@ -178,7 +182,8 @@ impl StakeState {
             }
         }
 
-        let block_height = abi::block_height();
+        // todo: implement
+        let block_height = 0; //abi::block_height();
         // update the state accordingly
         let stake_event = match &mut loaded_stake.amount {
             Some(amount) => {
@@ -198,7 +203,8 @@ impl StakeState {
                 StakeEvent::new(*keys, value)
             }
         };
-        abi::emit("stake", stake_event);
+        // todo: implement
+        // abi::emit("stake", stake_event);
 
         let key = keys.account.to_bytes();
         self.previous_block_state
@@ -241,8 +247,9 @@ impl StakeState {
 
         // make call to the transfer contract to withdraw funds from this
         // contract into the receiver specified by the withdrawal.
-        let _: () = abi::call(TRANSFER_CONTRACT, "withdraw", transfer_withdraw)
-            .expect("Withdrawing stake should succeed");
+        // todo: implement
+        // let _: () = abi::call(TRANSFER_CONTRACT, "withdraw", transfer_withdraw)
+        //     .expect("Withdrawing stake should succeed");
 
         let stake_event = if value > stake.value {
             let from_locked = value - stake.value;
@@ -255,7 +262,8 @@ impl StakeState {
             StakeEvent::new(*keys, value)
         };
 
-        abi::emit("unstake", stake_event);
+        // todo: implement
+        // abi::emit("unstake", stake_event);
         if stake.total_funds() == 0 {
             // update the state accordingly
             loaded_stake.amount = None;
@@ -293,21 +301,23 @@ impl StakeState {
             panic!("Value to unstake higher than the staked amount");
         }
 
-        let owner = Self::unwrap_contract_owner(&keys.owner);
-        let caller =
-            abi::caller().expect("unstake must be called by a contract");
-        assert!(&caller == owner, "Invalid contract caller");
-
-        let to_contract = ContractToContract {
-            contract: caller,
-            fn_name: unstake.fn_name().into(),
-            value,
-            data,
-        };
-
-        let _: () =
-            abi::call(TRANSFER_CONTRACT, "contract_to_contract", &to_contract)
-                .expect("Unstaking to contract should succeed");
+        // todo: implement
+        // let owner = Self::unwrap_contract_owner(&keys.owner);
+        // let caller =
+        //     abi::caller().expect("unstake must be called by a contract");
+        // assert!(&caller == owner, "Invalid contract caller");
+        //
+        // let to_contract = ContractToContract {
+        //     contract: caller,
+        //     fn_name: unstake.fn_name().into(),
+        //     value,
+        //     data,
+        // };
+        //
+        // let _: () =
+        //     abi::call(TRANSFER_CONTRACT, "contract_to_contract", &to_contract)
+        //         .expect("Unstaking to contract should succeed");
+        // todo: end
 
         let stake_event = if value > stake.value {
             let from_locked = value - stake.value;
@@ -320,7 +330,8 @@ impl StakeState {
             StakeEvent::new(*keys, value)
         };
 
-        abi::emit("unstake", stake_event);
+        // todo: implement
+        // abi::emit("unstake", stake_event);
         if stake.total_funds() == 0 {
             // update the state accordingly
             loaded_stake.amount = None;
@@ -376,12 +387,14 @@ impl StakeState {
 
         // make call to the transfer contract to withdraw funds from this
         // contract into the receiver specified by the withdrawal.
-        let _: () = abi::call(TRANSFER_CONTRACT, "mint", transfer_withdraw)
-            .expect("Withdrawing reward should succeed");
+        // todo: implement
+        // let _: () = abi::call(TRANSFER_CONTRACT, "mint", transfer_withdraw)
+        //     .expect("Withdrawing reward should succeed");
 
         // update the state accordingly
         loaded_stake.reward -= value;
-        abi::emit("withdraw", StakeEvent::new(*keys, value));
+        // todo: implement
+        // abi::emit("withdraw", StakeEvent::new(*keys, value));
 
         if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
             self.stakes.remove(&account.to_bytes());
@@ -408,25 +421,28 @@ impl StakeState {
             panic!("Value to withdraw is higher than available reward");
         }
 
-        let owner = Self::unwrap_contract_owner(&keys.owner);
-        let caller =
-            abi::caller().expect("unstake must be called by a contract");
-        assert!(&caller == owner, "Invalid contract caller");
-
-        let to_contract = ContractToContract {
-            contract: caller,
-            fn_name: withdraw.fn_name().into(),
-            value,
-            data,
-        };
-
-        let _: () =
-            abi::call(TRANSFER_CONTRACT, "mint_to_contract", &to_contract)
-                .expect("Withdrawing reward to contract should succeed");
+        // todo: implement
+        // let owner = Self::unwrap_contract_owner(&keys.owner);
+        // let caller =
+        //     abi::caller().expect("unstake must be called by a contract");
+        // assert!(&caller == owner, "Invalid contract caller");
+        //
+        // let to_contract = ContractToContract {
+        //     contract: caller,
+        //     fn_name: withdraw.fn_name().into(),
+        //     value,
+        //     data,
+        // };
+        //
+        // let _: () =
+        //     abi::call(TRANSFER_CONTRACT, "mint_to_contract", &to_contract)
+        //         .expect("Withdrawing reward to contract should succeed");
+        // todo: end
 
         // update the state accordingly
         loaded_stake.reward -= value;
-        abi::emit("withdraw", StakeEvent::new(*keys, value));
+        // todo: implement
+        // abi::emit("withdraw", StakeEvent::new(*keys, value));
 
         if loaded_stake.reward == 0 && loaded_stake.amount.is_none() {
             self.stakes.remove(&account.to_bytes());
@@ -497,7 +513,8 @@ impl StakeState {
             stake.reward += reward.value;
         }
         if !rewards.is_empty() {
-            abi::emit("reward", rewards);
+            // todo: implement
+            // abi::emit("reward", rewards);
         }
     }
 
@@ -542,7 +559,8 @@ impl StakeState {
             let to_shift = effective_faults * EPOCH;
 
             stake_amount.eligibility =
-                next_epoch(abi::block_height()) + to_shift;
+                // todo: implement
+                next_epoch(0 /*abi::block_height()*/) + to_shift;
         }
 
         // Slash the provided amount or calculate the percentage according to
@@ -556,14 +574,15 @@ impl StakeState {
         }
 
         if to_slash > 0 || effective_faults > 0 {
-            abi::emit(
-                "slash",
-                SlashEvent {
-                    account: *account,
-                    value: to_slash,
-                    next_eligibility: stake_amount.eligibility,
-                },
-            );
+            // todo: implement
+            // abi::emit(
+            //     "slash",
+            //     SlashEvent {
+            //         account: *account,
+            //         value: to_slash,
+            //         next_eligibility: stake_amount.eligibility,
+            //     },
+            // );
         }
 
         let key = account.to_bytes();
@@ -602,7 +621,8 @@ impl StakeState {
         // The stake is shifted (aka suspended) for the rest of the current
         // epoch plus hard_faults epochs
         let to_shift = hard_faults * EPOCH;
-        let next_eligibility = next_epoch(abi::block_height()) + to_shift;
+        // todo: implement
+        let next_eligibility = next_epoch(0 /*abi::block_height()*/) + to_shift;
         stake_amount.eligibility = next_eligibility;
 
         // Slash the provided amount or calculate the percentage according to
@@ -620,14 +640,15 @@ impl StakeState {
             self.burnt_amount += to_slash;
         }
 
-        abi::emit(
-            "hard_slash",
-            SlashEvent {
-                account: *account,
-                value: to_slash,
-                next_eligibility,
-            },
-        );
+        // todo: implement
+        // abi::emit(
+        //     "hard_slash",
+        //     SlashEvent {
+        //         account: *account,
+        //         value: to_slash,
+        //         next_eligibility,
+        //     },
+        // );
 
         let key = account.to_bytes();
         self.previous_block_state
@@ -643,29 +664,34 @@ impl StakeState {
     /// Feeds the host with the stakes.
     pub fn stakes(&self) {
         for (stake_data, account) in self.stakes.values() {
-            abi::feed((*account, *stake_data));
+            // todo: implement
+            // abi::feed((*account, *stake_data));
         }
     }
 
     fn chain_id(&self) -> u8 {
-        abi::chain_id()
+        // todo: implement
+        // abi::chain_id()
+        0
     }
 
     fn deduct_contract_balance(amount: u64) {
         // Update the module balance to reflect the change in the amount
         // withdrawable from the contract
-        let _: () = abi::call(
-            TRANSFER_CONTRACT,
-            "sub_contract_balance",
-            &(STAKE_CONTRACT, amount),
-        )
-        .expect("Subtracting balance should succeed");
+        // todo: implement
+        // let _: () = abi::call(
+        //     TRANSFER_CONTRACT,
+        //     "sub_contract_balance",
+        //     &(STAKE_CONTRACT, amount),
+        // )
+        // .expect("Subtracting balance should succeed");
     }
 
     /// Feeds the host with previous state of the changed provisioners.
     pub fn prev_state_changes(&self) {
         for (stake_data, account) in self.previous_block_state.values() {
-            abi::feed((*account, *stake_data));
+            // todo: implement
+            // abi::feed((*account, *stake_data));
         }
     }
 }
