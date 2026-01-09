@@ -4,11 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::collections::btree_map::Entry;
 use crate::error::Error;
 use crate::tree::Tree;
 use crate::verifier_data::tx_circuit_verifier;
+use std::collections::btree_map::Entry;
+use std::collections::{BTreeMap, BTreeSet};
 
 // use alloc::collections::btree_map::Entry;
 // use alloc::collections::{BTreeMap, BTreeSet};
@@ -186,10 +186,11 @@ impl TransferState {
 
         self.mint_withdrawal("mint", &mint);
 
-        // Note: here we need a broadcast::Sender object and send the event via the sender
-        // the sender belongs to a context in which the function is executed
-        // this particular function "mint" can only be called from the stake contract so
-        // this needs to be a stake contract context
+        // Note: here we need a broadcast::Sender object and send the event via
+        // the sender the sender belongs to a context in which the
+        // function is executed this particular function "mint" can only
+        // be called from the stake contract so this needs to be a stake
+        // contract context
         abi::emit(MINT_TOPIC, WithdrawEvent::from(mint));
     }
 
