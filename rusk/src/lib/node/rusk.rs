@@ -37,9 +37,10 @@ use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{to_str, Block, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, Mutex};
 use tracing::info;
 use stake::StakeState;
+use transfer::TransferState;
 
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
@@ -106,6 +107,7 @@ impl Rusk {
             archive,
             driver_store: Arc::new(RwLock::new(driver_store)),
             instance_cache: Arc::new(RwLock::new(BTreeMap::new())),
+            transfer_state: Arc::new(Mutex::new(TransferState::new())),
             stake_state: Arc::new(RwLock::new(StakeState::new()))
         })
     }
