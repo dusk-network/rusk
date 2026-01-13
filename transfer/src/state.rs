@@ -17,6 +17,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use dusk_core::stake::EPOCH;
 use dusk_core::transfer::MINT_CONTRACT_TOPIC;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
+use tokio::sync::broadcast;
 
 use dusk_core::abi::{self, ContractError, ContractId};
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
@@ -76,16 +77,18 @@ pub struct TransferState {
     //       up to replay attacks.
     accounts: BTreeMap<[u8; 193], AccountData>,
     contract_balances: BTreeMap<ContractId, u64>,
+    event_sender: broadcast::Sender<piecrust_uplink::Event>,
 }
 
 impl TransferState {
-    pub const fn new() -> TransferState {
+    pub const fn new(event_sender: broadcast::Sender<piecrust_uplink::Event>) -> TransferState {
         TransferState {
             tree: Tree::new(),
             nullifiers: BTreeSet::new(),
             roots: ConstGenericRingBuffer::new(),
             accounts: BTreeMap::new(),
             contract_balances: BTreeMap::new(),
+            event_sender,
         }
     }
 
@@ -191,8 +194,10 @@ impl TransferState {
         // function is executed this particular function "mint" can only
         // be called from the stake contract so this needs to be a stake
         // contract context
-        // todo: implement
+        // todo: replace what's below
         // abi::emit(MINT_TOPIC, WithdrawEvent::from(mint));
+        // todo: with the following: (build Event from mint)
+        // self.event_sender.send(piecrust_uplink::Event::from(mint))
     }
 
     /// Mint more Dusk to be owned by a contract.
@@ -981,11 +986,13 @@ fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
 
 #[cfg(test)]
 mod test_transfer {
+    use tokio::sync::broadcast;
     use super::*;
 
     #[test]
     fn find_existing_nullifiers() {
-        let mut transfer = TransferState::new();
+        let (event_sender, _) = broadcast::channel(16);
+        let mut transfer = TransferState::new(event_sender);
 
         let (zero, one, two, three, ten, eleven) = (
             BlsScalar::from(0),

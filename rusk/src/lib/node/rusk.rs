@@ -59,6 +59,7 @@ impl Rusk {
         event_sender: broadcast::Sender<RuesEvent>,
         #[cfg(feature = "archive")] archive: Archive,
         driver_store: DriverStore,
+        inner_event_sender: broadcast::Sender<piecrust_uplink::Event>,
     ) -> Result<Self> {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
@@ -102,12 +103,12 @@ impl Rusk {
             vm_config,
             min_gas_limit,
             feeder_gas_limit,
-            event_sender,
+            event_sender: event_sender,
             #[cfg(feature = "archive")]
             archive,
             driver_store: Arc::new(RwLock::new(driver_store)),
             instance_cache: Arc::new(RwLock::new(BTreeMap::new())),
-            transfer_state: Arc::new(Mutex::new(TransferState::new())),
+            transfer_state: Arc::new(Mutex::new(TransferState::new(inner_event_sender))),
             stake_state: Arc::new(RwLock::new(StakeState::new()))
         })
     }

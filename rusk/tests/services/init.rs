@@ -61,6 +61,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let (_vm, _commit_id) = deploy;
 
     let (sender, _) = broadcast::channel(10);
+    let (inner_sender, _) = broadcast::channel(10);
 
     #[cfg(feature = "archive")]
     let archive_dir =
@@ -78,6 +79,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
         #[cfg(feature = "archive")]
         archive,
         DriverStore::new(None::<PathBuf>),
+        inner_sender
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)

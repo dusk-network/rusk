@@ -241,6 +241,7 @@ impl RuskNodeBuilder {
             .map(|h| h.ws_event_channel_cap)
             .unwrap_or(1);
         let (rues_sender, rues_receiver) = broadcast::channel(channel_cap);
+        let (inner_sender, _) = broadcast::channel(channel_cap);
         let (node_sender, node_receiver) = mpsc::channel(1000);
 
         let chain_id = self.kadcast.kadcast_id.unwrap_or_default();
@@ -285,6 +286,7 @@ impl RuskNodeBuilder {
             #[cfg(feature = "archive")]
             archive.clone(),
             DriverStore::new(Some(self.driver_store_path)),
+            inner_sender,
         )
         .map_err(|e| anyhow::anyhow!("Cannot instantiate VM {e}"))?;
         info!("Rusk VM loaded");

@@ -62,6 +62,7 @@ pub async fn new_state_with_chainid<P: AsRef<Path>>(
             .expect("Deploying initial state should succeed");
 
     let (sender, _) = broadcast::channel(10);
+    let (inner_sender, _) = broadcast::channel(10);
 
     #[cfg(feature = "archive")]
     let archive_dir =
@@ -79,6 +80,7 @@ pub async fn new_state_with_chainid<P: AsRef<Path>>(
         #[cfg(feature = "archive")]
         archive,
         DriverStore::new(None::<PathBuf>),
+        inner_sender,
     )
     .expect("Instantiating rusk should succeed");
 

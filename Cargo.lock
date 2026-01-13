@@ -1936,6 +1936,7 @@ dependencies = [
  "hyper-util",
  "kadcast",
  "parking_lot",
+ "piecrust-uplink",
  "pin-project",
  "rand 0.8.5",
  "reqwest",
@@ -5886,9 +5887,12 @@ name = "transfer"
 version = "0.1.0"
 dependencies = [
  "dusk-core 1.4.1-alpha.1",
+ "dusk-node-data",
  "dusk-vm",
+ "piecrust-uplink",
  "ringbuffer",
  "rusk-profile",
+ "tokio",
 ]
 
 [[package]]

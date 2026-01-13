@@ -32,6 +32,9 @@ pub fn assert_stake_event<S>(
         .find(|e| e.topic == topic)
         .expect(&format!("event: {topic} should exist in the event list",));
 
+    println!("===========================================================");
+    println!("stake event received={:?}", event);
+
     if topic == "stake" || topic == "unstake" || topic == "withdraw" {
         let staking_event_data =
             check_archived_root::<StakeEvent>(event.data.as_slice())
@@ -39,6 +42,7 @@ pub fn assert_stake_event<S>(
         let staking_event_data: StakeEvent = staking_event_data
             .deserialize(&mut Infallible)
             .expect("Infallible");
+        println!("staking event data={:?}", staking_event_data);
         assert_eq!(
             staking_event_data.value, should_value,
             "Stake-event: value incorrect"
@@ -70,10 +74,13 @@ pub fn assert_reward_event<S>(
         .iter()
         .find(|e| e.topic == topic)
         .expect(&format!("event: {topic} should exist in the event list",));
+    println!("===========================================================");
+    println!("reward event received={:?}", event);
 
     if topic == "reward" {
         let reward_event_data = rkyv::from_bytes::<Vec<Reward>>(&event.data)
             .expect("Reward event data should deserialize correctly");
+        println!("reward event data={:?}", reward_event_data);
 
         assert!(reward_event_data.iter().any(|reward| {
             &reward.account == should_pk && reward.value == should_value

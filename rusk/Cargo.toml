@@ -53,6 +53,7 @@ dusk-transfer-contract-dd = { workspace = true }
 dusk-stake-contract-dd = { workspace = true }
 dusk-data-driver = {workspace = true}
 dusk-wasmtime = { workspace = true }
+piecrust-uplink = { workspace = true }
 
 dusk-bytes = { workspace = true }
 kadcast = { workspace = true }
