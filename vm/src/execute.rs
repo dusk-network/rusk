@@ -122,6 +122,10 @@ pub fn execute(
 
     let stripped_tx = tx.blob_to_memo().or(tx.strip_off_bytecode());
 
+    if let Some(call) = tx.call() {
+        println!("spend_and_execute contract={} fn_name={}", call.contract, call.fn_name)
+    }
+
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
     let mut receipt = session

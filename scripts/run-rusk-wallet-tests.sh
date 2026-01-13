@@ -8,7 +8,7 @@ set -e
 
 cp ../examples/consensus.keys ~/.dusk/rusk/consensus.keys
 
-RAND_POSTFIX=$(mktemp XXXXXX -u)
+RAND_POSTFIX=$(mktemp XXXXXX)
 STATE="/tmp/rusk-wallet-test-$RAND_POSTFIX.state"
 NODE_LOG="/tmp/rusk-wallet-test-node-$RAND_POSTFIX.log"
 
