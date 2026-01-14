@@ -1,11 +1,11 @@
 <script>
-  import { getKey } from "lamb";
   import { mdiArrowLeft, mdiContain } from "@mdi/js";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
 
   import { goto } from "$lib/navigation";
 
+  import { formatBlocksAsTime } from "$lib/bridge/formatBlocksAsTime";
   import { AppAnchorButton } from "$lib/components";
   import { Button, Icon, Suspense, Throbber } from "$lib/dusk/components";
   import { createTransferFormatter, luxToDusk } from "$lib/dusk/currency";
@@ -19,8 +19,10 @@
   /** @type {string} */
   export let language;
 
-  /** @type {Promise<[]>} */
-  export let items;
+  /** @type {Promise<PendingWithdrawalEntry[]>} */
+  export let items = Promise.resolve(
+    /** @type {PendingWithdrawalEntry[]} */ ([])
+  );
 
   /** @type {number} */
   let screenWidth = window.innerWidth;
@@ -130,69 +132,71 @@
       </div>
     </svelte:fragment>
     <svelte:fragment slot="success-content" let:result={transactions}>
-      {#if transactions.length}
-        {#each transactions as [txId, tx] (txId)}
+      {@const userTransactions =
+        currentProfileAccountAddress && Array.isArray(transactions)
+          ? transactions.filter(
+              ([, tx]) => tx?.to?.External === currentProfileAccountAddress
+            )
+          : []}
+
+      {#if userTransactions.length}
+        {#each userTransactions as [txId, tx] (txId)}
           {@const amount = BigInt(tx.amount)}
-          {#if currentProfileAccountAddress && tx?.to?.External === currentProfileAccountAddress}
-            <dl class="transactions-list">
-              <dt class="transactions-list__term">Block</dt>
-              <dd class="transactions-list__datum">
-                {numberFormatter.format(tx.block_height)}
-              </dd>
-              <dt class="transactions-list__term">Amount</dt>
-              <dd class="transactions-list__datum">
-                {transferFormatter(luxToDusk(amount))}
-                <span class="transactions-list__ticker">Dusk</span>
-              </dd>
-              <dt class="transactions-list__term">From</dt>
-              <dd class="transactions-list__datum">
-                {middleEllipsis(tx.from, ellipsisChars)}
-              </dd>
-              {#if chainInfo}
-                {#if chainInfo.height >= BigInt(tx.block_height) + chainInfo.period}
-                  <dt class="transactions-list__term">Status</dt>
-                  <dd class="transactions-list__datum">
-                    <Button
-                      text="Finalize now"
-                      on:click={async () => {
-                        try {
-                          const res =
-                            await walletStore.finalizeWithdrawalEvmFunctionCall(
-                              VITE_BRIDGE_CONTRACT_ID,
-                              txId,
-                              wasmPath
-                            );
-                          const hash = getKey("hash")(res);
-                          await goto(
-                            "/dashboard/bridge/transactions/complete",
-                            {
-                              replaceState: true,
-                              state: {
-                                hash,
-                              },
-                            }
-                          );
-                        } catch (e) {
-                          // eslint-disable-next-line no-console
-                          console.error("Finalize failed", e);
-                        }
-                      }}
-                    />
-                  </dd>
-                {:else}
-                  <dt class="transactions-list__term">Status</dt>
-                  <dd class="transactions-list__datum">
-                    Finalization possible in {Number(
-                      remainingBlocks(tx.block_height)
-                    )} blocks
-                  </dd>
-                {/if}
-              {:else}
+          <dl class="transactions-list">
+            <dt class="transactions-list__term">Block</dt>
+            <dd class="transactions-list__datum">
+              {numberFormatter.format(tx.block_height)}
+            </dd>
+            <dt class="transactions-list__term">Amount</dt>
+            <dd class="transactions-list__datum">
+              {transferFormatter(luxToDusk(amount))}
+              <span class="transactions-list__ticker">Dusk</span>
+            </dd>
+            <dt class="transactions-list__term">From</dt>
+            <dd class="transactions-list__datum">
+              {middleEllipsis(tx.from, ellipsisChars)}
+            </dd>
+            {#if chainInfo}
+              {#if chainInfo.height >= BigInt(tx.block_height) + chainInfo.period}
                 <dt class="transactions-list__term">Status</dt>
-                <dd class="transactions-list__datum"><Throbber /></dd>
+                <dd class="transactions-list__datum">
+                  <Button
+                    text="Finalize now"
+                    on:click={async () => {
+                      try {
+                        const res =
+                          await walletStore.finalizeWithdrawalEvmFunctionCall(
+                            VITE_BRIDGE_CONTRACT_ID,
+                            txId,
+                            wasmPath
+                          );
+                        const hash = res.hash;
+                        await goto("/dashboard/bridge/transactions/complete", {
+                          replaceState: true,
+                          state: {
+                            hash,
+                          },
+                        });
+                      } catch (e) {
+                        // eslint-disable-next-line no-console
+                        console.error("Finalize failed", e);
+                      }
+                    }}
+                  />
+                </dd>
+              {:else}
+                {@const remBlocks = remainingBlocks(tx.block_height)}
+                <dt class="transactions-list__term">Status</dt>
+                <dd class="transactions-list__datum">
+                  Finalization possible in {numberFormatter.format(remBlocks)} blocks
+                  ({formatBlocksAsTime(remBlocks, language)} at ~10s/block)
+                </dd>
               {/if}
-            </dl>
-          {/if}
+            {:else}
+              <dt class="transactions-list__term">Status</dt>
+              <dd class="transactions-list__datum"><Throbber /></dd>
+            {/if}
+          </dl>
         {/each}
       {:else}
         <div class="transactions-list__empty">

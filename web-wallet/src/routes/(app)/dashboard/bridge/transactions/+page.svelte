@@ -12,7 +12,7 @@
 
 <div class="transactions">
   <h2 class="sr-only">Transactions</h2>
-  <EvmTransactions items={data.transactions} {language} />
+  <EvmTransactions items={data.pendingWithdrawals} {language} />
 </div>
 
 <style lang="postcss">

@@ -7,6 +7,9 @@
   import { BridgeContract } from "$lib/containers";
   import { networkStore } from "$lib/stores";
 
+  /** @type {import('./$types').PageData} */
+  export let data;
+
   const { networkName } = $networkStore;
 
   onDestroy(() => {
@@ -17,6 +20,7 @@
 {#if import.meta.env.VITE_FEATURE_BRIDGE || false}
   {#if ["mainnet", "testnet", "devnet", "localnet"].includes(networkName)}
     <BridgeContract
+      pendingWithdrawals={data.pendingWithdrawals}
       on:operationChange={({ detail }) => updateOperation(detail)}
     />
   {/if}
