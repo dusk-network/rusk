@@ -11,7 +11,7 @@ mod vm;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use dusk_core::{dusk, Dusk};
 
@@ -53,7 +53,7 @@ pub struct Rusk {
     pub(crate) driver_store: Arc<RwLock<DriverStore>>,
     pub(crate) instance_cache:
         Arc<RwLock<BTreeMap<ContractId, DriverExecutor>>>,
-    pub(crate) transfer_state: Arc<tokio::sync::Mutex<TransferState>>,
+    pub(crate) transfer_state: Arc<Mutex<TransferState>>,
     pub(crate) stake_state: Arc<RwLock<StakeState>>,
 }
 

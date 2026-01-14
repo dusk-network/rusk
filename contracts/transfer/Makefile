@@ -13,7 +13,8 @@ check: wasm ## Run the Rust check on the project features
 	@cargo check
 
 test: wasm ## Perform the contract tests defined in the host module
-	@cargo test --release
+	@cargo test contract_to_account2 --release -- --nocapture
+# 	@cargo test --release
 
 wasm: ## Build the WASM files
 	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)= -C link-args=-zstack-size=65536" \

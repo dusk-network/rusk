@@ -41,7 +41,7 @@ use dusk_core::transfer::{
     WITHDRAW_TOPIC,
 };
 use dusk_core::BlsScalar;
-use dusk_vm::host_queries::{hash, verify_bls, verify_plonk, verify_schnorr};
+use crate::host_queries_flat::{hash, verify_bls, verify_plonk, verify_schnorr};
 
 use crate::transitory::{self, Deposit};
 

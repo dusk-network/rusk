@@ -6,7 +6,7 @@
 
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
-use std::sync::{mpsc, Arc};
+use std::sync::{mpsc, Arc, Mutex};
 use std::time::Instant;
 use std::{fs, io};
 
@@ -37,7 +37,7 @@ use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{to_str, Block, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
-use tokio::sync::{broadcast, Mutex};
+use tokio::sync::broadcast;
 use tracing::info;
 use stake::StakeState;
 use transfer::TransferState;

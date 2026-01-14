@@ -10,11 +10,14 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 
 [dependencies]
 dusk-core = { workspace = true }
-dusk-vm = { workspace = true }
 ringbuffer = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
 node-data = { workspace = true }
 piecrust-uplink = { workspace = true }
+tracing = { workspace = true }
+dusk-poseidon = { workspace = true }
+dusk-bytes = { workspace = true }
+sha3 = { workspace = true }
 
 [build-dependencies]
 rusk-profile = { workspace = true }

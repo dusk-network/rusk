@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod host_queries_flat;
+
 mod error;
 
 mod state;

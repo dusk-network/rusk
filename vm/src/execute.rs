@@ -7,6 +7,7 @@
 mod config;
 pub mod feature;
 
+use std::sync::{Arc, Mutex};
 use blake2b_simd::Params;
 use dusk_core::abi::{ContractError, ContractId, Metadata, CONTRACT_ID_BYTES};
 use dusk_core::stake::STAKE_CONTRACT;
@@ -16,6 +17,7 @@ use piecrust::{CallReceipt, Error, Session};
 use wasmparser::*;
 
 pub use config::Config;
+use transfer::TransferState;
 
 /// Executes a transaction in the provided session.
 ///
@@ -68,6 +70,14 @@ pub fn execute(
     session: &mut Session,
     tx: &Transaction,
     config: &Config,
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
+    execute_flat(session, tx, config, None)
+}
+pub fn execute_flat(
+    session: &mut Session,
+    tx: &Transaction,
+    config: &Config,
+    transfer_tool_opt: Option<Arc<Mutex<TransferState>>>
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
@@ -128,16 +138,24 @@ pub fn execute(
 
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
-    let mut receipt = session
-        .call::<_, Result<Vec<u8>, ContractError>>(
-            TRANSFER_CONTRACT,
-            "spend_and_execute",
-            stripped_tx.as_ref().unwrap_or(tx),
-            tx.gas_limit(),
-        )
-        .inspect_err(|_| {
-            clear_session(session, config);
-        })?;
+    let mut receipt = match &transfer_tool_opt {
+        None => {
+            session
+                .call::<_, Result<Vec<u8>, ContractError>>(
+                    TRANSFER_CONTRACT,
+                    "spend_and_execute",
+                    stripped_tx.as_ref().unwrap_or(tx),
+                    tx.gas_limit(),
+                )
+                .inspect_err(|_| {
+                    clear_session(session, config);
+                })?
+        },
+        Some(m) => {
+            let mut transfer_tool = m.lock().unwrap();
+            transfer_tool.spend_and_execute(stripped_tx.unwrap_or(tx.clone()))
+        }
+    };
 
     // Deploy if this is a deployment transaction and spend part is successful.
     contract_deploy(session, tx, config, &mut receipt);
@@ -158,14 +176,22 @@ pub fn execute(
     // Refund the appropriate amount to the transaction. This call is guaranteed
     // to never error. If it does, then a programming error has occurred. As
     // such, the call to `Result::expect` is warranted.
-    let refund_receipt = session
-        .call::<_, ()>(
-            TRANSFER_CONTRACT,
-            "refund",
-            &receipt.gas_spent,
-            u64::MAX,
-        )
-        .expect("Refunding must succeed");
+    let mut refund_receipt = match &transfer_tool_opt {
+        None => {
+            session
+            .call::<_, ()>(
+                TRANSFER_CONTRACT,
+                "refund",
+                &receipt.gas_spent,
+                u64::MAX,
+            )
+            .expect("Refunding must succeed")
+        },
+        Some(m) => {
+            let mut transfer_tool = m.lock().unwrap();
+            transfer_tool.refund(receipt.gas_spent)
+        }
+    };
 
     receipt.events.extend(refund_receipt.events);
 

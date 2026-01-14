@@ -8,7 +8,7 @@ help: ## Display this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # test: $(SUBDIRS) ## Run all the tests in the subfolder
-test: stake
+test: transfer
 
 wasm: $(SUBDIRS) ## Generate the WASM for all the contracts
 

@@ -13,8 +13,8 @@ check: wasm ## Run the Rust check on the project features
 	@cargo check
 
 test: wasm ## Perform the contract tests defined in the host contract
-	@cargo test stake_withdraw_unstake --release -- --nocapture
-# 	cargo test --release
+	cargo test --release
+# 	@cargo test stake_withdraw_unstake --release -- --nocapture
 
 wasm: ## Generate the optimized WASM for the contract given
 	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)= -C link-args=-zstack-size=65536" \

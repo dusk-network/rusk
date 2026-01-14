@@ -2016,9 +2016,7 @@ version = "1.4.4-alpha.1"
 dependencies = [
  "blake2b_simd",
  "blake3",
- "dusk-bytes",
  "dusk-core 1.4.1-alpha.1",
- "dusk-poseidon",
  "ff",
  "hex",
  "indexmap 2.11.4",
@@ -2028,8 +2026,7 @@ dependencies = [
  "rand 0.8.5",
  "rkyv",
  "serde",
- "sha3",
- "tracing",
+ "transfer",
  "wasmparser 0.240.0",
 ]
 
@@ -5886,13 +5883,16 @@ dependencies = [
 name = "transfer"
 version = "0.1.0"
 dependencies = [
+ "dusk-bytes",
  "dusk-core 1.4.1-alpha.1",
  "dusk-node-data",
- "dusk-vm",
+ "dusk-poseidon",
  "piecrust-uplink",
  "ringbuffer",
  "rusk-profile",
+ "sha3",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
