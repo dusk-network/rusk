@@ -153,7 +153,7 @@ pub fn execute_flat(
         },
         Some(m) => {
             let mut transfer_tool = m.lock().unwrap();
-            transfer_tool.spend_and_execute(stripped_tx.unwrap_or(tx.clone()))
+            transfer_tool.spend_and_execute(session, stripped_tx.unwrap_or(tx.clone()))?
         }
     };
 

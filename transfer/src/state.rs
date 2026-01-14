@@ -41,6 +41,8 @@ use dusk_core::transfer::{
     WITHDRAW_TOPIC,
 };
 use dusk_core::BlsScalar;
+use piecrust::{CallReceipt, CallTree, Error as PiecrustError, Session};
+
 use crate::host_queries_flat::{hash, verify_bls, verify_plonk, verify_schnorr};
 
 use crate::transitory::{self, Deposit};
@@ -538,8 +540,9 @@ impl TransferState {
     /// [`refund`]: [`TransferState::refund`]
     pub fn spend_and_execute(
         &mut self,
+        session: &mut Session,
         tx: Transaction,
-    ) -> Result<Vec<u8>, ContractError> {
+    ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
         if tx.gas_price() == 0 {
             panic!("Gas price too low!");
         }
@@ -555,9 +558,26 @@ impl TransferState {
         match tx.call() {
             Some(call) => {
                 // todo: implement
-                Ok(Vec::new()) //abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
+                // Ok(Vec::new()) //abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
+                let x = session
+                    .call::<_, Result<Vec<u8>, ContractError>>(
+                        call.contract,
+                        &call.fn_name,
+                        &call.fn_args,
+                        tx.gas_limit(),
+                    )?;
+                    /*.inspect_err(|_| {
+                        clear_session(session, config);
+                    })*/
+                Ok(x)
             }
-            None => Ok(Vec::new()),
+            None => Ok(CallReceipt{
+                gas_spent: 0,
+                gas_limit: 0,
+                events: Vec::new(),
+                call_tree: CallTree::new(),
+                data: Ok(Vec::new())
+            }),
         }
     }
 

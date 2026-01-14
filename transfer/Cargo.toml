@@ -13,6 +13,7 @@ dusk-core = { workspace = true }
 ringbuffer = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
 node-data = { workspace = true }
+piecrust = { workspace = true }
 piecrust-uplink = { workspace = true }
 tracing = { workspace = true }
 dusk-poseidon = { workspace = true }
