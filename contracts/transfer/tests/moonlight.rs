@@ -759,7 +759,7 @@ fn contract_to_contract() {
 /// In this test we call the Alice contract to trigger a transfer of funds into
 /// a moonlight account, the gas will be paid with moonlight.
 #[test]
-fn contract_to_account() {
+fn contract_to_account2() {
     const TRANSFER_VALUE: u64 = ALICE_GENESIS_VALUE / 2;
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
