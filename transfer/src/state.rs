@@ -9,6 +9,7 @@ use crate::tree::Tree;
 use crate::verifier_data::tx_circuit_verifier;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::mpsc;
 
 // use alloc::collections::btree_map::Entry;
 // use alloc::collections::{BTreeMap, BTreeSet};
@@ -995,6 +996,82 @@ impl TransferState {
         // todo: implement
         // abi::chain_id()
         0
+    }
+
+    pub fn import_all(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+        self.import_tree(session, gas_limit)
+    }
+
+    pub fn import_tree(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+        let (feeder, receiver) = mpsc::channel();
+        let _receipt = session
+            .feeder_call::<(u64, u64), ()>(
+                TRANSFER_CONTRACT,
+                "sync",
+                &(0u64, 0u64),
+                gas_limit,
+                feeder,
+            )?;
+        for bytes in receiver.iter() {
+            let leaf = rkyv::from_bytes(&bytes).expect("Should return leaves");
+            self.tree.push(leaf);
+        };
+
+        Ok(())
+    }
+
+    pub fn import_nullifiers(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+        let (feeder, receiver) = mpsc::channel();
+        let _receipt = session
+            .feeder_call::<(u64, u64), ()>(
+                TRANSFER_CONTRACT,
+                "sync_nullifiers",
+                &(0u64, 0u64),
+                gas_limit,
+                feeder,
+            )?;
+        for bytes in receiver.iter() {
+            let n = rkyv::from_bytes(&bytes).expect("Should return nullifiers");
+            self.nullifiers.insert(n);
+        };
+
+        Ok(())
+    }
+
+    pub fn import_contract_balances(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+        let (feeder, receiver) = mpsc::channel();
+        let _receipt = session
+            .feeder_call::<(u64, u64), ()>(
+                TRANSFER_CONTRACT,
+                "sync_contract_balances",
+                &(0u64, 0u64),
+                gas_limit,
+                feeder,
+            )?;
+        for bytes in receiver.iter() {
+            let (contract, balance) = rkyv::from_bytes(&bytes).expect("Should return contracts' balances");
+            self.contract_balances.insert(contract, balance);
+        };
+
+        Ok(())
+    }
+
+    pub fn import_accounts(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+        let (feeder, receiver) = mpsc::channel();
+        let _receipt = session
+            .feeder_call::<(u64, u64), ()>(
+                TRANSFER_CONTRACT,
+                "sync_accounts",
+                &(0u64, 0u64),
+                gas_limit,
+                feeder,
+            )?;
+        for bytes in receiver.iter() {
+            let (key, account) = rkyv::from_bytes(&bytes).expect("Should return key and account");
+            self.accounts.insert(key, account);
+        };
+
+        Ok(())
     }
 }
 
