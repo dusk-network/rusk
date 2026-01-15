@@ -10,6 +10,7 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 
 [dependencies]
 dusk-core = { workspace = true, features = ["zk"] }
+dusk-bytes = { workspace = true }
 piecrust = { workspace = true }
 lru = { workspace = true }
 blake2b_simd = { workspace = true }

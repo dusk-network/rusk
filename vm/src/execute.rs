@@ -71,13 +71,15 @@ pub fn execute(
     tx: &Transaction,
     config: &Config,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
-    execute_flat(session, tx, config, None)
+    execute_flat(session, tx, config, &None)
 }
+
+/// Same as execute only it uses the transfer tool if present
 pub fn execute_flat(
     session: &mut Session,
     tx: &Transaction,
     config: &Config,
-    transfer_tool_opt: Option<Arc<Mutex<TransferState>>>
+    transfer_tool_opt: &Option<Arc<Mutex<TransferState>>>
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
@@ -133,7 +135,7 @@ pub fn execute_flat(
     let stripped_tx = tx.blob_to_memo().or(tx.strip_off_bytecode());
 
     if let Some(call) = tx.call() {
-        println!("spend_and_execute contract={} fn_name={}", call.contract, call.fn_name)
+        println!("spend_and_execute contract={} fn_name={} is_flat={}", call.contract, call.fn_name, transfer_tool_opt.is_some())
     }
 
     // Spend the inputs and execute the call. If this errors the transaction is
@@ -176,7 +178,7 @@ pub fn execute_flat(
     // Refund the appropriate amount to the transaction. This call is guaranteed
     // to never error. If it does, then a programming error has occurred. As
     // such, the call to `Result::expect` is warranted.
-    let mut refund_receipt = match &transfer_tool_opt {
+    let refund_receipt = match &transfer_tool_opt {
         None => {
             session
             .call::<_, ()>(

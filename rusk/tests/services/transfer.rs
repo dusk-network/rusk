@@ -81,7 +81,7 @@ fn wallet_transfer(
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
 
     let tx_hash_input_bytes = tx.to_hash_input_bytes();
-    let tx_id = dusk_vm::host_queries::hash(tx_hash_input_bytes);
+    let tx_id = transfer::host_queries_flat::hash(tx_hash_input_bytes);
 
     info!("Tx ID: {}", hex::encode(tx_id.to_bytes()));
     let txs: Vec<SpentTransaction> = generator_procedure(

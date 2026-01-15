@@ -2014,6 +2014,7 @@ version = "1.4.4-alpha.1"
 dependencies = [
  "blake2b_simd",
  "blake3",
+ "dusk-bytes",
  "dusk-core 1.4.1-alpha.1",
  "ff",
  "hex",
@@ -5900,6 +5901,7 @@ dependencies = [
  "rusk-profile",
  "sha3",
  "tokio",
+ "tokio-stream",
  "tracing",
 ]
 

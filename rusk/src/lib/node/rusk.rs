@@ -30,7 +30,7 @@ use dusk_core::transfer::{
     TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, Dusk};
-use dusk_vm::{execute, CallReceipt, Error as VMError, Session, VM};
+use dusk_vm::{execute, CallReceipt, Error as VMError, Session, VM, execute_flat};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
@@ -47,6 +47,8 @@ use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
 use crate::node::{get_block_rewards, RuesEvent, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
+
+const RECKONING: bool = false;
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
@@ -208,7 +210,12 @@ impl Rusk {
                 continue;
             }
 
-            match execute(&mut session, &unspent_tx.inner, &execution_config) {
+            let transfer_tool_opt = if RECKONING {
+                Some(self.transfer_state.clone())
+            } else {
+                None
+            };
+            match execute_flat(&mut session, &unspent_tx.inner, &execution_config, &transfer_tool_opt) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
@@ -230,10 +237,11 @@ impl Rusk {
                         for spent_tx in &spent_txs {
                             // We know these transactions were correctly
                             // executed before, so we don't bother checking.
-                            let _ = execute(
+                            let _ = execute_flat(
                                 &mut session,
                                 &spent_tx.inner.inner,
                                 &execution_config,
+                                &transfer_tool_opt,
                             );
                         }
 
@@ -652,11 +660,17 @@ impl Rusk {
         let mut events = Vec::new();
         let mut event_bloom = Bloom::new();
 
+        let transfer_tool_opt = if RECKONING {
+            Some(self.transfer_state.clone())
+        } else {
+            None
+        };
+
         // Execute transactions
         for unspent_tx in txs {
             let tx = &unspent_tx.inner;
             let tx_id = unspent_tx.id();
-            let receipt = execute(&mut session, tx, &execution_config)
+            let receipt = execute_flat(&mut session, tx, &execution_config, &transfer_tool_opt)
                 .map_err(|err| {
                     StateTransitionError::ExecutionError(format!(
                         "Tx {} is discarded {err}",

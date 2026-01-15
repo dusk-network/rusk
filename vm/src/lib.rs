@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+
 //![doc = include_str!("../README.md")]
 
 #![deny(missing_docs)]
@@ -13,8 +14,9 @@
 
 extern crate alloc;
 
+use dusk_bytes as _;
 pub use self::execute::feature::Activation as FeatureActivation;
-pub use self::execute::{execute, gen_contract_id, Config as ExecutionConfig};
+pub use self::execute::{execute, execute_flat, gen_contract_id, Config as ExecutionConfig};
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
     Session,
@@ -165,7 +167,7 @@ impl VM {
         let host_query = host_query.into();
         if self.inner.host_queries().get(&host_query).is_none() {
             panic!(
-                "Host query '{host_query}' must be registered before setting activation"            
+                "Host query '{host_query}' must be registered before setting activation"
             );
         }
         self.hq_activation.insert(host_query, activation);
