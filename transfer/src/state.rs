@@ -557,19 +557,17 @@ impl TransferState {
 
         match tx.call() {
             Some(call) => {
-                // todo: implement
-                // Ok(Vec::new()) //abi::call_raw(call.contract, &call.fn_name, &call.fn_args)
-                let x = session
+                let receipt = session
                     .call::<_, Result<Vec<u8>, ContractError>>(
                         call.contract,
                         &call.fn_name,
                         &call.fn_args,
                         tx.gas_limit(),
                     )?;
-                    /*.inspect_err(|_| {
+                    /*.inspect_err(|_| { // todo
                         clear_session(session, config);
                     })*/
-                Ok(x)
+                Ok(receipt)
             }
             None => Ok(CallReceipt{
                 gas_spent: 0,
@@ -714,7 +712,7 @@ impl TransferState {
     /// in the fee structure.
     ///
     /// This function guarantees that it will not panic.
-    pub fn refund(&mut self, gas_spent: u64) {
+    pub fn refund(&mut self, gas_spent: u64) -> CallReceipt<()>{
         let ongoing = transitory::take_ongoing();
 
         // If there is a deposit still available on the call to this function,
@@ -790,6 +788,13 @@ impl TransferState {
                 //     },
                 // );
             }
+        }
+        CallReceipt{
+            gas_spent: 0,
+            gas_limit: 0,
+            events: Vec::new(),
+            call_tree: CallTree::new(),
+            data: ()
         }
     }
 

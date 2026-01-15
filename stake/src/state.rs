@@ -20,7 +20,7 @@ use dusk_core::stake::{
 use dusk_core::transfer::{
     ContractToContract, ReceiveFromContract, TRANSFER_CONTRACT,
 };
-use dusk_vm::host_queries::verify_bls;
+use transfer::host_queries_flat::verify_bls;
 
 /// Contract keeping track of each public key's stake.
 ///

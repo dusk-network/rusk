@@ -1352,8 +1352,6 @@ dependencies = [
 [[package]]
 name = "crumbles"
 version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90e660ac9c1d7549c850b4cbf31c06bd7e452879b55296554d5c85e25a26fefe"
 dependencies = [
  "libc",
  "rangemap",
@@ -1703,7 +1701,7 @@ dependencies = [
  "jubjub-schnorr",
  "phoenix-circuits",
  "phoenix-core",
- "piecrust-uplink",
+ "piecrust-uplink 0.19.0-rc.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "poseidon-merkle",
  "rand 0.8.5",
  "rkyv",
@@ -1732,7 +1730,7 @@ dependencies = [
  "jubjub-schnorr",
  "phoenix-circuits",
  "phoenix-core",
- "piecrust-uplink",
+ "piecrust-uplink 0.19.0-rc.0",
  "poseidon-merkle",
  "rand 0.8.5",
  "rkyv",
@@ -1936,7 +1934,7 @@ dependencies = [
  "hyper-util",
  "kadcast",
  "parking_lot",
- "piecrust-uplink",
+ "piecrust-uplink 0.19.0-rc.0",
  "pin-project",
  "rand 0.8.5",
  "reqwest",
@@ -4038,8 +4036,6 @@ dependencies = [
 [[package]]
 name = "piecrust"
 version = "0.29.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15c38e9e4914aed3e4ce5e5c8d48df1114e675879c20055064e00608893ca2c6"
 dependencies = [
  "blake3",
  "bytecheck",
@@ -4050,7 +4046,7 @@ dependencies = [
  "hex",
  "indexmap 2.11.4",
  "memmap2",
- "piecrust-uplink",
+ "piecrust-uplink 0.19.0-rc.0",
  "rand 0.8.5",
  "rkyv",
  "tempfile",
@@ -4061,11 +4057,21 @@ dependencies = [
 [[package]]
 name = "piecrust-uplink"
 version = "0.19.0-rc.0"
+dependencies = [
+ "bytecheck",
+ "dlmalloc",
+ "hex",
+ "rkyv",
+ "serde",
+]
+
+[[package]]
+name = "piecrust-uplink"
+version = "0.19.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49671c8d75a8c55fc4aff276729ac2e653596e74934fe7c72b592b6b868ad897"
 dependencies = [
  "bytecheck",
- "dlmalloc",
  "hex",
  "rkyv",
  "serde",
@@ -5373,6 +5379,7 @@ dependencies = [
  "ringbuffer",
  "rkyv",
  "rusk-profile",
+ "transfer",
 ]
 
 [[package]]
@@ -5888,7 +5895,7 @@ dependencies = [
  "dusk-node-data",
  "dusk-poseidon",
  "piecrust",
- "piecrust-uplink",
+ "piecrust-uplink 0.19.0-rc.0",
  "ringbuffer",
  "rusk-profile",
  "sha3",

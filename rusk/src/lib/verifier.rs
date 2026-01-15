@@ -11,7 +11,6 @@ use crate::Result;
 
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::Transaction as PhoenixTransaction;
-use dusk_vm::host_queries;
 
 #[cfg(not(feature = "dynamic-verifier"))]
 mod embed {
@@ -61,6 +60,7 @@ mod runtime {
 }
 #[cfg(feature = "dynamic-verifier")]
 use runtime::*;
+use transfer::host_queries_flat;
 
 /// Verifies the proof of the incoming transaction.
 pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
@@ -81,7 +81,7 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 
     // Maybe we want to handle internal serialization error too,
     // currently they map to `false`.
-    Ok(host_queries::verify_plonk(
+    Ok(host_queries_flat::verify_plonk(
         vd.to_vec(),
         tx.proof().to_vec(),
         tx.public_inputs(),
@@ -90,7 +90,7 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
 
 /// Verifies the signature of the incoming transaction.
 pub fn verify_signature(tx: &MoonlightTransaction) -> Result<bool> {
-    Ok(host_queries::verify_bls(
+    Ok(host_queries_flat::verify_bls(
         tx.signature_message(),
         *tx.sender(),
         *tx.signature(),

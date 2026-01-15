@@ -14,6 +14,7 @@ dusk-vm = { workspace = true }
 ringbuffer = { workspace = true }
 dusk-bytes = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }
+transfer = { path = "../transfer" }
 
 [build-dependencies]
 rusk-profile = { workspace = true }
