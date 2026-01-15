@@ -5898,6 +5898,7 @@ dependencies = [
  "piecrust",
  "piecrust-uplink 0.19.0-rc.0",
  "ringbuffer",
+ "rkyv",
  "rusk-profile",
  "sha3",
  "tokio",

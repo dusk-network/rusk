@@ -30,16 +30,18 @@ use dusk_core::transfer::{
     TRANSFER_CONTRACT,
 };
 use dusk_core::{BlsScalar, Dusk};
-use dusk_vm::{execute, CallReceipt, Error as VMError, Session, VM, execute_flat};
+use dusk_vm::{
+    execute, execute_flat, CallReceipt, Error as VMError, Session, VM,
+};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::{to_str, Block, Slash, SpentTransaction, Transaction};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
+use stake::StakeState;
 use tokio::sync::broadcast;
 use tracing::info;
-use stake::StakeState;
 use transfer::TransferState;
 
 use super::RuskVmConfig;
@@ -110,8 +112,10 @@ impl Rusk {
             archive,
             driver_store: Arc::new(RwLock::new(driver_store)),
             instance_cache: Arc::new(RwLock::new(BTreeMap::new())),
-            transfer_state: Arc::new(Mutex::new(TransferState::new(inner_event_sender))),
-            stake_state: Arc::new(RwLock::new(StakeState::new()))
+            transfer_state: Arc::new(Mutex::new(TransferState::new(
+                inner_event_sender,
+            ))),
+            stake_state: Arc::new(RwLock::new(StakeState::new())),
         })
     }
 
@@ -146,6 +150,20 @@ impl Rusk {
         );
 
         let mut session = self.new_block_session(block_height, prev_state)?;
+
+        const RECKONING_BLOCK_HEIGHT: u64 = 2;
+
+        if block_height == RECKONING_BLOCK_HEIGHT {
+            // copy all data from transfer contract to the transfer tool
+            let mut transfer_tool = self.transfer_state.lock().unwrap();
+            let result = transfer_tool.import_from_transfer_contract(&mut session, gas_limit); // todo: gas considerations
+            // todo: temporary error processing
+            if result.is_err() {
+                info!("error when importing from the transfer contract: {:?}", result)
+            } else {
+                info!("successfully imported data from the transfer contract")
+            }
+        }
 
         let mut gas_left = gas_limit;
 
@@ -215,7 +233,12 @@ impl Rusk {
             } else {
                 None
             };
-            match execute_flat(&mut session, &unspent_tx.inner, &execution_config, &transfer_tool_opt) {
+            match execute_flat(
+                &mut session,
+                &unspent_tx.inner,
+                &execution_config,
+                &transfer_tool_opt,
+            ) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
 
@@ -670,13 +693,18 @@ impl Rusk {
         for unspent_tx in txs {
             let tx = &unspent_tx.inner;
             let tx_id = unspent_tx.id();
-            let receipt = execute_flat(&mut session, tx, &execution_config, &transfer_tool_opt)
-                .map_err(|err| {
-                    StateTransitionError::ExecutionError(format!(
-                        "Tx {} is discarded {err}",
-                        hex::encode(tx_id)
-                    ))
-                })?;
+            let receipt = execute_flat(
+                &mut session,
+                tx,
+                &execution_config,
+                &transfer_tool_opt,
+            )
+            .map_err(|err| {
+                StateTransitionError::ExecutionError(format!(
+                    "Tx {} is discarded {err}",
+                    hex::encode(tx_id)
+                ))
+            })?;
 
             event_bloom.add_events(&receipt.events);
 

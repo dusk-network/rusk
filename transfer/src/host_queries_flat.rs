@@ -4,16 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use tracing::warn;
 use sha3::{Digest, Keccak256};
+use tracing::warn;
 
-use dusk_core::BlsScalar;
-use dusk_core::plonk::{Proof as PlonkProof, Verifier};
+use dusk_bytes::DeserializableSlice;
+use dusk_core::groth16::bn254::{Bn254, G1Projective};
+use dusk_core::groth16::serialize::CanonicalDeserialize;
 use dusk_core::groth16::{
     Groth16, PreparedVerifyingKey, Proof as Groth16Proof,
 };
-use dusk_core::groth16::bn254::{Bn254, G1Projective};
-use dusk_core::groth16::serialize::CanonicalDeserialize;
+use dusk_core::plonk::{Proof as PlonkProof, Verifier};
 use dusk_core::signatures::bls::{
     MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
     Signature as BlsSignature,
@@ -21,9 +21,8 @@ use dusk_core::signatures::bls::{
 use dusk_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
 };
+use dusk_core::BlsScalar;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
-use dusk_bytes::DeserializableSlice;
-
 
 /// Computes a cryptographic hash of a byte vector.
 ///

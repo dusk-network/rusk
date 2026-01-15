@@ -6,11 +6,11 @@
 
 // use alloc::vec::Vec;
 
+use crate::host_queries_flat::poseidon_hash;
 use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, NoteOpening, NoteTreeItem, NotesTree,
 };
 use dusk_core::BlsScalar;
-use crate::host_queries_flat::poseidon_hash;
 
 /// The merkle tree that holds all phoenix-notes.
 ///

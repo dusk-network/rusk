@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-
 //![doc = include_str!("../README.md")]
 
 #![deny(missing_docs)]
@@ -14,9 +13,11 @@
 
 extern crate alloc;
 
-use dusk_bytes as _;
 pub use self::execute::feature::Activation as FeatureActivation;
-pub use self::execute::{execute, execute_flat, gen_contract_id, Config as ExecutionConfig};
+pub use self::execute::{
+    execute, execute_flat, gen_contract_id, Config as ExecutionConfig,
+};
+use dusk_bytes as _;
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
     Session,

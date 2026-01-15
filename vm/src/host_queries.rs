@@ -8,10 +8,12 @@
 
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
-use transfer::host_queries_flat::{hash, keccak256, poseidon_hash, verify_bls, verify_bls_multisig, verify_groth16_bn254, verify_plonk, verify_schnorr};
+use transfer::host_queries_flat::{
+    hash, keccak256, poseidon_hash, verify_bls, verify_bls_multisig,
+    verify_groth16_bn254, verify_plonk, verify_schnorr,
+};
 
 use crate::cache;
-
 
 fn wrap_host_query<A, R, F>(arg_buf: &mut [u8], arg_len: u32, closure: F) -> u32
 where

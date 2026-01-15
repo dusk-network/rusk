@@ -79,7 +79,7 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
         #[cfg(feature = "archive")]
         archive,
         DriverStore::new(None::<PathBuf>),
-        inner_sender
+        inner_sender,
     )
     .expect("Instantiating rusk should succeed");
     Ok(rusk)

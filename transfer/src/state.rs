@@ -44,7 +44,9 @@ use dusk_core::transfer::{
 use dusk_core::BlsScalar;
 use piecrust::{CallReceipt, CallTree, Error as PiecrustError, Session};
 
-use crate::host_queries_flat::{hash, verify_bls, verify_plonk, verify_schnorr};
+use crate::host_queries_flat::{
+    hash, verify_bls, verify_plonk, verify_schnorr,
+};
 
 use crate::transitory::{self, Deposit};
 
@@ -84,7 +86,9 @@ pub struct TransferState {
 }
 
 impl TransferState {
-    pub const fn new(event_sender: broadcast::Sender<piecrust_uplink::Event>) -> TransferState {
+    pub const fn new(
+        event_sender: broadcast::Sender<piecrust_uplink::Event>,
+    ) -> TransferState {
         TransferState {
             tree: Tree::new(),
             nullifiers: BTreeSet::new(),
@@ -264,10 +268,10 @@ impl TransferState {
 
         // todo: implement
         // let caller = abi::caller()
-        //     .expect("A withdrawal must happen in the context of a transaction");
-        // if *contract != caller {
-        //     panic!("The \"withdraw\" function can only be called by the specified contract.");
-        // }
+        //     .expect("A withdrawal must happen in the context of a
+        // transaction"); if *contract != caller {
+        //     panic!("The \"withdraw\" function can only be called by the
+        // specified contract."); }
         // todo: end
 
         let value = withdraw.value();
@@ -301,8 +305,8 @@ impl TransferState {
         // this check impliest that this is the first contract call.
         // todo: implement
         // let caller = abi::caller()
-        //     .expect("A conversion must happen in the context of a transaction");
-        // if caller != TRANSFER_CONTRACT {
+        //     .expect("A conversion must happen in the context of a
+        // transaction"); if caller != TRANSFER_CONTRACT {
         //     panic!("Only the first contract call can be a conversion");
         // }
         // todo: end
@@ -366,7 +370,7 @@ impl TransferState {
     pub fn deposit(&mut self, value: u64) {
         // todo: implement
         let caller = TRANSFER_CONTRACT; //abi::caller()
-            //.expect("A deposit must happen in the context of a transaction");
+                                        //.expect("A deposit must happen in the context of a transaction");
 
         let deposit = transitory::deposit_info_mut();
         match deposit {
@@ -431,7 +435,8 @@ impl TransferState {
     pub fn contract_to_contract(&mut self, transfer: ContractToContract) {
         // todo: implement
         let sender_contract = TRANSFER_CONTRACT; //abi::caller()
-            // .expect("A transfer to a contract must happen in the context of a transaction");
+                                                 // .expect("A transfer to a contract must happen in the context of a
+                                                 // transaction");
 
         if sender_contract == TRANSFER_CONTRACT {
             panic!("Cannot be called directly by the transfer contract");
@@ -486,7 +491,8 @@ impl TransferState {
     pub fn contract_to_account(&mut self, transfer: ContractToAccount) {
         // todo: implement
         let sender_contract = TRANSFER_CONTRACT; //abi::caller()
-            // .expect("A transfer to an account must happen in the context of a transaction");
+                                                 // .expect("A transfer to an account must happen in the context of a
+                                                 // transaction");
 
         if sender_contract == TRANSFER_CONTRACT {
             panic!("Cannot be called directly by the transfer contract");
@@ -543,7 +549,8 @@ impl TransferState {
         &mut self,
         session: &mut Session,
         tx: Transaction,
-    ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
+    ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError>
+    {
         if tx.gas_price() == 0 {
             panic!("Gas price too low!");
         }
@@ -565,17 +572,17 @@ impl TransferState {
                         &call.fn_args,
                         tx.gas_limit(),
                     )?;
-                    /*.inspect_err(|_| { // todo
-                        clear_session(session, config);
-                    })*/
+                /*.inspect_err(|_| { // todo
+                    clear_session(session, config);
+                })*/
                 Ok(receipt)
             }
-            None => Ok(CallReceipt{
+            None => Ok(CallReceipt {
                 gas_spent: 0,
                 gas_limit: 0,
                 events: Vec::new(),
                 call_tree: CallTree::new(),
-                data: Ok(Vec::new())
+                data: Ok(Vec::new()),
             }),
         }
     }
@@ -713,7 +720,7 @@ impl TransferState {
     /// in the fee structure.
     ///
     /// This function guarantees that it will not panic.
-    pub fn refund(&mut self, gas_spent: u64) -> CallReceipt<()>{
+    pub fn refund(&mut self, gas_spent: u64) -> CallReceipt<()> {
         let ongoing = transitory::take_ongoing();
 
         // If there is a deposit still available on the call to this function,
@@ -790,12 +797,12 @@ impl TransferState {
                 // );
             }
         }
-        CallReceipt{
+        CallReceipt {
             gas_spent: 0,
             gas_limit: 0,
             events: Vec::new(),
             call_tree: CallTree::new(),
-            data: ()
+            data: (),
         }
     }
 
@@ -998,78 +1005,99 @@ impl TransferState {
         0
     }
 
-    pub fn import_all(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+    pub fn import_from_transfer_contract(
+        &mut self,
+        session: &mut Session,
+        gas_limit: u64,
+    ) -> Result<(), PiecrustError> {
         self.import_tree(session, gas_limit)
+            .and_then(|_| self.import_nullifiers(session, gas_limit))
+            .and_then(|_| self.import_contract_balances(session, gas_limit))
+            .and_then(|_| self.import_accounts(session, gas_limit))
     }
 
-    pub fn import_tree(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+    pub fn import_tree(
+        &mut self,
+        session: &mut Session,
+        gas_limit: u64,
+    ) -> Result<(), PiecrustError> {
         let (feeder, receiver) = mpsc::channel();
-        let _receipt = session
-            .feeder_call::<(u64, u64), ()>(
-                TRANSFER_CONTRACT,
-                "sync",
-                &(0u64, 0u64),
-                gas_limit,
-                feeder,
-            )?;
+        let _receipt = session.feeder_call::<(u64, u64), ()>(
+            TRANSFER_CONTRACT,
+            "sync",
+            &(0u64, 0u64),
+            gas_limit,
+            feeder,
+        )?;
         for bytes in receiver.iter() {
             let leaf = rkyv::from_bytes(&bytes).expect("Should return leaves");
             self.tree.push(leaf);
-        };
+        }
 
         Ok(())
     }
 
-    pub fn import_nullifiers(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+    pub fn import_nullifiers(
+        &mut self,
+        session: &mut Session,
+        gas_limit: u64,
+    ) -> Result<(), PiecrustError> {
         let (feeder, receiver) = mpsc::channel();
-        let _receipt = session
-            .feeder_call::<(u64, u64), ()>(
-                TRANSFER_CONTRACT,
-                "sync_nullifiers",
-                &(0u64, 0u64),
-                gas_limit,
-                feeder,
-            )?;
+        let _receipt = session.feeder_call::<(u64, u64), ()>(
+            TRANSFER_CONTRACT,
+            "sync_nullifiers",
+            &(0u64, 0u64),
+            gas_limit,
+            feeder,
+        )?;
         for bytes in receiver.iter() {
             let n = rkyv::from_bytes(&bytes).expect("Should return nullifiers");
             self.nullifiers.insert(n);
-        };
+        }
 
         Ok(())
     }
 
-    pub fn import_contract_balances(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+    pub fn import_contract_balances(
+        &mut self,
+        session: &mut Session,
+        gas_limit: u64,
+    ) -> Result<(), PiecrustError> {
         let (feeder, receiver) = mpsc::channel();
-        let _receipt = session
-            .feeder_call::<(u64, u64), ()>(
-                TRANSFER_CONTRACT,
-                "sync_contract_balances",
-                &(0u64, 0u64),
-                gas_limit,
-                feeder,
-            )?;
+        let _receipt = session.feeder_call::<(u64, u64), ()>(
+            TRANSFER_CONTRACT,
+            "sync_contract_balances",
+            &(0u64, 0u64),
+            gas_limit,
+            feeder,
+        )?;
         for bytes in receiver.iter() {
-            let (contract, balance) = rkyv::from_bytes(&bytes).expect("Should return contracts' balances");
+            let (contract, balance) = rkyv::from_bytes(&bytes)
+                .expect("Should return contracts' balances");
             self.contract_balances.insert(contract, balance);
-        };
+        }
 
         Ok(())
     }
 
-    pub fn import_accounts(&mut self, session: &mut Session, gas_limit: u64) -> Result<(), PiecrustError> {
+    pub fn import_accounts(
+        &mut self,
+        session: &mut Session,
+        gas_limit: u64,
+    ) -> Result<(), PiecrustError> {
         let (feeder, receiver) = mpsc::channel();
-        let _receipt = session
-            .feeder_call::<(u64, u64), ()>(
-                TRANSFER_CONTRACT,
-                "sync_accounts",
-                &(0u64, 0u64),
-                gas_limit,
-                feeder,
-            )?;
+        let _receipt = session.feeder_call::<(u64, u64), ()>(
+            TRANSFER_CONTRACT,
+            "sync_accounts",
+            &(0u64, 0u64),
+            gas_limit,
+            feeder,
+        )?;
         for bytes in receiver.iter() {
-            let (key, account) = rkyv::from_bytes(&bytes).expect("Should return key and account");
+            let (key, account) = rkyv::from_bytes(&bytes)
+                .expect("Should return key and account");
             self.accounts.insert(key, account);
-        };
+        }
 
         Ok(())
     }
@@ -1088,8 +1116,8 @@ fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
 
 #[cfg(test)]
 mod test_transfer {
-    use tokio::sync::broadcast;
     use super::*;
+    use tokio::sync::broadcast;
 
     #[test]
     fn find_existing_nullifiers() {

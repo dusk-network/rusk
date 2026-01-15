@@ -123,7 +123,7 @@ impl StakeState {
         // todo: implement
         // let block_height = abi::block_height();
         let block_height = 0; // todo
-        // update the state accordingly
+                              // update the state accordingly
         let stake_event = match &mut loaded_stake.amount {
             Some(amount) => {
                 let locked = if block_height >= amount.eligibility {
@@ -184,7 +184,7 @@ impl StakeState {
 
         // todo: implement
         let block_height = 0; //abi::block_height();
-        // update the state accordingly
+                              // update the state accordingly
         let stake_event = match &mut loaded_stake.amount {
             Some(amount) => {
                 let locked = if block_height >= amount.eligibility {
@@ -248,8 +248,9 @@ impl StakeState {
         // make call to the transfer contract to withdraw funds from this
         // contract into the receiver specified by the withdrawal.
         // todo: implement
-        // let _: () = abi::call(TRANSFER_CONTRACT, "withdraw", transfer_withdraw)
-        //     .expect("Withdrawing stake should succeed");
+        // let _: () = abi::call(TRANSFER_CONTRACT, "withdraw",
+        // transfer_withdraw)     .expect("Withdrawing stake should
+        // succeed");
 
         let stake_event = if value > stake.value {
             let from_locked = value - stake.value;
@@ -315,9 +316,9 @@ impl StakeState {
         // };
         //
         // let _: () =
-        //     abi::call(TRANSFER_CONTRACT, "contract_to_contract", &to_contract)
-        //         .expect("Unstaking to contract should succeed");
-        // todo: end
+        //     abi::call(TRANSFER_CONTRACT, "contract_to_contract",
+        // &to_contract)         .expect("Unstaking to contract should
+        // succeed"); todo: end
 
         let stake_event = if value > stake.value {
             let from_locked = value - stake.value;
@@ -622,7 +623,8 @@ impl StakeState {
         // epoch plus hard_faults epochs
         let to_shift = hard_faults * EPOCH;
         // todo: implement
-        let next_eligibility = next_epoch(0 /*abi::block_height()*/) + to_shift;
+        let next_eligibility =
+            next_epoch(0 /* abi::block_height() */) + to_shift;
         stake_amount.eligibility = next_eligibility;
 
         // Slash the provided amount or calculate the percentage according to
