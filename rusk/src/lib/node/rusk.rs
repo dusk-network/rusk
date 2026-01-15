@@ -149,23 +149,34 @@ impl Rusk {
             ?slashes
         );
 
-        let mut session = self.new_block_session(block_height, prev_state)?;
-
         const RECKONING_BLOCK_HEIGHT: u64 = 2;
 
-        if block_height == RECKONING_BLOCK_HEIGHT {
+        let mut gas_left = if block_height == RECKONING_BLOCK_HEIGHT {
+            let mut session =
+                self.new_block_session(block_height, prev_state)?;
             // copy all data from transfer contract to the transfer tool
             let mut transfer_tool = self.transfer_state.lock().unwrap();
-            let result = transfer_tool.import_from_transfer_contract(&mut session, gas_limit); // todo: gas considerations
+            let result = transfer_tool
+                .import_from_transfer_contract(&mut session, gas_limit);
             // todo: temporary error processing
-            if result.is_err() {
-                info!("error when importing from the transfer contract: {:?}", result)
-            } else {
-                info!("successfully imported data from the transfer contract")
+            match result {
+                Ok(gas_spent) => {
+                    info!("successfully imported data from the transfer contract, gas spent={} gas left={}", gas_spent, gas_limit - gas_spent);
+                    gas_limit - gas_spent
+                }
+                Err(e) => {
+                    info!(
+                        "error when importing from the transfer contract: {:?}",
+                        e
+                    );
+                    gas_limit
+                }
             }
-        }
+        } else {
+            gas_limit
+        };
 
-        let mut gas_left = gas_limit;
+        let mut session = self.new_block_session(block_height, prev_state)?;
 
         let mut spent_txs = Vec::<SpentTransaction>::new();
         let mut discarded_txs = vec![];

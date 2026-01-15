@@ -1009,20 +1009,22 @@ impl TransferState {
         &mut self,
         session: &mut Session,
         gas_limit: u64,
-    ) -> Result<(), PiecrustError> {
-        self.import_tree(session, gas_limit)
-            .and_then(|_| self.import_nullifiers(session, gas_limit))
-            .and_then(|_| self.import_contract_balances(session, gas_limit))
-            .and_then(|_| self.import_accounts(session, gas_limit))
+    ) -> Result<u64, PiecrustError> {
+        let gas_spent = self.import_tree(session, gas_limit)?
+            + self.import_nullifiers(session, gas_limit)?
+            + self.import_contract_balances(session, gas_limit)?
+            + self.import_accounts(session, gas_limit)?;
+        self.update_root();
+        Ok(gas_spent)
     }
 
     pub fn import_tree(
         &mut self,
         session: &mut Session,
         gas_limit: u64,
-    ) -> Result<(), PiecrustError> {
+    ) -> Result<u64, PiecrustError> {
         let (feeder, receiver) = mpsc::channel();
-        let _receipt = session.feeder_call::<(u64, u64), ()>(
+        let receipt = session.feeder_call::<(u64, u64), ()>(
             TRANSFER_CONTRACT,
             "sync",
             &(0u64, 0u64),
@@ -1034,16 +1036,16 @@ impl TransferState {
             self.tree.push(leaf);
         }
 
-        Ok(())
+        Ok(receipt.gas_spent)
     }
 
     pub fn import_nullifiers(
         &mut self,
         session: &mut Session,
         gas_limit: u64,
-    ) -> Result<(), PiecrustError> {
+    ) -> Result<u64, PiecrustError> {
         let (feeder, receiver) = mpsc::channel();
-        let _receipt = session.feeder_call::<(u64, u64), ()>(
+        let receipt = session.feeder_call::<(u64, u64), ()>(
             TRANSFER_CONTRACT,
             "sync_nullifiers",
             &(0u64, 0u64),
@@ -1055,16 +1057,16 @@ impl TransferState {
             self.nullifiers.insert(n);
         }
 
-        Ok(())
+        Ok(receipt.gas_spent)
     }
 
     pub fn import_contract_balances(
         &mut self,
         session: &mut Session,
         gas_limit: u64,
-    ) -> Result<(), PiecrustError> {
+    ) -> Result<u64, PiecrustError> {
         let (feeder, receiver) = mpsc::channel();
-        let _receipt = session.feeder_call::<(u64, u64), ()>(
+        let receipt = session.feeder_call::<(u64, u64), ()>(
             TRANSFER_CONTRACT,
             "sync_contract_balances",
             &(0u64, 0u64),
@@ -1077,16 +1079,16 @@ impl TransferState {
             self.contract_balances.insert(contract, balance);
         }
 
-        Ok(())
+        Ok(receipt.gas_spent)
     }
 
     pub fn import_accounts(
         &mut self,
         session: &mut Session,
         gas_limit: u64,
-    ) -> Result<(), PiecrustError> {
+    ) -> Result<u64, PiecrustError> {
         let (feeder, receiver) = mpsc::channel();
-        let _receipt = session.feeder_call::<(u64, u64), ()>(
+        let receipt = session.feeder_call::<(u64, u64), ()>(
             TRANSFER_CONTRACT,
             "sync_accounts",
             &(0u64, 0u64),
@@ -1099,7 +1101,7 @@ impl TransferState {
             self.accounts.insert(key, account);
         }
 
-        Ok(())
+        Ok(receipt.gas_spent)
     }
 }
 
