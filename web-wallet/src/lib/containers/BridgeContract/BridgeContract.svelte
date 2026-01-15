@@ -32,6 +32,9 @@
   /** @type {GetBalanceReturnType | undefined}  */
   let evmDuskBalance;
 
+  /** @type {Promise<PendingWithdrawalEntry[]>} */
+  export let pendingWithdrawals = Promise.resolve([]);
+
   /**
    * @param {number} id
    */
@@ -88,6 +91,7 @@
   <Bridge
     {unshieldedAddress}
     {evmDuskBalance}
+    {pendingWithdrawals}
     unshieldedBalance={balance.unshielded.value}
     {formatter}
     {gasLimits}

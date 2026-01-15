@@ -13,16 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added EVM pending transaction screen [#3826]
 - Added EVM finalize transaction button [#3824]
 - Added EVM balance [#3821]
+- Added pending withdrawals badge on the bridge transaction history icon [#3953]
 
 ### Changed
 
 - Update Transactions list design [#1922]
+- Withdrawal pending message explains status and shows finalization estimate [#3954]
 
 ### Removed
 
 ### Fixed
 
 - Fixed incorrect DUSK balance formatting in Bridge view [#3927]
+- Fixed withdrawal flow no longer becomes unresponsive when attemping to withdraw more than available EVM balance [#3955]
 
 ## [1.6.0] - 2025-06-13
 
@@ -613,6 +616,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3824]: https://github.com/dusk-network/rusk/issues/3824
 [#3826]: https://github.com/dusk-network/rusk/issues/3826
 [#3927]: https://github.com/dusk-network/rusk/issues/3927
+[#3953]: https://github.com/dusk-network/rusk/issues/3953
+[#3954]: https://github.com/dusk-network/rusk/issues/3954
+[#3955]: https://github.com/dusk-network/rusk/issues/3955
 
 <!-- VERSIONS -->
 

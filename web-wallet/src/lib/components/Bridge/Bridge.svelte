@@ -3,7 +3,7 @@
 <script>
   import { fade } from "svelte/transition";
   import { mdiArrowUpBoldBoxOutline, mdiHistory } from "@mdi/js";
-  import { parseEther, parseUnits } from "viem";
+  import { parseUnits } from "viem";
   import { switchChain, writeContract } from "@wagmi/core";
   import { getKey } from "lamb";
   import { Gas } from "@dusk/w3sper";
@@ -21,6 +21,7 @@
   } from "$lib/dusk/components";
   import {
     AppAnchor,
+    AppAnchorButton,
     Banner,
     GasFee,
     GasSettings,
@@ -29,12 +30,18 @@
   import { account, duskEvm, wagmiConfig } from "$lib/web3/walletConnection";
   import bridgeABI from "$lib/web3/abi/bridgeABI.json";
   import { logo } from "$lib/dusk/icons";
+  import { formatBlocksAsTime } from "$lib/bridge/formatBlocksAsTime";
+  import { countPendingWithdrawalsFor } from "$lib/bridge/pendingWithdrawals";
   import { MESSAGES } from "$lib/constants";
   import { luxToDusk } from "$lib/dusk/currency";
-  import { getDecimalSeparator, slashDecimals } from "$lib/dusk/number";
+  import {
+    createNumberFormatter,
+    getDecimalSeparator,
+    slashDecimals,
+  } from "$lib/dusk/number";
   import { cleanNumberString } from "$lib/dusk/string";
   import { areValidGasSettings } from "$lib/contracts";
-  import { walletStore } from "$lib/stores";
+  import { settingsStore, walletStore } from "$lib/stores";
   import wasmPath from "$lib/vendor/standard_bridge_dd_opt.wasm?url";
 
   /** @type {string} */
@@ -76,11 +83,54 @@
   /** @type {import('@wagmi/core').GetBalanceReturnType | undefined} */
   export let evmDuskBalance;
 
+  /** @type {Promise<PendingWithdrawalEntry[]>} */
+  export let pendingWithdrawals = Promise.resolve([]);
+
+  /** @type {string} */
+  let language = "en";
+
+  /** @type {(n: number | bigint) => string} */
+  let blocksFormatter = (n) => `${n}`;
+
+  /** @type {bigint | null} */
+  let finalizationPeriodBlocks = null;
+
+  /** @type {boolean} */
+  let isFinalizationPeriodLoading = false;
+
+  async function loadFinalizationPeriod() {
+    if (finalizationPeriodBlocks !== null || isFinalizationPeriodLoading) {
+      return;
+    }
+
+    isFinalizationPeriodLoading = true;
+
+    try {
+      const contract = await walletStore.useContract(
+        VITE_BRIDGE_CONTRACT_ID,
+        wasmPath
+      );
+      const period = await contract.call.finalization_period();
+      finalizationPeriodBlocks =
+        typeof period === "bigint" ? period : BigInt(period);
+    } catch {
+      finalizationPeriodBlocks = null;
+    } finally {
+      isFinalizationPeriodLoading = false;
+    }
+  }
+
   /** @type {string} */
   let destinationNetwork = "";
 
   /** @type {string} */
   let amount = "";
+
+  /** @type {bigint} */
+  let amountLux = 0n;
+
+  /** @type {bigint} */
+  let amountWei = 0n;
 
   /** @type {boolean} */
   let isGasValid = true;
@@ -124,7 +174,7 @@
         args,
         chainId: duskEvm.id,
         functionName: "bridgeETH",
-        value: parseEther(amount),
+        value: amountWei,
       });
     } else if (originNetwork === "duskDs" && destinationNetwork === "duskEvm") {
       // Deposit...
@@ -137,7 +187,7 @@
 
       const response = await walletStore.depositEvmFunctionCall(
         $account.address,
-        parseUnits(amount, 9),
+        amountLux,
         VITE_BRIDGE_CONTRACT_ID,
         wasmPath,
         gas
@@ -174,17 +224,65 @@
   $: fee = gasLimit * gasPrice;
   $: isDepositing =
     originNetwork === "duskDs" && destinationNetwork === "duskEvm";
-  $: isNextButtonDisabled = amount === "" || (isDepositing && !isGasValid);
+  $: isWithdrawing =
+    originNetwork === "duskEvm" && destinationNetwork === "duskDs";
+  $: if (isWithdrawing) {
+    loadFinalizationPeriod();
+  }
+  $: {
+    // viem expects a dot as decimal separator.
+    // We also guard against incomplete inputs like "1." or ",5".
+    const normalized = amount.replace(",", ".");
+    const trimmed = normalized.endsWith(".")
+      ? normalized.slice(0, -1)
+      : normalized;
+    const safe = trimmed.startsWith(".") ? `0${trimmed}` : trimmed;
+
+    try {
+      amountLux = safe ? parseUnits(safe, 9) : 0n;
+    } catch {
+      amountLux = 0n;
+    }
+
+    // Convert Lux (1e9) to EVM base units (1e18)
+    amountWei = amountLux * EVM_TO_LUX_SCALE_FACTOR;
+  }
+  $: totalDepositLux = amountLux + fee;
+  $: hasEnoughUnshielded =
+    !isDepositing || unshieldedBalance >= totalDepositLux;
+  $: hasEnoughEvm =
+    !isWithdrawing ||
+    (evmDuskBalance ? amountWei <= evmDuskBalance.value : false);
+  $: isBalanceSufficient = isDepositing ? hasEnoughUnshielded : hasEnoughEvm;
+  $: isNextButtonDisabled =
+    amountLux === 0n || (isDepositing && !isGasValid) || !isBalanceSufficient;
   $: isGasValid = areValidGasSettings(gasPrice, gasLimit);
   $: ({ address } = $account);
+  $: ({ language } = $settingsStore);
+  $: blocksFormatter = createNumberFormatter(language, 0);
 </script>
 
 <article class="bridge">
   <header class="bridge__header">
     <h3 class="h4">Bridge</h3>
     <div class="bridge__header-icons">
-      <AppAnchor href="/dashboard/bridge/transactions">
+      <AppAnchor
+        href="/dashboard/bridge/transactions"
+        className="bridge__transactions-link"
+        aria-label="Pending withdrawals"
+      >
         <Icon path={mdiHistory} />
+        {#await pendingWithdrawals then withdrawals}
+          {@const pendingCount = countPendingWithdrawalsFor(
+            unshieldedAddress,
+            withdrawals
+          )}
+          {#if pendingCount > 0}
+            <span class="bridge__transactions-indicator" aria-hidden="true">
+              {pendingCount > 9 ? "9+" : pendingCount}
+            </span>
+          {/if}
+        {/await}
       </AppAnchor>
     </div>
   </header>
@@ -257,6 +355,28 @@
                 path={logo}
               />
             </div>
+
+            {#if amount !== ""}
+              {#if isDepositing && !hasEnoughUnshielded}
+                <Banner title="Insufficient balance" variant="warning">
+                  <p>
+                    Your <b>unshielded</b> balance must cover the amount
+                    <i>plus</i> the fee.
+                  </p>
+                </Banner>
+              {:else if isWithdrawing && !evmDuskBalance}
+                <Banner title="Checking balance" variant="info">
+                  <p>Fetching your <b>DuskEVM</b> balance…</p>
+                </Banner>
+              {:else if isWithdrawing && evmDuskBalance && !hasEnoughEvm}
+                <Banner title="Insufficient balance" variant="warning">
+                  <p>
+                    Your <b>DuskEVM</b> balance is too low for this withdrawal (you
+                    also need a little extra for gas).
+                  </p>
+                </Banner>
+              {/if}
+            {/if}
           </fieldset>
           {#if isDepositing}
             <GasSettings
@@ -279,6 +399,7 @@
         step={1}
         {key}
         nextButton={{
+          disabled: isNextButtonDisabled,
           icon: { path: mdiArrowUpBoldBoxOutline, position: "before" },
           label: "SEND",
           variant: "primary",
@@ -297,7 +418,7 @@
             </dt>
             <dd class="review-transaction__value operation__review-amount">
               <span>
-                {`${formatter(luxToDusk(parseUnits(amount, 9)))} DUSK`}
+                {`${formatter(luxToDusk(amountLux))} DUSK`}
               </span>
               <Icon
                 className="dusk-amount__icon"
@@ -344,10 +465,37 @@
           errorMessage="Bridging failed"
           operation={bridge()}
           pendingMessage="Processing transaction"
-          successMessage="Transaction pending"
+          successMessage={isDepositing
+            ? "Deposit submitted"
+            : "Withdrawal request submitted"}
         >
           <svelte:fragment slot="success-content" let:result={hash}>
-            <p>{MESSAGES.TRANSACTION_PENDING}</p>
+            {#if isDepositing}
+              <p>{MESSAGES.TRANSACTION_CREATED}</p>
+            {:else}
+              <p>{MESSAGES.TRANSACTION_PENDING}</p>
+
+              {#if isFinalizationPeriodLoading}
+                <p class="bridge__finalization-hint">
+                  <Throbber size={16} /> Fetching finalization period…
+                </p>
+              {:else if finalizationPeriodBlocks !== null}
+                <p class="bridge__finalization-hint">
+                  Finalization period:
+                  {blocksFormatter(finalizationPeriodBlocks)} blocks ({formatBlocksAsTime(
+                    finalizationPeriodBlocks,
+                    language
+                  )} at ~10s/block). You can finalize your withdrawal once the period
+                  has passed.
+                </p>
+              {/if}
+
+              <AppAnchorButton
+                href="/dashboard/bridge/transactions"
+                text="PENDING WITHDRAWALS"
+                variant="primary"
+              />
+            {/if}
             {#if hash}
               <AnchorButton
                 href={isDepositing
@@ -383,6 +531,50 @@
       display: flex;
       align-items: center;
       gap: 0.675em;
+    }
+
+    :global(&__transactions-link) {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    :global(&__transactions-link .dusk-icon) {
+      /* Make the transaction history icon a little bit bigger */
+      --icon-size: 1.8rem;
+    }
+
+    &__transactions-indicator {
+      position: absolute;
+      top: -0.45em;
+      right: -0.45em;
+
+      min-width: 1.4em;
+      height: 1.4em;
+      padding: 0 0.4em;
+
+      border-radius: 999px;
+      background: var(--error-color);
+      color: var(--on-error-color);
+
+      font-size: 0.75em;
+      font-weight: 700;
+      line-height: 1.4em;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      border: 2px solid var(--surface-color);
+      box-sizing: border-box;
+      pointer-events: none;
+    }
+
+    &__finalization-hint {
+      opacity: 0.9;
+      line-height: 1.4;
+      margin-top: 0.75em;
     }
 
     &__balances {
