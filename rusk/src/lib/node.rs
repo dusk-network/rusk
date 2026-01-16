@@ -54,7 +54,7 @@ pub struct Rusk {
     pub(crate) instance_cache:
         Arc<RwLock<BTreeMap<ContractId, DriverExecutor>>>,
     pub(crate) transfer_state: Arc<Mutex<TransferState>>,
-    pub(crate) stake_state: Arc<RwLock<StakeState>>,
+    pub(crate) stake_state: Arc<Mutex<StakeState>>,
 }
 
 pub(crate) type Services =

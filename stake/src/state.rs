@@ -699,6 +699,18 @@ impl StakeState {
         }
     }
 
+    pub fn import_from_stake_contract(
+        &mut self,
+        session: &mut Session,
+        gas_limit: u64,
+    ) -> Result<u64, PiecrustError> {
+        let gas_spent = self.import_stakes(session, gas_limit)?
+            + self.import_config(session, gas_limit)?
+            + self.import_burnt_amount(session, gas_limit)?
+            + self.import_previous_block_state(session, gas_limit)?;
+        Ok(gas_spent)
+    }
+
     pub fn import_stakes(
         &mut self,
         session: &mut Session,
@@ -732,7 +744,7 @@ impl StakeState {
     ) -> Result<u64, PiecrustError> {
         let receipt = session.call::<(), StakeConfig>(
             STAKE_CONTRACT,
-            "config",
+            "get_config",
             &(),
             gas_limit,
         )?;
@@ -777,10 +789,8 @@ impl StakeState {
             let (account, stake_data): (BlsPublicKey, Option<StakeData>) =
                 rkyv::from_bytes(&bytes)
                     .expect("Should return stake keys and stake data");
-            self.previous_block_state.insert(
-                account.to_bytes(),
-                (stake_data, account),
-            );
+            self.previous_block_state
+                .insert(account.to_bytes(), (stake_data, account));
         }
 
         Ok(receipt.gas_spent)

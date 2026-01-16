@@ -115,8 +115,52 @@ impl Rusk {
             transfer_state: Arc::new(Mutex::new(TransferState::new(
                 inner_event_sender,
             ))),
-            stake_state: Arc::new(RwLock::new(StakeState::new())),
+            stake_state: Arc::new(Mutex::new(StakeState::new())),
         })
+    }
+
+    fn import_into_transfer_tool(
+        &self,
+        session: &mut Session,
+        gas_limit: u64,
+    ) -> u64 {
+        let mut transfer_tool = self.transfer_state.lock().unwrap();
+        let result =
+            transfer_tool.import_from_transfer_contract(session, gas_limit);
+        // todo: temporary error processing
+        match result {
+            Ok(gas_spent) => {
+                info!("successfully imported data from the transfer contract, gas spent={} gas left={}", gas_spent, gas_limit - gas_spent);
+                gas_spent
+            }
+            Err(e) => {
+                info!(
+                    "error when importing from the transfer contract: {:?}",
+                    e
+                );
+                0
+            }
+        }
+    }
+
+    fn import_into_stake_tool(
+        &self,
+        session: &mut Session,
+        gas_limit: u64,
+    ) -> u64 {
+        let mut stake_tool = self.stake_state.lock().unwrap();
+        let result = stake_tool.import_from_stake_contract(session, gas_limit);
+        // todo: temporary error processing
+        match result {
+            Ok(gas_spent) => {
+                info!("successfully imported data from the stake contract, gas spent={} gas left={}", gas_spent, gas_limit - gas_spent);
+                gas_spent
+            }
+            Err(e) => {
+                info!("error when importing from the stake contract: {:?}", e);
+                0
+            }
+        }
     }
 
     pub fn create_state_transition<I: Iterator<Item = Transaction>>(
@@ -154,24 +198,10 @@ impl Rusk {
         let mut gas_left = if block_height == RECKONING_BLOCK_HEIGHT {
             let mut session =
                 self.new_block_session(block_height, prev_state)?;
-            // copy all data from transfer contract to the transfer tool
-            let mut transfer_tool = self.transfer_state.lock().unwrap();
-            let result = transfer_tool
-                .import_from_transfer_contract(&mut session, gas_limit);
-            // todo: temporary error processing
-            match result {
-                Ok(gas_spent) => {
-                    info!("successfully imported data from the transfer contract, gas spent={} gas left={}", gas_spent, gas_limit - gas_spent);
-                    gas_limit - gas_spent
-                }
-                Err(e) => {
-                    info!(
-                        "error when importing from the transfer contract: {:?}",
-                        e
-                    );
-                    gas_limit
-                }
-            }
+            let gas_spent = self
+                .import_into_transfer_tool(&mut session, gas_limit)
+                + self.import_into_stake_tool(&mut session, gas_limit);
+            gas_limit - gas_spent
         } else {
             gas_limit
         };
