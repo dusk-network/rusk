@@ -39,17 +39,19 @@ pub struct StakeState {
     previous_block_state:
         BTreeMap<[u8; BlsPublicKey::SIZE], (Option<StakeData>, BlsPublicKey)>,
     stakes: BTreeMap<[u8; BlsPublicKey::SIZE], (StakeData, StakeKeys)>,
+    chain_id: u8,
 }
 
 const STAKE_CONTRACT_VERSION: u64 = 8;
 
 impl StakeState {
-    pub const fn new() -> Self {
+    pub const fn new(chain_id: u8) -> Self {
         Self {
             burnt_amount: 0u64,
             config: StakeConfig::new(),
             previous_block_state: BTreeMap::new(),
             stakes: BTreeMap::new(),
+            chain_id,
         }
     }
 
@@ -674,9 +676,7 @@ impl StakeState {
     }
 
     fn chain_id(&self) -> u8 {
-        // todo: implement
-        // abi::chain_id()
-        0
+        self.chain_id
     }
 
     fn deduct_contract_balance(amount: u64) {

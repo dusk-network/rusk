@@ -115,7 +115,7 @@ impl Rusk {
             transfer_state: Arc::new(Mutex::new(TransferState::new(
                 inner_event_sender, chain_id,
             ))),
-            stake_state: Arc::new(Mutex::new(StakeState::new())),
+            stake_state: Arc::new(Mutex::new(StakeState::new(chain_id))),
         })
     }
 
