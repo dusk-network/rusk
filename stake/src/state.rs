@@ -8,6 +8,7 @@
 // use alloc::vec::Vec;
 use core::cmp::min;
 use std::collections::BTreeMap;
+use std::sync::mpsc;
 
 use dusk_bytes::Serializable;
 use dusk_core::abi::{self, ContractId};
@@ -20,6 +21,7 @@ use dusk_core::stake::{
 use dusk_core::transfer::{
     ContractToContract, ReceiveFromContract, TRANSFER_CONTRACT,
 };
+use piecrust::{CallReceipt, CallTree, Error as PiecrustError, Session};
 use transfer::host_queries_flat::verify_bls;
 
 /// Contract keeping track of each public key's stake.
@@ -695,5 +697,31 @@ impl StakeState {
             // todo: implement
             // abi::feed((*account, *stake_data));
         }
+    }
+
+    pub fn import_stakes(
+        &mut self,
+        session: &mut Session,
+        gas_limit: u64,
+    ) -> Result<u64, PiecrustError> {
+        let (feeder, receiver) = mpsc::channel();
+        let receipt = session.feeder_call::<(), ()>(
+            STAKE_CONTRACT,
+            "stakes",
+            &(),
+            gas_limit,
+            feeder,
+        )?;
+        for bytes in receiver.iter() {
+            let (stake_keys, stake_data): (StakeKeys, StakeData) =
+                rkyv::from_bytes(&bytes)
+                    .expect("Should return stake keys and stake data");
+            self.stakes.insert(
+                stake_keys.account.to_bytes(),
+                (stake_data, stake_keys),
+            );
+        }
+
+        Ok(receipt.gas_spent)
     }
 }
