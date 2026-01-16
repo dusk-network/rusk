@@ -113,7 +113,7 @@ impl Rusk {
             driver_store: Arc::new(RwLock::new(driver_store)),
             instance_cache: Arc::new(RwLock::new(BTreeMap::new())),
             transfer_state: Arc::new(Mutex::new(TransferState::new(
-                inner_event_sender,
+                inner_event_sender, chain_id,
             ))),
             stake_state: Arc::new(Mutex::new(StakeState::new())),
         })

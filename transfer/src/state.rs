@@ -83,11 +83,13 @@ pub struct TransferState {
     accounts: BTreeMap<[u8; 193], AccountData>,
     contract_balances: BTreeMap<ContractId, u64>,
     event_sender: broadcast::Sender<piecrust_uplink::Event>,
+    chain_id: u8,
 }
 
 impl TransferState {
     pub const fn new(
         event_sender: broadcast::Sender<piecrust_uplink::Event>,
+        chain_id: u8,
     ) -> TransferState {
         TransferState {
             tree: Tree::new(),
@@ -96,6 +98,7 @@ impl TransferState {
             accounts: BTreeMap::new(),
             contract_balances: BTreeMap::new(),
             event_sender,
+            chain_id,
         }
     }
 
@@ -1000,9 +1003,7 @@ impl TransferState {
     }
 
     pub fn chain_id(&self) -> u8 {
-        // todo: implement
-        // abi::chain_id()
-        0
+        self.chain_id
     }
 
     pub fn import_from_transfer_contract(
