@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added EVM finalize transaction button [#3824]
 - Added EVM balance [#3821]
 - Added pending withdrawals badge on the bridge transaction history icon [#3953]
+- Added blocklist to block transfers to sanctioned, compromised or scam-related addresses [#3958]
 
 ### Changed
 
@@ -619,6 +620,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3953]: https://github.com/dusk-network/rusk/issues/3953
 [#3954]: https://github.com/dusk-network/rusk/issues/3954
 [#3955]: https://github.com/dusk-network/rusk/issues/3955
+[#3958]: https://github.com/dusk-network/rusk/issues/3958
 
 <!-- VERSIONS -->
 

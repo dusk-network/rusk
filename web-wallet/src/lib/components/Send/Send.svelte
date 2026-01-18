@@ -10,6 +10,7 @@
   } from "@mdi/js";
   import { areValidGasSettings } from "$lib/contracts";
   import { getAddressInfo } from "$lib/wallet";
+  import { getBlocklistedRecipient } from "$lib/security/addressBlocklist";
   import { duskToLux, luxToDusk } from "$lib/dusk/currency";
   import { isValidEvmAddress, makeClassName } from "$lib/dusk/string";
   import { logo } from "$lib/dusk/icons";
@@ -158,7 +159,8 @@
     isGasValid &&
     isTotalAmountWithinAvailableBalance &&
     isBalanceSufficientForGas &&
-    isMemoValidForBridge
+    isMemoValidForBridge &&
+    !isRecipientBlocklisted
   );
 
   $: addressInfo = getAddressInfo(
@@ -166,6 +168,9 @@
     shieldedAddress,
     publicAddress
   );
+
+  $: blocklistedRecipient = getBlocklistedRecipient(sendToAddress);
+  $: isRecipientBlocklisted = Boolean(blocklistedRecipient);
 
   $: if (addressInfo.type) {
     dispatch("keyChange", {
@@ -194,6 +199,7 @@
 
   $: sendToAddressTextboxClasses = makeClassName({
     "operation__send-address": true,
+    "operation__send-address--blocked": isRecipientBlocklisted,
     "operation__send-address--invalid": sendToAddress && !addressInfo.isValid,
   });
 
@@ -219,7 +225,7 @@
       }}
       nextButton={{
         action: () => activeStep++,
-        disabled: !addressInfo.isValid,
+        disabled: !addressInfo.isValid || isRecipientBlocklisted,
       }}
     >
       <div in:fade|global class="operation__send">
@@ -240,6 +246,13 @@
           type="multiline"
           bind:value={sendToAddress}
         />
+
+        {#if isRecipientBlocklisted}
+          <Banner variant="error" title="Blocked recipient address">
+            <p>{blocklistedRecipient?.reason}</p>
+          </Banner>
+        {/if}
+
         {#if addressInfo.type === "account"}
           <Banner title="Public account detected" variant="info">
             <p>
@@ -405,6 +418,7 @@
       }}
       nextButton={{
         action: () => activeStep++,
+        disabled: isRecipientBlocklisted,
         icon: { path: mdiArrowUpBoldBoxOutline, position: "before" },
         label: "SEND",
         variant: "primary",
@@ -560,6 +574,11 @@
 
   :global(.dusk-textbox.operation__send-address--invalid) {
     color: var(--error-color);
+  }
+
+  :global(.dusk-textbox.operation__send-address--blocked) {
+    color: var(--error-color);
+    border-color: var(--error-color);
   }
 
   :global(.dusk-textbox.operation__send-memo--invalid) {
