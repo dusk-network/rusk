@@ -81,7 +81,7 @@ exports[`Send page > should render the send page 1`] = `
     </div>
      
     <div
-      class="operation svelte-rb5xln"
+      class="operation svelte-adnu6a"
     >
       <div
         class="dusk-wizard"
@@ -158,10 +158,10 @@ exports[`Send page > should render the send page 1`] = `
          
          
         <div
-          class="operation__send svelte-rb5xln"
+          class="operation__send svelte-adnu6a"
         >
           <div
-            class="operation__address-wrapper svelte-rb5xln"
+            class="operation__address-wrapper svelte-adnu6a"
           >
             <p>
               Address
@@ -185,6 +185,7 @@ exports[`Send page > should render the send page 1`] = `
             required=""
           />
           
+           
            
            
           <div

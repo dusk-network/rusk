@@ -2,7 +2,7 @@
 
 exports[`Send > Address step > should display a warning if the address input is a public account 1`] = `
 <div
-  class="operation svelte-rb5xln"
+  class="operation svelte-adnu6a"
 >
   <div
     class="dusk-wizard"
@@ -79,10 +79,10 @@ exports[`Send > Address step > should display a warning if the address input is 
      
      
     <div
-      class="operation__send svelte-rb5xln"
+      class="operation__send svelte-adnu6a"
     >
       <div
-        class="operation__address-wrapper svelte-rb5xln"
+        class="operation__address-wrapper svelte-adnu6a"
       >
         <p>
           Address
@@ -106,6 +106,7 @@ exports[`Send > Address step > should display a warning if the address input is 
         required=""
       />
       
+       
        
       <div
         class="banner banner--info"
@@ -233,7 +234,7 @@ exports[`Send > Address step > should display a warning if the address input is 
 
 exports[`Send > Address step > should display a warning if the address input is self-referential 1`] = `
 <div
-  class="operation svelte-rb5xln"
+  class="operation svelte-adnu6a"
 >
   <div
     class="dusk-wizard"
@@ -310,10 +311,10 @@ exports[`Send > Address step > should display a warning if the address input is 
      
      
     <div
-      class="operation__send svelte-rb5xln"
+      class="operation__send svelte-adnu6a"
     >
       <div
-        class="operation__address-wrapper svelte-rb5xln"
+        class="operation__address-wrapper svelte-adnu6a"
       >
         <p>
           Address
@@ -337,6 +338,7 @@ exports[`Send > Address step > should display a warning if the address input is 
         required=""
       />
       
+       
        
       <div
         class="banner banner--info"
@@ -493,7 +495,7 @@ exports[`Send > Address step > should display a warning if the address input is 
 
 exports[`Send > Address step > should render the Send component Address step 1`] = `
 <div
-  class="operation svelte-rb5xln"
+  class="operation svelte-adnu6a"
 >
   <div
     class="dusk-wizard"
@@ -570,10 +572,10 @@ exports[`Send > Address step > should render the Send component Address step 1`]
      
      
     <div
-      class="operation__send svelte-rb5xln"
+      class="operation__send svelte-adnu6a"
     >
       <div
-        class="operation__address-wrapper svelte-rb5xln"
+        class="operation__address-wrapper svelte-adnu6a"
       >
         <p>
           Address
@@ -597,6 +599,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
         required=""
       />
       
+       
        
        
       <div
@@ -695,7 +698,7 @@ exports[`Send > Address step > should render the Send component Address step 1`]
 
 exports[`Send > Amount step > should render the Send component Amount step 1`] = `
 <div
-  class="operation svelte-rb5xln"
+  class="operation svelte-adnu6a"
 >
   <div
     class="dusk-wizard"
@@ -774,11 +777,11 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
      
      
     <div
-      class="operation__send svelte-rb5xln"
+      class="operation__send svelte-adnu6a"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <div
-        class="operation__amount-wrapper svelte-rb5xln"
+        class="operation__amount-wrapper svelte-adnu6a"
       >
         <p>
           Amount
@@ -797,7 +800,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
       </div>
        
       <div
-        class="operation__input-wrapper svelte-rb5xln"
+        class="operation__input-wrapper svelte-adnu6a"
       >
         <input
           class="dusk-textbox dusk-textbox-number operation__input-field"
@@ -824,7 +827,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
       </div>
        
       <div
-        class="operation__input-wrapper svelte-rb5xln"
+        class="operation__input-wrapper svelte-adnu6a"
       >
         <p>
           Memo
@@ -966,7 +969,7 @@ exports[`Send > Amount step > should render the Send component Amount step 1`] =
 
 exports[`Send > Review step > should render the Send component Review step 1`] = `
 <div
-  class="operation svelte-rb5xln"
+  class="operation svelte-adnu6a"
 >
   <div
     class="dusk-wizard"
@@ -1047,7 +1050,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
      
      
     <div
-      class="operation__send svelte-rb5xln"
+      class="operation__send svelte-adnu6a"
       style="animation: __svelte_3516408220_0 400ms linear 0ms 1 both;"
     >
       <span
@@ -1057,10 +1060,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </span>
        
       <dl
-        class="operation__review-transaction svelte-rb5xln"
+        class="operation__review-transaction svelte-adnu6a"
       >
         <dt
-          class="review-transaction__label svelte-rb5xln"
+          class="review-transaction__label svelte-adnu6a"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -1079,7 +1082,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="review-transaction__value operation__review-amount svelte-rb5xln"
+          class="review-transaction__value operation__review-amount svelte-adnu6a"
         >
           <span>
             2,345.000000000
@@ -1101,10 +1104,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </dl>
        
       <dl
-        class="operation__review-transaction svelte-rb5xln"
+        class="operation__review-transaction svelte-adnu6a"
       >
         <dt
-          class="review-transaction__label svelte-rb5xln"
+          class="review-transaction__label svelte-adnu6a"
         >
           <svg
             class="dusk-icon dusk-icon--size--default"
@@ -1123,7 +1126,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="operation__review-address svelte-rb5xln"
+          class="operation__review-address svelte-adnu6a"
         >
           <span>
             47jNTgAhzn9KCKF3msCfvKg3k1P1QpPCLZ3HG3AoNp87sQ5WNS3QyjckYHWeuXqW7uvLmbKgejpP8Xkcip89vnMM
@@ -1132,10 +1135,10 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
       </dl>
        
       <dl
-        class="operation__review-transaction svelte-rb5xln"
+        class="operation__review-transaction svelte-adnu6a"
       >
         <dt
-          class="review-transaction__label svelte-rb5xln"
+          class="review-transaction__label svelte-adnu6a"
         >
           <span>
             Memo
@@ -1143,7 +1146,7 @@ exports[`Send > Review step > should render the Send component Review step 1`] =
            
         </dt>
         <dd
-          class="operation__review-memo svelte-rb5xln"
+          class="operation__review-memo svelte-adnu6a"
         >
           <span>
             abc-example-memo
