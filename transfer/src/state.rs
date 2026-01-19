@@ -75,6 +75,7 @@ fn contract_fn_sender(fn_name: &str, contract: ContractId) -> Sender {
 
 pub struct TransferState {
     tree: Tree,
+    tree_store: Tree,
     nullifiers: BTreeSet<BlsScalar>,
     nullifiers_store: BTreeSet<BlsScalar>,
     roots: ConstGenericRingBuffer<BlsScalar, MAX_ROOTS>,
@@ -82,7 +83,9 @@ pub struct TransferState {
     //       contain the nonce of the given account. Doing so opens the account
     //       up to replay attacks.
     accounts: BTreeMap<[u8; 193], AccountData>,
+    accounts_store: BTreeMap<[u8; 193], AccountData>,
     contract_balances: BTreeMap<ContractId, u64>,
+    contract_balances_store: BTreeMap<ContractId, u64>,
     event_sender: broadcast::Sender<piecrust_uplink::Event>, /* todo: possibly remove it */
     chain_id: u8,
 }
@@ -94,11 +97,14 @@ impl TransferState {
     ) -> TransferState {
         TransferState {
             tree: Tree::new(),
+            tree_store: Tree::new(),
             nullifiers: BTreeSet::new(),
             nullifiers_store: BTreeSet::new(),
             roots: ConstGenericRingBuffer::new(),
             accounts: BTreeMap::new(),
+            accounts_store: BTreeMap::new(),
             contract_balances: BTreeMap::new(),
+            contract_balances_store: BTreeMap::new(),
             event_sender,
             chain_id,
         }
@@ -108,12 +114,33 @@ impl TransferState {
         for n in self.nullifiers.iter() {
             self.nullifiers_store.insert(*n);
         }
+        for leaf in self.tree.leaves_pos(0) {
+            self.tree_store.push(leaf.clone());
+        }
+        for (c, b) in self.contract_balances.iter() {
+            self.contract_balances_store.insert(*c, *b);
+        }
+        for (c, b) in self.accounts.iter() {
+            self.accounts_store.insert(*c, b.clone());
+        }
     }
 
     pub fn reset(&mut self) {
         self.nullifiers.clear();
         for n in self.nullifiers_store.iter() {
             self.nullifiers.insert(*n);
+        }
+        self.tree.clear();
+        for leaf in self.tree_store.leaves_pos(0) {
+            self.tree.push(leaf.clone());
+        }
+        self.contract_balances.clear();
+        for (c, b) in self.contract_balances_store.iter() {
+            self.contract_balances.insert(*c, *b);
+        }
+        self.accounts.clear();
+        for (c, b) in self.accounts_store.iter() {
+            self.accounts.insert(*c, b.clone());
         }
     }
 
@@ -853,10 +880,17 @@ impl TransferState {
 
     /// Feeds the host with the leaves in the tree, starting from the given
     /// height.
-    pub fn leaves_from_height(&self, height: u64) {
+    pub fn leaves_from_height(
+        &self,
+        height: u64,
+        feeder: mpsc::Sender<Vec<u8>>,
+    ) {
         for leaf in self.tree.leaves(height) {
-            // todo: implement
-            // abi::feed(leaf.clone());
+            let leaf_bytes = rkyv::to_bytes::<_, 4096>(leaf)
+                .expect("serializing leaf should succeed")
+                .to_vec();
+            println!("leaves_from_height in tool - pushing leaf");
+            feeder.send(leaf_bytes);
         }
     }
 

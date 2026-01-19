@@ -52,7 +52,7 @@ use crate::node::{get_block_rewards, RuesEvent, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
 
 pub const TOOL_ACTIVE: bool = true;
-pub const TOOL_ACTIVATION_BLOCK_HEIGHT: u64 = 2;
+pub const TOOL_ACTIVATION_BLOCK_HEIGHT: u64 = 20000000;
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
@@ -742,6 +742,7 @@ impl Rusk {
                 // in "execute state transition" we need to reset the tool
                 // as it has remnants of uncommitted changes from "create state
                 // transition" todo: optimize this
+                println!("reset");
                 let mut transfer_tool = self.transfer_state.lock().unwrap();
                 transfer_tool.reset();
             }
@@ -831,6 +832,12 @@ impl Rusk {
 
         // Get new state root
         let state_root = session.root();
+
+        if TOOL_ACTIVE {
+            println!("store");
+            let mut transfer_tool = self.transfer_state.lock().unwrap();
+            transfer_tool.store();
+        }
 
         Ok((
             spent_txs,

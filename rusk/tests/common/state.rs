@@ -84,6 +84,15 @@ pub async fn new_state_with_chainid<P: AsRef<Path>>(
     )
     .expect("Instantiating rusk should succeed");
 
+    {
+        let mut session = rusk
+            .new_block_session(0, rusk.state_root())
+            .expect("session creation should work");
+        let mut transfer_tool = rusk.transfer_state.lock().unwrap();
+        let _result =
+            transfer_tool.import_from_transfer_contract(&mut session, u64::MAX);
+    }
+
     assert_eq!(
         commit_id,
         rusk.state_root(),

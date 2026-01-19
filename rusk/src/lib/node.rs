@@ -53,7 +53,7 @@ pub struct Rusk {
     pub(crate) driver_store: Arc<RwLock<DriverStore>>,
     pub(crate) instance_cache:
         Arc<RwLock<BTreeMap<ContractId, DriverExecutor>>>,
-    pub(crate) transfer_state: Arc<Mutex<TransferState>>,
+    pub transfer_state: Arc<Mutex<TransferState>>,
     pub(crate) stake_state: Arc<Mutex<StakeState>>,
 }
 

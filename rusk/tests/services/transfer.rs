@@ -56,6 +56,7 @@ fn wallet_transfer(
         .get_balance(0)
         .expect("Failed to get the balance")
         .value;
+    println!("XXXX sender initial balance = {}", sender_initial_balance);
 
     // Check the sender's initial balance is correct
     assert_eq!(
@@ -79,6 +80,7 @@ fn wallet_transfer(
         .phoenix_transfer(&mut rng, 0, &receiver_pk, amount, 1_000_000_000, 2)
         .expect("Failed to transfer");
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
+    println!("XXXX created tx for transfer of amount={}", amount);
 
     let tx_hash_input_bytes = tx.to_hash_input_bytes();
     let tx_id = transfer::host_queries_flat::hash(tx_hash_input_bytes);
@@ -108,23 +110,27 @@ fn wallet_transfer(
     .expect("empty block generator procedure to succeed");
 
     // Check the receiver's balance is changed accordingly
-    // todo: this will pass when feeder_query has processing for TOOL_ACTIVE
-    // implemented assert_eq!(
-    //     wallet
-    //         .get_balance(1)
-    //         .expect("Failed to get the balance")
-    //         .value,
-    //     amount,
-    //     "Wrong resulting balance for the receiver"
-    // );
+    assert_eq!(
+        wallet
+            .get_balance(1)
+            .expect("Failed to get the balance")
+            .value,
+        amount,
+        "Wrong resulting balance for the receiver"
+    );
 
     // Check the sender's balance is changed accordingly
-    // let sender_final_balance = wallet
-    //     .get_balance(0)
-    //     .expect("Failed to get the balance")
-    //     .value;
-    // let fee = gas_spent * tx.inner.inner.gas_price();
+    let sender_final_balance = wallet
+        .get_balance(0)
+        .expect("Failed to get the balance")
+        .value;
+    let fee = gas_spent * tx.inner.inner.gas_price();
+    println!(
+        "XXXX sender_final_balance={} fee={}",
+        sender_final_balance, fee
+    );
 
+    // todo: this still does not pass
     // assert_eq!(
     //     sender_initial_balance - amount - fee,
     //     sender_final_balance,

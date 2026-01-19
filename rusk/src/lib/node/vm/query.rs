@@ -6,12 +6,14 @@
 
 use crate::node::Rusk;
 use crate::Result;
+use std::any::{Any, TypeId};
 
 use std::sync::mpsc;
 
 use crate::node::rusk::TOOL_ACTIVE;
 use bytecheck::CheckBytes;
 use dusk_core::abi::{ContractId, StandardBufSerializer};
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_vm::ContractMetadata;
 use dusk_vm::Error::ContractDoesNotExist;
 use node::vm::VMExecution;
@@ -43,6 +45,9 @@ impl Rusk {
         S: AsRef<str>,
         V: Into<Vec<u8>>,
     {
+        if TOOL_ACTIVE && contract_id == TRANSFER_CONTRACT {
+            println!("QUERY_RAW to {}", fn_name.as_ref());
+        }
         let mut session = self.query_session(None)?;
 
         session
@@ -72,6 +77,9 @@ impl Rusk {
         R::Archived: Deserialize<R, Infallible>
             + for<'b> CheckBytes<DefaultValidator<'b>>,
     {
+        if TOOL_ACTIVE && contract_id == TRANSFER_CONTRACT {
+            println!("QUERY to {}", call_name);
+        }
         let mut results = Vec::with_capacity(1);
         self.query_seq(contract_id, call_name, call_arg, |r| {
             results.push(r);
@@ -139,18 +147,28 @@ impl Rusk {
     {
         let mut session = self.query_session(base_commit)?;
 
-        // if TOOL_ACTIVE {
-        //
-        // } else {
-        // For feeder queries we use the gas limit set in the config
-        session.feeder_call::<_, ()>(
-            contract_id,
-            call_name,
-            call_arg,
-            self.feeder_gas_limit,
-            feeder,
-        )?;
-        // }
+        if TOOL_ACTIVE
+            && contract_id == TRANSFER_CONTRACT
+            && call_name == "leaves_from_height"
+        {
+            let transfer_tool = self.transfer_state.lock().unwrap();
+            let height: u64 = {
+                unsafe {
+                    std::ptr::read(call_arg as *const A as *const u64)
+                }
+            };
+            println!("feeder_query - height={}", height);
+            transfer_tool.leaves_from_height(height, feeder);
+        } else {
+            // For feeder queries we use the gas limit set in the config
+            session.feeder_call::<_, ()>(
+                contract_id,
+                call_name,
+                call_arg,
+                self.feeder_gas_limit,
+                feeder,
+            )?;
+        }
 
         Ok(())
     }
@@ -169,6 +187,9 @@ impl Rusk {
         S: AsRef<str>,
         V: Into<Vec<u8>>,
     {
+        if TOOL_ACTIVE && contract_id == TRANSFER_CONTRACT {
+            println!("FEEDER QUERY RAW to {}", call_name.as_ref());
+        }
         let mut session = self.query_session(None)?;
 
         // For feeder queries we use the gas limit set in the config

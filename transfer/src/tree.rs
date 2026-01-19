@@ -40,6 +40,15 @@ impl Tree {
         }
     }
 
+    /// Clear the tree.
+    pub fn clear(&mut self) {
+        let max_pos = self.leaves.len() as u64;
+        for pos in 0..max_pos { // todo: there should be a better way
+            self.tree.remove(pos);
+        }
+        self.leaves.clear();
+    }
+
     /// Push one [`NoteLeaf`] onto the tree, filtering out notes that are
     /// transparent with a value of 0.
     pub fn push(&mut self, mut leaf: NoteLeaf) -> Option<Note> {
