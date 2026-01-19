@@ -89,6 +89,7 @@ pub fn execute_flat(
     config: &Config,
     transfer_ctx_opt: &Option<TransferCtx>,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
+    println!("execute_flat opt={}", transfer_ctx_opt.is_some());
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     tx.deploy_check(
@@ -165,6 +166,7 @@ pub fn execute_flat(
                 clear_session(session, config);
             })?,
         Some(ctx) => {
+            println!("calling transfer tool's spend_and_execute");
             let mut transfer_tool = ctx.transfer_tool.lock().unwrap();
             transfer_tool.spend_and_execute(
                 session,

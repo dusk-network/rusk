@@ -51,7 +51,8 @@ use crate::node::driverstore::DriverStore;
 use crate::node::{get_block_rewards, RuesEvent, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
 
-const RECKONING: bool = false;
+pub const TOOL_ACTIVE: bool = true;
+pub const TOOL_ACTIVATION_BLOCK_HEIGHT: u64 = 2;
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
@@ -195,9 +196,12 @@ impl Rusk {
             ?slashes
         );
 
-        const RECKONING_BLOCK_HEIGHT: u64 = 2;
+        println!(
+            "inside create_state_transition, block_height={}",
+            block_height
+        );
 
-        let mut gas_left = if block_height == RECKONING_BLOCK_HEIGHT {
+        let mut gas_left = if block_height == TOOL_ACTIVATION_BLOCK_HEIGHT {
             let mut session =
                 self.new_block_session(block_height, prev_state)?;
             let gas_spent = self
@@ -271,7 +275,7 @@ impl Rusk {
                 continue;
             }
 
-            let transfer_ctx_opt = if RECKONING {
+            let transfer_ctx_opt = if TOOL_ACTIVE {
                 Some(TransferCtx {
                     transfer_tool: self.transfer_state.clone(),
                     block_height,
@@ -696,6 +700,10 @@ impl Rusk {
         StateTransitionError,
     > {
         let block_height = blk.header().height;
+        println!(
+            "inside execute_state_transition, block_height={}",
+            block_height
+        );
         let block_hash = blk.header().hash;
         let gas_limit = blk.header().gas_limit;
         let txs = blk.txs();
@@ -729,7 +737,14 @@ impl Rusk {
         let mut events = Vec::new();
         let mut event_bloom = Bloom::new();
 
-        let transfer_tool_opt = if RECKONING {
+        let transfer_tool_opt = if TOOL_ACTIVE {
+            {
+                // in "execute state transition" we need to reset the tool
+                // as it has remnants of uncommitted changes from "create state
+                // transition" todo: optimize this
+                let mut transfer_tool = self.transfer_state.lock().unwrap();
+                transfer_tool.reset();
+            }
             Some(TransferCtx {
                 transfer_tool: self.transfer_state.clone(),
                 block_height,

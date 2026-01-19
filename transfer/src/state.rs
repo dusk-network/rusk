@@ -76,13 +76,14 @@ fn contract_fn_sender(fn_name: &str, contract: ContractId) -> Sender {
 pub struct TransferState {
     tree: Tree,
     nullifiers: BTreeSet<BlsScalar>,
+    nullifiers_store: BTreeSet<BlsScalar>,
     roots: ConstGenericRingBuffer<BlsScalar, MAX_ROOTS>,
     // NOTE: we should never remove entries from this list, since the entries
     //       contain the nonce of the given account. Doing so opens the account
     //       up to replay attacks.
     accounts: BTreeMap<[u8; 193], AccountData>,
     contract_balances: BTreeMap<ContractId, u64>,
-    event_sender: broadcast::Sender<piecrust_uplink::Event>,
+    event_sender: broadcast::Sender<piecrust_uplink::Event>, /* todo: possibly remove it */
     chain_id: u8,
 }
 
@@ -94,11 +95,25 @@ impl TransferState {
         TransferState {
             tree: Tree::new(),
             nullifiers: BTreeSet::new(),
+            nullifiers_store: BTreeSet::new(),
             roots: ConstGenericRingBuffer::new(),
             accounts: BTreeMap::new(),
             contract_balances: BTreeMap::new(),
             event_sender,
             chain_id,
+        }
+    }
+
+    pub fn store(&mut self) {
+        for n in self.nullifiers.iter() {
+            self.nullifiers_store.insert(*n);
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.nullifiers.clear();
+        for n in self.nullifiers_store.iter() {
+            self.nullifiers.insert(*n);
         }
     }
 
@@ -574,6 +589,10 @@ impl TransferState {
 
         match tx.call() {
             Some(call) => {
+                println!(
+                    "inside spend_and_execute (call): {} {} ",
+                    &call.contract, &call.fn_name
+                );
                 // if call contract is TRANSFER or STAKE
                 // then call TRANSFER/STAKE tool
                 // the tool has to return CallReceipt with events
@@ -593,13 +612,16 @@ impl TransferState {
                 })*/
                 Ok(receipt)
             }
-            None => Ok(CallReceipt {
-                gas_spent: 0,
-                gas_limit: 0,
-                events: Vec::new(),
-                call_tree: CallTree::new(),
-                data: Ok(Vec::new()),
-            }),
+            None => {
+                println!("inside spend_and_execute (NO call)");
+                Ok(CallReceipt {
+                    gas_spent: 0,
+                    gas_limit: 0,
+                    events: Vec::new(),
+                    call_tree: CallTree::new(),
+                    data: Ok(Vec::new()),
+                })
+            }
         }
     }
 

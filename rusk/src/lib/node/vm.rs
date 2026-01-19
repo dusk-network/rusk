@@ -106,6 +106,7 @@ impl VMExecution for Rusk {
         // Check result against header
         check_transition_result(&transition_result, blk.header())?;
 
+        println!("inside accept state transition, about to commit session");
         // Commit state transition
         self.commit_session(session).map_err(|err| {
             StateTransitionError::PersistenceError(format!("{err}"))

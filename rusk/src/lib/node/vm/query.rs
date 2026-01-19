@@ -9,6 +9,7 @@ use crate::Result;
 
 use std::sync::mpsc;
 
+use crate::node::rusk::TOOL_ACTIVE;
 use bytecheck::CheckBytes;
 use dusk_core::abi::{ContractId, StandardBufSerializer};
 use dusk_vm::ContractMetadata;
@@ -55,6 +56,9 @@ impl Rusk {
             .map_err(Into::into)
     }
 
+    // here I need to detect if contract_id is TRANSFER/STAKE_CONTRACT
+    // and execute the appropriate tool method, same for all other query
+    // functions
     pub fn query<A, R>(
         &self,
         contract_id: ContractId,
@@ -118,6 +122,9 @@ impl Rusk {
         Ok(())
     }
 
+    // here I need to detect if contract_id is TRANSFER/STAKE_CONTRACT
+    // and execute the appropriate tool method, same for all other query
+    // functions todo: do this one first
     pub fn feeder_query<A>(
         &self,
         contract_id: ContractId,
@@ -132,6 +139,9 @@ impl Rusk {
     {
         let mut session = self.query_session(base_commit)?;
 
+        // if TOOL_ACTIVE {
+        //
+        // } else {
         // For feeder queries we use the gas limit set in the config
         session.feeder_call::<_, ()>(
             contract_id,
@@ -140,10 +150,14 @@ impl Rusk {
             self.feeder_gas_limit,
             feeder,
         )?;
+        // }
 
         Ok(())
     }
 
+    // here I need to detect if contract_id is TRANSFER/STAKE_CONTRACT
+    // and execute the appropriate tool method, same for all other query
+    // functions
     pub fn feeder_query_raw<S, V>(
         &self,
         contract_id: ContractId,
