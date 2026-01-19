@@ -31,7 +31,8 @@ use dusk_core::transfer::{
 };
 use dusk_core::{BlsScalar, Dusk};
 use dusk_vm::{
-    execute, execute_flat, CallReceipt, Error as VMError, Session, VM,
+    execute, execute_flat, CallReceipt, Error as VMError, Session, TransferCtx,
+    VM,
 };
 #[cfg(feature = "archive")]
 use node::archive::Archive;
@@ -113,7 +114,8 @@ impl Rusk {
             driver_store: Arc::new(RwLock::new(driver_store)),
             instance_cache: Arc::new(RwLock::new(BTreeMap::new())),
             transfer_state: Arc::new(Mutex::new(TransferState::new(
-                inner_event_sender, chain_id,
+                inner_event_sender,
+                chain_id,
             ))),
             stake_state: Arc::new(Mutex::new(StakeState::new(chain_id))),
         })
@@ -269,8 +271,11 @@ impl Rusk {
                 continue;
             }
 
-            let transfer_tool_opt = if RECKONING {
-                Some(self.transfer_state.clone())
+            let transfer_ctx_opt = if RECKONING {
+                Some(TransferCtx {
+                    transfer_tool: self.transfer_state.clone(),
+                    block_height,
+                })
             } else {
                 None
             };
@@ -278,7 +283,7 @@ impl Rusk {
                 &mut session,
                 &unspent_tx.inner,
                 &execution_config,
-                &transfer_tool_opt,
+                &transfer_ctx_opt,
             ) {
                 Ok(receipt) => {
                     let gas_spent = receipt.gas_spent;
@@ -305,7 +310,7 @@ impl Rusk {
                                 &mut session,
                                 &spent_tx.inner.inner,
                                 &execution_config,
-                                &transfer_tool_opt,
+                                &transfer_ctx_opt,
                             );
                         }
 
@@ -725,7 +730,10 @@ impl Rusk {
         let mut event_bloom = Bloom::new();
 
         let transfer_tool_opt = if RECKONING {
-            Some(self.transfer_state.clone())
+            Some(TransferCtx {
+                transfer_tool: self.transfer_state.clone(),
+                block_height,
+            })
         } else {
             None
         };

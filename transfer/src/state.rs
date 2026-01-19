@@ -104,7 +104,12 @@ impl TransferState {
 
     /// Checks the [`Withdraw`] is correct, and mints the amount of the
     /// withdrawal.
-    fn mint_withdrawal(&mut self, fn_name: &str, withdraw: &Withdraw) {
+    fn mint_withdrawal(
+        &mut self,
+        fn_name: &str,
+        withdraw: &Withdraw,
+        block_height: u64,
+    ) {
         let contract = withdraw.contract();
         let value = withdraw.value();
 
@@ -149,7 +154,7 @@ impl TransferState {
                 let sender = contract_fn_sender(fn_name, *contract);
 
                 let note = Note::transparent_stealth(*address, value, sender);
-                self.push_note_current_height(note);
+                self.push_note_current_height(note, block_height);
             }
             WithdrawReceiver::Moonlight(account) => {
                 let signature = match signature {
@@ -182,7 +187,7 @@ impl TransferState {
     /// # Safety
     /// We assume on trust that the value sent by the stake contract is
     /// according to consensus rules.
-    pub fn mint(&mut self, mint: Withdraw) {
+    pub fn mint(&mut self, mint: Withdraw, block_height: u64) {
         // Note: in native Rusk we can statically enforce that this function
         // is only called by the stake code (former contract)
         // the best would be to make sure that this function is only visible
@@ -197,7 +202,7 @@ impl TransferState {
             panic!("Withdrawal should from the stake contract");
         }
 
-        self.mint_withdrawal("mint", &mint);
+        self.mint_withdrawal("mint", &mint, block_height);
 
         // Note: here we need a broadcast::Sender object and send the event via
         // the sender the sender belongs to a context in which the
@@ -266,7 +271,7 @@ impl TransferState {
     /// # Panics
     /// This can only be called by the contract specified, and only if said
     /// contract has enough balance.
-    pub fn withdraw(&mut self, withdraw: Withdraw) {
+    pub fn withdraw(&mut self, withdraw: Withdraw, block_height: u64) {
         let contract = withdraw.contract();
 
         // todo: implement
@@ -286,7 +291,7 @@ impl TransferState {
         self.sub_contract_balance(contract, value)
             .expect("Subtracting balance from contract should succeed");
 
-        self.mint_withdrawal("withdraw", &withdraw);
+        self.mint_withdrawal("withdraw", &withdraw, block_height);
 
         // todo: implement
         // abi::emit(WITHDRAW_TOPIC, WithdrawEvent::from(withdraw));
@@ -303,7 +308,7 @@ impl TransferState {
     /// # Panics
     /// This can only be called by this contract - the transfer contract - and
     /// will panic if this is not the case.
-    pub fn convert(&mut self, convert: Withdraw) {
+    pub fn convert(&mut self, convert: Withdraw, block_height: u64) {
         // since each transaction only has, at maximum, a single contract call,
         // this check impliest that this is the first contract call.
         // todo: implement
@@ -345,7 +350,7 @@ impl TransferState {
                 // deposit as being taken. Interesting to note is that we don't
                 // need to change the value held by the contract at all, since
                 // it never changes.
-                self.mint_withdrawal("convert", &convert);
+                self.mint_withdrawal("convert", &convert, block_height);
                 deposit.set_taken();
 
                 // todo: implement
@@ -552,6 +557,7 @@ impl TransferState {
         &mut self,
         session: &mut Session,
         tx: Transaction,
+        block_height: u64,
     ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError>
     {
         if tx.gas_price() == 0 {
@@ -562,12 +568,19 @@ impl TransferState {
         let tx = transitory::transaction();
 
         match tx {
-            Transaction::Phoenix(tx) => self.spend_phoenix(tx),
+            Transaction::Phoenix(tx) => self.spend_phoenix(tx, block_height),
             Transaction::Moonlight(tx) => self.spend_moonlight(tx),
         }
 
         match tx.call() {
             Some(call) => {
+                // if call contract is TRANSFER or STAKE
+                // then call TRANSFER/STAKE tool
+                // the tool has to return CallReceipt with events
+                // and proper gas usage
+                // if call contract is not TRANSFER/STAKE
+                // perform the call as is, i.e., call actual contracts
+                // and CallReceipt is already OK in such case
                 let receipt = session
                     .call::<_, Result<Vec<u8>, ContractError>>(
                         call.contract,
@@ -599,7 +612,11 @@ impl TransferState {
     /// Any failure in the checks performed in processing the transaction will
     /// result in a panic. The contract expects the environment to roll back any
     /// change in state.
-    fn spend_phoenix(&mut self, phoenix_tx: &PhoenixTransaction) {
+    fn spend_phoenix(
+        &mut self,
+        phoenix_tx: &PhoenixTransaction,
+        block_height: u64,
+    ) {
         if phoenix_tx.chain_id() != self.chain_id() {
             panic!("The tx must target the correct chain");
         }
@@ -623,8 +640,6 @@ impl TransferState {
         }
 
         // append the output notes to the phoenix-notes tree
-        // todo: implement
-        let block_height = 0; //abi::block_height();
         for note in self
             .tree
             .extend_notes(block_height, phoenix_tx.outputs().clone())
@@ -723,7 +738,11 @@ impl TransferState {
     /// in the fee structure.
     ///
     /// This function guarantees that it will not panic.
-    pub fn refund(&mut self, gas_spent: u64) -> CallReceipt<()> {
+    pub fn refund(
+        &mut self,
+        gas_spent: u64,
+        block_height: u64,
+    ) -> CallReceipt<()> {
         let ongoing = transitory::take_ongoing();
 
         // If there is a deposit still available on the call to this function,
@@ -753,7 +772,8 @@ impl TransferState {
 
                 // if the refund-value is 0, we don't push the note onto the
                 // tree and the refund-note will be None
-                let refund_note = self.push_note_current_height(remainder_note);
+                let refund_note =
+                    self.push_note_current_height(remainder_note, block_height);
 
                 // todo: implement
                 // abi::emit(
@@ -996,9 +1016,11 @@ impl TransferState {
         self.tree.push(NoteLeaf { block_height, note })
     }
 
-    fn push_note_current_height(&mut self, note: Note) -> Option<Note> {
-        // todo: implement
-        let block_height = 0; //abi::block_height();
+    fn push_note_current_height(
+        &mut self,
+        note: Note,
+        block_height: u64,
+    ) -> Option<Note> {
         self.push_note(block_height, note)
     }
 

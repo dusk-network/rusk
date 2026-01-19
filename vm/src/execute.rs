@@ -19,6 +19,14 @@ use wasmparser::*;
 pub use config::Config;
 use transfer::TransferState;
 
+/// Context for transaction execution
+pub struct TransferCtx {
+    /// Transfer tool implementation
+    pub transfer_tool: Arc<Mutex<TransferState>>,
+    /// Current block height
+    pub block_height: u64,
+}
+
 /// Executes a transaction in the provided session.
 ///
 /// This function processes the transaction, invoking smart contracts or
@@ -79,7 +87,7 @@ pub fn execute_flat(
     session: &mut Session,
     tx: &Transaction,
     config: &Config,
-    transfer_tool_opt: &Option<Arc<Mutex<TransferState>>>,
+    transfer_ctx_opt: &Option<TransferCtx>,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
@@ -139,13 +147,13 @@ pub fn execute_flat(
             "spend_and_execute contract={} fn_name={} is_flat={}",
             call.contract,
             call.fn_name,
-            transfer_tool_opt.is_some()
+            transfer_ctx_opt.is_some()
         )
     }
 
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
-    let mut receipt = match &transfer_tool_opt {
+    let mut receipt = match &transfer_ctx_opt {
         None => session
             .call::<_, Result<Vec<u8>, ContractError>>(
                 TRANSFER_CONTRACT,
@@ -156,10 +164,13 @@ pub fn execute_flat(
             .inspect_err(|_| {
                 clear_session(session, config);
             })?,
-        Some(m) => {
-            let mut transfer_tool = m.lock().unwrap();
-            transfer_tool
-                .spend_and_execute(session, stripped_tx.unwrap_or(tx.clone()))?
+        Some(ctx) => {
+            let mut transfer_tool = ctx.transfer_tool.lock().unwrap();
+            transfer_tool.spend_and_execute(
+                session,
+                stripped_tx.unwrap_or(tx.clone()),
+                ctx.block_height,
+            )?
         }
     };
 
@@ -182,7 +193,7 @@ pub fn execute_flat(
     // Refund the appropriate amount to the transaction. This call is guaranteed
     // to never error. If it does, then a programming error has occurred. As
     // such, the call to `Result::expect` is warranted.
-    let refund_receipt = match &transfer_tool_opt {
+    let refund_receipt = match &transfer_ctx_opt {
         None => session
             .call::<_, ()>(
                 TRANSFER_CONTRACT,
@@ -191,9 +202,9 @@ pub fn execute_flat(
                 u64::MAX,
             )
             .expect("Refunding must succeed"),
-        Some(m) => {
-            let mut transfer_tool = m.lock().unwrap();
-            transfer_tool.refund(receipt.gas_spent)
+        Some(ctx) => {
+            let mut transfer_tool = ctx.transfer_tool.lock().unwrap();
+            transfer_tool.refund(receipt.gas_spent, ctx.block_height)
         }
     };
 

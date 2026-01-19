@@ -91,7 +91,7 @@ impl StakeState {
         }
     }
 
-    pub fn stake(&mut self, stake: Stake) {
+    pub fn stake(&mut self, stake: Stake, block_height: u64) {
         let minimum_stake = self.config.minimum_stake;
         let value = stake.value();
         let signature = *stake.signature();
@@ -124,10 +124,7 @@ impl StakeState {
         // let _: () = abi::call::<_, ()>(TRANSFER_CONTRACT, "deposit", &value)
         //     .expect("Depositing funds into contract should succeed");
 
-        // todo: implement
-        // let block_height = abi::block_height();
-        let block_height = 0; // todo
-                              // update the state accordingly
+        // update the state accordingly
         let stake_event = match &mut loaded_stake.amount {
             Some(amount) => {
                 let locked = if block_height >= amount.eligibility {
@@ -155,7 +152,11 @@ impl StakeState {
             .or_insert((prev_stake, account));
     }
 
-    pub fn stake_from_contract(&mut self, recv: ReceiveFromContract) {
+    pub fn stake_from_contract(
+        &mut self,
+        recv: ReceiveFromContract,
+        block_height: u64,
+    ) {
         let stake: Stake =
             rkyv::from_bytes(&recv.data).expect("Invalid stake received");
         let value = stake.value();
@@ -186,9 +187,7 @@ impl StakeState {
             }
         }
 
-        // todo: implement
-        let block_height = 0; //abi::block_height();
-                              // update the state accordingly
+        // update the state accordingly
         let stake_event = match &mut loaded_stake.amount {
             Some(amount) => {
                 let locked = if block_height >= amount.eligibility {
@@ -538,7 +537,12 @@ impl StakeState {
     /// If the reward is less than the `to_slash` amount, then the reward is
     /// depleted and the provisioner eligibility is shifted to the
     /// next epoch as well
-    pub fn slash(&mut self, account: &BlsPublicKey, to_slash: Option<u64>) {
+    pub fn slash(
+        &mut self,
+        account: &BlsPublicKey,
+        to_slash: Option<u64>,
+        block_height: u64,
+    ) {
         let stake_warnings = self.config.warnings;
         let (stake, _) = self
             .get_stake_mut(account)
@@ -565,7 +569,7 @@ impl StakeState {
 
             stake_amount.eligibility =
                 // todo: implement
-                next_epoch(0 /*abi::block_height()*/) + to_shift;
+                next_epoch(block_height) + to_shift;
         }
 
         // Slash the provided amount or calculate the percentage according to
@@ -605,6 +609,7 @@ impl StakeState {
         account: &BlsPublicKey,
         to_slash: Option<u64>,
         severity: Option<u8>,
+        block_height: u64,
     ) {
         let (stake, _) = self
             .get_stake_mut(account)
@@ -627,8 +632,7 @@ impl StakeState {
         // epoch plus hard_faults epochs
         let to_shift = hard_faults * EPOCH;
         // todo: implement
-        let next_eligibility =
-            next_epoch(0 /* abi::block_height() */) + to_shift;
+        let next_eligibility = next_epoch(block_height) + to_shift;
         stake_amount.eligibility = next_eligibility;
 
         // Slash the provided amount or calculate the percentage according to
