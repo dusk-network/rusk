@@ -1089,6 +1089,7 @@ impl TransferState {
         session: &mut Session,
         gas_limit: u64,
     ) -> Result<u64, PiecrustError> {
+        println!("import_from_transfer_contract");
         let gas_spent = self.import_tree(session, gas_limit)?
             + self.import_nullifiers(session, gas_limit)?
             + self.import_contract_balances(session, gas_limit)?
@@ -1110,6 +1111,7 @@ impl TransferState {
             gas_limit,
             feeder,
         )?;
+        self.tree.clear();
         for bytes in receiver.iter() {
             let leaf = rkyv::from_bytes(&bytes).expect("Should return leaves");
             self.tree.push(leaf);
@@ -1131,6 +1133,7 @@ impl TransferState {
             gas_limit,
             feeder,
         )?;
+        self.nullifiers.clear();
         for bytes in receiver.iter() {
             let n = rkyv::from_bytes(&bytes).expect("Should return nullifiers");
             self.nullifiers.insert(n);
@@ -1152,6 +1155,7 @@ impl TransferState {
             gas_limit,
             feeder,
         )?;
+        self.contract_balances.clear();
         for bytes in receiver.iter() {
             let (contract, balance) = rkyv::from_bytes(&bytes)
                 .expect("Should return contracts' balances");
@@ -1174,6 +1178,7 @@ impl TransferState {
             gas_limit,
             feeder,
         )?;
+        self.accounts.clear();
         for bytes in receiver.iter() {
             let (key, account) = rkyv::from_bytes(&bytes)
                 .expect("Should return key and account");

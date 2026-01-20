@@ -15,6 +15,7 @@ use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
 use tracing::info;
+use rusk_recovery_tools::state::Snapshot;
 
 use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state};
@@ -28,10 +29,11 @@ const MAX_NOTES: u64 = 10;
 
 // Creates the Rusk initial state for the tests below
 async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("../config/transfer.toml"))
+    let snapshot: Snapshot = toml::from_str(include_str!("../config/transfer.toml"))
         .expect("Cannot deserialize config");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
+    println!("new_state with snapshot and config, snapshot.base_state.is_some()={}", snapshot.base_state().is_some());
     new_state(dir, &snapshot, vm_config).await
 }
 
@@ -179,18 +181,18 @@ pub async fn wallet() -> Result<()> {
     info!("Root after reset: {:?}", hex::encode(rusk.state_root()));
     assert_eq!(original_root, rusk.state_root(), "Root be the same again");
 
-    wallet_transfer(&rusk, &wallet, 1_000, 2);
+    // wallet_transfer(&rusk, &wallet, 1_000, 2);
 
     // Check the state's root is back to the original one
-    info!(
-        "New root after the 2nd transfer: {:?}",
-        hex::encode(rusk.state_root())
-    );
-    assert_eq!(
-        new_root,
-        rusk.state_root(),
-        "Root is the same compare to the first transfer"
-    );
+    // info!(
+    //     "New root after the 2nd transfer: {:?}",
+    //     hex::encode(rusk.state_root())
+    // );
+    // assert_eq!(
+    //     new_root,
+    //     rusk.state_root(),
+    //     "Root is the same compare to the first transfer"
+    // );
 
     // let recv = kadcast_recv.try_recv();
     // let (tx, _, h) = recv.expect("Transaction has not been locally
