@@ -1112,6 +1112,7 @@ impl TransferState {
             feeder,
         )?;
         self.tree.clear();
+        self.tree_store.clear();
         for bytes in receiver.iter() {
             let leaf = rkyv::from_bytes(&bytes).expect("Should return leaves");
             self.tree.push(leaf);
@@ -1134,6 +1135,7 @@ impl TransferState {
             feeder,
         )?;
         self.nullifiers.clear();
+        self.nullifiers_store.clear();
         for bytes in receiver.iter() {
             let n = rkyv::from_bytes(&bytes).expect("Should return nullifiers");
             self.nullifiers.insert(n);
@@ -1156,6 +1158,7 @@ impl TransferState {
             feeder,
         )?;
         self.contract_balances.clear();
+        self.contract_balances_store.clear();
         for bytes in receiver.iter() {
             let (contract, balance) = rkyv::from_bytes(&bytes)
                 .expect("Should return contracts' balances");
@@ -1179,6 +1182,7 @@ impl TransferState {
             feeder,
         )?;
         self.accounts.clear();
+        self.accounts_store.clear();
         for bytes in receiver.iter() {
             let (key, account) = rkyv::from_bytes(&bytes)
                 .expect("Should return key and account");

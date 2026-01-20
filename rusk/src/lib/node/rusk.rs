@@ -458,7 +458,22 @@ impl Rusk {
     }
 
     pub fn revert_to_base_root(&self) -> Result<[u8; 32]> {
-        self.revert(self.base_root())
+        let base_root = self.base_root();
+        let current_tip = self.revert(self.base_root());
+        // revert transfer tool
+        // todo: this makes sense only if the original data still lives in the
+        // contract this will work for tests but this scheme needs to be
+        // generalized in the long run
+        {
+            let mut session = self
+                .new_block_session(0, base_root)
+                .expect("session creation should work");
+            let mut transfer_tool = self.transfer_state.lock().unwrap();
+            let _result = transfer_tool
+                .import_from_transfer_contract(&mut session, u64::MAX);
+        }
+
+        current_tip
     }
 
     /// Get the base root.
