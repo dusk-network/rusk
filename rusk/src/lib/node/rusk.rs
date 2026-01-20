@@ -477,7 +477,7 @@ impl Rusk {
         &self,
         nullifiers: &Vec<BlsScalar>,
     ) -> Result<Vec<BlsScalar>> {
-        self.query(TRANSFER_CONTRACT, "existing_nullifiers", nullifiers)
+        self.query_existing_nullifiers(nullifiers)
     }
 
     /// Returns the stakes.

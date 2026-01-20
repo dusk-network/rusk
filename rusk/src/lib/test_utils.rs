@@ -62,7 +62,7 @@ impl Rusk {
 
     /// Returns the opening of the transfer tree at the given position.
     pub fn tree_opening(&self, pos: u64) -> Result<Option<NoteOpening>> {
-        self.query(TRANSFER_CONTRACT, "opening", &pos)
+        self.query_opening(pos)
     }
 
     /// Returns data about the stake of the given key.

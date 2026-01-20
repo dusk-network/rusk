@@ -13,7 +13,9 @@ use std::sync::mpsc;
 use crate::node::rusk::TOOL_ACTIVE;
 use bytecheck::CheckBytes;
 use dusk_core::abi::{ContractId, StandardBufSerializer};
+use dusk_core::transfer::phoenix::NoteOpening;
 use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::BlsScalar;
 use dusk_vm::ContractMetadata;
 use dusk_vm::Error::ContractDoesNotExist;
 use node::vm::VMExecution;
@@ -88,6 +90,35 @@ impl Rusk {
         Ok(results.pop().unwrap())
     }
 
+    pub fn query_existing_nullifiers(
+        &self,
+        nullifiers: &Vec<BlsScalar>,
+    ) -> Result<Vec<BlsScalar>> {
+        if TOOL_ACTIVE {
+            let transfer_tool = self.transfer_state.lock().unwrap();
+            Ok(transfer_tool.existing_nullifiers(nullifiers.clone())) // todo: clone
+        } else {
+            self.query::<_, Vec<BlsScalar>>(
+                TRANSFER_CONTRACT,
+                "existing_nullifiers",
+                nullifiers,
+            )
+        }
+    }
+
+    pub fn query_opening(&self, pos: u64) -> Result<Option<NoteOpening>> {
+        if TOOL_ACTIVE {
+            let transfer_tool = self.transfer_state.lock().unwrap();
+            Ok(transfer_tool.opening(pos))
+        } else {
+            self.query::<_, Option<NoteOpening>>(
+                TRANSFER_CONTRACT,
+                "opening",
+                &pos,
+            )
+        }
+    }
+
     fn query_seq<A, R, F>(
         &self,
         contract_id: ContractId,
@@ -153,9 +184,7 @@ impl Rusk {
         {
             let transfer_tool = self.transfer_state.lock().unwrap();
             let height: u64 = {
-                unsafe {
-                    std::ptr::read(call_arg as *const A as *const u64)
-                }
+                unsafe { std::ptr::read(call_arg as *const A as *const u64) }
             };
             println!("feeder_query - height={}", height);
             transfer_tool.leaves_from_height(height, feeder);

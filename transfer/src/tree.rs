@@ -43,7 +43,8 @@ impl Tree {
     /// Clear the tree.
     pub fn clear(&mut self) {
         let max_pos = self.leaves.len() as u64;
-        for pos in 0..max_pos { // todo: there should be a better way
+        // todo: there should be a better way
+        for pos in 0..max_pos {
             self.tree.remove(pos);
         }
         self.leaves.clear();
