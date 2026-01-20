@@ -119,6 +119,33 @@ impl Rusk {
         }
     }
 
+    pub fn query_contract_balance(&self, id: &ContractId) -> Result<u64> {
+        if TOOL_ACTIVE {
+            let transfer_tool = self.transfer_state.lock().unwrap();
+            Ok(transfer_tool.contract_balance(id))
+        } else {
+            self.query::<_, u64>(TRANSFER_CONTRACT, "contract_balance", id)
+        }
+    }
+
+    pub fn query_root(&self) -> Result<BlsScalar> {
+        if TOOL_ACTIVE {
+            let transfer_tool = self.transfer_state.lock().unwrap();
+            Ok(transfer_tool.root())
+        } else {
+            self.query::<_, BlsScalar>(TRANSFER_CONTRACT, "root", &())
+        }
+    }
+
+    pub fn query_chain_id(&self) -> Result<u8> {
+        if TOOL_ACTIVE {
+            let transfer_tool = self.transfer_state.lock().unwrap();
+            Ok(transfer_tool.chain_id())
+        } else {
+            self.query::<_, u8>(TRANSFER_CONTRACT, "chain_id", &())
+        }
+    }
+
     fn query_seq<A, R, F>(
         &self,
         contract_id: ContractId,

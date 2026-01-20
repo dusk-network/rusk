@@ -57,7 +57,7 @@ impl Rusk {
     /// Returns the root of the transfer tree.
     pub fn tree_root(&self) -> Result<BlsScalar> {
         info!("Received tree_root request");
-        self.query(TRANSFER_CONTRACT, "root", &())
+        self.query_root()
     }
 
     /// Returns the opening of the transfer tree at the given position.

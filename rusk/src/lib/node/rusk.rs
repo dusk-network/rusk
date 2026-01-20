@@ -534,12 +534,12 @@ impl Rusk {
 
     /// Returns the balance held by a smart contract by its `ContractId`.
     pub fn contract_balance(&self, id: &ContractId) -> Result<u64> {
-        self.query(TRANSFER_CONTRACT, "contract_balance", id)
+        self.query_contract_balance(id)
     }
 
     /// Returns an account's information.
     pub fn chain_id(&self) -> Result<u8> {
-        self.query(TRANSFER_CONTRACT, "chain_id", &())
+        self.query_chain_id()
     }
 
     /// Fetches the previous state data for stake changes in the contract.

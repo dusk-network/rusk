@@ -52,7 +52,7 @@ pub async fn mainnet_genesis() -> Result<()> {
     }
 
     let skate_balance: u64 = rusk
-        .query(TRANSFER_CONTRACT, "contract_balance", &STAKE_CONTRACT)
+        .query_contract_balance(&STAKE_CONTRACT)
         .expect("Query to succeed");
     assert_eq!(
         total_amount, skate_balance,
