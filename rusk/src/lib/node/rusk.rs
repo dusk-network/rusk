@@ -561,7 +561,7 @@ impl Rusk {
 
     /// Returns an account's information.
     pub fn account(&self, pk: &BlsPublicKey) -> Result<AccountData> {
-        self.query(TRANSFER_CONTRACT, "account", pk)
+        self.query_account(pk)
     }
 
     /// Returns the balance held by a smart contract by its `ContractId`.
