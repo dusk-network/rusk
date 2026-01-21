@@ -645,7 +645,7 @@ impl TransferState {
                     gas_spent: 11_617_040, /* todo: moonlight vs phoenix,
                                             * make it configurable, at least
                                             * const */
-                    gas_limit: 0,
+                    gas_limit: tx.gas_limit(),
                     events: Vec::new(),
                     call_tree: CallTree::new(),
                     data: Ok(Vec::new()),

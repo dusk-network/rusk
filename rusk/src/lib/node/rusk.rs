@@ -51,7 +51,7 @@ use crate::node::driverstore::DriverStore;
 use crate::node::{get_block_rewards, RuesEvent, Rusk, RuskTip};
 use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
 
-pub const TOOL_ACTIVE: bool = false;
+pub const TOOL_ACTIVE: bool = true;
 pub const TOOL_ACTIVATION_BLOCK_HEIGHT: u64 = 20000000;
 
 impl Rusk {
@@ -295,7 +295,10 @@ impl Rusk {
                     // If the transaction went over the block gas limit we
                     // re-execute all spent transactions. We don't discard the
                     // transaction, since it is technically valid.
-                    println!("gas_spent={}", gas_spent);
+                    println!(
+                        "gas_spent={} gas_left={} block_height={}",
+                        gas_spent, gas_left, block_height
+                    );
                     if gas_spent > gas_left {
                         info!(
                             event = "Skipping transaction",
