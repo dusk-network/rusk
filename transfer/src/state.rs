@@ -642,7 +642,9 @@ impl TransferState {
             None => {
                 println!("inside spend_and_execute (NO call)");
                 Ok(CallReceipt {
-                    gas_spent: 0,
+                    gas_spent: 11_617_040, /* todo: moonlight vs phoenix,
+                                            * make it configurable, at least
+                                            * const */
                     gas_limit: 0,
                     events: Vec::new(),
                     call_tree: CallTree::new(),
