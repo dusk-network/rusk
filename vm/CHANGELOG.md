@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change `lru` dependency to `0.16.3`
+
 ## [1.4.3] - 2026-01-07
 
 ### Fixed
