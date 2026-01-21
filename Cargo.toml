@@ -122,7 +122,7 @@ inquire = "0.7.5"
 k256 = { version = "0.13", default-features = false, features = ["alloc"] }
 konst = "0.3.9"
 lazy_static = "1.5"
-lru = "0.12.4"
+lru = "0.16.3"
 memory-stats = "1.2"
 metrics = "0.22.3"
 metrics-exporter-prometheus = "0.14"
