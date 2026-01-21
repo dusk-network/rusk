@@ -752,7 +752,7 @@ impl Rusk {
         let mut events = Vec::new();
         let mut event_bloom = Bloom::new();
 
-        let transfer_tool_opt = if TOOL_ACTIVE {
+        let transfer_ctx_opt = if TOOL_ACTIVE {
             {
                 // in "execute state transition" we need to reset the tool
                 // as it has remnants of uncommitted changes from "create state
@@ -777,7 +777,7 @@ impl Rusk {
                 &mut session,
                 tx,
                 &execution_config,
-                &transfer_tool_opt,
+                &transfer_ctx_opt,
             )
             .map_err(|err| {
                 StateTransitionError::ExecutionError(format!(

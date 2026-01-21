@@ -63,9 +63,6 @@ impl Rusk {
             .map_err(Into::into)
     }
 
-    // here I need to detect if contract_id is TRANSFER/STAKE_CONTRACT
-    // and execute the appropriate tool method, same for all other query
-    // functions
     pub fn query<A, R>(
         &self,
         contract_id: ContractId,
@@ -188,9 +185,6 @@ impl Rusk {
         Ok(())
     }
 
-    // here I need to detect if contract_id is TRANSFER/STAKE_CONTRACT
-    // and execute the appropriate tool method, same for all other query
-    // functions todo: do this one first
     pub fn feeder_query<A>(
         &self,
         contract_id: ContractId,
@@ -229,9 +223,6 @@ impl Rusk {
         Ok(())
     }
 
-    // here I need to detect if contract_id is TRANSFER/STAKE_CONTRACT
-    // and execute the appropriate tool method, same for all other query
-    // functions
     pub fn feeder_query_raw<S, V>(
         &self,
         contract_id: ContractId,

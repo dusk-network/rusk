@@ -11,6 +11,7 @@ use crate::Result;
 
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::Transaction as PhoenixTransaction;
+use transfer::host_queries_flat;
 
 #[cfg(not(feature = "dynamic-verifier"))]
 mod embed {
@@ -60,7 +61,6 @@ mod runtime {
 }
 #[cfg(feature = "dynamic-verifier")]
 use runtime::*;
-use transfer::host_queries_flat;
 
 /// Verifies the proof of the incoming transaction.
 pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
