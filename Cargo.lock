@@ -5893,6 +5893,8 @@ dependencies = [
 name = "transfer"
 version = "0.1.0"
 dependencies = [
+ "bs58",
+ "bytecheck",
  "dusk-bytes",
  "dusk-core 1.4.1-alpha.1",
  "dusk-node-data",

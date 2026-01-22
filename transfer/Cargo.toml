@@ -21,6 +21,8 @@ dusk-poseidon = { workspace = true }
 dusk-bytes = { workspace = true }
 sha3 = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }
+bytecheck = { workspace = true }
+bs58 = { workspace = true }
 
 [build-dependencies]
 rusk-profile = { workspace = true }

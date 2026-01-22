@@ -12,6 +12,7 @@ use std::sync::mpsc;
 
 use crate::node::rusk::TOOL_ACTIVE;
 use bytecheck::CheckBytes;
+use dusk_bytes::Serializable;
 use dusk_core::abi::{ContractId, StandardBufSerializer};
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
@@ -139,6 +140,8 @@ impl Rusk {
     pub fn query_account(&self, pk: &AccountPublicKey) -> Result<AccountData> {
         if TOOL_ACTIVE {
             let transfer_tool = self.transfer_state.lock().unwrap();
+            // println!("query_account {}",
+            // bs58::encode(pk.to_bytes()).into_string());
             Ok(transfer_tool.account(pk))
         } else {
             self.query::<_, AccountData>(TRANSFER_CONTRACT, "account", pk)

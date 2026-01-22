@@ -180,6 +180,12 @@ impl Rusk {
     > {
         let started = Instant::now();
 
+        if TOOL_ACTIVE {
+            println!("store at the beginning of create_state_transition");
+            let mut transfer_tool = self.transfer_state.lock().unwrap();
+            transfer_tool.store();
+        }
+
         let block_height = transition_data.round;
         let gas_limit = self.vm_config.block_gas_limit;
         let generator = transition_data.generator.inner();
@@ -770,14 +776,14 @@ impl Rusk {
         let mut event_bloom = Bloom::new();
 
         let transfer_ctx_opt = if TOOL_ACTIVE {
-            {
-                // in "execute state transition" we need to reset the tool
-                // as it has remnants of uncommitted changes from "create state
-                // transition" todo: optimize this
-                println!("reset");
-                let mut transfer_tool = self.transfer_state.lock().unwrap();
-                transfer_tool.reset();
-            }
+            // {
+            // in "execute state transition" we need to reset the tool
+            // as it has remnants of uncommitted changes from "create state
+            // transition" todo: optimize this
+            // println!("reset");
+            // let mut transfer_tool = self.transfer_state.lock().unwrap();
+            // transfer_tool.reset();
+            // }
             Some(TransferCtx {
                 transfer_tool: self.transfer_state.clone(),
                 block_height,

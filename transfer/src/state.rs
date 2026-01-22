@@ -20,8 +20,10 @@ use dusk_core::transfer::MINT_CONTRACT_TOPIC;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use tokio::sync::broadcast;
 
+use bytecheck::CheckBytes;
+use dusk_bytes::Serializable;
 use dusk_core::abi::{self, ContractError, ContractId};
-use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::signatures::bls::{PublicKey as AccountPublicKey, PublicKey};
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::moonlight::{
     AccountData, Transaction as MoonlightTransaction,
@@ -43,6 +45,8 @@ use dusk_core::transfer::{
 };
 use dusk_core::BlsScalar;
 use piecrust::{CallReceipt, CallTree, Error as PiecrustError, Session};
+use rkyv::validation::validators::DefaultValidator;
+use rkyv::{check_archived_root, Archive, Deserialize, Infallible};
 
 use crate::host_queries_flat::{
     hash, verify_bls, verify_plonk, verify_schnorr,
@@ -603,16 +607,24 @@ impl TransferState {
     ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError>
     {
         if tx.gas_price() == 0 {
-            panic!("Gas price too low!");
+            return Err(PiecrustError::Panic("Gas price too low!".into()));
         }
 
         transitory::put_transaction(tx);
         let tx = transitory::transaction();
 
-        match tx {
-            Transaction::Phoenix(tx) => self.spend_phoenix(tx, block_height),
-            Transaction::Moonlight(tx) => self.spend_moonlight(tx),
-        }
+        const PHOENIX_GAS_SPENT: u64 = 11_617_040; // todo: gas const
+        const MOONLIGHT_GAS_SPENT: u64 = 101_924; // todo: gas const
+        let gas_spent = match tx {
+            Transaction::Phoenix(tx) => {
+                self.spend_phoenix(tx, block_height)?;
+                PHOENIX_GAS_SPENT
+            }
+            Transaction::Moonlight(tx) => {
+                self.spend_moonlight(tx)?;
+                MOONLIGHT_GAS_SPENT
+            }
+        };
 
         match tx.call() {
             Some(call) => {
@@ -642,9 +654,7 @@ impl TransferState {
             None => {
                 println!("inside spend_and_execute (NO call)");
                 Ok(CallReceipt {
-                    gas_spent: 11_617_040, /* todo: moonlight vs phoenix,
-                                            * make it configurable, at least
-                                            * const */
+                    gas_spent,
                     gas_limit: tx.gas_limit(),
                     events: Vec::new(),
                     call_tree: CallTree::new(),
@@ -667,27 +677,35 @@ impl TransferState {
         &mut self,
         phoenix_tx: &PhoenixTransaction,
         block_height: u64,
-    ) {
+    ) -> Result<(), PiecrustError> {
         if phoenix_tx.chain_id() != self.chain_id() {
-            panic!("The tx must target the correct chain");
+            return Err(PiecrustError::Panic(
+                "The tx must target the correct chain".into(),
+            ));
         }
 
         // panic if the root is invalid
         if !self.root_exists(phoenix_tx.root()) {
-            panic!("Root not found in the state!");
+            return Err(PiecrustError::Panic(
+                "Root not found in the state!".into(),
+            ));
         }
 
         // append the nullifiers to the set, and panic if an equal one has
         // already been inserted
         for nullifier in phoenix_tx.nullifiers() {
             if !self.nullifiers.insert(*nullifier) {
-                panic!("A provided nullifier has already been spent");
+                return Err(PiecrustError::Panic(
+                    "A provided nullifier has already been spent".into(),
+                ));
             }
         }
 
         // verify the phoenix-circuit
         if !verify_tx_proof(phoenix_tx) {
-            panic!("Invalid transaction proof!");
+            return Err(PiecrustError::Panic(
+                "Invalid transaction proof!".into(),
+            ));
         }
 
         // append the output notes to the phoenix-notes tree
@@ -699,6 +717,7 @@ impl TransferState {
             // subsequently picked up by `refund`
             transitory::push_note(note);
         }
+        Ok(())
     }
 
     /// Spends the amount available to the moonlight transaction. It performs
@@ -709,9 +728,14 @@ impl TransferState {
     /// Any failure in the checks performed in processing the transaction will
     /// result in a panic. The contract expects the environment to roll back any
     /// change in state.
-    fn spend_moonlight(&mut self, moonlight_tx: &MoonlightTransaction) {
+    fn spend_moonlight(
+        &mut self,
+        moonlight_tx: &MoonlightTransaction,
+    ) -> Result<(), PiecrustError> {
         if moonlight_tx.chain_id() != self.chain_id() {
-            panic!("The tx must target the correct chain");
+            return Err(PiecrustError::Panic(
+                "The tx must target the correct chain".into(),
+            ));
         }
 
         // check the signature is valid and made by `sender`
@@ -720,7 +744,7 @@ impl TransferState {
             *moonlight_tx.sender(),
             *moonlight_tx.signature(),
         ) {
-            panic!("Invalid signature!");
+            return Err(PiecrustError::Panic("Invalid signature!".into()));
         }
 
         // check `sender` has the funds necessary to suppress the total value
@@ -748,7 +772,9 @@ impl TransferState {
         match self.accounts.get_mut(&sender_bytes) {
             Some(account) => {
                 if total_value > account.balance {
-                    panic!("Account doesn't have enough funds");
+                    return Err(PiecrustError::Panic(
+                        "Account doesn't have enough funds".into(),
+                    ));
                 }
 
                 // NOTE: exhausting the nonce is nearly impossible, since it
@@ -757,16 +783,23 @@ impl TransferState {
                 //       skip overflow checks.
                 let incremented_nonce = account.nonce + 1;
                 if moonlight_tx.nonce() < incremented_nonce {
-                    panic!("Already used nonce");
+                    return Err(PiecrustError::Panic(
+                        "Already used nonce".into(),
+                    ));
                 }
                 if moonlight_tx.nonce() > incremented_nonce {
-                    panic!("{PANIC_NONCE_NOT_READY}",);
+                    // panic!("{PANIC_NONCE_NOT_READY}",);
+                    return Err(PiecrustError::Panic(
+                        PANIC_NONCE_NOT_READY.into(),
+                    ));
                 }
 
                 account.balance -= total_value;
                 account.nonce = moonlight_tx.nonce();
             }
-            None => panic!("Account has no funds"),
+            None => {
+                return Err(PiecrustError::Panic("Account has no funds".into()))
+            }
         }
 
         // add the value to the receiver account
@@ -781,6 +814,7 @@ impl TransferState {
                 .or_insert(EMPTY_ACCOUNT);
             account.balance += moonlight_tx.value();
         }
+        Ok(())
     }
 
     /// Refund the previously performed transaction, taking into account the
@@ -1186,13 +1220,29 @@ impl TransferState {
         self.accounts.clear();
         self.accounts_store.clear();
         for bytes in receiver.iter() {
-            let (key, account) = rkyv::from_bytes(&bytes)
+            let (account, key) = from_rkyv::<(AccountData, [u8; 193])>(&bytes)
                 .expect("Should return key and account");
             self.accounts.insert(key, account);
         }
 
         Ok(receipt.gas_spent)
     }
+}
+
+// todo: duplicated code
+pub fn from_rkyv<T>(rkyv: &[u8]) -> Result<T, Error>
+where
+    T: Archive,
+    for<'a> T::Archived:
+        CheckBytes<DefaultValidator<'a>> + Deserialize<T, Infallible>,
+{
+    let root = check_archived_root::<T>(rkyv)
+        .expect("Check archived root should work"); // todo: proper error processing
+    let object: T = root
+        .deserialize(&mut Infallible)
+        .expect("Deserialisation should work"); // todo: proper error processing
+
+    Ok(object)
 }
 
 fn verify_tx_proof(tx: &PhoenixTransaction) -> bool {
