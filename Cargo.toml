@@ -37,7 +37,7 @@ resolver = "2"
 # dusk-consensus = "1.4.0"
 dusk-consensus = { version = "1.4.1-alpha.1", path = "./consensus/" }
 # dusk-core = "1.4.0"
-dusk-core = { version = "1.4.1-alpha.1", path = "./core/" }
+dusk-core = { version = "1.4.2-alpha.1", path = "./core/" }
 # dusk-vm = "1.4.3"
 dusk-vm = { version = "1.4.4-alpha.1", path = "./vm/" }
 # node = { version = "1.4.2", package = "dusk-node" }
@@ -89,7 +89,7 @@ async-channel = "1.9"
 async-graphql = "5.0.10"
 async-trait = "0.1.83"
 base64 = "0.22.1"
-blake2b_simd = { version = "1.0.2", default-features = false }
+blake2b_simd = { version = "=1.0.3", default-features = false } # 1.0.4 requires rustc edition 2024
 blake3 = { version = "1.5.4", default-features = false }
 block-modes = "0.8.1"
 bs58 = "0.4"

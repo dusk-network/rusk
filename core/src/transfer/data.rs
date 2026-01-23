@@ -283,12 +283,15 @@ pub type BlobDataPart = [u8; BYTES_PER_BLOB];
 /// All the data the transfer-contract needs to perform a contract-call.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ContractCall {
     /// The unique ID of the contract to be called.
     pub contract: ContractId,
     /// The function of the contract that should be called.
     pub fn_name: String,
     /// The function arguments for the contract call, in bytes.
+    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
     pub fn_args: Vec<u8>,
 }
 

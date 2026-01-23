@@ -30,6 +30,8 @@ pub use error::{Error, TxPreconditionError};
 mod dusk;
 pub use dusk::{dusk, from_dusk, Dusk, LUX};
 
+use blake2b_simd as _; // Required to satisfy unused_crate_dependencies
+
 // elliptic curve types
 pub use dusk_bls12_381::BlsScalar;
 pub use dusk_jubjub::{
