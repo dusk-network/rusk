@@ -181,9 +181,9 @@ impl Rusk {
         let started = Instant::now();
 
         if TOOL_ACTIVE {
-            println!("store at the beginning of create_state_transition");
+            println!("stash at the beginning of create_state_transition");
             let mut transfer_tool = self.transfer_state.lock().unwrap();
-            transfer_tool.store();
+            transfer_tool.stash();
         }
 
         let block_height = transition_data.round;
@@ -315,10 +315,10 @@ impl Rusk {
                         );
 
                         if TOOL_ACTIVE {
-                            println!("reset in create_state_transition, after block limit exceeded");
+                            println!("stash_pop in create_state_transition, after block limit exceeded");
                             let mut transfer_tool =
                                 self.transfer_state.lock().unwrap();
-                            transfer_tool.reset();
+                            transfer_tool.stash_pop();
                         }
 
                         session =
@@ -441,9 +441,9 @@ impl Rusk {
         let state_root = session.root();
 
         if TOOL_ACTIVE {
-            println!("reset at the end of create_state_transition");
+            println!("stash_pop at the end of create_state_transition");
             let mut transfer_tool = self.transfer_state.lock().unwrap();
-            transfer_tool.reset();
+            transfer_tool.stash_pop();
         }
 
         Ok((
@@ -870,12 +870,6 @@ impl Rusk {
 
         // Get new state root
         let state_root = session.root();
-
-        if TOOL_ACTIVE {
-            println!("store");
-            let mut transfer_tool = self.transfer_state.lock().unwrap();
-            transfer_tool.store();
-        }
 
         Ok((
             spent_txs,

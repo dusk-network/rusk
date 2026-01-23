@@ -79,17 +79,17 @@ fn contract_fn_sender(fn_name: &str, contract: ContractId) -> Sender {
 
 pub struct TransferState {
     tree: Tree,
-    tree_store: Tree,
+    tree_stash: Tree,
     nullifiers: BTreeSet<BlsScalar>,
-    nullifiers_store: BTreeSet<BlsScalar>,
+    nullifiers_stash: BTreeSet<BlsScalar>,
     roots: ConstGenericRingBuffer<BlsScalar, MAX_ROOTS>,
     // NOTE: we should never remove entries from this list, since the entries
     //       contain the nonce of the given account. Doing so opens the account
     //       up to replay attacks.
     accounts: BTreeMap<[u8; 193], AccountData>,
-    accounts_store: BTreeMap<[u8; 193], AccountData>,
+    accounts_stash: BTreeMap<[u8; 193], AccountData>,
     contract_balances: BTreeMap<ContractId, u64>,
-    contract_balances_store: BTreeMap<ContractId, u64>,
+    contract_balances_stash: BTreeMap<ContractId, u64>,
     event_sender: broadcast::Sender<piecrust_uplink::Event>, /* todo: possibly remove it */
     chain_id: u8,
 }
@@ -101,49 +101,63 @@ impl TransferState {
     ) -> TransferState {
         TransferState {
             tree: Tree::new(),
-            tree_store: Tree::new(),
+            tree_stash: Tree::new(),
             nullifiers: BTreeSet::new(),
-            nullifiers_store: BTreeSet::new(),
+            nullifiers_stash: BTreeSet::new(),
             roots: ConstGenericRingBuffer::new(),
             accounts: BTreeMap::new(),
-            accounts_store: BTreeMap::new(),
+            accounts_stash: BTreeMap::new(),
             contract_balances: BTreeMap::new(),
-            contract_balances_store: BTreeMap::new(),
+            contract_balances_stash: BTreeMap::new(),
             event_sender,
             chain_id,
         }
     }
 
-    pub fn store(&mut self) {
+    pub fn stash(&mut self) {
+        self.nullifiers_stash.clear();
         for n in self.nullifiers.iter() {
-            self.nullifiers_store.insert(*n);
+            self.nullifiers_stash.insert(*n);
         }
+        self.tree_stash.clear();
         for leaf in self.tree.leaves_pos(0) {
-            self.tree_store.push(leaf.clone());
+            println!("   push leaf in stash {:?}", leaf.note.pos());
+            self.tree_stash.push(leaf.clone());
         }
+        self.contract_balances_stash.clear();
         for (c, b) in self.contract_balances.iter() {
-            self.contract_balances_store.insert(*c, *b);
+            self.contract_balances_stash.insert(*c, *b);
         }
+        self.accounts_stash.clear();
         for (c, b) in self.accounts.iter() {
-            self.accounts_store.insert(*c, b.clone());
+            println!(
+                "   insert account in stash nonce={} balance={}",
+                b.nonce, b.balance
+            );
+            self.accounts_stash.insert(*c, b.clone());
         }
     }
 
-    pub fn reset(&mut self) {
+    pub fn stash_pop(&mut self) {
         self.nullifiers.clear();
-        for n in self.nullifiers_store.iter() {
+        for n in self.nullifiers_stash.iter() {
             self.nullifiers.insert(*n);
         }
         self.tree.clear();
-        for leaf in self.tree_store.leaves_pos(0) {
+        for leaf in self.tree_stash.leaves_pos(0) {
+            println!("   push leaf in stash_pop {:?}", leaf.note.pos());
             self.tree.push(leaf.clone());
         }
         self.contract_balances.clear();
-        for (c, b) in self.contract_balances_store.iter() {
+        for (c, b) in self.contract_balances_stash.iter() {
             self.contract_balances.insert(*c, *b);
         }
         self.accounts.clear();
-        for (c, b) in self.accounts_store.iter() {
+        for (c, b) in self.accounts_stash.iter() {
+            println!(
+                "   insert account in stash_pop nonce={} balance={}",
+                b.nonce, b.balance
+            );
             self.accounts.insert(*c, b.clone());
         }
     }
@@ -1148,7 +1162,6 @@ impl TransferState {
             feeder,
         )?;
         self.tree.clear();
-        self.tree_store.clear();
         for bytes in receiver.iter() {
             let leaf = rkyv::from_bytes(&bytes).expect("Should return leaves");
             self.tree.push(leaf);
@@ -1171,7 +1184,6 @@ impl TransferState {
             feeder,
         )?;
         self.nullifiers.clear();
-        self.nullifiers_store.clear();
         for bytes in receiver.iter() {
             let n = rkyv::from_bytes(&bytes).expect("Should return nullifiers");
             self.nullifiers.insert(n);
@@ -1194,7 +1206,6 @@ impl TransferState {
             feeder,
         )?;
         self.contract_balances.clear();
-        self.contract_balances_store.clear();
         for bytes in receiver.iter() {
             let (contract, balance) = rkyv::from_bytes(&bytes)
                 .expect("Should return contracts' balances");
@@ -1218,7 +1229,6 @@ impl TransferState {
             feeder,
         )?;
         self.accounts.clear();
-        self.accounts_store.clear();
         for bytes in receiver.iter() {
             let (account, key) = from_rkyv::<(AccountData, [u8; 193])>(&bytes)
                 .expect("Should return key and account");
