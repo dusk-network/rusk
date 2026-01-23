@@ -25,6 +25,8 @@ ff = { workspace = true }
 sha2 = { workspace = true }
 c-kzg = { workspace = true, optional = true }
 
+blake2b_simd = { workspace = true, default-features = false } # 1.0.4 requires rustc edition 2024
+
 # plonk dependencies
 dusk-plonk = { workspace = true, features = ["rkyv-impl", "alloc"], optional = true }
 
