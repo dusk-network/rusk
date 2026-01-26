@@ -624,6 +624,11 @@ impl TransferState {
             return Err(PiecrustError::Panic("Gas price too low!".into()));
         }
 
+        if tx.gas_limit() < 1_000_000 {
+            // todo: gas limit for unspendable
+            return Err(PiecrustError::OutOfGas);
+        }
+
         transitory::put_transaction(tx);
         let tx = transitory::transaction();
 
@@ -653,17 +658,38 @@ impl TransferState {
                 // if call contract is not TRANSFER/STAKE
                 // perform the call as is, i.e., call actual contracts
                 // and CallReceipt is already OK in such case
-                let receipt = session
-                    .call::<_, Result<Vec<u8>, ContractError>>(
-                        call.contract,
-                        &call.fn_name,
-                        &call.fn_args,
-                        tx.gas_limit(),
-                    )?;
-                /*.inspect_err(|_| { // todo
-                    clear_session(session, config);
-                })*/
-                Ok(receipt)
+                if call.contract == TRANSFER_CONTRACT && &call.fn_name == "root"
+                {
+                    let root = self.root();
+                    let root_bytes = rkyv::to_bytes::<_, 1024>(&root)
+                        .expect("Root should serialize correctly")
+                        .to_vec();
+                    let data = if tx.gas_limit() <= 20_000_000 {
+                        // todo: what the gas limit should be here
+                        Err(ContractError::OutOfGas)
+                    } else {
+                        Ok(root_bytes)
+                    };
+                    Ok(CallReceipt {
+                        gas_spent: 0u64,
+                        gas_limit: tx.gas_limit(),
+                        events: Vec::new(),
+                        call_tree: CallTree::new(),
+                        data,
+                    })
+                } else {
+                    let receipt = session
+                        .call::<_, Result<Vec<u8>, ContractError>>(
+                            call.contract,
+                            &call.fn_name,
+                            &call.fn_args,
+                            tx.gas_limit(),
+                        )?;
+                    /*.inspect_err(|_| { // todo
+                        clear_session(session, config);
+                    })*/
+                    Ok(receipt)
+                }
             }
             None => {
                 println!("inside spend_and_execute (NO call)");

@@ -10,7 +10,7 @@ use dusk_core::Error as ExecutionError;
 #[derive(Debug, Clone)]
 pub enum Error {
     #[allow(dead_code)]
-    /// Wrapper of dusk-core error type.
+    /// Wrapper of dusk-core error type
     Execution(ExecutionError),
     /// A contract balance is not sufficient for the requested withdrawal
     NotEnoughBalance,
