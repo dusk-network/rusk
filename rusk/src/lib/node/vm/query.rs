@@ -221,7 +221,6 @@ impl Rusk {
             let height: u64 = {
                 unsafe { std::ptr::read(call_arg as *const A as *const u64) }
             };
-            println!("feeder_query - height={}", height);
             transfer_tool.leaves_from_height(height, feeder);
         } else {
             // For feeder queries we use the gas limit set in the config

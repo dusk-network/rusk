@@ -82,6 +82,8 @@ pub fn execute(
     execute_flat(session, tx, config, &None)
 }
 
+static SECTION: Mutex<()> = Mutex::new(());
+
 /// Same as execute only it uses the transfer tool if present
 pub fn execute_flat(
     session: &mut Session,
@@ -152,61 +154,87 @@ pub fn execute_flat(
         )
     }
 
-    // Spend the inputs and execute the call. If this errors the transaction is
-    // unspendable.
-    let mut receipt = match &transfer_ctx_opt {
-        None => session
-            .call::<_, Result<Vec<u8>, ContractError>>(
-                TRANSFER_CONTRACT,
-                "spend_and_execute",
-                stripped_tx.as_ref().unwrap_or(tx),
-                tx.gas_limit(),
-            )
-            .inspect_err(|_| {
-                clear_session(session, config);
-            })?,
+    let (mut receipt, refund_receipt) = match &transfer_ctx_opt {
+        None => {
+            let mut receipt = session
+                .call::<_, Result<Vec<u8>, ContractError>>(
+                    TRANSFER_CONTRACT,
+                    "spend_and_execute",
+                    stripped_tx.as_ref().unwrap_or(tx),
+                    tx.gas_limit(),
+                )
+                .inspect_err(|_| {
+                    clear_session(session, config);
+                })?;
+
+            // Deploy if this is a deployment transaction and spend part is
+            // successful.
+            contract_deploy(session, tx, config, &mut receipt);
+
+            // If this is a blob transaction, ensure the gas spent is at least
+            // the minimum charge.
+            if let Some(blob_min_charge) = blob_min_charge {
+                if receipt.gas_spent < blob_min_charge {
+                    receipt.gas_spent = blob_min_charge;
+                }
+            }
+
+            // Ensure all gas is consumed if there's an error in the contract
+            // call
+            if receipt.data.is_err() {
+                receipt.gas_spent = receipt.gas_limit;
+            }
+
+            // Refund the appropriate amount to the transaction. This call is
+            // guaranteed to never error. If it does, then a
+            // programming error has occurred. As such, the call to
+            // `Result::expect` is warranted.
+            let refund_receipt = session
+                .call::<_, ()>(
+                    TRANSFER_CONTRACT,
+                    "refund",
+                    &receipt.gas_spent,
+                    u64::MAX,
+                )
+                .expect("Refunding must succeed");
+            (receipt, refund_receipt)
+        }
         Some(ctx) => {
+            let _guard = SECTION.lock().unwrap();
+            // Spend the inputs and execute the call. If this errors the
+            // transaction is unspendable.
             println!("calling transfer tool's spend_and_execute");
             let mut transfer_tool = ctx.transfer_tool.lock().unwrap();
-            transfer_tool.spend_and_execute(
+            let mut receipt = transfer_tool.spend_and_execute(
                 session,
                 stripped_tx.unwrap_or(tx.clone()),
                 ctx.block_height,
-            )?
-        }
-    };
+            )?;
+            // Deploy if this is a deployment transaction and spend part is
+            // successful.
+            contract_deploy(session, tx, config, &mut receipt);
 
-    // Deploy if this is a deployment transaction and spend part is successful.
-    contract_deploy(session, tx, config, &mut receipt);
+            // If this is a blob transaction, ensure the gas spent is at least
+            // the minimum charge.
+            if let Some(blob_min_charge) = blob_min_charge {
+                if receipt.gas_spent < blob_min_charge {
+                    receipt.gas_spent = blob_min_charge;
+                }
+            }
 
-    // If this is a blob transaction, ensure the gas spent is at least the
-    // minimum charge.
-    if let Some(blob_min_charge) = blob_min_charge {
-        if receipt.gas_spent < blob_min_charge {
-            receipt.gas_spent = blob_min_charge;
-        }
-    }
+            // Ensure all gas is consumed if there's an error in the contract
+            // call
+            if receipt.data.is_err() {
+                receipt.gas_spent = receipt.gas_limit;
+            }
 
-    // Ensure all gas is consumed if there's an error in the contract call
-    if receipt.data.is_err() {
-        receipt.gas_spent = receipt.gas_limit;
-    }
-
-    // Refund the appropriate amount to the transaction. This call is guaranteed
-    // to never error. If it does, then a programming error has occurred. As
-    // such, the call to `Result::expect` is warranted.
-    let refund_receipt = match &transfer_ctx_opt {
-        None => session
-            .call::<_, ()>(
-                TRANSFER_CONTRACT,
-                "refund",
-                &receipt.gas_spent,
-                u64::MAX,
-            )
-            .expect("Refunding must succeed"),
-        Some(ctx) => {
-            let mut transfer_tool = ctx.transfer_tool.lock().unwrap();
-            transfer_tool.refund(receipt.gas_spent, ctx.block_height)
+            // Refund the appropriate amount to the transaction. This call is
+            // guaranteed to never error. If it does, then a
+            // programming error has occurred. As such, the call to
+            // `Result::expect` is warranted.
+            let refund_receipt =
+                transfer_tool.refund(receipt.gas_spent, ctx.block_height);
+            (receipt, refund_receipt)
         }
     };
 
