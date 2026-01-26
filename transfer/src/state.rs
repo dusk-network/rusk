@@ -664,7 +664,7 @@ impl TransferState {
                     let root_bytes = rkyv::to_bytes::<_, 1024>(&root)
                         .expect("Root should serialize correctly")
                         .to_vec();
-                    let data = if tx.gas_limit() <= 20_000_000 {
+                    let data = if tx.gas_limit() <= 100_000_000 {
                         // todo: what the gas limit should be here
                         Err(ContractError::OutOfGas)
                     } else {
