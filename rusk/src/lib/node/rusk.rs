@@ -776,14 +776,6 @@ impl Rusk {
         let mut event_bloom = Bloom::new();
 
         let transfer_ctx_opt = if TOOL_ACTIVE {
-            // {
-            // in "execute state transition" we need to reset the tool
-            // as it has remnants of uncommitted changes from "create state
-            // transition" todo: optimize this
-            // println!("reset");
-            // let mut transfer_tool = self.transfer_state.lock().unwrap();
-            // transfer_tool.reset();
-            // }
             Some(TransferCtx {
                 transfer_tool: self.transfer_state.clone(),
                 block_height,
