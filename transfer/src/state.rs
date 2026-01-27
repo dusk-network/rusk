@@ -667,9 +667,26 @@ impl TransferState {
                         call_tree: CallTree::new(),
                         data,
                     })
+                } else if call.contract == TRANSFER_CONTRACT
+                    && &call.fn_name == "convert"
+                {
+                    let withdraw: Withdraw = from_rkyv(&call.fn_args)
+                        .expect("Deserialization of withdraw"); // todo: proper error processing
+                    println!("withdraw={:?}", withdraw);
+                    self.convert(withdraw, block_height);
+                    Ok(CallReceipt {
+                        gas_spent,
+                        gas_limit: tx.gas_limit(),
+                        events: Vec::new(),
+                        call_tree: CallTree::new(),
+                        data: Ok(Vec::new()),
+                    })
                 } else {
                     if call.contract == TRANSFER_CONTRACT {
-                        println!("CALLING TRANSFER CONTRACT: {}", &call.fn_name);
+                        println!(
+                            "CALLING TRANSFER CONTRACT: {}",
+                            &call.fn_name
+                        );
                     }
                     let receipt = session
                         .call::<_, Result<Vec<u8>, ContractError>>(
