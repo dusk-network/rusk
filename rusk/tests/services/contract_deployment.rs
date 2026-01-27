@@ -127,6 +127,16 @@ async fn initial_state<P: AsRef<Path>>(
         inner_sender,
     )
     .expect("Instantiating rusk should succeed");
+
+    {
+        let mut session = rusk
+            .new_block_session(0, rusk.state_root())
+            .expect("session creation should work");
+        let mut transfer_tool = rusk.transfer_state.lock().unwrap();
+        let _result =
+            transfer_tool.import_from_transfer_contract(&mut session, u64::MAX);
+    }
+
     Ok(rusk)
 }
 

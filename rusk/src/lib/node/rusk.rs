@@ -244,6 +244,15 @@ impl Rusk {
 
         let mut unblocked_txs = VecDeque::new();
 
+        let transfer_ctx_opt = if TOOL_ACTIVE {
+            Some(TransferCtx {
+                transfer_tool: self.transfer_state.clone(),
+                block_height,
+            })
+        } else {
+            None
+        };
+
         while let Some(unspent_tx) =
             unblocked_txs.pop_front().or_else(|| mempool_txs.next())
         {
@@ -281,14 +290,6 @@ impl Rusk {
                 continue;
             }
 
-            let transfer_ctx_opt = if TOOL_ACTIVE {
-                Some(TransferCtx {
-                    transfer_tool: self.transfer_state.clone(),
-                    block_height,
-                })
-            } else {
-                None
-            };
             match execute_flat(
                 &mut session,
                 &unspent_tx.inner,
@@ -431,6 +432,7 @@ impl Rusk {
             cert_voters,
             dusk_spent,
             slashes,
+            &transfer_ctx_opt,
         )
         .map_err(|err| {
             StateTransitionError::ExecutionError(format!("{err}"))
@@ -844,6 +846,7 @@ impl Rusk {
             cert_voters,
             dusk_spent,
             slashes,
+            &transfer_ctx_opt,
         )
         .map_err(|err| {
             StateTransitionError::ExecutionError(format!("{err}"))
@@ -885,6 +888,7 @@ fn reward_and_slash(
     voters: &[Voter],
     spent_amount: Dusk,
     slashes: Vec<Slash>,
+    transfer_ctx_opt: &Option<TransferCtx>,
 ) -> Result<Vec<Event>> {
     let mut events = vec![];
 
@@ -901,13 +905,22 @@ fn reward_and_slash(
     events.extend(slash(session, slashes)?);
 
     // Update the note tree root in the Transfer contract
-    let r = session.call::<_, ()>(
-        TRANSFER_CONTRACT,
-        "update_root",
-        &(),
-        u64::MAX,
-    )?;
-    events.extend(r.events);
+    match transfer_ctx_opt {
+        None => {
+            let r = session.call::<_, ()>(
+                TRANSFER_CONTRACT,
+                "update_root",
+                &(),
+                u64::MAX,
+            )?;
+            events.extend(r.events);
+        }
+        Some(ctx) => {
+            let mut transfer_tool = ctx.transfer_tool.lock().unwrap();
+            transfer_tool.update_root();
+            // todo: do we need to extend events here?
+        }
+    }
 
     Ok(events)
 }
