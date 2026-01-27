@@ -5,3 +5,4 @@ cargo t erroring_tx_charged_full --release --features=testwallet -- --nocapture 
 cargo t finalization --release --features=testwallet -- --nocapture
 cargo t contract_deployment --release --features=testwallet -- --nocapture
 cargo t init --release --features=testwallet -- --nocapture
+#cargo t conversion --release --features=testwallet -- --nocapture

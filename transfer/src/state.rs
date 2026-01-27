@@ -668,6 +668,9 @@ impl TransferState {
                         data,
                     })
                 } else {
+                    if call.contract == TRANSFER_CONTRACT {
+                        println!("CALLING TRANSFER CONTRACT: {}", &call.fn_name);
+                    }
                     let receipt = session
                         .call::<_, Result<Vec<u8>, ContractError>>(
                             call.contract,
