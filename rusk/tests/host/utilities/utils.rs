@@ -12,7 +12,7 @@ use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey as PhoenixViewKey};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::BlsScalar;
-use dusk_vm::{Error as VMError, Session};
+use dusk_vm::{Error as VMError, Session, TransferCtx};
 
 const GAS_LIMIT: u64 = 0x10_000_000;
 
@@ -95,6 +95,12 @@ pub fn update_root(session: &mut Session) -> Result<(), VMError> {
         .map(|r| r.data)
 }
 
+pub fn update_root_flat(transfer_ctx: &TransferCtx) -> Result<(), VMError> {
+    let mut transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
+    transfer_tool.update_root();
+    Ok(())
+}
+
 /// Returns vector of notes owned by a given view key.
 pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
     vk: PhoenixViewKey,
@@ -106,15 +112,18 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 }
 
 pub fn existing_nullifiers(
-    session: &mut Session,
+    transfer_ctx: &TransferCtx,
+    _session: &mut Session,
     nullifiers: &Vec<BlsScalar>,
 ) -> Result<Vec<BlsScalar>, VMError> {
-    session
-        .call(
-            TRANSFER_CONTRACT,
-            "existing_nullifiers",
-            &nullifiers.clone(),
-            GAS_LIMIT,
-        )
-        .map(|r| r.data)
+    // session
+    //     .call(
+    //         TRANSFER_CONTRACT,
+    //         "existing_nullifiers",
+    //         &nullifiers.clone(),
+    //         GAS_LIMIT,
+    //     )
+    //     .map(|r| r.data)
+    let mut transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
+    Ok(transfer_tool.existing_nullifiers(nullifiers.clone()))
 }

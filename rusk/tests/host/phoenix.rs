@@ -26,8 +26,8 @@ use dusk_core::transfer::{
 };
 use dusk_core::{BlsScalar, JubJubScalar, LUX};
 use dusk_vm::{
-    execute, execute_flat, ContractData, Error as VMError, ExecutionConfig,
-    Session, TransferCtx, VM,
+    execute_flat, ContractData, Error as VMError, ExecutionConfig, Session,
+    TransferCtx, VM,
 };
 use ff::Field;
 use rand::rngs::StdRng;
@@ -38,7 +38,7 @@ use transfer::TransferState;
 use crate::host::utilities::utils::{
     account, chain_id, contract_balance, existing_nullifiers,
     filter_notes_owned_by, leaves_from_height, new_owned_notes_value,
-    owned_notes_value, update_root,
+    owned_notes_value, update_root, update_root_flat,
 };
 
 const PHOENIX_GENESIS_VALUE: u64 = dusk(1_200.0);
@@ -278,7 +278,7 @@ fn transfer_1_2() {
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
             .expect("Executing TX should succeed")
             .gas_spent;
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 1-2: {} gas", gas_spent);
 
@@ -291,8 +291,8 @@ fn transfer_1_2() {
         3,
         "Transfer, change and refund notes should have been added to the tree"
     );
-    let amount_notes =
-        num_notes(&mut session).expect("Getting num_notes should succeed");
+    let amount_notes = num_notes_flat(&transfer_ctx, &mut session)
+        .expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
         leaves.last().expect("note to exists").note.pos() + 1,
@@ -307,7 +307,7 @@ fn transfer_1_2() {
         &phoenix_sender_sk,
     );
     let existing_nullifers =
-        existing_nullifiers(&mut session, &input_nullifier)
+        existing_nullifiers(&transfer_ctx, &mut session, &input_nullifier)
             .expect("Querrying the nullifiers should work");
     assert_eq!(input_nullifier, existing_nullifers);
 
@@ -401,7 +401,7 @@ fn transfer_2_2() {
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
             .expect("Executing TX should succeed")
             .gas_spent;
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 2-2: {} gas", gas_spent);
 
@@ -413,8 +413,8 @@ fn transfer_2_2() {
         3,
         "Transfer, change and refund notes should have been added to the tree"
     );
-    let amount_notes =
-        num_notes(&mut session).expect("Getting num_notes should succeed");
+    let amount_notes = num_notes_flat(&transfer_ctx, &mut session)
+        .expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
         leaves.last().expect("note to exists").note.pos() + 1,
@@ -429,7 +429,7 @@ fn transfer_2_2() {
         &phoenix_sender_sk,
     );
     let existing_nullifers =
-        existing_nullifiers(&mut session, &input_nullifiers)
+        existing_nullifiers(&transfer_ctx, &mut session, &input_nullifiers)
             .expect("Querying the nullifiers should work");
     assert_eq!(input_nullifiers, existing_nullifers);
 
@@ -524,7 +524,7 @@ fn transfer_3_2() {
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
             .expect("Executing TX should succeed")
             .gas_spent;
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 3-2: {} gas", gas_spent);
 
@@ -536,8 +536,8 @@ fn transfer_3_2() {
         3,
         "Transfer, change and refund notes should have been added to the tree"
     );
-    let amount_notes =
-        num_notes(&mut session).expect("Getting num_notes should succeed");
+    let amount_notes = num_notes_flat(&transfer_ctx, &mut session)
+        .expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
         leaves.last().expect("note to exists").note.pos() + 1,
@@ -552,7 +552,7 @@ fn transfer_3_2() {
         &phoenix_sender_sk,
     );
     let existing_nullifers =
-        existing_nullifiers(&mut session, &input_nullifiers)
+        existing_nullifiers(&transfer_ctx, &mut session, &input_nullifiers)
             .expect("Querrying the nullifiers should work");
     assert_eq!(input_nullifiers, existing_nullifers);
 
@@ -647,7 +647,7 @@ fn transfer_4_2() {
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
             .expect("Executing TX should succeed")
             .gas_spent;
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 4-2: {} gas", gas_spent);
 
@@ -659,8 +659,8 @@ fn transfer_4_2() {
         3,
         "Transfer, change and refund notes should have been added to the tree"
     );
-    let amount_notes =
-        num_notes(&mut session).expect("Getting num_notes should succeed");
+    let amount_notes = num_notes_flat(&transfer_ctx, &mut session)
+        .expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
         leaves.last().expect("note to exists").note.pos() + 1,
@@ -675,7 +675,7 @@ fn transfer_4_2() {
         &phoenix_sender_sk,
     );
     let existing_nullifers =
-        existing_nullifiers(&mut session, &input_nullifiers)
+        existing_nullifiers(&transfer_ctx, &mut session, &input_nullifiers)
             .expect("Querrying the nullifiers should work");
     assert_eq!(input_nullifiers, existing_nullifers);
 
@@ -759,8 +759,8 @@ fn transfer_gas_fails() {
         &transfer_ctx,
     );
 
-    let total_num_notes_before_tx =
-        num_notes(&mut session).expect("Getting num_notes should succeed");
+    let total_num_notes_before_tx = num_notes_flat(&transfer_ctx, &mut session)
+        .expect("Getting num_notes should succeed");
 
     let result = execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt);
 
@@ -782,8 +782,8 @@ fn transfer_gas_fails() {
         "No new notes should have been added to the tree"
     );
 
-    let total_num_notes_after_tx =
-        num_notes(&mut session).expect("Getting num_notes should succeed");
+    let total_num_notes_after_tx = num_notes_flat(&transfer_ctx, &mut session)
+        .expect("Getting num_notes should succeed");
 
     assert_eq!(
         total_num_notes_after_tx, total_num_notes_before_tx,
@@ -845,7 +845,7 @@ fn alice_ping() {
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
             .expect("Executing TX should succeed")
             .gas_spent;
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONTRACT PING: {} gas", gas_spent);
 
@@ -923,7 +923,7 @@ fn contract_deposit() {
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
             .expect("Executing TX should succeed")
             .gas_spent;
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONTRACT DEPOSIT: {} gas", gas_spent);
 
@@ -1038,7 +1038,7 @@ fn contract_withdraw() {
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
             .expect("Executing TX should succeed")
             .gas_spent;
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONTRACT WITHDRAW: {} gas", gas_spent);
 
@@ -1183,7 +1183,7 @@ fn convert_to_phoenix_fails() {
         "The max gas should have been spent"
     );
 
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONVERT TO PHOENIX: {} gas", receipt.gas_spent);
 
@@ -1297,7 +1297,7 @@ fn convert_to_moonlight() {
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
             .expect("Executing TX should succeed")
             .gas_spent;
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONVERT TO MOONLIGHT: {} gas", gas_spent);
 
@@ -1412,7 +1412,7 @@ fn convert_wrong_contract_targeted() {
     let receipt =
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
             .expect("Executing transaction should succeed");
-    update_root(&mut session).expect("Updating the root should succeed");
+    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     let res = receipt.data;
     let gas_spent = receipt.gas_spent;
@@ -1652,7 +1652,7 @@ fn contract_to_account() {
 
 fn leaves_from_pos(
     transfer_ctx: &TransferCtx,
-    session: &mut Session,
+    _session: &mut Session,
     pos: u64,
 ) -> Result<Vec<NoteLeaf>, VMError> {
     let (feeder, receiver) = mpsc::channel();
@@ -1678,6 +1678,17 @@ fn num_notes(session: &mut Session) -> Result<u64, VMError> {
     session
         .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
         .map(|r| r.data)
+}
+
+fn num_notes_flat(
+    transfer_ctx: &TransferCtx,
+    _session: &mut Session,
+) -> Result<u64, VMError> {
+    // session
+    //     .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
+    //     .map(|r| r.data)
+    let transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
+    Ok(transfer_tool.num_notes())
 }
 
 fn root(session: &mut Session) -> Result<BlsScalar, VMError> {
