@@ -6,3 +6,4 @@ cargo t finalization --release --features=testwallet -- --nocapture
 cargo t contract_deployment --release --features=testwallet -- --nocapture
 cargo t init --release --features=testwallet -- --nocapture
 cargo t conversion --release --features=testwallet -- --nocapture
+cargo t owner_calls --release --features=testwallet -- --nocapture
