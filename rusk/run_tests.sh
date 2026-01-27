@@ -7,3 +7,5 @@ cargo t contract_deployment --release --features=testwallet -- --nocapture
 cargo t init --release --features=testwallet -- --nocapture
 cargo t conversion --release --features=testwallet -- --nocapture
 cargo t owner_calls --release --features=testwallet -- --nocapture
+
+#cargo t transfer_1_2 --release --features=testwallet -- --nocapture

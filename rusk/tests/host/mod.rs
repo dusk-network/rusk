@@ -4,8 +4,5 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod common;
-mod host;
-mod services;
-
-extern crate alloc;
+pub mod phoenix;
+pub mod utilities;

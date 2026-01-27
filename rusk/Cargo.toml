@@ -103,6 +103,7 @@ rusk-recovery = { workspace = true, features = ["state"] }
 ff = { workspace = true }
 rusk-prover = { workspace = true, features = ["no_random", "debug"] }
 criterion = { workspace = true }
+futures = { workspace = true }
 
 [build-dependencies]
 rustc_tools_util = { workspace = true }
