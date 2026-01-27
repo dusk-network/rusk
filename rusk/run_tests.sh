@@ -11,3 +11,4 @@
 
 # host tests
 cargo t transfer_1_2 --release --features=testwallet -- --nocapture
+cargo t transfer_2_2 --release --features=testwallet -- --nocapture

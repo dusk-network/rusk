@@ -113,7 +113,6 @@ pub fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 
 pub fn existing_nullifiers(
     transfer_ctx: &TransferCtx,
-    _session: &mut Session,
     nullifiers: &Vec<BlsScalar>,
 ) -> Result<Vec<BlsScalar>, VMError> {
     // session

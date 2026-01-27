@@ -302,7 +302,7 @@ fn transfer_1_2() {
     let input_nullifier =
         gen_nullifiers(&transfer_ctx, [input_note_pos], &phoenix_sender_sk);
     let existing_nullifers =
-        existing_nullifiers(&transfer_ctx, &mut session, &input_nullifier)
+        existing_nullifiers(&transfer_ctx, &input_nullifier)
             .expect("Querrying the nullifiers should work");
     assert_eq!(input_nullifier, existing_nullifers);
 
@@ -420,7 +420,7 @@ fn transfer_2_2() {
     let input_nullifiers =
         gen_nullifiers(&transfer_ctx, input_notes_pos, &phoenix_sender_sk);
     let existing_nullifers =
-        existing_nullifiers(&transfer_ctx, &mut session, &input_nullifiers)
+        existing_nullifiers(&transfer_ctx, &input_nullifiers)
             .expect("Querying the nullifiers should work");
     assert_eq!(input_nullifiers, existing_nullifers);
 
@@ -539,7 +539,7 @@ fn transfer_3_2() {
     let input_nullifiers =
         gen_nullifiers(&transfer_ctx, input_notes_pos, &phoenix_sender_sk);
     let existing_nullifers =
-        existing_nullifiers(&transfer_ctx, &mut session, &input_nullifiers)
+        existing_nullifiers(&transfer_ctx, &input_nullifiers)
             .expect("Querrying the nullifiers should work");
     assert_eq!(input_nullifiers, existing_nullifers);
 
@@ -658,7 +658,7 @@ fn transfer_4_2() {
     let input_nullifiers =
         gen_nullifiers(&transfer_ctx, input_notes_pos, &phoenix_sender_sk);
     let existing_nullifers =
-        existing_nullifiers(&transfer_ctx, &mut session, &input_nullifiers)
+        existing_nullifiers(&transfer_ctx, &input_nullifiers)
             .expect("Querrying the nullifiers should work");
     assert_eq!(input_nullifiers, existing_nullifers);
 
