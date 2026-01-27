@@ -121,7 +121,6 @@ impl TransferState {
         }
         self.tree_stash.clear();
         for leaf in self.tree.leaves_pos(0) {
-            println!("   push leaf in stash {:?}", leaf.note.pos());
             self.tree_stash.push(leaf.clone());
         }
         self.contract_balances_stash.clear();
@@ -130,10 +129,6 @@ impl TransferState {
         }
         self.accounts_stash.clear();
         for (c, b) in self.accounts.iter() {
-            println!(
-                "   insert account in stash nonce={} balance={}",
-                b.nonce, b.balance
-            );
             self.accounts_stash.insert(*c, b.clone());
         }
     }
@@ -145,7 +140,6 @@ impl TransferState {
         }
         self.tree.clear();
         for leaf in self.tree_stash.leaves_pos(0) {
-            println!("   push leaf in stash_pop {:?}", leaf.note.pos());
             self.tree.push(leaf.clone());
         }
         self.contract_balances.clear();
@@ -154,10 +148,6 @@ impl TransferState {
         }
         self.accounts.clear();
         for (c, b) in self.accounts_stash.iter() {
-            println!(
-                "   insert account in stash_pop nonce={} balance={}",
-                b.nonce, b.balance
-            );
             self.accounts.insert(*c, b.clone());
         }
     }
@@ -965,7 +955,6 @@ impl TransferState {
             let leaf_bytes = rkyv::to_bytes::<_, 4096>(leaf)
                 .expect("serializing leaf should succeed")
                 .to_vec();
-            println!("leaves_from_height in tool - pushing leaf");
             feeder.send(leaf_bytes);
         }
     }

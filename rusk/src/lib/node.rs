@@ -21,6 +21,7 @@ use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
 use node::LongLivedService;
 use parking_lot::RwLock;
+pub use rusk::TOOL_ACTIVE;
 use tokio::sync::broadcast;
 pub use vm::*;
 

@@ -17,7 +17,7 @@ use dusk_core::transfer::data::{
 use dusk_vm::gen_contract_id;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::{DriverStore, RuskVmConfig};
+use rusk::node::{DriverStore, RuskVmConfig, TOOL_ACTIVE};
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state;
 use tokio::sync::broadcast;
@@ -82,6 +82,16 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
         inner_sender,
     )
     .expect("Instantiating rusk should succeed");
+
+    {
+        let mut session = rusk
+            .new_block_session(0, rusk.state_root())
+            .expect("session creation should work");
+        let mut transfer_tool = rusk.transfer_state.lock().unwrap();
+        let _result =
+            transfer_tool.import_from_transfer_contract(&mut session, u64::MAX);
+    }
+
     Ok(rusk)
 }
 
@@ -93,7 +103,7 @@ fn bytecode_hash(bytecode: impl AsRef<[u8]>) -> ContractId {
 fn submit_transactions(
     rusk: &Rusk,
     wallet: &wallet::Wallet<TestStore, TestStateClient>,
-) -> SpentTransaction {
+) -> Option<SpentTransaction> {
     let initial_balance_0 = wallet
         .get_balance(DEPLOYER_INDEX)
         .expect("Getting initial balance should succeed")
@@ -155,9 +165,16 @@ fn submit_transactions(
         )
         .expect("Making the transaction should succeed");
 
-    let expected = ExecuteResult {
-        discarded: 0,
-        executed: 2,
+    let expected = if TOOL_ACTIVE {
+        ExecuteResult {
+            discarded: 1,
+            executed: 1,
+        }
+    } else {
+        ExecuteResult {
+            discarded: 0,
+            executed: 2,
+        }
     };
 
     let spent_transactions = generator_procedure(
@@ -169,11 +186,17 @@ fn submit_transactions(
         Some(expected),
     )
     .expect("generator procedure should succeed");
-    assert_eq!(spent_transactions.len(), 2);
-    spent_transactions
-        .get(1)
-        .expect("There should be one spent transaction")
-        .clone()
+    if TOOL_ACTIVE {
+        None
+    } else {
+        assert_eq!(spent_transactions.len(), 2);
+        Some(
+            spent_transactions
+                .get(1)
+                .expect("There should be one spent transaction")
+                .clone(),
+        )
+    }
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -197,10 +220,16 @@ pub async fn calling_init_via_tx_fails() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    assert_eq!(
-        submit_transactions(&rusk, &wallet).err,
-        Some("Unknown".into())
-    );
+    if TOOL_ACTIVE {
+        assert_eq!(submit_transactions(&rusk, &wallet), None);
+    } else {
+        assert_eq!(
+            submit_transactions(&rusk, &wallet)
+                .expect("spent transaction should be returned")
+                .err,
+            Some("Unknown".into())
+        );
+    }
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();

@@ -4,3 +4,4 @@ cargo t multi_transfer --release --features=testwallet -- --nocapture # multi_tr
 cargo t erroring_tx_charged_full --release --features=testwallet -- --nocapture # gas_behavior
 cargo t finalization --release --features=testwallet -- --nocapture
 cargo t contract_deployment --release --features=testwallet -- --nocapture
+cargo t init --release --features=testwallet -- --nocapture
