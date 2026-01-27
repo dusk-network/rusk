@@ -283,15 +283,14 @@ fn transfer_1_2() {
     println!("TRANSFER 1-2: {} gas", gas_spent);
 
     // check that correct notes have been generated
-    let leaves =
-        leaves_from_pos(&transfer_ctx, &mut session, input_note_pos + 1)
-            .expect("Getting the notes should succeed");
+    let leaves = leaves_from_pos(&transfer_ctx, input_note_pos + 1)
+        .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
         3,
         "Transfer, change and refund notes should have been added to the tree"
     );
-    let amount_notes = num_notes_flat(&transfer_ctx, &mut session)
+    let amount_notes = num_notes_flat(&transfer_ctx)
         .expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
@@ -300,12 +299,8 @@ fn transfer_1_2() {
     );
 
     // check that the genesis note has been nullified
-    let input_nullifier = gen_nullifiers(
-        &transfer_ctx,
-        &mut session,
-        [input_note_pos],
-        &phoenix_sender_sk,
-    );
+    let input_nullifier =
+        gen_nullifiers(&transfer_ctx, [input_note_pos], &phoenix_sender_sk);
     let existing_nullifers =
         existing_nullifiers(&transfer_ctx, &mut session, &input_nullifier)
             .expect("Querrying the nullifiers should work");
@@ -406,14 +401,14 @@ fn transfer_2_2() {
     println!("TRANSFER 2-2: {} gas", gas_spent);
 
     // check that correct notes have been generated
-    let leaves = leaves_from_pos(&transfer_ctx, &mut session, N as u64)
+    let leaves = leaves_from_pos(&transfer_ctx, N as u64)
         .expect("Getting the new notes should succeed");
     assert_eq!(
         leaves.len(),
         3,
         "Transfer, change and refund notes should have been added to the tree"
     );
-    let amount_notes = num_notes_flat(&transfer_ctx, &mut session)
+    let amount_notes = num_notes_flat(&transfer_ctx)
         .expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
@@ -422,12 +417,8 @@ fn transfer_2_2() {
     );
 
     // check that the genesis notes have been nullified
-    let input_nullifiers = gen_nullifiers(
-        &transfer_ctx,
-        &mut session,
-        input_notes_pos,
-        &phoenix_sender_sk,
-    );
+    let input_nullifiers =
+        gen_nullifiers(&transfer_ctx, input_notes_pos, &phoenix_sender_sk);
     let existing_nullifers =
         existing_nullifiers(&transfer_ctx, &mut session, &input_nullifiers)
             .expect("Querying the nullifiers should work");
@@ -529,14 +520,14 @@ fn transfer_3_2() {
     println!("TRANSFER 3-2: {} gas", gas_spent);
 
     // check that correct notes have been generated
-    let leaves = leaves_from_pos(&transfer_ctx, &mut session, N as u64)
+    let leaves = leaves_from_pos(&transfer_ctx, N as u64)
         .expect("Getting the new notes should succeed");
     assert_eq!(
         leaves.len(),
         3,
         "Transfer, change and refund notes should have been added to the tree"
     );
-    let amount_notes = num_notes_flat(&transfer_ctx, &mut session)
+    let amount_notes = num_notes_flat(&transfer_ctx)
         .expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
@@ -545,12 +536,8 @@ fn transfer_3_2() {
     );
 
     // check that the genesis notes have been nullified
-    let input_nullifiers = gen_nullifiers(
-        &transfer_ctx,
-        &mut session,
-        input_notes_pos,
-        &phoenix_sender_sk,
-    );
+    let input_nullifiers =
+        gen_nullifiers(&transfer_ctx, input_notes_pos, &phoenix_sender_sk);
     let existing_nullifers =
         existing_nullifiers(&transfer_ctx, &mut session, &input_nullifiers)
             .expect("Querrying the nullifiers should work");
@@ -652,14 +639,14 @@ fn transfer_4_2() {
     println!("TRANSFER 4-2: {} gas", gas_spent);
 
     // check that correct notes have been generated
-    let leaves = leaves_from_pos(&transfer_ctx, &mut session, N as u64)
+    let leaves = leaves_from_pos(&transfer_ctx, N as u64)
         .expect("Getting the new notes should succeed");
     assert_eq!(
         leaves.len(),
         3,
         "Transfer, change and refund notes should have been added to the tree"
     );
-    let amount_notes = num_notes_flat(&transfer_ctx, &mut session)
+    let amount_notes = num_notes_flat(&transfer_ctx)
         .expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
@@ -668,12 +655,8 @@ fn transfer_4_2() {
     );
 
     // check that the genesis notes have been nullified
-    let input_nullifiers = gen_nullifiers(
-        &transfer_ctx,
-        &mut session,
-        input_notes_pos,
-        &phoenix_sender_sk,
-    );
+    let input_nullifiers =
+        gen_nullifiers(&transfer_ctx, input_notes_pos, &phoenix_sender_sk);
     let existing_nullifers =
         existing_nullifiers(&transfer_ctx, &mut session, &input_nullifiers)
             .expect("Querrying the nullifiers should work");
@@ -759,7 +742,7 @@ fn transfer_gas_fails() {
         &transfer_ctx,
     );
 
-    let total_num_notes_before_tx = num_notes_flat(&transfer_ctx, &mut session)
+    let total_num_notes_before_tx = num_notes_flat(&transfer_ctx)
         .expect("Getting num_notes should succeed");
 
     let result = execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt);
@@ -770,11 +753,8 @@ fn transfer_gas_fails() {
     );
 
     // After the failed transaction, verify the state is unchanged
-    let leaves_after_fail =
-        leaves_from_pos(&transfer_ctx, &mut session, input_note_pos + 1)
-            .expect(
-                "Getting the leaves should succeed after failed transaction",
-            );
+    let leaves_after_fail = leaves_from_pos(&transfer_ctx, input_note_pos + 1)
+        .expect("Getting the leaves should succeed after failed transaction");
 
     assert_eq!(
         leaves_after_fail.len(),
@@ -782,7 +762,7 @@ fn transfer_gas_fails() {
         "No new notes should have been added to the tree"
     );
 
-    let total_num_notes_after_tx = num_notes_flat(&transfer_ctx, &mut session)
+    let total_num_notes_after_tx = num_notes_flat(&transfer_ctx)
         .expect("Getting num_notes should succeed");
 
     assert_eq!(
@@ -1001,11 +981,10 @@ fn contract_withdraw() {
     let address =
         phoenix_sender_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
     let note_sk = phoenix_sender_sk.gen_note_sk(&address);
-    let genesis_note_nullifier =
-        leaves_from_pos(&transfer_ctx, &mut session, 0)
-            .expect("Getting leaves from genesis note should succeed")[0]
-            .note
-            .gen_nullifier(&phoenix_sender_sk);
+    let genesis_note_nullifier = leaves_from_pos(&transfer_ctx, 0)
+        .expect("Getting leaves from genesis note should succeed")[0]
+        .note
+        .gen_nullifier(&phoenix_sender_sk);
 
     let contract_call = ContractCall::new(ALICE_ID, "withdraw")
         .with_args(&Withdraw::new(
@@ -1652,7 +1631,6 @@ fn contract_to_account() {
 
 fn leaves_from_pos(
     transfer_ctx: &TransferCtx,
-    _session: &mut Session,
     pos: u64,
 ) -> Result<Vec<NoteLeaf>, VMError> {
     let (feeder, receiver) = mpsc::channel();
@@ -1680,13 +1658,7 @@ fn num_notes(session: &mut Session) -> Result<u64, VMError> {
         .map(|r| r.data)
 }
 
-fn num_notes_flat(
-    transfer_ctx: &TransferCtx,
-    _session: &mut Session,
-) -> Result<u64, VMError> {
-    // session
-    //     .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
-    //     .map(|r| r.data)
+fn num_notes_flat(transfer_ctx: &TransferCtx) -> Result<u64, VMError> {
     let transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
     Ok(transfer_tool.num_notes())
 }
@@ -1708,7 +1680,6 @@ fn opening(
 
 fn gen_nullifiers(
     transfer_ctx: &TransferCtx,
-    session: &mut Session,
     notes_pos: impl AsRef<[u64]>,
     sk: &PhoenixSecretKey,
 ) -> Vec<BlsScalar> {
@@ -1716,7 +1687,7 @@ fn gen_nullifiers(
         .as_ref()
         .iter()
         .map(|pos| {
-            let note = &leaves_from_pos(&transfer_ctx, session, *pos)
+            let note = &leaves_from_pos(&transfer_ctx, *pos)
                 .expect("the position should exist")[0]
                 .note;
             note.gen_nullifier(sk)
@@ -1748,7 +1719,7 @@ fn create_phoenix_transaction<const I: usize>(
     let mut inputs = Vec::with_capacity(I);
     for pos in input_pos {
         // fetch the note and opening for the given position
-        let leaves = leaves_from_pos(&transfer_ctx, session, pos)
+        let leaves = leaves_from_pos(&transfer_ctx, pos)
             .expect("Getting leaves in the given range should succeed");
         assert!(
             leaves.len() > 0,
