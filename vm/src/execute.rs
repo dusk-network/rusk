@@ -20,6 +20,7 @@ pub use config::Config;
 use transfer::TransferState;
 
 /// Context for transaction execution
+#[derive(Clone)]
 pub struct TransferCtx {
     /// Transfer tool implementation
     pub transfer_tool: Arc<Mutex<TransferState>>,

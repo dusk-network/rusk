@@ -981,26 +981,35 @@ impl TransferState {
 
     /// Feeds the host with the leaves in the tree, starting from the given
     /// position.
-    pub fn leaves_from_pos(&self, pos: u64) {
-        self.sync(pos, 0)
+    pub fn leaves_from_pos(&self, pos: u64, feeder: mpsc::Sender<Vec<u8>>) {
+        self.sync(pos, 0, feeder)
     }
 
     /// Feeds the host with the leaves in the tree (up to `count_limit`
     /// occurrences), starting from the given `from` position.
     ///
     /// If `count_limit` is 0 there is no occurrences limit`
-    pub fn sync(&self, from: u64, count_limit: u64) {
+    pub fn sync(
+        &self,
+        from: u64,
+        count_limit: u64,
+        feeder: mpsc::Sender<Vec<u8>>,
+    ) {
         let iter = self.tree.leaves_pos(from);
 
         if count_limit == 0 {
             for leaf in iter {
-                // todo: implement
-                // abi::feed(leaf.clone());
+                let leaf_bytes = rkyv::to_bytes::<_, 4096>(leaf)
+                    .expect("serializing leaf should succeed")
+                    .to_vec();
+                feeder.send(leaf_bytes);
             }
         } else {
             for leaf in iter.take(count_limit as usize) {
-                // todo: implement
-                // abi::feed(leaf.clone());
+                let leaf_bytes = rkyv::to_bytes::<_, 4096>(leaf)
+                    .expect("serializing leaf should succeed")
+                    .to_vec();
+                feeder.send(leaf_bytes);
             }
         }
     }

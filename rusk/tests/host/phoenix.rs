@@ -244,6 +244,13 @@ fn transfer_1_2() {
     let (mut session, transfer_tool) =
         instantiate::<1>(rng, &phoenix_sender_sk);
 
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
+
     // create the transaction
     let input_note_pos = 0;
     let transfer_value = 42;
@@ -264,12 +271,8 @@ fn transfer_1_2() {
         obfuscate_transfer_note,
         deposit,
         contract_call,
+        &transfer_ctx,
     );
-
-    let transfer_ctx_opt = Some(TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
-        block_height: 0,
-    });
 
     let gas_spent =
         execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
@@ -280,8 +283,9 @@ fn transfer_1_2() {
     println!("TRANSFER 1-2: {} gas", gas_spent);
 
     // check that correct notes have been generated
-    let leaves = leaves_from_pos(&mut session, input_note_pos + 1)
-        .expect("Getting the notes should succeed");
+    let leaves =
+        leaves_from_pos(&transfer_ctx, &mut session, input_note_pos + 1)
+            .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
         3,
@@ -296,8 +300,12 @@ fn transfer_1_2() {
     );
 
     // check that the genesis note has been nullified
-    let input_nullifier =
-        gen_nullifiers(&mut session, [input_note_pos], &phoenix_sender_sk);
+    let input_nullifier = gen_nullifiers(
+        &transfer_ctx,
+        &mut session,
+        [input_note_pos],
+        &phoenix_sender_sk,
+    );
     let existing_nullifers =
         existing_nullifiers(&mut session, &input_nullifier)
             .expect("Querrying the nullifiers should work");
@@ -357,7 +365,15 @@ fn transfer_2_2() {
     let phoenix_receiver_pk = PhoenixPublicKey::from(&phoenix_receiver_sk);
     let phoenix_receiver_vk = PhoenixViewKey::from(&phoenix_receiver_sk);
 
-    let (session, _) = &mut instantiate::<N>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<N>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // create the transaction
     let input_notes_pos = [0, 1];
@@ -367,7 +383,7 @@ fn transfer_2_2() {
 
     let tx = create_phoenix_transaction(
         rng,
-        session,
+        &mut session,
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_receiver_pk,
@@ -378,17 +394,19 @@ fn transfer_2_2() {
         obfuscate_transfer_note,
         deposit,
         contract_call,
+        &transfer_ctx,
     );
 
-    let gas_spent = execute(session, &tx, &NO_CONFIG)
-        .expect("Executing TX should succeed")
-        .gas_spent;
-    update_root(session).expect("Updating the root should succeed");
+    let gas_spent =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Executing TX should succeed")
+            .gas_spent;
+    update_root(&mut session).expect("Updating the root should succeed");
 
     println!("TRANSFER 2-2: {} gas", gas_spent);
 
     // check that correct notes have been generated
-    let leaves = leaves_from_pos(session, N as u64)
+    let leaves = leaves_from_pos(&transfer_ctx, &mut session, N as u64)
         .expect("Getting the new notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -396,7 +414,7 @@ fn transfer_2_2() {
         "Transfer, change and refund notes should have been added to the tree"
     );
     let amount_notes =
-        num_notes(session).expect("Getting num_notes should succeed");
+        num_notes(&mut session).expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
         leaves.last().expect("note to exists").note.pos() + 1,
@@ -404,10 +422,15 @@ fn transfer_2_2() {
     );
 
     // check that the genesis notes have been nullified
-    let input_nullifiers =
-        gen_nullifiers(session, input_notes_pos, &phoenix_sender_sk);
-    let existing_nullifers = existing_nullifiers(session, &input_nullifiers)
-        .expect("Querying the nullifiers should work");
+    let input_nullifiers = gen_nullifiers(
+        &transfer_ctx,
+        &mut session,
+        input_notes_pos,
+        &phoenix_sender_sk,
+    );
+    let existing_nullifers =
+        existing_nullifiers(&mut session, &input_nullifiers)
+            .expect("Querying the nullifiers should work");
     assert_eq!(input_nullifiers, existing_nullifers);
 
     // the sender's balance has decreased
@@ -465,7 +488,15 @@ fn transfer_3_2() {
     let phoenix_receiver_pk = PhoenixPublicKey::from(&phoenix_receiver_sk);
     let phoenix_receiver_vk = PhoenixViewKey::from(&phoenix_receiver_sk);
 
-    let (session, _) = &mut instantiate::<N>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<N>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // create the transaction
     let input_notes_pos = [0, 1, 2];
@@ -475,7 +506,7 @@ fn transfer_3_2() {
 
     let tx = create_phoenix_transaction(
         rng,
-        session,
+        &mut session,
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_receiver_pk,
@@ -486,17 +517,19 @@ fn transfer_3_2() {
         obfuscate_transfer_note,
         deposit,
         contract_call,
+        &transfer_ctx,
     );
 
-    let gas_spent = execute(session, &tx, &NO_CONFIG)
-        .expect("Executing TX should succeed")
-        .gas_spent;
-    update_root(session).expect("Updating the root should succeed");
+    let gas_spent =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Executing TX should succeed")
+            .gas_spent;
+    update_root(&mut session).expect("Updating the root should succeed");
 
     println!("TRANSFER 3-2: {} gas", gas_spent);
 
     // check that correct notes have been generated
-    let leaves = leaves_from_pos(session, N as u64)
+    let leaves = leaves_from_pos(&transfer_ctx, &mut session, N as u64)
         .expect("Getting the new notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -504,7 +537,7 @@ fn transfer_3_2() {
         "Transfer, change and refund notes should have been added to the tree"
     );
     let amount_notes =
-        num_notes(session).expect("Getting num_notes should succeed");
+        num_notes(&mut session).expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
         leaves.last().expect("note to exists").note.pos() + 1,
@@ -512,10 +545,15 @@ fn transfer_3_2() {
     );
 
     // check that the genesis notes have been nullified
-    let input_nullifiers =
-        gen_nullifiers(session, input_notes_pos, &phoenix_sender_sk);
-    let existing_nullifers = existing_nullifiers(session, &input_nullifiers)
-        .expect("Querrying the nullifiers should work");
+    let input_nullifiers = gen_nullifiers(
+        &transfer_ctx,
+        &mut session,
+        input_notes_pos,
+        &phoenix_sender_sk,
+    );
+    let existing_nullifers =
+        existing_nullifiers(&mut session, &input_nullifiers)
+            .expect("Querrying the nullifiers should work");
     assert_eq!(input_nullifiers, existing_nullifers);
 
     // the sender's balance has decreased
@@ -573,7 +611,15 @@ fn transfer_4_2() {
     let phoenix_receiver_pk = PhoenixPublicKey::from(&phoenix_receiver_sk);
     let phoenix_receiver_vk = PhoenixViewKey::from(&phoenix_receiver_sk);
 
-    let (session, _) = &mut instantiate::<N>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<N>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // create the transaction
     let input_notes_pos = [0, 1, 2, 3];
@@ -583,7 +629,7 @@ fn transfer_4_2() {
 
     let tx = create_phoenix_transaction(
         rng,
-        session,
+        &mut session,
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_receiver_pk,
@@ -594,17 +640,19 @@ fn transfer_4_2() {
         obfuscate_transfer_note,
         deposit,
         contract_call,
+        &transfer_ctx,
     );
 
-    let gas_spent = execute(session, &tx, &NO_CONFIG)
-        .expect("Executing TX should succeed")
-        .gas_spent;
-    update_root(session).expect("Updating the root should succeed");
+    let gas_spent =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Executing TX should succeed")
+            .gas_spent;
+    update_root(&mut session).expect("Updating the root should succeed");
 
     println!("TRANSFER 4-2: {} gas", gas_spent);
 
     // check that correct notes have been generated
-    let leaves = leaves_from_pos(session, N as u64)
+    let leaves = leaves_from_pos(&transfer_ctx, &mut session, N as u64)
         .expect("Getting the new notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -612,7 +660,7 @@ fn transfer_4_2() {
         "Transfer, change and refund notes should have been added to the tree"
     );
     let amount_notes =
-        num_notes(session).expect("Getting num_notes should succeed");
+        num_notes(&mut session).expect("Getting num_notes should succeed");
     assert_eq!(
         amount_notes,
         leaves.last().expect("note to exists").note.pos() + 1,
@@ -620,10 +668,15 @@ fn transfer_4_2() {
     );
 
     // check that the genesis notes have been nullified
-    let input_nullifiers =
-        gen_nullifiers(session, input_notes_pos, &phoenix_sender_sk);
-    let existing_nullifers = existing_nullifiers(session, &input_nullifiers)
-        .expect("Querrying the nullifiers should work");
+    let input_nullifiers = gen_nullifiers(
+        &transfer_ctx,
+        &mut session,
+        input_notes_pos,
+        &phoenix_sender_sk,
+    );
+    let existing_nullifers =
+        existing_nullifiers(&mut session, &input_nullifiers)
+            .expect("Querrying the nullifiers should work");
     assert_eq!(input_nullifiers, existing_nullifers);
 
     // the sender's balance has decreased
@@ -673,7 +726,15 @@ fn transfer_gas_fails() {
     let phoenix_receiver_pk =
         PhoenixPublicKey::from(&PhoenixSecretKey::random(rng));
 
-    let (session, _) = &mut instantiate::<1>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<1>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     let gas_price = 0;
     let input_note_pos = 0;
@@ -684,7 +745,7 @@ fn transfer_gas_fails() {
 
     let tx = create_phoenix_transaction(
         rng,
-        session,
+        &mut session,
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_receiver_pk,
@@ -695,12 +756,13 @@ fn transfer_gas_fails() {
         obfuscate_transfer_note,
         deposit,
         contract_call,
+        &transfer_ctx,
     );
 
     let total_num_notes_before_tx =
-        num_notes(session).expect("Getting num_notes should succeed");
+        num_notes(&mut session).expect("Getting num_notes should succeed");
 
-    let result = execute(session, &tx, &NO_CONFIG);
+    let result = execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt);
 
     assert!(
         result.is_err(),
@@ -708,8 +770,11 @@ fn transfer_gas_fails() {
     );
 
     // After the failed transaction, verify the state is unchanged
-    let leaves_after_fail = leaves_from_pos(session, input_note_pos + 1)
-        .expect("Getting the leaves should succeed after failed transaction");
+    let leaves_after_fail =
+        leaves_from_pos(&transfer_ctx, &mut session, input_note_pos + 1)
+            .expect(
+                "Getting the leaves should succeed after failed transaction",
+            );
 
     assert_eq!(
         leaves_after_fail.len(),
@@ -718,7 +783,7 @@ fn transfer_gas_fails() {
     );
 
     let total_num_notes_after_tx =
-        num_notes(session).expect("Getting num_notes should succeed");
+        num_notes(&mut session).expect("Getting num_notes should succeed");
 
     assert_eq!(
         total_num_notes_after_tx, total_num_notes_before_tx,
@@ -726,7 +791,7 @@ fn transfer_gas_fails() {
     );
 
     assert_eq!(
-        new_owned_notes_value(session, 0, phoenix_sender_vk),
+        new_owned_notes_value(&mut session, 0, phoenix_sender_vk),
         PHOENIX_GENESIS_VALUE,
         "The sender should still own the genesis value"
     );
@@ -743,7 +808,15 @@ fn alice_ping() {
 
     let phoenix_change_pk = phoenix_sender_pk.clone();
 
-    let (session, _) = &mut instantiate::<1>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<1>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // create the transaction
     let input_note_pos = 0;
@@ -754,7 +827,7 @@ fn alice_ping() {
 
     let tx = create_phoenix_transaction(
         rng,
-        session,
+        &mut session,
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_sender_pk,
@@ -765,16 +838,18 @@ fn alice_ping() {
         obfuscate_transfer_note,
         deposit,
         Some(contract_call),
+        &transfer_ctx,
     );
 
-    let gas_spent = execute(session, &tx, &NO_CONFIG)
-        .expect("Executing TX should succeed")
-        .gas_spent;
-    update_root(session).expect("Updating the root should succeed");
+    let gas_spent =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Executing TX should succeed")
+            .gas_spent;
+    update_root(&mut session).expect("Updating the root should succeed");
 
     println!("CONTRACT PING: {} gas", gas_spent);
 
-    let leaves = leaves_from_height(session, 1)
+    let leaves = leaves_from_height(&mut session, 1)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -809,7 +884,15 @@ fn contract_deposit() {
 
     let phoenix_change_pk = phoenix_sender_pk.clone();
 
-    let (session, _) = &mut instantiate::<1>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<1>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // create the deposit transaction
     let input_note_pos = 0;
@@ -822,7 +905,7 @@ fn contract_deposit() {
 
     let tx = create_phoenix_transaction(
         rng,
-        session,
+        &mut session,
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_sender_pk,
@@ -833,16 +916,18 @@ fn contract_deposit() {
         obfuscate_transfer_note,
         deposit_value,
         Some(contract_call),
+        &transfer_ctx,
     );
 
-    let gas_spent = execute(session, &tx, &NO_CONFIG)
-        .expect("Executing TX should succeed")
-        .gas_spent;
-    update_root(session).expect("Updating the root should succeed");
+    let gas_spent =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Executing TX should succeed")
+            .gas_spent;
+    update_root(&mut session).expect("Updating the root should succeed");
 
     println!("CONTRACT DEPOSIT: {} gas", gas_spent);
 
-    let leaves = leaves_from_height(session, 1)
+    let leaves = leaves_from_height(&mut session, 1)
         .expect("getting the notes should succeed");
     assert_eq!(
         PHOENIX_GENESIS_VALUE,
@@ -876,7 +961,7 @@ fn contract_deposit() {
 
     // check that alice contract has the correct balance
 
-    let alice_balance = contract_balance(session, ALICE_ID)
+    let alice_balance = contract_balance(&mut session, ALICE_ID)
         .expect("Querying the contract balance should succeed");
     assert_eq!(
         alice_balance,
@@ -896,7 +981,15 @@ fn contract_withdraw() {
 
     let phoenix_change_pk = phoenix_sender_pk.clone();
 
-    let (session, _) = &mut instantiate::<1>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<1>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // withdraw alice's genesis balance, this is done by calling the alice
     // contract directly, which then calls the `withdraw` method of the transfer
@@ -908,10 +1001,11 @@ fn contract_withdraw() {
     let address =
         phoenix_sender_pk.gen_stealth_address(&JubJubScalar::random(&mut *rng));
     let note_sk = phoenix_sender_sk.gen_note_sk(&address);
-    let genesis_note_nullifier = leaves_from_pos(session, 0)
-        .expect("Getting leaves from genesis note should succeed")[0]
-        .note
-        .gen_nullifier(&phoenix_sender_sk);
+    let genesis_note_nullifier =
+        leaves_from_pos(&transfer_ctx, &mut session, 0)
+            .expect("Getting leaves from genesis note should succeed")[0]
+            .note
+            .gen_nullifier(&phoenix_sender_sk);
 
     let contract_call = ContractCall::new(ALICE_ID, "withdraw")
         .with_args(&Withdraw::new(
@@ -926,7 +1020,7 @@ fn contract_withdraw() {
 
     let tx = create_phoenix_transaction(
         rng,
-        session,
+        &mut session,
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_sender_pk,
@@ -937,16 +1031,18 @@ fn contract_withdraw() {
         obfuscate_transfer_note,
         deposit_value,
         Some(contract_call),
+        &transfer_ctx,
     );
 
-    let gas_spent = execute(session, &tx, &NO_CONFIG)
-        .expect("Executing TX should succeed")
-        .gas_spent;
-    update_root(session).expect("Updating the root should succeed");
+    let gas_spent =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Executing TX should succeed")
+            .gas_spent;
+    update_root(&mut session).expect("Updating the root should succeed");
 
     println!("CONTRACT WITHDRAW: {} gas", gas_spent);
 
-    let leaves = leaves_from_height(session, 1)
+    let leaves = leaves_from_height(&mut session, 1)
         .expect("getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -969,7 +1065,7 @@ fn contract_withdraw() {
         "The sender's balance should have increased by the withdrawal value minus the spent gas"
     );
 
-    let alice_balance = contract_balance(session, ALICE_ID)
+    let alice_balance = contract_balance(&mut session, ALICE_ID)
         .expect("Querying the contract balance should succeed");
     assert_eq!(
         alice_balance, 0,
@@ -994,7 +1090,15 @@ fn convert_to_phoenix_fails() {
     let moonlight_sk = AccountSecretKey::random(rng);
     let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
-    let (mut session, _) = instantiate::<1>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<1>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // Add the conversion value to the moonlight account
     session
@@ -1059,10 +1163,12 @@ fn convert_to_phoenix_fails() {
         // set the conversion-value as the deposit
         CONVERSION_VALUE,
         Some(contract_call),
+        &transfer_ctx,
     );
 
-    let receipt = execute(&mut session, &tx, &NO_CONFIG)
-        .expect("Executing TX should succeed");
+    let receipt =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Executing TX should succeed");
 
     // check that the transaction execution panicked with the correct message
     assert!(receipt.data.is_err());
@@ -1126,7 +1232,15 @@ fn convert_to_moonlight() {
     let moonlight_sk = AccountSecretKey::random(rng);
     let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
-    let (mut session, _) = instantiate::<1>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<1>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // make sure the moonlight account doesn't own any funds before the
     // conversion
@@ -1176,11 +1290,13 @@ fn convert_to_moonlight() {
         // set the conversion-value as the deposit
         CONVERSION_VALUE,
         Some(contract_call),
+        &transfer_ctx,
     );
 
-    let gas_spent = execute(&mut session, &tx, &NO_CONFIG)
-        .expect("Executing TX should succeed")
-        .gas_spent;
+    let gas_spent =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Executing TX should succeed")
+            .gas_spent;
     update_root(&mut session).expect("Updating the root should succeed");
 
     println!("CONVERT TO MOONLIGHT: {} gas", gas_spent);
@@ -1230,7 +1346,15 @@ fn convert_wrong_contract_targeted() {
     let moonlight_sk = AccountSecretKey::random(rng);
     let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
-    let (mut session, _) = instantiate::<1>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<1>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // make sure the moonlight account doesn't own any funds before the
     // conversion
@@ -1282,10 +1406,12 @@ fn convert_wrong_contract_targeted() {
         false,
         CONVERSION_VALUE,
         Some(contract_call),
+        &transfer_ctx,
     );
 
-    let receipt = execute(&mut session, &tx, &NO_CONFIG)
-        .expect("Executing transaction should succeed");
+    let receipt =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Executing transaction should succeed");
     update_root(&mut session).expect("Updating the root should succeed");
 
     let res = receipt.data;
@@ -1340,10 +1466,18 @@ fn contract_to_contract() {
 
     let phoenix_change_pk = phoenix_sender_pk.clone();
 
-    let (session, _) = &mut instantiate::<1>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<1>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // make sure bob contract has no balance prior to the tx
-    let bob_balance = contract_balance(session, BOB_ID)
+    let bob_balance = contract_balance(&mut session, BOB_ID)
         .expect("Querying the contract balance should succeed");
     assert_eq!(bob_balance, 0, "Bob must have an initial balance of zero");
 
@@ -1358,7 +1492,7 @@ fn contract_to_contract() {
 
     let tx = create_phoenix_transaction(
         rng,
-        session,
+        &mut session,
         &phoenix_sender_sk,
         &phoenix_change_pk,
         &phoenix_sender_pk,
@@ -1369,17 +1503,19 @@ fn contract_to_contract() {
         false,
         0,
         Some(contract_call),
+        &transfer_ctx,
     );
 
     let receipt =
-        execute(session, &tx, &NO_CONFIG).expect("Transaction should succeed");
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
     println!("CONTRACT TO CONTRACT: {gas_spent} gas");
 
-    let alice_balance = contract_balance(session, ALICE_ID)
+    let alice_balance = contract_balance(&mut session, ALICE_ID)
         .expect("Querying the contract balance should succeed");
-    let bob_balance = contract_balance(session, BOB_ID)
+    let bob_balance = contract_balance(&mut session, BOB_ID)
         .expect("Querying the contract balance should succeed");
 
     assert_eq!(
@@ -1392,7 +1528,7 @@ fn contract_to_contract() {
         "Bob's balance must have increased by the transfer value"
     );
 
-    let leaves = leaves_from_height(session, 1)
+    let leaves = leaves_from_height(&mut session, 1)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
         phoenix_sender_vk,
@@ -1428,7 +1564,15 @@ fn contract_to_account() {
     let moonlight_sk = AccountSecretKey::random(rng);
     let moonlight_pk = AccountPublicKey::from(&moonlight_sk);
 
-    let (mut session, _) = instantiate::<1>(rng, &phoenix_sender_sk);
+    let (mut session, transfer_tool) =
+        instantiate::<1>(rng, &phoenix_sender_sk);
+
+    let transfer_ctx = TransferCtx {
+        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        block_height: 0,
+    };
+
+    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // make sure the moonlight account doesn't own any funds before the
     // conversion
@@ -1459,10 +1603,12 @@ fn contract_to_account() {
         false,
         0,
         Some(contract_call),
+        &transfer_ctx,
     );
 
-    let receipt = execute(&mut session, &tx, &NO_CONFIG)
-        .expect("Transaction should succeed");
+    let receipt =
+        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
+            .expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
     println!("CONTRACT TO ACCOUNT: {gas_spent} gas");
@@ -1505,18 +1651,22 @@ fn contract_to_account() {
 // helper functions
 
 fn leaves_from_pos(
+    transfer_ctx: &TransferCtx,
     session: &mut Session,
     pos: u64,
 ) -> Result<Vec<NoteLeaf>, VMError> {
     let (feeder, receiver) = mpsc::channel();
 
-    session.feeder_call::<_, ()>(
-        TRANSFER_CONTRACT,
-        "leaves_from_pos",
-        &pos,
-        GAS_LIMIT,
-        feeder,
-    )?;
+    // session.feeder_call::<_, ()>(
+    //     TRANSFER_CONTRACT,
+    //     "leaves_from_pos",
+    //     &pos,
+    //     GAS_LIMIT,
+    //     feeder,
+    // )?;
+
+    let transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
+    transfer_tool.leaves_from_pos(pos, feeder);
 
     Ok(receiver
         .iter()
@@ -1546,6 +1696,7 @@ fn opening(
 }
 
 fn gen_nullifiers(
+    transfer_ctx: &TransferCtx,
     session: &mut Session,
     notes_pos: impl AsRef<[u64]>,
     sk: &PhoenixSecretKey,
@@ -1554,7 +1705,7 @@ fn gen_nullifiers(
         .as_ref()
         .iter()
         .map(|pos| {
-            let note = &leaves_from_pos(session, *pos)
+            let note = &leaves_from_pos(&transfer_ctx, session, *pos)
                 .expect("the position should exist")[0]
                 .note;
             note.gen_nullifier(sk)
@@ -1577,6 +1728,7 @@ fn create_phoenix_transaction<const I: usize>(
     obfuscated_transaction: bool,
     deposit: u64,
     data: Option<impl Into<TransactionData>>,
+    transfer_ctx: &TransferCtx,
 ) -> Transaction {
     // Get the root of the tree of phoenix-notes.
     let root = root(session).expect("Getting the anchor should be successful");
@@ -1585,7 +1737,7 @@ fn create_phoenix_transaction<const I: usize>(
     let mut inputs = Vec::with_capacity(I);
     for pos in input_pos {
         // fetch the note and opening for the given position
-        let leaves = leaves_from_pos(session, pos)
+        let leaves = leaves_from_pos(&transfer_ctx, session, pos)
             .expect("Getting leaves in the given range should succeed");
         assert!(
             leaves.len() > 0,
