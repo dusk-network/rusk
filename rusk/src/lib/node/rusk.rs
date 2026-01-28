@@ -31,8 +31,8 @@ use dusk_core::transfer::{
 };
 use dusk_core::{BlsScalar, Dusk};
 use dusk_vm::{
-    execute, execute_flat, CallReceipt, Error as VMError, Session, TransferCtx,
-    VM,
+    execute, execute_host, execute_host_or_contract, CallReceipt,
+    Error as VMError, Session, TransferCtx, VM,
 };
 #[cfg(feature = "archive")]
 use node::archive::Archive;
@@ -290,7 +290,7 @@ impl Rusk {
                 continue;
             }
 
-            match execute_flat(
+            match execute_host_or_contract(
                 &mut session,
                 &unspent_tx.inner,
                 &execution_config,
@@ -328,7 +328,7 @@ impl Rusk {
                         for spent_tx in &spent_txs {
                             // We know these transactions were correctly
                             // executed before, so we don't bother checking.
-                            let _ = execute_flat(
+                            let _ = execute_host_or_contract(
                                 &mut session,
                                 &spent_tx.inner.inner,
                                 &execution_config,
@@ -790,7 +790,7 @@ impl Rusk {
         for unspent_tx in txs {
             let tx = &unspent_tx.inner;
             let tx_id = unspent_tx.id();
-            let receipt = execute_flat(
+            let receipt = execute_host_or_contract(
                 &mut session,
                 tx,
                 &execution_config,

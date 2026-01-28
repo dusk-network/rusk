@@ -26,7 +26,7 @@ use dusk_core::transfer::{
 };
 use dusk_core::{BlsScalar, JubJubScalar, LUX};
 use dusk_vm::{
-    execute_flat, ContractData, Error as VMError, ExecutionConfig, Session,
+    execute_host, ContractData, Error as VMError, ExecutionConfig, Session,
     TransferCtx, VM,
 };
 use ff::Field;
@@ -249,8 +249,6 @@ fn transfer_1_2() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // create the transaction
     let input_note_pos = 0;
     let transfer_value = 42;
@@ -274,10 +272,9 @@ fn transfer_1_2() {
         &transfer_ctx,
     );
 
-    let gas_spent =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing TX should succeed")
-            .gas_spent;
+    let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 1-2: {} gas", gas_spent);
@@ -368,8 +365,6 @@ fn transfer_2_2() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // create the transaction
     let input_notes_pos = [0, 1];
     let obfuscate_transfer_note = true;
@@ -392,10 +387,9 @@ fn transfer_2_2() {
         &transfer_ctx,
     );
 
-    let gas_spent =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing TX should succeed")
-            .gas_spent;
+    let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 2-2: {} gas", gas_spent);
@@ -487,8 +481,6 @@ fn transfer_3_2() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // create the transaction
     let input_notes_pos = [0, 1, 2];
     let obfuscate_transfer_note = true;
@@ -511,10 +503,9 @@ fn transfer_3_2() {
         &transfer_ctx,
     );
 
-    let gas_spent =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing TX should succeed")
-            .gas_spent;
+    let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 3-2: {} gas", gas_spent);
@@ -606,8 +597,6 @@ fn transfer_4_2() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // create the transaction
     let input_notes_pos = [0, 1, 2, 3];
     let obfuscate_transfer_note = true;
@@ -630,10 +619,9 @@ fn transfer_4_2() {
         &transfer_ctx,
     );
 
-    let gas_spent =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing TX should succeed")
-            .gas_spent;
+    let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 4-2: {} gas", gas_spent);
@@ -717,8 +705,6 @@ fn transfer_gas_fails() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     let gas_price = 0;
     let input_note_pos = 0;
     let transfer_value = 42;
@@ -745,7 +731,7 @@ fn transfer_gas_fails() {
     let total_num_notes_before_tx = num_notes_flat(&transfer_ctx)
         .expect("Getting num_notes should succeed");
 
-    let result = execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt);
+    let result = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx);
 
     assert!(
         result.is_err(),
@@ -796,8 +782,6 @@ fn alice_ping() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // create the transaction
     let input_note_pos = 0;
     let transfer_value = 0;
@@ -821,10 +805,9 @@ fn alice_ping() {
         &transfer_ctx,
     );
 
-    let gas_spent =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing TX should succeed")
-            .gas_spent;
+    let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONTRACT PING: {} gas", gas_spent);
@@ -872,8 +855,6 @@ fn contract_deposit() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // create the deposit transaction
     let input_note_pos = 0;
     let transfer_value = 0;
@@ -899,10 +880,9 @@ fn contract_deposit() {
         &transfer_ctx,
     );
 
-    let gas_spent =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing TX should succeed")
-            .gas_spent;
+    let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONTRACT DEPOSIT: {} gas", gas_spent);
@@ -969,8 +949,6 @@ fn contract_withdraw() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // withdraw alice's genesis balance, this is done by calling the alice
     // contract directly, which then calls the `withdraw` method of the transfer
     // contract
@@ -1013,10 +991,9 @@ fn contract_withdraw() {
         &transfer_ctx,
     );
 
-    let gas_spent =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing TX should succeed")
-            .gas_spent;
+    let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONTRACT WITHDRAW: {} gas", gas_spent);
@@ -1076,8 +1053,6 @@ fn convert_to_phoenix_fails() {
         transfer_tool: Arc::new(Mutex::new(transfer_tool)),
         block_height: 0,
     };
-
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
 
     // Add the conversion value to the moonlight account
     session
@@ -1145,9 +1120,8 @@ fn convert_to_phoenix_fails() {
         &transfer_ctx,
     );
 
-    let receipt =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing TX should succeed");
+    let receipt = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing TX should succeed");
 
     // check that the transaction execution panicked with the correct message
     assert!(receipt.data.is_err());
@@ -1219,8 +1193,6 @@ fn convert_to_moonlight() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // make sure the moonlight account doesn't own any funds before the
     // conversion
     let moonlight_account = account(&mut session, &moonlight_pk)
@@ -1272,10 +1244,9 @@ fn convert_to_moonlight() {
         &transfer_ctx,
     );
 
-    let gas_spent =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing TX should succeed")
-            .gas_spent;
+    let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing TX should succeed")
+        .gas_spent;
     update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONVERT TO MOONLIGHT: {} gas", gas_spent);
@@ -1333,8 +1304,6 @@ fn convert_wrong_contract_targeted() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // make sure the moonlight account doesn't own any funds before the
     // conversion
     let moonlight_account = account(&mut session, &moonlight_pk)
@@ -1388,9 +1357,8 @@ fn convert_wrong_contract_targeted() {
         &transfer_ctx,
     );
 
-    let receipt =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Executing transaction should succeed");
+    let receipt = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Executing transaction should succeed");
     update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
 
     let res = receipt.data;
@@ -1453,8 +1421,6 @@ fn contract_to_contract() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // make sure bob contract has no balance prior to the tx
     let bob_balance = contract_balance(&mut session, BOB_ID)
         .expect("Querying the contract balance should succeed");
@@ -1485,9 +1451,8 @@ fn contract_to_contract() {
         &transfer_ctx,
     );
 
-    let receipt =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Transaction should succeed");
+    let receipt = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
     println!("CONTRACT TO CONTRACT: {gas_spent} gas");
@@ -1551,8 +1516,6 @@ fn contract_to_account() {
         block_height: 0,
     };
 
-    let transfer_ctx_opt = Some(transfer_ctx.clone());
-
     // make sure the moonlight account doesn't own any funds before the
     // conversion
     let moonlight_account = account(&mut session, &moonlight_pk)
@@ -1585,9 +1548,8 @@ fn contract_to_account() {
         &transfer_ctx,
     );
 
-    let receipt =
-        execute_flat(&mut session, &tx, &NO_CONFIG, &transfer_ctx_opt)
-            .expect("Transaction should succeed");
+    let receipt = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
+        .expect("Transaction should succeed");
     let gas_spent = receipt.gas_spent;
 
     println!("CONTRACT TO ACCOUNT: {gas_spent} gas");

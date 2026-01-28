@@ -80,13 +80,23 @@ pub fn execute(
     tx: &Transaction,
     config: &Config,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
-    execute_flat(session, tx, config, &None)
+    execute_host_or_contract(session, tx, config, &None)
 }
 
 static SECTION: Mutex<()> = Mutex::new(());
 
+/// Same as execute only it performs on the host rather than contract
+pub fn execute_host(
+    session: &mut Session,
+    tx: &Transaction,
+    config: &Config,
+    transfer_ctx: &TransferCtx,
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
+    execute_host_or_contract(session, tx, config, &Some(transfer_ctx.clone()))
+}
+
 /// Same as execute only it uses the transfer tool if present
-pub fn execute_flat(
+pub fn execute_host_or_contract(
     session: &mut Session,
     tx: &Transaction,
     config: &Config,

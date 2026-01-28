@@ -15,8 +15,8 @@ extern crate alloc;
 
 pub use self::execute::feature::Activation as FeatureActivation;
 pub use self::execute::{
-    execute, execute_flat, gen_contract_id, Config as ExecutionConfig,
-    TransferCtx,
+    execute, execute_host, execute_host_or_contract, gen_contract_id,
+    Config as ExecutionConfig, TransferCtx,
 };
 use dusk_bytes as _;
 pub use piecrust::{
