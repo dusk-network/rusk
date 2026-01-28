@@ -89,13 +89,28 @@ pub fn leaves_from_height(
         .collect())
 }
 
+pub fn leaves_from_height_host(
+    transfer_ctx: &TransferCtx,
+    height: u64,
+) -> Result<Vec<NoteLeaf>, VMError> {
+    let (feeder, receiver) = mpsc::channel();
+
+    let transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
+    transfer_tool.leaves_from_height(height, feeder);
+
+    Ok(receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return leaves"))
+        .collect())
+}
+
 pub fn update_root(session: &mut Session) -> Result<(), VMError> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), GAS_LIMIT)
         .map(|r| r.data)
 }
 
-pub fn update_root_flat(transfer_ctx: &TransferCtx) -> Result<(), VMError> {
+pub fn update_root_host(transfer_ctx: &TransferCtx) -> Result<(), VMError> {
     let mut transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
     transfer_tool.update_root();
     Ok(())

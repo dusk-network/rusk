@@ -15,4 +15,4 @@ cargo t transfer_2_2 --release --features=testwallet -- --nocapture
 cargo t transfer_3_2 --release --features=testwallet -- --nocapture
 cargo t transfer_4_2 --release --features=testwallet -- --nocapture
 cargo t transfer_gas_fails --release --features=testwallet -- --nocapture
-#cargo t alice_ping --release --features=testwallet -- --nocapture
+cargo t alice_ping --release --features=testwallet -- --nocapture

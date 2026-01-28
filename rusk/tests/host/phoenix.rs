@@ -37,8 +37,8 @@ use transfer::TransferState;
 
 use crate::host::utilities::utils::{
     account, chain_id, contract_balance, existing_nullifiers,
-    filter_notes_owned_by, leaves_from_height, new_owned_notes_value,
-    owned_notes_value, update_root, update_root_flat,
+    filter_notes_owned_by, leaves_from_height, leaves_from_height_host,
+    new_owned_notes_value, owned_notes_value, update_root, update_root_host,
 };
 
 const PHOENIX_GENESIS_VALUE: u64 = dusk(1_200.0);
@@ -275,7 +275,7 @@ fn transfer_1_2() {
     let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
         .expect("Executing TX should succeed")
         .gas_spent;
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 1-2: {} gas", gas_spent);
 
@@ -390,7 +390,7 @@ fn transfer_2_2() {
     let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
         .expect("Executing TX should succeed")
         .gas_spent;
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 2-2: {} gas", gas_spent);
 
@@ -506,7 +506,7 @@ fn transfer_3_2() {
     let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
         .expect("Executing TX should succeed")
         .gas_spent;
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 3-2: {} gas", gas_spent);
 
@@ -622,7 +622,7 @@ fn transfer_4_2() {
     let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
         .expect("Executing TX should succeed")
         .gas_spent;
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("TRANSFER 4-2: {} gas", gas_spent);
 
@@ -779,7 +779,7 @@ fn alice_ping() {
 
     let transfer_ctx = TransferCtx {
         transfer_tool: Arc::new(Mutex::new(transfer_tool)),
-        block_height: 0,
+        block_height: 1,
     };
 
     // create the transaction
@@ -808,11 +808,11 @@ fn alice_ping() {
     let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
         .expect("Executing TX should succeed")
         .gas_spent;
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONTRACT PING: {} gas", gas_spent);
 
-    let leaves = leaves_from_height(&mut session, 1)
+    let leaves = leaves_from_height_host(&transfer_ctx, 1)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -883,11 +883,11 @@ fn contract_deposit() {
     let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
         .expect("Executing TX should succeed")
         .gas_spent;
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONTRACT DEPOSIT: {} gas", gas_spent);
 
-    let leaves = leaves_from_height(&mut session, 1)
+    let leaves = leaves_from_height_host(&transfer_ctx, 1)
         .expect("getting the notes should succeed");
     assert_eq!(
         PHOENIX_GENESIS_VALUE,
@@ -994,11 +994,11 @@ fn contract_withdraw() {
     let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
         .expect("Executing TX should succeed")
         .gas_spent;
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONTRACT WITHDRAW: {} gas", gas_spent);
 
-    let leaves = leaves_from_height(&mut session, 1)
+    let leaves = leaves_from_height_host(&transfer_ctx, 1)
         .expect("getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -1073,7 +1073,7 @@ fn convert_to_phoenix_fails() {
     );
 
     // we need to retrieve the genesis-note to generate its nullifier
-    let leaves = leaves_from_height(&mut session, 0)
+    let leaves = leaves_from_height_host(&transfer_ctx, 0)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
         phoenix_sender_vk,
@@ -1136,7 +1136,7 @@ fn convert_to_phoenix_fails() {
         "The max gas should have been spent"
     );
 
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONVERT TO PHOENIX: {} gas", receipt.gas_spent);
 
@@ -1149,7 +1149,7 @@ fn convert_to_phoenix_fails() {
         "Since the conversion failed, the moonlight account should still own the conversion value"
     );
 
-    let leaves = leaves_from_height(&mut session, 1)
+    let leaves = leaves_from_height_host(&transfer_ctx, 1)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
         phoenix_sender_vk,
@@ -1203,7 +1203,7 @@ fn convert_to_moonlight() {
     );
 
     // we need to retrieve the genesis-note to generate its nullifier
-    let leaves = leaves_from_height(&mut session, 0)
+    let leaves = leaves_from_height_host(&transfer_ctx, 0)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
         phoenix_sender_vk,
@@ -1247,7 +1247,7 @@ fn convert_to_moonlight() {
     let gas_spent = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
         .expect("Executing TX should succeed")
         .gas_spent;
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     println!("CONVERT TO MOONLIGHT: {} gas", gas_spent);
 
@@ -1259,7 +1259,7 @@ fn convert_to_moonlight() {
         "The moonlight account should have conversion value added"
     );
 
-    let leaves = leaves_from_height(&mut session, 1)
+    let leaves = leaves_from_height_host(&transfer_ctx, 1)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
         phoenix_sender_vk,
@@ -1314,7 +1314,7 @@ fn convert_wrong_contract_targeted() {
     );
 
     // we need to retrieve the genesis-note to generate its nullifier
-    let leaves = leaves_from_height(&mut session, 0)
+    let leaves = leaves_from_height_host(&transfer_ctx, 0)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
         phoenix_sender_vk,
@@ -1359,7 +1359,7 @@ fn convert_wrong_contract_targeted() {
 
     let receipt = execute_host(&mut session, &tx, &NO_CONFIG, &transfer_ctx)
         .expect("Executing transaction should succeed");
-    update_root_flat(&transfer_ctx).expect("Updating the root should succeed");
+    update_root_host(&transfer_ctx).expect("Updating the root should succeed");
 
     let res = receipt.data;
     let gas_spent = receipt.gas_spent;
@@ -1379,7 +1379,7 @@ fn convert_wrong_contract_targeted() {
         "The moonlight account should not have received funds"
     );
 
-    let leaves = leaves_from_height(&mut session, 1)
+    let leaves = leaves_from_height_host(&transfer_ctx, 1)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
         phoenix_sender_vk,
@@ -1472,7 +1472,7 @@ fn contract_to_contract() {
         "Bob's balance must have increased by the transfer value"
     );
 
-    let leaves = leaves_from_height(&mut session, 1)
+    let leaves = leaves_from_height_host(&transfer_ctx, 1)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
         phoenix_sender_vk,
@@ -1569,7 +1569,7 @@ fn contract_to_account() {
         "Alice's balance should have decreased by the transfer value"
     );
 
-    let leaves = leaves_from_height(&mut session, 1)
+    let leaves = leaves_from_height_host(&transfer_ctx, 1)
         .expect("getting the notes should succeed");
     let notes = filter_notes_owned_by(
         phoenix_sender_vk,

@@ -688,17 +688,22 @@ impl TransferState {
                             &call.fn_name
                         );
                     }
-                    let receipt = session
-                        .call::<_, Result<Vec<u8>, ContractError>>(
-                            call.contract,
-                            &call.fn_name,
-                            &call.fn_args,
-                            tx.gas_limit(),
-                        )?;
+                    let receipt = session.call_raw(
+                        call.contract,
+                        &call.fn_name,
+                        call.fn_args.clone(),
+                        tx.gas_limit(),
+                    )?;
                     /*.inspect_err(|_| { // todo
                         clear_session(session, config);
                     })*/
-                    Ok(receipt)
+                    Ok(CallReceipt {
+                        gas_spent: receipt.gas_spent,
+                        gas_limit: receipt.gas_limit,
+                        events: receipt.events.clone(),
+                        call_tree: CallTree::new(),
+                        data: Ok(receipt.data),
+                    })
                 }
             }
             None => {
