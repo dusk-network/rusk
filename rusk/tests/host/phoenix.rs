@@ -36,7 +36,7 @@ use rusk_prover::LocalProver;
 use transfer::TransferState;
 
 use crate::host::utilities::utils::{
-    account, chain_id, contract_balance, contract_balance_host,
+    account, account_host, chain_id, contract_balance, contract_balance_host,
     existing_nullifiers, filter_notes_owned_by, leaves_from_height,
     leaves_from_height_host, new_owned_notes_value, owned_notes_value,
     update_root, update_root_host,
@@ -1555,9 +1555,9 @@ fn contract_to_account() {
 
     println!("CONTRACT TO ACCOUNT: {gas_spent} gas");
 
-    let moonlight_account = account(&mut session, &moonlight_pk)
+    let moonlight_account = account_host(&transfer_ctx, &moonlight_pk)
         .expect("Getting the account should succeed");
-    let alice_balance = contract_balance(&mut session, ALICE_ID)
+    let alice_balance = contract_balance_host(&transfer_ctx, ALICE_ID)
         .expect("Querying the contract balance should succeed");
 
     assert_eq!(

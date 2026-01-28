@@ -53,6 +53,14 @@ pub fn account(
         .map(|r| r.data)
 }
 
+pub fn account_host(
+    transfer_ctx: &TransferCtx,
+    pk: &AccountPublicKey,
+) -> Result<AccountData, VMError> {
+    let transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
+    Ok(transfer_tool.account(pk))
+}
+
 // phoenix helper functions
 
 pub fn new_owned_notes_value(

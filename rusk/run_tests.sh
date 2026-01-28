@@ -16,4 +16,12 @@ cargo t transfer_3_2 --release --features=testwallet -- --nocapture
 cargo t transfer_4_2 --release --features=testwallet -- --nocapture
 cargo t transfer_gas_fails --release --features=testwallet -- --nocapture
 cargo t alice_ping --release --features=testwallet -- --nocapture
+
+# tests below require contract-to-contract compatibility
 #cargo t contract_deposit --release --features=testwallet -- --nocapture
+#cargo t contract_withdraw --release --features=testwallet -- --nocapture
+#cargo t convert_to_phoenix_fails --release --features=testwallet -- --nocapture
+#cargo t convert_to_moonlight --release --features=testwallet -- --nocapture
+#cargo t convert_wrong_contract_targeted --release --features=testwallet -- --nocapture
+#cargo t contract_to_contract --release --features=testwallet -- --nocapture
+#cargo t contract_to_account --release --features=testwallet -- --nocapture
