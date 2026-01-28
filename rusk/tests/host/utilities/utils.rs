@@ -25,6 +25,17 @@ pub fn contract_balance(
         .map(|r| r.data)
 }
 
+pub fn contract_balance_host(
+    transfer_ctx: &TransferCtx,
+    contract: ContractId,
+) -> Result<u64, VMError> {
+    // session
+    //     .call(TRANSFER_CONTRACT, "contract_balance", &contract, GAS_LIMIT)
+    //     .map(|r| r.data)
+    let transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
+    Ok(transfer_tool.contract_balance(&contract))
+}
+
 pub fn chain_id(session: &mut Session) -> Result<u8, VMError> {
     session
         .call(TRANSFER_CONTRACT, "chain_id", &(), GAS_LIMIT)

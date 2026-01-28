@@ -36,9 +36,10 @@ use rusk_prover::LocalProver;
 use transfer::TransferState;
 
 use crate::host::utilities::utils::{
-    account, chain_id, contract_balance, existing_nullifiers,
-    filter_notes_owned_by, leaves_from_height, leaves_from_height_host,
-    new_owned_notes_value, owned_notes_value, update_root, update_root_host,
+    account, chain_id, contract_balance, contract_balance_host,
+    existing_nullifiers, filter_notes_owned_by, leaves_from_height,
+    leaves_from_height_host, new_owned_notes_value, owned_notes_value,
+    update_root, update_root_host,
 };
 
 const PHOENIX_GENESIS_VALUE: u64 = dusk(1_200.0);
@@ -921,7 +922,7 @@ fn contract_deposit() {
 
     // check that alice contract has the correct balance
 
-    let alice_balance = contract_balance(&mut session, ALICE_ID)
+    let alice_balance = contract_balance_host(&transfer_ctx, ALICE_ID)
         .expect("Querying the contract balance should succeed");
     assert_eq!(
         alice_balance,
