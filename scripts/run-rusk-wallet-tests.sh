@@ -6,16 +6,20 @@
 
 set -e
 
+: "${RUSK_MINIMUM_BLOCK_TIME:=1}"
+export RUSK_MINIMUM_BLOCK_TIME
+
 cp ../examples/consensus.keys ~/.dusk/rusk/consensus.keys
 
 RAND_POSTFIX=$(mktemp XXXXXX -u)
 STATE="/tmp/rusk-wallet-test-$RAND_POSTFIX.state"
 NODE_LOG="/tmp/rusk-wallet-test-node-$RAND_POSTFIX.log"
 
-cargo r --release -p dusk-rusk -- recovery state --init ../examples/genesis.toml -o "$STATE"
+# Build Rusk once
+cargo build --release -p dusk-rusk --features archive
 
-# Build rusk
-cargo build --release -p dusk-rusk --features archive,prover
+# Use the built binary to init state (no cargo run rebuild)
+../target/release/rusk recovery state --init ../examples/genesis.toml -o "$STATE"
 
 # Start nodes
 DUSK_CONSENSUS_KEYS_PASS=password ../target/release/rusk \
