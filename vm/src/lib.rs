@@ -39,6 +39,7 @@ use alloc::vec::Vec;
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::thread;
 
 use dusk_core::abi::{ContractId, Metadata, Query};
@@ -132,6 +133,14 @@ impl VM {
         let mut vm: Self = PiecrustVM::ephemeral()?.into();
         vm.register_host_queries();
         Ok(vm)
+    }
+
+    /// registers genesis callback
+    pub fn register_genesis_callback(
+        &self,
+        callback: Arc<dyn Fn(String, Vec<u8>) -> Vec<u8> + Send + Sync>,
+    ) {
+        PiecrustVM::register_genesis_callback(callback);
     }
 
     /// Sets the activation height for a specific host query.

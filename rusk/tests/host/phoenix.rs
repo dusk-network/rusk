@@ -224,6 +224,13 @@ fn instantiate<const N: u8>(
         transfer_tool
     };
 
+    let callback = Arc::new(move |fn_name: String, args: Vec<u8>| {
+        println!("callback called: {}", fn_name);
+        vec![]
+    });
+
+    vm.register_genesis_callback(callback);
+
     (session, transfer_tool)
 }
 
