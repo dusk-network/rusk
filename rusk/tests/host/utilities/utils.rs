@@ -157,6 +157,6 @@ pub fn existing_nullifiers(
     //         GAS_LIMIT,
     //     )
     //     .map(|r| r.data)
-    let mut transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
+    let transfer_tool = transfer_ctx.transfer_tool.lock().unwrap();
     Ok(transfer_tool.existing_nullifiers(nullifiers.clone()))
 }
