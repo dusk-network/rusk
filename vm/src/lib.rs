@@ -13,6 +13,7 @@
 
 extern crate alloc;
 
+use alloc::rc::Rc;
 pub use self::execute::feature::Activation as FeatureActivation;
 pub use self::execute::{
     execute, execute_host, execute_host_or_contract, gen_contract_id,
@@ -36,6 +37,7 @@ unsafe impl Send for ContractMetadata {}
 unsafe impl Sync for ContractMetadata {}
 
 use alloc::vec::Vec;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::path::{Path, PathBuf};
@@ -138,7 +140,7 @@ impl VM {
     /// registers genesis callback
     pub fn register_genesis_callback(
         &self,
-        callback: Arc<dyn Fn(String, Vec<u8>) -> Vec<u8> + Send + Sync>,
+        callback: Option<Rc<RefCell<dyn FnMut(String, Vec<u8>) -> Vec<u8>>>>,
     ) {
         PiecrustVM::register_genesis_callback(callback);
     }

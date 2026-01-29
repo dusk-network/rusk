@@ -4,7 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use alloc::rc::Rc;
+use std::cell::RefCell;
 use std::sync::{mpsc, Arc, Mutex};
+use dusk_data_driver::from_rkyv;
 use tokio::sync::broadcast;
 
 use dusk_core::abi::ContractId;
@@ -71,7 +74,7 @@ const NO_CONFIG: ExecutionConfig = ExecutionConfig::DEFAULT;
 fn instantiate<const N: u8>(
     rng: &mut (impl RngCore + CryptoRng),
     phoenix_sk: &PhoenixSecretKey,
-) -> (Session, TransferState) {
+) -> (Session, Arc<Mutex<TransferState>>) {
     assert!(N != 0, "We need at least one note in the tree");
 
     let transfer_bytecode = include_bytes!(
@@ -215,23 +218,32 @@ fn instantiate<const N: u8>(
         chain_id(&mut session).expect("Getting the chain ID should succeed");
     assert_eq!(chain_id, CHAIN_ID, "the chain id should be as expected");
 
-    let mut transfer_tool = {
+    let mut transfer_tool = Arc::new(Mutex::new({
         let (event_sender, _) = broadcast::channel(16);
         let mut transfer_tool =
             transfer::TransferState::new(event_sender, CHAIN_ID);
         let _result =
             transfer_tool.import_from_transfer_contract(&mut session, u64::MAX);
         transfer_tool
-    };
+    }));
 
-    let callback = Arc::new(move |fn_name: String, args: Vec<u8>| {
-        println!("callback called: {}", fn_name);
-        vec![]
-    });
+    let transfer_tool_clone = transfer_tool.clone();
 
-    vm.register_genesis_callback(callback);
+    {
+        let callback: Option<Rc<RefCell<dyn FnMut(String, Vec<u8>) -> Vec<u8>>>> = Some(Rc::new(RefCell::new(move |fn_name: String, args: Vec<u8>| {
+            println!("callback called: {}", fn_name);
+            if fn_name == "deposit" {
+                let value = from_rkyv(&args).expect("deposit argument deserialization");
+                let mut transfer_tool_guard = transfer_tool.lock().unwrap();
+                transfer_tool_guard.deposit(value);
+            }
+            vec![]
+        })));
 
-    (session, transfer_tool)
+        vm.register_genesis_callback(callback);
+    }
+
+    (session, transfer_tool_clone)
 }
 
 /// Perform a simple transfer of funds between two phoenix addresses.
@@ -253,7 +265,7 @@ fn transfer_1_2() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -369,7 +381,7 @@ fn transfer_2_2() {
         instantiate::<N>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -485,7 +497,7 @@ fn transfer_3_2() {
         instantiate::<N>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -601,7 +613,7 @@ fn transfer_4_2() {
         instantiate::<N>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -709,7 +721,7 @@ fn transfer_gas_fails() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -786,7 +798,7 @@ fn alice_ping() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 1,
     };
 
@@ -859,7 +871,7 @@ fn contract_deposit() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -953,7 +965,7 @@ fn contract_withdraw() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -1058,7 +1070,7 @@ fn convert_to_phoenix_fails() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -1197,7 +1209,7 @@ fn convert_to_moonlight() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -1308,7 +1320,7 @@ fn convert_wrong_contract_targeted() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -1425,7 +1437,7 @@ fn contract_to_contract() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
@@ -1520,7 +1532,7 @@ fn contract_to_account() {
         instantiate::<1>(rng, &phoenix_sender_sk);
 
     let transfer_ctx = TransferCtx {
-        transfer_tool: Arc::new(Mutex::new(transfer_tool)),
+        transfer_tool,
         block_height: 0,
     };
 
