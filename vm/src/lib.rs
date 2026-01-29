@@ -13,12 +13,12 @@
 
 extern crate alloc;
 
-use alloc::rc::Rc;
 pub use self::execute::feature::Activation as FeatureActivation;
 pub use self::execute::{
     execute, execute_host, execute_host_or_contract, gen_contract_id,
     Config as ExecutionConfig, TransferCtx,
 };
+use alloc::rc::Rc;
 use dusk_bytes as _;
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,

@@ -215,8 +215,8 @@ pub fn execute_host_or_contract(
             // Spend the inputs and execute the call. If this errors the
             // transaction is unspendable.
             println!("calling transfer tool's spend_and_execute");
-            let mut transfer_tool = ctx.transfer_tool.lock().unwrap();
-            let mut receipt = transfer_tool.spend_and_execute(
+            let mut receipt = TransferState::spend_and_execute(
+                &ctx.transfer_tool,
                 session,
                 stripped_tx.unwrap_or(tx.clone()),
                 ctx.block_height,
@@ -243,8 +243,11 @@ pub fn execute_host_or_contract(
             // guaranteed to never error. If it does, then a
             // programming error has occurred. As such, the call to
             // `Result::expect` is warranted.
-            let refund_receipt =
-                transfer_tool.refund(receipt.gas_spent, ctx.block_height);
+            let refund_receipt = TransferState::refund(
+                &ctx.transfer_tool,
+                receipt.gas_spent,
+                ctx.block_height,
+            );
             (receipt, refund_receipt)
         }
     };

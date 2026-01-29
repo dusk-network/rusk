@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::rc::Rc;
+use dusk_data_driver::from_rkyv;
 use std::cell::RefCell;
 use std::sync::{mpsc, Arc, Mutex};
-use dusk_data_driver::from_rkyv;
 use tokio::sync::broadcast;
 
 use dusk_core::abi::ContractId;
@@ -230,15 +230,20 @@ fn instantiate<const N: u8>(
     let transfer_tool_clone = transfer_tool.clone();
 
     {
-        let callback: Option<Rc<RefCell<dyn FnMut(String, Vec<u8>) -> Vec<u8>>>> = Some(Rc::new(RefCell::new(move |fn_name: String, args: Vec<u8>| {
-            println!("callback called: {}", fn_name);
-            if fn_name == "deposit" {
-                let value = from_rkyv(&args).expect("deposit argument deserialization");
-                let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                transfer_tool_guard.deposit(value);
-            }
-            vec![]
-        })));
+        let callback: Option<
+            Rc<RefCell<dyn FnMut(String, Vec<u8>) -> Vec<u8>>>,
+        > = Some(Rc::new(RefCell::new(
+            move |fn_name: String, args: Vec<u8>| {
+                println!("callback called: {}", fn_name);
+                if fn_name == "deposit" {
+                    let value = from_rkyv(&args)
+                        .expect("deposit argument deserialization");
+                    let mut transfer_tool_guard = transfer_tool.lock().unwrap();
+                    transfer_tool_guard.deposit(value);
+                }
+                vec![]
+            },
+        )));
 
         vm.register_genesis_callback(callback);
     }

@@ -9,7 +9,7 @@ use crate::tree::Tree;
 use crate::verifier_data::tx_circuit_verifier;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc, Mutex};
 
 // use alloc::collections::btree_map::Entry;
 // use alloc::collections::{BTreeMap, BTreeSet};
@@ -604,12 +604,13 @@ impl TransferState {
     ///
     /// [`refund`]: [`TransferState::refund`]
     pub fn spend_and_execute(
-        &mut self,
+        me: &Arc<Mutex<Self>>,
         session: &mut Session,
         tx: Transaction,
         block_height: u64,
     ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError>
     {
+        let mut slf = me.lock().unwrap();
         if tx.gas_price() == 0 {
             return Err(PiecrustError::Panic("Gas price too low!".into()));
         }
@@ -626,11 +627,11 @@ impl TransferState {
         const MOONLIGHT_GAS_SPENT: u64 = 101_924; // todo: gas const
         let gas_spent = match tx {
             Transaction::Phoenix(tx) => {
-                self.spend_phoenix(tx, block_height)?;
+                slf.spend_phoenix(tx, block_height)?;
                 PHOENIX_GAS_SPENT
             }
             Transaction::Moonlight(tx) => {
-                self.spend_moonlight(tx)?;
+                slf.spend_moonlight(tx)?;
                 MOONLIGHT_GAS_SPENT
             }
         };
@@ -650,7 +651,7 @@ impl TransferState {
                 // and CallReceipt is already OK in such case
                 if call.contract == TRANSFER_CONTRACT && &call.fn_name == "root"
                 {
-                    let root = self.root();
+                    let root = slf.root();
                     let root_bytes = rkyv::to_bytes::<_, 1024>(&root)
                         .expect("Root should serialize correctly")
                         .to_vec();
@@ -673,7 +674,7 @@ impl TransferState {
                     let withdraw: Withdraw = from_rkyv(&call.fn_args)
                         .expect("Deserialization of withdraw"); // todo: proper error processing
                     println!("withdraw={:?}", withdraw);
-                    self.convert(withdraw, block_height);
+                    slf.convert(withdraw, block_height);
                     Ok(CallReceipt {
                         gas_spent,
                         gas_limit: tx.gas_limit(),
@@ -682,6 +683,8 @@ impl TransferState {
                         data: Ok(Vec::new()),
                     })
                 } else {
+                    drop(slf); // important: release the lock so that contract methods can
+                               // call this object's methods
                     if call.contract == TRANSFER_CONTRACT {
                         println!(
                             "CALLING TRANSFER CONTRACT: {}",
@@ -879,10 +882,11 @@ impl TransferState {
     ///
     /// This function guarantees that it will not panic.
     pub fn refund(
-        &mut self,
+        me: &Arc<Mutex<Self>>,
         gas_spent: u64,
         block_height: u64,
     ) -> CallReceipt<()> {
+        let mut slf = me.lock().unwrap();
         let ongoing = transitory::take_ongoing();
 
         // If there is a deposit still available on the call to this function,
@@ -913,7 +917,7 @@ impl TransferState {
                 // if the refund-value is 0, we don't push the note onto the
                 // tree and the refund-note will be None
                 let refund_note =
-                    self.push_note_current_height(remainder_note, block_height);
+                    slf.push_note_current_height(remainder_note, block_height);
 
                 // todo: implement
                 // abi::emit(
@@ -932,7 +936,7 @@ impl TransferState {
                 let refund = remaining_gas * tx.gas_price()
                     + deposit.unwrap_or_default();
 
-                let refund_account = self
+                let refund_account = slf
                     .accounts
                     .entry(tx.refund_address().to_raw_bytes())
                     .or_insert(EMPTY_ACCOUNT);
