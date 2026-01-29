@@ -72,6 +72,8 @@ jobs:
     if: needs.changes.outputs.run-ci == 'true' && (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch')
     name: Nightly tests
     runs-on: core
+    env:
+      RUSK_MINIMUM_BLOCK_TIME: 1
     steps:
       - uses: actions/checkout@v4
       - uses: dsherret/rust-toolchain-file@v1

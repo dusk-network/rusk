@@ -6,6 +6,9 @@
 
 set -e
 
+: "${RUSK_MINIMUM_BLOCK_TIME:=1}"
+export RUSK_MINIMUM_BLOCK_TIME
+
 cp ../examples/consensus.keys ~/.dusk/rusk/consensus.keys
 
 RAND_POSTFIX=$(mktemp XXXXXX -u)
