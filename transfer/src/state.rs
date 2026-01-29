@@ -425,11 +425,12 @@ impl TransferState {
     /// # Panics
     /// This function will panic if there is no deposit on the state or the
     /// caller-id doesn't match the contract-id stored for the deposit.
-    pub fn deposit(&mut self, value: u64) {
-        // todo: implement
-        let caller = TRANSFER_CONTRACT; //abi::caller()
-                                        //.expect("A deposit must happen in the context of a transaction");
-
+    pub fn deposit(&mut self, value: u64, caller: ContractId) {
+        println!(
+            "tool deposit value={} caller={}",
+            value,
+            hex::encode(caller.to_bytes())
+        );
         let deposit = transitory::deposit_info_mut();
         match deposit {
             Deposit::Available {
@@ -446,6 +447,10 @@ impl TransferState {
                     );
                 }
 
+                println!(
+                    "deposit_contract={}",
+                    hex::encode(deposit_contract.as_bytes())
+                );
                 if deposit_contract != caller {
                     panic!("The calling contract doesn't match the contract in the transaction");
                 }
@@ -456,6 +461,7 @@ impl TransferState {
                 // add to the contract's balance and set the deposit as taken
                 self.add_contract_balance(deposit_contract, deposit_value);
                 deposit.set_taken();
+                println!("deposit finished");
 
                 // todo: implement
                 // abi::emit(
@@ -691,6 +697,11 @@ impl TransferState {
                             &call.fn_name
                         );
                     }
+                    println!(
+                        "spend_and_execute: CALLING {} {}",
+                        hex::encode(call.contract.to_bytes()),
+                        &call.fn_name
+                    );
                     let receipt = session.call_raw(
                         call.contract,
                         &call.fn_name,
@@ -700,6 +711,11 @@ impl TransferState {
                     /*.inspect_err(|_| { // todo
                         clear_session(session, config);
                     })*/
+                    println!(
+                        "AFTER CALLING {} {}",
+                        hex::encode(call.contract.to_bytes()),
+                        &call.fn_name
+                    );
                     Ok(CallReceipt {
                         gas_spent: receipt.gas_spent,
                         gas_limit: receipt.gas_limit,
@@ -887,7 +903,9 @@ impl TransferState {
         block_height: u64,
     ) -> CallReceipt<()> {
         let mut slf = me.lock().unwrap();
+        println!("in refund");
         let ongoing = transitory::take_ongoing();
+        println!("refund - after take_ongoing()");
 
         // If there is a deposit still available on the call to this function,
         // we refund it to the called.

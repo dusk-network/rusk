@@ -231,15 +231,16 @@ fn instantiate<const N: u8>(
 
     {
         let callback: Option<
-            Rc<RefCell<dyn FnMut(String, Vec<u8>) -> Vec<u8>>>,
+            Rc<RefCell<dyn FnMut([u8; 32], String, Vec<u8>) -> Vec<u8>>>,
         > = Some(Rc::new(RefCell::new(
-            move |fn_name: String, args: Vec<u8>| {
+            move |contract_id: [u8; 32], fn_name: String, args: Vec<u8>| {
                 println!("callback called: {}", fn_name);
                 if fn_name == "deposit" {
                     let value = from_rkyv(&args)
                         .expect("deposit argument deserialization");
                     let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                    transfer_tool_guard.deposit(value);
+                    transfer_tool_guard
+                        .deposit(value, ContractId::from_bytes(contract_id));
                 }
                 vec![]
             },
@@ -877,7 +878,7 @@ fn contract_deposit() {
 
     let transfer_ctx = TransferCtx {
         transfer_tool,
-        block_height: 0,
+        block_height: 1,
     };
 
     // create the deposit transaction
