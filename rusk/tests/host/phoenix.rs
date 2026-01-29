@@ -229,6 +229,7 @@ fn instantiate<const N: u8>(
 
     let transfer_tool_clone = transfer_tool.clone();
 
+    // todo - this callback code belongs somewhere else
     {
         let callback: Option<
             Rc<RefCell<dyn FnMut([u8; 32], String, Vec<u8>) -> Vec<u8>>>,
@@ -242,6 +243,7 @@ fn instantiate<const N: u8>(
                     transfer_tool_guard
                         .deposit(value, ContractId::from_bytes(contract_id));
                 }
+                // todo: process return argument
                 vec![]
             },
         )));
