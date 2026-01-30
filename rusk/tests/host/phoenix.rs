@@ -243,13 +243,18 @@ fn instantiate<const N: u8>(
                     let value =
                         from_rkyv(&args).expect("argument deserialization");
                     let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                    transfer_tool_guard
-                        .deposit(value, ContractId::from_bytes(contract_id));
+                    let _r =
+                        transfer_tool_guard // todo: process result
+                            .deposit(
+                                value,
+                                ContractId::from_bytes(contract_id),
+                            );
                 } else if fn_name == "withdraw" {
                     let withdraw: Withdraw =
                         from_rkyv(&args).expect("argument deserialization");
                     let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                    transfer_tool_guard.withdraw(
+                    let _r = transfer_tool_guard.withdraw(
+                        // todo: process result
                         withdraw,
                         bh,
                         ContractId::from_bytes(contract_id),
@@ -258,7 +263,8 @@ fn instantiate<const N: u8>(
                     let contract_to_contract: ContractToContract =
                         from_rkyv(&args).expect("argument deserialization");
                     let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                    transfer_tool_guard.contract_to_contract(
+                    let _r = transfer_tool_guard.contract_to_contract(
+                        // todo: process result
                         contract_to_contract,
                         ContractId::from_bytes(contract_id),
                     );
@@ -266,7 +272,8 @@ fn instantiate<const N: u8>(
                     let contract_to_account: ContractToAccount =
                         from_rkyv(&args).expect("argument deserialization");
                     let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                    transfer_tool_guard.contract_to_account(
+                    let _r = transfer_tool_guard.contract_to_account(
+                        // todo: process result
                         contract_to_account,
                         ContractId::from_bytes(contract_id),
                     );

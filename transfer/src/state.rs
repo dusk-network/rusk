@@ -346,17 +346,19 @@ impl TransferState {
         withdraw: Withdraw,
         block_height: u64,
         caller: ContractId,
-    ) {
+    ) -> Result<(), ContractError> {
         let contract = withdraw.contract();
 
         if *contract != caller {
-            panic!("The \"withdraw\" function can only be called by the specified contract.");
+            return Err(ContractError::Panic("The \"withdraw\" function can only be called by the specified contract.".into()));
         }
 
         let value = withdraw.value();
 
         if self.contract_balance(contract) < value {
-            panic!("The contract doesn't have enough balance");
+            return Err(ContractError::Panic(
+                "The contract doesn't have enough balance".into(),
+            ));
         }
 
         self.sub_contract_balance(contract, value)
@@ -366,6 +368,7 @@ impl TransferState {
 
         // todo: implement
         // abi::emit(WITHDRAW_TOPIC, WithdrawEvent::from(withdraw));
+        Ok(())
     }
 
     /// Takes the deposit addressed to this contract, and immediately withdraws
@@ -456,7 +459,11 @@ impl TransferState {
     /// # Panics
     /// This function will panic if there is no deposit on the state or the
     /// caller-id doesn't match the contract-id stored for the deposit.
-    pub fn deposit(&mut self, value: u64, caller: ContractId) {
+    pub fn deposit(
+        &mut self,
+        value: u64,
+        caller: ContractId,
+    ) -> Result<(), ContractError> {
         println!(
             "tool deposit value={} caller={}",
             value,
@@ -473,8 +480,8 @@ impl TransferState {
                 let deposit_value = *deposit_value;
 
                 if deposit_value != value {
-                    panic!(
-                        "The value to deposit doesn't match the value in the transaction"
+                    return Err(ContractError::Panic(
+                        "The value to deposit doesn't match the value in the transaction".into())
                     );
                 }
 
@@ -483,7 +490,7 @@ impl TransferState {
                     hex::encode(deposit_contract.as_bytes())
                 );
                 if deposit_contract != caller {
-                    panic!("The calling contract doesn't match the contract in the transaction");
+                    return Err(ContractError::Panic("The calling contract doesn't match the contract in the transaction".into()));
                 }
 
                 // copy here because `set_taken` needs a mutable reference
@@ -505,10 +512,17 @@ impl TransferState {
                 // );
             }
             Deposit::Taken { .. } => {
-                panic!("The deposit has already been taken")
+                return Err(ContractError::Panic(
+                    "The deposit has already been taken".into(),
+                ))
             }
-            Deposit::None => panic!("There is no deposit in the transaction"),
+            Deposit::None => {
+                return Err(ContractError::Panic(
+                    "There is no deposit in the transaction".into(),
+                ))
+            }
         }
+        Ok(())
     }
 
     /// Transfer funds from one contract's balance to another.
@@ -531,11 +545,13 @@ impl TransferState {
         &mut self,
         transfer: ContractToContract,
         caller: ContractId,
-    ) {
+    ) -> Result<(), ContractError> {
         let sender_contract = caller;
 
         if sender_contract == TRANSFER_CONTRACT {
-            panic!("Cannot be called directly by the transfer contract");
+            return Err(ContractError::Panic(
+                "Cannot be called directly by the transfer contract".into(),
+            ));
         }
 
         let sender_balance = self
@@ -544,7 +560,9 @@ impl TransferState {
             .expect("Caller must have a balance");
 
         if *sender_balance < transfer.value {
-            panic!("Caller must have enough balance");
+            return Err(ContractError::Panic(
+                "Caller must have enough balance".into(),
+            ));
         }
 
         *sender_balance -= transfer.value;
@@ -566,7 +584,7 @@ impl TransferState {
         println!(
             "xcalling: {} method={}",
             transfer.contract, transfer.fn_name
-        )
+        );
 
         // todo: implement
         // abi::emit(
@@ -577,6 +595,7 @@ impl TransferState {
         //         value: transfer.value,
         //     },
         // );
+        Ok(())
     }
 
     /// Transfer funds from a contract balance to a Moonlight account.
@@ -592,11 +611,13 @@ impl TransferState {
         &mut self,
         transfer: ContractToAccount,
         caller: ContractId,
-    ) {
+    ) -> Result<(), ContractError> {
         let sender_contract = caller;
 
         if sender_contract == TRANSFER_CONTRACT {
-            panic!("Cannot be called directly by the transfer contract");
+            return Err(ContractError::Panic(
+                "Cannot be called directly by the transfer contract".into(),
+            ));
         }
 
         let sender_balance = self
@@ -605,7 +626,9 @@ impl TransferState {
             .expect("Caller must have a balance");
 
         if *sender_balance < transfer.value {
-            panic!("Caller must have enough balance");
+            return Err(ContractError::Panic(
+                "Caller must have enough balance".into(),
+            ));
         }
 
         let account = self
@@ -625,6 +648,7 @@ impl TransferState {
         //         value: transfer.value,
         //     },
         // );
+        Ok(())
     }
 
     /// The top level transaction execution function.
