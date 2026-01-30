@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.4] - 2026-01-30
+
+### Added
+
+- Add keccak feature activation for testnet
+
+### Changed
+
+- Change dusk-core dependency to v1.4.1
+
 ## [1.4.3] - 2026-01-07
 
 ### Changed
@@ -461,7 +471,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#292]: https://github.com/dusk-network/rusk/issues/292
 [#290]: https://github.com/dusk-network/rusk/issues/290
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.3...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.4...HEAD
+[1.4.4]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.3...dusk-rusk-1.4.4
 [1.4.3]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.2...dusk-rusk-1.4.3
 [1.4.2]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.4.1...dusk-rusk-1.4.2
 [1.4.1]: https://github.com/dusk-network/rusk/compare/dusk-rusk-1.3.0...dusk-rusk-1.4.1

@@ -112,6 +112,10 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
 const TESTNET_AT_12_11_2025_AT_09_00_UTC: FeatureActivation =
     FeatureActivation::Height(1_814_090);
 
+/// Estimated testnet block height for 04th February 2026, 09:00 UTC.
+const TESTNET_AT_04_02_2026_AT_09_00_UTC: FeatureActivation =
+    FeatureActivation::Height(2_539_820);
+
 /// Testnet VM configuration.
 const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     gas_per_blob: DEFAULT_GAS_PER_BLOB,
@@ -121,7 +125,7 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     block_gas_limit: DEFAULT_BLOCK_GAS_LIMIT,
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
-        (HQ_KECCAK256, NEVER),
+        (HQ_KECCAK256, TESTNET_AT_04_02_2026_AT_09_00_UTC),
         (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM32, NEVER),
