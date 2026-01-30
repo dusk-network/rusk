@@ -26,7 +26,7 @@ use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 pub use header_validation::verify_att;
 use node_data::events::Event;
-use node_data::ledger::{to_str, BlockWithLabel, Label};
+use node_data::ledger::{BlockWithLabel, Label, ShortHex};
 use node_data::message::payload::RatificationResult;
 use node_data::message::{AsyncQueue, Payload, Topics};
 use tokio::sync::mpsc::Sender;
@@ -178,7 +178,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 src = "Block msg",
                                 height = blk.header().height,
                                 iter = blk.header().iteration,
-                                hash = to_str(&blk.header().hash),
+                                hash = blk.header().hash.hex(),
                                 metadata = ?msg.metadata,
                             );
 

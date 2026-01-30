@@ -72,7 +72,7 @@ impl Signature {
 impl std::fmt::Debug for Signature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Signature")
-            .field("signature", &to_str(&self.0))
+            .field("signature", &self.0.hex())
             .finish()
     }
 }

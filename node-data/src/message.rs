@@ -21,7 +21,7 @@ use tracing::{error, warn};
 
 use self::payload::{Candidate, Ratification, Validation};
 use crate::bls::PublicKey;
-use crate::ledger::{to_str, Hash, Signature};
+use crate::ledger::{Hash, ShortHex, Signature};
 use crate::{bls, ledger, Serializable, StepName};
 
 /// Topic field position in the message binary representation
@@ -347,7 +347,7 @@ pub struct ConsensusHeader {
 impl std::fmt::Debug for ConsensusHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ConsensusHeader")
-            .field("prev_block_hash", &to_str(&self.prev_block_hash))
+            .field("prev_block_hash", &self.prev_block_hash.hex())
             .field("round", &self.round)
             .field("iteration", &self.iteration)
             .finish()
@@ -508,7 +508,7 @@ pub mod payload {
     use serde::Serialize;
 
     use super::{ConsensusHeader, SignInfo};
-    use crate::ledger::{self, to_str, Attestation, Block, Hash, StepVotes};
+    use crate::ledger::{Attestation, Block, Hash, ShortHex, StepVotes};
     use crate::{get_current_timestamp, Serializable};
 
     #[derive(Debug, Clone)]
@@ -570,8 +570,8 @@ pub mod payload {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let (desc, hash) = match &self {
                 Self::NoCandidate => ("NoCandidate", "".into()),
-                Self::Valid(hash) => ("Valid", to_str(hash)),
-                Self::Invalid(hash) => ("Invalid", to_str(hash)),
+                Self::Valid(hash) => ("Valid", hash.hex()),
+                Self::Invalid(hash) => ("Invalid", hash.hex()),
                 Self::NoQuorum => ("NoQuorum", "".into()),
             };
             write!(f, "Vote: {desc}({hash})")
@@ -649,7 +649,7 @@ pub mod payload {
             f.debug_struct("Candidate")
                 .field(
                     "signature",
-                    &ledger::to_str(self.candidate.header().signature.inner()),
+                    &self.candidate.header().signature.inner().hex(),
                 )
                 .field("block", &self.candidate)
                 .finish()
@@ -986,13 +986,13 @@ pub mod payload {
     impl fmt::Debug for InvParam {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
-                InvParam::Hash(hash) => write!(f, "Hash: {}", to_str(hash)),
+                InvParam::Hash(hash) => write!(f, "Hash: {}", hash.hex()),
                 InvParam::Height(height) => write!(f, "Height: {}", height),
                 InvParam::Iteration(ch) => {
                     write!(
                         f,
                         "PrevBlock: {}, Round: {}, Iteration: {}",
-                        to_str(&ch.prev_block_hash),
+                        ch.prev_block_hash.hex(),
                         ch.round,
                         ch.iteration
                     )
@@ -1166,7 +1166,7 @@ pub mod payload {
 
     impl fmt::Debug for GetBlocks {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            write!(f, "GetBlocks, locator: {}", to_str(&self.locator))
+            write!(f, "GetBlocks, locator: {}", self.locator.hex())
         }
     }
 
@@ -1620,7 +1620,7 @@ impl Serializable for SignInfo {
 impl std::fmt::Debug for SignInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SignInfo")
-            .field("signer", &to_str(self.signature.inner()))
+            .field("signer", &self.signature.inner().hex())
             .field("signature", &self.signature)
             .finish()
     }

@@ -34,7 +34,9 @@ use dusk_vm::{execute, CallReceipt, Error as VMError, Session, VM};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::{to_str, Block, Slash, SpentTransaction, Transaction};
+use node_data::ledger::{
+    Block, ShortHex, Slash, SpentTransaction, Transaction,
+};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
@@ -133,7 +135,7 @@ impl Rusk {
         info!(
             event = "Creating state transition",
             height = block_height,
-            prev_state = to_str(&prev_state),
+            prev_state = prev_state.hex(),
             gas_limit,
             ?slashes
         );
@@ -628,8 +630,8 @@ impl Rusk {
         info!(
             event = "Executing state transition",
             height = block_height,
-            block_hash = to_str(&block_hash),
-            prev_state = to_str(&prev_state),
+            block_hash = block_hash.hex(),
+            prev_state = prev_state.hex(),
             gas_limit,
             ?slashes
         );

@@ -151,7 +151,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             if !prev_blk_exists {
                 warn!(
                     "received block from fork at height {remote_height}: {}",
-                    to_str(&remote_header.hash)
+                    remote_header.hash.hex()
                 );
                 return Ok(None);
             }
@@ -253,8 +253,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 Ordering::Equal => {
                     // If remote_blk and local_blk have the same iteration, it
                     // means two conflicting candidates have been generated
-                    let local_hash = to_str(&local_header.hash);
-                    let remote_hash = to_str(&remote_header.hash);
+                    let local_hash = local_header.hash.hex();
+                    let remote_hash = remote_header.hash.hex();
                     warn!("Double candidate detected. Local block: {local_hash}, remote block {remote_hash}");
                 }
             }

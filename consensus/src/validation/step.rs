@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use dusk_core::transfer::data::BlobData;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block, Transaction};
+use node_data::ledger::{Block, ShortHex, Transaction};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
     AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
@@ -42,12 +42,11 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
         executor: Arc<T>,
         expected_generator: PublicKeyBytes,
     ) {
-        let hash = to_str(
-            &candidate
-                .as_ref()
-                .map(|c| c.header().hash)
-                .unwrap_or_default(),
-        );
+        let hash = candidate
+            .as_ref()
+            .map(|c| c.header().hash)
+            .unwrap_or_default()
+            .hex();
         join_set.spawn(
             async move {
                 Self::try_vote(
@@ -287,7 +286,7 @@ impl<T: Operations + 'static, D: Database> ValidationStep<T, D> {
             name = self.name(),
             round,
             iter = iteration,
-            hash = to_str(&hash),
+            hash = hash.hex(),
         )
     }
 

@@ -29,7 +29,7 @@ use node_data::bls::PublicKey;
 use node_data::events::contract::ContractEvent;
 use node_data::events::{BlockEvent, BlockState, Event, TransactionEvent};
 use node_data::ledger::{
-    self, to_str, Block, BlockWithLabel, Label, Seed, Slash,
+    self, Block, BlockWithLabel, Label, Seed, ShortHex, Slash,
 };
 use node_data::message::payload::{GetBlocks, Vote};
 use node_data::message::{AsyncQueue, Payload, Status};
@@ -1046,9 +1046,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             event = "block accepted",
             height = tip.inner().header().height,
             iter = tip.inner().header().iteration,
-            hash = to_str(&tip.inner().header().hash),
+            hash = tip.inner().header().hash.hex(),
             txs = tip.inner().txs().len(),
-            state_hash = to_str(&tip.inner().header().state_hash),
+            state_hash = tip.inner().header().state_hash.hex(),
             generator = tip.inner().header().generator_bls_pubkey.to_bs58(),
             validation_bitset,
             ratification_bitset,
@@ -1128,7 +1128,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .block_header(&lfb_hash)?
             .ok_or(anyhow!(
                 "Cannot get header for last finalized block hash {}",
-                to_str(&lfb_hash)
+                lfb_hash.hex()
             ))?
             .state_hash;
 
@@ -1149,7 +1149,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                             current_height,
                             height,
                             confirmed_after,
-                            hash = to_str(hash),
+                            hash = hash.hex(),
                             ?label,
                         );
                         *label = Label::Confirmed(current_height - height);
@@ -1201,7 +1201,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         .map(|h| h.state_hash)
                         .ok_or(anyhow!(
                             "Cannot get header for hash {}",
-                            to_str(&hash)
+                            &hash.hex()
                         ))?;
                     let finalized = Identifiers {
                         block_hash: hash,
@@ -1213,8 +1213,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                         current_height,
                         height,
                         finalized_after,
-                        hash = to_str(&finalized.block_hash),
-                        state_root = to_str(&finalized.state_root),
+                        hash = finalized.block_hash.hex(),
+                        state_root = finalized.state_root.hex(),
                     );
 
                     finalized_blocks.insert(height, finalized);
@@ -1398,7 +1398,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             event = "restart consensus",
             height = tip.header().height,
             iter = tip.header().iteration,
-            hash = to_str(&tip.header().hash),
+            hash = tip.header().hash.hex(),
         );
 
         let tip_voters =
@@ -1576,7 +1576,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let prev_hash = &local.prev_block_hash;
             db.block_header(prev_hash)?.ok_or(anyhow::anyhow!(
                 "Unable to find block with hash {}",
-                to_str(prev_hash)
+                prev_hash.hex()
             ))
         })?;
 

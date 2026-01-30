@@ -12,7 +12,7 @@ use dusk_core::signatures::bls::{
     Error as BlsSigError, MultisigSignature as BlsMultisigSignature,
 };
 use node_data::bls::{PublicKey, PublicKeyBytes};
-use node_data::ledger::{to_str, StepVotes};
+use node_data::ledger::{ShortHex, StepVotes};
 use node_data::message::payload::Vote;
 use node_data::message::SignedStepMessage;
 use thiserror::Error;
@@ -158,7 +158,7 @@ impl<V: StepVote> Aggregator<V> {
             total,
             majority = committee.majority_quorum(),
             super_majority = committee.super_majority_quorum(),
-            signature = to_str(signature),
+            signature = signature.hex(),
         );
 
         let aggregate_signature = aggr_sign
@@ -185,7 +185,7 @@ impl<V: StepVote> Aggregator<V> {
                 target = quorum_target,
                 bitset,
                 step = msg_step,
-                signature = to_str(&aggregate_signature),
+                signature = aggregate_signature.hex(),
             );
         }
 

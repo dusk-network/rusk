@@ -67,7 +67,7 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                     .increment(1);
 
                 #[cfg(feature = "network-trace")]
-                let ray_id = node_data::ledger::to_str(md.ray_id());
+                let ray_id = node_data::ledger::ShortHex::hex(&md.ray_id());
                 #[cfg(not(feature = "network-trace"))]
                 #[allow(non_upper_case_globals)]
                 const ray_id: String = String::new();

@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block, StepVotes};
+use node_data::ledger::{Block, ShortHex, StepVotes};
 use node_data::message::payload::{
     GetResource, Inv, QuorumType, Validation, Vote,
 };
@@ -324,7 +324,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                 event = "Request ValidationResult",
                 round,
                 iteration = curr_iteration,
-                prev_block = to_str(&prev_block_hash)
+                prev_block = prev_block_hash.hex()
             );
 
             let mut inv = Inv::new(1);

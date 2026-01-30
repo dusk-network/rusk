@@ -31,19 +31,28 @@ use crate::bls::PublicKeyBytes;
 use crate::Serializable;
 
 /// Encode a byte array into a shortened HEX representation.
-pub fn to_str(bytes: &[u8]) -> String {
-    const OFFSET: usize = 16;
-    let hex = hex::encode(bytes);
-    if bytes.len() <= OFFSET {
-        return hex;
+pub trait ShortHex {
+    /// Encode a byte array into a shortened HEX representation.
+    fn hex(&self) -> String;
+}
+
+/// Implement ShortHex for any AsRef<[u8]> type.
+impl<T: AsRef<[u8]>> ShortHex for T {
+    fn hex(&self) -> String {
+        const OFFSET: usize = 16;
+        let bytes = self.as_ref();
+        let hex = hex::encode(bytes);
+        if bytes.len() <= OFFSET {
+            return hex;
+        }
+
+        let len = hex.len();
+
+        let first = &hex[0..OFFSET];
+        let last = &hex[len - OFFSET..];
+
+        format!("{first}...{last}")
     }
-
-    let len = hex.len();
-
-    let first = &hex[0..OFFSET];
-    let last = &hex[len - OFFSET..];
-
-    format!("{first}...{last}")
 }
 
 #[cfg(any(feature = "faker", test))]

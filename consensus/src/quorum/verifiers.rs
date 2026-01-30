@@ -10,7 +10,7 @@ use dusk_core::signatures::bls::{
     MultisigSignature as BlsMultisigSignature,
 };
 use node_data::bls::PublicKey;
-use node_data::ledger::{to_str, Seed, StepVotes};
+use node_data::ledger::{Seed, ShortHex, StepVotes};
 use node_data::message::payload::{self, Vote};
 use node_data::message::{ConsensusHeader, SignedStepMessage};
 use node_data::{Serializable, StepName};
@@ -51,7 +51,7 @@ pub async fn verify_step_votes(
                 round = ch.round,
                 iter = ch.iteration,
                 ?step,
-                seed = to_str(seed.inner()),
+                seed = seed.inner().hex(),
                 ?step_votes
             );
         })?;

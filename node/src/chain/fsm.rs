@@ -15,7 +15,7 @@ use std::time::Duration;
 
 use dusk_consensus::config::is_emergency_block;
 use metrics::counter;
-use node_data::ledger::{to_str, Attestation, Block};
+use node_data::ledger::{Attestation, Block, ShortHex};
 use node_data::message::payload::{Inv, Quorum, RatificationResult, Vote};
 use node_data::message::Metadata;
 use tokio::sync::RwLock;
@@ -182,7 +182,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             info!(
                 event = "block discarded",
                 reason = "blacklisted",
-                hash = to_str(&blk.header().hash),
+                hash = blk.header().hash.hex(),
                 height = blk.header().height,
                 iter = blk.header().iteration,
             );
@@ -252,8 +252,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             stalled::State::StalledOnFork(local_hash_at_fork, remote_blk) => {
                 info!(
                     event = "stalled on fork",
-                    local_hash = to_str(&local_hash_at_fork),
-                    remote_hash = to_str(&remote_blk.header().hash),
+                    local_hash = local_hash_at_fork.hex(),
+                    remote_hash = remote_blk.header().hash.hex(),
                     remote_height = remote_blk.header().height,
                 );
                 let mut acc = self.acc.write().await;
@@ -281,7 +281,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         info!(
                             event = "recovery block",
                             height = remote_blk.header().height,
-                            hash = to_str(&remote_blk.header().hash),
+                            hash = remote_blk.header().hash.hex(),
                         );
 
                         acc.accept_block(&remote_blk, true).await?;
@@ -399,7 +399,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     src = "Quorum msg",
                     height = blk.header().height,
                     iter = blk.header().iteration,
-                    hash = to_str(&blk.header().hash)
+                    hash = blk.header().hash.hex()
                 );
 
                 // Attach the Attestation to the block
@@ -417,7 +417,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 // Candidate block not found
                 debug!(
                     event = "Candidate not found. Requesting it to the network",
-                    hash = to_str(&candidate),
+                    hash = candidate.hex(),
                     height = quorum_height,
                 );
 
@@ -482,10 +482,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         if let Some((att, _)) = self.attestations_cache.get(&block_hash) {
             blk.set_attestation(*att);
         } else {
-            // warn!("Attestation not found for {}", hex::encode(block_hash));
             return Err(anyhow!(
                 "Attestation not found for {}",
-                hex::encode(block_hash)
+                block_hash.hex()
             ));
         }
 

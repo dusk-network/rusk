@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::to_str;
+use node_data::ledger::ShortHex;
 use node_data::message::payload::{Candidate, GetResource, Inv};
 use node_data::message::{
     ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
@@ -69,10 +69,10 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
 
         info!(
             event = "New Candidate",
-            hash = &to_str(&p.candidate.header().hash),
+            hash = p.candidate.header().hash.hex(),
             round = p.candidate.header().height,
             iter = p.candidate.header().iteration,
-            prev_block = &to_str(&p.candidate.header().prev_block_hash)
+            prev_block = p.candidate.header().prev_block_hash.hex()
         );
 
         Ok(StepOutcome::Ready(msg))
@@ -94,10 +94,10 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
 
         info!(
             event = "New Candidate",
-            hash = &to_str(&p.candidate.header().hash),
+            hash = p.candidate.header().hash.hex(),
             round = p.candidate.header().height,
             iter = p.candidate.header().iteration,
-            prev_block = &to_str(&p.candidate.header().prev_block_hash)
+            prev_block = p.candidate.header().prev_block_hash.hex()
         );
 
         Ok(StepOutcome::Ready(msg))
@@ -120,7 +120,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
                 event = "request candidate block",
                 src = "emergency_iter",
                 iteration = curr_iteration,
-                prev_block_hash = to_str(&ru.hash())
+                prev_block_hash = ru.hash().hex()
             );
 
             let mut inv = Inv::new(1);

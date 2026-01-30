@@ -103,7 +103,7 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
     pub(crate) async fn on_block_received(&mut self, blk: &Block) -> &State {
         trace!(
             event = "chain.block_received",
-            hash = to_str(&blk.header().hash),
+            hash = blk.header().hash.hex(),
             height = blk.header().height,
             iter = blk.header().iteration,
         );
@@ -191,9 +191,9 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
         if let Err(err) = res {
             error!(
                 event = "recovery failed",
-                local_hash = to_str(&local_blk.header().hash),
+                local_hash = local_blk.header().hash.hex(),
                 local_height = local_blk.header().height,
-                remote_hash = to_str(&remote_blk.header().hash),
+                remote_hash = remote_blk.header().hash.hex(),
                 remote_height = remote_blk.header().height,
                 err = format!("verification err: {:?}", err)
             );
@@ -257,14 +257,14 @@ impl<DB: database::DB, N: Network, VM: VMExecution> StalledChainFSM<DB, N, VM> {
                 format!("stalled at {}", timestamp)
             }
             State::StalledOnFork(hash, _) => {
-                format!("stalled_on_fork at {}", to_str(hash))
+                format!("stalled_on_fork at {}", hash.hex())
             }
         };
 
         let hdr = &self.tip.0;
         info!(
             event = format!("chain.{}", state_str),
-            tip_hash = to_str(&hdr.hash),
+            tip_hash = hdr.hash.hex(),
             tip_height = hdr.height,
             tip_iter = hdr.iteration,
             tip_updated_at = self.tip.1,

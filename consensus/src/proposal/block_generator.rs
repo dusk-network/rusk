@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use dusk_bytes::Serializable;
-use node_data::ledger::{to_str, Block, Fault, IterationsInfo, Seed, Slash};
+use node_data::ledger::{Block, Fault, IterationsInfo, Seed, ShortHex, Slash};
 use node_data::message::payload::Candidate;
 use node_data::message::{Message, SignedStepMessage, BLOCK_HEADER_VERSION};
 use node_data::{get_current_timestamp, ledger};
@@ -141,10 +141,10 @@ impl<T: Operations> Generator<T> {
                     event = "Block generated",
                     round = blk.header().height,
                     iter = blk.header().iteration,
-                    prev_block = &to_str(&blk.header().prev_block_hash),
-                    hash = &to_str(&blk.header().hash),
+                    prev_block = blk.header().prev_block_hash.hex(),
+                    hash = blk.header().hash.hex(),
                     gas_limit = blk.header().gas_limit,
-                    state_hash = &to_str(&blk.header().state_hash),
+                    state_hash = blk.header().state_hash.hex(),
                     dur = format!("{:?}ms", start.elapsed().as_millis()),
                 );
                 Ok(blk)
