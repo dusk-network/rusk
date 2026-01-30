@@ -300,4 +300,16 @@ impl Query {
 
         Ok(next_height)
     }
+
+    #[cfg(feature = "archive")]
+    pub async fn supply_stats(
+        &self,
+        ctx: &Context<'_>,
+    ) -> FieldResult<SupplyStats> {
+        let (_, archive) = ctx.data::<DBContext>()?;
+
+        let supply_stats = archive.fetch_supply_info().await?;
+
+        Ok(SupplyStats(supply_stats))
+    }
 }

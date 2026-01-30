@@ -7,9 +7,42 @@
 use async_graphql::Object;
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
-use node::archive::MoonlightGroup;
+use node::archive::{MoonlightGroup, SupplyInfo};
 use serde::Serialize;
 use translator::{IntermediateEvent, IntermediateMoonlightGroup};
+
+pub struct SupplyStats(pub SupplyInfo);
+
+#[Object]
+impl SupplyStats {
+    pub async fn json(&self) -> serde_json::Value {
+        serde_json::to_value(&self.0).unwrap_or_default()
+    }
+
+    pub async fn block_height(&self) -> i64 {
+        self.0.block_height
+    }
+
+    pub async fn total_supply(&self) -> f64 {
+        self.0.total_supply
+    }
+
+    pub async fn circulating_supply(&self) -> f64 {
+        self.0.circulating_supply
+    }
+
+    pub async fn max_supply(&self) -> f64 {
+        self.0.max_supply
+    }
+
+    pub async fn burned(&self) -> f64 {
+        self.0.burned
+    }
+
+    pub async fn updated_at(&self) -> String {
+        self.0.updated_at.clone()
+    }
+}
 
 /// List of archived transactions where each transaction includes at least one
 /// event indicating a Moonlight transfer of funds (Not necessarily a moonlight
