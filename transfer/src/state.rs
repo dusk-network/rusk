@@ -588,11 +588,12 @@ impl TransferState {
     /// The function will panic if it is not being called by a contract, if it
     /// is called by the transfer contract itself, or if the calling contract
     /// doesn't have enough funds.
-    pub fn contract_to_account(&mut self, transfer: ContractToAccount) {
-        // todo: implement
-        let sender_contract = TRANSFER_CONTRACT; //abi::caller()
-                                                 // .expect("A transfer to an account must happen in the context of a
-                                                 // transaction");
+    pub fn contract_to_account(
+        &mut self,
+        transfer: ContractToAccount,
+        caller: ContractId,
+    ) {
+        let sender_contract = caller;
 
         if sender_contract == TRANSFER_CONTRACT {
             panic!("Cannot be called directly by the transfer contract");

@@ -262,6 +262,14 @@ fn instantiate<const N: u8>(
                         contract_to_contract,
                         ContractId::from_bytes(contract_id),
                     );
+                } else if fn_name == "contract_to_account" {
+                    let contract_to_account: ContractToAccount =
+                        from_rkyv(&args).expect("argument deserialization");
+                    let mut transfer_tool_guard = transfer_tool.lock().unwrap();
+                    transfer_tool_guard.contract_to_account(
+                        contract_to_account,
+                        ContractId::from_bytes(contract_id),
+                    );
                 }
                 // todo: process return argument
                 vec![]
@@ -1561,12 +1569,12 @@ fn contract_to_account() {
 
     let transfer_ctx = TransferCtx {
         transfer_tool,
-        block_height: 0,
+        block_height: 1,
     };
 
     // make sure the moonlight account doesn't own any funds before the
     // conversion
-    let moonlight_account = account(&mut session, &moonlight_pk)
+    let moonlight_account = account_host(&transfer_ctx, &moonlight_pk)
         .expect("Getting account should succeed");
     assert_eq!(
         moonlight_account.balance, 0,
