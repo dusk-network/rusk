@@ -20,6 +20,7 @@ mod transformer;
 use conf::Params as ArchiveParams;
 
 pub use moonlight::{MoonlightGroup, Order};
+pub use sqlite::SupplyInfo;
 
 // Archive folder containing the sqlite database and the moonlight database
 const ARCHIVE_FOLDER_NAME: &str = "archive";

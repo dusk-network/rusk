@@ -9,6 +9,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use anyhow::Result;
+use dusk_core::{from_dusk, Dusk};
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
 use sqlx::sqlite::{
@@ -18,11 +19,17 @@ use sqlx::sqlite::{
 use sqlx::{Pool, Sqlite, SqliteConnection};
 use tracing::{error, info, warn};
 
+pub use data::SupplyInfo;
+
 use crate::archive::transformer;
 use crate::archive::Archive;
 
 /// The name of the archive SQLite database.
 const SQLITEARCHIVE_DB_NAME: &str = "archive.sqlite3";
+/// The initial supply for DUSK.
+const INITIAL_SUPPLY: f64 = 500_000_000.0;
+/// The maximum supply for DUSK.
+const MAX_SUPPLY: f64 = 1_000_000_000.0;
 
 // The roles available for SQLite access.
 #[derive(Clone, Copy)]
@@ -353,6 +360,21 @@ impl Archive {
 
         Ok((row.moonlight as u64, row.phoenix as u64))
     }
+
+    /// Fetch the supply info from the supply_info table
+    pub async fn fetch_supply_info(&self) -> Result<data::SupplyInfo> {
+        let mut conn = self.sqlite_reader.acquire().await?;
+
+        let supply_info = sqlx::query_as!(data::SupplyInfo,
+            r#"SELECT block_height, total_supply, circulating_supply, max_supply, burned, updated_at as "updated_at: String"
+            FROM supply_info
+            WHERE id = 1"#
+        )
+        .fetch_one(&mut *conn)
+        .await?;
+
+        Ok(supply_info)
+    }
 }
 
 /// Mutating methods for the SQLite Archive
@@ -371,7 +393,7 @@ impl Archive {
         let hex_block_hash = hex::encode(block_hash);
 
         sqlx::query!(
-            r#"INSERT INTO unfinalized_blocks (block_height, block_hash) 
+            r#"INSERT INTO unfinalized_blocks (block_height, block_hash)
                 VALUES (?, ?)
                 ON CONFLICT(block_height) DO UPDATE SET block_hash = excluded.block_hash"#,
            block_height, hex_block_hash
@@ -407,9 +429,12 @@ impl Archive {
 
     /// Finalize all data related to the block of the given hash in the archive.
     ///
-    /// This also triggers the loading of the MoonlightTxEvents into the
-    /// moonlight db. This also updates the last finalized block height
-    /// attribute.
+    /// This also:
+    /// - Triggers the loading of the MoonlightTxEvents into the moonlight db.
+    /// - Updates the last finalized block height attribute.
+    /// - Includes phoenix presence in finalized_blocks table for the finalized
+    ///   block.
+    /// - Updates circulating supply.
     pub(crate) async fn finalize_archive_data(
         &mut self,
         current_block_height: u64,
@@ -424,8 +449,8 @@ impl Archive {
         // no write lock (yet).
         let already_finalized = sqlx::query_scalar!(
             r#"SELECT EXISTS(
-                SELECT 1 
-                FROM finalized_blocks 
+                SELECT 1
+                FROM finalized_blocks
                 WHERE block_hash = ?
             ) AS "exists!: bool""#,
             hex_block_hash
@@ -478,6 +503,67 @@ impl Archive {
             event.event.target == dusk_core::transfer::TRANSFER_CONTRACT
                 && event.event.topic == dusk_core::transfer::PHOENIX_TOPIC
         });
+
+        /*
+        Get the reward event from the stake contract
+        that contains a Vec<Reward> for all the rewards paid out in the block.
+         */
+        let reward_event = events
+            .iter()
+            .find(|event| {
+                event.event.target == dusk_core::stake::STAKE_CONTRACT
+                    && event.event.topic == "reward"
+            })
+            .expect("Every block needs a reward event")
+            .event
+            .clone();
+
+        let rewards = rkyv::from_bytes::<Vec<dusk_core::stake::Reward>>(
+            &reward_event.data,
+        )
+        .expect("Reward event should be rkyv deserializable");
+
+        let total_block_rewards: Dusk = rewards.iter().map(|r| r.value).sum();
+        let total_block_rewards_f64: f64 = from_dusk(total_block_rewards);
+
+        // Fetch the previous supply from the database
+        let previous_supply: f64 = sqlx::query_scalar!(
+            r#"SELECT total_supply FROM supply_info WHERE id = 1"#
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        // Calculate theoretical total supply based on emission schedule
+        let theoretical_total_supply =
+            util::calculate_total_supply(finalized_block_height as u64);
+
+        // Actual supply is previous supply + what was emitted in this block
+        let actual_total_supply = previous_supply + total_block_rewards_f64;
+
+        // Burned amount is the difference between theoretical and actual supply
+        // This accounts for any coins that were burned or failed to be minted
+        let burned = theoretical_total_supply - actual_total_supply;
+
+        // Circulating supply equals actual total supply
+        let circulating_supply = actual_total_supply;
+
+        sqlx::query!(
+            r#"UPDATE supply_info
+                SET block_height = ?,
+                    total_supply = ?,
+                    circulating_supply = ?,
+                    max_supply = ?,
+                    burned = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = 1"#,
+            finalized_block_height,
+            actual_total_supply,
+            circulating_supply,
+            MAX_SUPPLY,
+            burned
+        )
+        .execute(&mut *tx)
+        .await?;
 
         // Group events by origin (block height, OriginHash)
         let grouped_events = transformer::group_by_origins(
@@ -545,6 +631,7 @@ impl Archive {
         }
 
         tx.commit().await?;
+
         let current_block_height: i64 = current_block_height as i64;
         info!(
             "Marked block {} with height {} as finalized. After {} blocks at height {}",
@@ -654,6 +741,17 @@ mod data {
     use serde::{Deserialize, Serialize};
     use sqlx::FromRow;
 
+    /// Supply information data
+    #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
+    pub struct SupplyInfo {
+        pub block_height: i64,
+        pub total_supply: f64,
+        pub circulating_supply: f64,
+        pub max_supply: f64,
+        pub burned: f64,
+        pub updated_at: String,
+    }
+
     /// Data transfer object for GraphQL pagination
     #[serde_with::serde_as]
     #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
@@ -721,6 +819,8 @@ mod data {
 }
 
 mod util {
+    use super::INITIAL_SUPPLY;
+
     /// Truncate a string to at most 35 characters.
     pub(super) fn truncate_string(s: &str) -> String {
         if s.len() <= 35 {
@@ -736,6 +836,139 @@ mod util {
                 .chars()
                 .rev()
                 .collect::<String>()
+    }
+
+    /// Calculate the theoretical optimistic total supply at a given block
+    /// height.
+    ///
+    /// This represents what the supply should be if no coins were burned during
+    /// emission.
+    pub fn calculate_total_supply(block_height: u64) -> f64 {
+        const PERIOD_BLOCKS: u64 = 12_614_400;
+
+        // Emission per complete period in Dusk
+        const P_1_EMISSION: f64 = 250_480_000.0;
+        const P_2_EMISSION: f64 = 125_240_000.0;
+        const P_3_EMISSION: f64 = 62_620_000.0;
+        const P_4_EMISSION: f64 = 31_310_000.0;
+        const P_5_EMISSION: f64 = 15_650_000.0;
+        const P_6_EMISSION: f64 = 7_830_000.0;
+        const P_7_EMISSION: f64 = 3_910_000.0;
+        const P_8_EMISSION: f64 = 1_950_000.0;
+        const P_9_EMISSION: f64 = 980_000.0;
+        const FINAL_MINT: f64 = 0.05428;
+
+        let total_emission = match block_height {
+            0 => 0.0,
+            1..=12_614_400 => {
+                // Period 1: partial or complete
+                (block_height as f64 / PERIOD_BLOCKS as f64) * P_1_EMISSION
+            }
+            12_614_401..=25_228_800 => {
+                // Period 1 complete + Period 2 partial
+                let remaining = block_height - 12_614_400;
+                P_1_EMISSION
+                    + (remaining as f64 / PERIOD_BLOCKS as f64) * P_2_EMISSION
+            }
+            25_228_801..=37_843_200 => {
+                // Periods 1-2 complete + Period 3 partial
+                let remaining = block_height - 25_228_800;
+                P_1_EMISSION
+                    + P_2_EMISSION
+                    + (remaining as f64 / PERIOD_BLOCKS as f64) * P_3_EMISSION
+            }
+            37_843_201..=50_457_600 => {
+                // Periods 1-3 complete + Period 4 partial
+                let remaining = block_height - 37_843_200;
+                P_1_EMISSION
+                    + P_2_EMISSION
+                    + P_3_EMISSION
+                    + (remaining as f64 / PERIOD_BLOCKS as f64) * P_4_EMISSION
+            }
+            50_457_601..=63_072_000 => {
+                // Periods 1-4 complete + Period 5 partial
+                let remaining = block_height - 50_457_600;
+                P_1_EMISSION
+                    + P_2_EMISSION
+                    + P_3_EMISSION
+                    + P_4_EMISSION
+                    + (remaining as f64 / PERIOD_BLOCKS as f64) * P_5_EMISSION
+            }
+            63_072_001..=75_686_400 => {
+                // Periods 1-5 complete + Period 6 partial
+                let remaining = block_height - 63_072_000;
+                P_1_EMISSION
+                    + P_2_EMISSION
+                    + P_3_EMISSION
+                    + P_4_EMISSION
+                    + P_5_EMISSION
+                    + (remaining as f64 / PERIOD_BLOCKS as f64) * P_6_EMISSION
+            }
+            75_686_401..=88_300_800 => {
+                // Periods 1-6 complete + Period 7 partial
+                let remaining = block_height - 75_686_400;
+                P_1_EMISSION
+                    + P_2_EMISSION
+                    + P_3_EMISSION
+                    + P_4_EMISSION
+                    + P_5_EMISSION
+                    + P_6_EMISSION
+                    + (remaining as f64 / PERIOD_BLOCKS as f64) * P_7_EMISSION
+            }
+            88_300_801..=100_915_200 => {
+                // Periods 1-7 complete + Period 8 partial
+                let remaining = block_height - 88_300_800;
+                P_1_EMISSION
+                    + P_2_EMISSION
+                    + P_3_EMISSION
+                    + P_4_EMISSION
+                    + P_5_EMISSION
+                    + P_6_EMISSION
+                    + P_7_EMISSION
+                    + (remaining as f64 / PERIOD_BLOCKS as f64) * P_8_EMISSION
+            }
+            100_915_201..=113_529_596 => {
+                // Periods 1-8 complete + Period 9 partial
+                let remaining = block_height - 100_915_200;
+                P_1_EMISSION
+                    + P_2_EMISSION
+                    + P_3_EMISSION
+                    + P_4_EMISSION
+                    + P_5_EMISSION
+                    + P_6_EMISSION
+                    + P_7_EMISSION
+                    + P_8_EMISSION
+                    + (remaining as f64 / PERIOD_BLOCKS as f64) * P_9_EMISSION
+            }
+            113_529_597 => {
+                // All periods complete + final mint
+                P_1_EMISSION
+                    + P_2_EMISSION
+                    + P_3_EMISSION
+                    + P_4_EMISSION
+                    + P_5_EMISSION
+                    + P_6_EMISSION
+                    + P_7_EMISSION
+                    + P_8_EMISSION
+                    + P_9_EMISSION
+                    + FINAL_MINT
+            }
+            _ => {
+                // Beyond last mint - max emission reached
+                P_1_EMISSION
+                    + P_2_EMISSION
+                    + P_3_EMISSION
+                    + P_4_EMISSION
+                    + P_5_EMISSION
+                    + P_6_EMISSION
+                    + P_7_EMISSION
+                    + P_8_EMISSION
+                    + P_9_EMISSION
+                    + FINAL_MINT
+            }
+        };
+
+        INITIAL_SUPPLY + total_emission
     }
 }
 
