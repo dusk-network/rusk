@@ -527,11 +527,12 @@ impl TransferState {
     /// it is called by the transfer contract itself), if the call to the
     /// receiving contract fails, or if the sending contract doesn't have enough
     /// funds.
-    pub fn contract_to_contract(&mut self, transfer: ContractToContract) {
-        // todo: implement
-        let sender_contract = TRANSFER_CONTRACT; //abi::caller()
-                                                 // .expect("A transfer to a contract must happen in the context of a
-                                                 // transaction");
+    pub fn contract_to_contract(
+        &mut self,
+        transfer: ContractToContract,
+        caller: ContractId,
+    ) {
+        let sender_contract = caller;
 
         if sender_contract == TRANSFER_CONTRACT {
             panic!("Cannot be called directly by the transfer contract");
@@ -562,6 +563,10 @@ impl TransferState {
         // todo: implement
         // abi::call::<_, ()>(transfer.contract, &transfer.fn_name, &receive)
         //     .expect("Calling receiver should succeed");
+        println!(
+            "xcalling: {} method={}",
+            transfer.contract, transfer.fn_name
+        )
 
         // todo: implement
         // abi::emit(

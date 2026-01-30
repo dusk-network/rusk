@@ -254,6 +254,14 @@ fn instantiate<const N: u8>(
                         bh,
                         ContractId::from_bytes(contract_id),
                     );
+                } else if fn_name == "contract_to_contract" {
+                    let contract_to_contract: ContractToContract =
+                        from_rkyv(&args).expect("argument deserialization");
+                    let mut transfer_tool_guard = transfer_tool.lock().unwrap();
+                    transfer_tool_guard.contract_to_contract(
+                        contract_to_contract,
+                        ContractId::from_bytes(contract_id),
+                    );
                 }
                 // todo: process return argument
                 vec![]
@@ -1341,7 +1349,7 @@ fn convert_wrong_contract_targeted() {
 
     let transfer_ctx = TransferCtx {
         transfer_tool,
-        block_height: 0,
+        block_height: 1,
     };
 
     // make sure the moonlight account doesn't own any funds before the
@@ -1411,7 +1419,7 @@ fn convert_wrong_contract_targeted() {
 
     assert!(matches!(res, Err(_)), "The contract call should error");
 
-    let moonlight_account = account(&mut session, &moonlight_pk)
+    let moonlight_account = account_host(&transfer_ctx, &moonlight_pk)
         .expect("Getting account should succeed");
 
     assert_eq!(
@@ -1458,7 +1466,7 @@ fn contract_to_contract() {
 
     let transfer_ctx = TransferCtx {
         transfer_tool,
-        block_height: 0,
+        block_height: 1,
     };
 
     // make sure bob contract has no balance prior to the tx
@@ -1497,9 +1505,9 @@ fn contract_to_contract() {
 
     println!("CONTRACT TO CONTRACT: {gas_spent} gas");
 
-    let alice_balance = contract_balance(&mut session, ALICE_ID)
+    let alice_balance = contract_balance_host(&transfer_ctx, ALICE_ID)
         .expect("Querying the contract balance should succeed");
-    let bob_balance = contract_balance(&mut session, BOB_ID)
+    let bob_balance = contract_balance_host(&transfer_ctx, BOB_ID)
         .expect("Querying the contract balance should succeed");
 
     assert_eq!(
