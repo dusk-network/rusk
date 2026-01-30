@@ -100,8 +100,4 @@ rusk-wallet: ## build the rusk wallet binary
 web-wallet: ## build the static files of the web wallet
 	$(MAKE) -C ./web-wallet all 
 
-COMPILER_VERSION=v0.3.0-rc.1
-setup-compiler: ## Setup the Dusk Contract Compiler
-	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
-
-.PHONY: all abi keys state wasm contracts test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet web-wallet setup-compiler data-drivers
+.PHONY: all abi keys state wasm contracts test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet web-wallet data-drivers

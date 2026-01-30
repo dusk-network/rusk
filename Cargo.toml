@@ -1,15 +1,5 @@
 [workspace]
 members = [
-    # Test contracts
-    "contracts/alice",
-    "contracts/bob",
-    "contracts/charlie",
-    "contracts/host_fn",
-
-    # Genesis contracts
-    "contracts/stake",
-    "contracts/transfer",
-
     "data-drivers/data-driver",
     "data-drivers/transfer-contract",
     "data-drivers/stake-contract",
@@ -184,12 +174,6 @@ debug-assertions = false
 overflow-checks = false
 incremental = false
 codegen-units = 16
-
-[profile.release.package.stake-contract]
-overflow-checks = true
-
-[profile.release.package.transfer-contract]
-overflow-checks = true
 
 [profile.release.package.rusk-wallet]
 overflow-checks = true
