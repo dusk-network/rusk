@@ -321,16 +321,17 @@ impl TransferState {
     /// # Panics
     /// This can only be called by the contract specified, and only if said
     /// contract has enough balance.
-    pub fn withdraw(&mut self, withdraw: Withdraw, block_height: u64) {
+    pub fn withdraw(
+        &mut self,
+        withdraw: Withdraw,
+        block_height: u64,
+        caller: ContractId,
+    ) {
         let contract = withdraw.contract();
 
-        // todo: implement
-        // let caller = abi::caller()
-        //     .expect("A withdrawal must happen in the context of a
-        // transaction"); if *contract != caller {
-        //     panic!("The \"withdraw\" function can only be called by the
-        // specified contract."); }
-        // todo: end
+        if *contract != caller {
+            panic!("The \"withdraw\" function can only be called by the specified contract.");
+        }
 
         let value = withdraw.value();
 

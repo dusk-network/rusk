@@ -232,16 +232,28 @@ fn instantiate<const N: u8>(
     // todo - this callback code belongs somewhere else
     {
         let callback: Option<
-            Rc<RefCell<dyn FnMut([u8; 32], String, Vec<u8>) -> Vec<u8>>>,
+            Rc<RefCell<dyn FnMut([u8; 32], String, Vec<u8>, u64) -> Vec<u8>>>,
         > = Some(Rc::new(RefCell::new(
-            move |contract_id: [u8; 32], fn_name: String, args: Vec<u8>| {
-                println!("callback called: {}", fn_name);
+            move |contract_id: [u8; 32],
+                  fn_name: String,
+                  args: Vec<u8>,
+                  bh: u64| {
+                println!("callback called: {} bh={}", fn_name, bh);
                 if fn_name == "deposit" {
-                    let value = from_rkyv(&args)
-                        .expect("deposit argument deserialization");
+                    let value =
+                        from_rkyv(&args).expect("argument deserialization");
                     let mut transfer_tool_guard = transfer_tool.lock().unwrap();
                     transfer_tool_guard
                         .deposit(value, ContractId::from_bytes(contract_id));
+                } else if fn_name == "withdraw" {
+                    let withdraw: Withdraw =
+                        from_rkyv(&args).expect("argument deserialization");
+                    let mut transfer_tool_guard = transfer_tool.lock().unwrap();
+                    transfer_tool_guard.withdraw(
+                        withdraw,
+                        bh,
+                        ContractId::from_bytes(contract_id),
+                    );
                 }
                 // todo: process return argument
                 vec![]
@@ -974,7 +986,7 @@ fn contract_withdraw() {
 
     let transfer_ctx = TransferCtx {
         transfer_tool,
-        block_height: 0,
+        block_height: 1,
     };
 
     // withdraw alice's genesis balance, this is done by calling the alice
@@ -1049,7 +1061,7 @@ fn contract_withdraw() {
         "The sender's balance should have increased by the withdrawal value minus the spent gas"
     );
 
-    let alice_balance = contract_balance(&mut session, ALICE_ID)
+    let alice_balance = contract_balance_host(&transfer_ctx, ALICE_ID)
         .expect("Querying the contract balance should succeed");
     assert_eq!(
         alice_balance, 0,

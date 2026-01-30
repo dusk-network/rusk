@@ -141,7 +141,7 @@ impl VM {
     pub fn register_genesis_callback(
         &self,
         callback: Option<
-            Rc<RefCell<dyn FnMut([u8; 32], String, Vec<u8>) -> Vec<u8>>>,
+            Rc<RefCell<dyn FnMut([u8; 32], String, Vec<u8>, u64) -> Vec<u8>>>,
         >,
     ) {
         PiecrustVM::register_genesis_callback(callback);
