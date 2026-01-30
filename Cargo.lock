@@ -122,7 +122,7 @@ dependencies = [
 name = "alice"
 version = "0.3.0"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "rkyv",
 ]
 
@@ -791,7 +791,7 @@ version = "0.3.0"
 dependencies = [
  "bytecheck",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "rkyv",
 ]
 
@@ -917,7 +917,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "charlie"
 version = "0.3.0"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "rkyv",
 ]
 
@@ -1676,7 +1676,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-merkle",
  "dusk-node-data 1.4.0",
  "hex",
@@ -1695,7 +1695,7 @@ dependencies = [
  "async-trait",
  "criterion",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-merkle",
  "dusk-node-data 1.4.0",
  "hex",
@@ -1709,14 +1709,15 @@ dependencies = [
 
 [[package]]
 name = "dusk-core"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7972fd42fb3fe67ea5492909f7715f8fe373af98a02943b7e24b5262fbd4678a"
+checksum = "27c7f082e93ac1976697518c968a8d4d8ed8607bec2d910a244e66765871c73a"
 dependencies = [
  "ark-bn254",
  "ark-groth16",
  "ark-relations",
  "ark-serialize",
+ "blake2b_simd",
  "bls12_381-bls 0.5.1",
  "bytecheck",
  "c-kzg",
@@ -1836,7 +1837,7 @@ dependencies = [
  "bs58",
  "dusk-bytes",
  "dusk-consensus 1.4.0",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-node-data 1.4.0",
  "hex",
  "humantime-serde",
@@ -1870,7 +1871,7 @@ dependencies = [
  "criterion",
  "dusk-bytes",
  "dusk-consensus 1.4.0",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-node-data 1.4.0",
  "dusk-wallet-core 1.4.0",
  "fake",
@@ -1912,7 +1913,7 @@ dependencies = [
  "bs58",
  "chrono",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "fake",
  "hex",
  "pbkdf2 0.12.2",
@@ -1940,7 +1941,7 @@ dependencies = [
  "bs58",
  "chrono",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "fake",
  "hex",
  "pbkdf2 0.12.2",
@@ -2008,7 +2009,7 @@ dependencies = [
  "dirs",
  "dusk-bytes",
  "dusk-consensus 1.4.0",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-data-driver 0.3.0",
  "dusk-node 1.4.2",
  "dusk-node-data 1.4.0",
@@ -2069,7 +2070,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "663066363a8445cef95aeea0adc6f08fbadd635d6476149dac50058ae9c74a2a"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-data-driver 0.3.0",
 ]
 
@@ -2077,7 +2078,7 @@ dependencies = [
 name = "dusk-stake-contract-dd"
 version = "0.3.1-alpha.1"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-data-driver 0.3.0",
 ]
 
@@ -2087,7 +2088,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce738f97c0e00fe40357b2c7327f21a68adc840a4b5336f4e2bf488849f72fc7"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-data-driver 0.3.0",
 ]
 
@@ -2095,7 +2096,7 @@ dependencies = [
 name = "dusk-transfer-contract-dd"
 version = "0.3.1-alpha.1"
 dependencies = [
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-data-driver 0.3.0",
 ]
 
@@ -2108,7 +2109,7 @@ dependencies = [
  "blake2b_simd",
  "blake3",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-poseidon",
  "lru 0.12.5",
  "piecrust",
@@ -2126,7 +2127,7 @@ dependencies = [
  "blake2b_simd",
  "blake3",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-poseidon",
  "ff",
  "hex",
@@ -2152,7 +2153,7 @@ dependencies = [
  "bytecheck",
  "dlmalloc",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "ff",
  "hkdf",
  "rand 0.8.5",
@@ -2170,7 +2171,7 @@ dependencies = [
  "bytecheck",
  "dlmalloc",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "ff",
  "hex",
  "hkdf",
@@ -2889,7 +2890,7 @@ name = "host_fn"
 version = "0.2.0"
 dependencies = [
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
 ]
 
 [[package]]
@@ -4801,7 +4802,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06ec33ea54518b45d9d26ec791ddc6430f96dcf75083e32170c3d87f7082f692"
 dependencies = [
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-plonk",
  "hex",
  "once_cell",
@@ -4815,7 +4816,7 @@ name = "rusk-prover"
 version = "1.4.1-alpha.1"
 dependencies = [
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-plonk",
  "hex",
  "once_cell",
@@ -4833,7 +4834,7 @@ dependencies = [
  "bs58",
  "cargo_toml",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-plonk",
  "dusk-vm 1.4.3",
  "ff",
@@ -4860,7 +4861,7 @@ dependencies = [
  "bs58",
  "cargo_toml",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-plonk",
  "dusk-vm 1.4.3",
  "ff",
@@ -4897,7 +4898,7 @@ dependencies = [
  "crossterm",
  "dirs",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-node-data 1.4.0",
  "dusk-wallet-core 1.4.0",
  "flume 0.10.14",
@@ -5585,7 +5586,7 @@ version = "0.8.0"
 dependencies = [
  "criterion",
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-vm 1.4.3",
  "dusk-wallet-core 1.4.0",
  "ff",
@@ -6088,7 +6089,7 @@ name = "transfer-contract"
 version = "0.10.1"
 dependencies = [
  "dusk-bytes",
- "dusk-core 1.4.0",
+ "dusk-core 1.4.1",
  "dusk-vm 1.4.3",
  "ff",
  "rand 0.8.5",
