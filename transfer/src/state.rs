@@ -159,7 +159,8 @@ impl TransferState {
         fn_name: &str,
         withdraw: &Withdraw,
         block_height: u64,
-    ) {
+    ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError>
+    {
         let contract = withdraw.contract();
         let value = withdraw.value();
 
@@ -172,33 +173,41 @@ impl TransferState {
 
                 for n in phoenix_tx.nullifiers() {
                     if !nullifiers.contains(n) {
-                        panic!("Incorrect nullifiers signed");
+                        return Err(PiecrustError::Panic(
+                            "Incorrect nullifiers signed".into(),
+                        ));
                     }
                 }
             }
             WithdrawReplayToken::Moonlight(nonce) => {
-                let moonlight_tx = transitory::moonlight_transaction();
+                let moonlight_tx = transitory::moonlight_transaction()?;
 
                 if *nonce != moonlight_tx.nonce() {
-                    panic!("Incorrect nonce signed");
+                    return Err(PiecrustError::Panic(
+                        "Incorrect nonce signed".into(),
+                    ));
                 }
             }
         }
 
         match withdraw.receiver() {
             WithdrawReceiver::Phoenix(address) => {
-                let signature = match signature {
-                    WithdrawSignature::Phoenix(s) => s,
-                    _ => panic!(
-                        "Withdrawal to Phoenix must be signed with Schnorr"
-                    ),
-                };
+                let signature =
+                    match signature {
+                        WithdrawSignature::Phoenix(s) => s,
+                        _ => return Err(PiecrustError::Panic(
+                            "Withdrawal to Phoenix must be signed with Schnorr"
+                                .into(),
+                        )),
+                    };
 
                 let hash = hash(msg);
                 let pk = address.note_pk();
 
                 if !verify_schnorr(hash, *pk, *signature) {
-                    panic!("Invalid signature");
+                    return Err(PiecrustError::Panic(
+                        "Invalid signature".into(),
+                    ));
                 }
 
                 let sender = contract_fn_sender(fn_name, *contract);
@@ -207,15 +216,19 @@ impl TransferState {
                 self.push_note_current_height(note, block_height);
             }
             WithdrawReceiver::Moonlight(account) => {
-                let signature = match signature {
-                    WithdrawSignature::Moonlight(s) => s,
-                    _ => panic!(
-                        "Withdrawal to Moonlight must be signed with BLS"
-                    ),
-                };
+                let signature =
+                    match signature {
+                        WithdrawSignature::Moonlight(s) => s,
+                        _ => return Err(PiecrustError::Panic(
+                            "Withdrawal to Moonlight must be signed with BLS"
+                                .into(),
+                        )),
+                    };
 
                 if !verify_bls(msg, *account, *signature) {
-                    panic!("Invalid signature");
+                    return Err(PiecrustError::Panic(
+                        "Invalid signature".into(),
+                    ));
                 }
 
                 let account_bytes = account.to_raw_bytes();
@@ -225,6 +238,13 @@ impl TransferState {
                 account.balance += value;
             }
         }
+        Ok(CallReceipt {
+            gas_spent: 0,
+            gas_limit: 0,
+            events: Vec::new(),
+            call_tree: CallTree::new(),
+            data: Ok(Vec::new()),
+        })
     }
 
     /// Mint more Dusk.
@@ -359,19 +379,24 @@ impl TransferState {
     /// # Panics
     /// This can only be called by this contract - the transfer contract - and
     /// will panic if this is not the case.
-    pub fn convert(&mut self, convert: Withdraw, block_height: u64) {
+    pub fn convert(
+        &mut self,
+        convert: Withdraw,
+        block_height: u64,
+        caller: ContractId,
+    ) -> Result<Vec<u8>, ContractError> {
         // since each transaction only has, at maximum, a single contract call,
         // this check impliest that this is the first contract call.
-        // todo: implement
-        // let caller = abi::caller()
-        //     .expect("A conversion must happen in the context of a
-        // transaction"); if caller != TRANSFER_CONTRACT {
-        //     panic!("Only the first contract call can be a conversion");
-        // }
-        // todo: end
+        if caller != TRANSFER_CONTRACT {
+            return Err(ContractError::Panic(
+                "Only the first contract call can be a conversion".into(),
+            ));
+        }
 
         if *convert.contract() != TRANSFER_CONTRACT {
-            panic!("The conversion must target the transfer contract");
+            return Err(ContractError::Panic(
+                "The conversion must target the transfer contract".into(),
+            ));
         }
 
         let deposit = transitory::deposit_info_mut();
@@ -384,7 +409,7 @@ impl TransferState {
                 let deposit_value = *deposit_value;
 
                 if convert.value() != deposit_value {
-                    panic!("The value to convert doesn't match the value in the transaction");
+                    return Err(ContractError::Panic("The value to convert doesn't match the value in the transaction".into()));
                 }
 
                 // Since this is the first contract call, and the target of a
@@ -401,7 +426,7 @@ impl TransferState {
                 // deposit as being taken. Interesting to note is that we don't
                 // need to change the value held by the contract at all, since
                 // it never changes.
-                self.mint_withdrawal("convert", &convert, block_height);
+                self.mint_withdrawal("convert", &convert, block_height)?;
                 deposit.set_taken();
 
                 // todo: implement
@@ -410,11 +435,16 @@ impl TransferState {
                 //     ConvertEvent::from_withdraw_and_sender(sender, &convert),
                 // );
             }
-            Deposit::None => panic!("There is no deposit in the transaction"),
+            Deposit::None => {
+                return Err(ContractError::Panic(
+                    "There is no deposit in the transaction".into(),
+                ))
+            }
             // Since this is the first contract call, it is impossible for the
             // deposit to be already taken.
             _ => unreachable!(),
         }
+        Ok(vec![])
     }
 
     /// Deposit funds to a contract's balance.
@@ -680,14 +710,14 @@ impl TransferState {
                 {
                     let withdraw: Withdraw = from_rkyv(&call.fn_args)
                         .expect("Deserialization of withdraw"); // todo: proper error processing
-                    println!("withdraw={:?}", withdraw);
-                    slf.convert(withdraw, block_height);
+                    let data =
+                        slf.convert(withdraw, block_height, TRANSFER_CONTRACT);
                     Ok(CallReceipt {
                         gas_spent,
                         gas_limit: tx.gas_limit(),
                         events: Vec::new(),
                         call_tree: CallTree::new(),
-                        data: Ok(Vec::new()),
+                        data,
                     })
                 } else {
                     drop(slf); // important: release the lock so that contract methods can

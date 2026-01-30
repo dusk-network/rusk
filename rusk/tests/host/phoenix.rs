@@ -1091,7 +1091,7 @@ fn convert_to_phoenix_fails() {
 
     let transfer_ctx = TransferCtx {
         transfer_tool,
-        block_height: 0,
+        block_height: 1,
     };
 
     // Add the conversion value to the moonlight account

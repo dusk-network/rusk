@@ -23,6 +23,7 @@ use dusk_core::transfer::{
     phoenix::{Note, Transaction as PhoenixTransaction},
     Transaction,
 };
+use piecrust::Error as PiecrustError;
 
 /// The state of a deposit while a transaction is executing.
 pub enum Deposit {
@@ -152,10 +153,13 @@ pub fn transaction() -> &'static Transaction {
 }
 
 /// Get a reference of the current ongoing transaction, assuming it's Moonlight.
-pub fn moonlight_transaction() -> &'static MoonlightTransaction {
+pub fn moonlight_transaction(
+) -> Result<&'static MoonlightTransaction, PiecrustError> {
     match transaction() {
-        Transaction::Moonlight(ref tx) => tx,
-        _ => panic!("Expected Moonlight TX, found Phoenix"),
+        Transaction::Moonlight(ref tx) => Ok(tx),
+        _ => Err(PiecrustError::Panic(
+            "Expected Moonlight TX, found Phoenix".into(),
+        )),
     }
 }
 
