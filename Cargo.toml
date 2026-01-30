@@ -34,24 +34,24 @@ resolver = "2"
 
 [workspace.dependencies]
 # Workspace internal dependencies
-dusk-consensus = "1.4.0"
-# dusk-consensus = { version = "1.4.1-alpha.1", path = "./consensus/" }
-dusk-core = "1.4.1"
-# dusk-core = { version = "1.4.2-alpha.1", path = "./core/" }
-dusk-vm = "1.4.3"
-# dusk-vm = { version = "1.4.4-alpha.1", path = "./vm/" }
-node = { version = "1.4.2", package = "dusk-node" }
-# node = { version = "1.4.3-alpha.1", path = "./node/", package = "dusk-node" }
-node-data = { version = "1.4.0", package = "dusk-node-data" }
-# node-data = { version = "1.4.1-alpha.1", path = "./node-data/", package = "dusk-node-data" }
-rusk-profile = "1.4.0"
-# rusk-profile = { version = "1.4.1-alpha.1", path = "./rusk-profile/" }
-rusk-prover = "1.3.0"
-# rusk-prover = { version = "1.4.1-alpha.1", path = "./rusk-prover/" }
-rusk-recovery = "1.4.0"
-# rusk-recovery = { version = "1.4.1-alpha.1", path = "./rusk-recovery/" }
-wallet-core = { version = "1.4.0", package = "dusk-wallet-core" }
-# wallet-core = { version = "1.4.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
+# dusk-consensus = "1.4.0"
+dusk-consensus = { version = "1.4.1-alpha.1", path = "./consensus/" }
+# dusk-core = "1.4.1"
+dusk-core = { version = "1.4.2-alpha.1", path = "./core/" }
+# dusk-vm = "1.4.3"
+dusk-vm = { version = "1.4.4-alpha.1", path = "./vm/" }
+# node = { version = "1.4.2", package = "dusk-node" }
+node = { version = "1.4.3-alpha.1", path = "./node/", package = "dusk-node" }
+# node-data = { version = "1.4.0", package = "dusk-node-data" }
+node-data = { version = "1.4.1-alpha.1", path = "./node-data/", package = "dusk-node-data" }
+# rusk-profile = "1.4.0"
+rusk-profile = { version = "1.4.1-alpha.1", path = "./rusk-profile/" }
+# rusk-prover = "1.3.0"
+rusk-prover = { version = "1.4.1-alpha.1", path = "./rusk-prover/" }
+# rusk-recovery = "1.4.0"
+rusk-recovery = { version = "1.4.1-alpha.1", path = "./rusk-recovery/" }
+# wallet-core = { version = "1.4.0", package = "dusk-wallet-core" }
+wallet-core = { version = "1.4.1-alpha.1", path = "./wallet-core/", package = "dusk-wallet-core" }
 
 dusk-data-driver = "0.3.0"
 # dusk-data-driver = { version = "0.3.1-alpha.1", path = "./data-drivers/data-driver" }
