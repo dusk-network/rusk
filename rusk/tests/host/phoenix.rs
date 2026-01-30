@@ -10,6 +10,7 @@ use std::cell::RefCell;
 use std::sync::{mpsc, Arc, Mutex};
 use tokio::sync::broadcast;
 
+use crate::host::transfer_callback::TransferCallback;
 use dusk_core::abi::ContractId;
 use dusk_core::dusk;
 use dusk_core::signatures::bls::{
@@ -239,47 +240,13 @@ fn instantiate<const N: u8>(
                   args: Vec<u8>,
                   bh: u64| {
                 println!("callback called: {} bh={}", fn_name, bh);
-                if fn_name == "deposit" {
-                    let value =
-                        from_rkyv(&args).expect("argument deserialization");
-                    let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                    let _r =
-                        transfer_tool_guard // todo: process result
-                            .deposit(
-                                value,
-                                ContractId::from_bytes(contract_id),
-                            );
-                } else if fn_name == "withdraw" {
-                    let withdraw: Withdraw =
-                        from_rkyv(&args).expect("argument deserialization");
-                    let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                    let _r = transfer_tool_guard.withdraw(
-                        // todo: process result
-                        withdraw,
-                        bh,
-                        ContractId::from_bytes(contract_id),
-                    );
-                } else if fn_name == "contract_to_contract" {
-                    let contract_to_contract: ContractToContract =
-                        from_rkyv(&args).expect("argument deserialization");
-                    let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                    let _r = transfer_tool_guard.contract_to_contract(
-                        // todo: process result
-                        contract_to_contract,
-                        ContractId::from_bytes(contract_id),
-                    );
-                } else if fn_name == "contract_to_account" {
-                    let contract_to_account: ContractToAccount =
-                        from_rkyv(&args).expect("argument deserialization");
-                    let mut transfer_tool_guard = transfer_tool.lock().unwrap();
-                    let _r = transfer_tool_guard.contract_to_account(
-                        // todo: process result
-                        contract_to_account,
-                        ContractId::from_bytes(contract_id),
-                    );
-                }
-                // todo: process return argument
-                vec![]
+                TransferCallback::process(
+                    transfer_tool.clone(),
+                    contract_id,
+                    fn_name,
+                    args,
+                    bh,
+                )
             },
         )));
 
