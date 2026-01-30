@@ -164,10 +164,13 @@ pub fn moonlight_transaction(
 }
 
 /// Get a reference of the current ongoing transaction, assuming it's Phoenix.
-pub fn phoenix_transaction() -> &'static PhoenixTransaction {
+pub fn phoenix_transaction(
+) -> Result<&'static PhoenixTransaction, PiecrustError> {
     match transaction() {
-        Transaction::Phoenix(ref tx) => tx,
-        _ => panic!("Expected Phoenix TX, found Moonlight"),
+        Transaction::Phoenix(ref tx) => Ok(tx),
+        _ => Err(PiecrustError::Panic(
+            "Expected Phoenix TX, found Moonlight".into(),
+        )),
     }
 }
 

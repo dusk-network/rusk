@@ -169,7 +169,7 @@ impl TransferState {
 
         match withdraw.token() {
             WithdrawReplayToken::Phoenix(nullifiers) => {
-                let phoenix_tx = transitory::phoenix_transaction();
+                let phoenix_tx = transitory::phoenix_transaction()?;
 
                 for n in phoenix_tx.nullifiers() {
                     if !nullifiers.contains(n) {

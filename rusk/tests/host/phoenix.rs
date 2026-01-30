@@ -1230,7 +1230,7 @@ fn convert_to_moonlight() {
 
     let transfer_ctx = TransferCtx {
         transfer_tool,
-        block_height: 0,
+        block_height: 1,
     };
 
     // make sure the moonlight account doesn't own any funds before the
@@ -1291,7 +1291,7 @@ fn convert_to_moonlight() {
 
     println!("CONVERT TO MOONLIGHT: {} gas", gas_spent);
 
-    let moonlight_account = account(&mut session, &moonlight_pk)
+    let moonlight_account = account_host(&transfer_ctx, &moonlight_pk)
         .expect("Getting account should succeed");
 
     assert_eq!(
