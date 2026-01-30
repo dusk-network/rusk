@@ -4,33 +4,18 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'rusk/**'
+      - 'node/**'
+      - '.github/workflows/benchmarks.yml'
 
 jobs:
-  # Job to run change detection
-  changes:
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: read
-    outputs:
-      run-ci: ${{ steps.filter.outputs.run-ci }}
-    steps:
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            run-ci:
-              - 'rusk/**'
-              - 'node/**'
-              - '.github/workflows/benchmarks.yml'
-
   benchmark:
-    needs: changes
-    if: needs.changes.outputs.run-ci == 'true'
     name: Run Benchmarks
     runs-on: core
     steps:
       - uses: actions/checkout@v4
-      - uses: dsherret/rust-toolchain-file@v1      
+      - uses: dsherret/rust-toolchain-file@v1
       - run: make bench
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v4
