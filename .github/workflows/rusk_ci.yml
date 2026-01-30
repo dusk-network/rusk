@@ -26,22 +26,13 @@ jobs:
         with:
           filters: |
             run-ci:
-              - '!(web-wallet/**/*|.github/workflows/webwallet_ci.yml)'
-              - '!(explorer/**/*|.github/workflows/explorer_ci.yml)'
-              - '!(w3sper.js/**/*|.github/workflows/w3sperjs_ci.yml)'
-          predicate-quantifier: "every"
+              - '!(web-wallet/**/*|explorer/**/*|w3sper.js/**/*|.github/workflows/webwallet_ci.yml|.github/workflows/explorer_ci.yml|.github/workflows/w3sperjs_ci.yml)'
 
   analyze:
     needs: changes
     if: needs.changes.outputs.run-ci == 'true'
-
     name: Dusk Analyzer
-    runs-on: core
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dsherret/rust-toolchain-file@v1
-      - run: cargo install --git https://github.com/dusk-network/cargo-dusk-analyzer
-      - run: cargo dusk-analyzer
+    uses: dusk-network/.github/.github/workflows/dusk-analysis.yml@main
 
   fmt:
     needs: changes
