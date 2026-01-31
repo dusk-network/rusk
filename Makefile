@@ -11,10 +11,10 @@ abi: ## Build the ABI
 keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk recovery-keys
 
-state: keys wasm ## Create the network state
+state: keys ## Create the network state
 	$(MAKE) -C ./rusk recovery-state
 
-wasm: setup-compiler ## Generate the WASM for all the contracts and wallet-core
+wasm: ## Generate the WASM for all the contracts and wallet-core
 	$(MAKE) -C ./contracts $@
 	$(MAKE) -C ./wallet-core $@
 
@@ -24,7 +24,7 @@ data-drivers: ## Build the data-driver WASM files
 data-drivers-js: ## Build the data-driver WASM files (with alloc support for JS)
 	$(MAKE) -C ./data-drivers wasm-js
 
-contracts: setup-compiler ## Execute the test for all contracts
+contracts: ## Execute the test for all contracts
 	$(MAKE) -j1 -C ./contracts all
 
 test: keys wasm ## Run the tests
@@ -77,7 +77,7 @@ bench: keys wasm  ## Bench Rusk & node
 run: keys state web-wallet ## Run the server
 	$(MAKE) -C ./rusk/ $@
 
-prepare-dev: keys wasm ## Preparation steps for launching a local node for development
+prepare-dev: keys ## Preparation steps for launching a local node for development
 		@cp examples/consensus.keys ~/.dusk/rusk/consensus.keys \
 	&& cargo r --release -p dusk-rusk -- recovery state --init examples/genesis.toml -o /tmp/example.state || echo "Example genesis state already exists. Not overriding it"
 
@@ -100,8 +100,4 @@ rusk-wallet: ## build the rusk wallet binary
 web-wallet: ## build the static files of the web wallet
 	$(MAKE) -C ./web-wallet all 
 
-COMPILER_VERSION=v0.3.0-rc.1
-setup-compiler: ## Setup the Dusk Contract Compiler
-	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
-
-.PHONY: all abi keys state wasm contracts test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet web-wallet setup-compiler data-drivers
+.PHONY: all abi keys state wasm contracts test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet web-wallet data-drivers
