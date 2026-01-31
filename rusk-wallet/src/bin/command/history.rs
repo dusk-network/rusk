@@ -41,15 +41,20 @@ impl TransactionHistory {
     }
 
     pub(crate) fn action(&self) -> &str {
-        match self.tx.call() {
-            None => "transfer",
-            Some(call) => {
-                if call.contract == STAKE_CONTRACT && call.fn_name == "withdraw"
+        if self.tx.deploy().is_some() {
+            "deploy"
+        } else if self.tx.blob().is_some() {
+            "blob"
+        } else {
+            match self.tx.call() {
+                Some(call)
+                    if call.contract == STAKE_CONTRACT
+                        && call.fn_name == "withdraw" =>
                 {
-                    "claim-reward"
-                } else {
-                    &call.fn_name
+                    "claim-rewards"
                 }
+                Some(call) => &call.fn_name,
+                None => "transfer",
             }
         }
     }
