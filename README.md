@@ -96,6 +96,7 @@ For more information on **running a node for main- or testnet**, see our
 - Rust 1.71 nightly or higher
 - GCC 13 or higher
 - Clang 16 or higher
+- Node.js 20.x or higher
 
 ### Setup script
 
