@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE supply_info\n                SET block_height = ?,\n                    total_supply = ?,\n                    circulating_supply = ?,\n                    max_supply = ?,\n                    burned = ?,\n                    updated_at = CURRENT_TIMESTAMP\n                WHERE id = 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "57cb3510ebca13bbacf5aead1f7c8cf72e468e23e8c2d1ce57df9a0f8ce2ae1d"
+}
