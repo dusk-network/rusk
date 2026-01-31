@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Change transaction history action names to be more descriptive [#3801]
 - Change withdraw rewards to withdraw partial amount [#2538]
 - Change transaction history fee display to be negative
 - Change transaction history item type to display public/shielded
@@ -97,6 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Issues -->
 [#3948]: https://github.com/dusk-network/rusk/issues/3948
+[#3801]: https://github.com/dusk-network/rusk/issues/3801
 [#3792]: https://github.com/dusk-network/rusk/issues/3792
 [#3775]: https://github.com/dusk-network/rusk/issues/3775
 [#3077]: https://github.com/dusk-network/rusk/issues/3077
