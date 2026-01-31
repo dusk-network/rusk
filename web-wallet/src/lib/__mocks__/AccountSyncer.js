@@ -16,10 +16,10 @@ class AccountSyncerMock extends AccountSyncer {
    * @returns {Promise<AccountBalance[]>}
    */
   async balances(profiles) {
-    return Array(profiles.length).fill({
+    return Array.from({ length: profiles.length }, () => ({
       nonce: 9876n,
       value: 12_345_000_000_000n,
-    });
+    }));
   }
 
   /**
@@ -27,7 +27,7 @@ class AccountSyncerMock extends AccountSyncer {
    * @returns {Promise<StakeInfo[]>}
    */
   async stakes(profiles) {
-    return Array(profiles.length).fill(stakeInfo);
+    return Array.from({ length: profiles.length }, () => stakeInfo);
   }
 }
 
