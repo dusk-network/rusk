@@ -53,11 +53,34 @@ impl Config {
                 path.push(env!("CARGO_BIN_NAME"));
                 path.push("config.toml");
 
-                let contents = read_to_string(profile)?
-                    .or(read_to_string(path)?)
-                    .unwrap_or_else(|| {
-                        include_str!("../../default.config.toml").to_string()
-                    });
+                // Try to read profile config first, then global config
+                let contents = match read_to_string(&profile)? {
+                    Some(contents) => Some(contents),
+                    None => read_to_string(path.clone())?,
+                };
+
+                let contents = match contents {
+                    Some(contents) => contents,
+                    None => {
+                        // If no config exists anywhere, create one in the
+                        // global location
+                        let default_config =
+                            include_str!("../../default.config.toml");
+
+                        // Create the global config directory if it doesn't
+                        // exist
+                        if let Some(parent) = path.parent() {
+                            let _ = fs::create_dir_all(parent);
+                        }
+
+                        // Write the default config to the global location
+                        // Ignore errors - if writing fails, we'll just use the
+                        // embedded default
+                        let _ = fs::write(path, default_config);
+
+                        default_config.to_string()
+                    }
+                };
 
                 let network: Network = toml::from_str(&contents)
                     .map_err(|_| Error::NetworkNotFound)?;

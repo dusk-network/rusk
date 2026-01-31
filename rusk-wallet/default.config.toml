@@ -1,3 +1,20 @@
+# Rusk Wallet Configuration
+#
+# Config priority: CLI args > profile config > global config > defaults
+# Profile config: {wallet_dir}/config.toml (default: ~/.dusk/rusk-wallet/)
+# Global config:  ~/.config/rusk-wallet/config.toml
+
+# Custom networks can be added as [network.<name>] sections.
+# Required: state, prover
+# Optional: explorer, archiver (defaults to state URL)
+#
+# Example:
+# [network.mynetwork]
+# state = "https://my-node.example.com"
+# prover = "https://my-prover.example.com"
+#
+# Usage: rusk-wallet --network mynetwork <command>
+
 state = "https://nodes.dusk.network"
 prover = "https://provers.dusk.network"
 explorer = "https://explorer.dusk.network/transactions/transaction/?id="
