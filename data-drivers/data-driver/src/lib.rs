@@ -11,7 +11,7 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
-#![deny(unused_crate_dependencies)]
+#![cfg_attr(not(test), deny(unused_crate_dependencies))]
 #![deny(unused_extern_crates)]
 
 extern crate alloc;
