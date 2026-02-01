@@ -1,7 +1,7 @@
 # 🧩 Data Drivers
 
 Tools to encode and decode arguments passed to Dusk contracts, bridging  
-low-level RKYV bytes and JavaScript inputs/outputs.
+low-level RKYV bytes and JavaScript/Rust inputs/outputs.
 
 This package acts as a collection of utilities and helpers that simplify  
 interaction with contracts from both Rust and JavaScript contexts.
@@ -11,8 +11,12 @@ interaction with contracts from both Rust and JavaScript contexts.
 Each folder inside `data-drivers/` is a local package with its own README  
 and focus area:
 
-- `data-driver/`: Utilities to encode & decode arguments.
+- `data-driver/`: Utilities to encode & decode arguments. Supports both WASM export (for JS) and reader mode (for Rust).
 - `stake-contract/`: Library to encode/decode contract inputs/outputs for the stake contract.
 - `transfer-contract/`: Library to encode/decode contract inputs/outputs for the transfer contract.
 
 For details on each, see their local README files.
+
+## Reader Feature
+
+The `data-driver` includes a **reader** feature that enables loading compiled WASM drivers from Rust applications.

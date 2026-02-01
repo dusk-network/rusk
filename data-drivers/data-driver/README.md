@@ -1,7 +1,7 @@
 # Data Drivers Overview
 
 In this module, we provide data drivers whose task is to ease communication with Dusk smart contracts
-for JavaScript clients.
+for JavaScript clients and Rust applications.
 By a data driver we mean here a separate Web Assembly module which provides methods converting
 JavaScript arguments into a form which is understood by Dusk smart contracts,
 and also converting Dusk smart contracts outputs into a form which is understood
@@ -13,6 +13,20 @@ Dusk smart contract, yet it does not call them.
 Each data driver has its assigned Dusk smart contract, yet it is important to
 be aware that data driver for a contract does not call its methods, although it is aware of them
 and of their arguments and outputs.
+
+## Two Usage Modes
+
+### 1. WASM Export Mode (for JavaScript)
+
+Build contract drivers as WASM modules that JavaScript can load via `loader.js`.
+
+**Features**: `wasm-export` + `alloc`
+
+### 2. Reader Mode (for Rust)
+
+Load compiled WASM drivers from Rust applications using the `DriverReader` API. See `src/reader.rs` for implementation details.
+
+**Feature**: `reader`
 
 # Module data-driver
 

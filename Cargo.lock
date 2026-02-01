@@ -1735,6 +1735,9 @@ name = "dusk-data-driver"
 version = "0.3.1-alpha.1"
 dependencies = [
  "bytecheck",
+ "dusk-core 1.4.2-alpha.1",
+ "dusk-wasmtime",
+ "parking_lot",
  "rkyv",
  "serde",
  "serde_json",

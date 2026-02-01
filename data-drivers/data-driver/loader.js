@@ -35,7 +35,7 @@
  * import { loadDriverWasm } from "./data-driver/loader.js";
  * const bytes = await fetch("/path/to/driver.wasm").then(r => r.arrayBuffer());
  * const driver = await loadDriverWasm(new Uint8Array(bytes));
- * driver.init?.(); // optional, if exported
+ * driver.init(); // Must be called exactly once before using any FFI functions
  * const callBytes = driver.encodeInputFn("fn_name", JSON.stringify({ amount: "100" }));
  * const schema = driver.getSchema();
  * console.log(schema, callBytes);
@@ -46,7 +46,7 @@
  * Create a JS driver from a compiled WASM binary.
  * @param {Uint8Array|ArrayBuffer} bytes - The compiled data‑driver WASM.
  * @returns {Promise<{
- *   init: () => number|void,
+ *   init: () => void,
  *   encodeInputFn: (fnName: string, json: string) => Uint8Array,
  *   decodeInputFn: (fnName: string, rkyvBytes: Uint8Array) => any,
  *   decodeOutputFn: (fnName: string, rkyvBytes: Uint8Array) => any,
@@ -230,7 +230,7 @@ export async function loadDriverWasm(bytes) {
       return textDecoder.decode(result);
     },
 
-    /** Initializes the contract driver */
+    /** Initializes the contract driver. Must be called exactly once before using any FFI functions. */
     init: () => exports.init(),
   };
 }
