@@ -18,7 +18,7 @@
 //   data according to the stake contract's ABI via the data-driver.
 // - The paths assume you've built the WASM via `make data-drivers-js`.
 // - Any base64 printed to the console is just a convenient way to view raw bytes.
-import { loadDriverWasm } from "./data-driver/loader.js";
+import { load as loadDriverWasm } from "../w3sper.js/src/data-driver/mod.js";
 import { readFile } from "fs/promises";
 
 function decodeBase64(b64) {
