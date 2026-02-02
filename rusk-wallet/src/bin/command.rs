@@ -630,9 +630,19 @@ impl Command {
                     Ok(mut moonlight_history) => {
                         history.append(&mut moonlight_history)
                     }
-                    Err(err) => tracing::error!(
-                        "Failed to fetch archive history with error: {err}"
-                    ),
+                    Err(err) => {
+                        let err_msg = err.to_string();
+                        if err_msg.contains("Unknown field") {
+                            tracing::info!(
+                                "Public transaction history not available. \
+                                Connect to an archive node to retrieve it."
+                            );
+                        } else {
+                            tracing::error!(
+                                "Failed to fetch moonlight history: {err}"
+                            );
+                        }
+                    }
                 }
 
                 history.sort_by_key(|th| th.height());
