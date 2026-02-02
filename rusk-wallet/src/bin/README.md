@@ -67,20 +67,30 @@ You will need to connect to a running [**Rusk**](https://github.com/dusk-network
 
 The default settings can be seen [here](https://github.com/dusk-network/rusk/blob/master/rusk-wallet/default.config.toml).
 
-It's possible to override those settings by create a `config.toml` file with the same structure, in one of the following
-directory:
+### Configuration Hierarchy
 
-- The wallet directory (provided via the `--wallet-dir` argument, defaults to `$HOME/.dusk/rusk-wallet/`)
-- The global configuration folder (`$HOME/.config/rusk-wallet/`)
+Settings are loaded in order of priority:
 
-The default wallet directory can also be changed by setting `wallet_dir = ...` in a `config.toml` file located in the same
-directory as the `rusk-wallet` binary.
+1. CLI arguments (`--state`, `--prover`, `--archiver`, `--network`)
+2. Profile config: `{wallet_dir}/config.toml`
+3. Global config: `$HOME/.config/rusk-wallet/config.toml`
+4. Embedded defaults
 
-Having the `config.toml` in the global configuration folder is useful in case of multiple wallets (each one with its own wallet directory) that shares the same settings.
+If no config file exists, one is created at the global location on first run.
 
-If a `config.toml` exists in both locations, the one found in the specified wallet directory will be used.
+### Custom Networks
 
-The CLI arguments takes precedence and overrides any configuration present in the configuration file.
+Add custom networks to your `config.toml`:
+
+```toml
+[network.mynetwork]
+state = "https://my-node.example.com"
+prover = "https://my-prover.example.com"
+explorer = "https://my-explorer.example.com/tx/?id="  # optional
+archiver = "https://my-archiver.example.com"         # optional, defaults to state
+```
+
+Then use with: `rusk-wallet --network mynetwork <command>`
 
 **Note:** When using Windows, connection will default to TCP/IP even if UDS is explicitly specified.
 
