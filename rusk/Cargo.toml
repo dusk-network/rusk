@@ -51,7 +51,7 @@ blake3 = { workspace = true }
 sha3 = { workspace = true }
 dusk-transfer-contract-dd = { workspace = true }
 dusk-stake-contract-dd = { workspace = true }
-dusk-data-driver = {workspace = true}
+dusk-data-driver = { workspace = true, features = ["reader"] }
 dusk-wasmtime = { workspace = true }
 
 dusk-bytes = { workspace = true }

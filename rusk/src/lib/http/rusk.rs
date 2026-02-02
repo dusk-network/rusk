@@ -129,7 +129,6 @@ impl Rusk {
                             contract_id,
                             bytecode,
                         )?;
-                        driver_executor.init()?;
                         let mut instance_cache = self.instance_cache.write();
                         instance_cache
                             .insert(*contract_id, driver_executor.clone());
