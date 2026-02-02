@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 
-import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
+import mockedWalletStore from "$lib/mocks/mockedWalletStore";
+import { getAsHTMLElement } from "$lib/dusk/test-helpers";
 
 import { AddressPicker } from "..";
 
@@ -382,27 +383,21 @@ describe("AddressPicker", () => {
   describe("Profile Display", () => {
     it("should display profile header with correct format", async () => {
       const { container } = render(AddressPicker, props);
+      const trigger = getAsHTMLElement(container, ".address-picker__trigger");
 
-      // Open dropdown
-      const trigger = container.querySelector(".address-picker__trigger");
-      expect(trigger).toBeTruthy();
-      if (trigger) {
-        await fireEvent.click(trigger);
-      }
+      expect(trigger).toBeInTheDocument();
+
+      await fireEvent.click(trigger);
 
       // Check profile headers
       const profileHeaders = container.querySelectorAll(
         ".address-picker__profile-header"
       );
+
+      expect(currentProfile).toBe(profiles[0]);
       expect(profileHeaders).toHaveLength(profiles.length);
-
-      // First profile should show "Profile 1"
       expect(profileHeaders[0]).toHaveTextContent("Profile 1");
-
-      // Check if current indicator is shown for current profile
-      if (currentProfile === profiles[0]) {
-        expect(profileHeaders[0]).toHaveTextContent("(Current)");
-      }
+      expect(profileHeaders[0]).toHaveTextContent("(Current)");
     });
 
     it("should display both public and shielded addresses with proper labels", async () => {

@@ -11,7 +11,7 @@ import {
   when,
 } from "lamb";
 
-/** @type {(buffer: ArrayBuffer) => Uint8Array} */
+/** @type {(buffer: ArrayBuffer) => Uint8Array<ArrayBuffer>} */
 const bufferToUint8Array = (buffer) => new Uint8Array(buffer);
 
 /** @type {(profiles: Array<Profile>) => string[]} */
@@ -19,7 +19,7 @@ const getAddressesFrom = mapWith(compose(String, getKey("address")));
 
 const nullifiersToString = mapWith(String);
 
-/** @type {(source: WalletCacheDbNote) => Omit<WalletCacheDbNote, "note"> & { note: Uint8Array }} */
+/** @type {(source: WalletCacheDbNote) => Omit<WalletCacheDbNote, "note"> & { note: Uint8Array<ArrayBuffer> }} */
 const updateNote = updateKey("note", bufferToUint8Array);
 
 const updateNullifier = updateKey("nullifier", bufferToUint8Array);
@@ -160,7 +160,7 @@ class WalletCache {
   }
 
   /**
-   * @param {Uint8Array[]} [nullifiers]
+   * @param {Uint8Array<ArrayBuffer>[]} [nullifiers]
    * @returns {Promise<WalletCachePendingNoteInfo[]>}
    */
   getPendingNotesInfo(nullifiers = []) {
@@ -183,7 +183,7 @@ class WalletCache {
 
   /**
    * @param {string[]} [addresses] Base58 encoded addresses to fetch the spent notes of
-   * @returns {Promise<Uint8Array[]>}
+   * @returns {Promise<Uint8Array<ArrayBuffer>[]>}
    */
   getSpentNotesNullifiers(addresses = []) {
     return this.#getEntriesFrom("spentNotes", true, {
@@ -244,7 +244,7 @@ class WalletCache {
 
   /**
    * @param {string[]} [addresses] Base58 encoded addresses to fetch the unspent notes of
-   * @returns {Promise<Uint8Array[]>}
+   * @returns {Promise<Uint8Array<ArrayBuffer>[]>}
    */
   getUnspentNotesNullifiers(addresses = []) {
     return this.#getEntriesFrom("unspentNotes", true, {
@@ -259,9 +259,9 @@ class WalletCache {
    *
    * @see {@link https://en.wikipedia.org/wiki/Complement_(set_theory)#Relative_complement}
    *
-   * @param {Uint8Array[]} a
-   * @param {Uint8Array[]} b
-   * @returns {Uint8Array[]}
+   * @param {Uint8Array<ArrayBuffer>[]} a
+   * @param {Uint8Array<ArrayBuffer>[]} b
+   * @returns {Uint8Array<ArrayBuffer>[]}
    */
   nullifiersDifference(a, b) {
     if (a.length === 0 || b.length === 0) {
@@ -293,7 +293,7 @@ class WalletCache {
   }
 
   /**
-   * @param {Uint8Array[]} nullifiers
+   * @param {Uint8Array<ArrayBuffer>[]} nullifiers
    * @param {string} txId
    * @returns {Promise<void>}
    */
@@ -335,10 +335,10 @@ class WalletCache {
 
   /**
    * Added the `ArrayBuffer[]` as a possibility as
-   * w3sper in some cases doesn't return a `Uint8Array[]`.
+   * w3sper in some cases doesn't return a `Uint8Array<ArrayBuffer>[]`.
    * IndexedDB will write ArrayBuffers in the database anyway.
    *
-   * @param {Uint8Array[] | ArrayBuffer[]} nullifiers
+   * @param {Uint8Array<ArrayBuffer>[] | ArrayBuffer[]} nullifiers
    * @returns {Promise<void>}
    */
   async spendNotes(nullifiers) {
@@ -362,7 +362,7 @@ class WalletCache {
   }
 
   /**
-   * @param {Uint8Array[]} nullifiers
+   * @param {Uint8Array<ArrayBuffer>[]} nullifiers
    * @returns {Promise<void>}
    */
   async unspendNotes(nullifiers) {
@@ -381,7 +381,7 @@ class WalletCache {
   }
 
   /**
-   * @param {Array<Map<Uint8Array, Uint8Array>>} syncerNotes
+   * @param {Array<Map<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>>} syncerNotes
    * @param {Array<Profile>} profiles
    * @returns {WalletCacheNote[]}
    */

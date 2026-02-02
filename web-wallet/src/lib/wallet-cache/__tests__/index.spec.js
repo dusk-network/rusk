@@ -381,7 +381,7 @@ describe("Wallet cache", () => {
 
   describe("Spending notes", () => {
     it("should expose a method to move a group of notes from the unspent to the spent table", async () => {
-      /** @type {(entry: { nullifier: Uint8Array }) => Uint8Array} */
+      /** @type {(entry: { nullifier: Uint8Array<ArrayBuffer> }) => Uint8Array<ArrayBuffer>} */
       const getNullifier = getKey("nullifier");
       const [pendingToSpend, expectedPending] = await walletCache
         .getPendingNotesInfo()
@@ -577,7 +577,7 @@ describe("Wallet cache", () => {
 
   describe("Utilities", () => {
     it("should expose a method that returns the array of unique nullifiers contained only in the first of the two given sets of nullifiers", () => {
-      /** @type {(source: WalletCacheNote[]) => Uint8Array[]} */
+      /** @type {(source: WalletCacheNote[]) => Uint8Array<ArrayBuffer>[]} */
       const getNullifiers = pluck("nullifier");
       const a = getNullifiers(cacheUnspentNotes);
       const b = getNullifiers(cacheUnspentNotes.slice(0, a.length - 2));
@@ -745,9 +745,10 @@ describe("Wallet cache", () => {
         },
       }));
       const notesAsMap = notesArrayToMap(cacheUnspentNotes);
-      const notesArray = /** @type {Array<Map<Uint8Array, Uint8Array>>} */ (
-        addresses.map((address) => notesAsMap.get(address))
-      );
+      const notesArray =
+        /** @type {Array<Map<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>>} */ (
+          addresses.map((address) => notesAsMap.get(address))
+        );
 
       expect(
         // @ts-expect-error we are passing fake profiles

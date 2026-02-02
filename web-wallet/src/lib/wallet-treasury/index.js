@@ -57,7 +57,7 @@ class WalletTreasury {
 
   /**
    * @param {Profile["address"]} identifier
-   * @returns {Promise<Map<Uint8Array, Uint8Array>>}
+   * @returns {Promise<Map<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>>}
    */
   async address(identifier) {
     const address = identifier.toString();
@@ -73,7 +73,7 @@ class WalletTreasury {
     }
 
     return result.length
-      ? /** @type {Map<Uint8Array, Uint8Array>} */ (
+      ? /** @type {Map<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>} */ (
           notesArrayToMap(result).get(address)
         )
       : new Map();
@@ -212,7 +212,7 @@ class WalletTreasury {
      * Retrieving the nullifiers that are now spent.
      *
      * Currently `w3sper.js` returns an array of `ArrayBuffer`s
-     * instead of one of `Uint8Array`s, but we don't
+     * instead of one of `Uint8Array<ArrayBuffer>`s, but we don't
      * care as `ArrayBuffers` will be written in the
      * database anyway.
      */
@@ -233,7 +233,7 @@ class WalletTreasury {
      * cache, while they really aren't.
      *
      * Currently `w3sper.js` returns an array of `ArrayBuffer`s
-     * instead of one of `Uint8Array`s.
+     * instead of one of `Uint8Array<ArrayBuffer>`s.
      */
     const reallySpentNullifiers = await addressSyncer.spent(
       currentSpentNullifiers
@@ -288,7 +288,7 @@ class WalletTreasury {
   }
 
   /**
-   * @param {Uint8Array[]} nullifiers
+   * @param {Uint8Array<ArrayBuffer>[]} nullifiers
    * @param {string} hash
    * @returns {Promise<void>}
    */

@@ -27,7 +27,7 @@
   } from "$lib/wallet";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
 
-  /** @type {(seed: Uint8Array) => Promise<ProfileGenerator>} */
+  /** @type {(seed: Uint8Array<ArrayBuffer>) => Promise<ProfileGenerator>} */
   async function checkLocalData(seed) {
     const profileGenerator = await profileGeneratorFrom(seed);
     const defaultAddress = (await profileGenerator.default).address.toString();
@@ -40,13 +40,13 @@
     return profileGenerator;
   }
 
-  /** @type {(mnemonic: string) => Promise<Uint8Array>} */
+  /** @type {(mnemonic: string) => Promise<Uint8Array<ArrayBuffer>>} */
   const getSeedFromMnemonicAsync = async (mnemonic) =>
     validateMnemonic(mnemonic)
       ? getSeedFromMnemonic(mnemonic)
       : Promise.reject(new InvalidMnemonicError());
 
-  /** @type {(loginInfo: WalletEncryptInfo) => (pwd: string) => Promise<Uint8Array>} */
+  /** @type {(loginInfo: WalletEncryptInfo) => (pwd: string) => Promise<Uint8Array<ArrayBuffer>>} */
   const getSeedFromInfo = (loginInfo) => (pwd) =>
     decryptMnemonic(loginInfo, pwd).then(getSeedFromMnemonic, () =>
       Promise.reject(new InvalidPasswordError())
@@ -66,7 +66,7 @@
 
   /** @type {import("svelte/elements").FormEventHandler<HTMLFormElement>} */
   function handleUnlockWalletSubmit() {
-    /** @type {(mnemonic: string) => Promise<Uint8Array>} */
+    /** @type {(mnemonic: string) => Promise<Uint8Array<ArrayBuffer>>} */
     const getSeed = loginInfo
       ? getSeedFromInfo(loginInfo)
       : (mnemonic) => getSeedFromMnemonicAsync(mnemonic.toLowerCase());

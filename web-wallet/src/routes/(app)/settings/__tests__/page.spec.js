@@ -11,7 +11,7 @@ import { act, cleanup, fireEvent, render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { setKey } from "lamb";
 
-import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
+import mockedWalletStore from "$lib/mocks/mockedWalletStore";
 import * as navigation from "$lib/navigation";
 import {
   gasStore,

@@ -1,5 +1,5 @@
 type WalletEncryptInfo = {
-  data: Uint8Array;
-  iv: Uint8Array;
-  salt: Uint8Array;
+  data: Uint8Array<ArrayBuffer>;
+  iv: Uint8Array<ArrayBuffer>;
+  salt: Uint8Array<ArrayBuffer>;
 };

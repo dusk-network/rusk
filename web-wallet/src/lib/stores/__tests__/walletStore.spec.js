@@ -21,8 +21,6 @@ import { networkStore, walletStore } from "..";
 const VITE_SYNC_INTERVAL = import.meta.env.VITE_SYNC_INTERVAL;
 
 describe("Wallet store", async () => {
-  vi.useFakeTimers();
-
   const AUTO_SYNC_INTERVAL = !isNaN(Number(VITE_SYNC_INTERVAL))
     ? Number(VITE_SYNC_INTERVAL)
     : 5 * 60 * 1000;
@@ -65,8 +63,11 @@ describe("Wallet store", async () => {
     minimumStake
   );
 
-  const setTimeoutSpy = vi.spyOn(window, "setTimeout");
-  const clearTimeoutSpy = vi.spyOn(window, "clearTimeout");
+  /** @type {import("vitest").Mock<typeof setTimeout>} */
+  let setTimeoutSpy;
+
+  /** @type {import("vitest").Mock<typeof clearTimeout>} */
+  let clearTimeoutSpy;
 
   const abortControllerSpy = vi.spyOn(AbortController.prototype, "abort");
   const balanceSpy = vi
@@ -138,7 +139,12 @@ describe("Wallet store", async () => {
 
   beforeEach(async () => {
     vi.useFakeTimers();
+
+    setTimeoutSpy = vi.spyOn(window, "setTimeout");
+    clearTimeoutSpy = vi.spyOn(window, "clearTimeout");
+
     await vi.runOnlyPendingTimersAsync();
+
     vi.clearAllTimers();
     vi.clearAllMocks();
   });
@@ -258,6 +264,8 @@ describe("Wallet store", async () => {
 
       walletStore.reset();
       expect(get(walletStore)).toStrictEqual(initialState);
+
+      await vi.runOnlyPendingTimersAsync();
     });
   });
 
@@ -363,13 +371,6 @@ describe("Wallet store", async () => {
      * @param {Parameters<WalletStoreServices[M]>} args
      */
     async function walletStoreTransferCheck(method, args) {
-      /**
-       * For some reason calling `useRealTimers` makes
-       * `setTimeout` and `clearTimeout` disappear from
-       * `window` if they are spied upon.
-       */
-      setTimeoutSpy.mockRestore();
-      clearTimeoutSpy.mockRestore();
       vi.useRealTimers();
 
       const currentlyCachedBalance =
@@ -620,13 +621,6 @@ describe("Wallet store", async () => {
     });
 
     it("should expose a method to clear local data", async () => {
-      /**
-       * For some reason calling `useRealTimers` makes
-       * `setTimeout` and `clearTimeout` disappear from
-       * `window` if they are spied upon.
-       */
-      setTimeoutSpy.mockRestore();
-      clearTimeoutSpy.mockRestore();
       vi.useRealTimers();
 
       await walletStore.clearLocalData();

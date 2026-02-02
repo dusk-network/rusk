@@ -13,7 +13,7 @@ const getKeyMaterial = (pwd) =>
 
 /**
  * @param {String} pwd
- * @param {Uint8Array} salt
+ * @param {Uint8Array<ArrayBuffer>} salt
  * @returns {Promise<CryptoKey>}
  */
 const getDerivedKey = async (pwd, salt) =>

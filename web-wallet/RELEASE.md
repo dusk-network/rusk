@@ -131,13 +131,11 @@ git push origin web-wallet-v1.1.0
 Deploy the new version progressively through each environment:
 
 1. **Devnet**
-
    - Deploy to development network
    - Verify functionality
    - Address any issues before proceeding
 
 2. **Testnet**
-
    - Deploy to test network after devnet validation
    - Run comprehensive tests
    - Verify integrations with other systems

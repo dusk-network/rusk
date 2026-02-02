@@ -16,13 +16,13 @@ type WalletCacheBalanceInfo = {
 type WalletCacheCriteria =
   | { field: "address"; values: string[] }
   | { field: "account"; values: string[] }
-  | { field: "nullifier"; values: Uint8Array[] }
+  | { field: "nullifier"; values: Uint8Array<ArrayBuffer>[] }
   | undefined;
 
 type WalletCacheNote = {
   address: string;
-  note: Uint8Array;
-  nullifier: Uint8Array;
+  note: Uint8Array<ArrayBuffer>;
+  nullifier: Uint8Array<ArrayBuffer>;
 };
 
 type WalletCacheDbNote = Omit<WalletCacheNote, "note" | "nullifier"> & {
@@ -67,9 +67,15 @@ type WalletCacheHistoryEntry = {
   psk: string;
 };
 
-type WalletCacheNotesMap = Map<string, Map<Uint8Array, Uint8Array>>;
+type WalletCacheNotesMap = Map<
+  string,
+  Map<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>
+>;
 
-type WalletCachePendingNoteInfo = { nullifier: Uint8Array; txId: string };
+type WalletCachePendingNoteInfo = {
+  nullifier: Uint8Array<ArrayBuffer>;
+  txId: string;
+};
 
 type WalletCacheDbPendingNoteInfo = Omit<
   WalletCachePendingNoteInfo,
