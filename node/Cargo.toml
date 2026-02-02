@@ -47,6 +47,8 @@ sqlx = { workspace = true, features = [
 serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, features = ["hex"], optional = true }
 bs58 = { workspace = true, optional = true }
+regex = { version = "1", optional = true }
+blake2b_simd = { workspace = true, optional = true }
 
 [dev-dependencies]
 fake = { workspace = true, features = ['derive'] }
@@ -58,7 +60,7 @@ wallet-core = { workspace = true }
 
 [features]
 with_telemetry = []
-archive = ["dep:sqlx", "dep:serde_json", "dep:serde_with", "dep:bs58"]
+archive = ["dep:sqlx", "dep:serde_json", "dep:serde_with", "dep:bs58", "dep:regex", "dep:blake2b_simd"]
 network-trace = []
 
 [[bench]]

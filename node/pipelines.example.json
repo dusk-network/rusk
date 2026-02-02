@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "pipelines": [
+    {
+      "id": "moonlight_builtin",
+      "type": "moonlight_builtin",
+      "enabled": true,
+      "required": false,
+      "params": {}
+    },
+    {
+      "id": "transfer_events",
+      "type": "sql_event_table",
+      "enabled": true,
+      "required": false,
+      "source": {
+        "stream": "finalized_events",
+        "grouping": "per_event"
+      },
+      "filter": {
+        "contract_ids": [],
+        "topics": ["moonlight", "phoenix", "withdraw", "convert", "mint", "contract_to_account"]
+      },
+      "decoder": {
+        "mode": "raw_only"
+      },
+      "sink": {
+        "kind": "sqlite_table",
+        "table": "idx_transfer_events",
+        "schema": [
+          {
+            "name": "topic",
+            "type": "TEXT",
+            "not_null": true
+          },
+          {
+            "name": "source",
+            "type": "TEXT",
+            "not_null": true
+          },
+          {
+            "name": "data",
+            "type": "BLOB",
+            "not_null": true
+          }
+        ],
+        "indexes": [
+          {
+            "name": "idx_transfer_events_topic",
+            "columns": ["topic"]
+          },
+          {
+            "name": "idx_transfer_events_block_height",
+            "columns": ["block_height"]
+          }
+        ]
+      }
+    }
+  ]
+}

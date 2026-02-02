@@ -12,12 +12,24 @@ use rocksdb::OptimisticTransactionDB;
 use sqlx::sqlite::SqlitePool;
 use tracing::debug;
 
+use crate::archive::conf::pipeline_config::PipelinesConfig;
+
 pub mod conf;
 mod moonlight;
+mod moonlight_pipeline;
+mod pipeline;
+mod pipeline_manager;
+mod schema_manager;
+mod sql_event_table_pipeline;
 mod sqlite;
 mod transformer;
 
+/// etl unit tests module.
+#[cfg(test)]
+mod etl_pipeline_tests;
+
 use conf::Params as ArchiveParams;
+use pipeline_manager::PipelineManager;
 
 pub use moonlight::{MoonlightGroup, Order};
 
@@ -29,7 +41,7 @@ const ARCHIVE_FOLDER_NAME: &str = "archive";
 /// The implementation for the sqlite archive and archivist trait is in the
 /// `sqlite` module. The implementation for the moonlight database is in the
 /// `moonlight` module.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Archive {
     // Writer pool (single connection) to the SQLite database
     sqlite_writer: SqlitePool,
@@ -41,6 +53,8 @@ pub struct Archive {
     moonlight_db: Arc<OptimisticTransactionDB>,
     // last finalized block height known to the archive
     last_finalized_block_height: u64,
+    // Pipeline manager for ETL indexing
+    pipeline_manager: Option<Arc<PipelineManager>>,
 }
 
 impl Archive {
@@ -87,13 +101,15 @@ impl Archive {
         let sqlite_reader =
             Self::create_reader_pool(&path, params.reader_max_connections)
                 .await;
-        let moonlight_db = Self::create_or_open_moonlight_db(&path, params);
+        let moonlight_db =
+            Self::create_or_open_moonlight_db(&path, params.clone());
 
         let mut self_archive = Self {
-            sqlite_writer,
+            sqlite_writer: sqlite_writer.clone(),
             sqlite_reader,
             moonlight_db,
             last_finalized_block_height: 0,
+            pipeline_manager: None,
         };
 
         let last_finalized_block_height = match self_archive
@@ -110,6 +126,76 @@ impl Archive {
         };
 
         self_archive.last_finalized_block_height = last_finalized_block_height;
+
+        // Load and initialize pipeline manager if config provided
+        if let Some(config_path) = params.pipelines_config_path {
+            match PipelinesConfig::load(&config_path) {
+                Ok(config) => {
+                    tracing::info!(
+                        "Loaded pipelines config from {:?}",
+                        config_path
+                    );
+
+                    let mut manager = PipelineManager::new(config.clone());
+
+                    // Register pipelines based on config
+                    for pipeline_cfg in &config.pipelines {
+                        if !pipeline_cfg.enabled {
+                            continue;
+                        }
+
+                        match pipeline_cfg.pipeline_type.as_str() {
+                            "moonlight_builtin" => {
+                                let pipeline = Arc::new(
+                                    moonlight_pipeline::MoonlightPipeline::new(Arc::new(self_archive.clone()))
+                                );
+                                manager.register(pipeline);
+                            }
+                            "sql_event_table" => {
+                                match sql_event_table_pipeline::SqlEventTablePipeline::new(pipeline_cfg.clone()) {
+                                    Ok(pipeline) => {
+                                        manager.register(Arc::new(pipeline));
+                                    }
+                                    Err(e) => {
+                                        tracing::error!("Failed to create sql_event_table pipeline '{}': {}", pipeline_cfg.id, e);
+                                        panic!("Pipeline creation failed: {}", e);
+                                    }
+                                }
+                            }
+                            other => {
+                                tracing::error!("Unknown pipeline type: {}", other);
+                                panic!("Unknown pipeline type: {}", other);
+                            }
+                        }
+                    }
+
+                    // Initialize the pipeline manager (creates tables and
+                    // metadata)
+                    if let Err(e) =
+                        manager.initialize(&self_archive.sqlite_writer).await
+                    {
+                        tracing::error!(
+                            "Failed to initialize pipeline manager: {}",
+                            e
+                        );
+                        panic!("Pipeline manager initialization failed: {}", e);
+                    }
+
+                    tracing::info!(
+                        "Initialized {} pipelines",
+                        manager.enabled_pipeline_ids().len()
+                    );
+
+                    self_archive.pipeline_manager = Some(Arc::new(manager));
+                }
+                Err(e) => {
+                    tracing::error!("Failed to load pipelines config: {}", e);
+                    panic!("Pipelines config loading failed: {}", e);
+                }
+            }
+        } else {
+            tracing::info!("No pipelines config provided, pipelines disabled");
+        }
 
         self_archive
     }

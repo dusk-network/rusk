@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use node_data::events::contract::ContractTxEvent;
 use node_data::ledger::Hash;
 use sqlx::sqlite::{
@@ -370,12 +370,15 @@ impl Archive {
         let block_height: i64 = block_height as i64;
         let hex_block_hash = hex::encode(block_hash);
 
-        sqlx::query!(
-            r#"INSERT INTO unfinalized_blocks (block_height, block_hash) 
+        sqlx::query(
+            r#"INSERT INTO unfinalized_blocks (block_height, block_hash)
                 VALUES (?, ?)
                 ON CONFLICT(block_height) DO UPDATE SET block_hash = excluded.block_hash"#,
-           block_height, hex_block_hash
-       ).execute(&mut *tx).await?.rows_affected();
+       )
+       .bind(block_height)
+       .bind(&hex_block_hash)
+       .execute(&mut *tx)
+       .await?;
 
         // Convert the events to a data::Event
         for event in events {
@@ -407,14 +410,62 @@ impl Archive {
 
     /// Finalize all data related to the block of the given hash in the archive.
     ///
-    /// This also triggers the loading of the MoonlightTxEvents into the
-    /// moonlight db. This also updates the last finalized block height
-    /// attribute.
+    /// This handles canonical persistence (staging → finalized) and then runs
+    /// ETL pipelines if configured.
     pub(crate) async fn finalize_archive_data(
         &mut self,
         current_block_height: u64,
         hex_block_hash: &str,
     ) -> Result<()> {
+        // Step 1: Canonical finalization (staging → finalized in SQLite)
+        let (finalized_block_height, phoenix_present, grouped_events) =
+            self.finalize_block_in_sqlite(hex_block_hash).await?;
+
+        info!(
+            "Marked block {} with height {} as finalized. After {} blocks at height {}",
+            util::truncate_string(hex_block_hash),
+            finalized_block_height,
+            (current_block_height as i64 - finalized_block_height),
+            current_block_height
+        );
+
+        // Step 2: Run ETL pipelines if manager is configured
+        if let Some(ref pipeline_manager) = self.pipeline_manager {
+            let ctx = crate::archive::pipeline::PipelineContext {
+                block_height: finalized_block_height as u64,
+                block_hash: hex_block_hash,
+                grouped_events: &grouped_events,
+                phoenix_present,
+            };
+
+            pipeline_manager
+                .run_for_block(&self.sqlite_writer, &ctx)
+                .await?;
+        } else {
+            // Fallback: run legacy Moonlight indexer directly
+            let active_accounts = self.tl_moonlight(grouped_events)?;
+            self.update_active_accounts(active_accounts).await?;
+        }
+
+        self.last_finalized_block_height = finalized_block_height as u64;
+
+        Ok(())
+    }
+
+    /// Canonical finalization: move data from staging to finalized tables.
+    ///
+    /// Returns (block_height, phoenix_present, grouped_events) on success.
+    async fn finalize_block_in_sqlite(
+        &mut self,
+        hex_block_hash: &str,
+    ) -> Result<(
+        i64,
+        bool,
+        std::collections::BTreeMap<
+            crate::archive::transformer::EventIdentifier,
+            Vec<node_data::events::contract::ContractEvent>,
+        >,
+    )> {
         let mut tx = self.sqlite_writer.begin().await?;
 
         // Early-exit safeguard: Skip if this block is already finalized. Even
@@ -422,14 +473,14 @@ impl Archive {
         // query/delete staging tables and reinsert events, adding
         // unnecessary locks. Transaction is deferred so this read takes
         // no write lock (yet).
-        let already_finalized = sqlx::query_scalar!(
+        let already_finalized: bool = sqlx::query_scalar(
             r#"SELECT EXISTS(
-                SELECT 1 
-                FROM finalized_blocks 
+                SELECT 1
+                FROM finalized_blocks
                 WHERE block_hash = ?
-            ) AS "exists!: bool""#,
-            hex_block_hash
+            )"#,
         )
+        .bind(hex_block_hash)
         .fetch_one(&mut *tx)
         .await?;
 
@@ -440,7 +491,7 @@ impl Archive {
             );
             // No changes have been made, explicitly rollback immediately
             tx.rollback().await?;
-            return Ok(());
+            return Err(anyhow!("Block already finalized"));
         }
 
         // Get the row for the block with the given hash that got finalized
@@ -457,7 +508,7 @@ impl Archive {
                 util::truncate_string(hex_block_hash)
             );
             tx.rollback().await?;
-            return Ok(());
+            return Err(anyhow!("No unfinalized block found"));
         };
 
         let finalized_block_height = r.block_height;
@@ -545,23 +596,12 @@ impl Archive {
         }
 
         tx.commit().await?;
-        let current_block_height: i64 = current_block_height as i64;
-        info!(
-            "Marked block {} with height {} as finalized. After {} blocks at height {}",
-            util::truncate_string(hex_block_hash),
+
+        Ok((
             finalized_block_height,
-            (current_block_height - finalized_block_height),
-            current_block_height
-        );
-
-        // Get the MoonlightTxEvents and load it into the moonlight db
-        let active_accounts = self.tl_moonlight(grouped_events)?;
-
-        self.update_active_accounts(active_accounts).await?;
-
-        self.last_finalized_block_height = finalized_block_height as u64;
-
-        Ok(())
+            phoenix_event_present,
+            grouped_events,
+        ))
     }
 
     /// Remove the unfinalized block together with the unfinalized events of the
