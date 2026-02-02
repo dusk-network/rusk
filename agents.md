@@ -52,7 +52,10 @@ Work on these with extra diligence.
 
 ## Workflows
 
-### Bug Fix
+### TDD Bug Fixes
+
+When a bug is reported, start by adding a test that reproduces it (it should fail on the current code). Once the failing test exists, have subagents propose minimal fixes, and only accept a change that makes the test pass (and keeps the rest of the suite green).
+
 1. Reproduce → 2. Locate → 3. Read surrounding code → 4. Smallest fix → 5. Test → 6. Clippy
 
 ### New Feature
