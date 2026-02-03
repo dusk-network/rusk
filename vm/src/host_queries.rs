@@ -417,10 +417,7 @@ pub(crate) fn host_sha256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     wrap_host_query(arg_buf, arg_len, sha256)
 }
 
-pub(crate) fn host_verify_kzg_proof(
-    arg_buf: &mut [u8],
-    arg_len: u32,
-) -> u32 {
+pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     wrap_host_query(arg_buf, arg_len, |(commitment, z, y, proof)| {
         verify_kzg_proof(commitment, z, y, proof)
     })
