@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { generateMnemonic } from "bip39";
 
-import { decryptBuffer, encryptBuffer } from "..";
+import { decryptBuffer, encryptBuffer, generateMnemonic } from "..";
 
 describe("decryptBuffer", () => {
   const plaintext = new TextEncoder().encode(generateMnemonic());

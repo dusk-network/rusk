@@ -1,6 +1,5 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-import { generateMnemonic } from "bip39";
 import { getKey, setKey } from "lamb";
 import { get } from "svelte/store";
 import { tick } from "svelte";
@@ -30,7 +29,7 @@ const fireInput = (input, value) =>
 const asInput = (element) => /** @type {HTMLInputElement} */ (element);
 
 describe("Restore", async () => {
-  const mnemonic = generateMnemonic();
+  const mnemonic = walletLib.generateMnemonic();
   const invalidMnemonic = "dad dad dad dad dad dad dad dad dad dad dad dad";
   const pwd = "passwordpassword";
   const loginInfo = await walletLib.encryptMnemonic(mnemonic, pwd);

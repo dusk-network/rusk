@@ -12,7 +12,6 @@ import { tick } from "svelte";
 import { get } from "svelte/store";
 import * as SvelteKit from "@sveltejs/kit";
 import { getKey, setKey } from "lamb";
-import * as bip39 from "bip39";
 import { ProfileGenerator } from "@dusk/w3sper";
 
 import { networkStore, settingsStore, walletStore } from "$lib/stores";
@@ -78,7 +77,7 @@ describe("Create", async () => {
     throw new Error("SvelteKit Error Simulation");
   });
 
-  vi.spyOn(bip39, "generateMnemonic").mockReturnValue(mnemonic);
+  vi.spyOn(walletLib, "generateMnemonic").mockReturnValue(mnemonic);
   vi.spyOn(shuffleArray, "shuffleArray").mockReturnValue(mnemonicShuffled);
 
   const gotoSpy = vi.spyOn(navigation, "goto");

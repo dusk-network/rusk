@@ -1,7 +1,7 @@
 <script>
   import { Words } from "$lib/dusk/components";
   import { WarningCard } from "$lib/containers/Cards";
-  import { generateMnemonic } from "bip39";
+  import { generateMnemonic } from "$lib/wallet";
 
   /** @type {string[]} */
   export let mnemonicPhrase;

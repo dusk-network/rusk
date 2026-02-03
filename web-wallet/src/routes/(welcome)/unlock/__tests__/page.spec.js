@@ -8,7 +8,6 @@ import {
   vi,
 } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
-import { generateMnemonic } from "bip39";
 import { get } from "svelte/store";
 import { ProfileGenerator } from "@dusk/w3sper";
 
@@ -19,6 +18,7 @@ import * as navigation from "$lib/navigation";
 import { settingsStore, walletStore } from "$lib/stores";
 import {
   encryptMnemonic,
+  generateMnemonic,
   getSeedFromMnemonic,
   profileGeneratorFrom,
 } from "$lib/wallet";

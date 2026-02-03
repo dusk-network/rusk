@@ -9,12 +9,11 @@ import {
 } from "vitest";
 import { get } from "svelte/store";
 import { Bookkeeper, Gas, Network, ProfileGenerator } from "@dusk/w3sper";
-import { generateMnemonic } from "bip39";
 
 import { stakeInfo } from "$lib/mock-data";
 
 import WalletTreasury from "$lib/wallet-treasury";
-import { getSeedFromMnemonic } from "$lib/wallet";
+import { generateMnemonic, getSeedFromMnemonic } from "$lib/wallet";
 
 import { networkStore, walletStore } from "..";
 
@@ -272,6 +271,9 @@ describe("Wallet store", async () => {
   describe("Abort sync", () => {
     beforeEach(async () => {
       walletStore.reset();
+
+      await vi.runOnlyPendingTimersAsync();
+
       expect(get(walletStore)).toStrictEqual(initialState);
 
       await walletStore.init(profileGenerator);
@@ -322,6 +324,8 @@ describe("Wallet store", async () => {
       expect(finalState.syncStatus.isInProgress).toBe(false);
 
       walletStore.abortSync();
+
+      await vi.runAllTimersAsync();
     });
 
     it("should do nothing but stopping the auto-sync if there is no sync in progress", async () => {
@@ -329,6 +333,8 @@ describe("Wallet store", async () => {
 
       expect(abortControllerSpy).not.toHaveBeenCalled();
       expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
+
+      await vi.runAllTimersAsync();
     });
   });
 
@@ -503,6 +509,9 @@ describe("Wallet store", async () => {
 
     beforeEach(async () => {
       walletStore.reset();
+
+      await vi.runOnlyPendingTimersAsync();
+
       expect(get(walletStore)).toStrictEqual(initialState);
 
       await walletStore.init(profileGenerator);
@@ -589,6 +598,9 @@ describe("Wallet store", async () => {
 
     beforeEach(async () => {
       walletStore.reset();
+
+      await vi.runOnlyPendingTimersAsync();
+
       expect(get(walletStore)).toStrictEqual(initialState);
 
       await walletStore.init(profileGenerator);

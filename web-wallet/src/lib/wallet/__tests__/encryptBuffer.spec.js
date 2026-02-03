@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { generateMnemonic } from "bip39";
 
-import { encryptBuffer, getSeedFromMnemonic } from "..";
+import { encryptBuffer, generateMnemonic, getSeedFromMnemonic } from "..";
 
 describe("encryptBuffer", () => {
   it("should be able to encrypt a buffer using the given password", async () => {

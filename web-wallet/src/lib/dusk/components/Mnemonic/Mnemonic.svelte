@@ -1,6 +1,7 @@
 <script>
   import { mdiAlertOutline, mdiContentPaste, mdiRedoVariant } from "@mdi/js";
-  import { wordlists } from "bip39";
+  import { wordlist as enDictionary } from "@scure/bip39/wordlists/english.js";
+
   import { Button, Textbox, Words } from "$lib/dusk/components";
   import { makeClassName } from "$lib/dusk/string";
   import { findFirstNMatches } from "$lib/dusk/array";
@@ -32,7 +33,6 @@
 
   const classes = makeClassName(["dusk-mnemonic", className]);
   const enteredWordIndex = Array(wordLimit).fill("");
-  const enDictionary = wordlists.english;
 
   if (enteredMnemonicPhrase.length === 0) {
     enteredMnemonicPhrase = Array(wordLimit).fill("");

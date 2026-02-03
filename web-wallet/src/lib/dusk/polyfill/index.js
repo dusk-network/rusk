@@ -2,5 +2,3 @@
 
 import "./asyncIterator";
 import "./promiseWithResolvers";
-
-import "web-streams-polyfill/polyfill";

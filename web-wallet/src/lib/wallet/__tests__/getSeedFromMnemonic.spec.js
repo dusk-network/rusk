@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateMnemonic } from "bip39";
-import { getSeedFromMnemonic } from "..";
+import { generateMnemonic, getSeedFromMnemonic } from "..";
 
 describe("getSeedFromMnemonic", () => {
   it("should convert a mnemonic phrase into a seed of 64 bytes", () => {
