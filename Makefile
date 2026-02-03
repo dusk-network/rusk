@@ -15,6 +15,8 @@ state: keys ## Create the network state
 	$(MAKE) -C ./rusk recovery-state
 
 wasm: ## Generate the WASM for wallet-core
+	git submodule update --init
+	git submodule update --remote contracts
 	$(MAKE) -C ./wallet-core $@
 
 data-drivers: ## Build the data-driver WASM files
