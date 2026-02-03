@@ -500,33 +500,52 @@ impl RuesEventUri {
         )
     }
 
+    /// Parses a RUES URI from an URL path.
+    ///
+    /// # Format
+    ///
+    /// `/on/component[:entity]/topic`
+    ///
+    /// # Rules
+    ///
+    /// - Path must start with `/on`
+    /// - Component and topic are normalized to lowercase
+    /// - Topic is mandatory and cannot be empty
+    /// - Entity is optional (for blocks & transactions), separated from
+    ///   component by `:`
+    /// - Entity can contain colons (only first `:` is used as delimiter)
+    /// - `contracts` component requires an entity (contract ID)
+    ///
+    /// # Returns
+    ///
+    /// `None` if parsing fails or validation rules are violated.
     pub fn parse_from_path(path: &str) -> Option<Self> {
-        if !path.starts_with(RUES_LOCATION_PREFIX) {
+        // Strip the required prefix, returning None if not present
+        // Note: we already know its present
+        let path = path.strip_prefix(RUES_LOCATION_PREFIX)?;
+
+        let mut segments = path.split('/');
+
+        // Skip the empty segment before first '/' (path starts with "/")
+        segments.next()?;
+
+        // Parse component and optional entity from first segment
+        // Format: "component" or "component:entity"
+        let first_segment = segments.next()?;
+        let (component, entity) = match first_segment.split_once(':') {
+            Some((comp, ent)) => (comp, Some(ent.to_string())),
+            None => (first_segment, None),
+        };
+        let component = component.to_lowercase();
+
+        // Parse topic (mandatory, must be non-empty)
+        let topic = segments.next().filter(|t| !t.is_empty())?;
+        let topic = topic.to_lowercase();
+
+        // Contracts require an entity (contract ID)
+        if component == "contracts" && entity.is_none() {
             return None;
         }
-        // Skip '/on' since we already know its present
-        let path = &path[RUES_LOCATION_PREFIX.len()..];
-
-        let mut path_split = path.split('/');
-
-        // Skip first '/'
-        path_split.next()?;
-
-        // If the segment contains a `:`, we split the string in two after the
-        // first one - meaning entities with `:` are still possible.
-        // If the segment doesn't contain a `:` then the segment is just a
-        // component.
-        let (component, entity) =
-            path_split
-                .next()
-                .map(|segment| match segment.split_once(':') {
-                    Some((component, entity)) => (component, Some(entity)),
-                    None => (segment, None),
-                })?;
-
-        let component = component.to_string().to_lowercase();
-        let entity = entity.map(ToString::to_string);
-        let topic = path_split.next()?.to_string().to_lowercase();
 
         Some(Self {
             component,
@@ -535,20 +554,27 @@ impl RuesEventUri {
         })
     }
 
+    /// Returns `true` if this subscription URI matches the given event.
+    ///
+    /// Matching rules:
+    /// - Component must match exactly
+    /// - Entity: `None` acts as wildcard (matches any), `Some` must match
+    ///   exactly
+    /// - Topic must match exactly
     pub fn matches(&self, event: &RuesEvent) -> bool {
         let event = &event.uri;
-        if self.component != event.component {
-            return false;
-        }
 
-        if self.entity.is_some() && self.entity != event.entity {
-            return false;
-        }
+        // Component must match exactly
+        let component_matches = self.component == event.component;
 
-        if self.topic != event.topic {
-            return false;
-        }
-        true
+        // None entity acts as wildcard, Some must match exactly
+        let entity_matches =
+            self.entity.is_none() || self.entity == event.entity;
+
+        // Topic must match exactly
+        let topic_matches = self.topic == event.topic;
+
+        component_matches && entity_matches && topic_matches
     }
 }
 
@@ -767,4 +793,220 @@ pub fn check_rusk_version(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DataType, RuesEvent, RuesEventUri};
+
+    const DUMMY_ENTITY: &str = "abc123";
+
+    // valid parsing
+
+    #[test]
+    fn parse_contracts_with_entity_and_topic() {
+        let uri = RuesEventUri::parse_from_path(&format!(
+            "/on/contracts:{DUMMY_ENTITY}/withdraw"
+        ))
+        .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "contracts");
+        assert_eq!(uri.entity, Some(DUMMY_ENTITY.to_string()));
+        assert_eq!(uri.topic, "withdraw");
+    }
+
+    #[test]
+    fn parse_blocks_without_entity() {
+        // Blocks can omit entity (wildcard)
+        let uri = RuesEventUri::parse_from_path("/on/blocks/accepted")
+            .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "blocks");
+        assert_eq!(uri.entity, None);
+        assert_eq!(uri.topic, "accepted");
+    }
+
+    #[test]
+    fn parse_transactions_without_entity() {
+        // Transactions can omit entity (wildcard)
+        let uri = RuesEventUri::parse_from_path("/on/transactions/included")
+            .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "transactions");
+        assert_eq!(uri.entity, None);
+        assert_eq!(uri.topic, "included");
+    }
+
+    #[test]
+    fn parse_normalizes_to_lowercase() {
+        let uri = RuesEventUri::parse_from_path("/on/BLOCKS/ACCEPTED")
+            .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "blocks");
+        assert_eq!(uri.topic, "accepted");
+    }
+
+    #[test]
+    fn parse_entity_with_colon() {
+        // Entity can contain colons (split_once only splits on first colon)
+        let uri = RuesEventUri::parse_from_path(
+            "/on/contracts:entity:with:colons/topic",
+        )
+        .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "contracts");
+        assert_eq!(uri.entity, Some("entity:with:colons".to_string()));
+        assert_eq!(uri.topic, "topic");
+    }
+
+    // invalid parsing
+
+    #[test]
+    fn parse_contracts_without_entity_fails() {
+        // Contracts component requires an entity (contract ID)
+        let uri = RuesEventUri::parse_from_path("/on/contracts/withdraw");
+        assert!(
+            uri.is_none(),
+            "Contracts without entity should fail parsing"
+        );
+    }
+
+    #[test]
+    fn parse_empty_topic_with_trailing_slash_fails() {
+        let uri = RuesEventUri::parse_from_path(&format!(
+            "/on/contracts:{DUMMY_ENTITY}/"
+        ));
+        assert!(uri.is_none(), "Empty topic should fail parsing");
+    }
+
+    #[test]
+    fn parse_missing_topic_segment_fails() {
+        let uri = RuesEventUri::parse_from_path(&format!(
+            "/on/contracts:{DUMMY_ENTITY}"
+        ));
+        assert!(uri.is_none(), "Missing topic segment should fail parsing");
+    }
+
+    #[test]
+    fn parse_component_only_fails() {
+        let uri = RuesEventUri::parse_from_path("/on/blocks");
+        assert!(uri.is_none(), "Missing topic should fail parsing");
+    }
+
+    #[test]
+    fn parse_invalid_prefix_fails() {
+        let uri = RuesEventUri::parse_from_path(&format!(
+            "/invalid/contracts:{DUMMY_ENTITY}/topic"
+        ));
+        assert!(uri.is_none(), "Invalid prefix should fail parsing");
+    }
+
+    // matches test
+
+    #[test]
+    fn matches_exact_uri() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "contracts".to_string(),
+                entity: Some(DUMMY_ENTITY.to_string()),
+                topic: "withdraw".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_different_component_fails() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "blocks".to_string(),
+                entity: Some(DUMMY_ENTITY.to_string()),
+                topic: "withdraw".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(!subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_different_entity_fails() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "contracts".to_string(),
+                entity: Some("def456".to_string()),
+                topic: "withdraw".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(!subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_different_topic_fails() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "contracts".to_string(),
+                entity: Some(DUMMY_ENTITY.to_string()),
+                topic: "stake".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(!subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_none_entity_acts_as_wildcard() {
+        // Entity wildcard: subscription with None entity matches any event
+        // entity
+        let subscription = RuesEventUri {
+            component: "blocks".to_string(),
+            entity: None,
+            topic: "accepted".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "blocks".to_string(),
+                entity: Some("12345".to_string()),
+                topic: "accepted".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(subscription.matches(&event));
+    }
 }
