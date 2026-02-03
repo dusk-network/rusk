@@ -83,6 +83,20 @@ impl HostFnTest {
         abi::keccak256(bytes)
     }
 
+    pub fn sha256(&self, bytes: Vec<u8>) -> [u8; 32] {
+        abi::sha256(bytes)
+    }
+
+    pub fn verify_kzg_proof(
+        &self,
+        commitment: [u8; 48],
+        z: [u8; 32],
+        y: [u8; 32],
+        proof: [u8; 48],
+    ) -> bool {
+        abi::verify_kzg_proof(commitment, z, y, proof)
+    }
+
     pub fn chain_id(&self) -> u8 {
         abi::chain_id()
     }
@@ -144,6 +158,18 @@ unsafe fn verify_bls_multisig(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn keccak256(arg_len: u32) -> u32 {
     abi::wrap_call(arg_len, |bytes| STATE.keccak256(bytes))
+}
+
+#[no_mangle]
+unsafe fn sha256(arg_len: u32) -> u32 {
+    abi::wrap_call(arg_len, |bytes| STATE.sha256(bytes))
+}
+
+#[no_mangle]
+unsafe fn verify_kzg_proof(arg_len: u32) -> u32 {
+    abi::wrap_call(arg_len, |(commitment, z, y, proof)| {
+        STATE.verify_kzg_proof(commitment, z, y, proof)
+    })
 }
 
 #[no_mangle]
