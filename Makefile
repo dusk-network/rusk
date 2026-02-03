@@ -91,7 +91,7 @@ run-dev-archive: ## Launch a local ephemeral archive node for development
 	DUSK_CONSENSUS_KEYS_PASS=password cargo r --release --features archive -p dusk-rusk  -- -s /tmp/example.state || \
 	echo "Failed to start the node. Make sure you have run 'make prepare-dev' before running this command"
 
-rusk: keys state web-wallet ## Build rusk binary
+rusk: keys state ## Build rusk binary
 	$(MAKE) -C ./rusk build
 
 rusk-wallet: ## build the rusk wallet binary
