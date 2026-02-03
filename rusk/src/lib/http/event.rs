@@ -502,42 +502,47 @@ impl RuesEventUri {
 
     /// Parses a RUES URI from an URL path.
     ///
-    /// Expected format: `/on/component[:entity][/topic]`
-    /// Returns `None` if the path doesn't start with the RUES prefix.
+    /// # Format
+    ///
+    /// `/on/component[:entity]/topic`
+    ///
+    /// # Rules
+    ///
+    /// - Path must start with `/on`
+    /// - Component and topic are normalized to lowercase
+    /// - Topic is mandatory and cannot be empty
+    /// - Entity is optional (for blocks & transactions), separated from
+    ///   component by `:`
+    /// - Entity can contain colons (only first `:` is used as delimiter)
+    /// - `contracts` component requires an entity (contract ID)
+    ///
+    /// # Returns
+    ///
+    /// `None` if parsing fails or validation rules are violated.
     pub fn parse_from_path(path: &str) -> Option<Self> {
-        if !path.starts_with(RUES_LOCATION_PREFIX) {
-            return None;
-        }
-        // Skip '/on' since we already know its present
-        let path = &path[RUES_LOCATION_PREFIX.len()..];
+        // Strip the required prefix, returning None if not present
+        // Note: we already know its present
+        let path = path.strip_prefix(RUES_LOCATION_PREFIX)?;
 
-        let mut path_split = path.split('/');
+        let mut segments = path.split('/');
 
-        // Skip first '/'
-        path_split.next()?;
+        // Skip the empty segment before first '/' (path starts with "/")
+        segments.next()?;
 
-        // If the segment contains a `:`, we split the string in two after the
-        // first one - meaning entities with `:` are still possible.
-        // If the segment doesn't contain a `:` then the segment is just a
-        // component.
-        let (component, entity) =
-            path_split
-                .next()
-                .map(|segment| match segment.split_once(':') {
-                    Some((component, entity)) => (component, Some(entity)),
-                    None => (segment, None),
-                })?;
+        // Parse component and optional entity from first segment
+        // Format: "component" or "component:entity"
+        let first_segment = segments.next()?;
+        let (component, entity) = match first_segment.split_once(':') {
+            Some((comp, ent)) => (comp, Some(ent.to_string())),
+            None => (first_segment, None),
+        };
+        let component = component.to_lowercase();
 
-        let component = component.to_string().to_lowercase();
-        let entity = entity.map(ToString::to_string);
-        let topic = path_split.next()?.to_string().to_lowercase();
+        // Parse topic (mandatory, must be non-empty)
+        let topic = segments.next().filter(|t| !t.is_empty())?;
+        let topic = topic.to_lowercase();
 
-        // Topic must not be empty because it is mandatory
-        if topic.is_empty() {
-            return None;
-        }
-
-        // Contracts component requires an entity (contract ID)
+        // Contracts require an entity (contract ID)
         if component == "contracts" && entity.is_none() {
             return None;
         }
@@ -549,24 +554,27 @@ impl RuesEventUri {
         })
     }
 
-    /// Returns `true` if this URI matches the given event.
+    /// Returns `true` if this subscription URI matches the given event.
     ///
-    /// A `None` entity acts as a wildcard (for blocks/transactions only).
+    /// Matching rules:
+    /// - Component must match exactly
+    /// - Entity: `None` acts as wildcard (matches any), `Some` must match
+    ///   exactly
+    /// - Topic must match exactly
     pub fn matches(&self, event: &RuesEvent) -> bool {
         let event = &event.uri;
 
-        if self.component != event.component {
-            return false;
-        }
+        // Component must match exactly
+        let component_matches = self.component == event.component;
 
-        if self.entity.is_some() && self.entity != event.entity {
-            return false;
-        }
+        // None entity acts as wildcard, Some must match exactly
+        let entity_matches =
+            self.entity.is_none() || self.entity == event.entity;
 
-        if self.topic != event.topic {
-            return false;
-        }
-        true
+        // Topic must match exactly
+        let topic_matches = self.topic == event.topic;
+
+        component_matches && entity_matches && topic_matches
     }
 }
 

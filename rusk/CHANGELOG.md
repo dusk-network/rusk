@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change dusk-core dependency to v1.4.1
+- Change RUES subscription behavior to disallow contract component without entity (contractId)
+- Change RUES subscription behavior to disallow topic wildcard
+- 
 
 ## [1.4.3] - 2026-01-07
 
