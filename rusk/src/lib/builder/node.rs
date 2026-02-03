@@ -344,6 +344,7 @@ impl RuskNodeBuilder {
             let mut handler = DataSources::default();
             handler.sources.push(Box::new(rusk.clone()));
             handler.sources.push(Box::new(node.clone()));
+            handler.set_graphql_handler(node.clone());
 
             #[cfg(feature = "prover")]
             handler.sources.push(Box::new(rusk_prover::LocalProver));
