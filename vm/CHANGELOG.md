@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `sha256` and `verify_kzg_proof` host queries [#3993]
+
 ### Changed
 
 - Change `lru` dependency to `0.16.3`
@@ -80,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Issues -->
 [#3774]: https://github.com/dusk-network/rusk/issues/3774
+[#3993]: https://github.com/dusk-network/rusk/issues/3993
 [#3235]: https://github.com/dusk-network/rusk/issues/3235
 [#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
