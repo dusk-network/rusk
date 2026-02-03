@@ -17,10 +17,10 @@ jobs:
       - name: Rust toolchain 
         uses: dsherret/rust-toolchain-file@v1      
 
-      - name: Setting up Node 20.x
+      - name: Setting up Node 24.x
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: 24.x
           scope: "@dusk-network"
 
       - name: Build node 
