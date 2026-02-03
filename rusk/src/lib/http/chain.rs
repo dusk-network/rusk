@@ -23,7 +23,8 @@ use node::vm::VMExecution;
 use node_data::ledger::{SpendingId, Transaction};
 
 use async_graphql::{
-    EmptyMutation, EmptySubscription, Name, Schema, Variables,
+    BatchRequest, BatchResponse, EmptyMutation, EmptySubscription, Name,
+    Schema, Variables,
 };
 use graphql::Query;
 use serde_json::{json, Map, Value};
@@ -35,6 +36,7 @@ use crate::node::RuskNode;
 use crate::{VERSION, VERSION_BUILD};
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
+type GraphqlSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
 fn variables_from_headers(headers: &Map<String, Value>) -> Variables {
     let mut var = Variables::default();
@@ -141,6 +143,18 @@ impl HandleRequest for RuskNode {
 }
 
 impl RuskNode {
+    fn graphql_schema(&self) -> GraphqlSchema {
+        #[cfg(feature = "archive")]
+        let init = (self.db(), self.archive());
+
+        #[cfg(not(feature = "archive"))]
+        let init = (self.db(), ());
+
+        Schema::build(Query, EmptyMutation, EmptySubscription)
+            .data(init)
+            .finish()
+    }
+
     async fn handle_gql(
         &self,
         data: &RequestData,
@@ -148,14 +162,7 @@ impl RuskNode {
     ) -> HttpResult<ResponseData> {
         let gql_query = data.as_string();
 
-        #[cfg(feature = "archive")]
-        let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
-            .data((self.db(), self.archive()))
-            .finish();
-        #[cfg(not(feature = "archive"))]
-        let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
-            .data((self.db(), ()))
-            .finish();
+        let schema = self.graphql_schema();
 
         if gql_query.trim().is_empty() {
             return Ok(ResponseData::new(schema.sdl()));
@@ -499,6 +506,13 @@ impl RuskNode {
         Err(HttpError::generic(
             "The archive feature is required for this endpoint.",
         ))
+    }
+}
+
+#[async_trait]
+impl GraphqlHandler for RuskNode {
+    async fn execute_graphql(&self, request: BatchRequest) -> BatchResponse {
+        self.graphql_schema().execute_batch(request).await
     }
 }
 

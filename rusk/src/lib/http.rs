@@ -34,6 +34,15 @@ use std::pin::Pin;
 use std::str::FromStr;
 use std::sync::Arc;
 
+#[cfg(feature = "chain")]
+use async_graphql::http::{
+    parse_query_string, receive_batch_body, MultipartOptions,
+};
+#[cfg(feature = "chain")]
+use async_graphql::{
+    BatchRequest, BatchResponse, ParseRequestError,
+    Response as GraphqlResponse, ServerError,
+};
 use async_trait::async_trait;
 
 use tokio::net::ToSocketAddrs;
@@ -42,7 +51,13 @@ use tokio::{io, task};
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 
+#[cfg(feature = "chain")]
+use futures_util::io::Cursor;
+#[cfg(feature = "chain")]
+use http_body_util::BodyExt;
 use http_body_util::Full;
+#[cfg(feature = "chain")]
+use hyper::header::{ALLOW, CONTENT_TYPE};
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::service::Service;
 use hyper::{
@@ -136,6 +151,24 @@ impl HttpServer {
 #[derive(Default)]
 pub struct DataSources {
     pub sources: Vec<Box<dyn HandleRequest>>,
+    #[cfg(feature = "chain")]
+    graphql: Option<Arc<dyn GraphqlHandler>>,
+}
+
+#[cfg(feature = "chain")]
+#[async_trait]
+pub(crate) trait GraphqlHandler: Send + Sync + 'static {
+    async fn execute_graphql(&self, request: BatchRequest) -> BatchResponse;
+}
+
+impl DataSources {
+    #[cfg(feature = "chain")]
+    pub(crate) fn set_graphql_handler<T>(&mut self, handler: T)
+    where
+        T: GraphqlHandler,
+    {
+        self.graphql = Some(Arc::new(handler));
+    }
 }
 
 #[async_trait]
@@ -156,6 +189,35 @@ impl HandleRequest for DataSources {
             }
         }
         Err(HttpError::Unsupported)
+    }
+
+    async fn handle_http(
+        &self,
+        req: Request<Incoming>,
+    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+        let path = req.uri().path();
+        #[cfg(feature = "chain")]
+        {
+            if is_graphql_path(path) {
+                let handler = match self.graphql.as_ref() {
+                    Some(handler) => handler,
+                    None => {
+                        return graphql_error_response(
+                            StatusCode::NOT_FOUND,
+                            "GraphQL endpoint not configured",
+                        );
+                    }
+                };
+
+                return handle_graphql_http(handler.as_ref(), req).await;
+            }
+        }
+        #[cfg(not(feature = "chain"))]
+        {
+            let _ = path;
+        }
+
+        Err(ExecutionError::Generic(anyhow::anyhow!("Unsupported path")))
     }
 }
 
@@ -627,7 +689,118 @@ where
         }
     }
 
-    Err(ExecutionError::Generic(anyhow::anyhow!("Unsupported path")))
+    sources.handle_http(req).await
+}
+
+#[cfg(feature = "chain")]
+fn is_graphql_path(path: &str) -> bool {
+    matches!(path, "/graphql" | "/graphql/")
+}
+
+#[cfg(feature = "chain")]
+fn graphql_batch_response(
+    status: StatusCode,
+    batch_response: BatchResponse,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    let body = serde_json::to_vec(&batch_response)?;
+    let mut response = response(status, body)?;
+    let headers = response.headers_mut();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    for (name, value) in batch_response.http_headers_iter() {
+        let name = HeaderName::from_bytes(name.as_str().as_bytes())?;
+        let value = HeaderValue::from_bytes(value.as_bytes())?;
+        headers.append(name, value);
+    }
+    Ok(response)
+}
+
+#[cfg(feature = "chain")]
+fn graphql_error_response(
+    status: StatusCode,
+    message: impl Into<String>,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    let error = ServerError::new(message, None);
+    let response = GraphqlResponse::from_errors(vec![error]);
+    graphql_batch_response(status, BatchResponse::from(response))
+}
+
+#[cfg(feature = "chain")]
+fn graphql_parse_error_status(error: &ParseRequestError) -> StatusCode {
+    match error {
+        ParseRequestError::PayloadTooLarge => StatusCode::PAYLOAD_TOO_LARGE,
+        ParseRequestError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        _ => StatusCode::BAD_REQUEST,
+    }
+}
+
+#[cfg(feature = "chain")]
+async fn handle_graphql_http(
+    handler: &dyn GraphqlHandler,
+    req: Request<Incoming>,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    match *req.method() {
+        Method::GET => {
+            let query = req.uri().query().unwrap_or_default();
+            if query.is_empty() {
+                return graphql_error_response(
+                    StatusCode::BAD_REQUEST,
+                    "GraphQL GET requests require a query parameter",
+                );
+            }
+
+            let request = match parse_query_string(query) {
+                Ok(request) => request,
+                Err(err) => {
+                    return graphql_error_response(
+                        graphql_parse_error_status(&err),
+                        err.to_string(),
+                    );
+                }
+            };
+
+            let batch_response =
+                handler.execute_graphql(BatchRequest::Single(request)).await;
+            graphql_batch_response(StatusCode::OK, batch_response)
+        }
+        Method::POST => {
+            let (parts, body) = req.into_parts();
+            let content_type = parts
+                .headers
+                .get(CONTENT_TYPE)
+                .and_then(|v| v.to_str().ok());
+            let body = body.collect().await?.to_bytes().to_vec();
+            let reader = Cursor::new(body);
+
+            let batch_request = receive_batch_body(
+                content_type,
+                reader,
+                MultipartOptions::default(),
+            )
+            .await;
+
+            match batch_request {
+                Ok(batch_request) => {
+                    let batch_response =
+                        handler.execute_graphql(batch_request).await;
+                    graphql_batch_response(StatusCode::OK, batch_response)
+                }
+                Err(err) => graphql_error_response(
+                    graphql_parse_error_status(&err),
+                    err.to_string(),
+                ),
+            }
+        }
+        _ => {
+            let mut response = graphql_error_response(
+                StatusCode::METHOD_NOT_ALLOWED,
+                "Method not allowed",
+            )?;
+            response
+                .headers_mut()
+                .insert(ALLOW, HeaderValue::from_static("GET, POST"));
+            Ok(response)
+        }
+    }
 }
 
 async fn handle_execution_rues<H>(
@@ -668,6 +841,13 @@ pub trait HandleRequest: Send + Sync + 'static {
         &self,
         request: &RuesDispatchEvent,
     ) -> HttpResult<ResponseData>;
+    async fn handle_http(
+        &self,
+        req: Request<Incoming>,
+    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+        let _ = req;
+        Err(ExecutionError::Generic(anyhow::anyhow!("Unsupported path")))
+    }
 }
 
 #[cfg(test)]
@@ -676,6 +856,11 @@ mod tests {
 
     use super::*;
 
+    #[cfg(feature = "chain")]
+    use async_graphql::{
+        BatchRequest, BatchResponse, EmptyMutation, EmptySubscription, Object,
+        Schema,
+    };
     use dusk_core::abi::ContractId;
     use event::{BinaryWrapper, RequestData};
     use node_data::events::contract::{ContractEvent, ContractTxEvent};
@@ -714,9 +899,40 @@ mod tests {
                 ("test", _, "echo") => {
                     ResponseData::new(request.data.as_bytes().to_vec())
                 }
+                ("graphql", _, "query") => {
+                    ResponseData::new(serde_json::json!({ "data": "ok" }))
+                }
                 _ => return Err(HttpError::Unsupported),
             };
             Ok(response)
+        }
+    }
+
+    #[cfg(feature = "chain")]
+    struct GraphqlQuery;
+
+    #[cfg(feature = "chain")]
+    #[Object]
+    impl GraphqlQuery {
+        async fn ping(&self) -> &'static str {
+            "pong"
+        }
+    }
+
+    #[cfg(feature = "chain")]
+    struct TestGraphqlHandler;
+
+    #[cfg(feature = "chain")]
+    #[async_trait]
+    impl GraphqlHandler for TestGraphqlHandler {
+        async fn execute_graphql(
+            &self,
+            request: BatchRequest,
+        ) -> BatchResponse {
+            let schema =
+                Schema::build(GraphqlQuery, EmptyMutation, EmptySubscription)
+                    .finish();
+            schema.execute_batch(request).await
         }
     }
 
@@ -975,6 +1191,119 @@ mod tests {
         let event = from_bytes(&event_bytes).expect("Event should deserialize");
 
         assert_eq!(received_event, event, "Event should be the same");
+    }
+
+    #[tokio::test]
+    async fn legacy_graphql_query_still_works() {
+        let cert_and_key: Option<(String, String)> = None;
+
+        let (_, event_receiver) = broadcast::channel(16);
+        let ws_event_channel_cap = 2;
+
+        let (_server, local_addr) = HttpServer::bind(
+            TestHandle,
+            event_receiver,
+            ws_event_channel_cap,
+            "localhost:0",
+            HeaderMap::new(),
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/graphql/query"))
+            .body("{ ping }")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let payload_bytes =
+            response.bytes().await.expect("Response should have body");
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .expect("Response should be JSON");
+        assert_eq!(payload["data"], "ok");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_post_query() {
+        let cert_and_key: Option<(String, String)> = None;
+
+        let (_, event_receiver) = broadcast::channel(16);
+        let ws_event_channel_cap = 2;
+
+        let mut handler = DataSources::default();
+        handler.set_graphql_handler(TestGraphqlHandler);
+
+        let (_server, local_addr) = HttpServer::bind(
+            handler,
+            event_receiver,
+            ws_event_channel_cap,
+            "localhost:0",
+            HeaderMap::new(),
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/graphql"))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "query": "{ ping }" }).to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let payload_bytes =
+            response.bytes().await.expect("Response should have body");
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .expect("Response should be JSON");
+        assert_eq!(payload["data"]["ping"], "pong");
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "chain")]
+    async fn graphql_post_invalid_query_returns_errors() {
+        let cert_and_key: Option<(String, String)> = None;
+
+        let (_, event_receiver) = broadcast::channel(16);
+        let ws_event_channel_cap = 2;
+
+        let mut handler = DataSources::default();
+        handler.set_graphql_handler(TestGraphqlHandler);
+
+        let (_server, local_addr) = HttpServer::bind(
+            handler,
+            event_receiver,
+            ws_event_channel_cap,
+            "localhost:0",
+            HeaderMap::new(),
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/graphql"))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "query": "{ missing }" }).to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let payload_bytes =
+            response.bytes().await.expect("Response should have body");
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .expect("Response should be JSON");
+        assert!(payload["errors"].is_array());
+        assert!(!payload["errors"].as_array().unwrap().is_empty());
     }
 
     fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {

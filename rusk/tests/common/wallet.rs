@@ -22,7 +22,7 @@ use dusk_core::{
     },
     BlsScalar,
 };
-use futures::StreamExt;
+use futures_util::StreamExt;
 use rusk::{Error, Result, Rusk};
 use test_wallet::{self as wallet, Store};
 use tracing::info;
