@@ -500,6 +500,10 @@ impl RuesEventUri {
         )
     }
 
+    /// Parses a RUES URI from an URL path.
+    ///
+    /// Expected format: `/on/component[:entity][/topic]`
+    /// Returns `None` if the path doesn't start with the RUES prefix.
     pub fn parse_from_path(path: &str) -> Option<Self> {
         if !path.starts_with(RUES_LOCATION_PREFIX) {
             return None;
@@ -528,6 +532,16 @@ impl RuesEventUri {
         let entity = entity.map(ToString::to_string);
         let topic = path_split.next()?.to_string().to_lowercase();
 
+        // Topic must not be empty because it is mandatory
+        if topic.is_empty() {
+            return None;
+        }
+
+        // Contracts component requires an entity (contract ID)
+        if component == "contracts" && entity.is_none() {
+            return None;
+        }
+
         Some(Self {
             component,
             entity,
@@ -535,8 +549,12 @@ impl RuesEventUri {
         })
     }
 
+    /// Returns `true` if this URI matches the given event.
+    ///
+    /// A `None` entity acts as a wildcard (for blocks/transactions only).
     pub fn matches(&self, event: &RuesEvent) -> bool {
         let event = &event.uri;
+
         if self.component != event.component {
             return false;
         }
@@ -767,4 +785,220 @@ pub fn check_rusk_version(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DataType, RuesEvent, RuesEventUri};
+
+    const DUMMY_ENTITY: &str = "abc123";
+
+    // valid parsing
+
+    #[test]
+    fn parse_contracts_with_entity_and_topic() {
+        let uri = RuesEventUri::parse_from_path(&format!(
+            "/on/contracts:{DUMMY_ENTITY}/withdraw"
+        ))
+        .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "contracts");
+        assert_eq!(uri.entity, Some(DUMMY_ENTITY.to_string()));
+        assert_eq!(uri.topic, "withdraw");
+    }
+
+    #[test]
+    fn parse_blocks_without_entity() {
+        // Blocks can omit entity (wildcard)
+        let uri = RuesEventUri::parse_from_path("/on/blocks/accepted")
+            .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "blocks");
+        assert_eq!(uri.entity, None);
+        assert_eq!(uri.topic, "accepted");
+    }
+
+    #[test]
+    fn parse_transactions_without_entity() {
+        // Transactions can omit entity (wildcard)
+        let uri = RuesEventUri::parse_from_path("/on/transactions/included")
+            .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "transactions");
+        assert_eq!(uri.entity, None);
+        assert_eq!(uri.topic, "included");
+    }
+
+    #[test]
+    fn parse_normalizes_to_lowercase() {
+        let uri = RuesEventUri::parse_from_path("/on/BLOCKS/ACCEPTED")
+            .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "blocks");
+        assert_eq!(uri.topic, "accepted");
+    }
+
+    #[test]
+    fn parse_entity_with_colon() {
+        // Entity can contain colons (split_once only splits on first colon)
+        let uri = RuesEventUri::parse_from_path(
+            "/on/contracts:entity:with:colons/topic",
+        )
+        .expect("Should parse successfully");
+
+        assert_eq!(uri.component, "contracts");
+        assert_eq!(uri.entity, Some("entity:with:colons".to_string()));
+        assert_eq!(uri.topic, "topic");
+    }
+
+    // invalid parsing
+
+    #[test]
+    fn parse_contracts_without_entity_fails() {
+        // Contracts component requires an entity (contract ID)
+        let uri = RuesEventUri::parse_from_path("/on/contracts/withdraw");
+        assert!(
+            uri.is_none(),
+            "Contracts without entity should fail parsing"
+        );
+    }
+
+    #[test]
+    fn parse_empty_topic_with_trailing_slash_fails() {
+        let uri = RuesEventUri::parse_from_path(&format!(
+            "/on/contracts:{DUMMY_ENTITY}/"
+        ));
+        assert!(uri.is_none(), "Empty topic should fail parsing");
+    }
+
+    #[test]
+    fn parse_missing_topic_segment_fails() {
+        let uri = RuesEventUri::parse_from_path(&format!(
+            "/on/contracts:{DUMMY_ENTITY}"
+        ));
+        assert!(uri.is_none(), "Missing topic segment should fail parsing");
+    }
+
+    #[test]
+    fn parse_component_only_fails() {
+        let uri = RuesEventUri::parse_from_path("/on/blocks");
+        assert!(uri.is_none(), "Missing topic should fail parsing");
+    }
+
+    #[test]
+    fn parse_invalid_prefix_fails() {
+        let uri = RuesEventUri::parse_from_path(&format!(
+            "/invalid/contracts:{DUMMY_ENTITY}/topic"
+        ));
+        assert!(uri.is_none(), "Invalid prefix should fail parsing");
+    }
+
+    // matches test
+
+    #[test]
+    fn matches_exact_uri() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "contracts".to_string(),
+                entity: Some(DUMMY_ENTITY.to_string()),
+                topic: "withdraw".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_different_component_fails() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "blocks".to_string(),
+                entity: Some(DUMMY_ENTITY.to_string()),
+                topic: "withdraw".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(!subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_different_entity_fails() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "contracts".to_string(),
+                entity: Some("def456".to_string()),
+                topic: "withdraw".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(!subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_different_topic_fails() {
+        let subscription = RuesEventUri {
+            component: "contracts".to_string(),
+            entity: Some(DUMMY_ENTITY.to_string()),
+            topic: "withdraw".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "contracts".to_string(),
+                entity: Some(DUMMY_ENTITY.to_string()),
+                topic: "stake".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(!subscription.matches(&event));
+    }
+
+    #[test]
+    fn matches_none_entity_acts_as_wildcard() {
+        // Entity wildcard: subscription with None entity matches any event
+        // entity
+        let subscription = RuesEventUri {
+            component: "blocks".to_string(),
+            entity: None,
+            topic: "accepted".to_string(),
+        };
+
+        let event = RuesEvent {
+            uri: RuesEventUri {
+                component: "blocks".to_string(),
+                entity: Some("12345".to_string()),
+                topic: "accepted".to_string(),
+            },
+            headers: Default::default(),
+            data: DataType::None,
+        };
+
+        assert!(subscription.matches(&event));
+    }
 }

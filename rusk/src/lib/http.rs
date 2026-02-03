@@ -1193,6 +1193,131 @@ mod tests {
         assert_eq!(received_event, event, "Event should be the same");
     }
 
+    #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_rues_missing_topic() {
+        let cert_and_key: Option<(String, String)> = None;
+
+        let (_, event_receiver) = broadcast::channel(16);
+        let ws_event_channel_cap = 2;
+
+        let (_server, local_addr) = HttpServer::bind(
+            TestHandle,
+            event_receiver,
+            ws_event_channel_cap,
+            "localhost:0",
+            HeaderMap::new(),
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let stream = TcpStream::connect(local_addr)
+            .expect("Connecting to the server should succeed");
+
+        let ws_uri = format!("ws://{local_addr}/on");
+        let (mut stream, _) = client(ws_uri, stream)
+            .expect("Handshake with the server should succeed");
+
+        let first_message =
+            stream.read().expect("Session ID should be received");
+        let sid = SessionId::parse(
+            &first_message
+                .into_text()
+                .expect("Session ID should come in a text message"),
+        )
+        .expect("Session ID should be parsed");
+
+        const CONTRACT_ID: ContractId = ContractId::from_bytes([1; 32]);
+        let contract_id_hex = hex::encode(CONTRACT_ID);
+
+        let client = reqwest::Client::new();
+
+        // Subscribing without a topic (trailing slash) should fail
+        let response = client
+            .get(format!(
+                "http://{local_addr}/on/contracts:{contract_id_hex}/",
+            ))
+            .header("Rusk-Session-Id", sid.to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(
+            response.status(),
+            StatusCode::NOT_FOUND,
+            "Missing topic should return NOT_FOUND"
+        );
+
+        // Subscribing without a topic (no trailing slash) should also fail
+        let response = client
+            .get(format!(
+                "http://{local_addr}/on/contracts:{contract_id_hex}",
+            ))
+            .header("Rusk-Session-Id", sid.to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(
+            response.status(),
+            StatusCode::NOT_FOUND,
+            "Missing topic should return NOT_FOUND"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_rues_missing_contract_entity() {
+        let cert_and_key: Option<(String, String)> = None;
+
+        let (_, event_receiver) = broadcast::channel(16);
+        let ws_event_channel_cap = 2;
+
+        let (_server, local_addr) = HttpServer::bind(
+            TestHandle,
+            event_receiver,
+            ws_event_channel_cap,
+            "localhost:0",
+            HeaderMap::new(),
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let stream = TcpStream::connect(local_addr)
+            .expect("Connecting to the server should succeed");
+
+        let ws_uri = format!("ws://{local_addr}/on");
+        let (mut stream, _) = client(ws_uri, stream)
+            .expect("Handshake with the server should succeed");
+
+        let first_message =
+            stream.read().expect("Session ID should be received");
+        let sid = SessionId::parse(
+            &first_message
+                .into_text()
+                .expect("Session ID should come in a text message"),
+        )
+        .expect("Session ID should be parsed");
+
+        const TOPIC: &str = "withdraw";
+
+        let client = reqwest::Client::new();
+
+        // Subscribing to contracts without entity should fail
+        let response = client
+            .get(format!("http://{local_addr}/on/contracts/{TOPIC}"))
+            .header("Rusk-Session-Id", sid.to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(
+            response.status(),
+            StatusCode::NOT_FOUND,
+            "Contracts without entity should return NOT_FOUND"
+        );
+    }
+
     #[tokio::test]
     async fn legacy_graphql_query_still_works() {
         let cert_and_key: Option<(String, String)> = None;
