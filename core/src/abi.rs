@@ -46,6 +46,10 @@ impl Query {
     pub const VERIFY_BLS_MULTISIG: &'static str = "verify_bls_multisig";
     /// Host-function name to compute the keccak256 hash.
     pub const KECCAK256: &'static str = "keccak256";
+    /// Host-function name to compute the sha256 hash.
+    pub const SHA256: &'static str = "sha256";
+    /// Host-function name to verify a KZG point-evaluation proof.
+    pub const VERIFY_KZG_PROOF: &'static str = "verify_kzg_proof";
 }
 
 #[cfg(feature = "abi")]
@@ -146,6 +150,24 @@ pub(crate) mod host_queries {
     #[must_use]
     pub fn keccak256(bytes: Vec<u8>) -> [u8; 32] {
         host_query(Query::KECCAK256, bytes)
+    }
+
+    /// Compute the sha256 hash of the given bytes, returning the resulting
+    /// bytes.
+    #[must_use]
+    pub fn sha256(bytes: Vec<u8>) -> [u8; 32] {
+        host_query(Query::SHA256, bytes)
+    }
+
+    /// Verify a KZG point-evaluation proof for a commitment and evaluation.
+    #[must_use]
+    pub fn verify_kzg_proof(
+        commitment: [u8; 48],
+        z: [u8; 32],
+        y: [u8; 32],
+        proof: [u8; 48],
+    ) -> bool {
+        host_query(Query::VERIFY_KZG_PROOF, (commitment, z, y, proof))
     }
 
     /// Get the chain ID.
