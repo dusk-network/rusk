@@ -66,11 +66,11 @@ export default defineConfig(({ mode }) => {
         // Aliases to mock private w3sper's modules
         {
           find: /.+\/protocol-driver\/mod\.js$/,
-          replacement: resolve("./src/lib/__mocks__/ProtocolDriver.js"),
+          replacement: resolve("./src/lib/mocks/ProtocolDriver.js"),
         },
         {
           find: /.*\/components\/transactions\.js$/,
-          replacement: resolve("./src/lib/__mocks__/Transactions.js"),
+          replacement: resolve("./src/lib/mocks/Transactions.js"),
         },
       ],
       coverage: {

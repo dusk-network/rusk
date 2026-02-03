@@ -1,4 +1,12 @@
-import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 import { tick } from "svelte";
 import { get } from "svelte/store";
@@ -15,6 +23,11 @@ import * as shuffleArray from "$lib/dusk/array";
 
 import Create from "../+page.svelte";
 import { load } from "../+page.js";
+
+vi.mock("@sveltejs/kit", async (importOriginal) => ({
+  ...(await importOriginal()),
+  error: vi.fn(),
+}));
 
 /**
  * @param {HTMLElement} input
@@ -61,12 +74,13 @@ describe("Create", async () => {
     target: document.body,
   };
 
-  const generateMnemonicSpy = vi
-    .spyOn(bip39, "generateMnemonic")
-    .mockReturnValue(mnemonic);
-  const shuffleArraySpy = vi
-    .spyOn(shuffleArray, "shuffleArray")
-    .mockReturnValue(mnemonicShuffled);
+  vi.mocked(SvelteKit.error).mockImplementation(() => {
+    throw new Error("SvelteKit Error Simulation");
+  });
+
+  vi.spyOn(bip39, "generateMnemonic").mockReturnValue(mnemonic);
+  vi.spyOn(shuffleArray, "shuffleArray").mockReturnValue(mnemonicShuffled);
+
   const gotoSpy = vi.spyOn(navigation, "goto");
   const settingsResetSpy = vi.spyOn(settingsStore, "reset");
   const clearAndInitSpy = vi
@@ -74,25 +88,16 @@ describe("Create", async () => {
     .mockResolvedValue(undefined);
   const initWalletSpy = vi.spyOn(walletLib, "initializeWallet");
 
-  afterEach(() => {
-    cleanup();
+  beforeEach(() => {
     settingsStore.reset();
-
-    generateMnemonicSpy.mockClear();
-    shuffleArraySpy.mockClear();
-    clearAndInitSpy.mockClear();
-    gotoSpy.mockClear();
-    settingsResetSpy.mockClear();
-    initWalletSpy.mockClear();
+    vi.clearAllMocks();
   });
 
+  afterEach(cleanup);
+
   afterAll(() => {
-    generateMnemonicSpy.mockRestore();
-    shuffleArraySpy.mockRestore();
-    clearAndInitSpy.mockRestore();
-    gotoSpy.mockRestore();
-    settingsResetSpy.mockRestore();
-    initWalletSpy.mockRestore();
+    vi.restoreAllMocks();
+    vi.doUnmock("@sveltejs/kit");
   });
 
   describe("Create page load", () => {

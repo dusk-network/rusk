@@ -246,7 +246,7 @@ describe("Send", () => {
 
       const nextButtonAmountStep = getByRole("button", { name: "Next" });
       const amountInput = getByRole("spinbutton");
-      const memoInput = container.querySelector(".operation__send-memo");
+      const memoInput = getAsHTMLElement(container, ".operation__send-memo");
 
       expect(memoInput).toBeInTheDocument();
 
@@ -257,12 +257,9 @@ describe("Send", () => {
       expect(nextButtonAmountStep).toBeDisabled();
 
       // Enter an invalid EVM address as memo
-      if (memoInput) {
-        await fireEvent.input(memoInput, { target: { value: "invalid-evm" } });
-        expect(memoInput).toHaveValue("invalid-evm");
-      } else {
-        throw new Error("Memo input not found");
-      }
+      await fireEvent.input(memoInput, { target: { value: "invalid-evm" } });
+      expect(memoInput).toHaveValue("invalid-evm");
+
       expect(
         await findByText("Invalid EVM address format")
       ).toBeInTheDocument();
@@ -270,14 +267,11 @@ describe("Send", () => {
 
       // Enter a valid EVM address as memo
       const validEvmAddress = "0x9876543210987654321098765432109876543210";
-      if (memoInput) {
-        await fireEvent.input(memoInput, {
-          target: { value: validEvmAddress },
-        });
-        expect(memoInput).toHaveValue(validEvmAddress);
-      } else {
-        throw new Error("Memo input not found");
-      }
+
+      await fireEvent.input(memoInput, {
+        target: { value: validEvmAddress },
+      });
+      expect(memoInput).toHaveValue(validEvmAddress);
 
       // Error banners should disappear
       expect(
@@ -318,17 +312,15 @@ describe("Send", () => {
 
       // Show memo field
       await fireEvent.click(memoSwitch);
-      const memoInput = container.querySelector(".operation__send-memo");
+
+      const memoInput = getAsHTMLElement(container, ".operation__send-memo");
+
       expect(memoInput).toBeInTheDocument();
 
-      if (memoInput) {
-        await fireEvent.input(memoInput, {
-          target: { value: "not-an-evm-address" },
-        });
-        expect(memoInput).toHaveValue("not-an-evm-address");
-      } else {
-        throw new Error("Memo input not found");
-      }
+      await fireEvent.input(memoInput, {
+        target: { value: "not-an-evm-address" },
+      });
+      expect(memoInput).toHaveValue("not-an-evm-address");
 
       expect(queryByText("Invalid EVM address format")).not.toBeInTheDocument();
       expect(nextButtonAmountStep).toBeEnabled();

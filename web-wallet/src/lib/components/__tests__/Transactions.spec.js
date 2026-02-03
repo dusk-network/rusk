@@ -14,11 +14,13 @@ import {
 
 import Transactions from "../Transactions/Transactions.svelte";
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-}));
+global.ResizeObserver = vi.fn().mockImplementation(function () {
+  return {
+    disconnect: vi.fn(),
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+  };
+});
 
 vi.useFakeTimers();
 

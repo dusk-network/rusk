@@ -4,7 +4,7 @@ import { sortWith } from "lamb";
  * We need to sort the entries in tests as the
  * database doesn't guarantee a sort order.
  *
- * @typedef {{ nullifier: Uint8Array }} T
+ * @typedef {{ nullifier: Uint8Array<ArrayBuffer> }} T
  * @type {<U extends T>(entries: U[]) => U[]}
  */
 const sortByNullifier = sortWith([

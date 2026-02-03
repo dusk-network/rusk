@@ -107,13 +107,13 @@ fieldset {
 }
 
 :is(
-    .dusk-anchor-button:not(.dusk-anchor-button__disabled),
-    .dusk-button:enabled,
-    .dusk-select:enabled,
-    .dusk-switch[aria-disabled="false"],
-    .dusk-textbox:read-write:enabled,
-    *[role="menuitem"]
-  ):focus,
+  .dusk-anchor-button:not(.dusk-anchor-button__disabled),
+  .dusk-button:enabled,
+  .dusk-select:enabled,
+  .dusk-switch[aria-disabled="false"],
+  .dusk-textbox:read-write:enabled,
+  *[role="menuitem"]
+):focus,
 .dusk-exclusive-choice:focus-within {
   border-color: var(--secondary-color-variant-dark);
   box-shadow: inset 0 0 0 var(--control-border-size)

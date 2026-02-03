@@ -2,7 +2,7 @@ import { mnemonicToSeedSync } from "bip39";
 
 /**
  * @param {String} mnemonic
- * @returns {Uint8Array}
+ * @returns {Uint8Array<ArrayBuffer>}
  */
 const getSeedFromMnemonic = (mnemonic) =>
   Uint8Array.from(mnemonicToSeedSync(mnemonic));

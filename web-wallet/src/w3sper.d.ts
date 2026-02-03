@@ -33,15 +33,15 @@ declare module "@dusk/w3sper" {
     : Increment<N, [...Arr, unknown]>;
 
   type ShieldedTransferResult = Readonly<{
-    buffer: Uint8Array;
+    buffer: Uint8Array<ArrayBuffer>;
     hash: string;
-    nullifiers: Uint8Array[];
+    nullifiers: Uint8Array<ArrayBuffer>[];
   }>;
 
   type ToPrimitiveHint = "default" | "number" | "string";
 
   type UnshieldedTransferResult = Readonly<{
-    buffer: Uint8Array;
+    buffer: Uint8Array<ArrayBuffer>;
     hash: string;
     nonce: bigint;
   }>;
@@ -56,7 +56,7 @@ declare module "@dusk/w3sper" {
   /***** FUNCTIONS *****/
 
   function useAsProtocolDriver(
-    source: string | URL | Uint8Array,
+    source: string | URL | Uint8Array<ArrayBuffer>,
     importsURL?: URL
   ): PromiseLike<void> & {
     cleanup: Promise<void>;
@@ -151,7 +151,7 @@ declare module "@dusk/w3sper" {
 
     get headers(): Headers;
     get origin(): RuesEventOrigin;
-    get payload(): Uint8Array | Record<string, any> | unknown;
+    get payload(): Uint8Array<ArrayBuffer> | Record<string, any> | unknown;
   }
 
   abstract class RuesScope {
@@ -182,7 +182,7 @@ declare module "@dusk/w3sper" {
 
     memo(options?: {
       as: "string";
-    }): typeof options extends undefined ? Uint8Array : string;
+    }): typeof options extends undefined ? Uint8Array<ArrayBuffer> : string;
   }
 
   interface Transactions extends RuesScope {
@@ -201,7 +201,9 @@ declare module "@dusk/w3sper" {
 
   interface Treasury {
     account(identifier: Key): Promise<AccountBalance>;
-    address(identifier: Key): Promise<Map<Uint8Array, Uint8Array>>;
+    address(
+      identifier: Key
+    ): Promise<Map<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>>;
     stakeInfo(identifier: Key): Promise<StakeInfo>;
   }
 
@@ -256,11 +258,11 @@ declare module "@dusk/w3sper" {
       hint: T
     ): T extends "number" ? number : T extends "string" ? string : null;
 
-    get seed(): Uint8Array;
+    get seed(): Uint8Array<ArrayBuffer>;
 
     toString(): string;
 
-    valueOf(): Uint8Array;
+    valueOf(): Uint8Array<ArrayBuffer>;
   };
 
   type Provisioner = {
@@ -328,7 +330,7 @@ declare module "@dusk/w3sper" {
     ): Promise<
       ReadableStream<
         [
-          Array<Map<Uint8Array, Uint8Array>>,
+          Array<Map<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>>,
           {
             blockHeight: bigint;
             bookmark: bigint;
@@ -337,9 +339,11 @@ declare module "@dusk/w3sper" {
       >
     >;
 
-    openings(notes: Map<Uint8Array, Uint8Array>): Promise<ArrayBuffer[]>;
+    openings(
+      notes: Map<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>
+    ): Promise<ArrayBuffer[]>;
 
-    spent(nullifiers: Uint8Array[]): Promise<ArrayBuffer[]>;
+    spent(nullifiers: Uint8Array<ArrayBuffer>[]): Promise<ArrayBuffer[]>;
   }
 
   class Bookkeeper {
@@ -351,17 +355,20 @@ declare module "@dusk/w3sper" {
 
     balance(identifier: Key): Promise<AccountBalance | AddressBalance>;
 
-    pick(identifier: Key, amount: bigint): Promise<Map<Uint8Array, Uint8Array>>;
+    pick(
+      identifier: Key,
+      amount: bigint
+    ): Promise<Map<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>>;
 
     stakeInfo(identifier: Key): Promise<StakeInfo>;
   }
 
   class Bookmark {
-    constructor(data: Uint8Array);
+    constructor(data: Uint8Array<ArrayBuffer>);
 
     static from(source: bigint | number): Bookmark;
 
-    get data(): Uint8Array;
+    get data(): Uint8Array<ArrayBuffer>;
 
     asUint(): bigint;
 
@@ -418,7 +425,7 @@ declare module "@dusk/w3sper" {
 
     execute<T extends BasicTransfer>(tx: T): ReturnType<T["build"]>;
 
-    prove(circuits: Uint8Array): Promise<ArrayBuffer>;
+    prove(circuits: Uint8Array<ArrayBuffer>): Promise<ArrayBuffer>;
 
     query(
       gql?: string,
@@ -456,7 +463,7 @@ declare module "@dusk/w3sper" {
   }
 
   class Profile {
-    constructor(buffer: Uint8Array);
+    constructor(buffer: Uint8Array<ArrayBuffer>);
 
     [Symbol.toPrimitive]<T extends ToPrimitiveHint>(
       hint: T
@@ -466,14 +473,14 @@ declare module "@dusk/w3sper" {
 
     get address(): Key;
 
-    get seed(): Uint8Array;
+    get seed(): Uint8Array<ArrayBuffer>;
 
     sameSourceOf(profile: Profile): boolean;
   }
 
   class ProfileGenerator {
-    constructor(seeder: () => Promise<Uint8Array>);
-    constructor(seeder: () => Uint8Array);
+    constructor(seeder: () => Promise<Uint8Array<ArrayBuffer>>);
+    constructor(seeder: () => Uint8Array<ArrayBuffer>);
 
     get default(): Promise<Profile>;
 
@@ -481,7 +488,7 @@ declare module "@dusk/w3sper" {
 
     static seedFrom<T>(
       target: T
-    ): T extends WithSeeder ? Uint8Array : undefined;
+    ): T extends WithSeeder ? Uint8Array<ArrayBuffer> : undefined;
 
     static typeOf(value: string): "account" | "address" | "undefined";
 
@@ -509,7 +516,7 @@ declare module "@dusk/w3sper" {
 
     to(value: string | Key): AccountTransfer | AddressTransfer;
 
-    memo(value: Uint8Array | string): this;
+    memo(value: Uint8Array<ArrayBuffer> | string): this;
 
     deposit(value: bigint): this;
   }
@@ -533,14 +540,17 @@ declare module "@dusk/w3sper" {
     encodeInputFn(
       fnName: string,
       json: string
-    ): Uint8Array | Promise<Uint8Array>;
+    ): Uint8Array<ArrayBuffer> | Promise<Uint8Array<ArrayBuffer>>;
 
     decodeOutputFn(
       fnName: string,
-      bytes: Uint8Array
+      bytes: Uint8Array<ArrayBuffer>
     ): unknown | Promise<unknown>;
 
-    decodeEvent(name: string, bytes: Uint8Array): unknown | Promise<unknown>;
+    decodeEvent(
+      name: string,
+      bytes: Uint8Array<ArrayBuffer>
+    ): unknown | Promise<unknown>;
   }
 
   type ContractCallOptions = {
@@ -550,7 +560,7 @@ declare module "@dusk/w3sper" {
 
   type ContractPayload = Readonly<{
     fnName: string;
-    fnArgs: Uint8Array;
+    fnArgs: Uint8Array<ArrayBuffer>;
     contractId: number[];
   }>;
 
@@ -563,7 +573,7 @@ declare module "@dusk/w3sper" {
   };
 
   type ContractConstructorParams = Readonly<{
-    contractId: string | Uint8Array;
+    contractId: string | Uint8Array<ArrayBuffer>;
     driver: ContractDriver | Promise<ContractDriver>;
     network?: Network | null;
     bookentry?: BookEntry | null;
@@ -580,7 +590,7 @@ declare module "@dusk/w3sper" {
     encode(
       fnName: string | number | symbol,
       jsonValue?: unknown
-    ): Promise<Uint8Array>;
+    ): Promise<Uint8Array<ArrayBuffer>>;
 
     readonly call: {
       [fnName: string]: (

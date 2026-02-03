@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update Transactions list design [#1922]
 - Withdrawal pending message explains status and shows finalization estimate [#3954]
+- Update dependencies to address potential security issues [#3982]
 
 ### Removed
 
@@ -621,6 +622,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3954]: https://github.com/dusk-network/rusk/issues/3954
 [#3955]: https://github.com/dusk-network/rusk/issues/3955
 [#3958]: https://github.com/dusk-network/rusk/issues/3958
+[#3982]: https://github.com/dusk-network/rusk/issues/3982
 
 <!-- VERSIONS -->
 

@@ -3,7 +3,7 @@ import { ProfileGenerator } from "@dusk/w3sper";
 import decryptBuffer from "./decryptBuffer";
 import encryptBuffer from "./encryptBuffer";
 
-/** @type {(seed: Uint8Array) => Promise<ProfileGenerator>} */
+/** @type {(seed: Uint8Array<ArrayBuffer>) => Promise<ProfileGenerator>} */
 async function profileGeneratorFrom(seed) {
   // creating a local copy
   seed = seed.slice();

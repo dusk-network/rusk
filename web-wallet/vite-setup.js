@@ -56,9 +56,9 @@ globalThis.fetch = vi.fn((url) => {
 
 vi.mock("@dusk/w3sper", async (importOriginal) => ({
   ...(await importOriginal()),
-  AccountSyncer: (await import("$lib/__mocks__/AccountSyncer")).default,
-  AddressSyncer: (await import("$lib/__mocks__/AddressSyncer")).default,
-  Network: (await import("$lib/__mocks__/Network")).default,
+  AccountSyncer: (await import("$lib/mocks/AccountSyncer")).default,
+  AddressSyncer: (await import("$lib/mocks/AddressSyncer")).default,
+  Network: (await import("$lib/mocks/Network")).default,
 }));
 
 // Removing the console logging created by the walletConnect library after each test file

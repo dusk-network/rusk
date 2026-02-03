@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/svelte";
 
-import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
+import mockedWalletStore from "$lib/mocks/mockedWalletStore";
 import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
 
 import SendPage from "../+page.svelte";

@@ -13,7 +13,7 @@ import { get } from "svelte/store";
 import { apiMarketData } from "$lib/mock-data";
 import { createCurrencyFormatter, luxToDusk } from "$lib/dusk/currency";
 
-import mockedWalletStore from "$lib/__mocks__/mockedWalletStore";
+import mockedWalletStore from "$lib/mocks/mockedWalletStore";
 
 import Layout from "../+layout.svelte";
 import { load } from "../+layout.js";
