@@ -1,4 +1,4 @@
-import { mnemonicToSeedSync } from "bip39";
+import { mnemonicToSeedSync } from "@scure/bip39";
 
 /**
  * @param {String} mnemonic

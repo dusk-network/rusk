@@ -2,7 +2,6 @@
 
 <script>
   import { mdiArrowLeft, mdiKeyOutline } from "@mdi/js";
-  import { validateMnemonic } from "bip39";
 
   import { getErrorFrom } from "$lib/dusk/error";
   import { Button, Textbox } from "$lib/dusk/components";
@@ -24,6 +23,7 @@
     decryptMnemonic,
     getSeedFromMnemonic,
     profileGeneratorFrom,
+    validateMnemonic,
   } from "$lib/wallet";
   import loginInfoStorage from "$lib/services/loginInfoStorage";
 

@@ -13,7 +13,7 @@ Web Wallet website.
 
 ## Build system and dev environment
 
-The build system assumes that you have at least Node.js v18.x installed. The LTS version is 18.16.0 at the time of writing.
+The build system assumes that you have at least Node.js v24.x installed. The LTS version is 24.13.0 at the time of writing.
 
 All terminal commands assume that you are positioned in root folder of the repository.
 Run `npm install` from the root folder to get the necessary dependencies.

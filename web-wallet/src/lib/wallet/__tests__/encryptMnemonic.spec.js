@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { generateMnemonic } from "bip39";
 
-import { encryptMnemonic } from "..";
+import { encryptMnemonic, generateMnemonic } from "..";
 
 describe("encryptMnemonic", () => {
   const mnemonic = generateMnemonic();

@@ -87,17 +87,6 @@ if (!Promise.withResolvers) {
   };
 }
 
-/*
- * Mocking deprecated `atob` and `btoa` functions in Node.
- * Vitest get stuck otherwise.
- */
-vi.spyOn(global, "atob").mockImplementation((data) =>
-  Buffer.from(data, "base64").toString("binary")
-);
-vi.spyOn(global, "btoa").mockImplementation((data) =>
-  Buffer.from(data, "binary").toString("base64")
-);
-
 // Adding missing bits in JSDOM
 
 vi.mock("./src/lib/dusk/mocks/IntersectionObserver");
