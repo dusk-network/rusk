@@ -297,9 +297,8 @@ fn deploy_proxy_contract(
 ) -> ContractId {
     let deploy_nonce = 0u64;
     let owner = wallet.account_public_key(0).unwrap();
-    let charlie_byte_code = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/charlie.wasm"
-    );
+    let charlie_byte_code =
+        include_bytes!("../../../contracts/bin/charlie.wasm");
     let contract_id =
         gen_contract_id(charlie_byte_code, deploy_nonce, owner.to_bytes());
     let tx = wallet
