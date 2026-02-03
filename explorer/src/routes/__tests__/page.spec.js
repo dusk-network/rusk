@@ -18,9 +18,8 @@ const marketDataSettleTime = vi.hoisted(() => {
 vi.mock("$lib/services", async (importOriginal) => {
   /** @type {import("$lib/services")} */
   const original = await importOriginal();
-  const { transformBlock, transformTransaction } = await import(
-    "$lib/chain-info"
-  );
+  const { transformBlock, transformTransaction } =
+    await import("$lib/chain-info");
   const { apiMarketData, gqlLatestChainInfo, nodeLocationsCount } =
     await import("$lib/mock-data");
   const { current_price: currentPrice, market_cap: marketCap } =

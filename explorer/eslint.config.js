@@ -40,6 +40,24 @@ export default defineConfig([
         svelteConfig,
       },
     },
+    rules: {
+      /**
+       * This rule was added in `eslint-plugin-svelte` v3.12.0.
+       * We disable it temporarily for links, as we have our own
+       * path resolution in place.
+       *
+       * @see https://sveltejs.github.io/eslint-plugin-svelte/rules/no-navigation-without-resolve/
+       */
+      "svelte/no-navigation-without-resolve": [
+        "error",
+        {
+          ignoreGoto: false,
+          ignoreLinks: true,
+          ignorePushState: false,
+          ignoreReplaceState: false,
+        },
+      ],
+    },
   },
   {
     extends: [vitestEsLintConfig],
