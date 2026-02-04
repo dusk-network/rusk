@@ -35,6 +35,7 @@ use dusk_core::BlsScalar;
 use dusk_vm::{ContractData, Session, VM};
 use ff::Field;
 use rand::rngs::OsRng;
+use secp256k1::{Message, Secp256k1, SecretKey};
 use sha2::{Digest as Sha2Digest, Sha256};
 
 const POINT_LIMIT: u64 = 0x4000000;
@@ -293,6 +294,55 @@ fn sha256_host() {
     let expected: [u8; 32] = hasher.finalize().into();
 
     assert_eq!(expected, output);
+}
+
+#[test]
+fn secp256k1_recover_host() {
+    let vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
+
+    let msg_hash: [u8; 32] = Sha256::digest(b"rusk-host-secp256k1").into();
+    let sk_bytes = [1u8; 32];
+    let sk = SecretKey::from_slice(&sk_bytes).expect("secret key should be valid");
+
+    let secp = Secp256k1::new();
+    let msg =
+        Message::from_digest_slice(&msg_hash).expect("message should be valid");
+    let sig = secp.sign_ecdsa_recoverable(&msg, &sk);
+    let (rec_id, compact) = sig.serialize_compact();
+
+    let mut sig_bytes = [0u8; 65];
+    sig_bytes[..64].copy_from_slice(&compact);
+    sig_bytes[64] = (rec_id.to_i32() as u8) + 27;
+
+    let expected_pub = secp256k1::PublicKey::from_secret_key(&secp, &sk)
+        .serialize_uncompressed();
+
+    let recovered: Option<[u8; 65]> = session
+        .call(
+            contract_id,
+            "secp256k1_recover",
+            &(msg_hash, sig_bytes),
+            POINT_LIMIT,
+        )
+        .expect("Query should succeed")
+        .data;
+
+    assert_eq!(Some(expected_pub), recovered);
+
+    let mut invalid_sig = sig_bytes;
+    invalid_sig[0] ^= 0x01;
+    let invalid: Option<[u8; 65]> = session
+        .call(
+            contract_id,
+            "secp256k1_recover",
+            &(msg_hash, invalid_sig),
+            POINT_LIMIT,
+        )
+        .expect("Query should succeed")
+        .data;
+
+    assert!(invalid.is_none());
 }
 
 #[test]

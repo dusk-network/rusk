@@ -24,6 +24,7 @@ indexmap = { workspace = true, optional = true }    # 2.12 requires rustc editio
 serde = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
 c-kzg = { workspace = true }
+secp256k1 = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true, features = ["getrandom"] }

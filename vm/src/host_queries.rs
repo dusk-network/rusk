@@ -28,6 +28,7 @@ use dusk_core::BlsScalar;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
+use secp256k1::{ecdsa::RecoverableSignature, Message, Secp256k1};
 use sha2::{Digest as Sha2Digest, Sha256};
 use sha3::Keccak256;
 use tracing::warn;
@@ -330,6 +331,29 @@ pub fn verify_kzg_proof(
     }
 }
 
+/// Recover a secp256k1 public key from a message hash and signature.
+///
+/// Signature format: r(32) || s(32) || v(1), with v in {0,1,27,28}.
+pub fn secp256k1_recover(
+    msg_hash: [u8; 32],
+    sig: [u8; 65],
+) -> Option<[u8; 65]> {
+    let v = sig[64];
+    let v = match v {
+        0 | 1 => v as i32,
+        27 | 28 => (v - 27) as i32,
+        _ => return None,
+    };
+
+    let rec_id = secp256k1::ecdsa::RecoveryId::from_i32(v).ok()?;
+    let sig = RecoverableSignature::from_compact(&sig[0..64], rec_id).ok()?;
+    let msg = Message::from_digest_slice(&msg_hash).ok()?;
+
+    let secp = Secp256k1::new();
+    let pk = secp.recover_ecdsa(&msg, &sig).ok()?;
+    Some(pk.serialize_uncompressed())
+}
+
 fn wrap_host_query<A, R, F>(arg_buf: &mut [u8], arg_len: u32, closure: F) -> u32
 where
     F: FnOnce(A) -> R,
@@ -420,5 +444,14 @@ pub(crate) fn host_sha256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     wrap_host_query(arg_buf, arg_len, |(commitment, z, y, proof)| {
         verify_kzg_proof(commitment, z, y, proof)
+    })
+}
+
+pub(crate) fn host_secp256k1_recover(
+    arg_buf: &mut [u8],
+    arg_len: u32,
+) -> u32 {
+    wrap_host_query(arg_buf, arg_len, |(msg_hash, sig)| {
+        secp256k1_recover(msg_hash, sig)
     })
 }

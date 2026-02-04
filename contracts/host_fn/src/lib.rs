@@ -97,6 +97,14 @@ impl HostFnTest {
         abi::verify_kzg_proof(commitment, z, y, proof)
     }
 
+    pub fn secp256k1_recover(
+        &self,
+        msg_hash: [u8; 32],
+        sig: [u8; 65],
+    ) -> Option<[u8; 65]> {
+        abi::secp256k1_recover(msg_hash, sig)
+    }
+
     pub fn chain_id(&self) -> u8 {
         abi::chain_id()
     }
@@ -169,6 +177,13 @@ unsafe fn sha256(arg_len: u32) -> u32 {
 unsafe fn verify_kzg_proof(arg_len: u32) -> u32 {
     abi::wrap_call(arg_len, |(commitment, z, y, proof)| {
         STATE.verify_kzg_proof(commitment, z, y, proof)
+    })
+}
+
+#[no_mangle]
+unsafe fn secp256k1_recover(arg_len: u32) -> u32 {
+    abi::wrap_call(arg_len, |(msg_hash, sig)| {
+        STATE.secp256k1_recover(msg_hash, sig)
     })
 }
 
