@@ -80,7 +80,7 @@ use crate::VERSION;
 pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
 pub use error::Error as HttpError;
 
-use self::event::{ResponseData, RuesEventUri, SessionId};
+use self::event::{check_rusk_version, ResponseData, RuesEventUri, SessionId};
 use self::stream::Listener;
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;
@@ -556,6 +556,10 @@ async fn handle_request_rues<H: HandleRequest>(
 
         Ok(response.map(Into::into))
     } else if req.method() == Method::POST {
+        if let Err(err) = validate_rusk_version_headers(req.headers()) {
+            return response(StatusCode::BAD_REQUEST, err.to_string());
+        }
+
         let (event, binary_request) =
             RuesDispatchEvent::from_request(req).await?;
         let mut resp_headers = event.x_headers();
@@ -582,6 +586,10 @@ async fn handle_request_rues<H: HandleRequest>(
 
         Ok(resp)
     } else {
+        if let Err(err) = validate_rusk_version_headers(req.headers()) {
+            return response(StatusCode::BAD_REQUEST, err.to_string());
+        }
+
         let sid = match SessionId::parse_from_req(&req) {
             None => {
                 return response(
@@ -632,6 +640,20 @@ async fn handle_request_rues<H: HandleRequest>(
 
         response(StatusCode::OK, "")
     }
+}
+
+fn validate_rusk_version_headers(headers: &HeaderMap) -> anyhow::Result<()> {
+    let strict = headers.contains_key(RUSK_VERSION_STRICT_HEADER);
+    let version = match headers.get(RUSK_VERSION_HEADER) {
+        Some(value) => {
+            let value_str = value.to_str().map_err(|_| {
+                anyhow::anyhow!("Invalid Rusk-Version header encoding")
+            })?;
+            Some(serde_json::Value::String(value_str.to_owned()))
+        }
+        None => None,
+    };
+    check_rusk_version(version.as_ref(), strict)
 }
 
 async fn handle_request<H>(
@@ -975,6 +997,158 @@ mod tests {
         assert_eq!(
             request_bytes, response_bytes,
             "Data received the same as sent"
+        );
+    }
+
+    #[tokio::test]
+    async fn post_rues_strict_without_version_returns_bad_request() {
+        let cert_and_key: Option<(String, String)> = None;
+        let (_, event_receiver) = broadcast::channel(16);
+
+        let (_server, local_addr) = HttpServer::bind(
+            TestHandle,
+            event_receiver,
+            2,
+            "localhost:0",
+            HeaderMap::new(),
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .header(RUSK_VERSION_STRICT_HEADER, "1")
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            body.contains(
+                "Missing Rusk-Version header while Rusk-Version-Strict is set"
+            ),
+            "Expected strict-without-version error, got: {body}"
+        );
+    }
+
+    #[tokio::test]
+    async fn post_rues_invalid_version_header_encoding_returns_bad_request() {
+        let cert_and_key: Option<(String, String)> = None;
+        let (_, event_receiver) = broadcast::channel(16);
+
+        let (_server, local_addr) = HttpServer::bind(
+            TestHandle,
+            event_receiver,
+            2,
+            "localhost:0",
+            HeaderMap::new(),
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let invalid_version = HeaderValue::from_bytes(&[0xff])
+            .expect("Creating invalid UTF-8 header value should succeed");
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .header(RUSK_VERSION_HEADER, invalid_version)
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            body.contains("Invalid Rusk-Version header encoding"),
+            "Expected invalid encoding error, got: {body}"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn get_delete_rues_strict_without_version_returns_bad_request() {
+        let cert_and_key: Option<(String, String)> = None;
+        let (_, event_receiver) = broadcast::channel(16);
+
+        let (_server, local_addr) = HttpServer::bind(
+            TestHandle,
+            event_receiver,
+            2,
+            "localhost:0",
+            HeaderMap::new(),
+            cert_and_key,
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let stream = TcpStream::connect(local_addr)
+            .expect("Connecting to the server should succeed");
+        let ws_uri = format!("ws://{local_addr}/on");
+        let (mut stream, _) = client(ws_uri, stream)
+            .expect("Handshake with the server should succeed");
+
+        let first_message =
+            stream.read().expect("Session ID should be received");
+        let sid = SessionId::parse(
+            &first_message
+                .into_text()
+                .expect("Session ID should come in a text message"),
+        )
+        .expect("Session ID should be parsed");
+
+        let client = reqwest::Client::new();
+        let contract_id_hex = hex::encode(ContractId::from_bytes([1; 32]));
+        let path =
+            format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
+
+        let subscribe_response = client
+            .get(path.clone())
+            .header("Rusk-Session-Id", sid.to_string())
+            .header(RUSK_VERSION_STRICT_HEADER, "1")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+        assert_eq!(subscribe_response.status(), StatusCode::BAD_REQUEST);
+        let subscribe_body = subscribe_response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            subscribe_body.contains(
+                "Missing Rusk-Version header while Rusk-Version-Strict is set"
+            ),
+            "Expected strict-without-version error, got: {subscribe_body}"
+        );
+
+        let unsubscribe_response = client
+            .delete(path)
+            .header("Rusk-Session-Id", sid.to_string())
+            .header(RUSK_VERSION_STRICT_HEADER, "1")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+        assert_eq!(unsubscribe_response.status(), StatusCode::BAD_REQUEST);
+        let unsubscribe_body = unsubscribe_response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            unsubscribe_body.contains(
+                "Missing Rusk-Version header while Rusk-Version-Strict is set"
+            ),
+            "Expected strict-without-version error, got: {unsubscribe_body}"
         );
     }
 
