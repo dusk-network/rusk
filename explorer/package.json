@@ -33,7 +33,7 @@
     "typecheck:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch --fail-on-warnings"
   },
   "type": "module",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "dependencies": {
     "@floating-ui/dom": "1.7.5",
     "@mdi/js": "7.4.47",
