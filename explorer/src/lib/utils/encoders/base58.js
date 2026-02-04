@@ -18,8 +18,8 @@ export function encode(buffer) {
     n; //a temporary placeholder variable for the current base58 digit
   for (i in buffer) {
     //loop through each byte in the input stream
-    (j = 0), //reset the base58 digit iterator
-      (c = buffer[i]); //set the initial carry amount equal to the current byte amount
+    ((j = 0), //reset the base58 digit iterator
+      (c = buffer[i])); //set the initial carry amount equal to the current byte amount
     s += c || s.length ^ i ? "" : 1; //prepend the result string with a "1" (0 in base58) if the byte stream is zero and non-zero bytes haven't been seen yet (to ensure correct decode length)
     while (j in d || c) {
       //start looping through the digits until there are no more digits and no carry amount
@@ -46,8 +46,8 @@ export function decode(string) {
     n; //a temporary placeholder variable for the current byte
   for (i in string) {
     //loop through each base58 character in the input string
-    (j = 0), //reset the byte iterator
-      (c = A.indexOf(string[i])); //set the initial carry amount equal to the current base58 digit
+    ((j = 0), //reset the byte iterator
+      (c = A.indexOf(string[i]))); //set the initial carry amount equal to the current base58 digit
     if (c < 0)
       //see if the base58 digit lookup is invalid (-1)
       return undefined; //if invalid base58 digit, bail out and return undefined

@@ -25,6 +25,7 @@ and this project adheres to
 - No longer rely on Vite dev proxy for `/supply` during development [#3847]
 - Hide provisioners with no active or locked stake from the provisioners list [#3930]
 - Change ranking column to take the full provisioner list into account [#3931]
+- Update dependencies to address potential security issues [#3985]
 
 ### Removed
 
@@ -280,6 +281,7 @@ and this project adheres to
 [#3925]: https://github.com/dusk-network/rusk/issues/3925
 [#3930]: https://github.com/dusk-network/rusk/issues/3930
 [#3931]: https://github.com/dusk-network/rusk/issues/3931
+[#3985]: https://github.com/dusk-network/rusk/issues/3985
 
 <!-- VERSIONS -->
 
