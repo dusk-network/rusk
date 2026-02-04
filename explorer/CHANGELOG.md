@@ -10,6 +10,16 @@ and this project adheres to
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+## [1.5.0] - 2026-02-04
+
+### Added
+
 - Add Tokens page [#3415]
 - Add support for transactions' blob hashes [#3804]
 - Provisioner table now supports sorting across all columns [#3924]
@@ -30,8 +40,6 @@ and this project adheres to
 ### Removed
 
 - Deleted API URL plumbing (`makeApiUrl`, `ensureTrailingSlash`) and the `apiGet` helper. Removed `VITE_API_ENDPOINT` environment variable. [#3847]
-
-### Fixed
 
 ## [1.4.0] - 2025-05-22
 
@@ -286,6 +294,7 @@ and this project adheres to
 <!-- VERSIONS -->
 
 [Unreleased]: https://github.com/dusk-network/rusk/tree/master/explorer
+[1.5.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.5.0
 [1.4.0]: https://github.com/dusk-network/rusk/tree/explorer-v1.4.0
 [1.3.3]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.3
 [1.3.2]: https://github.com/dusk-network/rusk/tree/explorer-v1.3.2
