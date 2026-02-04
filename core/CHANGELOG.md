@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `sha256` and `verify_kzg_proof` ABI host queries [#3993]
+
 ## [1.4.1] - 2026-01-23
 
 - Add serde support for `ContractCall`
@@ -67,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add types, type-alias, functionality, re-exports and modules to interact with dusk-network
 
 <!-- Issues -->
+[#3993]: https://github.com/dusk-network/rusk/issues/3993
 [#3533]: https://github.com/dusk-network/rusk/issues/3533
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3341]: https://github.com/dusk-network/rusk/issues/3341

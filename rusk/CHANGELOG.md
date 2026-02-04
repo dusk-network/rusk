@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add feature activation flags for `sha256` and `verify_kzg_proof` host queries [#3993]
+
 ## [1.4.4] - 2026-01-30
 
 ### Added
@@ -431,6 +435,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 <!-- Issues -->
+[#3993]: https://github.com/dusk-network/rusk/issues/3993
 [#3917]: https://github.com/dusk-network/rusk/issues/3917
 [#3897]: https://github.com/dusk-network/rusk/issues/3897
 [#3894]: https://github.com/dusk-network/rusk/issues/3894
