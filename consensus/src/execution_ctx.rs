@@ -1164,13 +1164,19 @@ mod tests {
             .process_inbound_msg(validation_handler.clone(), msg)
             .await;
 
-        let queued = future_msgs
-            .lock()
-            .await
-            .msg_count_by_round_step(
-                round_update.round,
-                StepName::Validation.to_step(1),
-            );
+        let queued = {
+            let mut registry = future_msgs.lock().await;
+            let step = StepName::Validation.to_step(1);
+            let drained =
+                registry.drain_msg_by_round_step(round_update.round, step);
+            let len = drained.as_ref().map(|items| items.len()).unwrap_or(0);
+            if let Some(items) = drained {
+                for msg in items {
+                    registry.put_msg(msg).expect("reinsert future msg");
+                }
+            }
+            len
+        };
         assert_eq!(queued, 1, "future message should be queued");
 
         validation_handler.lock().await.reset(1);
@@ -1191,14 +1197,16 @@ mod tests {
             .handle_future_msgs(validation_handler)
             .await;
 
-        let queued = future_msgs
+        let drained = future_msgs
             .lock()
             .await
-            .msg_count_by_round_step(
+            .drain_msg_by_round_step(
                 tip.height + 1,
                 StepName::Validation.to_step(1),
-            );
-        assert_eq!(queued, 0, "future message should be drained");
+            )
+            .map(|items| items.is_empty())
+            .unwrap_or(true);
+        assert!(drained, "future message should be drained");
 
         let forwarded = outbound.recv().await.expect("forwarded message");
         assert!(matches!(forwarded.payload, Payload::Validation(_)));
