@@ -572,7 +572,12 @@ async fn handle_request_rues<H: HandleRequest>(
             .expect("An execution should always return a response");
         resp_headers.extend(execution_response.headers.clone());
         let binary_response = binary_request || execution_response.force_binary;
+        let is_empty = execution_response.error.is_none()
+            && matches!(execution_response.data, DataType::None);
         let mut resp = execution_response.into_http(binary_response)?;
+        if is_empty {
+            *resp.status_mut() = StatusCode::ACCEPTED;
+        }
 
         for (k, v) in resp_headers {
             let k = HeaderName::from_str(&k)?;
@@ -922,6 +927,7 @@ mod tests {
                 ("test", _, "echo") => {
                     ResponseData::new(request.data.as_bytes().to_vec())
                 }
+                ("test", _, "no-content") => ResponseData::new(DataType::None),
                 ("graphql", _, "query") => {
                     ResponseData::new(serde_json::json!({ "data": "ok" }))
                 }
@@ -1052,6 +1058,26 @@ mod tests {
             request_bytes, response_bytes,
             "Data received the same as sent"
         );
+    }
+
+    #[tokio::test]
+    async fn post_rues_empty_response_returns_accepted_with_empty_body() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/no-content"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::ACCEPTED);
+        let body = response
+            .bytes()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(body.is_empty(), "Expected empty response body");
     }
 
     #[tokio::test]
