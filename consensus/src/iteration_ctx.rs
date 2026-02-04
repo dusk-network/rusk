@@ -318,3 +318,85 @@ impl<DB: Database> Drop for IterationCtx<DB> {
         self.on_close();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_trait::async_trait;
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
+
+    use crate::config::{MIN_STEP_TIMEOUT, TIMEOUT_INCREASE};
+    use crate::step_votes_reg::AttInfoRegistry;
+
+    #[derive(Default)]
+    struct DummyDb;
+
+    #[async_trait]
+    impl Database for DummyDb {
+        async fn store_candidate_block(&mut self, _b: node_data::ledger::Block) {}
+        async fn store_validation_result(
+            &mut self,
+            _ch: &node_data::message::ConsensusHeader,
+            _vr: &node_data::message::payload::ValidationResult,
+        ) {
+        }
+        async fn get_last_iter(&self) -> (node_data::ledger::Hash, u8) {
+            ([0u8; 32], 0)
+        }
+        async fn store_last_iter(
+            &mut self,
+            _data: (node_data::ledger::Hash, u8),
+        ) {
+        }
+    }
+
+    fn build_ctx() -> IterationCtx<DummyDb> {
+        let db = Arc::new(Mutex::new(DummyDb::default()));
+        let att_registry =
+            Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let validation = Arc::new(Mutex::new(
+            validation::handler::ValidationHandler::new(
+                att_registry.clone(),
+                db.clone(),
+            ),
+        ));
+        let ratification = Arc::new(Mutex::new(
+            ratification::handler::RatificationHandler::new(
+                att_registry,
+            ),
+        ));
+        let proposal = Arc::new(Mutex::new(
+            proposal::handler::ProposalHandler::new(db),
+        ));
+
+        let mut timeouts: TimeoutSet = HashMap::new();
+        timeouts.insert(StepName::Proposal, MIN_STEP_TIMEOUT);
+        timeouts.insert(
+            StepName::Validation,
+            MIN_STEP_TIMEOUT + TIMEOUT_INCREASE,
+        );
+        timeouts.insert(
+            StepName::Ratification,
+            MIN_STEP_TIMEOUT + TIMEOUT_INCREASE + TIMEOUT_INCREASE,
+        );
+
+        IterationCtx::new(1, 0, validation, ratification, proposal, timeouts)
+    }
+
+    #[test]
+    fn timeout_increases_and_caps_at_max() {
+        let mut ctx = build_ctx();
+        let mut current = ctx.get_timeout(StepName::Proposal);
+
+        for _ in 0..20 {
+            ctx.on_timeout_event(StepName::Proposal);
+            let next = ctx.get_timeout(StepName::Proposal);
+            assert!(next >= current, "timeout should be non-decreasing");
+            current = next;
+        }
+
+        assert_eq!(ctx.get_timeout(StepName::Proposal), MAX_STEP_TIMEOUT);
+    }
+}

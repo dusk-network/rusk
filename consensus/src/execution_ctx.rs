@@ -772,6 +772,667 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_trait::async_trait;
+    use std::collections::HashMap;
+    use node_data::ledger::{Attestation, Block, Header, StepVotes};
+    use node_data::message::payload::{Candidate, ValidationQuorum};
+    use node_data::message::{ConsensusHeader, SignedStepMessage};
+    use dusk_core::signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey};
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+    use tokio::sync::Mutex;
+
+    use crate::commons::TimeoutSet;
+    use crate::config::{MIN_STEP_TIMEOUT, TIMEOUT_INCREASE};
+    use crate::iteration_ctx::IterationCtx;
+    use crate::merkle::merkle_root;
+    use crate::operations::{StateTransitionData, StateTransitionResult, Voter};
+    use crate::proposal::handler::ProposalHandler;
+    use crate::ratification::handler::RatificationHandler;
+    use crate::step_votes_reg::AttInfoRegistry;
+    use crate::validation::handler::ValidationHandler;
+    use crate::user::provisioners::DUSK;
+
+    #[derive(Default)]
+    struct DummyDb {
+        stored_candidates: Arc<Mutex<usize>>,
+        validation_results:
+            Arc<Mutex<Vec<(node_data::message::ConsensusHeader, ValidationResult)>>>,
+    }
+
+    #[async_trait]
+    impl Database for DummyDb {
+        async fn store_candidate_block(&mut self, _b: Block) {
+            let mut count = self.stored_candidates.lock().await;
+            *count += 1;
+        }
+        async fn store_validation_result(
+            &mut self,
+            ch: &node_data::message::ConsensusHeader,
+            vr: &node_data::message::payload::ValidationResult,
+        ) {
+            let mut results = self.validation_results.lock().await;
+            results.push((*ch, vr.clone()));
+        }
+        async fn get_last_iter(&self) -> (node_data::ledger::Hash, u8) {
+            ([0u8; 32], 0)
+        }
+        async fn store_last_iter(
+            &mut self,
+            _data: (node_data::ledger::Hash, u8),
+        ) {
+        }
+    }
+
+    #[derive(Default)]
+    struct DummyOps;
+
+    #[async_trait]
+    impl Operations for DummyOps {
+        async fn validate_block_header(
+            &self,
+            _candidate_header: &node_data::ledger::Header,
+            _expected_generator: &node_data::bls::PublicKeyBytes,
+        ) -> Result<Vec<Voter>, crate::errors::HeaderError> {
+            Ok(vec![])
+        }
+        async fn validate_faults(
+            &self,
+            _block_height: u64,
+            _faults: &[node_data::ledger::Fault],
+        ) -> Result<(), crate::errors::OperationError> {
+            Ok(())
+        }
+        async fn validate_state_transition(
+            &self,
+            _prev_state: [u8; 32],
+            _blk: &Block,
+            _cert_voters: &[Voter],
+        ) -> Result<(), crate::errors::OperationError> {
+            Ok(())
+        }
+        async fn generate_state_transition(
+            &self,
+            _transition_data: StateTransitionData,
+        ) -> Result<(Vec<node_data::ledger::SpentTransaction>, StateTransitionResult), crate::errors::OperationError>
+        {
+            Ok((
+                vec![],
+                StateTransitionResult {
+                    state_root: [0u8; 32],
+                    event_bloom: [0u8; 256],
+                },
+            ))
+        }
+        async fn add_step_elapsed_time(
+            &self,
+            _round: u64,
+            _step_name: StepName,
+            _elapsed: Duration,
+        ) -> Result<(), crate::errors::OperationError> {
+            Ok(())
+        }
+        async fn get_block_gas_limit(&self) -> u64 {
+            0
+        }
+    }
+
+    struct NoopHandler;
+
+    #[async_trait]
+    impl MsgHandler for NoopHandler {
+        fn verify(
+            &self,
+            _msg: &Message,
+            _round_committees: &crate::iteration_ctx::RoundCommittees,
+        ) -> Result<(), ConsensusError> {
+            Ok(())
+        }
+
+        async fn collect(
+            &mut self,
+            _msg: Message,
+            _ru: &RoundUpdate,
+            _committee: &crate::user::committee::Committee,
+            _generator: Option<PublicKeyBytes>,
+            _round_committees: &crate::iteration_ctx::RoundCommittees,
+        ) -> Result<StepOutcome, ConsensusError> {
+            Ok(StepOutcome::Pending)
+        }
+
+        async fn collect_from_past(
+            &mut self,
+            _msg: Message,
+            _committee: &crate::user::committee::Committee,
+            _generator: Option<PublicKeyBytes>,
+        ) -> Result<StepOutcome, ConsensusError> {
+            Ok(StepOutcome::Pending)
+        }
+
+        fn handle_timeout(
+            &self,
+            _ru: &RoundUpdate,
+            _curr_iteration: u8,
+        ) -> Option<Message> {
+            None
+        }
+    }
+
+    fn build_iter_ctx(
+        db: Arc<Mutex<DummyDb>>,
+    ) -> (
+        IterationCtx<DummyDb>,
+        SafeAttestationInfoRegistry,
+        Arc<Mutex<ValidationHandler<DummyDb>>>,
+    ) {
+        let att_registry =
+            Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let validation = Arc::new(Mutex::new(
+            ValidationHandler::new(
+                att_registry.clone(),
+                db.clone(),
+            ),
+        ));
+        let validation_ref = validation.clone();
+        let ratification =
+            Arc::new(Mutex::new(RatificationHandler::new(
+                att_registry.clone(),
+            )));
+        let proposal =
+            Arc::new(Mutex::new(ProposalHandler::new(db)));
+
+        let mut timeouts: TimeoutSet = HashMap::new();
+        timeouts.insert(StepName::Proposal, MIN_STEP_TIMEOUT);
+        timeouts.insert(
+            StepName::Validation,
+            MIN_STEP_TIMEOUT + TIMEOUT_INCREASE,
+        );
+        timeouts.insert(
+            StepName::Ratification,
+            MIN_STEP_TIMEOUT + TIMEOUT_INCREASE + TIMEOUT_INCREASE,
+        );
+
+        (
+            IterationCtx::new(1, 0, validation, ratification, proposal, timeouts),
+            att_registry,
+            validation_ref,
+        )
+    }
+
+    fn build_candidate_message(ru: &RoundUpdate) -> Message {
+        let mut header = Header::default();
+        header.height = ru.round;
+        header.iteration = 0;
+        header.prev_block_hash = ru.hash();
+        header.generator_bls_pubkey = *ru.pubkey_bls.bytes();
+        header.txroot = merkle_root::<[u8; 32]>(&[]);
+        header.faultroot = merkle_root::<[u8; 32]>(&[]);
+
+        let block = Block::new(header, vec![], vec![]).expect("valid block");
+        let mut candidate = Candidate { candidate: block };
+        candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
+        candidate.into()
+    }
+
+    fn build_quorum_message(
+        ru: &RoundUpdate,
+        iteration: u8,
+        result: RatificationResult,
+    ) -> Message {
+        let att = Attestation {
+            result,
+            validation: StepVotes::default(),
+            ratification: StepVotes::default(),
+        };
+        let header = ConsensusHeader {
+            prev_block_hash: ru.hash(),
+            round: ru.round,
+            iteration,
+        };
+        let quorum = node_data::message::payload::Quorum { header, att };
+        quorum.into()
+    }
+
+    #[tokio::test]
+    async fn past_message_not_processed_outside_emergency() {
+        let stored_candidates = Arc::new(Mutex::new(0usize));
+        let db = Arc::new(Mutex::new(DummyDb {
+            stored_candidates: stored_candidates.clone(),
+            ..Default::default()
+        }));
+        let (mut iter_ctx, att_registry, validation_handler) = build_iter_ctx(db);
+
+        let mut provisioners = Provisioners::empty();
+        let mut rng = StdRng::seed_from_u64(1);
+        let mut keys = Vec::new();
+        for _ in 0..3 {
+            let sk = BlsSecretKey::random(&mut rng);
+            let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+            provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
+            keys.push((pk, sk));
+        }
+
+        let mut tip = node_data::ledger::Header::default();
+        tip.height = 0;
+        tip.seed = node_data::ledger::Seed::from([7u8; 48]);
+        tip.hash = [3u8; 32];
+        let (pk1, sk1) = &keys[0];
+        let round_update = RoundUpdate::new(
+            pk1.clone(),
+            sk1.clone(),
+            &tip,
+            HashMap::new(),
+            vec![],
+        );
+
+        let inbound = AsyncQueue::bounded(16, "test-inbound");
+        let outbound = AsyncQueue::bounded(16, "test-outbound");
+        let future_msgs = Arc::new(Mutex::new(MsgRegistry::default()));
+        let client = Arc::new(DummyOps::default());
+
+        iter_ctx.generate_iteration_committees(
+            0,
+            &provisioners,
+            round_update.seed(),
+        );
+
+        let generator = iter_ctx
+            .get_generator(0)
+            .expect("generator for iter 0");
+        let (gen_pk, gen_sk) = keys
+            .iter()
+            .find(|(pk, _)| pk.bytes() == &generator)
+            .map(|(pk, sk)| (pk.clone(), sk.clone()))
+            .expect("generator key");
+        let generator_ru = RoundUpdate::new(
+            gen_pk,
+            gen_sk,
+            &tip,
+            HashMap::new(),
+            vec![],
+        );
+
+        let mut ctx = ExecutionCtx::new(
+            &mut iter_ctx,
+            inbound,
+            outbound,
+            future_msgs,
+            &provisioners,
+            round_update,
+            0,
+            StepName::Validation,
+            client,
+            att_registry,
+        );
+
+        let msg = build_candidate_message(&generator_ru);
+        let _ = ctx.process_inbound_msg(validation_handler, msg).await;
+
+        let stored = *stored_candidates.lock().await;
+        assert_eq!(
+            stored, 0,
+            "past messages should not be processed outside emergency"
+        );
+    }
+
+    #[tokio::test]
+    async fn future_message_is_queued_then_drained() {
+        let db = Arc::new(Mutex::new(DummyDb::default()));
+        let (mut iter_ctx, att_registry, validation_handler) = build_iter_ctx(db);
+
+        let mut provisioners = Provisioners::empty();
+        let mut rng = StdRng::seed_from_u64(5);
+        let mut keys = Vec::new();
+        for _ in 0..3 {
+            let sk = BlsSecretKey::random(&mut rng);
+            let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+            provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
+            keys.push((pk, sk));
+        }
+
+        let mut tip = node_data::ledger::Header::default();
+        tip.height = 0;
+        tip.seed = node_data::ledger::Seed::from([7u8; 48]);
+        tip.hash = [3u8; 32];
+        let (pk1, sk1) = &keys[0];
+        let round_update = RoundUpdate::new(
+            pk1.clone(),
+            sk1.clone(),
+            &tip,
+            HashMap::new(),
+            vec![],
+        );
+
+        iter_ctx.generate_iteration_committees(
+            0,
+            &provisioners,
+            round_update.seed(),
+        );
+        iter_ctx.generate_iteration_committees(
+            1,
+            &provisioners,
+            round_update.seed(),
+        );
+
+        let committee = iter_ctx
+            .committees
+            .get_committee(StepName::Validation.to_step(1))
+            .expect("committee for iter 1");
+        let member = committee.iter().next().expect("member");
+        let (member_pk, member_sk) = keys
+            .iter()
+            .find(|(pk, _)| pk.bytes() == member.bytes())
+            .map(|(pk, sk)| (pk.clone(), sk.clone()))
+            .expect("member key");
+        let signer_ru = RoundUpdate::new(
+            member_pk,
+            member_sk,
+            &tip,
+            HashMap::new(),
+            vec![],
+        );
+
+        let inbound = AsyncQueue::bounded(16, "test-inbound");
+        let outbound = AsyncQueue::bounded(16, "test-outbound");
+        let future_msgs = Arc::new(Mutex::new(MsgRegistry::default()));
+        let client = Arc::new(DummyOps::default());
+
+        let mut ctx = ExecutionCtx::new(
+            &mut iter_ctx,
+            inbound.clone(),
+            outbound.clone(),
+            future_msgs.clone(),
+            &provisioners,
+            round_update.clone(),
+            0,
+            StepName::Validation,
+            client.clone(),
+            att_registry.clone(),
+        );
+
+        let future_validation =
+            crate::validation::step::build_validation_payload(
+                Vote::NoCandidate,
+                &signer_ru,
+                1,
+            );
+        let msg: Message = future_validation.into();
+        let _ = ctx
+            .process_inbound_msg(validation_handler.clone(), msg)
+            .await;
+
+        let queued = future_msgs
+            .lock()
+            .await
+            .msg_count_by_round_step(
+                round_update.round,
+                StepName::Validation.to_step(1),
+            );
+        assert_eq!(queued, 1, "future message should be queued");
+
+        validation_handler.lock().await.reset(1);
+        let ctx_future = ExecutionCtx::new(
+            &mut iter_ctx,
+            inbound,
+            outbound.clone(),
+            future_msgs.clone(),
+            &provisioners,
+            round_update,
+            1,
+            StepName::Validation,
+            client,
+            att_registry,
+        );
+
+        let _ = ctx_future
+            .handle_future_msgs(validation_handler)
+            .await;
+
+        let queued = future_msgs
+            .lock()
+            .await
+            .msg_count_by_round_step(
+                tip.height + 1,
+                StepName::Validation.to_step(1),
+            );
+        assert_eq!(queued, 0, "future message should be drained");
+
+        let forwarded = outbound.recv().await.expect("forwarded message");
+        assert!(matches!(forwarded.payload, Payload::Validation(_)));
+    }
+
+    #[tokio::test]
+    async fn open_consensus_mode_broadcasts_only_success_quorums() {
+        let db = Arc::new(Mutex::new(DummyDb::default()));
+        let att_registry =
+            Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let validation = Arc::new(Mutex::new(
+            ValidationHandler::new(att_registry.clone(), db.clone()),
+        ));
+        let ratification = Arc::new(Mutex::new(
+            RatificationHandler::new(att_registry.clone()),
+        ));
+        let proposal =
+            Arc::new(Mutex::new(ProposalHandler::new(db)));
+
+        let mut timeouts: TimeoutSet = HashMap::new();
+        timeouts.insert(StepName::Proposal, Duration::from_millis(20));
+        timeouts.insert(StepName::Validation, Duration::from_millis(20));
+        timeouts.insert(StepName::Ratification, Duration::from_millis(20));
+
+        let mut iter_ctx = IterationCtx::new(
+            1,
+            0,
+            validation,
+            ratification,
+            proposal,
+            timeouts,
+        );
+
+        let mut provisioners = Provisioners::empty();
+        let mut rng = StdRng::seed_from_u64(11);
+        let mut keys = Vec::new();
+        for _ in 0..3 {
+            let sk = BlsSecretKey::random(&mut rng);
+            let pk =
+                node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+            provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
+            keys.push((pk, sk));
+        }
+
+        let mut tip = Header::default();
+        tip.height = 0;
+        tip.seed = node_data::ledger::Seed::from([7u8; 48]);
+        tip.hash = [3u8; 32];
+        let (pk1, sk1) = &keys[0];
+        let round_update = RoundUpdate::new(
+            pk1.clone(),
+            sk1.clone(),
+            &tip,
+            HashMap::new(),
+            vec![],
+        );
+
+        let iter = CONSENSUS_MAX_ITER - 1;
+        iter_ctx.generate_iteration_committees(
+            iter,
+            &provisioners,
+            round_update.seed(),
+        );
+
+        let inbound = AsyncQueue::bounded(16, "test-inbound");
+        let outbound = AsyncQueue::bounded(16, "test-outbound");
+        let future_msgs = Arc::new(Mutex::new(MsgRegistry::default()));
+        let client = Arc::new(DummyOps::default());
+
+        let mut ctx = ExecutionCtx::new(
+            &mut iter_ctx,
+            inbound.clone(),
+            outbound.clone(),
+            future_msgs,
+            &provisioners,
+            round_update.clone(),
+            iter,
+            StepName::Ratification,
+            client,
+            att_registry,
+        );
+
+        let phase = Arc::new(Mutex::new(NoopHandler));
+        let mut event_loop = Box::pin(ctx.event_loop(phase, None));
+
+        let driver = async {
+            tokio::time::sleep(Duration::from_millis(80)).await;
+
+            let fail_quorum = build_quorum_message(
+                &round_update,
+                iter,
+                RatificationResult::Fail(Vote::NoCandidate),
+            );
+            inbound.try_send(fail_quorum);
+
+            let fail_forwarded = tokio::time::timeout(
+                Duration::from_millis(60),
+                outbound.recv(),
+            )
+            .await;
+            assert!(
+                fail_forwarded.is_err(),
+                "fail quorum should not be rebroadcast in open consensus"
+            );
+
+            let success_quorum = build_quorum_message(
+                &round_update,
+                iter,
+                RatificationResult::Success(Vote::Valid([9u8; 32])),
+            );
+            inbound.try_send(success_quorum);
+
+            let forwarded = tokio::time::timeout(
+                Duration::from_millis(200),
+                outbound.recv(),
+            )
+            .await
+            .expect("expected success quorum")
+            .expect("outbound message");
+
+            match forwarded.payload {
+                Payload::Quorum(q) => match q.att.result {
+                    RatificationResult::Success(_) => {}
+                    other => panic!("unexpected quorum result: {other:?}"),
+                },
+                _ => panic!("expected quorum payload"),
+            }
+        };
+
+        tokio::select! {
+            _ = &mut event_loop => {
+                panic!("open consensus loop should not exit early");
+            }
+            _ = driver => {}
+        }
+    }
+
+    #[tokio::test]
+    async fn invalid_validation_quorum_is_rejected() {
+        let db = Arc::new(Mutex::new(DummyDb::default()));
+        let (mut iter_ctx, att_registry, validation_handler) =
+            build_iter_ctx(db.clone());
+
+        let mut provisioners = Provisioners::empty();
+        let mut rng = StdRng::seed_from_u64(12);
+        let mut keys = Vec::new();
+        for _ in 0..3 {
+            let sk = BlsSecretKey::random(&mut rng);
+            let pk =
+                node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+            provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
+            keys.push((pk, sk));
+        }
+
+        let mut tip = Header::default();
+        tip.height = 0;
+        tip.seed = node_data::ledger::Seed::from([7u8; 48]);
+        tip.hash = [3u8; 32];
+        let (pk1, sk1) = &keys[0];
+        let round_update = RoundUpdate::new(
+            pk1.clone(),
+            sk1.clone(),
+            &tip,
+            HashMap::new(),
+            vec![],
+        );
+
+        let msg_iter = crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+        let current_iter = msg_iter + 1;
+        iter_ctx.generate_iteration_committees(
+            msg_iter,
+            &provisioners,
+            round_update.seed(),
+        );
+        iter_ctx.generate_iteration_committees(
+            current_iter,
+            &provisioners,
+            round_update.seed(),
+        );
+
+        let inbound = AsyncQueue::bounded(16, "test-inbound");
+        let outbound = AsyncQueue::bounded(16, "test-outbound");
+        let future_msgs = Arc::new(Mutex::new(MsgRegistry::default()));
+        let client = Arc::new(DummyOps::default());
+
+        let mut ctx = ExecutionCtx::new(
+            &mut iter_ctx,
+            inbound,
+            outbound.clone(),
+            future_msgs,
+            &provisioners,
+            round_update,
+            current_iter,
+            StepName::Validation,
+            client,
+            att_registry,
+        );
+
+        let header = ConsensusHeader {
+            prev_block_hash: tip.hash,
+            round: tip.height + 1,
+            iteration: msg_iter,
+        };
+        let bad_votes = StepVotes::new([0u8; 48], 1);
+        let validation = ValidationResult::new(
+            bad_votes,
+            Vote::Valid([1u8; 32]),
+            QuorumType::Valid,
+        );
+        let vq = ValidationQuorum { header, result: validation };
+        let msg: Message = vq.into();
+
+        let _ = ctx
+            .process_inbound_msg(validation_handler, msg)
+            .await;
+
+        let stored = db.lock().await.validation_results.lock().await.len();
+        assert_eq!(
+            stored, 0,
+            "invalid validation quorum should be rejected"
+        );
+
+        let forwarded = tokio::time::timeout(
+            Duration::from_millis(100),
+            outbound.recv(),
+        )
+        .await;
+        assert!(
+            forwarded.is_err(),
+            "invalid validation quorum should not be rebroadcast"
+        );
+    }
+}
+
 #[inline(always)]
 fn log_msg(event: &str, src: &str, msg: &Message) {
     debug!(

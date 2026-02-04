@@ -356,3 +356,128 @@ impl RatificationHandler {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
+    use dusk_core::signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    };
+    use node_data::ledger::{Header, Seed, StepVotes};
+    use node_data::message::payload::{QuorumType, ValidationResult, Vote};
+    use node_data::message::Message;
+    use node_data::StepName;
+    use rand::SeedableRng;
+    use tokio::sync::Mutex;
+
+    use crate::commons::RoundUpdate;
+    use crate::errors::ConsensusError;
+    use crate::iteration_ctx::RoundCommittees;
+    use crate::msg_handler::MsgHandler;
+    use crate::ratification::handler::RatificationHandler;
+    use crate::step_votes_reg::AttInfoRegistry;
+    use crate::user::committee::Committee;
+    use crate::user::provisioners::{Provisioners, DUSK};
+    use crate::user::sortition::Config;
+
+    fn setup_committee(
+        seed: Seed,
+        round: u64,
+        iteration: u8,
+    ) -> (Committee, RoundUpdate) {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(20);
+        let sk = BlsSecretKey::random(&mut rng);
+        let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+
+        let mut provisioners = Provisioners::empty();
+        provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
+
+        let mut tip_header = Header::default();
+        tip_header.height = round - 1;
+        tip_header.seed = seed;
+
+        let ru =
+            RoundUpdate::new(pk.clone(), sk, &tip_header, HashMap::new(), vec![]);
+        let cfg = Config::new(seed, round, iteration, StepName::Ratification, vec![]);
+        let committee = Committee::new(&provisioners, &cfg);
+
+        (committee, ru)
+    }
+
+    #[tokio::test]
+    async fn ratification_rejects_noquorum_with_validation_votes() {
+        let (committee, ru) = setup_committee(Seed::from([4u8; 48]), 1, 0);
+
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let mut handler = RatificationHandler::new(att_registry);
+        handler.reset(0, ValidationResult::default());
+
+        let validation = ValidationResult::new(
+            StepVotes::new([9u8; 48], 1),
+            Vote::NoQuorum,
+            QuorumType::NoQuorum,
+        );
+        let ratification =
+            crate::build_ratification_payload(&ru, 0, &validation);
+        let msg: Message = ratification.into();
+
+        let err = match handler
+            .collect(
+                msg,
+                &ru,
+                &committee,
+                Some(*ru.pubkey_bls.bytes()),
+                &RoundCommittees::default(),
+            )
+            .await
+        {
+            Ok(_) => panic!("expected invalid noquorum rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::InvalidVote(Vote::NoQuorum)));
+    }
+
+    #[tokio::test]
+    async fn ratification_rejects_mismatched_local_validation_result() {
+        let (committee, ru) = setup_committee(Seed::from([6u8; 48]), 1, 0);
+
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let mut handler = RatificationHandler::new(att_registry);
+
+        let local_vote = Vote::Valid([2u8; 32]);
+        let local_validation = ValidationResult::new(
+            StepVotes::new([1u8; 48], 1),
+            local_vote,
+            QuorumType::Valid,
+        );
+        handler.reset(0, local_validation);
+
+        let msg_validation = ValidationResult::new(
+            StepVotes::new([3u8; 48], 1),
+            Vote::NoCandidate,
+            QuorumType::NoCandidate,
+        );
+        let ratification =
+            crate::build_ratification_payload(&ru, 0, &msg_validation);
+        let msg: Message = ratification.into();
+
+        let err = match handler
+            .collect(
+                msg,
+                &ru,
+                &committee,
+                Some(*ru.pubkey_bls.bytes()),
+                &RoundCommittees::default(),
+            )
+            .await
+        {
+            Ok(_) => panic!("expected vote mismatch rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::VoteMismatch(_, _)));
+    }
+}

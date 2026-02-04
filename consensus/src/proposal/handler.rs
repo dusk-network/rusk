@@ -224,3 +224,89 @@ pub fn verify_stateless(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::verify_candidate_msg;
+    use dusk_core::signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey};
+    use node_data::ledger::{Block, Header};
+    use node_data::message::payload::Candidate;
+    use node_data::message::SignedStepMessage;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+
+    use crate::merkle::merkle_root;
+
+    #[test]
+    fn reject_candidate_from_wrong_generator() {
+        let mut rng = StdRng::seed_from_u64(10);
+        let expected_sk = BlsSecretKey::random(&mut rng);
+        let expected_pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&expected_sk));
+        let wrong_sk = BlsSecretKey::random(&mut rng);
+        let wrong_pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&wrong_sk));
+
+        let mut header = Header::default();
+        header.height = 1;
+        header.iteration = 0;
+        header.prev_block_hash = [7u8; 32];
+        header.generator_bls_pubkey = *wrong_pk.bytes();
+        header.txroot = merkle_root::<[u8; 32]>(&[]);
+        header.faultroot = merkle_root::<[u8; 32]>(&[]);
+
+        let block = Block::new(header, vec![], vec![]).expect("valid block");
+        let mut candidate = Candidate { candidate: block };
+
+        candidate.sign(&wrong_sk, wrong_pk.inner());
+
+        let err = verify_candidate_msg(&candidate, expected_pk.bytes())
+            .expect_err("expected wrong generator to be rejected");
+
+        assert!(matches!(err, crate::errors::ConsensusError::NotCommitteeMember));
+    }
+
+    fn build_candidate(
+        sk: &BlsSecretKey,
+        pk: &node_data::bls::PublicKey,
+        txroot: [u8; 32],
+        faultroot: [u8; 32],
+    ) -> Candidate {
+        let mut header = Header::default();
+        header.height = 1;
+        header.iteration = 0;
+        header.prev_block_hash = [7u8; 32];
+        header.generator_bls_pubkey = *pk.bytes();
+        header.txroot = txroot;
+        header.faultroot = faultroot;
+
+        let block = Block::new(header, vec![], vec![]).expect("valid block");
+        let mut candidate = Candidate { candidate: block };
+        candidate.sign(sk, pk.inner());
+        candidate
+    }
+
+    #[test]
+    fn reject_candidate_with_mismatched_txroot() {
+        let mut rng = StdRng::seed_from_u64(20);
+        let sk = BlsSecretKey::random(&mut rng);
+        let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+
+        let candidate = build_candidate(&sk, &pk, [1u8; 32], merkle_root::<[u8; 32]>(&[]));
+        let err = verify_candidate_msg(&candidate, pk.bytes())
+            .expect_err("expected invalid txroot to be rejected");
+
+        assert!(matches!(err, crate::errors::ConsensusError::InvalidBlock));
+    }
+
+    #[test]
+    fn reject_candidate_with_mismatched_faultroot() {
+        let mut rng = StdRng::seed_from_u64(30);
+        let sk = BlsSecretKey::random(&mut rng);
+        let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+
+        let candidate = build_candidate(&sk, &pk, merkle_root::<[u8; 32]>(&[]), [2u8; 32]);
+        let err = verify_candidate_msg(&candidate, pk.bytes())
+            .expect_err("expected invalid faultroot to be rejected");
+
+        assert!(matches!(err, crate::errors::ConsensusError::InvalidBlock));
+    }
+}

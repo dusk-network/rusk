@@ -340,3 +340,163 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
+    use dusk_core::signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    };
+    use node_data::ledger::{Header, Seed};
+    use node_data::message::payload::{ValidationResult, Vote};
+    use node_data::message::Message;
+    use node_data::StepName;
+    use rand::SeedableRng;
+    use tokio::sync::Mutex;
+
+    use crate::commons::{Database, RoundUpdate};
+    use crate::errors::ConsensusError;
+    use crate::iteration_ctx::RoundCommittees;
+    use crate::msg_handler::MsgHandler;
+    use crate::step_votes_reg::AttInfoRegistry;
+    use crate::user::committee::Committee;
+    use crate::user::provisioners::{Provisioners, DUSK};
+    use crate::user::sortition::Config;
+    use crate::validation::handler::ValidationHandler;
+
+    #[derive(Default)]
+    struct DummyDb;
+
+    #[async_trait::async_trait]
+    impl Database for DummyDb {
+        async fn store_candidate_block(&mut self, _b: node_data::ledger::Block) {}
+        async fn store_validation_result(
+            &mut self,
+            _ch: &node_data::message::ConsensusHeader,
+            _vr: &ValidationResult,
+        ) {
+        }
+        async fn get_last_iter(&self) -> (node_data::ledger::Hash, u8) {
+            ([0u8; 32], 0)
+        }
+        async fn store_last_iter(
+            &mut self,
+            _data: (node_data::ledger::Hash, u8),
+        ) {
+        }
+    }
+
+    fn setup_committee(
+        seed: Seed,
+        round: u64,
+        iteration: u8,
+    ) -> (Committee, RoundUpdate) {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(10);
+        let sk = BlsSecretKey::random(&mut rng);
+        let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+
+        let mut provisioners = Provisioners::empty();
+        provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
+
+        let mut tip_header = Header::default();
+        tip_header.height = round - 1;
+        tip_header.seed = seed;
+
+        let ru =
+            RoundUpdate::new(pk.clone(), sk, &tip_header, HashMap::new(), vec![]);
+        let cfg = Config::new(seed, round, iteration, StepName::Validation, vec![]);
+        let committee = Committee::new(&provisioners, &cfg);
+
+        (committee, ru)
+    }
+
+    #[tokio::test]
+    async fn validation_rejects_noquorum_vote() {
+        let (committee, ru) = setup_committee(Seed::from([7u8; 48]), 1, 0);
+
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let db = Arc::new(Mutex::new(DummyDb::default()));
+        let mut handler = ValidationHandler::new(att_registry, db);
+        handler.reset(0);
+
+        let validation =
+            crate::build_validation_payload(Vote::NoQuorum, &ru, 0);
+        let msg: Message = validation.into();
+
+        let err = match handler
+            .collect(
+                msg,
+                &ru,
+                &committee,
+                Some(*ru.pubkey_bls.bytes()),
+                &RoundCommittees::default(),
+            )
+            .await
+        {
+            Ok(_) => panic!("expected noquorum vote rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::InvalidVote(Vote::NoQuorum)));
+    }
+
+    #[tokio::test]
+    async fn validation_rejects_wrong_iteration() {
+        let (committee, ru) = setup_committee(Seed::from([5u8; 48]), 1, 0);
+
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let db = Arc::new(Mutex::new(DummyDb::default()));
+        let mut handler = ValidationHandler::new(att_registry, db);
+        handler.reset(0);
+
+        let validation =
+            crate::build_validation_payload(Vote::NoCandidate, &ru, 1);
+        let msg: Message = validation.into();
+
+        let err = match handler
+            .collect(
+                msg,
+                &ru,
+                &committee,
+                Some(*ru.pubkey_bls.bytes()),
+                &RoundCommittees::default(),
+            )
+            .await
+        {
+            Ok(_) => panic!("expected future iteration rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::InvalidMsgIteration(1)));
+    }
+
+    #[tokio::test]
+    async fn validation_accepts_basic_vote_when_in_committee() {
+        let (committee, ru) = setup_committee(Seed::from([9u8; 48]), 1, 0);
+
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let db = Arc::new(Mutex::new(DummyDb::default()));
+        let mut handler = ValidationHandler::new(att_registry, db);
+        handler.reset(0);
+
+        let validation =
+            crate::build_validation_payload(Vote::NoCandidate, &ru, 0);
+        let msg: Message = validation.into();
+
+        let outcome = handler
+            .collect(
+                msg,
+                &ru,
+                &committee,
+                Some(*ru.pubkey_bls.bytes()),
+                &RoundCommittees::default(),
+            )
+            .await;
+
+        if let Err(err) = outcome {
+            panic!("expected Ok outcome, got {err:?}");
+        }
+    }
+}
