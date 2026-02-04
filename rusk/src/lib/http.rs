@@ -81,7 +81,10 @@ use crate::http::event::FullOrStreamBody;
 pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
 pub use error::Error as HttpError;
 
-use self::event::{ResponseData, RuesEventUri, SessionId, check_rusk_version};
+use self::event::{
+    check_rusk_version, RequestParseError, ResponseData, RuesEventUri,
+    SessionId,
+};
 use self::stream::Listener;
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;
@@ -581,7 +584,27 @@ async fn handle_request_rues<H: HandleRequest>(
         }
 
         let (event, binary_request) =
-            RuesDispatchEvent::from_request(req).await?;
+            match RuesDispatchEvent::from_request(req).await {
+                Ok(data) => data,
+                Err(RequestParseError::InvalidPath) => {
+                    return response(
+                        StatusCode::NOT_FOUND,
+                        "{\"error\":\"Invalid URL path\"}",
+                    );
+                }
+                Err(RequestParseError::InvalidPayload(msg)) => {
+                    return response(
+                        StatusCode::UNPROCESSABLE_ENTITY,
+                        serde_json::json!({ "error": msg }).to_string(),
+                    );
+                }
+                Err(RequestParseError::Other(err)) => {
+                    return response(
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        err.to_string(),
+                    );
+                }
+            };
         let mut resp_headers = event.x_headers();
         let (responder, mut receiver) = mpsc::unbounded_channel();
         handle_execution_rues(handler, event, responder).await;
@@ -1062,11 +1085,12 @@ mod tests {
         (stream, sid)
     }
 
-    async fn assert_bad_request_contains(
+    async fn assert_status_contains(
         response: reqwest::Response,
+        status: StatusCode,
         expected: &str,
     ) {
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), status);
         let body = response
             .text()
             .await
@@ -1075,6 +1099,14 @@ mod tests {
             body.contains(expected),
             "Expected error containing '{expected}', got: {body}"
         );
+    }
+
+    async fn assert_bad_request_contains(
+        response: reqwest::Response,
+        expected: &str,
+    ) {
+        assert_status_contains(response, StatusCode::BAD_REQUEST, expected)
+            .await;
     }
 
     #[tokio::test]
@@ -1167,6 +1199,48 @@ mod tests {
         assert_bad_request_contains(
             response,
             "Invalid Rusk-Version header encoding",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_invalid_path_returns_not_found() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on"))
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::NOT_FOUND,
+            "Invalid URL path",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_invalid_utf8_payload_returns_unprocessable_entity() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body(vec![0xff, 0xfe])
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Invalid utf8",
         )
         .await;
     }
