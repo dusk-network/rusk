@@ -83,7 +83,10 @@ pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
 pub use error::Error as HttpError;
 pub use policy::HttpPolicyConfig;
 
-use self::event::{ResponseData, RuesEventUri, SessionId, check_rusk_version};
+use self::event::{
+    check_rusk_version, RequestParseError, ResponseData, RuesEventUri,
+    SessionId,
+};
 use self::policy::HttpRequestPolicy;
 use self::stream::Listener;
 
@@ -637,11 +640,29 @@ async fn handle_request_rues<H: HandleRequest>(
 
         let (event, binary_request) =
             match RuesDispatchEvent::from_request(req).await {
-                Ok(event) => event,
-                Err(err) => {
-                    let status = StatusCode::from_u16(err.http_code())
-                        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-                    return response(status, err.to_string());
+                Ok(data) => data,
+                Err(RequestParseError::InvalidPath) => {
+                    return response(
+                        StatusCode::NOT_FOUND,
+                        "{\"error\":\"Invalid URL path\"}",
+                    );
+                }
+                Err(RequestParseError::InvalidPayload(msg)) => {
+                    return response(
+                        StatusCode::UNPROCESSABLE_ENTITY,
+                        serde_json::json!({ "error": msg }).to_string(),
+                    );
+                }
+                Err(RequestParseError::Other(err)) => {
+                    if let Some(http_err) = err.downcast_ref::<HttpError>() {
+                        let status = StatusCode::from_u16(http_err.http_code())
+                            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+                        return response(status, http_err.to_string());
+                    }
+                    return response(
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        err.to_string(),
+                    );
                 }
             };
         let mut resp_headers = event.x_headers();
@@ -1181,11 +1202,12 @@ mod tests {
         (stream, sid)
     }
 
-    async fn assert_bad_request_contains(
+    async fn assert_status_contains(
         response: reqwest::Response,
+        status: StatusCode,
         expected: &str,
     ) {
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), status);
         let body = response
             .text()
             .await
@@ -1194,6 +1216,14 @@ mod tests {
             body.contains(expected),
             "Expected error containing '{expected}', got: {body}"
         );
+    }
+
+    async fn assert_bad_request_contains(
+        response: reqwest::Response,
+        expected: &str,
+    ) {
+        assert_status_contains(response, StatusCode::BAD_REQUEST, expected)
+            .await;
     }
 
     #[tokio::test]
@@ -1506,6 +1536,48 @@ mod tests {
         assert_bad_request_contains(
             response,
             "Invalid Rusk-Version header encoding",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_invalid_path_returns_not_found() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on"))
+            .body("hello")
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::NOT_FOUND,
+            "Invalid URL path",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_invalid_utf8_payload_returns_unprocessable_entity() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/echo"))
+            .body(vec![0xff, 0xfe])
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Invalid utf8",
         )
         .await;
     }
