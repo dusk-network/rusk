@@ -874,6 +874,7 @@ pub trait HandleRequest: Send + Sync + 'static {
 
 #[cfg(test)]
 mod tests {
+    use std::net::SocketAddr;
     use std::{fs, thread};
 
     use super::*;
@@ -958,23 +959,76 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn http_query() {
-        let cert_and_key: Option<(String, String)> = None;
+    const EVENT_CHANNEL_CAP: usize = 16;
+    const WS_EVENT_CHANNEL_CAP: usize = 2;
 
-        let (_, event_receiver) = broadcast::channel(16);
-        let ws_event_channel_cap = 2;
+    async fn bind_test_server<H: HandleRequest>(
+        handler: H,
+    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
+        bind_test_server_with_tls(handler, None).await
+    }
 
+    async fn bind_test_server_with_tls<H: HandleRequest>(
+        handler: H,
+        cert_and_key: Option<(&'static str, &'static str)>,
+    ) -> (HttpServer, SocketAddr, broadcast::Sender<RuesEvent>) {
+        let (event_sender, event_receiver) =
+            broadcast::channel(EVENT_CHANNEL_CAP);
         let (_server, local_addr) = HttpServer::bind(
-            TestHandle,
+            handler,
             event_receiver,
-            ws_event_channel_cap,
+            WS_EVENT_CHANNEL_CAP,
             "localhost:0",
             HeaderMap::new(),
             cert_and_key,
         )
         .await
         .expect("Binding the server to the address should succeed");
+
+        (_server, local_addr, event_sender)
+    }
+
+    fn connect_ws(
+        local_addr: SocketAddr,
+    ) -> (tungstenite::WebSocket<TcpStream>, SessionId) {
+        let stream = TcpStream::connect(local_addr)
+            .expect("Connecting to the server should succeed");
+
+        let ws_uri = format!("ws://{local_addr}/on");
+        let (mut stream, _) = client(ws_uri, stream)
+            .expect("Handshake with the server should succeed");
+
+        let first_message =
+            stream.read().expect("Session ID should be received");
+        let sid = SessionId::parse(
+            &first_message
+                .into_text()
+                .expect("Session ID should come in a text message"),
+        )
+        .expect("Session ID should be parsed");
+
+        (stream, sid)
+    }
+
+    async fn assert_bad_request_contains(
+        response: reqwest::Response,
+        expected: &str,
+    ) {
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            body.contains(expected),
+            "Expected error containing '{expected}', got: {body}"
+        );
+    }
+
+    #[tokio::test]
+    async fn http_query() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
 
         let data = Vec::from(&b"I am call data 0"[..]);
         let data = RequestData::Binary(BinaryWrapper { inner: data });
@@ -1002,19 +1056,8 @@ mod tests {
 
     #[tokio::test]
     async fn post_rues_strict_without_version_returns_bad_request() {
-        let cert_and_key: Option<(String, String)> = None;
-        let (_, event_receiver) = broadcast::channel(16);
-
-        let (_server, local_addr) = HttpServer::bind(
-            TestHandle,
-            event_receiver,
-            2,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1025,34 +1068,17 @@ mod tests {
             .await
             .expect("Requesting should succeed");
 
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        let body = response
-            .text()
-            .await
-            .expect("Reading response body should succeed");
-        assert!(
-            body.contains(
-                "Missing Rusk-Version header while Rusk-Version-Strict is set"
-            ),
-            "Expected strict-without-version error, got: {body}"
-        );
+        assert_bad_request_contains(
+            response,
+            "Missing Rusk-Version header while Rusk-Version-Strict is set",
+        )
+        .await;
     }
 
     #[tokio::test]
     async fn post_rues_invalid_version_header_encoding_returns_bad_request() {
-        let cert_and_key: Option<(String, String)> = None;
-        let (_, event_receiver) = broadcast::channel(16);
-
-        let (_server, local_addr) = HttpServer::bind(
-            TestHandle,
-            event_receiver,
-            2,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
 
         let invalid_version = HeaderValue::from_bytes(&[0xff])
             .expect("Creating invalid UTF-8 header value should succeed");
@@ -1066,47 +1092,18 @@ mod tests {
             .await
             .expect("Requesting should succeed");
 
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        let body = response
-            .text()
-            .await
-            .expect("Reading response body should succeed");
-        assert!(
-            body.contains("Invalid Rusk-Version header encoding"),
-            "Expected invalid encoding error, got: {body}"
-        );
+        assert_bad_request_contains(
+            response,
+            "Invalid Rusk-Version header encoding",
+        )
+        .await;
     }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn get_delete_rues_strict_without_version_returns_bad_request() {
-        let cert_and_key: Option<(String, String)> = None;
-        let (_, event_receiver) = broadcast::channel(16);
-
-        let (_server, local_addr) = HttpServer::bind(
-            TestHandle,
-            event_receiver,
-            2,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
-
-        let stream = TcpStream::connect(local_addr)
-            .expect("Connecting to the server should succeed");
-        let ws_uri = format!("ws://{local_addr}/on");
-        let (mut stream, _) = client(ws_uri, stream)
-            .expect("Handshake with the server should succeed");
-
-        let first_message =
-            stream.read().expect("Session ID should be received");
-        let sid = SessionId::parse(
-            &first_message
-                .into_text()
-                .expect("Session ID should come in a text message"),
-        )
-        .expect("Session ID should be parsed");
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+        let (_stream, sid) = connect_ws(local_addr);
 
         let client = reqwest::Client::new();
         let contract_id_hex = hex::encode(ContractId::from_bytes([1; 32]));
@@ -1120,17 +1117,11 @@ mod tests {
             .send()
             .await
             .expect("Requesting should succeed");
-        assert_eq!(subscribe_response.status(), StatusCode::BAD_REQUEST);
-        let subscribe_body = subscribe_response
-            .text()
-            .await
-            .expect("Reading response body should succeed");
-        assert!(
-            subscribe_body.contains(
-                "Missing Rusk-Version header while Rusk-Version-Strict is set"
-            ),
-            "Expected strict-without-version error, got: {subscribe_body}"
-        );
+        assert_bad_request_contains(
+            subscribe_response,
+            "Missing Rusk-Version header while Rusk-Version-Strict is set",
+        )
+        .await;
 
         let unsubscribe_response = client
             .delete(path)
@@ -1139,17 +1130,11 @@ mod tests {
             .send()
             .await
             .expect("Requesting should succeed");
-        assert_eq!(unsubscribe_response.status(), StatusCode::BAD_REQUEST);
-        let unsubscribe_body = unsubscribe_response
-            .text()
-            .await
-            .expect("Reading response body should succeed");
-        assert!(
-            unsubscribe_body.contains(
-                "Missing Rusk-Version header while Rusk-Version-Strict is set"
-            ),
-            "Expected strict-without-version error, got: {unsubscribe_body}"
-        );
+        assert_bad_request_contains(
+            unsubscribe_response,
+            "Missing Rusk-Version header while Rusk-Version-Strict is set",
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -1165,19 +1150,9 @@ mod tests {
         let certificate = reqwest::tls::Certificate::from_pem(&cert_bytes)
             .expect("cert should be valid");
 
-        let (_, event_receiver) = broadcast::channel(16);
-        let ws_event_channel_cap = 2;
-
-        let (_server, local_addr) = HttpServer::bind(
-            TestHandle,
-            event_receiver,
-            ws_event_channel_cap,
-            "localhost:0",
-            HeaderMap::new(),
-            Some((cert_path, key_path)),
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
+        let (_server, local_addr, _event_sender) =
+            bind_test_server_with_tls(TestHandle, Some((cert_path, key_path)))
+                .await;
 
         let data = Vec::from(&b"I am call data 0"[..]);
         let data = RequestData::Binary(BinaryWrapper { inner: data });
@@ -1212,37 +1187,9 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn websocket_rues() {
-        let cert_and_key: Option<(String, String)> = None;
-
-        let (event_sender, event_receiver) = broadcast::channel(16);
-        let ws_event_channel_cap = 2;
-
-        let (_server, local_addr) = HttpServer::bind(
-            TestHandle,
-            event_receiver,
-            ws_event_channel_cap,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
-
-        let stream = TcpStream::connect(local_addr)
-            .expect("Connecting to the server should succeed");
-
-        let ws_uri = format!("ws://{local_addr}/on");
-        let (mut stream, _) = client(ws_uri, stream)
-            .expect("Handshake with the server should succeed");
-
-        let first_message =
-            stream.read().expect("Session ID should be received");
-        let sid = SessionId::parse(
-            &first_message
-                .into_text()
-                .expect("Session ID should come in a text message"),
-        )
-        .expect("Session ID should be parsed");
+        let (_server, local_addr, event_sender) =
+            bind_test_server(TestHandle).await;
+        let (mut stream, sid) = connect_ws(local_addr);
 
         const SUB_CONTRACT_ID: ContractId = ContractId::from_bytes([1; 32]);
         const MAYBE_SUB_CONTRACT_ID: ContractId =
@@ -1369,37 +1316,9 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn websocket_rues_missing_topic() {
-        let cert_and_key: Option<(String, String)> = None;
-
-        let (_, event_receiver) = broadcast::channel(16);
-        let ws_event_channel_cap = 2;
-
-        let (_server, local_addr) = HttpServer::bind(
-            TestHandle,
-            event_receiver,
-            ws_event_channel_cap,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
-
-        let stream = TcpStream::connect(local_addr)
-            .expect("Connecting to the server should succeed");
-
-        let ws_uri = format!("ws://{local_addr}/on");
-        let (mut stream, _) = client(ws_uri, stream)
-            .expect("Handshake with the server should succeed");
-
-        let first_message =
-            stream.read().expect("Session ID should be received");
-        let sid = SessionId::parse(
-            &first_message
-                .into_text()
-                .expect("Session ID should come in a text message"),
-        )
-        .expect("Session ID should be parsed");
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+        let (_stream, sid) = connect_ws(local_addr);
 
         const CONTRACT_ID: ContractId = ContractId::from_bytes([1; 32]);
         let contract_id_hex = hex::encode(CONTRACT_ID);
@@ -1441,37 +1360,9 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn websocket_rues_missing_contract_entity() {
-        let cert_and_key: Option<(String, String)> = None;
-
-        let (_, event_receiver) = broadcast::channel(16);
-        let ws_event_channel_cap = 2;
-
-        let (_server, local_addr) = HttpServer::bind(
-            TestHandle,
-            event_receiver,
-            ws_event_channel_cap,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
-
-        let stream = TcpStream::connect(local_addr)
-            .expect("Connecting to the server should succeed");
-
-        let ws_uri = format!("ws://{local_addr}/on");
-        let (mut stream, _) = client(ws_uri, stream)
-            .expect("Handshake with the server should succeed");
-
-        let first_message =
-            stream.read().expect("Session ID should be received");
-        let sid = SessionId::parse(
-            &first_message
-                .into_text()
-                .expect("Session ID should come in a text message"),
-        )
-        .expect("Session ID should be parsed");
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+        let (_stream, sid) = connect_ws(local_addr);
 
         const TOPIC: &str = "withdraw";
 
@@ -1494,21 +1385,8 @@ mod tests {
 
     #[tokio::test]
     async fn legacy_graphql_query_still_works() {
-        let cert_and_key: Option<(String, String)> = None;
-
-        let (_, event_receiver) = broadcast::channel(16);
-        let ws_event_channel_cap = 2;
-
-        let (_server, local_addr) = HttpServer::bind(
-            TestHandle,
-            event_receiver,
-            ws_event_channel_cap,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1529,24 +1407,11 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "chain")]
     async fn graphql_post_query() {
-        let cert_and_key: Option<(String, String)> = None;
-
-        let (_, event_receiver) = broadcast::channel(16);
-        let ws_event_channel_cap = 2;
-
         let mut handler = DataSources::default();
         handler.set_graphql_handler(TestGraphqlHandler);
 
-        let (_server, local_addr) = HttpServer::bind(
-            handler,
-            event_receiver,
-            ws_event_channel_cap,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(handler).await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -1568,24 +1433,11 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "chain")]
     async fn graphql_post_invalid_query_returns_errors() {
-        let cert_and_key: Option<(String, String)> = None;
-
-        let (_, event_receiver) = broadcast::channel(16);
-        let ws_event_channel_cap = 2;
-
         let mut handler = DataSources::default();
         handler.set_graphql_handler(TestGraphqlHandler);
 
-        let (_server, local_addr) = HttpServer::bind(
-            handler,
-            event_receiver,
-            ws_event_channel_cap,
-            "localhost:0",
-            HeaderMap::new(),
-            cert_and_key,
-        )
-        .await
-        .expect("Binding the server to the address should succeed");
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(handler).await;
 
         let client = reqwest::Client::new();
         let response = client
