@@ -11,9 +11,6 @@
 <a href="https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml">
 <img src="https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml/badge.svg" alt="Rusk CI"></a>
 &nbsp;
-<a href="https://github.com/dusk-network/rusk/actions/workflows/explorer_ci.yml">
-<img src="https://github.com/dusk-network/rusk/actions/workflows/explorer_ci.yml/badge.svg" alt="explorer CI"></a>
-&nbsp;
 <a href="https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml">
 <img src="https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml/badge.svg" alt="web-wallet CI"></a>
 &nbsp;
@@ -70,7 +67,7 @@ For more information on **running a node for main- or testnet**, see our
 | 🧩 [data-drivers](/data-drivers/)    | Tools to encode/decode contract arguments between RKYV and JS I/O           |
 | 🧬 [dusk-core](/core/)               | Core types used for interacting with Dusk and writing smart contracts       |
 | 🌐 [dusk-abi](/core/src/abi.rs)      | Dusk application binary interface to develop smart contracts (part of core) |
-| 🧭 [explorer](/explorer/)            | Dusk's blockchain explorer                                                  |
+| 🧭 [explorer](https://github.com/dusk-network/explorer) | Dusk's blockchain explorer (external repo)                   |
 | 📊 [node-data](/node-data/)          | Core datatypes for the blockchain node                                      |
 | ⚙️ [dusk-vm](/vm/)                   | The virtual machine to run Dusk smart contracts                             |
 | 🪪 [rusk-profile](/rusk-profile/)    | Utility to generate a genesis state based on a set profile                  |

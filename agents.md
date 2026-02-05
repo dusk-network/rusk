@@ -67,7 +67,6 @@ When a bug is reported, start by adding a test that reproduces it (it should fai
 
 ### Frontend/SDK
 ```bash
-cd explorer && npm ci && npm run checks
 cd web-wallet && npm ci && npm run checks
 cd w3sper.js && deno task test
 ```

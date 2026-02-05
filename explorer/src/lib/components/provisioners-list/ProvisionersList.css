@@ -1,7 +1,0 @@
-.provisioners-list *[data-tooltip-id] {
-  cursor: help;
-}
-
-.provisioners-list__staking-address {
-  text-transform: uppercase;
-}
