@@ -113,9 +113,7 @@ fn submit_transactions(
 
     let mut rng = StdRng::seed_from_u64(0xcafe);
 
-    let bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/bob.wasm"
-    );
+    let bytecode = include_bytes!("../../../contracts/bin/bob.wasm");
     let contract_id = gen_contract_id(bytecode, 0u64, OWNER);
 
     let init_args = Some(vec![BOB_INIT_VALUE]);

@@ -160,9 +160,7 @@ pub async fn test_isolated() -> Result<(), Error> {
         .expect("creating a session should be possible");
 
     // deploy alice
-    let alice_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/alice.wasm"
-    );
+    let alice_bytecode = include_bytes!("../../../contracts/bin/alice.wasm");
     session
         .deploy(
             alice_bytecode,
@@ -175,9 +173,8 @@ pub async fn test_isolated() -> Result<(), Error> {
         .expect("Deploying the alice contract should succeed");
 
     // deploy charlie
-    let charlie_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/charlie.wasm"
-    );
+    let charlie_bytecode =
+        include_bytes!("../../../contracts/bin/charlie.wasm");
     session
         .deploy(
             charlie_bytecode,

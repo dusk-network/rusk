@@ -30,8 +30,7 @@ const GAS_LIMIT: u64 = 12_000_000; // Lowest value for a transfer
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 const INITIAL_BALANCE_DEPLOY: u64 = 1_000_000_000_000;
 
-const BOB_BYTECODE: &[u8] =
-    include_bytes!("../../../target/wasm32-unknown-unknown/release/bob.wasm");
+const BOB_BYTECODE: &[u8] = include_bytes!("../../../contracts/bin/bob.wasm");
 
 // Creates the Rusk initial state for the tests below
 async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {

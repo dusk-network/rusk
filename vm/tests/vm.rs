@@ -62,9 +62,7 @@ fn hash_host() {
 }
 
 fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
-    let bytecode = include_bytes!(
-        "../../target/dusk/wasm32-unknown-unknown/release/host_fn.wasm"
-    );
+    let bytecode = include_bytes!("../../contracts/bin/host_fn.wasm");
 
     let mut session = vm.genesis_session(CHAIN_ID);
 

@@ -66,9 +66,8 @@ async fn initial_state<P: AsRef<Path>>(
 
     let dusk_key = *DUSK_CONSENSUS_KEY;
     let deploy = state::deploy(dir, &snapshot, dusk_key, |session| {
-        let alice_bytecode = include_bytes!(
-            "../../../target/wasm32-unknown-unknown/release/alice.wasm"
-        );
+        let alice_bytecode =
+            include_bytes!("../../../contracts/bin/alice.wasm");
 
         session
             .deploy(
@@ -81,9 +80,8 @@ async fn initial_state<P: AsRef<Path>>(
             .expect("Deploying the alice contract should succeed");
 
         if deploy_bob {
-            let bob_bytecode = include_bytes!(
-                "../../../target/wasm32-unknown-unknown/release/bob.wasm"
-            );
+            let bob_bytecode =
+                include_bytes!("../../../contracts/bin/bob.wasm");
 
             session
                 .deploy(
@@ -226,10 +224,8 @@ impl Fixture {
 
         info!("Original Root: {:?}", hex::encode(original_root));
 
-        let bob_bytecode = include_bytes!(
-            "../../../target/wasm32-unknown-unknown/release/bob.wasm"
-        )
-        .to_vec();
+        let bob_bytecode =
+            include_bytes!("../../../contracts/bin/bob.wasm").to_vec();
         let contract_id = gen_contract_id(&bob_bytecode, 0u64, OWNER);
 
         let path = tmp.into_path();
@@ -381,9 +377,7 @@ pub async fn contract_deploy_charge() {
     logger();
     let f = Fixture::build(false).await;
 
-    let alice_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/alice.wasm"
-    );
+    let alice_bytecode = include_bytes!("../../../contracts/bin/alice.wasm");
 
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
