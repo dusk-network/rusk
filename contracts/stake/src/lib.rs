@@ -4,9 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! # Stake Contract Documentation
+//!
+//! This contract manages staking-related state for the Dusk Network,
+//! implementing core functions that facilitate the management of stakes,
+//! rewards and penalties.
+//!
+//! For a detailed explanation of staking mechanisms refer to the
+//! [Dusk Whitepaper](https://dusk-cms.ams3.digitaloceanspaces.com/Dusk_Whitepaper_2024_4db72f92a1.pdf)
+//! and [Dusk Documentation](https://docs.dusk.network).
+
 #![cfg_attr(target_family = "wasm", no_std)]
 #![cfg(target_family = "wasm")]
 #![feature(arbitrary_self_types)]
+#![deny(missing_docs)]
+#![deny(rustdoc::broken_intra_doc_links)]
 #![deny(unused_crate_dependencies)]
 #![deny(unused_extern_crates)]
 

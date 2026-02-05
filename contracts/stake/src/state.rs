@@ -20,14 +20,22 @@ use dusk_core::transfer::{
     ContractToContract, ReceiveFromContract, TRANSFER_CONTRACT,
 };
 
-/// Contract keeping track of each public key's stake.
+/// Represents the main state structure for staking operations.
+/// Tracks active stakes, burnt amounts, and configurations.
 ///
-/// A caller can stake Dusk, and have it attached to a public key. This stake
-/// has a maturation period, after which it is considered valid and the key
-/// eligible to participate in the consensus.
+/// A caller can stake Dusk, and have it attached to a provisioner's account
+/// public key. This stake has a maturation period of minimal one [`EPOCH`],
+/// after which it is considered valid and the key eligible to participate in
+/// the consensus.
 ///
-/// Rewards may be received by a public key regardless of whether they have a
-/// valid stake.
+/// # Fields
+/// - `burnt_amount`: Total amount of tokens burnt due to penalties or other
+///   actions.
+/// - `config`: Current staking configuration.
+/// - `previous_block_state`: State changes from the previous block, indexed by
+///   provisioner's account [`BlsPublicKey`].
+/// - `stakes: Active stakes, indexed by the provisioner's account
+///   [`BlsPublicKey`], including stake data and associated keys.
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
     burnt_amount: u64,
@@ -40,6 +48,15 @@ pub struct StakeState {
 const STAKE_CONTRACT_VERSION: u64 = 8;
 
 impl StakeState {
+    /// Creates a new instance of [`StakeState`] with default values.
+    ///
+    /// # Returns
+    /// A new [`StakeState`] instance with default configurations and empty
+    /// state mappings.
+    ///
+    /// # Note
+    /// Ensure to configure the state using [`configure`] before performing any
+    /// stake-related operations.
     pub const fn new() -> Self {
         Self {
             burnt_amount: 0u64,
@@ -49,14 +66,31 @@ impl StakeState {
         }
     }
 
+    /// Returns a reference to the current staking configuration.
+    ///
+    /// # Returns
+    /// A reference to a [`StakeConfig`] object representing the current staking
+    /// configuration.
     pub fn config(&self) -> &StakeConfig {
         &self.config
     }
 
+    /// Configures the [`StakeState`] with a new staking configuration.
+    ///
+    /// # Parameters
+    /// - `config`: A [`StakeConfig`] object containing new configuration
+    ///   values.
     pub fn configure(&mut self, config: StakeConfig) {
         self.config = config;
     }
 
+    /// Updates the state to reflect changes for a new block.
+    ///
+    /// This includes processing any pending rewards or penalties and updating
+    /// the internal state to prepare for the next block.
+    ///
+    /// # Note
+    /// This method should be called at the end of each block.
     pub fn on_new_block(&mut self) {
         self.previous_block_state.clear()
     }
@@ -85,6 +119,30 @@ impl StakeState {
         }
     }
 
+    /// Stakes an amount for a given account.
+    ///
+    /// A first time stake needs to mature for at least on [`EPOCH`] before it
+    /// becomes eligible.
+    /// If there is a mature stake in the state for the provided [`StakeKeys`],
+    /// one 10th of the stake top-up will be locked.
+    ///
+    /// The previous stake for the given provisioner's account is appended to
+    /// the `previous_block_state`.
+    ///
+    /// # Parameters
+    /// - `stake`: A [`Stake`] object containing details of the stake.
+    ///
+    /// # Panics
+    /// This function will panic if:
+    /// - The provided `chain_id` is incorrect.
+    /// - The provisioner's account is stored in the state with a different
+    ///   `owner` than the one given in the [`StakeKeys`].
+    /// - It's a first time stake for the given provisioner's account and the
+    ///   stake is smaller than the configured minimum stake.
+    /// - The stake owner is a contract
+    /// - One of the provided signatures is invalid.
+    /// - There is no deposit set on the transfer-contract or it has a different
+    ///   value than the stake amount.
     pub fn stake(&mut self, stake: Stake) {
         let minimum_stake = self.config.minimum_stake;
         let value = stake.value();
@@ -145,6 +203,33 @@ impl StakeState {
             .or_insert((prev_stake, account));
     }
 
+    /// Processes staking from a smart contract.
+    ///
+    /// A first time stake needs to mature for at least on [`EPOCH`] before it
+    /// becomes eligible.
+    /// If there is a mature stake in the state for the provided [`StakeKeys`],
+    /// one 10th of the stake top-up will be locked.
+    ///
+    /// The previous stake for the given provisioner's account is appended to
+    /// the `previous_block_state`.
+    ///
+    /// # Parameters
+    /// - `recv`: A [`ReceiveFromContract`] object representing
+    ///   contract-specific staking details.
+    ///
+    ///
+    /// # Panics
+    /// This function will panic if:
+    /// - The `rcvr.data` doesn't deserialize to a [`Stake`] object.
+    /// - The `chain_id` of the [`Stake`] is incorrect.
+    /// - The provisioner's account is stored in the state with a different
+    ///   `owner` than the one given.
+    /// - The value in the [`Stake`] object doesn't match the one given in the
+    ///   [`ReceiveFromContract`].
+    /// - The stake owner is not a contract
+    /// - It's a first time stake for the given provisioner's account and the
+    ///   stake is smaller than the configured minimum stake or the provided
+    ///   signature is incorrect.
     pub fn stake_from_contract(&mut self, recv: ReceiveFromContract) {
         let stake: Stake =
             rkyv::from_bytes(&recv.data).expect("Invalid stake received");
@@ -204,6 +289,29 @@ impl StakeState {
             .or_insert((prev_stake, account));
     }
 
+    /// Initiates an unstake request for a given account.
+    ///
+    /// Any locked amount will be unstaked last.
+    ///
+    /// The previous stake for the given provisioner's account is appended to
+    /// the `previous_block_state`.
+    ///
+    /// If after this call there is no stake or stake-rewards left for the
+    /// provisioner, the stake entry is removed from the state.
+    ///
+    /// # Parameters
+    /// - `unstake: A [`Withdraw`] object containing details of the unstake
+    ///   request.
+    ///
+    /// # Panics
+    /// This function will panic if:
+    /// - There is no stake for the given provisioner's account or the recorded
+    ///   `owner` doesn't match the provided one.
+    /// - The requested amount to unstake exceeds the total stake.
+    /// - The stake owner is a contract
+    /// - One of the provided signatures is invalid.
+    /// - The total funds of the stake would be smaller than the configured
+    ///   minimum stake after the unstake request.
     pub fn unstake(&mut self, unstake: Withdraw) {
         let transfer_withdraw = unstake.transfer_withdraw();
         let account = *unstake.account();
@@ -270,6 +378,28 @@ impl StakeState {
             .or_insert((prev_stake, account));
     }
 
+    /// Processes an unstake request originating from a smart contract.
+    ///
+    /// Any locked amount will be unstaked last.
+    ///
+    /// The previous stake for the given provisioner's account is appended to
+    /// the `previous_block_state`.
+    ///
+    /// If after this call there is no stake or stake-rewards left for the
+    /// provisioner, the stake entry is removed from the state.
+    ///
+    /// # Parameters
+    /// - `unstake`: A [`WithdrawToContract`] object specifying
+    ///   contract-specific unstaking details.
+    ///
+    /// # Panics
+    /// This function will panic if:
+    /// - There is no stake for the given provisioner's account or the recorded
+    ///   `owner` doesn't match the provided one.
+    /// - The requested amount to unstake exceeds the total stake.
+    /// - The stake owner is not a contract
+    /// - The calling contract of this method is not the same as the recorded
+    ///   stake `owner`.
     pub fn unstake_from_contract(&mut self, unstake: WithdrawToContract) {
         let account = unstake.account();
         let value = unstake.value();
@@ -340,6 +470,22 @@ impl StakeState {
             .or_insert_with(|| (prev_stake, *account));
     }
 
+    /// Withdraw stake rewards owned by a given account.
+    //
+    /// If after this call there is no stake or stake-rewards left for the
+    /// provisioner, the stake entry is removed from the state.
+    ///
+    /// # Parameters
+    /// - `withdraw`: A [`Withdraw`] object containing withdrawal details.
+    ///
+    /// # Panics
+    /// This function will panic if:
+    /// - There is no stake for the given provisioner's account or the recorded
+    ///   `owner` doesn't match the provided one.
+    /// - The value to withdraw is 0.
+    /// - The value to withdraw is higher than the accumulated rewards.
+    /// - The stake owner is a contract
+    /// - One of the provided signatures is incorrect.
     pub fn withdraw(&mut self, withdraw: Withdraw) {
         let transfer_withdraw = withdraw.transfer_withdraw();
         let account = withdraw.account();
@@ -386,6 +532,23 @@ impl StakeState {
         }
     }
 
+    /// Withdraw stake rewards owned by a smart contract.
+    //
+    /// If after this call there is no stake or stake-rewards left for the
+    /// provisioner, the stake entry is removed from the state.
+    ///
+    /// # Parameters
+    /// - `withdraw`: A [`WithdrawToContract`] object specifying withdrawal
+    ///   details.
+    ///
+    /// # Panics
+    /// - There is no stake for the given provisioner's account or the recorded
+    ///   `owner` doesn't match the provided one.
+    /// - The value to withdraw is 0.
+    /// - The value to withdraw is higher than the accumulated rewards.
+    /// - The stake owner is not a contract
+    /// - The calling contract of this method is not the same as the recorded
+    ///   stake `owner`.
     pub fn withdraw_from_contract(&mut self, withdraw: WithdrawToContract) {
         let account = withdraw.account();
         let value = withdraw.value();
@@ -431,17 +594,41 @@ impl StakeState {
         }
     }
 
-    /// Gets a reference to a stake.
+    /// Retrieves stake data associated with the provisioner's account
+    /// [`BlsPublicKey`].
+    ///
+    /// # Parameters
+    /// - `key`: A reference to a [`BlsPublicKey`] identifying the account.
+    ///
+    /// # Returns
+    /// An Option containing a reference to [`StakeData`] if it exists, or
+    /// `None` if not.
     pub fn get_stake(&self, key: &BlsPublicKey) -> Option<&StakeData> {
         self.stakes.get(&key.to_bytes()).map(|(s, _)| s)
     }
 
-    /// Gets the keys linked to to a stake.
+    /// Retrieves stake keys associated with a specific provisioner's account
+    /// [`BlsPublicKey`].
+    ///
+    /// # Parameters
+    /// - `key`: A reference to a [`BlsPublicKey`].
+    ///
+    /// # Returns
+    /// An Option containing a reference to [`StakeKeys`] if they exist, or
+    /// `None` if not.
     pub fn get_stake_keys(&self, key: &BlsPublicKey) -> Option<&StakeKeys> {
         self.stakes.get(&key.to_bytes()).map(|(_, k)| k)
     }
 
-    /// Gets a mutable reference to a stake.
+    /// Retrieves a mutable reference to stake data and keys associated with a
+    /// specific provisioner's account [`BlsPublicKey`].
+    ///
+    /// # Parameters
+    /// - `key`: A reference to a [`BlsPublicKey`].
+    ///
+    /// # Returns
+    /// An Option containing mutable references to both [`StakeData`] and
+    /// [`StakeKeys`], or `None` if not found.
     pub fn get_stake_mut(
         &mut self,
         key: &BlsPublicKey,
@@ -449,7 +636,13 @@ impl StakeState {
         self.stakes.get_mut(&key.to_bytes())
     }
 
-    /// Pushes the given `stake` onto the state for a given `keys`.
+    /// Inserts new stake data and keys into the state.
+    ///
+    /// Overwrites any existing data for the same [`BlsPublicKey`].
+    ///
+    /// # Parameters
+    /// - `keys`: [`StakeKeys`] associated with the stake.
+    /// - `stake`: [`StakeData`] representing the stake details.
     pub fn insert_stake(&mut self, keys: StakeKeys, stake: StakeData) {
         self.stakes.insert(keys.account.to_bytes(), (stake, keys));
     }
@@ -459,8 +652,12 @@ impl StakeState {
     /// If said stake doesn't exist, a default one is inserted and a mutable
     /// reference returned.
     ///
+    /// # Parameters
+    /// - `keys`: [`StakeKeys`] associated with the stake.
+    ///
     /// # Panics
-    /// Panics if the provided keys doesn't match the existing (if any)
+    /// Panics if the provided `owner` key doesn't match the existing `owner`
+    /// associated to the `account` key.
     pub(crate) fn load_or_create_stake_mut(
         &mut self,
         keys: &StakeKeys,
@@ -475,9 +672,14 @@ impl StakeState {
             .or_insert_with(|| (StakeData::EMPTY, *keys))
     }
 
-    /// Rewards multiple accounts with the given rewards.
+    /// Distributes rewards to multiple stakeholders.
     ///
-    /// If a stake does not exist in the map, it is skipped.
+    /// # Parameters
+    /// - `rewards`: A vector of reward details.
+    ///
+    /// # Panics
+    /// Panics if rewards cannot be applied due to invalid data or state
+    /// inconsistencies.
     pub fn reward(&mut self, rewards: Vec<Reward>) {
         for reward in &rewards {
             let stake =
@@ -499,21 +701,35 @@ impl StakeState {
         }
     }
 
-    /// Total amount burned since the genesis
+    /// Returns the total burnt amount in the system.
+    ///
+    /// # Returns
+    /// A `u64` representing the total amount of burnt tokens.
     pub fn burnt_amount(&self) -> u64 {
         self.burnt_amount
     }
 
-    /// Version of the stake contract
+    /// Returns the current version of the stake contract.
+    ///
+    /// # Returns
+    /// A `u64` representing the version of the stake state.
     pub fn get_version(&self) -> u64 {
         STAKE_CONTRACT_VERSION
     }
 
-    /// Slash the given `to_slash` amount from an `account`'s reward
+    /// Penalizes a given account by slashing a specified amount.
     ///
-    /// If the reward is less than the `to_slash` amount, then the reward is
-    /// depleted and the provisioner eligibility is shifted to the
-    /// next epoch as well
+    /// If the stake is less than the `to_slash` amount, then the stake is
+    /// depleted.
+    /// If no `to_slash` amount is given, it is derived from the active stake
+    /// and number of `faults`.
+    ///
+    /// # Parameters
+    /// - `account`: A reference to a [`BlsPublicKey`] identifying the account.
+    /// - `to_slash`: An optional amount to slash.
+    ///
+    /// # Panics
+    /// Panics if the account does not exist or the slash amount is invalid.
     pub fn slash(&mut self, account: &BlsPublicKey, to_slash: Option<u64>) {
         let stake_warnings = self.config.warnings;
         let (stake, _) = self
@@ -570,10 +786,32 @@ impl StakeState {
             .or_insert_with(|| (prev_stake, *account));
     }
 
-    /// Slash the given `to_slash` amount from an `account`'s stake.
+    /// Performs a severe penalty by slashing a specified amount of stake from
+    /// an account. This function may result in permanent changes to the stake
+    /// by burning the slashed tokens if the severity level indicates a high
+    /// impact.
     ///
     /// If the stake is less than the `to_slash` amount, then the stake is
     /// depleted
+    /// If no `to_slash` amount is given, it is derived from the active stake
+    /// and number of `hard_faults`.
+    ///
+    ///
+    /// Parameters:
+    /// - `account`: &[`BlsPublicKey`] - The public key of the account to be
+    ///   slashed.
+    /// - `to_slash`: `Option<u64>` - The amount of stake to slash. If None, a
+    ///   default penalty may be applied based on protocol rules.
+    /// - `severity`: `Option<u8>` - The severity level of the slash. Higher
+    ///   severity could indicate more stringent penalties or different rules.
+    ///
+    /// Panics:
+    /// Panics if the account does not exist in the [`StakeState`] or in the
+    /// case of invalid `to_slash` or `severity` values.
+    ///
+    /// Notes:
+    /// This function should be used with caution due to its potential for
+    /// significant and irreversible changes to the staking state.
     pub fn hard_slash(
         &mut self,
         account: &BlsPublicKey,
@@ -633,12 +871,25 @@ impl StakeState {
             .or_insert_with(|| (prev_stake, *account));
     }
 
-    /// Sets the burnt amount
+    /// Sets the total amount of burnt tokens within the staking state. Burnt
+    /// tokens represent a deflationary mechanism within the protocol.
+    ///
+    /// Parameters:
+    /// - `burnt_amount`: `u64` - The new burnt token amount to set.
+    ///
+    /// Notes:
+    /// This value is critical for maintaining accurate tokenomics and should
+    /// only be modified by authorized procedures or governance decisions.
     pub fn set_burnt_amount(&mut self, burnt_amount: u64) {
         self.burnt_amount = burnt_amount;
     }
 
-    /// Feeds the host with the stakes.
+    /// Feeds the host with the current stakes within the state. This function
+    /// provides read-only access to all stake entries.
+    ///
+    /// Notes:
+    /// Use this method to gather staking data for analytics, audits, or
+    /// protocol decisions.
     pub fn stakes(&self) {
         for (stake_data, account) in self.stakes.values() {
             abi::feed((*account, *stake_data));
@@ -661,6 +912,10 @@ impl StakeState {
     }
 
     /// Feeds the host with previous state of the changed provisioners.
+    ///
+    /// Notes:
+    /// This method is essential for understanding recent state transitions and
+    /// ensuring the integrity of protocol operations.
     pub fn prev_state_changes(&self) {
         for (stake_data, account) in self.previous_block_state.values() {
             abi::feed((*account, *stake_data));
