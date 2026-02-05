@@ -26,7 +26,7 @@ jobs:
         with:
           filters: |
             run-ci:
-              - '!(web-wallet/**/*|w3sper.js/**/*|.github/workflows/webwallet_ci.yml|.github/workflows/w3sperjs_ci.yml)'
+              - '!(w3sper.js/**/*|.github/workflows/w3sperjs_ci.yml)'
 
   analyze:
     needs: changes

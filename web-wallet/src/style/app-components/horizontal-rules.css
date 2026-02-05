@@ -1,9 +1,0 @@
-hr {
-  text-align: center;
-  overflow: visible;
-  border: none;
-  border-top: 1px solid var(--divider-color-primary);
-  width: 100%;
-  height: 1px;
-  padding: 0;
-}

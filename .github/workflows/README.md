@@ -55,10 +55,6 @@ This directory contains the GitHub Actions workflows that automate various proce
 **Purpose**: CI for `w3sper.js`, executing linting and test tasks.  
 **Trigger**: `pull_request` and `workflow_dispatch`.
 
-### [webwallet_ci.yml](./webwallet_ci.yml)
-**Purpose**: CI for the `web-wallet`, executing lints, tests, typechecks and builds the app.  
-**Trigger**: `pull_request` events.
-
 ## Adding or Modifying Workflows
 1. Create a new `.yml` file in this directory.
 2. Use a descriptive `name` for the workflow.

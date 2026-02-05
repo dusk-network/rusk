@@ -1,4 +1,4 @@
-all: keys wasm abi state rusk rusk-wallet web-wallet ## Build everything
+all: keys wasm abi state rusk rusk-wallet ## Build everything
 
 help: ## Display this help screen
 	@grep -h \
@@ -69,7 +69,7 @@ bench: keys wasm  ## Bench Rusk & node
 	$(MAKE) -C ./node bench
 	$(MAKE) -C ./rusk bench
 
-run: keys state web-wallet ## Run the server
+run: keys state ## Run the server
 	$(MAKE) -C ./rusk/ $@
 
 prepare-dev: keys ## Preparation steps for launching a local node for development
@@ -92,7 +92,4 @@ rusk: keys state ## Build rusk binary
 rusk-wallet: ## build the rusk wallet binary
 	$(MAKE) -C ./rusk-wallet build 
 
-web-wallet: ## build the static files of the web wallet
-	$(MAKE) -C ./web-wallet all 
-
-.PHONY: all abi keys state wasm test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet web-wallet data-drivers
+.PHONY: all abi keys state wasm test bench prepare-dev run run-dev run-dev-archive help rusk rusk-wallet data-drivers
