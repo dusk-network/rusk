@@ -21,7 +21,9 @@
 //! ```
 
 use base64::prelude::*;
+use base64::Engine as _;
 use dusk_data_driver::reader::DriverReader;
+use dusk_wasmtime::{Engine, Instance, Module, Store};
 
 const STAKE_DRIVER_WASM: &[u8] = include_bytes!("stake_driver.wasm");
 
@@ -37,7 +39,7 @@ fn test_decode_reward_event() {
         .expect("Failed to decode base64");
 
     // Load driver and initialize it
-    let mut driver =
+    let driver =
         DriverReader::new(STAKE_DRIVER_WASM).expect("Failed to create driver");
 
     // Decode event
@@ -57,9 +59,34 @@ fn test_decode_reward_event() {
 }
 
 #[test]
+fn test_init_signature_is_void() {
+    let engine = Engine::default();
+    let module =
+        Module::from_binary(&engine, STAKE_DRIVER_WASM).expect("compile wasm");
+    let mut store = Store::new(&engine, ());
+    let instance =
+        Instance::new(&mut store, &module, &[]).expect("instantiate wasm");
+
+    let init_void = instance
+        .get_typed_func::<(), ()>(&mut store, "init")
+        .expect("init should be exported as () -> ()");
+
+    let init_result =
+        init_void.call(&mut store, ()).expect("init() call failed");
+    assert_eq!(init_result, ());
+
+    assert!(
+        instance
+            .get_typed_func::<(), i32>(&mut store, "init")
+            .is_err(),
+        "init should not return i32"
+    );
+}
+
+#[test]
 fn test_driver_metadata() {
     // Load driver and initialize it
-    let mut driver =
+    let driver =
         DriverReader::new(STAKE_DRIVER_WASM).expect("Failed to create driver");
 
     // Get version
@@ -85,7 +112,7 @@ fn test_decode_stake_call() {
         .expect("Failed to decode base64");
 
     // Load driver and initialize it
-    let mut driver =
+    let driver =
         DriverReader::new(STAKE_DRIVER_WASM).expect("Failed to create driver");
 
     // Decode input function arguments
@@ -114,7 +141,7 @@ fn test_decode_withdraw_call() {
         .expect("Failed to decode base64");
 
     // Load driver and initialize it
-    let mut driver =
+    let driver =
         DriverReader::new(STAKE_DRIVER_WASM).expect("Failed to create driver");
 
     // Decode input function arguments

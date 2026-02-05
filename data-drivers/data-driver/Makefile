@@ -12,6 +12,7 @@ wasm-js: ## Noop
 
 test: ## Perform the contract tests defined in the host module
 	@cargo test --release
+	@cargo test --release --features reader
 			
 clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings
