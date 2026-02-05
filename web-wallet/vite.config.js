@@ -76,7 +76,7 @@ export default defineConfig(({ mode }) => {
           "src/lib/vendor/**",
           ...coverageConfigDefaults.exclude,
         ],
-        include: ["src/**"],
+        include: ["src/**/*.{js,ts,svelte}"],
         provider: "istanbul",
       },
       env: {
