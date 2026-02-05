@@ -6,15 +6,18 @@
 
 //! Types used for interacting with Dusk's transfer and stake contracts.
 
-#![no_std]
+#![cfg_attr(not(feature = "reader"), no_std)]
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
-#![deny(unused_crate_dependencies)]
+#![cfg_attr(not(test), deny(unused_crate_dependencies))]
 #![deny(unused_extern_crates)]
 
 extern crate alloc;
+
+#[cfg(feature = "reader")]
+extern crate std;
 
 mod error;
 
@@ -23,6 +26,9 @@ pub mod wasm;
 
 #[cfg(all(target_family = "wasm", feature = "alloc"))]
 mod mem;
+
+#[cfg(feature = "reader")]
+pub mod reader;
 
 use alloc::string::ToString;
 use alloc::vec;

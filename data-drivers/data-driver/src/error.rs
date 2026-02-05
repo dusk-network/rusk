@@ -20,6 +20,18 @@ pub enum Error {
     Unsupported(String),
     /// Other
     Other(String),
+    /// WASM runtime error (reader feature only)
+    #[cfg(feature = "reader")]
+    WasmRuntime(String),
+    /// WASM memory error (reader feature only)
+    #[cfg(feature = "reader")]
+    WasmMemory(String),
+    /// WASM export error (reader feature only)
+    #[cfg(feature = "reader")]
+    WasmExport(String),
+    /// FFI call error (reader feature only)
+    #[cfg(feature = "reader")]
+    FfiError(String),
 }
 
 impl fmt::Display for Error {
