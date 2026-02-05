@@ -50,7 +50,7 @@ export default defineConfig(({ mode }) => {
       alias: [{ find: /^svelte$/, replacement: "svelte/internal" }],
       coverage: {
         all: true,
-        include: ["src/**"],
+        include: ["src/**/*.{js,ts,svelte}"],
         provider: "istanbul",
       },
       env: {
