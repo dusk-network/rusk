@@ -21,7 +21,8 @@
 | `rusk-wallet/` | CLI wallet |
 | `data-drivers/` | RKYV ↔ JS bridge for contract calls |
 | `w3sper.js/` | Deno SDK |
-| `web-wallet/` | Svelte/Vite frontend wallet app |
+
+Note: the web wallet lives in the external repo `dusk-network/web-wallet`.
 
 ## Commands
 

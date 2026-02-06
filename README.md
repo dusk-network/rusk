@@ -11,9 +11,6 @@
 <a href="https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml">
 <img src="https://github.com/dusk-network/rusk/actions/workflows/rusk_ci.yml/badge.svg" alt="Rusk CI"></a>
 &nbsp;
-<a href="https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml">
-<img src="https://github.com/dusk-network/rusk/actions/workflows/webwallet_ci.yml/badge.svg" alt="web-wallet CI"></a>
-&nbsp;
 <a href="https://github.com/dusk-network/rusk/stargazers">
 <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/dusk-network/rusk?style=social"></a>
 &nbsp;
@@ -76,7 +73,7 @@ For more information on **running a node for main- or testnet**, see our
 | ⌨️ [rusk-wallet](/rusk-wallet/)      | Dusk CLI wallet                                                             |
 | 🔨 [w3sper.js](/w3sper.js/)          | Js SDK to integrate Dusk features into applications                         |
 | ⚙️ [wallet-core](/wallet-core/)      | WASM library providing core logic for Dusk wallet implementations           |
-| 📱 [web-wallet](/web-wallet/)        | Cross platform Dusk wallet                                                  |
+| 📱 [web-wallet](https://github.com/dusk-network/web-wallet) | Cross platform Dusk wallet (external repo)                  |
 
 
 
