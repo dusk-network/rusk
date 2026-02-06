@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO unfinalized_blocks (block_height, block_hash)\n                VALUES (?, ?)\n                ON CONFLICT(block_height) DO UPDATE SET block_hash = excluded.block_hash",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "13807a5e27b376c2e9f7566d0ce92ed42556487d0c87f490f50efb647df3d6fb"
+}
