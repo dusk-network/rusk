@@ -31,10 +31,6 @@ This directory contains the GitHub Actions workflows that automate various proce
 **Purpose**: Builds a Docker image and uploads it as an artifact.  
 **Trigger**: `workflow_dispatch` (manual trigger).
 
-### [explorer_ci.yml](./explorer_ci.yml)
-**Purpose**: CI for the `explorer`. Lints, tests, typechecks and builds it.  
-**Trigger**: `pull_request` events.
-
 ### [profile_ci.yml](./profile_ci.yml)
 **Purpose**: Generates proving keys using `make keys`.  
 **Trigger**: `workflow_dispatch`.
