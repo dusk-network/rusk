@@ -46,6 +46,12 @@ impl Query {
     pub const VERIFY_BLS_MULTISIG: &'static str = "verify_bls_multisig";
     /// Host-function name to compute the keccak256 hash.
     pub const KECCAK256: &'static str = "keccak256";
+    /// Host-function name to compute the sha256 hash.
+    pub const SHA256: &'static str = "sha256";
+    /// Host-function name to verify a KZG point-evaluation proof.
+    pub const VERIFY_KZG_PROOF: &'static str = "verify_kzg_proof";
+    /// Host-function name to recover a secp256k1 public key.
+    pub const SECP256K1_RECOVER: &'static str = "secp256k1_recover";
 }
 
 #[cfg(feature = "abi")]
@@ -146,6 +152,35 @@ pub(crate) mod host_queries {
     #[must_use]
     pub fn keccak256(bytes: Vec<u8>) -> [u8; 32] {
         host_query(Query::KECCAK256, bytes)
+    }
+
+    /// Compute the sha256 hash of the given bytes, returning the resulting
+    /// bytes.
+    #[must_use]
+    pub fn sha256(bytes: Vec<u8>) -> [u8; 32] {
+        host_query(Query::SHA256, bytes)
+    }
+
+    /// Verify a KZG point-evaluation proof for a commitment and evaluation.
+    #[must_use]
+    pub fn verify_kzg_proof(
+        commitment: [u8; 48],
+        z: [u8; 32],
+        y: [u8; 32],
+        proof: [u8; 48],
+    ) -> bool {
+        host_query(Query::VERIFY_KZG_PROOF, (commitment, z, y, proof))
+    }
+
+    /// Recover a secp256k1 public key from a 32-byte message hash and signature.
+    ///
+    /// Signature is expected as r(32) || s(32) || v(1), with v in {0,1,27,28}.
+    #[must_use]
+    pub fn secp256k1_recover(
+        msg_hash: [u8; 32],
+        sig: [u8; 65],
+    ) -> Option<[u8; 65]> {
+        host_query(Query::SECP256K1_RECOVER, (msg_hash, sig))
     }
 
     /// Get the chain ID.
