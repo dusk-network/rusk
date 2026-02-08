@@ -8,6 +8,7 @@
 
 use alloc::vec::Vec;
 
+use c_kzg::{Bytes32 as KzgBytes32, Bytes48};
 use dusk_bytes::DeserializableSlice;
 use dusk_core::groth16::bn254::{Bn254, G1Projective};
 use dusk_core::groth16::serialize::CanonicalDeserialize;
@@ -22,11 +23,14 @@ use dusk_core::signatures::bls::{
 use dusk_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
 };
+use dusk_core::transfer::data::BlobData;
 use dusk_core::BlsScalar;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
-use sha3::{Digest, Keccak256};
+use secp256k1::{ecdsa::RecoverableSignature, Message, Secp256k1};
+use sha2::{Digest as Sha2Digest, Sha256};
+use sha3::Keccak256;
 use tracing::warn;
 
 use crate::cache;
@@ -284,6 +288,94 @@ pub fn keccak256(bytes: Vec<u8>) -> [u8; 32] {
     hasher.finalize().into()
 }
 
+/// Computes sha256 hash of a byte vector.
+///
+/// # Arguments
+/// * `bytes` - A vector of bytes representing the input data to be hashed.
+///
+/// # Returns
+/// An array (`[u8; 32]`) representing the sha256 hash.
+pub fn sha256(bytes: Vec<u8>) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes.as_slice());
+    hasher.finalize().into()
+}
+
+/// Verifies a KZG point-evaluation proof.
+///
+/// # Arguments
+/// * `commitment` - The 48-byte KZG commitment.
+/// * `z` - The evaluation point.
+/// * `y` - The expected evaluation.
+/// * `proof` - The 48-byte KZG proof.
+///
+/// # Returns
+/// `true` if the proof is valid, `false` otherwise.
+pub fn verify_kzg_proof(
+    commitment: [u8; 48],
+    z: [u8; 32],
+    y: [u8; 32],
+    proof: [u8; 48],
+) -> bool {
+    let settings = BlobData::eth_kzg_settings(None);
+    let commitment = Bytes48::new(commitment);
+    let z = KzgBytes32::new(z);
+    let y = KzgBytes32::new(y);
+    let proof = Bytes48::new(proof);
+    match settings.verify_kzg_proof(&commitment, &z, &y, &proof) {
+        Ok(valid) => valid,
+        Err(e) => {
+            warn!("vm: kzg proof verification failed: {e}");
+            false
+        }
+    }
+}
+
+/// Recover a secp256k1 public key from a message hash and signature.
+///
+/// Signature format: r(32) || s(32) || v(1), with v in {0,1,27,28}.
+pub fn secp256k1_recover(
+    msg_hash: [u8; 32],
+    sig: [u8; 65],
+) -> Option<[u8; 65]> {
+    let v_raw = sig[64];
+    let v = match v_raw {
+        0 | 1 => v_raw as i32,
+        27 | 28 => (v_raw - 27) as i32,
+        _ => {
+            warn!("vm: secp256k1 recovery: invalid v byte {v_raw}");
+            return None;
+        }
+    };
+
+    let rec_id = match secp256k1::ecdsa::RecoveryId::try_from(v) {
+        Ok(id) => id,
+        Err(e) => {
+            warn!("vm: secp256k1 recovery: invalid recovery id {v} ({e})");
+            return None;
+        }
+    };
+
+    let sig = match RecoverableSignature::from_compact(&sig[0..64], rec_id) {
+        Ok(sig) => sig,
+        Err(e) => {
+            warn!("vm: secp256k1 recovery: invalid signature ({e})");
+            return None;
+        }
+    };
+    let msg = Message::from_digest(msg_hash);
+
+    let secp = Secp256k1::new();
+    let pk = match secp.recover_ecdsa(msg, &sig) {
+        Ok(pk) => pk,
+        Err(e) => {
+            warn!("vm: secp256k1 recovery failed ({e})");
+            return None;
+        }
+    };
+    Some(pk.serialize_uncompressed())
+}
+
 fn wrap_host_query<A, R, F>(arg_buf: &mut [u8], arg_len: u32, closure: F) -> u32
 where
     F: FnOnce(A) -> R,
@@ -365,4 +457,23 @@ pub(crate) fn host_verify_bls_multisig(
 
 pub(crate) fn host_keccak256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     wrap_host_query(arg_buf, arg_len, keccak256)
+}
+
+pub(crate) fn host_sha256(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    wrap_host_query(arg_buf, arg_len, sha256)
+}
+
+pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
+    wrap_host_query(arg_buf, arg_len, |(commitment, z, y, proof)| {
+        verify_kzg_proof(commitment, z, y, proof)
+    })
+}
+
+pub(crate) fn host_secp256k1_recover(
+    arg_buf: &mut [u8],
+    arg_len: u32,
+) -> u32 {
+    wrap_host_query(arg_buf, arg_len, |(msg_hash, sig)| {
+        secp256k1_recover(msg_hash, sig)
+    })
 }

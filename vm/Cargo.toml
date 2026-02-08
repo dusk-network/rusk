@@ -9,7 +9,7 @@ license = "MPL-2.0"
 exclude = [".github/workflows/ci.yml", ".gitignore"]
 
 [dependencies]
-dusk-core = { workspace = true, features = ["zk"] }
+dusk-core = { workspace = true, features = ["zk", "kzg"] }
 dusk-bytes = { workspace = true }
 piecrust = { workspace = true }
 lru = { workspace = true }
@@ -17,17 +17,21 @@ blake2b_simd = { workspace = true }
 blake3 = { workspace = true }
 dusk-poseidon = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }
+sha2 = { workspace = true }
 sha3 = { workspace = true }
 wasmparser = { workspace = true }
 indexmap = { workspace = true, optional = true }    # 2.12 requires rustc edition 2024
 serde = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
+c-kzg = { workspace = true }
+secp256k1 = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true, features = ["getrandom"] }
 once_cell = { workspace = true }
 ff = { workspace = true }
 hex = { workspace = true }
+c-kzg = { workspace = true }
 
 [features]
 debug = ["piecrust/debug"]

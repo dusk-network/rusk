@@ -8,6 +8,7 @@
 
 use std::sync::OnceLock;
 
+use c_kzg::{Blob as KzgBlob, Bytes32 as KzgBytes32, BYTES_PER_BLOB};
 use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_core::abi::ContractId;
 use dusk_core::groth16::bn254::{Bn254, Fr as Bn254Fr};
@@ -29,10 +30,13 @@ use dusk_core::signatures::bls::{
 use dusk_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
 };
+use dusk_core::transfer::data::BlobData;
 use dusk_core::BlsScalar;
 use dusk_vm::{ContractData, Session, VM};
 use ff::Field;
 use rand::rngs::OsRng;
+use secp256k1::{Message, Secp256k1, SecretKey};
+use sha2::{Digest as Sha2Digest, Sha256};
 
 const POINT_LIMIT: u64 = 0x4000000;
 const CHAIN_ID: u8 = 0xFA;
@@ -272,6 +276,109 @@ fn keccak256() {
         "48299ecd7ccb5655d3be5747703c44137173e1c5ef2ec9e175bffe9e2c5e3eda",
         hex::encode(output),
     );
+}
+
+#[test]
+fn sha256_host() {
+    let input = b"rusk-host-sha256".to_vec();
+    let mut hasher = Sha256::new();
+    hasher.update(&input);
+    let expected: [u8; 32] = hasher.finalize().into();
+
+    let output = dusk_vm::host_queries::sha256(input);
+    assert_eq!(expected, output);
+}
+
+#[test]
+fn secp256k1_recover_host() {
+    let msg_hash: [u8; 32] = Sha256::digest(b"rusk-host-secp256k1").into();
+    let sk_bytes = [1u8; 32];
+    let sk =
+        SecretKey::from_byte_array(sk_bytes).expect("secret key should be valid");
+
+    let secp = Secp256k1::new();
+    let msg = Message::from_digest(msg_hash);
+    let sig = secp.sign_ecdsa_recoverable(msg, &sk);
+    let (rec_id, compact) = sig.serialize_compact();
+
+    let mut sig_bytes = [0u8; 65];
+    sig_bytes[..64].copy_from_slice(&compact);
+    sig_bytes[64] = (i32::from(rec_id) as u8) + 27;
+
+    let expected_pub = secp256k1::PublicKey::from_secret_key(&secp, &sk)
+        .serialize_uncompressed();
+
+    let recovered =
+        dusk_vm::host_queries::secp256k1_recover(msg_hash, sig_bytes);
+    assert_eq!(Some(expected_pub), recovered);
+
+    let mut invalid_sig = sig_bytes;
+    // Any (r,s,v) that parses can recover *some* pubkey, so test invalid `v`
+    // semantics instead.
+    invalid_sig[64] = 2;
+    let invalid =
+        dusk_vm::host_queries::secp256k1_recover(msg_hash, invalid_sig);
+    assert!(invalid.is_none());
+
+    // Signature bytes that parse but fail recovery should return None.
+    let mut invalid_sig = [0u8; 65];
+    invalid_sig[64] = 27;
+    let invalid =
+        dusk_vm::host_queries::secp256k1_recover(msg_hash, invalid_sig);
+    assert!(invalid.is_none());
+
+    // Signature bytes that don't parse should return None.
+    let mut invalid_sig = [0xffu8; 65];
+    invalid_sig[64] = 27;
+    let invalid =
+        dusk_vm::host_queries::secp256k1_recover(msg_hash, invalid_sig);
+    assert!(invalid.is_none());
+
+    // v in {0,1} should also be accepted.
+    let mut sig_v01 = sig_bytes;
+    sig_v01[64] = i32::from(rec_id) as u8;
+    let recovered =
+        dusk_vm::host_queries::secp256k1_recover(msg_hash, sig_v01);
+    assert_eq!(Some(expected_pub), recovered);
+}
+
+#[test]
+fn verify_kzg_proof_host() {
+    let mut blob_bytes = vec![0u8; BYTES_PER_BLOB];
+    blob_bytes[0] = 1;
+    let blob = KzgBlob::from_bytes(&blob_bytes).expect("blob should be valid");
+    let settings = BlobData::eth_kzg_settings(None);
+    let commitment = settings
+        .blob_to_kzg_commitment(&blob)
+        .expect("commitment should succeed");
+    let commitment_bytes = commitment.to_bytes().into_inner();
+
+    let mut z_bytes = [0u8; 32];
+    z_bytes[31] = 1;
+    let z = KzgBytes32::new(z_bytes);
+    let (proof, y) = settings
+        .compute_kzg_proof(&blob, &z)
+        .expect("proof should succeed");
+    let y_bytes = *y.as_ref();
+    let proof_bytes = proof.to_bytes().into_inner();
+
+    let valid = dusk_vm::host_queries::verify_kzg_proof(
+        commitment_bytes,
+        z_bytes,
+        y_bytes,
+        proof_bytes,
+    );
+    assert!(valid, "KZG proof verification expected to succeed");
+
+    let mut invalid_proof = proof_bytes;
+    invalid_proof[0] ^= 0x01;
+    let invalid = dusk_vm::host_queries::verify_kzg_proof(
+        commitment_bytes,
+        z_bytes,
+        y_bytes,
+        invalid_proof,
+    );
+    assert!(!invalid, "KZG proof verification expected to fail");
 }
 
 #[derive(Debug, Default)]
