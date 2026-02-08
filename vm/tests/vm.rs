@@ -293,8 +293,8 @@ fn sha256_host() {
 fn secp256k1_recover_host() {
     let msg_hash: [u8; 32] = Sha256::digest(b"rusk-host-secp256k1").into();
     let sk_bytes = [1u8; 32];
-    let sk =
-        SecretKey::from_byte_array(sk_bytes).expect("secret key should be valid");
+    let sk = SecretKey::from_byte_array(sk_bytes)
+        .expect("secret key should be valid");
 
     let secp = Secp256k1::new();
     let msg = Message::from_digest(msg_hash);
@@ -337,8 +337,7 @@ fn secp256k1_recover_host() {
     // v in {0,1} should also be accepted.
     let mut sig_v01 = sig_bytes;
     sig_v01[64] = i32::from(rec_id) as u8;
-    let recovered =
-        dusk_vm::host_queries::secp256k1_recover(msg_hash, sig_v01);
+    let recovered = dusk_vm::host_queries::secp256k1_recover(msg_hash, sig_v01);
     assert_eq!(Some(expected_pub), recovered);
 }
 

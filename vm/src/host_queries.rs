@@ -469,10 +469,7 @@ pub(crate) fn host_verify_kzg_proof(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     })
 }
 
-pub(crate) fn host_secp256k1_recover(
-    arg_buf: &mut [u8],
-    arg_len: u32,
-) -> u32 {
+pub(crate) fn host_secp256k1_recover(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     wrap_host_query(arg_buf, arg_len, |(msg_hash, sig)| {
         secp256k1_recover(msg_hash, sig)
     })

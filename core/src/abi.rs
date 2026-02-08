@@ -172,7 +172,8 @@ pub(crate) mod host_queries {
         host_query(Query::VERIFY_KZG_PROOF, (commitment, z, y, proof))
     }
 
-    /// Recover a secp256k1 public key from a 32-byte message hash and signature.
+    /// Recover a secp256k1 public key from a 32-byte message hash and
+    /// signature.
     ///
     /// Signature is expected as r(32) || s(32) || v(1), with v in {0,1,27,28}.
     #[must_use]

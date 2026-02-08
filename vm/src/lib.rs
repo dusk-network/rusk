@@ -41,10 +41,10 @@ use dusk_core::abi::{ContractId, Metadata, Query};
 use piecrust::{SessionData, VM as PiecrustVM};
 
 use self::host_queries::{
-    host_hash, host_keccak256, host_poseidon_hash, host_sha256,
-    host_verify_bls, host_verify_bls_multisig, host_verify_groth16_bn254,
-    host_verify_kzg_proof, host_verify_plonk, host_verify_schnorr,
-    host_secp256k1_recover,
+    host_hash, host_keccak256, host_poseidon_hash, host_secp256k1_recover,
+    host_sha256, host_verify_bls, host_verify_bls_multisig,
+    host_verify_groth16_bn254, host_verify_kzg_proof, host_verify_plonk,
+    host_verify_schnorr,
 };
 
 pub(crate) mod cache;
