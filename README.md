@@ -64,7 +64,6 @@ For more information on **running a node for main- or testnet**, see our
 | 🧩 [data-drivers](/data-drivers/)    | Tools to encode/decode contract arguments between RKYV and JS I/O           |
 | 🧬 [dusk-core](/core/)               | Core types used for interacting with Dusk and writing smart contracts       |
 | 🌐 [dusk-abi](/core/src/abi.rs)      | Dusk application binary interface to develop smart contracts (part of core) |
-| 🧭 [explorer](https://github.com/dusk-network/explorer) | Dusk's blockchain explorer (external repo)                   |
 | 📊 [node-data](/node-data/)          | Core datatypes for the blockchain node                                      |
 | ⚙️ [dusk-vm](/vm/)                   | The virtual machine to run Dusk smart contracts                             |
 | 🪪 [rusk-profile](/rusk-profile/)    | Utility to generate a genesis state based on a set profile                  |
@@ -73,9 +72,6 @@ For more information on **running a node for main- or testnet**, see our
 | ⌨️ [rusk-wallet](/rusk-wallet/)      | Dusk CLI wallet                                                             |
 | 🔨 [w3sper.js](/w3sper.js/)          | Js SDK to integrate Dusk features into applications                         |
 | ⚙️ [wallet-core](/wallet-core/)      | WASM library providing core logic for Dusk wallet implementations           |
-| 📱 [web-wallet](https://github.com/dusk-network/web-wallet) | Cross platform Dusk wallet (external repo)                  |
-
-
 
 #### Infrastructure & Testing
 
@@ -87,10 +83,10 @@ For more information on **running a node for main- or testnet**, see our
 
 ## 📝 Prerequisites
 
-- Rust 1.71 nightly or higher
+- Rust 1.82 nightly or higher
 - GCC 13 or higher
-- Clang 16 or higher
-- Node.js 20.x or higher
+- Clang 18 or higher
+- Deno 2.x
 
 ### Setup script
 
