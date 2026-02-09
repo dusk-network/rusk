@@ -1,28 +1,29 @@
 # --- Build stage ---
 FROM ubuntu:24.04 AS build-stage
 
-RUN apt-get update && apt-get install -y unzip curl build-essential openssl libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y unzip curl build-essential openssl libssl-dev pkg-config clang && rm -rf /var/lib/apt/lists/*
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 WORKDIR /opt/rusk
 ENV RUSK_PROFILE_PATH=/opt/dusk/rusk/
-ENV PATH="$PATH:/root/.cargo/bin"
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-RUN apt-get update && apt-get install -y clang && rm -rf /var/lib/apt/lists/*
-
-# Using this to modify rusk config file before running a node
-RUN cargo install toml-cli --version 0.2.3
+COPY rust-toolchain.toml ./rust-toolchain.toml
+RUN set -eux; \
+    RUST_VERSION="$(grep -Eo 'channel = \"(.*)\"' rust-toolchain.toml | sed 's/channel = \"//;s/\"//')"; \
+    rustup toolchain install "$RUST_VERSION" \
+      --profile minimal \
+      --component rust-src \
+      --component rustfmt \
+      --component clippy \
+      --target wasm32-unknown-unknown; \
+    rustup default "$RUST_VERSION"
 
 COPY . .
 
-ARG TARGETPLATFORM
-# See also https://github.com/docker/buildx/issues/510
-ENV TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
-
 # Generate keys and compile genesis contracts
 RUN make keys
-RUN make wasm
 
 ARG NODE_TYPE="provisioner"
 
@@ -36,7 +37,7 @@ RUN case "$NODE_TYPE" in \
 # --- Run stage ---
 FROM ubuntu:24.04 AS run-stage
 
-RUN apt-get update && apt-get install -y unzip curl net-tools libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y unzip curl net-tools libssl-dev dasel && rm -rf /var/lib/apt/lists/*
     
 WORKDIR /opt/dusk
 
@@ -52,7 +53,6 @@ EXPOSE 8080/tcp
 COPY --from=build-stage /opt/rusk/target/release/rusk /opt/dusk/bin/rusk
 COPY --from=build-stage /opt/rusk/scripts/persistent-docker-setup/setup.sh /opt/dusk/setup.sh
 COPY --from=build-stage /opt/rusk/scripts/persistent-docker-setup/detect_ips.sh /opt/dusk/detect_ips.sh
-COPY --from=build-stage /root/.cargo/bin/toml /usr/bin/toml-cli
 
 RUN chmod +x /opt/dusk/setup.sh /opt/dusk/detect_ips.sh
 

@@ -25,9 +25,6 @@
 </a>
 </p>
 
-> _Unstable_ : No guarantees can be made regarding the API stability, the
-> project is in development.
-
 # 🖧 How to run a node
 
 This README is for people who want to develop, test nodes locally, and
@@ -60,7 +57,7 @@ For more information on **running a node for main- or testnet**, see our
 | :------------------------------------ | :-------------------------------------------------------------------------- |
 | 🌒 [rusk](/rusk/)                    | Entrypoint for the blockchain node                                          |
 | 🔗 [consensus](/consensus/)          | Implementation of Dusk's succinct attestation consensus                     |
-| 📜 [contracts](/contracts/)          | Dusk genesis contracts                                                      |
+| 📜 [contracts](https://github.com/dusk-network/contracts) | Contains Dusk genesis, test and ecosystem contracts    |
 | 🧩 [data-drivers](/data-drivers/)    | Tools to encode/decode contract arguments between RKYV and JS I/O           |
 | 🧬 [dusk-core](/core/)               | Core types used for interacting with Dusk and writing smart contracts       |
 | 🌐 [dusk-abi](/core/src/abi.rs)      | Dusk application binary interface to develop smart contracts (part of core) |
