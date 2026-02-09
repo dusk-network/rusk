@@ -14,7 +14,7 @@ use crate::node::{FEATURE_DISABLE_3RD_PARTY, FEATURE_DISABLE_WASM32};
 
 use super::feature::{
     FEATURE_ABI_PUBLIC_SENDER, FEATURE_BLOB, FEATURE_DISABLE_WASM64,
-    HQ_KECCAK256,
+    HQ_KECCAK256, HQ_SECP256K1_RECOVER, HQ_SHA256, HQ_VERIFY_KZG_PROOF,
 };
 use super::{
     DEFAULT_BLOCK_GAS_LIMIT, DEFAULT_GAS_PER_BLOB, DEFAULT_GAS_PER_DEPLOY_BYTE,
@@ -36,7 +36,7 @@ pub struct WellKnownConfig {
     pub min_deploy_points: u64,
     pub min_deployment_gas_price: u64,
     pub block_gas_limit: u64,
-    pub features: [(&'static str, FeatureActivation); 7],
+    pub features: [(&'static str, FeatureActivation); 10],
 }
 
 impl WellKnownConfig {
@@ -96,6 +96,9 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
         features: [
             (FEATURE_ABI_PUBLIC_SENDER, MAINNET_SENDER_ACTIVATION_HEIGHT),
             (HQ_KECCAK256, NEVER),
+            (HQ_SHA256, NEVER),
+            (HQ_VERIFY_KZG_PROOF, NEVER),
+            (HQ_SECP256K1_RECOVER, NEVER),
             (FEATURE_BLOB, MAINNET_BLOB_ACTIVATION),
             (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
@@ -126,6 +129,9 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
         (HQ_KECCAK256, TESTNET_AT_04_02_2026_AT_09_00_UTC),
+        (HQ_SHA256, NEVER),
+        (HQ_VERIFY_KZG_PROOF, NEVER),
+        (HQ_SECP256K1_RECOVER, NEVER),
         (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM32, NEVER),
@@ -144,6 +150,9 @@ const DEVNET_CONFIG: WellKnownConfig = WellKnownConfig {
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
         (HQ_KECCAK256, GENESIS),
+        (HQ_SHA256, GENESIS),
+        (HQ_VERIFY_KZG_PROOF, GENESIS),
+        (HQ_SECP256K1_RECOVER, GENESIS),
         (FEATURE_BLOB, GENESIS),
         (FEATURE_DISABLE_WASM64, GENESIS),
         FILLER_FEATURE,
@@ -162,6 +171,9 @@ const LOCALNET_CONFIG: WellKnownConfig = WellKnownConfig {
     features: [
         (FEATURE_ABI_PUBLIC_SENDER, GENESIS),
         (HQ_KECCAK256, GENESIS),
+        (HQ_SHA256, GENESIS),
+        (HQ_VERIFY_KZG_PROOF, GENESIS),
+        (HQ_SECP256K1_RECOVER, GENESIS),
         (FEATURE_BLOB, GENESIS),
         (FEATURE_DISABLE_WASM64, GENESIS),
         FILLER_FEATURE,

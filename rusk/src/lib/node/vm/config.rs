@@ -63,6 +63,9 @@ pub(crate) mod feature {
     pub const FEATURE_DISABLE_3RD_PARTY: &str = "DISABLE_3RD_PARTY";
 
     pub const HQ_KECCAK256: &str = "HQ_KECCAK256";
+    pub const HQ_SHA256: &str = "HQ_SHA256";
+    pub const HQ_VERIFY_KZG_PROOF: &str = "HQ_VERIFY_KZG_PROOF";
+    pub const HQ_SECP256K1_RECOVER: &str = "HQ_SECP256K1_RECOVER";
 }
 
 impl Config {

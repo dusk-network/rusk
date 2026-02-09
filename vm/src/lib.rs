@@ -41,8 +41,9 @@ use dusk_core::abi::{ContractId, Metadata, Query};
 use piecrust::{SessionData, VM as PiecrustVM};
 
 use self::host_queries::{
-    host_hash, host_keccak256, host_poseidon_hash, host_verify_bls,
-    host_verify_bls_multisig, host_verify_groth16_bn254, host_verify_plonk,
+    host_hash, host_keccak256, host_poseidon_hash, host_secp256k1_recover,
+    host_sha256, host_verify_bls, host_verify_bls_multisig,
+    host_verify_groth16_bn254, host_verify_kzg_proof, host_verify_plonk,
     host_verify_schnorr,
 };
 
@@ -331,6 +332,15 @@ impl VM {
         );
         self.inner
             .register_host_query(Query::KECCAK256, host_keccak256);
+        self.inner.register_host_query(Query::SHA256, host_sha256);
+        self.inner.register_host_query(
+            Query::VERIFY_KZG_PROOF,
+            host_verify_kzg_proof,
+        );
+        self.inner.register_host_query(
+            Query::SECP256K1_RECOVER,
+            host_secp256k1_recover,
+        );
     }
 
     /// Remove contract
