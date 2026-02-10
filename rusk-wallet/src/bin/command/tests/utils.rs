@@ -173,6 +173,18 @@ pub async fn rcv_moonlight_from_faucet(
     Ok(id)
 }
 
+async fn execute_tx_command(
+    cmd: Command,
+    wallet: &mut Wallet<WalletFile>,
+    settings: &Settings,
+) -> anyhow::Result<String> {
+    let run_result = cmd.run(wallet, settings).await.unwrap();
+    let RunResult::Tx(tx_hash) = run_result else {
+        unreachable!()
+    };
+    Ok(hex::encode(&tx_hash.to_bytes()))
+}
+
 pub async fn transfer_moonlight(
     wallet: &mut Wallet<WalletFile>,
     to: Address,
@@ -188,12 +200,7 @@ pub async fn transfer_moonlight(
         gas_price,
         memo: None,
     };
-    let run_result = cmd.run(wallet, settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
-        unreachable!()
-    };
-    let tx_id = hex::encode(&tx_hash.to_bytes());
-    Ok(tx_id)
+    execute_tx_command(cmd, wallet, settings).await
 }
 
 pub async fn transfer_phoenix(
@@ -211,12 +218,7 @@ pub async fn transfer_phoenix(
         gas_price,
         memo: None,
     };
-    let run_result = cmd.run(wallet, settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
-        unreachable!()
-    };
-    let tx_id = hex::encode(&tx_hash.to_bytes());
-    Ok(tx_id)
+    execute_tx_command(cmd, wallet, settings).await
 }
 
 pub async fn rcv_phoenix_from_faucet(
@@ -256,12 +258,7 @@ pub async fn convert_phoenix_to_moonlight(
         gas_limit: 3_000_000_000,
         gas_price,
     };
-    let run_result = cmd.run(wallet, &settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
-        unreachable!()
-    };
-    let tx_id = hex::encode(&tx_hash.to_bytes());
-    Ok(tx_id)
+    execute_tx_command(cmd, wallet, settings).await
 }
 
 pub async fn convert_moonlight_to_phoenix(
@@ -276,12 +273,7 @@ pub async fn convert_moonlight_to_phoenix(
         gas_limit: 3_000_000_000,
         gas_price,
     };
-    let run_result = cmd.run(wallet, &settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
-        unreachable!()
-    };
-    let tx_id = hex::encode(&tx_hash.to_bytes());
-    Ok(tx_id)
+    execute_tx_command(cmd, wallet, settings).await
 }
 
 pub async fn stake_moonlight(
@@ -297,12 +289,7 @@ pub async fn stake_moonlight(
         gas_limit: 3_000_000_000,
         gas_price,
     };
-    let run_result = cmd.run(wallet, &settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
-        unreachable!()
-    };
-    let tx_id = hex::encode(&tx_hash.to_bytes());
-    Ok(tx_id)
+    execute_tx_command(cmd, wallet, settings).await
 }
 
 pub async fn stake_phoenix(
@@ -318,12 +305,7 @@ pub async fn stake_phoenix(
         gas_limit: 3_000_000_000,
         gas_price,
     };
-    let run_result = cmd.run(wallet, &settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
-        unreachable!()
-    };
-    let tx_id = hex::encode(&tx_hash.to_bytes());
-    Ok(tx_id)
+    execute_tx_command(cmd, wallet, settings).await
 }
 
 pub async fn unstake_moonlight(
@@ -336,12 +318,7 @@ pub async fn unstake_moonlight(
         gas_limit: 3_000_000_000,
         gas_price,
     };
-    let run_result = cmd.run(wallet, &settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
-        unreachable!()
-    };
-    let tx_id = hex::encode(&tx_hash.to_bytes());
-    Ok(tx_id)
+    execute_tx_command(cmd, wallet, settings).await
 }
 
 pub async fn unstake_phoenix(
@@ -354,12 +331,7 @@ pub async fn unstake_phoenix(
         gas_limit: 3_000_000_000,
         gas_price,
     };
-    let run_result = cmd.run(wallet, &settings).await.unwrap();
-    let RunResult::Tx(tx_hash) = run_result else {
-        unreachable!()
-    };
-    let tx_id = hex::encode(&tx_hash.to_bytes());
-    Ok(tx_id)
+    execute_tx_command(cmd, wallet, settings).await
 }
 
 async fn block_is_finalized(
