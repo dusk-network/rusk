@@ -36,7 +36,17 @@ toml_set() {
     property=$2
     value=$3
 
-    echo -e "$(toml-cli set $file $property $value)" > $file
+    # dasel selectors are dot-prefixed (e.g. ".kadcast.public_address").
+    dasel put -f "$file" -r toml -t string -v "$value" ".${property}" >/dev/null
+}
+
+toml_has_table() {
+    file=$1
+    table=$2
+
+    # Match `[http]` and `[http.*]` tables (keep behaviour compatible with the
+    # previous `toml-cli get <file> http` check).
+    grep -Eq "^\\[${table}(\\]|\\.)" "$file"
 }
 
 # Configure your local installation based on the selected network
@@ -46,7 +56,7 @@ configure_network() {
     cp "$RUSK_TEMPLATE_CONFIG_PATH" "$RUSK_CONFIG_PATH"
     toml_set "$RUSK_CONFIG_PATH" kadcast.public_address "$PUBLIC_IP:9000"
     toml_set "$RUSK_CONFIG_PATH" kadcast.listen_address "$LISTEN_IP:9000"
-    if toml-cli get "$RUSK_CONFIG_PATH" http &> /dev/null; then
+    if toml_has_table "$RUSK_CONFIG_PATH" http; then
         toml_set "$RUSK_CONFIG_PATH" http.listen_address "$LISTEN_IP:8080"
     fi
 }
