@@ -5,19 +5,20 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
-use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use dusk_bytes::Serializable;
 use dusk_core::transfer::data::TransactionData;
 use rand::prelude::*;
-use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, new_state, ExecuteResult};
+use crate::common::state::{
+    generator_procedure, new_state_from_config_with_block_gas_limit,
+    ExecuteResult,
+};
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore,
 };
@@ -29,16 +30,6 @@ const BLOCK_GAS_LIMIT: u64 = 24_000_000;
 
 const GAS_LIMIT: u64 = 12_000_000; // Lowest value for a transfer
 const INITIAL_BALANCE: u64 = 10_000_000_000;
-
-// Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot =
-        toml::from_str(include_str!("../config/sequential_nonce.toml"))
-            .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
-}
 
 /// Executes three different transactions in the same block, expecting only two
 /// to be included due to exceeding the block gas limit
@@ -175,7 +166,12 @@ pub async fn multi_transfer() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("../config/sequential_nonce.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 

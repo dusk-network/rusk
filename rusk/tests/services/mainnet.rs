@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
 use std::sync::mpsc::{self, Receiver, Sender};
 
 use dusk_core::dusk;
@@ -13,23 +12,13 @@ use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::NoteLeaf;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use rusk::node::RuskVmConfig;
-use rusk::{Result, Rusk};
+use rusk::Result;
 use tempfile::tempdir;
 
 use crate::common::logger;
-use crate::common::state::new_state;
+use crate::common::state::new_state_from_config;
 
 const GENESIS_BALANCE: u64 = dusk(500_000_000.0);
-
-// Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!(
-        "../../../rusk-recovery/config/mainnet.toml"
-    ))
-    .expect("Cannot deserialize config");
-
-    new_state(dir, &snapshot, RuskVmConfig::default()).await
-}
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn mainnet_genesis() -> Result<()> {
@@ -37,7 +26,12 @@ pub async fn mainnet_genesis() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let rusk = new_state_from_config(
+        &tmp,
+        include_str!("../../../rusk-recovery/config/mainnet.toml"),
+        RuskVmConfig::default(),
+    )
+    .await?;
     let mut total_amount = 0u64;
 
     let (sender, receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) =

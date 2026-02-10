@@ -6,7 +6,6 @@
 
 use dusk_rusk_test::common::{self, *};
 
-use std::path::Path;
 use std::sync::{mpsc, Arc};
 
 use dusk_core::{
@@ -24,26 +23,17 @@ use ff::Field;
 use parking_lot::RwLockWriteGuard;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::{Rusk, RuskTip, RuskVmConfig};
+use rusk::node::{Rusk, RuskTip};
 use rusk::Result;
 use tempfile::tempdir;
 use tracing::info;
 
-use crate::common::state::new_state;
+use crate::common::state::new_state_from_config_with_block_gas_limit;
 
 const BLOCK_HEIGHT: u64 = 1;
 const CHAIN_ID: u8 = 0xFA;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
-
-// Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("./config/rusk-state.toml"))
-        .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
-}
 
 fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
     let (sender, receiver) = mpsc::channel();
@@ -110,7 +100,12 @@ pub async fn rusk_state_accepted() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("./config/rusk-state.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     push_note(&rusk, |_tip, _vm| {});
 
@@ -140,7 +135,12 @@ pub async fn rusk_state_finalized() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("./config/rusk-state.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     push_note(&rusk, |mut tip, _vm| {
         tip.base = tip.current;
@@ -180,11 +180,12 @@ async fn generate_phoenix_txs() -> Result<(), Box<dyn std::error::Error>> {
     common::logger();
 
     let tmp = tempdir()?;
-    let snapshot = toml::from_str(include_str!("./config/bench.toml"))
-        .expect("Cannot deserialize config");
-
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(100_000_000_000);
-    let rusk = new_state(&tmp, &snapshot, vm_config).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("./config/bench.toml"),
+        100_000_000_000,
+    )
+    .await?;
 
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));
@@ -243,11 +244,12 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
     common::logger();
 
     let tmp = tempdir()?;
-    let snapshot = toml::from_str(include_str!("./config/bench.toml"))
-        .expect("Cannot deserialize config");
-
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(100_000_000_000);
-    let rusk = new_state(&tmp, &snapshot, vm_config).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("./config/bench.toml"),
+        100_000_000_000,
+    )
+    .await?;
 
     let cache =
         Arc::new(std::sync::RwLock::new(std::collections::HashMap::new()));

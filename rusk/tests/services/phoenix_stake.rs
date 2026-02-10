@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
@@ -17,15 +16,14 @@ use dusk_core::{
 
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use std::collections::HashMap;
 use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::state::{
-    generator_procedure, new_state, BLOCK_GAS_LIMIT, BLOCK_HEIGHT, GAS_LIMIT,
-    GAS_PRICE,
+    generator_procedure, new_state_from_config_with_block_gas_limit,
+    BLOCK_GAS_LIMIT, BLOCK_HEIGHT, GAS_LIMIT, GAS_PRICE,
 };
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore,
@@ -33,24 +31,6 @@ use crate::common::wallet::{
 use crate::common::*;
 
 const DEPOSIT: u64 = 0;
-
-// Creates the Rusk initial state for the tests below
-async fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("../config/stake.toml"))
-        .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
-}
-
-// Creates the Rusk initial state for the tests below
-async fn slash_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("../config/slash.toml"))
-        .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
-}
 
 /// Stakes an amount Dusk and produces a block with this single transaction,
 /// checking the stake is set successfully. It then proceeds to withdraw the
@@ -149,7 +129,12 @@ pub async fn stake() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("../config/stake.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -234,7 +219,12 @@ pub async fn reward() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("../config/stake.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -271,7 +261,12 @@ pub async fn slash() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = slash_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("../config/slash.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 

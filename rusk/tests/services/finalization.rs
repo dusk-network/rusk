@@ -4,30 +4,25 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
-
-use rusk::{node::RuskVmConfig, Result, Rusk};
+use rusk::{Result, Rusk};
 use tempfile::tempdir;
 
-use crate::common::state::{generator_procedure2, new_state};
+use crate::common::state::{
+    generator_procedure2, new_state_from_config_with_block_gas_limit,
+};
 
 const BLOCK_GAS_LIMIT: u64 = 24_000_000;
 const BLOCKS_NUM: u64 = 10;
 
-// Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot =
-        toml::from_str(include_str!("../config/multi_transfer.toml"))
-            .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
-}
-
 #[tokio::test(flavor = "multi_thread")]
 pub async fn finalization() -> Result<()> {
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("../config/multi_transfer.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     let roots = empty_blocks(&rusk, BLOCKS_NUM, false);
     rusk.revert_to_base_root().expect("revert to work");

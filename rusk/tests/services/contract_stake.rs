@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use dusk_core::stake::{
@@ -19,29 +18,22 @@ use dusk_vm::gen_contract_id;
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use std::collections::HashMap;
 use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::state::{
-    generator_procedure2, new_state, BLOCK_GAS_LIMIT, BLOCK_HEIGHT, GAS_LIMIT,
-    GAS_PRICE,
+    generator_procedure2, new_state_from_config_with_block_gas_limit,
+    BLOCK_GAS_LIMIT, BLOCK_HEIGHT, GAS_LIMIT, GAS_PRICE,
 };
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore,
 };
 use crate::common::*;
 
-// Creates the Rusk initial state for the tests below
-async fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot =
-        toml::from_str(include_str!("../config/stake_from_contract.toml"))
-            .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
+fn config() -> &'static str {
+    include_str!("../config/stake_from_contract.toml")
 }
 fn wallet(rusk: &Rusk) -> wallet::Wallet<TestStore, TestStateClient> {
     // Create a wallet
@@ -60,7 +52,12 @@ pub async fn stake_from_contract_direct() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        config(),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     // Create a wallet
     let wallet = wallet(&rusk);
@@ -105,7 +102,12 @@ pub async fn stake_from_contract() -> Result<()> {
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        config(),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     // Create a wallet
     let wallet = wallet(&rusk);

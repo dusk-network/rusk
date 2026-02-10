@@ -5,33 +5,25 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
-use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, new_state, BLOCK_GAS_LIMIT};
+use crate::common::state::{
+    generator_procedure, new_state_from_config_with_block_gas_limit,
+    BLOCK_GAS_LIMIT,
+};
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore,
 };
 
 const INITIAL_PHOENIX_BALANCE: u64 = 10_000_000_000;
 const INITIAL_MOONLIGHT_BALANCE: u64 = 10_000_000_000;
-
-// Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("../config/convert.toml"))
-        .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
-}
 
 /// Makes a transaction that converts Dusk from Phoenix to Moonlight, and
 /// produces a block with a single transaction, checking balances accordingly.
@@ -165,7 +157,12 @@ pub async fn convert_to_moonlight() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("../config/convert.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -191,7 +188,12 @@ pub async fn convert_to_phoenix() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("../config/convert.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 

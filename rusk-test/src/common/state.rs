@@ -42,6 +42,27 @@ pub const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 pub const GAS_LIMIT: u64 = 10_000_000_000;
 pub const GAS_PRICE: u64 = 1;
 
+// Creates a Rusk initial state in the given directory from an embedded config.
+pub async fn new_state_from_config<P: AsRef<Path>>(
+    dir: P,
+    config: &str,
+    vm_config: RuskVmConfig,
+) -> Result<Rusk> {
+    let snapshot = toml::from_str(config).expect("Cannot deserialize config");
+    new_state(dir, &snapshot, vm_config).await
+}
+
+// Creates a Rusk initial state in the given directory from an embedded config,
+// using a default VM config with the given block gas limit.
+pub async fn new_state_from_config_with_block_gas_limit<P: AsRef<Path>>(
+    dir: P,
+    config: &str,
+    block_gas_limit: u64,
+) -> Result<Rusk> {
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(block_gas_limit);
+    new_state_from_config(dir, config, vm_config).await
+}
+
 // Creates a Rusk initial state in the given directory
 pub async fn new_state<P: AsRef<Path>>(
     dir: P,

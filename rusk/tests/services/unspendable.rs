@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
-use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use dusk_core::transfer::{
@@ -14,13 +13,15 @@ use dusk_core::transfer::{
 };
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, new_state, ExecuteResult};
+use crate::common::state::{
+    generator_procedure, new_state_from_config_with_block_gas_limit,
+    ExecuteResult,
+};
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore,
 };
@@ -34,15 +35,6 @@ const GAS_LIMIT_1: u64 = 1_000; // Not enough to spend
 const GAS_LIMIT_2: u64 = 300_000_000; // All ok
 const GAS_PRICE: u64 = 1;
 const DEPOSIT: u64 = 0;
-
-// Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("../config/unspendable.toml"))
-        .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
-}
 
 const SENDER_INDEX_0: u8 = 0;
 const SENDER_INDEX_1: u8 = 1;
@@ -167,7 +159,12 @@ pub async fn unspendable() -> Result<()> {
     logger();
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let rusk = new_state_from_config_with_block_gas_limit(
+        &tmp,
+        include_str!("../config/unspendable.toml"),
+        BLOCK_GAS_LIMIT,
+    )
+    .await?;
 
     let cache = Arc::new(RwLock::new(HashMap::new()));
 
