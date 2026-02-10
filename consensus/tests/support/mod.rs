@@ -9,7 +9,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use dusk_core::signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey};
+use dusk_core::signatures::bls::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::{Block, Hash, Header, Seed, SpentTransaction};
 use node_data::message::payload::ValidationResult;
@@ -25,8 +27,12 @@ use tokio::task::JoinHandle;
 use dusk_consensus::commons::{Database, RoundUpdate, TimeoutSet};
 use dusk_consensus::config::{MIN_STEP_TIMEOUT, TIMEOUT_INCREASE};
 use dusk_consensus::consensus::Consensus;
-use dusk_consensus::errors::{ConsensusError, HeaderError, OperationError, StateTransitionError};
-use dusk_consensus::operations::{Operations, StateTransitionData, StateTransitionResult, Voter};
+use dusk_consensus::errors::{
+    ConsensusError, HeaderError, OperationError, StateTransitionError,
+};
+use dusk_consensus::operations::{
+    Operations, StateTransitionData, StateTransitionResult, Voter,
+};
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 
@@ -327,8 +333,10 @@ pub fn write_trace_with_meta(
     }
 
     for entry in entries {
-        let line =
-            format!("{},{},{}", entry.from, entry.deliver_at, entry.payload_hex);
+        let line = format!(
+            "{},{},{}",
+            entry.from, entry.deliver_at, entry.payload_hex
+        );
         checksum_input.push_str(&line);
         checksum_input.push('\n');
         out.push_str(&line);
@@ -343,7 +351,9 @@ pub fn write_trace_with_meta(
     std::fs::write(path, out).expect("write trace");
 }
 
-pub fn read_trace_with_meta(path: &std::path::Path) -> (TraceMeta, Vec<TraceEntry>) {
+pub fn read_trace_with_meta(
+    path: &std::path::Path,
+) -> (TraceMeta, Vec<TraceEntry>) {
     let contents = std::fs::read_to_string(path).expect("read trace");
     let mut meta = TraceMeta::default();
     let mut version: Option<u32> = None;
@@ -492,7 +502,9 @@ impl BufferedRouter {
         let mut rx = self.rx.lock().await;
 
         loop {
-            let remaining = match deadline.checked_duration_since(tokio::time::Instant::now()) {
+            let remaining = match deadline
+                .checked_duration_since(tokio::time::Instant::now())
+            {
                 Some(duration) => duration,
                 None => break,
             };
@@ -526,7 +538,8 @@ impl TestNetwork {
 
         for i in 0..num_nodes {
             let keys = TestKeys::from_seed(seed + i as u64 + 1);
-            provisioners.add_provisioner_with_value(keys.pk.clone(), 1000 * DUSK);
+            provisioners
+                .add_provisioner_with_value(keys.pk.clone(), 1000 * DUSK);
             nodes.push(TestNode::new(keys));
         }
 
@@ -545,10 +558,8 @@ impl TestNetwork {
     pub fn base_timeouts() -> TimeoutSet {
         let mut timeouts = HashMap::new();
         timeouts.insert(StepName::Proposal, MIN_STEP_TIMEOUT);
-        timeouts.insert(
-            StepName::Validation,
-            MIN_STEP_TIMEOUT + TIMEOUT_INCREASE,
-        );
+        timeouts
+            .insert(StepName::Validation, MIN_STEP_TIMEOUT + TIMEOUT_INCREASE);
         timeouts.insert(
             StepName::Ratification,
             MIN_STEP_TIMEOUT + TIMEOUT_INCREASE + TIMEOUT_INCREASE,
@@ -579,7 +590,8 @@ pub async fn wait_for_quorum(
         let recv = tokio::time::timeout(remaining, queue.recv()).await;
         match recv {
             Ok(Ok(msg)) => {
-                if matches!(msg.payload, node_data::message::Payload::Quorum(_)) {
+                if matches!(msg.payload, node_data::message::Payload::Quorum(_))
+                {
                     return Some(msg);
                 }
             }

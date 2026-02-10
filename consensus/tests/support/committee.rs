@@ -18,7 +18,13 @@ pub fn build_committee(
     step: StepName,
 ) -> Committee {
     let round = network.tip_header.height + 1;
-    build_committee_for_round(network, network.tip_header.seed, round, iteration, step)
+    build_committee_for_round(
+        network,
+        network.tip_header.seed,
+        round,
+        iteration,
+        step,
+    )
 }
 
 pub fn build_committee_for_round(
@@ -34,9 +40,10 @@ pub fn build_committee_for_round(
             network.provisioners.get_generator(iteration, seed, round);
         exclusion.push(cur_generator);
         if dusk_consensus::config::exclude_next_generator(iteration) {
-            let next_generator = network
-                .provisioners
-                .get_generator(iteration + 1, seed, round);
+            let next_generator =
+                network
+                    .provisioners
+                    .get_generator(iteration + 1, seed, round);
             exclusion.push(next_generator);
         }
     }

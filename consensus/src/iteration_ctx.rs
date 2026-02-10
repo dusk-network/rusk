@@ -335,7 +335,11 @@ mod tests {
 
     #[async_trait]
     impl Database for DummyDb {
-        async fn store_candidate_block(&mut self, _b: node_data::ledger::Block) {}
+        async fn store_candidate_block(
+            &mut self,
+            _b: node_data::ledger::Block,
+        ) {
+        }
         async fn store_validation_result(
             &mut self,
             _ch: &node_data::message::ConsensusHeader,
@@ -354,29 +358,22 @@ mod tests {
 
     fn build_ctx() -> IterationCtx<DummyDb> {
         let db = Arc::new(Mutex::new(DummyDb::default()));
-        let att_registry =
-            Arc::new(Mutex::new(AttInfoRegistry::new()));
-        let validation = Arc::new(Mutex::new(
-            validation::handler::ValidationHandler::new(
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let validation =
+            Arc::new(Mutex::new(validation::handler::ValidationHandler::new(
                 att_registry.clone(),
                 db.clone(),
-            ),
-        ));
+            )));
         let ratification = Arc::new(Mutex::new(
-            ratification::handler::RatificationHandler::new(
-                att_registry,
-            ),
+            ratification::handler::RatificationHandler::new(att_registry),
         ));
-        let proposal = Arc::new(Mutex::new(
-            proposal::handler::ProposalHandler::new(db),
-        ));
+        let proposal =
+            Arc::new(Mutex::new(proposal::handler::ProposalHandler::new(db)));
 
         let mut timeouts: TimeoutSet = HashMap::new();
         timeouts.insert(StepName::Proposal, MIN_STEP_TIMEOUT);
-        timeouts.insert(
-            StepName::Validation,
-            MIN_STEP_TIMEOUT + TIMEOUT_INCREASE,
-        );
+        timeouts
+            .insert(StepName::Validation, MIN_STEP_TIMEOUT + TIMEOUT_INCREASE);
         timeouts.insert(
             StepName::Ratification,
             MIN_STEP_TIMEOUT + TIMEOUT_INCREASE + TIMEOUT_INCREASE,

@@ -122,6 +122,11 @@ pub fn assert_quorum_message_verifies(network: &TestNetwork, msg: &Message) {
     .expect("ratification step votes verify");
 }
 
+pub fn assert_quorum_message_ok(network: &TestNetwork, msg: &Message) {
+    assert_quorum_message_invariants(msg);
+    assert_quorum_message_verifies(network, msg);
+}
+
 pub fn assert_no_conflicting_quorums(
     envelopes: &[Envelope],
     seen: &mut HashMap<(u64, u8), RatificationResult>,
@@ -148,10 +153,7 @@ pub fn assert_quorum_batch_invariants_with_network(
     network: &TestNetwork,
 ) {
     assert_quorum_batch_invariants_with_network_for_round(
-        envelopes,
-        seen,
-        network,
-        None,
+        envelopes, seen, network, None,
     );
 }
 
@@ -171,4 +173,3 @@ pub fn assert_quorum_batch_invariants_with_network_for_round(
     }
     assert_no_conflicting_quorums(envelopes, seen);
 }
-

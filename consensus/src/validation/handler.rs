@@ -371,7 +371,11 @@ mod tests {
 
     #[async_trait::async_trait]
     impl Database for DummyDb {
-        async fn store_candidate_block(&mut self, _b: node_data::ledger::Block) {}
+        async fn store_candidate_block(
+            &mut self,
+            _b: node_data::ledger::Block,
+        ) {
+        }
         async fn store_validation_result(
             &mut self,
             _ch: &node_data::message::ConsensusHeader,
@@ -404,9 +408,15 @@ mod tests {
         tip_header.height = round - 1;
         tip_header.seed = seed;
 
-        let ru =
-            RoundUpdate::new(pk.clone(), sk, &tip_header, HashMap::new(), vec![]);
-        let cfg = Config::new(seed, round, iteration, StepName::Validation, vec![]);
+        let ru = RoundUpdate::new(
+            pk.clone(),
+            sk,
+            &tip_header,
+            HashMap::new(),
+            vec![],
+        );
+        let cfg =
+            Config::new(seed, round, iteration, StepName::Validation, vec![]);
         let committee = Committee::new(&provisioners, &cfg);
 
         (committee, ru)

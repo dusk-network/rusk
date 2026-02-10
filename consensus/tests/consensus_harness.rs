@@ -17,27 +17,29 @@ use rand::rngs::StdRng;
 use rand::{seq::SliceRandom, Rng, SeedableRng};
 
 use dusk_consensus::build_validation_payload;
-use dusk_consensus::config::{EMERGENCY_MODE_ITERATION_THRESHOLD, MAX_ROUND_DISTANCE};
 use dusk_consensus::commons::TimeoutSet;
+use dusk_consensus::config::{
+    EMERGENCY_MODE_ITERATION_THRESHOLD, MAX_ROUND_DISTANCE,
+};
 use dusk_consensus::user::committee::Committee;
 use dusk_consensus::user::sortition::Config as SortitionConfig;
 
 use support::{
     decode_message, deliver_all, encode_message, find_quorum,
-    read_trace_with_meta, wait_for_quorum, write_trace_with_meta, BufferedRouter,
-    TestNetwork, TraceEntry, TraceMeta,
+    read_trace_with_meta, wait_for_quorum, write_trace_with_meta,
+    BufferedRouter, TestNetwork, TraceEntry, TraceMeta,
 };
 
 use support::assertions::{
-    assert_no_conflicting_quorums, assert_quorum_batch_invariants_with_network,
-    assert_quorum_batch_invariants_with_network_for_round,
-    assert_quorum_message_invariants, assert_quorum_message_verifies,
+    assert_no_conflicting_quorums, assert_quorum_message_invariants,
+    assert_quorum_message_ok,
 };
 use support::committee::build_committee;
-use support::harness::{set_emergency_iteration, shutdown_all, spawn_all};
-use support::messages::{
-    build_candidate_message, corrupt_message_signature,
+use support::harness::{
+    drain_pending, set_emergency_iteration, shutdown_all, spawn_all,
+    QuorumObservation, RunningNetwork,
 };
+use support::messages::{build_candidate_message, corrupt_message_signature};
 use support::trace::{track_trace_round_prev, write_failure_trace};
 
 const TRACE_NETWORK_SIZE: usize = 3;
@@ -91,15 +93,7 @@ async fn record_round_trace(
             pending.push((env, deliver_at));
         }
 
-        let mut delivery = Vec::new();
-        pending.retain(|(env, at)| {
-            if *at <= tick {
-                delivery.push(env.clone());
-                false
-            } else {
-                true
-            }
-        });
+        let delivery = drain_pending(&mut pending, tick);
 
         if find_quorum(&delivery).is_some() {
             quorum = Some(());
@@ -137,7 +131,8 @@ fn committee_is_deterministic_for_same_inputs() {
     let round = 1;
     let iter = 0;
 
-    let cfg = SortitionConfig::new(seed, round, iter, StepName::Validation, vec![]);
+    let cfg =
+        SortitionConfig::new(seed, round, iter, StepName::Validation, vec![]);
     let c1 = Committee::new(&provisioners, &cfg);
     let c2 = Committee::new(&provisioners, &cfg);
 
@@ -172,9 +167,7 @@ fn committees_exclude_generators_on_non_proposal_steps() {
             "current generator should be excluded in {step:?}"
         );
         assert!(
-            !committee
-                .iter()
-                .any(|pk| pk.bytes() == &current_generator),
+            !committee.iter().any(|pk| pk.bytes() == &current_generator),
             "current generator should not be in {step:?} committee"
         );
 
@@ -193,54 +186,37 @@ fn committees_exclude_generators_on_non_proposal_steps() {
 
 #[tokio::test]
 async fn single_node_without_peers_does_not_reach_quorum() {
-    let network = TestNetwork::new(1, 100);
+    // Three provisioners spread committee slots via sortition; each node
+    // holds ~21 of 64 slots, well below the 43-slot supermajority.  All
+    // three run consensus but no messages are routed between them.
+    let network = TestNetwork::new(3, 100);
     let timeouts = TestNetwork::fast_timeouts();
 
-    let node = &network.nodes[0];
     let (cancels, handles) = spawn_all(&network, timeouts);
 
-    let msg = wait_for_quorum(&node.outbound, Duration::from_secs(2)).await;
-    assert!(msg.is_none(), "single node should not reach quorum");
-
-    let stored = node.db.lock().await.candidates.len();
-    assert!(stored > 0, "candidate should be stored locally");
+    let msg =
+        wait_for_quorum(&network.nodes[0].outbound, Duration::from_secs(2))
+            .await;
+    assert!(msg.is_none(), "isolated node should not reach quorum");
 
     shutdown_all(cancels, handles).await;
-
 }
 
 #[tokio::test]
 async fn multi_nodes_propagate_candidate_and_reach_quorum() {
-    let network = TestNetwork::new(3, 77);
     let timeouts = TestNetwork::fast_timeouts();
+    let mut harness = RunningNetwork::new(3, 77, timeouts);
 
-    let (cancels, handles) = spawn_all(&network, timeouts.clone());
-
-    let router = BufferedRouter::start(&network.nodes);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
-    let mut quorum = None;
-    let mut seen_quorums = HashMap::new();
-
-    while tokio::time::Instant::now() < deadline {
-        let batch = router.recv_batch(Duration::from_millis(200)).await;
-        if batch.is_empty() {
-            continue;
-        }
-        assert_quorum_batch_invariants_with_network(
-            &batch,
-            &mut seen_quorums,
-            &network,
-        );
-        if let Some(q) = find_quorum(&batch) {
-            quorum = Some(q);
-            break;
-        }
-        deliver_all(&network.nodes, &batch);
-    }
-
-    let msg = quorum.expect("expected quorum message from either node");
-    assert_quorum_message_invariants(&msg);
-    assert_quorum_message_verifies(&network, &msg);
+    let msg = harness
+        .expect_verified_quorum(
+            deadline,
+            Duration::from_millis(200),
+            QuorumObservation::Batch,
+            |batch| batch,
+            "expected quorum message from either node",
+        )
+        .await;
 
     match msg.payload {
         Payload::Quorum(q) => match q.att.result {
@@ -251,10 +227,13 @@ async fn multi_nodes_propagate_candidate_and_reach_quorum() {
     }
 
     // Ensure non-generator stored a candidate (candidate propagated)
-    let generator = network
-        .provisioners
-        .get_generator(0, network.tip_header.seed, 1);
-    let non_generator = network
+    let generator = harness.network.provisioners.get_generator(
+        0,
+        harness.network.tip_header.seed,
+        1,
+    );
+    let non_generator = harness
+        .network
         .nodes
         .iter()
         .find(|n| n.keys.pk.bytes() != &generator)
@@ -263,175 +242,118 @@ async fn multi_nodes_propagate_candidate_and_reach_quorum() {
     let stored = non_generator.db.lock().await.candidates.len();
     assert!(stored > 0, "non-generator should store candidate");
 
-    shutdown_all(cancels, handles).await;
-
-    router.stop();
+    harness.shutdown().await;
 }
 
 #[tokio::test]
 async fn shuffled_delivery_reaches_quorum() {
-    let network = TestNetwork::new(3, 200);
     let timeouts = TestNetwork::fast_timeouts();
+    let mut harness = RunningNetwork::new(3, 200, timeouts);
 
-    let (cancels, handles) = spawn_all(&network, timeouts.clone());
-
-    let router = BufferedRouter::start(&network.nodes);
     let mut rng = StdRng::seed_from_u64(777);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
-    let mut quorum = None;
-    let mut seen_quorums = HashMap::new();
+    let _ = harness
+        .expect_verified_quorum(
+            deadline,
+            Duration::from_millis(200),
+            QuorumObservation::Batch,
+            |mut batch| {
+                batch.shuffle(&mut rng);
+                batch
+            },
+            "expected quorum under shuffled delivery",
+        )
+        .await;
 
-    while tokio::time::Instant::now() < deadline {
-        let mut batch = router.recv_batch(Duration::from_millis(200)).await;
-        if batch.is_empty() {
-            continue;
-        }
-        batch.shuffle(&mut rng);
-        assert_quorum_batch_invariants_with_network(
-            &batch,
-            &mut seen_quorums,
-            &network,
-        );
-        if let Some(q) = find_quorum(&batch) {
-            quorum = Some(q);
-            break;
-        }
-        deliver_all(&network.nodes, &batch);
-    }
-
-    assert!(quorum.is_some(), "expected quorum under shuffled delivery");
-    assert_quorum_message_invariants(quorum.as_ref().unwrap());
-    assert_quorum_message_verifies(&network, quorum.as_ref().unwrap());
-
-    shutdown_all(cancels, handles).await;
-
-    router.stop();
+    harness.shutdown().await;
 }
 
 #[tokio::test]
 async fn duplicate_delivery_does_not_break_quorum() {
-    let network = TestNetwork::new(3, 300);
     let timeouts = TestNetwork::fast_timeouts();
+    let mut harness = RunningNetwork::new(3, 300, timeouts);
 
-    let (cancels, handles) = spawn_all(&network, timeouts.clone());
-
-    let router = BufferedRouter::start(&network.nodes);
     let mut rng = StdRng::seed_from_u64(888);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
-    let mut quorum = None;
-    let mut seen_quorums = HashMap::new();
+    let _ = harness
+        .expect_verified_quorum(
+            deadline,
+            Duration::from_millis(200),
+            QuorumObservation::Delivery,
+            |mut batch| {
+                batch.shuffle(&mut rng);
+                let mut delivery = batch.clone();
+                for env in batch.iter().take(3) {
+                    delivery.push(env.clone());
+                }
+                delivery
+            },
+            "expected quorum with duplicates",
+        )
+        .await;
 
-    while tokio::time::Instant::now() < deadline {
-        let mut batch = router.recv_batch(Duration::from_millis(200)).await;
-        if batch.is_empty() {
-            continue;
-        }
-        batch.shuffle(&mut rng);
-        let mut delivery = batch.clone();
-        for env in batch.iter().take(3) {
-            delivery.push(env.clone());
-        }
-        assert_quorum_batch_invariants_with_network(
-            &delivery,
-            &mut seen_quorums,
-            &network,
-        );
-        if let Some(q) = find_quorum(&delivery) {
-            quorum = Some(q);
-            break;
-        }
-        deliver_all(&network.nodes, &delivery);
-    }
-
-    assert!(quorum.is_some(), "expected quorum with duplicates");
-    assert_quorum_message_invariants(quorum.as_ref().unwrap());
-    assert_quorum_message_verifies(&network, quorum.as_ref().unwrap());
-
-    shutdown_all(cancels, handles).await;
-
-    router.stop();
+    harness.shutdown().await;
 }
 
 #[tokio::test]
 async fn corrupted_messages_do_not_break_quorum() {
-    let network = TestNetwork::new(3, 650);
     let timeouts = TestNetwork::fast_timeouts();
+    let mut harness = RunningNetwork::new(3, 650, timeouts);
 
-    let (cancels, handles) = spawn_all(&network, timeouts.clone());
-
-    let router = BufferedRouter::start(&network.nodes);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
-    let mut quorum = None;
-    let mut seen_quorums = HashMap::new();
+    let _ = harness
+        .expect_verified_quorum(
+            deadline,
+            Duration::from_millis(200),
+            QuorumObservation::Batch,
+            |batch| {
+                let mut delivery = batch.clone();
+                for env in &batch {
+                    if let Some(mutated) = corrupt_message_signature(&env.msg) {
+                        delivery.push(support::Envelope {
+                            from: env.from,
+                            msg: mutated,
+                        });
+                    }
+                }
+                delivery
+            },
+            "expected quorum with corrupted extras",
+        )
+        .await;
 
-    while tokio::time::Instant::now() < deadline {
-        let batch = router.recv_batch(Duration::from_millis(200)).await;
-        if batch.is_empty() {
-            continue;
-        }
-        assert_quorum_batch_invariants_with_network(
-            &batch,
-            &mut seen_quorums,
-            &network,
-        );
-        if let Some(q) = find_quorum(&batch) {
-            quorum = Some(q);
-            break;
-        }
-        let mut delivery = batch.clone();
-        for env in &batch {
-            if let Some(mutated) = corrupt_message_signature(&env.msg) {
-                delivery.push(support::Envelope {
-                    from: env.from,
-                    msg: mutated,
-                });
-            }
-        }
-        deliver_all(&network.nodes, &delivery);
-    }
-
-    assert!(quorum.is_some(), "expected quorum with corrupted extras");
-    assert_quorum_message_invariants(quorum.as_ref().unwrap());
-    assert_quorum_message_verifies(&network, quorum.as_ref().unwrap());
-
-    shutdown_all(cancels, handles).await;
-
-    router.stop();
+    harness.shutdown().await;
 }
 
 #[tokio::test]
 async fn network_partition_prevents_quorum() {
-    let network = TestNetwork::new(4, 700);
+    // Ten nodes split into two partitions of five.  After generator
+    // exclusions each partition holds at most ~40 of 64 committee slots,
+    // safely below the 43-slot supermajority required for quorum.
     let timeouts = TestNetwork::fast_timeouts();
+    let mut harness = RunningNetwork::new(10, 700, timeouts);
 
-    let (cancels, handles) = spawn_all(&network, timeouts.clone());
-
-    let router = BufferedRouter::start(&network.nodes);
-    let partition_deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+    let partition_deadline =
+        tokio::time::Instant::now() + Duration::from_secs(2);
     let mut saw_quorum = false;
-    let mut seen_quorums = HashMap::new();
 
     while tokio::time::Instant::now() < partition_deadline {
-        let batch = router.recv_batch(Duration::from_millis(200)).await;
+        let batch = harness.recv_batch(Duration::from_millis(200)).await;
         if batch.is_empty() {
             continue;
         }
-        assert_quorum_batch_invariants_with_network(
-            &batch,
-            &mut seen_quorums,
-            &network,
-        );
+        harness.assert_quorum_batch_invariants(&batch);
         if find_quorum(&batch).is_some() {
             saw_quorum = true;
             break;
         }
         for env in &batch {
-            let group = if env.from < 2 { 0 } else { 1 };
-            for (idx, node) in network.nodes.iter().enumerate() {
+            let group = if env.from < 5 { 0 } else { 1 };
+            for (idx, node) in harness.network.nodes.iter().enumerate() {
                 if idx == env.from {
                     continue;
                 }
-                let peer_group = if idx < 2 { 0 } else { 1 };
+                let peer_group = if idx < 5 { 0 } else { 1 };
                 if peer_group == group {
                     node.inbound.try_send(env.msg.clone());
                 }
@@ -440,74 +362,47 @@ async fn network_partition_prevents_quorum() {
     }
 
     assert!(!saw_quorum, "quorum should not be reached during partition");
-    router.stop();
-
-    shutdown_all(cancels, handles).await;
+    harness.shutdown().await;
 }
 
 #[tokio::test]
 async fn deterministic_schedule_reaches_quorum() {
-    let network = TestNetwork::new(4, 800);
-    let timeouts = TestNetwork::base_timeouts();
+    let timeouts = TestNetwork::fast_timeouts();
+    let mut harness = RunningNetwork::new(4, 800, timeouts);
 
-    let (cancels, handles) = spawn_all(&network, timeouts.clone());
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
+    let mut pending: Vec<(support::Envelope, u32)> = Vec::new();
+    let mut tick: u32 = 0;
+    let _ = harness
+        .expect_verified_quorum(
+            deadline,
+            Duration::from_millis(200),
+            QuorumObservation::Delivery,
+            |mut batch| {
+                batch.sort_by_key(|env| {
+                    (
+                        env.from,
+                        env.msg.header.round,
+                        env.msg.header.iteration,
+                        env.msg.get_step(),
+                    )
+                });
 
-    let router = BufferedRouter::start(&network.nodes);
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(7);
-    let mut pending: Vec<(support::Envelope, u8)> = Vec::new();
-    let mut quorum = None;
-    let mut tick = 0u8;
-    let mut seen_quorums = HashMap::new();
+                for (idx, env) in batch.into_iter().enumerate() {
+                    let delay = (tick + idx as u32) % 3;
+                    let deliver_at = tick + delay;
+                    pending.push((env, deliver_at));
+                }
 
-    while tokio::time::Instant::now() < deadline {
-        let mut batch = router.recv_batch(Duration::from_millis(200)).await;
-        if batch.is_empty() {
-            continue;
-        }
-        batch.sort_by_key(|env| {
-            (
-                env.from,
-                env.msg.header.round,
-                env.msg.header.iteration,
-                env.msg.get_step(),
-            )
-        });
+                let delivery = drain_pending(&mut pending, tick);
+                tick += 1;
+                delivery
+            },
+            "expected quorum under deterministic schedule",
+        )
+        .await;
 
-        for (idx, env) in batch.into_iter().enumerate() {
-            let delay = (tick.wrapping_add(idx as u8)) % 3;
-            pending.push((env, delay));
-        }
-
-        let mut delivery = Vec::new();
-        for item in pending.iter_mut() {
-            if item.1 == 0 {
-                delivery.push(item.0.clone());
-            } else {
-                item.1 -= 1;
-            }
-        }
-        pending.retain(|item| item.1 != 0);
-
-        assert_quorum_batch_invariants_with_network(
-            &delivery,
-            &mut seen_quorums,
-            &network,
-        );
-        if let Some(q) = find_quorum(&delivery) {
-            quorum = Some(q);
-            break;
-        }
-        deliver_all(&network.nodes, &delivery);
-        tick = tick.wrapping_add(1);
-    }
-
-    assert!(quorum.is_some(), "expected quorum under deterministic schedule");
-    assert_quorum_message_invariants(quorum.as_ref().unwrap());
-    assert_quorum_message_verifies(&network, quorum.as_ref().unwrap());
-
-    shutdown_all(cancels, handles).await;
-
-    router.stop();
+    harness.shutdown().await;
 }
 
 #[tokio::test]
@@ -516,33 +411,33 @@ async fn emergency_mode_repropagates_past_iteration_message() {
     set_emergency_iteration(&network).await;
     let timeouts = TestNetwork::fast_timeouts();
 
-    let (cancels, handles) = spawn_all(&network, timeouts.clone());
-    let router = BufferedRouter::start(&network.nodes);
+    let harness = RunningNetwork::start(network, timeouts.clone());
 
     let iter = EMERGENCY_MODE_ITERATION_THRESHOLD;
-    let round = network.tip_header.height + 1;
-    let generator =
-        network.provisioners.get_generator(iter, network.tip_header.seed, round);
-    let gen_idx = network
+    let round = harness.network.tip_header.height + 1;
+    let generator = harness.network.provisioners.get_generator(
+        iter,
+        harness.network.tip_header.seed,
+        round,
+    );
+    let gen_idx = harness
+        .network
         .nodes
         .iter()
         .position(|node| node.keys.pk.bytes() == &generator)
         .expect("generator node");
-    let generator_ru =
-        network.nodes[gen_idx].round_update(&network.tip_header, timeouts);
+    let generator_ru = harness.network.nodes[gen_idx]
+        .round_update(&harness.network.tip_header, timeouts);
     let msg = build_candidate_message(&generator_ru, iter);
     let msg_hex = encode_message(&msg);
 
-    network.nodes[0].inbound.try_send(msg);
+    harness.network.nodes[0].inbound.try_send(msg);
 
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     let mut saw_repropagation = false;
     while tokio::time::Instant::now() < deadline {
-        let batch = router.recv_batch(Duration::from_millis(200)).await;
-        if batch
-            .iter()
-            .any(|env| encode_message(&env.msg) == msg_hex)
-        {
+        let batch = harness.recv_batch(Duration::from_millis(200)).await;
+        if batch.iter().any(|env| encode_message(&env.msg) == msg_hex) {
             saw_repropagation = true;
             break;
         }
@@ -553,8 +448,7 @@ async fn emergency_mode_repropagates_past_iteration_message() {
         "past iteration message should be rebroadcast in emergency mode"
     );
 
-    shutdown_all(cancels, handles).await;
-    router.stop();
+    harness.shutdown().await;
 }
 
 #[tokio::test]
@@ -566,15 +460,14 @@ async fn emergency_mode_requests_missing_resources_on_timeouts() {
     timeouts.insert(StepName::Validation, Duration::from_millis(90));
     timeouts.insert(StepName::Ratification, Duration::from_millis(120));
 
-    let (cancels, handles) = spawn_all(&network, timeouts);
-    let router = BufferedRouter::start(&network.nodes);
+    let harness = RunningNetwork::start(network, timeouts);
 
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut saw_candidate_request = false;
     let mut saw_validation_request = false;
 
     while tokio::time::Instant::now() < deadline {
-        let batch = router.recv_batch(Duration::from_millis(200)).await;
+        let batch = harness.recv_batch(Duration::from_millis(200)).await;
         for env in &batch {
             if let Payload::GetResource(req) = &env.msg.payload {
                 for inv in &req.get_inv().inv_list {
@@ -593,7 +486,8 @@ async fn emergency_mode_requests_missing_resources_on_timeouts() {
         if saw_candidate_request && saw_validation_request {
             break;
         }
-        // Drop messages to force proposal/validation timeouts in emergency mode.
+        // Drop messages to force proposal/validation timeouts in emergency
+        // mode.
     }
 
     assert!(
@@ -605,8 +499,7 @@ async fn emergency_mode_requests_missing_resources_on_timeouts() {
         "emergency mode should request validation result on timeout"
     );
 
-    shutdown_all(cancels, handles).await;
-    router.stop();
+    harness.shutdown().await;
 }
 
 #[tokio::test]
@@ -622,8 +515,7 @@ async fn far_future_round_message_is_dropped() {
     far_header.height = far_round - 1;
     far_header.hash = [9u8; 32];
     let ru_far = node.round_update(&far_header, timeouts.clone());
-    let validation =
-        build_validation_payload(Vote::NoCandidate, &ru_far, 0);
+    let validation = build_validation_payload(Vote::NoCandidate, &ru_far, 0);
     let msg: Message = validation.into();
     let msg_hex = encode_message(&msg);
     node.inbound.try_send(msg);
@@ -631,7 +523,12 @@ async fn far_future_round_message_is_dropped() {
     let deadline = tokio::time::Instant::now() + Duration::from_millis(500);
     let mut forwarded = false;
     while tokio::time::Instant::now() < deadline {
-        match tokio::time::timeout(Duration::from_millis(50), node.outbound.recv()).await {
+        match tokio::time::timeout(
+            Duration::from_millis(50),
+            node.outbound.recv(),
+        )
+        .await
+        {
             Ok(Ok(out)) => {
                 if encode_message(&out) == msg_hex {
                     forwarded = true;
@@ -646,21 +543,12 @@ async fn far_future_round_message_is_dropped() {
         .future_msgs
         .lock()
         .await
-        .drain_msg_by_round_step(
-            far_round,
-            StepName::Validation.to_step(0),
-        )
+        .drain_msg_by_round_step(far_round, StepName::Validation.to_step(0))
         .map(|items| items.len())
         .unwrap_or(0);
 
-    assert!(
-        !forwarded,
-        "far-future message should not be rebroadcast"
-    );
-    assert_eq!(
-        queued, 0,
-        "far-future message should not be queued"
-    );
+    assert!(!forwarded, "far-future message should not be rebroadcast");
+    assert_eq!(queued, 0, "far-future message should not be queued");
 
     shutdown_all(cancels, handles).await;
 }
@@ -679,27 +567,19 @@ async fn seeded_fault_injection_schedules_reach_quorum() {
 
 async fn run_fault_injection_schedule(seed: u64) -> Result<(), PathBuf> {
     let network_seed = 1100 + seed;
-    let network = TestNetwork::new(3, network_seed);
     let timeouts = TestNetwork::fast_timeouts();
+    let mut harness = RunningNetwork::new(3, network_seed, timeouts);
 
-    let (cancels, handles) = spawn_all(&network, timeouts.clone());
-
-    let router = BufferedRouter::start(&network.nodes);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     let mut rng = StdRng::seed_from_u64(seed);
     let mut pending: Vec<(support::Envelope, u32)> = Vec::new();
     let mut trace: Vec<TraceEntry> = Vec::new();
     let mut tick: u32 = 0;
     let mut quorum = None;
-    let mut seen_quorums = HashMap::new();
 
     while tokio::time::Instant::now() < deadline {
-        let mut batch = router.recv_batch(Duration::from_millis(120)).await;
-        assert_quorum_batch_invariants_with_network(
-            &batch,
-            &mut seen_quorums,
-            &network,
-        );
+        let mut batch = harness.recv_batch(Duration::from_millis(120)).await;
+        harness.assert_quorum_batch_invariants(&batch);
         if find_quorum(&batch).is_some() {
             quorum = Some(());
             break;
@@ -762,30 +642,22 @@ async fn run_fault_injection_schedule(seed: u64) -> Result<(), PathBuf> {
             }
         }
 
-        let mut delivery = Vec::new();
-        pending.retain(|(env, at)| {
-            if *at <= tick {
-                delivery.push(env.clone());
-                false
-            } else {
-                true
-            }
-        });
+        let delivery = drain_pending(&mut pending, tick);
 
         if !delivery.is_empty() {
-            deliver_all(&network.nodes, &delivery);
+            harness.deliver_all(&delivery);
         }
 
         tick = tick.wrapping_add(1);
     }
 
-    shutdown_all(cancels, handles).await;
-    router.stop();
+    let nodes = harness.network.nodes.len();
+    harness.shutdown().await;
 
     if quorum.is_some() {
         Ok(())
     } else {
-        Err(write_failure_trace(network_seed, network.nodes.len(), &trace))
+        Err(write_failure_trace(network_seed, nodes, &trace))
     }
 }
 
@@ -795,19 +667,15 @@ async fn replay_trace_entries(
     seed: u64,
     timeouts: dusk_consensus::commons::TimeoutSet,
 ) -> bool {
-    let replay_network = TestNetwork::new(network_size, seed);
-    let (cancels, handles) = spawn_all(&replay_network, timeouts);
-
-    let router = BufferedRouter::start(&replay_network.nodes);
-    let expected_round = replay_network.tip_header.height + 1;
-    let expected_prev = replay_network.tip_header.hash;
+    let mut harness = RunningNetwork::new(network_size, seed, timeouts);
+    let expected_round = harness.network.tip_header.height + 1;
+    let expected_prev = harness.network.tip_header.hash;
     let max_tick = trace
         .iter()
         .map(|entry| entry.deliver_at)
         .max()
         .unwrap_or(0);
     let mut quorum = None;
-    let mut seen_quorums = HashMap::new();
     let mut seen_trace_quorums = HashMap::new();
     let mut trace_round_prev: HashMap<u64, [u8; 32]> = HashMap::new();
 
@@ -837,16 +705,12 @@ async fn replay_trace_entries(
             });
         }
         if !delivery.is_empty() {
-            deliver_all(&replay_network.nodes, &delivery);
+            harness.deliver_all(&delivery);
         }
 
-        let batch = router.recv_batch(Duration::from_millis(200)).await;
-        assert_quorum_batch_invariants_with_network_for_round(
-            &batch,
-            &mut seen_quorums,
-            &replay_network,
-            Some(expected_round),
-        );
+        let batch = harness.recv_batch(Duration::from_millis(200)).await;
+        harness
+            .assert_quorum_batch_invariants_for_round(&batch, expected_round);
         let round_quorum = batch.iter().find_map(|env| {
             if let Payload::Quorum(q) = &env.msg.payload {
                 if q.header.round == expected_round {
@@ -861,13 +725,12 @@ async fn replay_trace_entries(
         }
     }
 
-    shutdown_all(cancels, handles).await;
-    router.stop();
     if let Some(ref msg) = quorum {
-        assert_quorum_message_invariants(msg);
-        assert_quorum_message_verifies(&replay_network, msg);
+        assert_quorum_message_ok(&harness.network, msg);
     }
-    quorum.is_some()
+    let ok = quorum.is_some();
+    harness.shutdown().await;
+    ok
 }
 
 #[tokio::test]
@@ -881,40 +744,36 @@ async fn replay_fault_injection_trace_from_env() {
     assert!(!trace.is_empty(), "trace is empty: {:?}", path);
 
     let nodes = meta.nodes.unwrap_or_else(|| {
-        trace
-            .iter()
-            .map(|entry| entry.from)
-            .max()
-            .unwrap_or(0)
-            + 1
+        trace.iter().map(|entry| entry.from).max().unwrap_or(0) + 1
     });
     let seed = match meta.seed {
         Some(seed) => seed,
         None => panic!("trace missing seed metadata: {:?}", path),
     };
 
-    let ok = replay_trace_entries(&trace, nodes, seed, TestNetwork::fast_timeouts())
-        .await;
+    let ok =
+        replay_trace_entries(&trace, nodes, seed, TestNetwork::fast_timeouts())
+            .await;
     assert!(ok, "expected quorum when replaying trace {:?}", path);
 }
 
 #[tokio::test]
 async fn record_replay_trace_reaches_quorum() {
-    let network = TestNetwork::new(TRACE_NETWORK_SIZE, TRACE_NETWORK_SEED);
     let timeouts = TestNetwork::fast_timeouts();
+    let mut harness = RunningNetwork::new(
+        TRACE_NETWORK_SIZE,
+        TRACE_NETWORK_SEED,
+        timeouts.clone(),
+    );
 
-    let (cancels, handles) = spawn_all(&network, timeouts.clone());
-
-    let router = BufferedRouter::start(&network.nodes);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     let mut trace: Vec<TraceEntry> = Vec::new();
     let mut pending: Vec<(support::Envelope, u32)> = Vec::new();
     let mut quorum = None;
     let mut tick: u32 = 0;
-    let mut seen_quorums = HashMap::new();
 
     while tokio::time::Instant::now() < deadline {
-        let batch = router.recv_batch(Duration::from_millis(200)).await;
+        let batch = harness.recv_batch(Duration::from_millis(200)).await;
         for env in batch {
             let delay = (env.from as u32 + env.msg.get_step() as u32) % 3;
             let deliver_at = tick + delay;
@@ -926,37 +785,23 @@ async fn record_replay_trace_reaches_quorum() {
             pending.push((env, deliver_at));
         }
 
-        let mut delivery = Vec::new();
-        pending.retain(|(env, at)| {
-            if *at <= tick {
-                delivery.push(env.clone());
-                false
-            } else {
-                true
-            }
-        });
+        let delivery = drain_pending(&mut pending, tick);
 
-        assert_quorum_batch_invariants_with_network(
-            &delivery,
-            &mut seen_quorums,
-            &network,
-        );
+        harness.assert_quorum_batch_invariants(&delivery);
         if let Some(q) = find_quorum(&delivery) {
             quorum = Some(q);
             break;
         }
         if !delivery.is_empty() {
-            deliver_all(&network.nodes, &delivery);
+            harness.deliver_all(&delivery);
         }
         tick = tick.wrapping_add(1);
     }
 
-    assert!(quorum.is_some(), "expected quorum in record phase");
-    assert_quorum_message_invariants(quorum.as_ref().unwrap());
-    assert_quorum_message_verifies(&network, quorum.as_ref().unwrap());
+    let quorum = quorum.expect("expected quorum in record phase");
+    assert_quorum_message_ok(&harness.network, &quorum);
 
-    let trace_path = if let Ok(path) =
-        std::env::var("DUSK_CONSENSUS_TRACE_OUT")
+    let trace_path = if let Ok(path) = std::env::var("DUSK_CONSENSUS_TRACE_OUT")
     {
         let path = PathBuf::from(path);
         if let Some(parent) = path.parent() {
@@ -978,16 +823,18 @@ async fn record_replay_trace_reaches_quorum() {
     };
     write_trace_with_meta(&trace_path, &trace, &meta);
 
-    shutdown_all(cancels, handles).await;
-
-    router.stop();
+    harness.shutdown().await;
 
     let (meta, replay) = read_trace_with_meta(&trace_path);
     assert_eq!(meta.seed, Some(TRACE_NETWORK_SEED));
     assert_eq!(meta.nodes, Some(TRACE_NETWORK_SIZE));
-    let ok =
-        replay_trace_entries(&replay, TRACE_NETWORK_SIZE, TRACE_NETWORK_SEED, timeouts.clone())
-            .await;
+    let ok = replay_trace_entries(
+        &replay,
+        TRACE_NETWORK_SIZE,
+        TRACE_NETWORK_SEED,
+        timeouts.clone(),
+    )
+    .await;
     assert!(ok, "expected quorum in replay phase");
     if std::env::var("DUSK_CONSENSUS_TRACE_OUT").is_err() {
         let _ = std::fs::remove_file(&trace_path);
@@ -1005,7 +852,8 @@ async fn record_multi_round_trace() {
     let timeouts = TestNetwork::fast_timeouts();
     let (mut trace, max_tick) =
         record_round_trace(0, None, timeouts.clone()).await;
-    let (mut round_two, _) = record_round_trace(1, Some([9u8; 32]), timeouts).await;
+    let (mut round_two, _) =
+        record_round_trace(1, Some([9u8; 32]), timeouts).await;
     let offset = max_tick.saturating_add(5);
     for entry in &mut round_two {
         entry.deliver_at = entry.deliver_at.saturating_add(offset);
@@ -1065,36 +913,28 @@ async fn replay_multi_round_trace_reaches_quorum() {
 #[ignore = "long-run randomized schedule; run manually"]
 async fn random_schedules_eventually_reach_quorum() {
     for seed in 1u64..=3 {
-        let network = TestNetwork::new(6, 500 + seed);
         let timeouts = TestNetwork::base_timeouts();
+        let mut harness = RunningNetwork::new(6, 500 + seed, timeouts);
 
-        let (cancels, handles) = spawn_all(&network, timeouts.clone());
-
-        let router = BufferedRouter::start(&network.nodes);
         let mut rng = StdRng::seed_from_u64(900 + seed);
         let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-        let mut quorum = None;
-
-        while tokio::time::Instant::now() < deadline {
-            let mut batch = router.recv_batch(Duration::from_millis(200)).await;
-            if batch.is_empty() {
-                continue;
-            }
-            batch.shuffle(&mut rng);
-            if let Some(q) = find_quorum(&batch) {
-                quorum = Some(q);
-                break;
-            }
-            deliver_all(&network.nodes, &batch);
-        }
+        let quorum = harness
+            .run_until_quorum(
+                deadline,
+                Duration::from_millis(200),
+                QuorumObservation::Batch,
+                |mut batch| {
+                    batch.shuffle(&mut rng);
+                    batch
+                },
+            )
+            .await;
 
         assert!(
             quorum.is_some(),
             "expected quorum under random schedule (seed {seed})"
         );
 
-        shutdown_all(cancels, handles).await;
-
-        router.stop();
+        harness.shutdown().await;
     }
 }

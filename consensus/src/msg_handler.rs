@@ -190,19 +190,23 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-    use dusk_core::signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey};
+    use dusk_core::signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    };
     use node_data::ledger::{Block, Header, Seed, StepVotes};
-    use node_data::message::payload::{Candidate, QuorumType, ValidationResult, Vote};
+    use node_data::message::payload::{
+        Candidate, QuorumType, ValidationResult, Vote,
+    };
     use node_data::message::{Message, SignedStepMessage};
     use node_data::StepName;
-    use tokio::sync::Mutex;
     use rand::SeedableRng;
+    use tokio::sync::Mutex;
 
     use crate::commons::{Database, RoundUpdate};
     use crate::errors::ConsensusError;
     use crate::iteration_ctx::RoundCommittees;
-    use crate::msg_handler::MsgHandler;
     use crate::merkle::merkle_root;
+    use crate::msg_handler::MsgHandler;
     use crate::proposal::handler::ProposalHandler;
     use crate::ratification::handler::RatificationHandler;
     use crate::step_votes_reg::AttInfoRegistry;
@@ -290,7 +294,10 @@ mod tests {
         async fn get_last_iter(&self) -> (node_data::ledger::Hash, u8) {
             ([0u8; 32], 0)
         }
-        async fn store_last_iter(&mut self, _data: (node_data::ledger::Hash, u8)) {
+        async fn store_last_iter(
+            &mut self,
+            _data: (node_data::ledger::Hash, u8),
+        ) {
         }
     }
 
@@ -397,7 +404,8 @@ mod tests {
 
         let rc = build_round_committees(&provisioners, tip.seed, ru.round, 0);
         let proposal_step = StepName::Proposal.to_step(0);
-        let proposal_committee = rc.get_committee(proposal_step).expect("committee");
+        let proposal_committee =
+            rc.get_committee(proposal_step).expect("committee");
 
         let db = Arc::new(Mutex::new(DummyDb::default()));
         let handler = ProposalHandler::new(db);
@@ -481,7 +489,8 @@ mod tests {
 
         let rc = build_round_committees(&provisioners, tip.seed, ru.round, 0);
         let validation_step = StepName::Validation.to_step(0);
-        let validation_committee = rc.get_committee(validation_step).expect("committee");
+        let validation_committee =
+            rc.get_committee(validation_step).expect("committee");
 
         let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
         let db = Arc::new(Mutex::new(DummyDb::default()));
@@ -492,7 +501,8 @@ mod tests {
 
         let mut wrong_prev = valid_msg.clone();
         wrong_prev.header.prev_block_hash = [9u8; 32];
-        if let node_data::message::Payload::Validation(v) = &mut wrong_prev.payload
+        if let node_data::message::Payload::Validation(v) =
+            &mut wrong_prev.payload
         {
             v.header.prev_block_hash = [9u8; 32];
         }

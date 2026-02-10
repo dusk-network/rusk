@@ -74,4 +74,3 @@ pub fn write_failure_trace(
     write_trace_with_meta(&path, trace, &meta);
     path
 }
-

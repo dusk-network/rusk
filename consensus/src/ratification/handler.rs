@@ -398,9 +398,15 @@ mod tests {
         tip_header.height = round - 1;
         tip_header.seed = seed;
 
-        let ru =
-            RoundUpdate::new(pk.clone(), sk, &tip_header, HashMap::new(), vec![]);
-        let cfg = Config::new(seed, round, iteration, StepName::Ratification, vec![]);
+        let ru = RoundUpdate::new(
+            pk.clone(),
+            sk,
+            &tip_header,
+            HashMap::new(),
+            vec![],
+        );
+        let cfg =
+            Config::new(seed, round, iteration, StepName::Ratification, vec![]);
         let committee = Committee::new(&provisioners, &cfg);
 
         (committee, ru)

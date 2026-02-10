@@ -776,31 +776,36 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use std::collections::HashMap;
+    use dusk_core::signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    };
     use node_data::ledger::{Attestation, Block, Header, StepVotes};
     use node_data::message::payload::{Candidate, ValidationQuorum};
     use node_data::message::{ConsensusHeader, SignedStepMessage};
-    use dusk_core::signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey};
     use rand::rngs::StdRng;
     use rand::SeedableRng;
+    use std::collections::HashMap;
     use tokio::sync::Mutex;
 
     use crate::commons::TimeoutSet;
     use crate::config::{MIN_STEP_TIMEOUT, TIMEOUT_INCREASE};
     use crate::iteration_ctx::IterationCtx;
     use crate::merkle::merkle_root;
-    use crate::operations::{StateTransitionData, StateTransitionResult, Voter};
+    use crate::operations::{
+        StateTransitionData, StateTransitionResult, Voter,
+    };
     use crate::proposal::handler::ProposalHandler;
     use crate::ratification::handler::RatificationHandler;
     use crate::step_votes_reg::AttInfoRegistry;
-    use crate::validation::handler::ValidationHandler;
     use crate::user::provisioners::DUSK;
+    use crate::validation::handler::ValidationHandler;
 
     #[derive(Default)]
     struct DummyDb {
         stored_candidates: Arc<Mutex<usize>>,
-        validation_results:
-            Arc<Mutex<Vec<(node_data::message::ConsensusHeader, ValidationResult)>>>,
+        validation_results: Arc<
+            Mutex<Vec<(node_data::message::ConsensusHeader, ValidationResult)>>,
+        >,
     }
 
     #[async_trait]
@@ -857,8 +862,13 @@ mod tests {
         async fn generate_state_transition(
             &self,
             _transition_data: StateTransitionData,
-        ) -> Result<(Vec<node_data::ledger::SpentTransaction>, StateTransitionResult), crate::errors::OperationError>
-        {
+        ) -> Result<
+            (
+                Vec<node_data::ledger::SpentTransaction>,
+                StateTransitionResult,
+            ),
+            crate::errors::OperationError,
+        > {
             Ok((
                 vec![],
                 StateTransitionResult {
@@ -928,35 +938,35 @@ mod tests {
         SafeAttestationInfoRegistry,
         Arc<Mutex<ValidationHandler<DummyDb>>>,
     ) {
-        let att_registry =
-            Arc::new(Mutex::new(AttInfoRegistry::new()));
-        let validation = Arc::new(Mutex::new(
-            ValidationHandler::new(
-                att_registry.clone(),
-                db.clone(),
-            ),
-        ));
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let validation = Arc::new(Mutex::new(ValidationHandler::new(
+            att_registry.clone(),
+            db.clone(),
+        )));
         let validation_ref = validation.clone();
-        let ratification =
-            Arc::new(Mutex::new(RatificationHandler::new(
-                att_registry.clone(),
-            )));
-        let proposal =
-            Arc::new(Mutex::new(ProposalHandler::new(db)));
+        let ratification = Arc::new(Mutex::new(RatificationHandler::new(
+            att_registry.clone(),
+        )));
+        let proposal = Arc::new(Mutex::new(ProposalHandler::new(db)));
 
         let mut timeouts: TimeoutSet = HashMap::new();
         timeouts.insert(StepName::Proposal, MIN_STEP_TIMEOUT);
-        timeouts.insert(
-            StepName::Validation,
-            MIN_STEP_TIMEOUT + TIMEOUT_INCREASE,
-        );
+        timeouts
+            .insert(StepName::Validation, MIN_STEP_TIMEOUT + TIMEOUT_INCREASE);
         timeouts.insert(
             StepName::Ratification,
             MIN_STEP_TIMEOUT + TIMEOUT_INCREASE + TIMEOUT_INCREASE,
         );
 
         (
-            IterationCtx::new(1, 0, validation, ratification, proposal, timeouts),
+            IterationCtx::new(
+                1,
+                0,
+                validation,
+                ratification,
+                proposal,
+                timeouts,
+            ),
             att_registry,
             validation_ref,
         )
@@ -1003,7 +1013,8 @@ mod tests {
             stored_candidates: stored_candidates.clone(),
             ..Default::default()
         }));
-        let (mut iter_ctx, att_registry, validation_handler) = build_iter_ctx(db);
+        let (mut iter_ctx, att_registry, validation_handler) =
+            build_iter_ctx(db);
 
         let mut provisioners = Provisioners::empty();
         let mut rng = StdRng::seed_from_u64(1);
@@ -1039,21 +1050,15 @@ mod tests {
             round_update.seed(),
         );
 
-        let generator = iter_ctx
-            .get_generator(0)
-            .expect("generator for iter 0");
+        let generator =
+            iter_ctx.get_generator(0).expect("generator for iter 0");
         let (gen_pk, gen_sk) = keys
             .iter()
             .find(|(pk, _)| pk.bytes() == &generator)
             .map(|(pk, sk)| (pk.clone(), sk.clone()))
             .expect("generator key");
-        let generator_ru = RoundUpdate::new(
-            gen_pk,
-            gen_sk,
-            &tip,
-            HashMap::new(),
-            vec![],
-        );
+        let generator_ru =
+            RoundUpdate::new(gen_pk, gen_sk, &tip, HashMap::new(), vec![]);
 
         let mut ctx = ExecutionCtx::new(
             &mut iter_ctx,
@@ -1081,7 +1086,8 @@ mod tests {
     #[tokio::test]
     async fn future_message_is_queued_then_drained() {
         let db = Arc::new(Mutex::new(DummyDb::default()));
-        let (mut iter_ctx, att_registry, validation_handler) = build_iter_ctx(db);
+        let (mut iter_ctx, att_registry, validation_handler) =
+            build_iter_ctx(db);
 
         let mut provisioners = Provisioners::empty();
         let mut rng = StdRng::seed_from_u64(5);
@@ -1193,9 +1199,7 @@ mod tests {
             att_registry,
         );
 
-        let _ = ctx_future
-            .handle_future_msgs(validation_handler)
-            .await;
+        let _ = ctx_future.handle_future_msgs(validation_handler).await;
 
         let drained = future_msgs
             .lock()
@@ -1215,16 +1219,15 @@ mod tests {
     #[tokio::test]
     async fn open_consensus_mode_broadcasts_only_success_quorums() {
         let db = Arc::new(Mutex::new(DummyDb::default()));
-        let att_registry =
-            Arc::new(Mutex::new(AttInfoRegistry::new()));
-        let validation = Arc::new(Mutex::new(
-            ValidationHandler::new(att_registry.clone(), db.clone()),
-        ));
-        let ratification = Arc::new(Mutex::new(
-            RatificationHandler::new(att_registry.clone()),
-        ));
-        let proposal =
-            Arc::new(Mutex::new(ProposalHandler::new(db)));
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let validation = Arc::new(Mutex::new(ValidationHandler::new(
+            att_registry.clone(),
+            db.clone(),
+        )));
+        let ratification = Arc::new(Mutex::new(RatificationHandler::new(
+            att_registry.clone(),
+        )));
+        let proposal = Arc::new(Mutex::new(ProposalHandler::new(db)));
 
         let mut timeouts: TimeoutSet = HashMap::new();
         timeouts.insert(StepName::Proposal, Duration::from_millis(20));
@@ -1245,8 +1248,7 @@ mod tests {
         let mut keys = Vec::new();
         for _ in 0..3 {
             let sk = BlsSecretKey::random(&mut rng);
-            let pk =
-                node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+            let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
             provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
             keys.push((pk, sk));
         }
@@ -1355,8 +1357,7 @@ mod tests {
         let mut keys = Vec::new();
         for _ in 0..3 {
             let sk = BlsSecretKey::random(&mut rng);
-            let pk =
-                node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+            let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
             provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
             keys.push((pk, sk));
         }
@@ -1416,24 +1417,20 @@ mod tests {
             Vote::Valid([1u8; 32]),
             QuorumType::Valid,
         );
-        let vq = ValidationQuorum { header, result: validation };
+        let vq = ValidationQuorum {
+            header,
+            result: validation,
+        };
         let msg: Message = vq.into();
 
-        let _ = ctx
-            .process_inbound_msg(validation_handler, msg)
-            .await;
+        let _ = ctx.process_inbound_msg(validation_handler, msg).await;
 
         let stored = db.lock().await.validation_results.lock().await.len();
-        assert_eq!(
-            stored, 0,
-            "invalid validation quorum should be rejected"
-        );
+        assert_eq!(stored, 0, "invalid validation quorum should be rejected");
 
-        let forwarded = tokio::time::timeout(
-            Duration::from_millis(100),
-            outbound.recv(),
-        )
-        .await;
+        let forwarded =
+            tokio::time::timeout(Duration::from_millis(100), outbound.recv())
+                .await;
         assert!(
             forwarded.is_err(),
             "invalid validation quorum should not be rebroadcast"

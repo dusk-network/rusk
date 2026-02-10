@@ -240,10 +240,10 @@ mod tests {
         PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
     };
     use hex::FromHex;
-    use rand::SeedableRng;
     use node_data::ledger::{Header, Seed, StepVotes};
     use node_data::message::StepMessage;
     use node_data::StepName;
+    use rand::SeedableRng;
 
     use super::*;
     use crate::aggregator::Aggregator;
@@ -433,7 +433,13 @@ mod tests {
         );
 
         let iter = EMERGENCY_MODE_ITERATION_THRESHOLD;
-        let cfg = Config::new(Seed::from([9u8; 48]), 1, iter, StepName::Validation, vec![]);
+        let cfg = Config::new(
+            Seed::from([9u8; 48]),
+            1,
+            iter,
+            StepName::Validation,
+            vec![],
+        );
         let committee = Committee::new(&provisioners, &cfg);
 
         let vote = Vote::Invalid([4u8; 32]);
@@ -470,13 +476,8 @@ mod tests {
             vec![],
         );
 
-        let cfg = Config::new(
-            tip_header.seed,
-            1,
-            0,
-            StepName::Validation,
-            vec![],
-        );
+        let cfg =
+            Config::new(tip_header.seed, 1, 0, StepName::Validation, vec![]);
         let committee = Committee::new(&provisioners, &cfg);
 
         let vote = Vote::Valid([1u8; 32]);

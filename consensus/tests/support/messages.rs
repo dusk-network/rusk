@@ -45,7 +45,8 @@ pub fn build_candidate_message(ru: &RoundUpdate, iteration: u8) -> Message {
     header.faultroot = merkle_root::<[u8; 32]>(&[]);
 
     let block = Block::new(header, vec![], vec![]).expect("valid block");
-    let mut candidate = node_data::message::payload::Candidate { candidate: block };
+    let mut candidate =
+        node_data::message::payload::Candidate { candidate: block };
     candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
     candidate.into()
 }

@@ -228,7 +228,9 @@ pub fn verify_stateless(
 #[cfg(test)]
 mod tests {
     use super::verify_candidate_msg;
-    use dusk_core::signatures::bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey};
+    use dusk_core::signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    };
     use node_data::ledger::{Block, Header};
     use node_data::message::payload::Candidate;
     use node_data::message::SignedStepMessage;
@@ -241,9 +243,11 @@ mod tests {
     fn reject_candidate_from_wrong_generator() {
         let mut rng = StdRng::seed_from_u64(10);
         let expected_sk = BlsSecretKey::random(&mut rng);
-        let expected_pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&expected_sk));
+        let expected_pk =
+            node_data::bls::PublicKey::new(BlsPublicKey::from(&expected_sk));
         let wrong_sk = BlsSecretKey::random(&mut rng);
-        let wrong_pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&wrong_sk));
+        let wrong_pk =
+            node_data::bls::PublicKey::new(BlsPublicKey::from(&wrong_sk));
 
         let mut header = Header::default();
         header.height = 1;
@@ -261,7 +265,10 @@ mod tests {
         let err = verify_candidate_msg(&candidate, expected_pk.bytes())
             .expect_err("expected wrong generator to be rejected");
 
-        assert!(matches!(err, crate::errors::ConsensusError::NotCommitteeMember));
+        assert!(matches!(
+            err,
+            crate::errors::ConsensusError::NotCommitteeMember
+        ));
     }
 
     fn build_candidate(
@@ -290,7 +297,8 @@ mod tests {
         let sk = BlsSecretKey::random(&mut rng);
         let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
 
-        let candidate = build_candidate(&sk, &pk, [1u8; 32], merkle_root::<[u8; 32]>(&[]));
+        let candidate =
+            build_candidate(&sk, &pk, [1u8; 32], merkle_root::<[u8; 32]>(&[]));
         let err = verify_candidate_msg(&candidate, pk.bytes())
             .expect_err("expected invalid txroot to be rejected");
 
@@ -303,7 +311,8 @@ mod tests {
         let sk = BlsSecretKey::random(&mut rng);
         let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
 
-        let candidate = build_candidate(&sk, &pk, merkle_root::<[u8; 32]>(&[]), [2u8; 32]);
+        let candidate =
+            build_candidate(&sk, &pk, merkle_root::<[u8; 32]>(&[]), [2u8; 32]);
         let err = verify_candidate_msg(&candidate, pk.bytes())
             .expect_err("expected invalid faultroot to be rejected");
 
