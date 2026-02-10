@@ -4,34 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use dusk_rusk_test::{RuskVmConfig, TestContext};
 
-#[cfg(feature = "archive")]
-use node::archive::Archive;
-
+use anyhow::Result;
 use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::{
     ContractBytecode, ContractDeploy, TransactionData,
 };
-use dusk_vm::{gen_contract_id, ContractData, Error as VMError, VM};
+use dusk_vm::{gen_contract_id, ContractData, Error as VMError};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::{DriverStore, RuskVmConfig};
-use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
-use rusk_recovery_tools::state;
-use tempfile::tempdir;
-use tokio::sync::broadcast;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{
-    generator_procedure, ExecuteResult, DEFAULT_MIN_GAS_LIMIT,
-};
-use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore, Wallet,
-};
+use crate::common::state::{generator_procedure, ExecuteResult};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -49,23 +35,14 @@ const ALICE_CONTRACT_ID: ContractId = {
 };
 
 const OWNER: [u8; 32] = [1; 32];
-const CHAIN_ID: u8 = 0xFA;
 
 const BOB_ECHO_VALUE: u64 = 775;
 const BOB_INIT_VALUE: u8 = 5;
 
-async fn initial_state<P: AsRef<Path>>(
-    dir: P,
-    deploy_bob: bool,
-) -> Result<Rusk> {
-    let dir = dir.as_ref();
+async fn initial_state(deploy_bob: bool) -> Result<TestContext> {
+    let state = include_str!("../config/contract_deployment.toml");
 
-    let snapshot =
-        toml::from_str(include_str!("../config/contract_deployment.toml"))
-            .expect("Cannot deserialize config");
-
-    let dusk_key = *DUSK_CONSENSUS_KEY;
-    let deploy = state::deploy(dir, &snapshot, dusk_key, |session| {
+    TestContext::instantiate_with(state, RuskVmConfig::new(), |session| {
         let alice_bytecode =
             include_bytes!("../../../contracts/bin/alice.wasm");
 
@@ -99,31 +76,7 @@ async fn initial_state<P: AsRef<Path>>(
                 .expect("Deploying the bob contract should succeed");
         }
     })
-    .expect("Deploying initial state should succeed");
-
-    let (_vm, _commit_id) = deploy;
-
-    let (sender, _) = broadcast::channel(10);
-
-    #[cfg(feature = "archive")]
-    let archive_dir =
-        tempdir().expect("Should be able to create temporary directory");
-    #[cfg(feature = "archive")]
-    let archive = Archive::create_or_open(archive_dir.path()).await;
-
-    let rusk = Rusk::new(
-        dir,
-        CHAIN_ID,
-        RuskVmConfig::new(),
-        DEFAULT_MIN_GAS_LIMIT,
-        u64::MAX,
-        sender,
-        #[cfg(feature = "archive")]
-        archive,
-        DriverStore::new(None::<PathBuf>),
-    )
-    .expect("Instantiating rusk should succeed");
-    Ok(rusk)
+    .await
 }
 
 fn bytecode_hash(bytecode: impl AsRef<[u8]>) -> ContractId {
@@ -133,8 +86,7 @@ fn bytecode_hash(bytecode: impl AsRef<[u8]>) -> ContractId {
 
 #[allow(clippy::too_many_arguments)]
 fn make_and_execute_transaction_deploy(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
+    tc: &TestContext,
     bytecode: impl AsRef<[u8]>,
     gas_limit: u64,
     init_value: u8,
@@ -142,6 +94,9 @@ fn make_and_execute_transaction_deploy(
     should_discard: bool,
     gas_price: u64,
 ) {
+    let rusk = tc.rusk();
+    let wallet = tc.wallet();
+
     let mut rng = StdRng::seed_from_u64(0xcafe);
 
     let init_args = Some(vec![init_value]);
@@ -195,32 +150,18 @@ fn make_and_execute_transaction_deploy(
 }
 
 struct Fixture {
-    pub rusk: Rusk,
-    pub wallet: Wallet<TestStore, TestStateClient>,
+    pub tc: TestContext,
     pub bob_bytecode: Vec<u8>,
     pub contract_id: ContractId,
-    pub path: PathBuf,
 }
 
 impl Fixture {
     async fn build(deploy_bob: bool) -> Self {
-        let tmp =
-            tempdir().expect("Should be able to create temporary directory");
-        let rusk = initial_state(&tmp, deploy_bob)
+        let tc = initial_state(deploy_bob)
             .await
             .expect("Initializing should succeed");
 
-        let cache = Arc::new(RwLock::new(HashMap::new()));
-
-        let wallet = wallet::Wallet::new(
-            TestStore,
-            TestStateClient {
-                rusk: rusk.clone(),
-                cache,
-            },
-        );
-
-        let original_root = rusk.state_root();
+        let original_root = tc.state_root();
 
         info!("Original Root: {:?}", hex::encode(original_root));
 
@@ -228,62 +169,43 @@ impl Fixture {
             include_bytes!("../../../contracts/bin/bob.wasm").to_vec();
         let contract_id = gen_contract_id(&bob_bytecode, 0u64, OWNER);
 
-        let path = tmp.into_path();
         Self {
-            rusk,
-            wallet,
+            tc,
             bob_bytecode,
             contract_id,
-            path,
         }
     }
 
     pub fn assert_bob_contract_is_not_deployed(&self) {
-        let commit = self.rusk.state_root();
-        let vm =
-            VM::new(self.path.as_path()).expect("VM creation should succeed");
-        let mut session = vm
-            .session(commit, CHAIN_ID, 0)
-            .expect("Session creation should succeed");
-        let result = session.call::<_, u64>(
-            self.contract_id,
-            "echo",
-            &BOB_ECHO_VALUE,
-            u64::MAX,
-        );
-        match result.err() {
-            Some(VMError::ContractDoesNotExist(_)) => (),
+        let result: Result<(), _> =
+            self.tc
+                .rusk()
+                .query(self.contract_id, "echo", &BOB_ECHO_VALUE);
+
+        match result {
+            Err(rusk::Error::Vm(VMError::ContractDoesNotExist(_))) => (),
             _ => unreachable!(),
         }
     }
 
     pub fn assert_bob_contract_is_deployed(&self) {
-        let commit = self.rusk.state_root();
-        let vm =
-            VM::new(self.path.as_path()).expect("VM creation should succeed");
-        let mut session = vm
-            .session(commit, CHAIN_ID, 0)
-            .expect("Session creation should succeed");
-        let result = session.call::<_, u64>(
-            self.contract_id,
-            "echo",
-            &BOB_ECHO_VALUE,
-            u64::MAX,
-        );
-        assert_eq!(
-            result.expect("Echo call should succeed").data,
-            BOB_ECHO_VALUE
-        );
-        let result =
-            session.call::<_, u8>(self.contract_id, "value", &(), u64::MAX);
-        assert_eq!(
-            result.expect("Value call should succeed").data,
-            BOB_INIT_VALUE
-        );
+        let result: Result<u64, _> =
+            self.tc
+                .rusk()
+                .query(self.contract_id, "echo", &BOB_ECHO_VALUE);
+        assert_eq!(result.expect("Echo call should succeed"), BOB_ECHO_VALUE);
+
+        let result: u8 = self
+            .tc
+            .rusk()
+            .query(self.contract_id, "value", &())
+            .expect("Value call should succeed");
+        assert_eq!(result, BOB_INIT_VALUE);
     }
 
     pub fn wallet_balance(&self) -> u64 {
-        self.wallet
+        self.tc
+            .wallet()
             .get_balance(0)
             .expect("Getting wallet's balance should succeed")
             .value
@@ -302,9 +224,8 @@ pub async fn contract_deploy() {
     f.assert_bob_contract_is_not_deployed();
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &f.rusk,
-        &f.wallet,
-        f.bob_bytecode.clone(),
+        &f.tc,
+        &f.bob_bytecode,
         GAS_LIMIT,
         BOB_INIT_VALUE,
         false,
@@ -328,9 +249,8 @@ pub async fn contract_already_deployed() {
     f.assert_bob_contract_is_deployed();
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &f.rusk,
-        &f.wallet,
-        f.bob_bytecode.clone(),
+        &f.tc,
+        &f.bob_bytecode,
         GAS_LIMIT,
         BOB_INIT_VALUE,
         true,
@@ -356,9 +276,8 @@ pub async fn contract_deploy_corrupted_bytecode() {
     f.assert_bob_contract_is_not_deployed();
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &f.rusk,
-        &f.wallet,
-        f.bob_bytecode.clone(),
+        &f.tc,
+        &f.bob_bytecode,
         GAS_LIMIT,
         BOB_INIT_VALUE,
         true,
@@ -381,9 +300,8 @@ pub async fn contract_deploy_charge() {
 
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &f.rusk,
-        &f.wallet,
-        f.bob_bytecode.clone(),
+        &f.tc,
+        &f.bob_bytecode,
         GAS_LIMIT,
         BOB_INIT_VALUE,
         false,
@@ -392,8 +310,7 @@ pub async fn contract_deploy_charge() {
     );
     let after_bob_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &f.rusk,
-        &f.wallet,
+        &f.tc,
         alice_bytecode,
         GAS_LIMIT,
         0,
@@ -419,9 +336,8 @@ pub async fn contract_deploy_not_enough_to_spend() {
     f.assert_bob_contract_is_not_deployed();
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &f.rusk,
-        &f.wallet,
-        f.bob_bytecode.clone(),
+        &f.tc,
+        &f.bob_bytecode,
         GAS_LIMIT_NOT_ENOUGH_TO_SPEND,
         BOB_INIT_VALUE,
         false,
@@ -445,9 +361,8 @@ pub async fn contract_deploy_gas_price_too_low() {
     f.assert_bob_contract_is_not_deployed();
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &f.rusk,
-        &f.wallet,
-        f.bob_bytecode.clone(),
+        &f.tc,
+        &f.bob_bytecode,
         GAS_LIMIT,
         BOB_INIT_VALUE,
         false,
@@ -471,9 +386,8 @@ pub async fn contract_deploy_gas_limit_too_low() {
     f.assert_bob_contract_is_not_deployed();
     let before_balance = f.wallet_balance();
     make_and_execute_transaction_deploy(
-        &f.rusk,
-        &f.wallet,
-        f.bob_bytecode.clone(),
+        &f.tc,
+        &f.bob_bytecode,
         GAS_LIMIT_NOT_ENOUGH_TO_DEPLOY,
         BOB_INIT_VALUE,
         false,
