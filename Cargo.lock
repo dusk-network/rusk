@@ -1878,6 +1878,7 @@ dependencies = [
  "dusk-data-driver",
  "dusk-node",
  "dusk-node-data",
+ "dusk-rusk-test",
  "dusk-stake-contract-dd",
  "dusk-transfer-contract-dd",
  "dusk-vm",
