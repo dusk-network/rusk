@@ -762,10 +762,22 @@ impl From<node_data::events::Event> for RuesEvent {
     }
 }
 
+/// Checks the Rusk version of the incoming request against the current version
+/// of the binary.
+///
+/// If `strict` is `true`, the version check is strict and requires the presence
+/// of the version header, otherwise the check for the version header can be
+/// optional.
 pub fn check_rusk_version(
     version: Option<&serde_json::Value>,
     strict: bool,
 ) -> anyhow::Result<()> {
+    if strict && version.is_none() {
+        return Err(anyhow::anyhow!(
+            "Missing Rusk-Version header while Rusk-Version-Strict is set",
+        ));
+    }
+
     if let Some(v) = version {
         let req = match v.as_str() {
             Some(v) => VersionReq::from_str(v),
