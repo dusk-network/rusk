@@ -11,11 +11,12 @@ use std::{
 
 pub use anyhow::Result;
 use common::{
-    state::new_state,
+    state::{new_state, new_state_with, LOCAL_TEST_CHAIN_ID},
     wallet::{self, DummyCacheItem, TestStateClient, TestStore, Wallet},
 };
 pub use rusk::node::RuskVmConfig;
 pub use rusk::{Result as RuskResult, Rusk};
+pub use rusk_recovery_tools::state::Session;
 use tempfile::tempdir;
 
 pub mod common;
@@ -47,6 +48,52 @@ impl TestContext {
             .map_err(|e| anyhow::anyhow!("Cannot deserialize config: {e}"))?;
 
         let rusk = new_state(_temp_dir.path(), &snapshot, vm_config).await?;
+
+        let wallet_cache = Arc::new(RwLock::new(HashMap::new()));
+
+        // Create a wallet
+        let wallet = wallet::Wallet::new(
+            TestStore,
+            TestStateClient {
+                rusk: rusk.clone(),
+                cache: wallet_cache.clone(),
+            },
+        );
+
+        Ok(TestContext {
+            _temp_dir,
+            wallet,
+            rusk,
+            wallet_cache,
+        })
+    }
+
+    /// Creates a new `TestContext` with the given state configuration and VM
+    /// configuration. This function sets up the Rusk instance and the test
+    /// wallet, and returns the context for use in tests.
+    pub async fn instantiate_with<F>(
+        state_toml: &str,
+        vm_config: RuskVmConfig,
+        closure: F,
+    ) -> anyhow::Result<Self>
+    where
+        F: FnOnce(&mut Session),
+    {
+        let _temp_dir = tempdir().map_err(|e| {
+            anyhow::anyhow!("Should be able to create temporary directory: {e}")
+        })?;
+
+        let snapshot = toml::from_str(state_toml)
+            .map_err(|e| anyhow::anyhow!("Cannot deserialize config: {e}"))?;
+
+        let rusk = new_state_with(
+            _temp_dir.path(),
+            &snapshot,
+            vm_config,
+            LOCAL_TEST_CHAIN_ID,
+            closure,
+        )
+        .await?;
 
         let wallet_cache = Arc::new(RwLock::new(HashMap::new()));
 
