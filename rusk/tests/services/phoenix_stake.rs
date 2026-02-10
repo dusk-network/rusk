@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::{Arc, RwLock};
-
 use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 use dusk_core::{
     dusk,
@@ -17,7 +15,6 @@ use dusk_core::{
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use std::collections::HashMap;
 use tempfile::tempdir;
 use tracing::info;
 
@@ -26,7 +23,7 @@ use crate::common::state::{
     BLOCK_GAS_LIMIT, BLOCK_HEIGHT, GAS_LIMIT, GAS_PRICE,
 };
 use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
+    test_wallet as wallet, TestContext, TestStateClient, TestStore,
 };
 use crate::common::*;
 
@@ -135,27 +132,14 @@ pub async fn stake() -> Result<()> {
         BLOCK_GAS_LIMIT,
     )
     .await?;
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
+    let ctx = TestContext::new(rusk);
+    let original_root = ctx.original_root;
 
     // Perform some staking actions.
-    wallet_stake(&rusk, &wallet, DEFAULT_MINIMUM_STAKE);
+    wallet_stake(&ctx.rusk, &ctx.wallet, DEFAULT_MINIMUM_STAKE);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = ctx.rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
@@ -225,27 +209,14 @@ pub async fn reward() -> Result<()> {
         BLOCK_GAS_LIMIT,
     )
     .await?;
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
+    let ctx = TestContext::new(rusk);
+    let original_root = ctx.original_root;
 
     // Perform some staking actions.
-    wallet_reward(&rusk, &wallet);
+    wallet_reward(&ctx.rusk, &ctx.wallet);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = ctx.rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
@@ -267,21 +238,12 @@ pub async fn slash() -> Result<()> {
         BLOCK_GAS_LIMIT,
     )
     .await?;
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
+    let TestContext {
+        rusk,
+        wallet,
+        cache: _,
+        original_root,
+    } = TestContext::new(rusk);
 
     let contract_balance = rusk
         .contract_balance(&STAKE_CONTRACT)

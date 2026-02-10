@@ -4,9 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-
 use dusk_core::transfer::{
     data::{ContractCall, TransactionData},
     TRANSFER_CONTRACT,
@@ -22,7 +19,7 @@ use crate::common::state::{
     generator_procedure, new_state_from_config_with_block_gas_limit,
 };
 use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
+    test_wallet as wallet, TestContext, TestStateClient, TestStore,
 };
 
 const BLOCK_HEIGHT: u64 = 1;
@@ -135,26 +132,13 @@ pub async fn erroring_tx_charged_full() -> Result<()> {
         BLOCK_GAS_LIMIT,
     )
     .await?;
+    let ctx = TestContext::new(rusk);
+    let original_root = ctx.original_root;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
-
-    make_transactions(&rusk, &wallet);
+    make_transactions(&ctx.rusk, &ctx.wallet);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = ctx.rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)

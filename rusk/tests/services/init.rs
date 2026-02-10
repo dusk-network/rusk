@@ -4,9 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
 
 #[cfg(feature = "archive")]
 use node::archive::Archive;
@@ -31,7 +29,7 @@ use crate::common::logger;
 use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
 use crate::common::state::{generator_procedure, ExecuteResult};
 use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
+    test_wallet as wallet, TestContext, TestStateClient, TestStore,
 };
 
 const BLOCK_HEIGHT: u64 = 1;
@@ -178,28 +176,16 @@ pub async fn calling_init_via_tx_fails() -> Result<()> {
 
     let tmp = tempdir().expect("Should be able to create temporary directory");
     let rusk = initial_state(&tmp).await?;
-
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
+    let ctx = TestContext::new(rusk);
+    let original_root = ctx.original_root;
 
     assert_eq!(
-        submit_transactions(&rusk, &wallet).err,
+        submit_transactions(&ctx.rusk, &ctx.wallet).err,
         Some("Unknown".into())
     );
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = ctx.rusk.state_root();
     info!(
         "New root after the call transfer: {:?}",
         hex::encode(new_root)

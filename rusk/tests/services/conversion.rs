@@ -4,9 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -19,7 +16,7 @@ use crate::common::state::{
     BLOCK_GAS_LIMIT,
 };
 use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
+    test_wallet as wallet, TestContext, TestStateClient, TestStore,
 };
 
 const INITIAL_PHOENIX_BALANCE: u64 = 10_000_000_000;
@@ -163,19 +160,9 @@ pub async fn convert_to_moonlight() -> Result<()> {
         BLOCK_GAS_LIMIT,
     )
     .await?;
+    let ctx = TestContext::new(rusk);
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache: cache.clone(),
-        },
-    );
-
-    wallet_convert_to_moonlight(&rusk, &wallet, BLOCK_HEIGHT);
+    wallet_convert_to_moonlight(&ctx.rusk, &ctx.wallet, BLOCK_HEIGHT);
 
     Ok(())
 }
@@ -194,19 +181,9 @@ pub async fn convert_to_phoenix() -> Result<()> {
         BLOCK_GAS_LIMIT,
     )
     .await?;
+    let ctx = TestContext::new(rusk);
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache: cache.clone(),
-        },
-    );
-
-    wallet_convert_to_phoenix(&rusk, &wallet, BLOCK_HEIGHT);
+    wallet_convert_to_phoenix(&ctx.rusk, &ctx.wallet, BLOCK_HEIGHT);
 
     Ok(())
 }

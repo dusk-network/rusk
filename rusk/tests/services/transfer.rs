@@ -4,9 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -20,7 +17,7 @@ use crate::common::state::{
     BLOCK_GAS_LIMIT,
 };
 use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
+    test_wallet as wallet, TestContext, TestStateClient, TestStore,
 };
 
 const INITIAL_BALANCE: u64 = 10_000_000_000;
@@ -134,26 +131,13 @@ pub async fn wallet() -> Result<()> {
         BLOCK_GAS_LIMIT,
     )
     .await?;
+    let ctx = TestContext::new(rusk);
+    let original_root = ctx.original_root;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache: cache.clone(),
-        },
-    );
-
-    let original_root = rusk.state_root();
-
-    info!("Original Root: {:?}", hex::encode(original_root));
-
-    wallet_transfer(&rusk, &wallet, 1_000, 2);
+    wallet_transfer(&ctx.rusk, &ctx.wallet, 1_000, 2);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = ctx.rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
@@ -161,24 +145,29 @@ pub async fn wallet() -> Result<()> {
     assert_ne!(original_root, new_root, "Root should have changed");
 
     // Revert the state
-    rusk.revert_to_base_root()
+    ctx.rusk
+        .revert_to_base_root()
         .expect("Reverting should succeed");
-    cache.write().unwrap().clear();
+    ctx.cache.write().unwrap().clear();
 
     // Check the state's root is back to the original one
-    info!("Root after reset: {:?}", hex::encode(rusk.state_root()));
-    assert_eq!(original_root, rusk.state_root(), "Root be the same again");
+    info!("Root after reset: {:?}", hex::encode(ctx.rusk.state_root()));
+    assert_eq!(
+        original_root,
+        ctx.rusk.state_root(),
+        "Root be the same again"
+    );
 
-    wallet_transfer(&rusk, &wallet, 1_000, 2);
+    wallet_transfer(&ctx.rusk, &ctx.wallet, 1_000, 2);
 
     // Check the state's root is back to the original one
     info!(
         "New root after the 2nd transfer: {:?}",
-        hex::encode(rusk.state_root())
+        hex::encode(ctx.rusk.state_root())
     );
     assert_eq!(
         new_root,
-        rusk.state_root(),
+        ctx.rusk.state_root(),
         "Root is the same compare to the first transfer"
     );
 

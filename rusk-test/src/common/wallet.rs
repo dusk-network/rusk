@@ -129,6 +129,37 @@ impl wallet::StateClient for TestStateClient {
     }
 }
 
+pub struct TestContext {
+    pub rusk: Rusk,
+    pub wallet: wallet::Wallet<TestStore, TestStateClient>,
+    pub cache: Arc<RwLock<HashMap<Vec<u8>, DummyCacheItem>>>,
+    pub original_root: [u8; 32],
+}
+
+impl TestContext {
+    pub fn new(rusk: Rusk) -> Self {
+        let cache = Arc::new(RwLock::new(HashMap::new()));
+
+        let wallet = wallet::Wallet::new(
+            TestStore,
+            TestStateClient {
+                rusk: rusk.clone(),
+                cache: cache.clone(),
+            },
+        );
+
+        let original_root = rusk.state_root();
+        info!("Original Root: {:?}", hex::encode(original_root));
+
+        Self {
+            rusk,
+            wallet,
+            cache,
+            original_root,
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct DummyCacheItem {
     notes: Vec<(Note, u64)>,
