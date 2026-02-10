@@ -44,6 +44,8 @@ import { Bookmark } from "@dusk/w3sper";
 const WASM_RELEASE_PATH =
   "../target/wasm32-unknown-unknown/release/dusk_wallet_core.wasm";
 
+export const NETWORK = "http://localhost:8080/";
+
 export function getLocalWasmBuffer() {
   if (typeof Deno !== "undefined") {
     return Deno.readFile(WASM_RELEASE_PATH);

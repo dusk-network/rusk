@@ -11,7 +11,7 @@ import {
   ProfileGenerator,
 } from "@dusk/w3sper";
 
-import { assert, seeder, test, Treasury } from "./harness.js";
+import { assert, NETWORK, seeder, test, Treasury } from "./harness.js";
 
 /**
  * Tests fetching the stake information using string representations
@@ -24,7 +24,7 @@ test("stake info without profiles", async () => {
     "ocXXBAafr7xFqQTpC1vfdSYdHMXerbPCED2apyUVpLjkuycsizDxwA6b9D7UW91kG58PFKqm9U9NmY9VSwufUFL5rVRSnFSYxbiKK658TF6XjHsHGBzavFJcxAzjjBRM4eF",
   ];
 
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const syncer = new AccountSyncer(network);
 
   const stakes = await syncer.stakes(users);
@@ -60,7 +60,7 @@ test("stake info without profiles", async () => {
  * the use of a decoupled cache to retrieve and store the stake information.
  */
 test("stake info with treasury", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
 
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);

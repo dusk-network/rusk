@@ -12,7 +12,7 @@ import {
   Network,
   ProfileGenerator,
 } from "../src/mod.js";
-import { assert, test, Treasury } from "./harness.js";
+import { assert, NETWORK, test, Treasury } from "./harness.js";
 import * as bip39 from "npm:bip39";
 
 // Generate 64 byte seed from the mnemonic.
@@ -31,7 +31,6 @@ const STAKE_ID =
 const STAKE_WASM = "dusk_stake_contract_dd_opt.wasm";
 const TRANSFER_WASM = "dusk_transfer_contract_dd_opt.wasm";
 
-const NETWORK = "http://localhost:8080/";
 const GAS_LIMIT = 500_000_000n;
 
 // Wrapper function to grab a data-driver from the Rust release folder
