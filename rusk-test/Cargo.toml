@@ -19,6 +19,7 @@ wallet-core = { workspace = true }
 rusk-recovery = { workspace = true, features = ["state"] }
 rusk-prover = { workspace = true, features = ["no_random", "debug"] }
 dusk-bytes = { workspace = true }
+dusk-vm = { workspace = true }
 
 anyhow = { workspace = true }
 tracing = { workspace = true }
@@ -35,6 +36,8 @@ rkyv = { workspace = true, features = ["size_32"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
 tempfile = { workspace = true }
 futures-util = { workspace = true }
+toml = { workspace = true }
+hex = { workspace = true }
 
 [features]
 archive = ["dusk-rusk/archive"]
