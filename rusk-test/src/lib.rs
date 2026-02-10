@@ -4,8 +4,4 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod services;
-
-pub use dusk_rusk_test::common;
-
-extern crate alloc;
+pub mod common;

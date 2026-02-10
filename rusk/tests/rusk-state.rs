@@ -4,9 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod common;
-
-use crate::common::*;
+use dusk_rusk_test::common::{self, *};
 
 use std::path::Path;
 use std::sync::{mpsc, Arc};

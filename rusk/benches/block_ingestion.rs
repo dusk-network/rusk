@@ -4,11 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![feature(lazy_cell)]
 extern crate alloc;
 
-#[path = "../tests/common/mod.rs"]
-mod common;
+use dusk_rusk_test::common;
 
 use std::io::{BufRead, BufReader};
 use std::sync::Arc;
@@ -116,7 +114,7 @@ fn bench_accept(
     const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
     const BLOCK_HASH: [u8; 32] = [0u8; 32];
 
-    let generator = PublicKey::new(*DUSK_CONSENSUS_KEY).into_inner();
+    let generator = *PublicKey::new(*DUSK_CONSENSUS_KEY).bytes();
 
     let txs = Arc::new(txs);
     let prev_state = rusk.state_root();
@@ -134,8 +132,7 @@ fn bench_accept(
 
                     // Build block
                     let mut header = Header::default();
-                    header.generator_bls_pubkey =
-                        *PublicKey::new(*DUSK_CONSENSUS_KEY).bytes();
+                    header.generator_bls_pubkey = generator;
                     header.height = BLOCK_HEIGHT;
                     header.hash = BLOCK_HASH;
                     header.gas_limit = BLOCK_GAS_LIMIT;

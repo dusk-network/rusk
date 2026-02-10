@@ -50,8 +50,8 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let (sender, _) = broadcast::channel(10);
 
     #[cfg(feature = "archive")]
-    let archive_dir =
-        tempdir().expect("Should be able to create temporary directory");
+    let archive_dir = tempfile::tempdir()
+        .expect("Should be able to create temporary directory");
     #[cfg(feature = "archive")]
     let archive =
         node::archive::Archive::create_or_open(archive_dir.path()).await;
