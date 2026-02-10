@@ -12,11 +12,6 @@ use node::archive::Archive;
 use tempfile::tempdir;
 
 use dusk_bytes::Serializable;
-use node::vm::VMExecution;
-use rusk::node::{driverstore::DriverStore, RuskVmConfig};
-use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
-use rusk_recovery_tools::state::{self, Snapshot};
-
 use dusk_consensus::{
     config::{RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS},
     operations::StateTransitionData,
@@ -24,6 +19,7 @@ use dusk_consensus::{
 use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::Transaction,
 };
+use node::vm::VMExecution;
 use node_data::{
     bls::PublicKeyBytes,
     ledger::{
@@ -31,7 +27,11 @@ use node_data::{
     },
     message::payload::Vote,
 };
+use rusk::node::{driverstore::DriverStore, RuskVmConfig};
+use rusk::{Rusk, DUSK_CONSENSUS_KEY};
+use rusk_recovery_tools::state::{self, Snapshot};
 
+use anyhow::Result;
 use tokio::sync::broadcast;
 use tracing::info;
 

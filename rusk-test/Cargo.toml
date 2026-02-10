@@ -35,6 +35,7 @@ rkyv = { workspace = true, features = ["size_32"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
 tempfile = { workspace = true }
 futures-util = { workspace = true }
+toml = { workspace = true }
 
 [features]
 archive = ["dusk-rusk/archive"]

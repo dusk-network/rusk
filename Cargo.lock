@@ -1941,6 +1941,7 @@ dependencies = [
  "rusk-recovery",
  "tempfile",
  "tokio",
+ "toml",
  "tracing",
  "tracing-subscriber",
  "zeroize",
