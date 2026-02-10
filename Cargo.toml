@@ -13,6 +13,7 @@ members = [
     "rusk-recovery",
     "rusk-profile",
     "rusk",
+    "rusk-test",
 
     "node-data",
     "consensus",

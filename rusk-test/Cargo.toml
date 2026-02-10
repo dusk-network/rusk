@@ -1,0 +1,40 @@
+[package]
+name = "dusk-rusk-test"
+version = "1.4.5-alpha.1"
+edition = "2021"
+
+description = "Test utilities for Rusk"
+repository = "https://github.com/dusk-network/rusk"
+categories = ["cryptography", "cryptography::cryptocurrencies"]
+keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
+license = "MPL-2.0"
+
+[dependencies]
+dusk-rusk = { path = "../rusk", features = ["testwallet"] }
+dusk-core = { workspace = true, features = ["zk"] }
+node-data = { workspace = true }
+node = { workspace = true }
+dusk-consensus = { workspace = true }
+wallet-core = { workspace = true }
+rusk-recovery = { workspace = true, features = ["state"] }
+rusk-prover = { workspace = true, features = ["no_random", "debug"] }
+dusk-bytes = { workspace = true }
+
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = [
+    "fmt",
+    "env-filter",
+    "json",
+] }
+zeroize = { workspace = true, features = ["derive"] }
+ff = { workspace = true }
+criterion = { workspace = true }
+rand = { workspace = true }
+rkyv = { workspace = true, features = ["size_32"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
+tempfile = { workspace = true }
+futures-util = { workspace = true }
+
+[features]
+archive = ["dusk-rusk/archive"]

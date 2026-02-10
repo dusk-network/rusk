@@ -1917,6 +1917,31 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tungstenite",
+]
+
+[[package]]
+name = "dusk-rusk-test"
+version = "1.4.5-alpha.1"
+dependencies = [
+ "anyhow",
+ "criterion",
+ "dusk-bytes",
+ "dusk-consensus",
+ "dusk-core",
+ "dusk-node",
+ "dusk-node-data",
+ "dusk-rusk",
+ "dusk-wallet-core",
+ "ff",
+ "futures-util",
+ "rand 0.8.5",
+ "rkyv",
+ "rusk-prover",
+ "rusk-recovery",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
  "zeroize",
 ]
 
