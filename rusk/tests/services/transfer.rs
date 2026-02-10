@@ -186,10 +186,5 @@ pub async fn wallet() -> Result<()> {
         "Root is the same compare to the first transfer"
     );
 
-    // let recv = kadcast_recv.try_recv();
-    // let (tx, _, h) = recv.expect("Transaction has not been locally
-    // propagated"); info!("Tx Wire Message {}", hex::encode(tx));
-    // assert_eq!(h, 0, "Transaction locally propagated with wrong height");
-
     Ok(())
 }

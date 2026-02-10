@@ -162,11 +162,6 @@ pub async fn stake() -> Result<()> {
     );
     assert_ne!(original_root, new_root, "Root should have changed");
 
-    // let recv = kadcast_recv.try_recv();
-    // let (_, _, h) = recv.expect("Transaction has not been locally
-    // propagated"); assert_eq!(h, 0, "Transaction locally propagated with
-    // wrong height");
-
     Ok(())
 }
 

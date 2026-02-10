@@ -386,11 +386,6 @@ pub async fn multi_transfer() -> Result<()> {
     );
     assert_ne!(original_root, new_root, "Root should have changed");
 
-    // let recv = kadcast_recv.try_recv();
-    // let (_, _, h) = recv.expect("Transaction has not been locally
-    // propagated"); assert_eq!(h, 0, "Transaction locally propagated with
-    // wrong height");
-
     Ok(())
 }
 
@@ -426,11 +421,6 @@ pub async fn multi_transfer_deploy() -> Result<()> {
         hex::encode(new_root)
     );
     assert_ne!(original_root, new_root, "Root should have changed");
-
-    // let recv = kadcast_recv.try_recv();
-    // let (_, _, h) = recv.expect("Transaction has not been locally
-    // propagated"); assert_eq!(h, 0, "Transaction locally propagated with
-    // wrong height");
 
     Ok(())
 }
