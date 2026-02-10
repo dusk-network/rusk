@@ -7,136 +7,21 @@
 use dusk_consensus::operations::StateTransitionData;
 use dusk_core::signatures::bls;
 use node_data::ledger::Transaction;
-use rusk::node::{DriverStore, RuskVmConfig, FEATURE_ABI_PUBLIC_SENDER};
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use rusk::{Error, Result, DUSK_CONSENSUS_KEY};
 
-use rusk::{Error, Result, Rusk, DUSK_CONSENSUS_KEY};
-use rusk_recovery_tools::state::restore_state;
-use tempfile::TempDir;
-use tokio::sync::broadcast;
-use tracing::info;
-
+use crate::common::fixture::StateFixture;
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
-use crate::common::wallet::{
-    test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
-};
 
 const CHAIN_ID: u8 = 0x01;
-
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let dir = dir.as_ref();
-
-    // let snapshot =
-    //     toml::from_str(include_str!("../config/contract_deployment.toml"))
-    //         .expect("Cannot deserialize config");
-    //
-    // let dusk_key = *rusk::DUSK_CONSENSUS_KEY;
-    // let deploy = state::deploy(dir, &snapshot, dusk_key, |session| {
-    //     let bob_bytecode = include_bytes!(
-    //         "../../../target/dusk/wasm32-unknown-unknown/release/bob.wasm"
-    //     );
-    //
-    //     session
-    //         .deploy(
-    //             bob_bytecode,
-    //             ContractData::builder()
-    //                 .owner(owner.as_ref())
-    //                 .init_arg(&BOB_INIT_VALUE)
-    //                 .contract_id(gen_contract_id(bob_bytecode, 0u64, owner)),
-    //             POINT_LIMIT,
-    //         )
-    //         .expect("Deploying the bob contract should succeed");
-    // })
-    // .expect("Deploying initial state should succeed");
-
-    // let (_vm, _commit_id) = deploy;
-    let (_vm, _commit_id) = restore_state(dir)?;
-
-    // let s = vm.session(commit_id, 1, 1)?;
-
-    let (sender, _) = broadcast::channel(10);
-
-    #[cfg(feature = "archive")]
-    let archive_dir = tempfile::tempdir()
-        .expect("Should be able to create temporary directory");
-    #[cfg(feature = "archive")]
-    let archive =
-        node::archive::Archive::create_or_open(archive_dir.path()).await;
-
-    let mut vm_config =
-        RuskVmConfig::new().with_block_gas_limit(10_000_000_000);
-    vm_config.with_feature(FEATURE_ABI_PUBLIC_SENDER, 1);
-
-    let rusk = Rusk::new(
-        dir,
-        CHAIN_ID,
-        vm_config,
-        DEFAULT_MIN_GAS_LIMIT,
-        u64::MAX,
-        sender,
-        #[cfg(feature = "archive")]
-        archive,
-        DriverStore::new(None::<PathBuf>),
-    )
-    .expect("Instantiating rusk should succeed");
-    Ok(rusk)
-}
-
-#[allow(dead_code)]
-struct Fixture {
-    pub rusk: Rusk,
-    pub wallet: Wallet<TestStore, TestStateClient>,
-    pub tmpdir: TempDir,
-}
-
-impl Fixture {
-    async fn build() -> Self {
-        let tmpdir: TempDir = tempfile::tempdir().expect("tempdir() to work");
-        let state_dir = tmpdir.path().join("state");
-        let data = include_bytes!("../assets/2710377_state.tar.gz");
-
-        rusk_recovery_tools::state::tar::unarchive(
-            &data[..],
-            state_dir.as_path(),
-        )
-        .expect("unarchive should work");
-
-        // let state_dir = Path::new("/Users/seppia/Downloads/2710477 2/state
-        // 2");
-
-        let rusk = initial_state(&state_dir)
-            .await
-            .expect("Initializing should succeed");
-
-        let cache = Arc::new(RwLock::new(HashMap::new()));
-
-        let wallet = wallet::Wallet::new(
-            TestStore,
-            TestStateClient {
-                rusk: rusk.clone(),
-                cache,
-            },
-        );
-
-        let original_root = rusk.state_root();
-
-        info!("Original Root: {:?}", hex::encode(original_root));
-
-        Self {
-            rusk,
-            wallet,
-            tmpdir,
-        }
-    }
-}
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_mainnet_2710377() -> Result<(), Error> {
     logger();
-    let f = Fixture::build().await;
+    let f = StateFixture::build(
+        include_bytes!("../assets/2710377_state.tar.gz"),
+        CHAIN_ID,
+    )
+    .await;
     println!("root={}", hex::encode(f.rusk.state_root()));
     // let base = hex::decode(
     //     "c5870f263709d39e5d8098fb53cbe17856f7d7a0ff47ccd47f5cea3687566bdb",

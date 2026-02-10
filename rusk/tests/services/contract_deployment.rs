@@ -4,9 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
 
 #[cfg(feature = "archive")]
 use node::archive::Archive;
@@ -23,14 +21,14 @@ use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
 use tokio::sync::broadcast;
-use tracing::info;
 
+use crate::common::fixture::DeployFixture;
 use crate::common::logger;
 use crate::common::state::{
     generator_procedure, ExecuteResult, DEFAULT_MIN_GAS_LIMIT,
 };
 use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore, Wallet,
+    test_wallet as wallet, TestStateClient, TestStore,
 };
 
 const BLOCK_HEIGHT: u64 = 1;
@@ -194,51 +192,23 @@ fn make_and_execute_transaction_deploy(
     }
 }
 
-struct Fixture {
-    pub rusk: Rusk,
-    pub wallet: Wallet<TestStore, TestStateClient>,
-    pub bob_bytecode: Vec<u8>,
-    pub contract_id: ContractId,
-    pub path: PathBuf,
+async fn fixture(deploy_bob: bool) -> DeployFixture {
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp, deploy_bob)
+        .await
+        .expect("Initializing should succeed");
+
+    DeployFixture::new(tmp, rusk, OWNER)
 }
 
-impl Fixture {
-    async fn build(deploy_bob: bool) -> Self {
-        let tmp =
-            tempdir().expect("Should be able to create temporary directory");
-        let rusk = initial_state(&tmp, deploy_bob)
-            .await
-            .expect("Initializing should succeed");
+trait DeployFixtureExt {
+    fn assert_bob_contract_is_not_deployed(&self);
+    fn assert_bob_contract_is_deployed(&self);
+    fn wallet_balance(&self) -> u64;
+}
 
-        let cache = Arc::new(RwLock::new(HashMap::new()));
-
-        let wallet = wallet::Wallet::new(
-            TestStore,
-            TestStateClient {
-                rusk: rusk.clone(),
-                cache,
-            },
-        );
-
-        let original_root = rusk.state_root();
-
-        info!("Original Root: {:?}", hex::encode(original_root));
-
-        let bob_bytecode =
-            include_bytes!("../../../contracts/bin/bob.wasm").to_vec();
-        let contract_id = gen_contract_id(&bob_bytecode, 0u64, OWNER);
-
-        let path = tmp.into_path();
-        Self {
-            rusk,
-            wallet,
-            bob_bytecode,
-            contract_id,
-            path,
-        }
-    }
-
-    pub fn assert_bob_contract_is_not_deployed(&self) {
+impl DeployFixtureExt for DeployFixture {
+    fn assert_bob_contract_is_not_deployed(&self) {
         let commit = self.rusk.state_root();
         let vm =
             VM::new(self.path.as_path()).expect("VM creation should succeed");
@@ -257,7 +227,7 @@ impl Fixture {
         }
     }
 
-    pub fn assert_bob_contract_is_deployed(&self) {
+    fn assert_bob_contract_is_deployed(&self) {
         let commit = self.rusk.state_root();
         let vm =
             VM::new(self.path.as_path()).expect("VM creation should succeed");
@@ -282,7 +252,7 @@ impl Fixture {
         );
     }
 
-    pub fn wallet_balance(&self) -> u64 {
+    fn wallet_balance(&self) -> u64 {
         self.wallet
             .get_balance(0)
             .expect("Getting wallet's balance should succeed")
@@ -297,7 +267,7 @@ impl Fixture {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy() {
     logger();
-    let f = Fixture::build(false).await;
+    let f = fixture(false).await;
 
     f.assert_bob_contract_is_not_deployed();
     let before_balance = f.wallet_balance();
@@ -323,7 +293,7 @@ pub async fn contract_deploy() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_already_deployed() {
     logger();
-    let f = Fixture::build(true).await;
+    let f = fixture(true).await;
 
     f.assert_bob_contract_is_deployed();
     let before_balance = f.wallet_balance();
@@ -348,7 +318,7 @@ pub async fn contract_already_deployed() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_corrupted_bytecode() {
     logger();
-    let mut f = Fixture::build(false).await;
+    let mut f = fixture(false).await;
 
     // let's corrupt the bytecode
     f.bob_bytecode = f.bob_bytecode[4..].to_vec();
@@ -375,7 +345,7 @@ pub async fn contract_deploy_corrupted_bytecode() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_charge() {
     logger();
-    let f = Fixture::build(false).await;
+    let f = fixture(false).await;
 
     let alice_bytecode = include_bytes!("../../../contracts/bin/alice.wasm");
 
@@ -414,7 +384,7 @@ pub async fn contract_deploy_charge() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_not_enough_to_spend() {
     logger();
-    let f = Fixture::build(false).await;
+    let f = fixture(false).await;
 
     f.assert_bob_contract_is_not_deployed();
     let before_balance = f.wallet_balance();
@@ -440,7 +410,7 @@ pub async fn contract_deploy_not_enough_to_spend() {
 pub async fn contract_deploy_gas_price_too_low() {
     const LOW_GAS_PRICE: u64 = 10;
     logger();
-    let f = Fixture::build(false).await;
+    let f = fixture(false).await;
 
     f.assert_bob_contract_is_not_deployed();
     let before_balance = f.wallet_balance();
@@ -466,7 +436,7 @@ pub async fn contract_deploy_gas_price_too_low() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn contract_deploy_gas_limit_too_low() {
     logger();
-    let f = Fixture::build(false).await;
+    let f = fixture(false).await;
 
     f.assert_bob_contract_is_not_deployed();
     let before_balance = f.wallet_balance();

@@ -4,10 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
-
 use dusk_consensus::operations::StateTransitionData;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls;
@@ -19,19 +15,11 @@ use dusk_core::transfer::data::ContractCall;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_vm::ContractData;
 use node_data::ledger::Transaction as NodeTransaction;
-use rusk::node::{DriverStore, RuskVmConfig, FEATURE_ABI_PUBLIC_SENDER};
-use rusk::{Error, Result, Rusk, DUSK_CONSENSUS_KEY};
-use rusk_recovery_tools::state::restore_state;
-use tempfile::TempDir;
-use tokio::sync::broadcast;
-use tracing::info;
+use rusk::{Error, Result, DUSK_CONSENSUS_KEY};
 use wallet_core::transaction::{moonlight, moonlight_stake_reward};
 
+use crate::common::fixture::StateFixture;
 use crate::common::logger;
-use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
-use crate::common::wallet::{
-    test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
-};
 
 const GAS_LIMIT: u64 = 0x10000000;
 
@@ -42,90 +30,16 @@ const CHARLIE_ID: ContractId = ContractId::from_bytes([4; 32]);
 
 const CHAIN_ID: u8 = 0x01;
 
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let dir = dir.as_ref();
-
-    let (_vm, _commit_id) = restore_state(dir)?;
-
-    let (sender, _) = broadcast::channel(10);
-
-    #[cfg(feature = "archive")]
-    let archive_dir = tempfile::tempdir()
-        .expect("Should be able to create temporary directory");
-    #[cfg(feature = "archive")]
-    let archive =
-        node::archive::Archive::create_or_open(archive_dir.path()).await;
-
-    let mut vm_config =
-        RuskVmConfig::new().with_block_gas_limit(10_000_000_000);
-    vm_config.with_feature(FEATURE_ABI_PUBLIC_SENDER, 1);
-
-    let rusk = Rusk::new(
-        dir,
-        CHAIN_ID,
-        vm_config,
-        DEFAULT_MIN_GAS_LIMIT,
-        u64::MAX,
-        sender,
-        #[cfg(feature = "archive")]
-        archive,
-        DriverStore::new(None::<PathBuf>),
-    )
-    .expect("Instantiating rusk should succeed");
-    Ok(rusk)
-}
-
-#[allow(dead_code)]
-struct Fixture {
-    pub rusk: Rusk,
-    pub wallet: Wallet<TestStore, TestStateClient>,
-    pub tmpdir: TempDir,
-}
-
-impl Fixture {
-    async fn build(/*owner: impl AsRef<[u8]>*/) -> Self {
-        let tmpdir: TempDir = tempfile::tempdir().expect("tempdir() to work");
-        let state_dir = tmpdir.path().join("state");
-        let data = include_bytes!("../assets/2710377_state.tar.gz");
-
-        rusk_recovery_tools::state::tar::unarchive(
-            &data[..],
-            state_dir.as_path(),
-        )
-        .expect("unarchive should work");
-
-        let rusk = initial_state(&state_dir)
-            .await
-            .expect("Initializing should succeed");
-
-        let cache = Arc::new(RwLock::new(HashMap::new()));
-
-        let wallet = wallet::Wallet::new(
-            TestStore,
-            TestStateClient {
-                rusk: rusk.clone(),
-                cache,
-            },
-        );
-
-        let original_root = rusk.state_root();
-
-        info!("Original Root: {:?}", hex::encode(original_root));
-
-        Self {
-            rusk,
-            wallet,
-            tmpdir,
-        }
-    }
-}
-
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_isolated() -> Result<(), Error> {
     logger();
 
     // start rusk instance from state "../assets/2710377_state.tar.gz"
-    let f = Fixture::build().await;
+    let f = StateFixture::build(
+        include_bytes!("../assets/2710377_state.tar.gz"),
+        CHAIN_ID,
+    )
+    .await;
     println!("root={}", hex::encode(f.rusk.state_root()));
 
     // move rusk to block 2,710,376

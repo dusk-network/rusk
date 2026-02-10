@@ -11,9 +11,10 @@ use rand::SeedableRng;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 use rusk::node::{DriverStore, RuskVmConfig};
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+
+#[cfg(feature = "archive")]
+use node::archive::Archive;
 
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::{
@@ -25,13 +26,10 @@ use rusk::{Error, Result, Rusk};
 use rusk_recovery_tools::state;
 use tempfile::tempdir;
 use tokio::sync::broadcast;
-use tracing::info;
 
+use crate::common::fixture::DeployFixture;
 use crate::common::logger;
 use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
-use crate::common::wallet::{
-    test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
-};
 
 const POINT_LIMIT: u64 = 0x10000000;
 
@@ -78,8 +76,7 @@ async fn initial_state<P: AsRef<Path>>(
     let archive_dir =
         tempdir().expect("Should be able to create temporary directory");
     #[cfg(feature = "archive")]
-    let archive =
-        node::archive::Archive::create_or_open(archive_dir.path()).await;
+    let archive = Archive::create_or_open(archive_dir.path()).await;
 
     let rusk = Rusk::new(
         dir,
@@ -96,55 +93,30 @@ async fn initial_state<P: AsRef<Path>>(
     Ok(rusk)
 }
 
-#[allow(dead_code)]
-struct Fixture {
-    pub rusk: Rusk,
-    pub wallet: Wallet<TestStore, TestStateClient>,
-    pub bob_bytecode: Vec<u8>,
-    pub contract_id: ContractId,
-    pub path: PathBuf,
-    pub session: Option<Session>,
+async fn fixture(owner: impl AsRef<[u8]>) -> DeployFixture {
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp, owner.as_ref())
+        .await
+        .expect("Initializing should succeed");
+
+    DeployFixture::new(tmp, rusk, owner.as_ref())
 }
 
-impl Fixture {
-    async fn build(owner: impl AsRef<[u8]>) -> Self {
-        let tmp =
-            tempdir().expect("Should be able to create temporary directory");
-        let rusk = initial_state(&tmp, owner.as_ref())
-            .await
-            .expect("Initializing should succeed");
+trait DeployFixtureExt {
+    fn assert_bob_contract_is_deployed(&self);
+    fn set_session(&mut self);
+    fn query_contract<R>(
+        &mut self,
+        method: impl AsRef<str>,
+    ) -> Result<CallReceipt<R>, Error>
+    where
+        R: Archive,
+        R::Archived: Deserialize<R, Infallible>
+            + for<'b> CheckBytes<DefaultValidator<'b>>;
+}
 
-        let cache = Arc::new(RwLock::new(HashMap::new()));
-
-        let wallet = wallet::Wallet::new(
-            TestStore,
-            TestStateClient {
-                rusk: rusk.clone(),
-                cache,
-            },
-        );
-
-        let original_root = rusk.state_root();
-
-        info!("Original Root: {:?}", hex::encode(original_root));
-
-        let bob_bytecode =
-            include_bytes!("../../../contracts/bin/bob.wasm").to_vec();
-        let contract_id = gen_contract_id(&bob_bytecode, 0u64, owner.as_ref());
-
-        let path = tmp.into_path();
-
-        Self {
-            rusk,
-            wallet,
-            bob_bytecode,
-            contract_id,
-            path,
-            session: None,
-        }
-    }
-
-    pub fn assert_bob_contract_is_deployed(&self) {
+impl DeployFixtureExt for DeployFixture {
+    fn assert_bob_contract_is_deployed(&self) {
         const BOB_ECHO_VALUE: u64 = 775;
         let commit = self.rusk.state_root();
         let vm =
@@ -170,7 +142,7 @@ impl Fixture {
         );
     }
 
-    pub fn set_session(&mut self) {
+    fn set_session(&mut self) {
         let commit = self.rusk.state_root();
         let vm =
             VM::new(self.path.as_path()).expect("VM creation should succeed");
@@ -180,7 +152,7 @@ impl Fixture {
         );
     }
 
-    pub fn query_contract<R>(
+    fn query_contract<R>(
         &mut self,
         method: impl AsRef<str>,
     ) -> Result<CallReceipt<R>, Error>
@@ -251,7 +223,7 @@ pub async fn non_bls_owner_guarded_call() -> Result<(), Error> {
     const VALUE: u8 = 244;
     let rng = &mut StdRng::seed_from_u64(0xcafe);
     let sk = BlsSecretKey::random(rng);
-    let mut f = Fixture::build(NON_BLS_OWNER).await;
+    let mut f = fixture(NON_BLS_OWNER).await;
     f.assert_bob_contract_is_deployed();
     f.set_session();
 
@@ -278,7 +250,7 @@ pub async fn bls_owner_guarded_call() -> Result<(), Error> {
     let pk = BlsPublicKey::from(&sk);
     let owner = pk.to_bytes();
 
-    let mut f = Fixture::build(&owner).await;
+    let mut f = fixture(&owner).await;
     f.assert_bob_contract_is_deployed();
     f.set_session();
 
