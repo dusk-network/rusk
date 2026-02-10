@@ -25,17 +25,14 @@ use std::collections::HashMap;
 use tempfile::tempdir;
 use tracing::info;
 
-use crate::common::state::{generator_procedure2, new_state};
+use crate::common::state::{
+    generator_procedure2, new_state, BLOCK_GAS_LIMIT, BLOCK_HEIGHT, GAS_LIMIT,
+    GAS_PRICE,
+};
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore,
 };
 use crate::common::*;
-
-const BLOCK_HEIGHT: u64 = 1;
-const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
-
-const GAS_LIMIT: u64 = 10_000_000_000;
-const GAS_PRICE: u64 = 1;
 
 // Creates the Rusk initial state for the tests below
 async fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {

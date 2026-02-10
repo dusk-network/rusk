@@ -37,6 +37,10 @@ use tracing::info;
 
 const CHAIN_ID: u8 = 0xFA;
 pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
+pub const BLOCK_HEIGHT: u64 = 1;
+pub const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
+pub const GAS_LIMIT: u64 = 10_000_000_000;
+pub const GAS_PRICE: u64 = 1;
 
 // Creates a Rusk initial state in the given directory
 pub async fn new_state<P: AsRef<Path>>(

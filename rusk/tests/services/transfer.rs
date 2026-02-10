@@ -17,12 +17,11 @@ use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, new_state};
+use crate::common::state::{generator_procedure, new_state, BLOCK_GAS_LIMIT};
 use crate::common::wallet::{
     test_wallet as wallet, TestStateClient, TestStore,
 };
 
-const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 const MAX_NOTES: u64 = 10;
 
