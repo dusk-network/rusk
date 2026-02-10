@@ -30,6 +30,12 @@ use dusk_consensus::operations::{Operations, StateTransitionData, StateTransitio
 use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 
+pub mod assertions;
+pub mod committee;
+pub mod harness;
+pub mod messages;
+pub mod trace;
+
 #[derive(Clone)]
 pub struct TestKeys {
     pub sk: BlsSecretKey,

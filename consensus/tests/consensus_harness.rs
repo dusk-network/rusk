@@ -10,19 +10,15 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use node_data::ledger::{Block, Header};
 use node_data::message::payload::{InvType, RatificationResult, Vote};
-use node_data::message::{Message, Payload, SignedStepMessage};
+use node_data::message::{Message, Payload};
 use node_data::StepName;
 use rand::rngs::StdRng;
 use rand::{seq::SliceRandom, Rng, SeedableRng};
 
 use dusk_consensus::build_validation_payload;
 use dusk_consensus::config::{EMERGENCY_MODE_ITERATION_THRESHOLD, MAX_ROUND_DISTANCE};
-use dusk_consensus::commons::{RoundUpdate, TimeoutSet};
-use dusk_consensus::errors::ConsensusError;
-use dusk_consensus::merkle::merkle_root;
-use dusk_consensus::quorum::verifiers::verify_quorum_votes;
+use dusk_consensus::commons::TimeoutSet;
 use dusk_consensus::user::committee::Committee;
 use dusk_consensus::user::sortition::Config as SortitionConfig;
 
@@ -32,46 +28,17 @@ use support::{
     TestNetwork, TraceEntry, TraceMeta,
 };
 
-type ConsensusCancel = tokio::sync::oneshot::Sender<i32>;
-type ConsensusHandle = tokio::task::JoinHandle<Result<(), ConsensusError>>;
-
-fn spawn_all(
-    network: &TestNetwork,
-    timeouts: TimeoutSet,
-) -> (Vec<ConsensusCancel>, Vec<ConsensusHandle>) {
-    let mut cancels = Vec::new();
-    let mut handles = Vec::new();
-
-    for node in &network.nodes {
-        let ru = node.round_update(&network.tip_header, timeouts.clone());
-        let (cancel, handle) =
-            node.spawn_consensus(ru, network.provisioners.clone());
-        cancels.push(cancel);
-        handles.push(handle);
-    }
-
-    (cancels, handles)
-}
-
-async fn shutdown_all(cancels: Vec<ConsensusCancel>, handles: Vec<ConsensusHandle>) {
-    for cancel in cancels {
-        let _ = cancel.send(0);
-    }
-    for handle in handles {
-        let _ = handle.await;
-    }
-}
-
-async fn set_emergency_iteration(network: &TestNetwork) {
-    let last_iter = (
-        network.tip_header.hash,
-        EMERGENCY_MODE_ITERATION_THRESHOLD,
-    );
-    for node in &network.nodes {
-        let mut db = node.db.lock().await;
-        db.last_iter = last_iter;
-    }
-}
+use support::assertions::{
+    assert_no_conflicting_quorums, assert_quorum_batch_invariants_with_network,
+    assert_quorum_batch_invariants_with_network_for_round,
+    assert_quorum_message_invariants, assert_quorum_message_verifies,
+};
+use support::committee::build_committee;
+use support::harness::{set_emergency_iteration, shutdown_all, spawn_all};
+use support::messages::{
+    build_candidate_message, corrupt_message_signature,
+};
+use support::trace::{track_trace_round_prev, write_failure_trace};
 
 const TRACE_NETWORK_SIZE: usize = 3;
 const TRACE_NETWORK_SEED: u64 = 900;
@@ -90,311 +57,6 @@ fn multi_round_trace_path() -> PathBuf {
         .join("tests")
         .join("fixtures")
         .join(MULTI_ROUND_TRACE_FILE)
-}
-
-fn build_committee(
-    network: &TestNetwork,
-    iteration: u8,
-    step: StepName,
-) -> Committee {
-    let round = network.tip_header.height + 1;
-    let mut exclusion = Vec::new();
-    if step != StepName::Proposal {
-        let cur_generator = network
-            .provisioners
-            .get_generator(iteration, network.tip_header.seed, round);
-        exclusion.push(cur_generator);
-        if dusk_consensus::config::exclude_next_generator(iteration) {
-            let next_generator = network
-                .provisioners
-                .get_generator(iteration + 1, network.tip_header.seed, round);
-            exclusion.push(next_generator);
-        }
-    }
-    let cfg = SortitionConfig::new(
-        network.tip_header.seed,
-        round,
-        iteration,
-        step,
-        exclusion,
-    );
-    Committee::new(&network.provisioners, &cfg)
-}
-
-fn corrupt_message_signature(msg: &node_data::message::Message) -> Option<node_data::message::Message> {
-    let mut corrupted = msg.clone();
-    match &mut corrupted.payload {
-        Payload::Candidate(c) => {
-            let mut sig = *c.candidate.header().signature.inner();
-            sig[0] ^= 0x01;
-            c.candidate.set_signature(sig.into());
-            Some(corrupted)
-        }
-        Payload::Validation(v) => {
-            let mut sig = *v.sign_info.signature.inner();
-            sig[0] ^= 0x01;
-            v.sign_info.signature = sig.into();
-            Some(corrupted)
-        }
-        Payload::Ratification(r) => {
-            let mut sig = *r.sign_info.signature.inner();
-            sig[0] ^= 0x01;
-            r.sign_info.signature = sig.into();
-            Some(corrupted)
-        }
-        _ => None,
-    }
-}
-
-fn build_candidate_message(ru: &RoundUpdate, iteration: u8) -> Message {
-    let mut header = Header::default();
-    header.height = ru.round;
-    header.iteration = iteration;
-    header.prev_block_hash = ru.hash();
-    header.generator_bls_pubkey = *ru.pubkey_bls.bytes();
-    header.txroot = merkle_root::<[u8; 32]>(&[]);
-    header.faultroot = merkle_root::<[u8; 32]>(&[]);
-
-    let block = Block::new(header, vec![], vec![]).expect("valid block");
-    let mut candidate = node_data::message::payload::Candidate { candidate: block };
-    candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
-    candidate.into()
-}
-
-fn assert_quorum_message_invariants(msg: &Message) {
-    let Payload::Quorum(q) = &msg.payload else {
-        panic!("expected quorum payload");
-    };
-
-    assert_eq!(msg.header, q.header, "quorum header mismatch");
-
-    let validation_sig_nonzero = q
-        .att
-        .validation
-        .aggregate_signature()
-        .inner()
-        .iter()
-        .any(|b| *b != 0);
-    let ratification_sig_nonzero = q
-        .att
-        .ratification
-        .aggregate_signature()
-        .inner()
-        .iter()
-        .any(|b| *b != 0);
-
-    assert_eq!(
-        q.att.validation.bitset == 0,
-        !validation_sig_nonzero,
-        "validation StepVotes signature/bitset mismatch"
-    );
-    assert_eq!(
-        q.att.ratification.bitset == 0,
-        !ratification_sig_nonzero,
-        "ratification StepVotes signature/bitset mismatch"
-    );
-
-    match q.att.result {
-        RatificationResult::Success(Vote::Valid(_)) => {}
-        RatificationResult::Success(other) => {
-            panic!("unexpected success vote: {other:?}");
-        }
-        RatificationResult::Fail(Vote::Valid(_)) => {
-            panic!("valid vote should not be a failure");
-        }
-        RatificationResult::Fail(_) => {}
-    }
-
-    if matches!(q.att.result.vote(), Vote::NoQuorum) {
-        assert!(
-            q.att.validation.is_empty(),
-            "noquorum must have empty validation votes"
-        );
-    } else {
-        assert!(
-            !q.att.validation.is_empty(),
-            "quorum requires validation votes"
-        );
-    }
-
-    assert!(
-        !q.att.ratification.is_empty(),
-        "quorum requires ratification votes"
-    );
-}
-
-fn build_committee_for_round(
-    network: &TestNetwork,
-    seed: node_data::ledger::Seed,
-    round: u64,
-    iteration: u8,
-    step: StepName,
-) -> Committee {
-    let mut exclusion = Vec::new();
-    if step != StepName::Proposal {
-        let cur_generator =
-            network
-                .provisioners
-                .get_generator(iteration, seed, round);
-        exclusion.push(cur_generator);
-        if dusk_consensus::config::exclude_next_generator(iteration) {
-            let next_generator = network
-                .provisioners
-                .get_generator(iteration + 1, seed, round);
-            exclusion.push(next_generator);
-        }
-    }
-    let cfg = SortitionConfig::new(seed, round, iteration, step, exclusion);
-    Committee::new(&network.provisioners, &cfg)
-}
-
-fn assert_quorum_message_verifies(network: &TestNetwork, msg: &Message) {
-    let Payload::Quorum(q) = &msg.payload else {
-        panic!("expected quorum payload");
-    };
-
-    let seed = network.tip_header.seed;
-    let round = q.header.round;
-    let iter = q.header.iteration;
-    let vote = q.att.result.vote();
-
-    if !matches!(vote, Vote::NoQuorum) {
-        let validation_committee =
-            build_committee_for_round(network, seed, round, iter, StepName::Validation);
-        verify_quorum_votes(
-            &q.header,
-            StepName::Validation,
-            vote,
-            &q.att.validation,
-            &validation_committee,
-        )
-        .expect("validation step votes verify");
-    }
-
-    let ratification_committee =
-        build_committee_for_round(network, seed, round, iter, StepName::Ratification);
-    verify_quorum_votes(
-        &q.header,
-        StepName::Ratification,
-        vote,
-        &q.att.ratification,
-        &ratification_committee,
-    )
-    .expect("ratification step votes verify");
-}
-
-fn assert_no_conflicting_quorums(
-    envelopes: &[support::Envelope],
-    seen: &mut HashMap<(u64, u8), RatificationResult>,
-) {
-    for env in envelopes {
-        if let Payload::Quorum(q) = &env.msg.payload {
-            let key = (q.header.round, q.header.iteration);
-            if let Some(prev) = seen.get(&key) {
-                assert_eq!(
-                    prev, &q.att.result,
-                    "conflicting quorum for round/iter {:?}",
-                    key
-                );
-            } else {
-                seen.insert(key, q.att.result);
-            }
-        }
-    }
-}
-
-fn assert_quorum_batch_invariants_with_network(
-    envelopes: &[support::Envelope],
-    seen: &mut HashMap<(u64, u8), RatificationResult>,
-    network: &TestNetwork,
-) {
-    assert_quorum_batch_invariants_with_network_for_round(
-        envelopes,
-        seen,
-        network,
-        None,
-    );
-}
-
-fn assert_quorum_batch_invariants_with_network_for_round(
-    envelopes: &[support::Envelope],
-    seen: &mut HashMap<(u64, u8), RatificationResult>,
-    network: &TestNetwork,
-    verify_round: Option<u64>,
-) {
-    for env in envelopes {
-        if let Payload::Quorum(q) = &env.msg.payload {
-            assert_quorum_message_invariants(&env.msg);
-            if verify_round.map_or(true, |round| round == q.header.round) {
-                assert_quorum_message_verifies(network, &env.msg);
-            }
-        }
-    }
-    assert_no_conflicting_quorums(envelopes, seen);
-}
-
-fn track_trace_round_prev(
-    msg: &Message,
-    expected_round: u64,
-    expected_prev: [u8; 32],
-    round_prev: &mut HashMap<u64, [u8; 32]>,
-) {
-    match msg.payload {
-        Payload::Candidate(_)
-        | Payload::Validation(_)
-        | Payload::Ratification(_)
-        | Payload::ValidationQuorum(_)
-        | Payload::Quorum(_) => {
-            let round = msg.header.round;
-            let prev = msg.header.prev_block_hash;
-            if let Some(existing) = round_prev.get(&round) {
-                assert_eq!(
-                    existing, &prev,
-                    "inconsistent prev_block_hash in trace for round {round}"
-                );
-            } else {
-                if round == expected_round {
-                    assert_eq!(
-                        prev, expected_prev,
-                        "unexpected prev_block_hash in trace message"
-                    );
-                }
-                round_prev.insert(round, prev);
-            }
-        }
-        _ => {}
-    }
-}
-
-fn write_failure_trace(
-    network_seed: u64,
-    nodes: usize,
-    trace: &[TraceEntry],
-) -> PathBuf {
-    let path = if let Ok(path) = std::env::var("DUSK_CONSENSUS_TRACE_FAIL_OUT")
-    {
-        PathBuf::from(path)
-    } else {
-        let mut path = std::env::temp_dir();
-        let stamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("time")
-            .as_millis();
-        path.push(format!(
-            "dusk-consensus-fault-trace-{network_seed}-{stamp}.log"
-        ));
-        path
-    };
-
-    if let Some(parent) = path.parent() {
-        let _ = std::fs::create_dir_all(parent);
-    }
-    let meta = TraceMeta {
-        seed: Some(network_seed),
-        nodes: Some(nodes),
-    };
-    write_trace_with_meta(&path, trace, &meta);
-    path
 }
 
 async fn record_round_trace(
