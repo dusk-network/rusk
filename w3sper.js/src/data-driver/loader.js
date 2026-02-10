@@ -44,6 +44,20 @@
  * ```
  */
 
+const REQUIRED_EXPORTS = [
+  "memory",
+  "alloc",
+  "dealloc",
+  "get_last_error",
+  "encode_input_fn",
+  "decode_input_fn",
+  "decode_output_fn",
+  "decode_event",
+  "get_schema",
+  "get_version",
+  "init",
+];
+
 /**
  * Create a JS driver from a compiled WASM binary.
  * @param {Uint8Array|ArrayBuffer} bytes - The compiled data‑driver WASM.
@@ -60,6 +74,14 @@
 export async function loadWasmDataDriver(bytes) {
   const wasmModule = await WebAssembly.instantiate(bytes, { env: {} });
   const exports = wasmModule.instance.exports;
+
+  const missing = REQUIRED_EXPORTS.filter((name) => !(name in exports));
+  if (missing.length > 0) {
+    throw new Error(
+      `Invalid data-driver WASM: missing required exports: ${missing.join(", ")}`,
+    );
+  }
+
   const memory = exports.memory;
 
   const textEncoder = new TextEncoder();

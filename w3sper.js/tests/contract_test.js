@@ -9,6 +9,7 @@ import {
   AddressSyncer,
   Bookkeeper,
   Contract,
+  dataDrivers,
   Network,
   ProfileGenerator,
 } from "../src/mod.js";
@@ -261,3 +262,17 @@ test(
     }
   },
 );
+
+test("loadWasmDataDriver: rejects WASM missing required exports", async () => {
+  // Minimal valid WASM module (magic + version, no exports)
+  const emptyWasm = new Uint8Array([
+    0x00, 0x61, 0x73, 0x6d, // magic: \0asm
+    0x01, 0x00, 0x00, 0x00, // version: 1
+  ]);
+
+  await assert.reject(
+    () => dataDrivers.load(emptyWasm),
+    Error,
+    "missing required exports",
+  );
+});
