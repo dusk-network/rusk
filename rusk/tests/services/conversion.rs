@@ -4,22 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::{Arc, RwLock};
-
+use anyhow::Result;
+use dusk_rusk_test::TestContext;
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::RuskVmConfig;
-use rusk::{Result, Rusk};
-use tempfile::tempdir;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
-};
+use crate::common::state::generator_procedure;
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 
@@ -27,21 +20,19 @@ const INITIAL_PHOENIX_BALANCE: u64 = 10_000_000_000;
 const INITIAL_MOONLIGHT_BALANCE: u64 = 10_000_000_000;
 
 // Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("../config/convert.toml"))
-        .expect("Cannot deserialize config");
+async fn initial_state() -> Result<TestContext> {
+    let state = include_str!("../config/convert.toml");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config).await
+    TestContext::instantiate(state, vm_config).await
 }
 
 /// Makes a transaction that converts Dusk from Phoenix to Moonlight, and
 /// produces a block with a single transaction, checking balances accordingly.
-fn wallet_convert_to_moonlight(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-    block_height: u64,
-) {
+fn wallet_convert_to_moonlight(tc: &TestContext, block_height: u64) {
+    let rusk = tc.rusk();
+    let wallet = tc.wallet();
+
     const CONVERT_VALUE: u64 = INITIAL_PHOENIX_BALANCE / 2;
     const GAS_LIMIT: u64 = 1_000_000_000;
 
@@ -99,11 +90,10 @@ fn wallet_convert_to_moonlight(
 
 /// Makes a transaction that converts Dusk from Phoenix to Moonlight, and
 /// produces a block with a single transaction, checking balances accordingly.
-fn wallet_convert_to_phoenix(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-    block_height: u64,
-) {
+fn wallet_convert_to_phoenix(tc: &TestContext, block_height: u64) {
+    let rusk = tc.rusk();
+    let wallet = tc.wallet();
+
     const CONVERT_VALUE: u64 = INITIAL_PHOENIX_BALANCE / 2;
     const GAS_LIMIT: u64 = 1_000_000_000;
 
@@ -166,21 +156,9 @@ pub async fn convert_to_moonlight() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let tc = initial_state().await?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache: cache.clone(),
-        },
-    );
-
-    wallet_convert_to_moonlight(&rusk, &wallet, BLOCK_HEIGHT);
+    wallet_convert_to_moonlight(&tc, BLOCK_HEIGHT);
 
     Ok(())
 }
@@ -192,21 +170,9 @@ pub async fn convert_to_phoenix() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let tc = initial_state().await?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache: cache.clone(),
-        },
-    );
-
-    wallet_convert_to_phoenix(&rusk, &wallet, BLOCK_HEIGHT);
+    wallet_convert_to_phoenix(&tc, BLOCK_HEIGHT);
 
     Ok(())
 }

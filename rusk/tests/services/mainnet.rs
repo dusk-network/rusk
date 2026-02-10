@@ -4,45 +4,36 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
 use std::sync::mpsc::{self, Receiver, Sender};
 
+use anyhow::Result;
 use dusk_core::dusk;
 use dusk_core::stake::{StakeData, StakeKeys, STAKE_CONTRACT};
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::NoteLeaf;
 use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_rusk_test::TestContext;
 use rusk::node::RuskVmConfig;
-use rusk::{Result, Rusk};
-use tempfile::tempdir;
 
 use crate::common::logger;
-use crate::common::state::new_state;
 
 const GENESIS_BALANCE: u64 = dusk(500_000_000.0);
-
-// Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!(
-        "../../../rusk-recovery/config/mainnet.toml"
-    ))
-    .expect("Cannot deserialize config");
-
-    new_state(dir, &snapshot, RuskVmConfig::default()).await
-}
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn mainnet_genesis() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let state = include_str!("../../../rusk-recovery/config/mainnet.toml");
+    let tc = TestContext::instantiate(state, RuskVmConfig::default()).await?;
+    let rusk = tc.rusk();
+
     let mut total_amount = 0u64;
 
     let (sender, receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) =
         mpsc::channel();
-    rusk.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, None)?;
+    rusk.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, None)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     for bytes in receiver.into_iter() {
         let (_, data) = rkyv::from_bytes::<(StakeKeys, StakeData)>(&bytes)
             .expect(
@@ -68,7 +59,8 @@ pub async fn mainnet_genesis() -> Result<()> {
         &sync_range,
         sender,
         None,
-    )?;
+    )
+    .map_err(|e| anyhow::anyhow!("{e}"))?;
     for bytes in receiver.into_iter() {
         let (data, _) = rkyv::from_bytes::<(AccountData, [u8; 193])>(&bytes)
             .expect(
@@ -79,7 +71,8 @@ pub async fn mainnet_genesis() -> Result<()> {
 
     let (sender, receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) =
         std::sync::mpsc::channel();
-    rusk.feeder_query(TRANSFER_CONTRACT, "sync", &sync_range, sender, None)?;
+    rusk.feeder_query(TRANSFER_CONTRACT, "sync", &sync_range, sender, None)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     for bytes in receiver.into_iter() {
         let leaf: NoteLeaf = rkyv::from_bytes(&bytes)
             .expect("The contract should only return NoteLeaf");

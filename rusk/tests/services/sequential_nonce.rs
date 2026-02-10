@@ -4,23 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::{Arc, RwLock};
-
+use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_core::transfer::data::TransactionData;
+use dusk_rusk_test::TestContext;
 use rand::prelude::*;
 use rusk::node::RuskVmConfig;
-use rusk::{Result, Rusk};
-use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, new_state, ExecuteResult};
-use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
-};
+use crate::common::state::{generator_procedure, ExecuteResult};
 
 const BLOCK_HEIGHT: u64 = 1;
 // This is purposefully chosen to be low to trigger the discarding of a
@@ -30,23 +23,11 @@ const BLOCK_GAS_LIMIT: u64 = 24_000_000;
 const GAS_LIMIT: u64 = 12_000_000; // Lowest value for a transfer
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
-// Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot =
-        toml::from_str(include_str!("../config/sequential_nonce.toml"))
-            .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
-}
-
 /// Executes three different transactions in the same block, expecting only two
 /// to be included due to exceeding the block gas limit
-fn wallet_transfer(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-    amount: u64,
-) {
+fn wallet_transfer(tc: &TestContext, amount: u64) {
+    let rusk = tc.rusk();
+    let wallet = tc.wallet();
     for i in 0..3 {
         let account = wallet
             .account_public_key(i)
@@ -174,25 +155,17 @@ pub async fn multi_transfer() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let state_toml = include_str!("../config/sequential_nonce.toml");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
+    let tc = TestContext::instantiate(state_toml, vm_config).await?;
+    let rusk = tc.rusk();
 
     let original_root = rusk.state_root();
 
     info!("Original Root: {}", hex::encode(original_root));
 
-    wallet_transfer(&rusk, &wallet, 1_000);
+    wallet_transfer(&tc, 1_000);
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();

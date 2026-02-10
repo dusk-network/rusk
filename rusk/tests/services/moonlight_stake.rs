@@ -4,23 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
-use std::sync::{Arc, RwLock};
-
 use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 
+use anyhow::Result;
+use dusk_rusk_test::TestContext;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::RuskVmConfig;
-use rusk::{Result, Rusk};
-use std::collections::HashMap;
-use tempfile::tempdir;
 use tracing::info;
 
-use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
-};
+use crate::common::state::generator_procedure;
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
@@ -29,22 +22,19 @@ const GAS_LIMIT: u64 = 10_000_000_000;
 const GAS_PRICE: u64 = 1;
 
 // Creates the Rusk initial state for the tests below
-async fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("../config/stake.toml"))
-        .expect("Cannot deserialize config");
+async fn stake_state() -> Result<TestContext> {
+    let state = include_str!("../config/stake.toml");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
+    TestContext::instantiate(state, vm_config).await
 }
 
 /// Stakes an amount Dusk and produces a block with this single transaction,
 /// checking the stake is set successfully. It then proceeds to withdraw the
 /// stake and checking it is correctly withdrawn.
-fn wallet_stake(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-    value: u64,
-) {
+fn wallet_stake(tc: &TestContext, value: u64) {
+    let rusk = tc.rusk();
+    let wallet = tc.wallet();
+
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     wallet
@@ -133,39 +123,22 @@ pub async fn stake() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let tc = stake_state().await?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
+    let original_root = tc.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     // Perform some staking actions.
-    wallet_stake(&rusk, &wallet, DEFAULT_MINIMUM_STAKE);
+    wallet_stake(&tc, DEFAULT_MINIMUM_STAKE);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = tc.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
     );
     assert_ne!(original_root, new_root, "Root should have changed");
-
-    // let recv = kadcast_recv.try_recv();
-    // let (_, _, h) = recv.expect("Transaction has not been locally
-    // propagated"); assert_eq!(h, 0, "Transaction locally propagated with
-    // wrong height");
 
     Ok(())
 }
@@ -173,10 +146,10 @@ pub async fn stake() -> Result<()> {
 /// Attempt to submit a management transaction intending it to fail. Verify that
 /// the reward amount remains unchanged and confirm that the transaction indeed
 /// fails
-fn wallet_reward(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-) {
+fn wallet_reward(tc: &TestContext) {
+    let rusk = tc.rusk();
+    let wallet = tc.wallet();
+
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     let stake = wallet.get_stake(2).expect("stake to be found");
@@ -210,29 +183,17 @@ pub async fn reward() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let tc = stake_state().await?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
+    let original_root = tc.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     // Perform some staking actions.
-    wallet_reward(&rusk, &wallet);
+    wallet_reward(&tc);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = tc.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)

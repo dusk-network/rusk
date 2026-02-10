@@ -5,10 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_rusk_test::common::{self, *};
+use dusk_rusk_test::TestContext;
 
-use std::path::Path;
 use std::sync::{mpsc, Arc};
 
+use anyhow::Result;
 use dusk_core::{
     transfer::{
         phoenix::{
@@ -25,7 +26,6 @@ use parking_lot::RwLockWriteGuard;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::{Rusk, RuskTip, RuskVmConfig};
-use rusk::Result;
 use tempfile::tempdir;
 use tracing::info;
 
@@ -37,17 +37,17 @@ const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 // Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("./config/rusk-state.toml"))
-        .expect("Cannot deserialize config");
+async fn initial_state() -> Result<TestContext> {
+    let state = include_str!("./config/rusk-state.toml");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config).await
+    TestContext::instantiate(state, vm_config).await
 }
 
 fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
     let (sender, receiver) = mpsc::channel();
-    rusk.leaves_from_height(height, sender)?;
+    rusk.leaves_from_height(height, sender)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     Ok(receiver
         .into_iter()
         .map(|bytes| rkyv::from_bytes(&bytes).unwrap())
@@ -109,8 +109,8 @@ pub async fn rusk_state_accepted() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let tc = initial_state().await?;
+    let rusk = tc.rusk();
 
     push_note(&rusk, |_tip, _vm| {});
 
@@ -122,7 +122,8 @@ pub async fn rusk_state_accepted() -> Result<()> {
         "There should be two notes in the state now"
     );
 
-    rusk.revert_to_base_root()?;
+    rusk.revert_to_base_root()
+        .expect("Reverting to base should succeed");
     let leaves = leaves_from_height(&rusk, 0)?;
 
     assert_eq!(
@@ -139,8 +140,8 @@ pub async fn rusk_state_finalized() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let tc = initial_state().await?;
+    let rusk = tc.rusk();
 
     push_note(&rusk, |mut tip, _vm| {
         tip.base = tip.current;
@@ -154,7 +155,8 @@ pub async fn rusk_state_finalized() -> Result<()> {
         "There should be two notes in the state now"
     );
 
-    rusk.revert_to_base_root()?;
+    rusk.revert_to_base_root()
+        .expect("Reverting to base should succeed");
     let leaves = leaves_from_height(&rusk, 0)?;
 
     assert_eq!(
