@@ -6,10 +6,16 @@
 
 import { Network } from "@dusk/w3sper";
 
-import { assert, FakeWebSocket, resolveAfter, test } from "./harness.js";
+import { assert, FakeWebSocket, NETWORK, resolveAfter, test } from "./harness.js";
+
+const NETWORK_FAKE_HOST = (() => {
+  const url = new URL(NETWORK);
+  url.hostname = "localhost.fake";
+  return url.toString();
+})();
 
 test("Network connection", async () => {
-  const network = new Network("http://localhost:8080/");
+  const network = new Network(NETWORK);
 
   assert.ok(!network.connected);
 
@@ -45,14 +51,14 @@ test("Network connection failure", async () => {
   await resolveAfter(11, undefined);
 
   const timeoutError = await assert.reject(
-    () => Network.connect("http://localhost:8080/", { signal }),
+    () => Network.connect(NETWORK, { signal }),
     DOMException
   );
 
   assert.ok(timeoutError.name === "TimeoutError");
 
   const networkError = await assert.reject(
-    () => Network.connect("http://localhost.fake:8080/"),
+    () => Network.connect(NETWORK_FAKE_HOST),
     DOMException
   );
 
@@ -72,7 +78,7 @@ test("Network's RUES failure after connection is established", async () => {
 
   globalThis.WebSocket = FakeWebSocket;
 
-  const network = await Network.connect("http://localhost:8080/", {
+  const network = await Network.connect(NETWORK, {
     signal: AbortSignal.timeout(100),
   });
 
@@ -120,7 +126,7 @@ test("Network's disconnect event is fired when the socket closes on its own", as
 
   let firedDisconnect = false;
 
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
 
   network.addEventListener("disconnect", () => {
     firedDisconnect = true;
@@ -140,7 +146,7 @@ test("Network's disconnect event is fired when the socket closes on its own", as
 
 test("Multiple connection calls won't create new sockets if the network is already connected", async () => {
   let connectCalls = 0;
-  const network = new Network("http://localhost:8080/");
+  const network = new Network(NETWORK);
 
   network.addEventListener("connect", () => {
     connectCalls++;
@@ -156,7 +162,7 @@ test("Multiple connection calls won't create new sockets if the network is alrea
 });
 
 test("Network block height", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
 
   assert.ok((await network.blockHeight) > 0);
 
@@ -164,7 +170,7 @@ test("Network block height", async () => {
 });
 
 test("Network gas price", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
 
   const price = await network.blocks.gasPrice;
 

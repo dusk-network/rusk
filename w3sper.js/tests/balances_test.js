@@ -12,10 +12,10 @@ import {
   AccountSyncer,
 } from "@dusk/w3sper";
 
-import { test, assert, seeder, Treasury } from "./harness.js";
+import { NETWORK, test, assert, seeder, Treasury } from "./harness.js";
 
 test("Account Balance", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
 
   const user =
     "oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu";
@@ -31,7 +31,7 @@ test("Account Balance", async () => {
 });
 
 test("Address balance failure", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profileGeneratorA = new ProfileGenerator(seeder);
   const profileGeneratorB = new ProfileGenerator(() =>
     new Uint8Array(64).fill(0)
@@ -54,7 +54,7 @@ test("Address balance failure", async () => {
 });
 
 test("Balances synchronization", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const owners = await Promise.all([

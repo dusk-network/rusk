@@ -11,13 +11,13 @@ import {
   ProfileGenerator,
 } from "@dusk/w3sper";
 
-import { assert, seeder, test, Treasury } from "./harness.js";
+import { assert, NETWORK, seeder, test, Treasury } from "./harness.js";
 
 const MINIMUM_STAKE = 1_000_000_000_000n;
 const STAKE_AMOUNT = MINIMUM_STAKE + 321n;
 
 test("minimum stake correct", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
 
   const bookkeeper = new Bookkeeper();
   const minimumStake = await bookkeeper.minimumStake;
@@ -28,7 +28,7 @@ test("minimum stake correct", async () => {
 });
 
 test("stake amount insufficient", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default];
@@ -55,7 +55,7 @@ test("stake amount insufficient", async () => {
 });
 
 test("cannot top up with no stake", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -82,7 +82,7 @@ test("cannot top up with no stake", async () => {
 });
 
 test("partial unstake insufficient", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -116,7 +116,7 @@ test("partial unstake insufficient", async () => {
 });
 
 test("stake", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -160,7 +160,7 @@ test("stake", async () => {
 });
 
 test("cannot stake twice", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -187,7 +187,7 @@ test("cannot stake twice", async () => {
 });
 
 test("partial unstake", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -231,7 +231,7 @@ test("partial unstake", async () => {
 });
 
 test("topup with no penalty", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -275,7 +275,7 @@ test("topup with no penalty", async () => {
 });
 
 test("topup with penalty", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -319,7 +319,7 @@ test("topup with penalty", async () => {
 });
 
 test("unstake", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -363,7 +363,7 @@ test("unstake", async () => {
 });
 
 test("withdraw stake reward with no stake", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [
@@ -392,7 +392,7 @@ test("withdraw stake reward with no stake", async () => {
 });
 
 test("withdraw stake reward greater than available", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [
@@ -425,7 +425,7 @@ test("withdraw stake reward greater than available", async () => {
 });
 
 test("withdraw partial stake reward", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -464,7 +464,7 @@ test("withdraw partial stake reward", async () => {
 });
 
 test("withdraw full stake reward", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];
@@ -503,7 +503,7 @@ test("withdraw full stake reward", async () => {
 });
 
 test("withdraw 0 as stake reward", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = [await profiles.default, await profiles.next()];

@@ -18,6 +18,7 @@ import {
 import {
   assert,
   getLocalWasmBuffer,
+  NETWORK,
   seeder,
   test,
   Treasury,
@@ -103,7 +104,7 @@ function collectTransfer(key, info) {
 let HISTORY_FROM = 0n;
 
 test("Setting up `HISTORY_FROM` constant", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const currentBlockHeight = await network.blockHeight;
 
   await waitForFinalizedBlock(network, currentBlockHeight);
@@ -125,7 +126,7 @@ test("Offline account transfers", async () => {
   // `nonce` starts from `0`, so we need to fetch the current nonce for the
   // sender from the network before the offline operations.
 
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
 
   // profile #1
   const from =
@@ -201,7 +202,7 @@ test("Offline account transfers", async () => {
 });
 
 test("accounts", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = await Promise.all([profiles.default, profiles.next()]);
@@ -252,7 +253,7 @@ test("accounts", async () => {
 });
 
 test("addresses", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
 
   const users = await Promise.all([profiles.default, profiles.next()]);
@@ -303,7 +304,7 @@ test("addresses", async () => {
 });
 
 test("unshield", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
   const defaultProfile = await profiles.default;
 
@@ -349,7 +350,7 @@ test("unshield", async () => {
 });
 
 test("shield", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
   const defaultProfile = await profiles.default;
 
@@ -395,7 +396,7 @@ test("shield", async () => {
 });
 
 test("account memo transfer", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);
   const accounts = new AccountSyncer(network);
@@ -465,7 +466,7 @@ test("account memo transfer", async () => {
 });
 
 test("address memo transfer", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);
   const addresses = new AddressSyncer(network);
@@ -535,7 +536,7 @@ test("address memo transfer", async () => {
 });
 
 test("address memo transfer using payload method", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);
   const addresses = new AddressSyncer(network);
@@ -615,7 +616,7 @@ test("address memo transfer using payload method", async () => {
 test("account contract call transfer", async () => {
   const GAS_LIMIT = 500_000_000n;
   const METHOD = "get_version";
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default, profiles.next()]);
   const accounts = new AccountSyncer(network);
@@ -673,7 +674,7 @@ test("account contract call transfer", async () => {
 test("account contract call genesis with deposit", async () => {
   const GAS_LIMIT = 500_000_000n;
   const METHOD = "get_version";
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profiles = new ProfileGenerator(seeder);
   const users = await Promise.all([profiles.default]);
   const accounts = new AccountSyncer(network);
@@ -731,7 +732,7 @@ test("account contract call genesis with deposit", async () => {
 });
 
 test("account transfers history", async () => {
-  const network = await Network.connect("http://localhost:8080/");
+  const network = await Network.connect(NETWORK);
   const profileGenerator = new ProfileGenerator(seeder);
   const profiles = await Promise.all([
     profileGenerator.default,
