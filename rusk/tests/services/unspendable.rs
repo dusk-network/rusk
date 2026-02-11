@@ -155,14 +155,14 @@ pub async fn unspendable() -> Result<()> {
 
     let tc = TestContext::instantiate(state_toml, vm_config).await?;
 
-    let original_root = tc.rusk().state_root();
+    let original_root = tc.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     make_transactions(&tc);
 
     // Check the state's root is changed from the original one
-    let new_root = tc.rusk().state_root();
+    let new_root = tc.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)

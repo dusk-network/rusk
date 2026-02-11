@@ -6,13 +6,11 @@
 
 use anyhow::Result;
 use dusk_rusk_test::TestContext;
-use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::RuskVmConfig;
 
 use crate::common::logger;
-use crate::common::state::generator_procedure;
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 
@@ -30,7 +28,6 @@ async fn initial_state() -> Result<TestContext> {
 /// Makes a transaction that converts Dusk from Phoenix to Moonlight, and
 /// produces a block with a single transaction, checking balances accordingly.
 fn wallet_convert_to_moonlight(tc: &TestContext, block_height: u64) {
-    let rusk = tc.rusk();
     let wallet = tc.wallet();
 
     const CONVERT_VALUE: u64 = INITIAL_PHOENIX_BALANCE / 2;
@@ -58,17 +55,7 @@ fn wallet_convert_to_moonlight(tc: &TestContext, block_height: u64) {
         .phoenix_to_moonlight(&mut rng, 0, 0, CONVERT_VALUE, GAS_LIMIT, 1)
         .expect("Creating conversion transaction should succeed");
 
-    let txs: Vec<SpentTransaction> = generator_procedure(
-        rusk,
-        &[tx],
-        block_height,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("The generator procedure should succeed");
-
-    let tx = txs.first().expect("tx to be processed");
+    let tx = tc.execute_transaction(tx, block_height, None);
     let gas_spent = tx.gas_spent;
 
     let phoenix_balance = wallet
@@ -91,7 +78,6 @@ fn wallet_convert_to_moonlight(tc: &TestContext, block_height: u64) {
 /// Makes a transaction that converts Dusk from Phoenix to Moonlight, and
 /// produces a block with a single transaction, checking balances accordingly.
 fn wallet_convert_to_phoenix(tc: &TestContext, block_height: u64) {
-    let rusk = tc.rusk();
     let wallet = tc.wallet();
 
     const CONVERT_VALUE: u64 = INITIAL_PHOENIX_BALANCE / 2;
@@ -119,17 +105,7 @@ fn wallet_convert_to_phoenix(tc: &TestContext, block_height: u64) {
         .moonlight_to_phoenix(&mut rng, 0, 0, CONVERT_VALUE, GAS_LIMIT, 1)
         .expect("Creating conversion transaction should succeed");
 
-    let txs: Vec<SpentTransaction> = generator_procedure(
-        rusk,
-        &[tx],
-        block_height,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("The generator procedure should succeed");
-
-    let tx = txs.first().expect("tx to be processed");
+    let tx = tc.execute_transaction(tx, block_height, None);
     let gas_spent = tx.gas_spent;
 
     let moonlight_account = wallet

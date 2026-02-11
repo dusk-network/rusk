@@ -4,15 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use anyhow::Result;
 use dusk_core::transfer::{
     data::{ContractCall, TransactionData},
     TRANSFER_CONTRACT,
 };
-use dusk_rusk_test::TestContext;
+use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
 use tracing::info;
 
 use crate::common::logger;

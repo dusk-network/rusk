@@ -4,11 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use anyhow::Result;
-use dusk_rusk_test::TestContext;
-use rusk::{node::RuskVmConfig, Rusk};
-
-use crate::common::state::generator_procedure2;
+use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 
 const BLOCK_GAS_LIMIT: u64 = 24_000_000;
 const BLOCKS_NUM: u64 = 10;
@@ -18,11 +14,10 @@ pub async fn finalization() -> Result<()> {
     let toml = include_str!("../config/multi_transfer.toml");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
     let tc = TestContext::instantiate(toml, vm_config).await?;
-    let rusk = tc.rusk();
 
-    let roots = empty_blocks(&rusk, BLOCKS_NUM, false);
-    rusk.revert_to_base_root().expect("revert to work");
-    let roots_with_finalize = empty_blocks(&rusk, BLOCKS_NUM, true);
+    let roots = empty_blocks(&tc, BLOCKS_NUM, false);
+    tc.revert_to_base_root().expect("revert to work");
+    let roots_with_finalize = empty_blocks(&tc, BLOCKS_NUM, true);
 
     // ensure that roots calculation is not influenced by the finalization
     // strategy
@@ -31,26 +26,22 @@ pub async fn finalization() -> Result<()> {
     Ok(())
 }
 
-fn empty_blocks(rusk: &Rusk, blocks: u64, finalize: bool) -> Vec<[u8; 32]> {
+fn empty_blocks(
+    tc: &TestContext,
+    blocks: u64,
+    finalize: bool,
+) -> Vec<[u8; 32]> {
     let mut roots = vec![];
 
-    let base_root = rusk.state_root();
+    let base_root = tc.state_root();
     roots.push(base_root);
 
     for height in 0..blocks {
-        let (_, root) = generator_procedure2(
-            rusk,
-            &[],
-            height,
-            BLOCK_GAS_LIMIT,
-            vec![],
-            None,
-            None,
-        )
-        .expect("block to be created");
+        let root = tc.empty_block(height).expect("block to be created");
         if finalize {
             let to_merge = roots.last().expect("to exists");
-            rusk.finalize_state(root, vec![*to_merge])
+            tc.rusk()
+                .finalize_state(root, vec![*to_merge])
                 .expect("finalization to work");
         }
         roots.push(root);

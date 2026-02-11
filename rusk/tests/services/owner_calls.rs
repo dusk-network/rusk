@@ -7,19 +7,17 @@
 use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
 use dusk_core::transfer::data::ContractCall;
-use dusk_rusk_test::TestContext;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{Rng, SeedableRng};
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
-use rusk::node::RuskVmConfig;
+
+use dusk_rusk_test::{
+    BlsPublicKey, BlsSecretKey, Result, RuskVmConfig, TestContext,
+};
 
 use dusk_core::abi::ContractId;
-use dusk_core::signatures::bls::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-};
 use dusk_vm::{gen_contract_id, ContractData};
-use rusk::Result;
 use tracing::info;
 
 use crate::common::logger;
@@ -41,14 +39,16 @@ struct Fixture {
 impl Fixture {
     async fn build(owner: impl AsRef<[u8]>) -> Self {
         let owner = owner.as_ref();
-        let state = include_str!("../config/contract_deployment.toml");
         let bob_bytecode = include_bytes!("../../../contracts/bin/bob.wasm");
-        let contract_id = gen_contract_id(bob_bytecode, 0u64, owner);
+        let mut rng = StdRng::from_entropy();
+        let nonce = rng.gen();
+        let contract_id = gen_contract_id(bob_bytecode, nonce, owner);
         let deploy_data = ContractData::builder()
             .owner(owner)
             .init_arg(&BOB_INIT_VALUE)
             .contract_id(contract_id);
 
+        let state = include_str!("../config/contract_deployment.toml");
         let tc = TestContext::instantiate_with(
             state,
             RuskVmConfig::new(),
@@ -85,10 +85,7 @@ impl Fixture {
         assert_eq!(result, BOB_INIT_VALUE);
     }
 
-    pub fn query_contract<R>(
-        &mut self,
-        method: impl AsRef<str>,
-    ) -> anyhow::Result<R>
+    pub fn query_contract<R>(&mut self, method: impl AsRef<str>) -> Result<R>
     where
         R: Archive,
         R::Archived: Deserialize<R, Infallible>
@@ -152,7 +149,7 @@ fn make_owner_only_tx<'a, E: Into<Option<&'a str>>>(
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn bls_non_owner_guarded_call() -> anyhow::Result<()> {
+pub async fn bls_non_owner_guarded_call() -> Result<()> {
     logger();
     const VALUE: u8 = 244;
     let rng = &mut StdRng::seed_from_u64(0xcafe);
@@ -175,7 +172,7 @@ pub async fn bls_non_owner_guarded_call() -> anyhow::Result<()> {
 
 /// owner is a BLS public key, method called is guarded
 #[tokio::test(flavor = "multi_thread")]
-pub async fn bls_owner_guarded_call() -> anyhow::Result<()> {
+pub async fn bls_owner_guarded_call() -> Result<()> {
     logger();
     const VALUE1: u8 = 244;
     const VALUE2: u8 = 233;

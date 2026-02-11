@@ -7,9 +7,7 @@
 use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 use dusk_core::{
     dusk,
-    signatures::bls::PublicKey as BlsPublicKey,
     stake::{StakeAmount, STAKE_CONTRACT},
-    transfer::data::ContractCall,
 };
 
 use anyhow::Result;
@@ -19,14 +17,12 @@ use rand::rngs::StdRng;
 use rusk::node::RuskVmConfig;
 use tracing::info;
 
-use crate::common::state::generator_procedure;
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const GAS_LIMIT: u64 = 10_000_000_000;
 const GAS_PRICE: u64 = 1;
-const DEPOSIT: u64 = 0;
 
 // Creates the Rusk initial state for the tests below
 async fn stake_state() -> Result<TestContext> {
@@ -40,7 +36,6 @@ async fn stake_state() -> Result<TestContext> {
 /// checking the stake is set successfully. It then proceeds to withdraw the
 /// stake and checking it is correctly withdrawn.
 fn wallet_stake(tc: &TestContext, value: u64) {
-    let rusk = tc.rusk();
     let wallet = tc.wallet();
 
     let mut rng = StdRng::seed_from_u64(0xdead);
@@ -63,22 +58,7 @@ fn wallet_stake(tc: &TestContext, value: u64) {
     let tx = wallet
         .phoenix_stake(&mut rng, 0, 2, value, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to create a stake transaction");
-    let executed_txs = generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    if let Some(e) = &executed_txs
-        .first()
-        .expect("Transaction must be executed")
-        .err
-    {
-        panic!("Stake transaction failed due to {e}")
-    }
+    let _ = tc.execute_transaction(tx, BLOCK_HEIGHT, None);
 
     let stake = wallet.get_stake(2).expect("stake to be found");
     let stake_value = stake.amount.expect("stake should have an amount").value;
@@ -94,17 +74,7 @@ fn wallet_stake(tc: &TestContext, value: u64) {
     let tx = wallet
         .phoenix_unstake(&mut rng, 0, 0, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to unstake");
-    let spent_txs = generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    let spent_tx = spent_txs.first().expect("Unstake tx to be included");
-    assert_eq!(spent_tx.err, None, "unstake to be successfull");
+    let _ = tc.execute_transaction(tx, BLOCK_HEIGHT, None);
 
     let stake = wallet.get_stake(0).expect("stake should still be state");
     assert_eq!(stake.amount, None);
@@ -112,15 +82,7 @@ fn wallet_stake(tc: &TestContext, value: u64) {
     let tx = wallet
         .phoenix_stake_withdraw(&mut rng, 0, 1, GAS_LIMIT, GAS_PRICE)
         .expect("failed to withdraw reward");
-    generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
+    let _ = tc.execute_transaction(tx, BLOCK_HEIGHT, None);
 
     let stake = wallet.get_stake(1).expect("stake should still be state");
     assert_eq!(stake.reward, 0);
@@ -148,11 +110,6 @@ pub async fn stake() -> Result<()> {
     );
     assert_ne!(original_root, new_root, "Root should have changed");
 
-    // let recv = kadcast_recv.try_recv();
-    // let (_, _, h) = recv.expect("Transaction has not been locally
-    // propagated"); assert_eq!(h, 0, "Transaction locally propagated with
-    // wrong height");
-
     Ok(())
 }
 
@@ -160,46 +117,22 @@ pub async fn stake() -> Result<()> {
 /// the reward amount remains unchanged and confirm that the transaction indeed
 /// fails
 fn wallet_reward(tc: &TestContext) {
-    let rusk = tc.rusk();
     let wallet = tc.wallet();
 
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    let stake_sk = wallet.account_secret_key(2).unwrap();
-    let stake_pk = BlsPublicKey::from(&stake_sk);
-    let reward_calldata = (stake_pk, 6u32);
-
     let stake = wallet.get_stake(2).expect("stake to be found");
     assert_eq!(stake.reward, 0, "stake reward must be empty");
 
-    let contract_call = ContractCall::new(STAKE_CONTRACT.to_bytes(), "reward")
-        .with_args(&reward_calldata)
-        .expect("calldata should serialize");
     let tx = wallet
-        .phoenix_execute(
-            &mut rng,
-            0,
-            GAS_LIMIT,
-            GAS_PRICE,
-            DEPOSIT,
-            contract_call,
-        )
-        .expect("Failed to create a reward transaction");
-    let executed_txs = generator_procedure(
-        rusk,
-        &[tx],
+        .phoenix_stake_withdraw(&mut rng, 0, 2, GAS_LIMIT, GAS_PRICE)
+        .expect("Creating reward transaction should succeed");
+    let _ = tc.execute_transaction(
+        tx,
         BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    let _ = executed_txs
-        .first()
-        .expect("Transaction must be executed")
-        .err
-        .as_ref()
-        .expect("reward transaction to fail");
+        "Panic: A stake should exist in the map to get rewards!",
+    );
+
     let stake = wallet.get_stake(2).expect("stake to be found");
     assert_eq!(stake.reward, 0, "stake reward must be empty");
 }
@@ -262,24 +195,8 @@ pub async fn slash() -> Result<()> {
         })
     );
 
-    generator_procedure(
-        &rusk,
-        &[],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![to_slash],
-        None,
-    )
-    .expect("to work");
-    generator_procedure(
-        &rusk,
-        &[],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![to_slash],
-        None,
-    )
-    .expect("to work");
+    tc.slash(BLOCK_HEIGHT, vec![to_slash]).expect("to work");
+    tc.slash(BLOCK_HEIGHT, vec![to_slash]).expect("to work");
 
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed");
@@ -310,15 +227,7 @@ pub async fn slash() -> Result<()> {
     let new_balance = rusk.contract_balance(&STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, contract_balance);
 
-    generator_procedure(
-        &rusk,
-        &[],
-        BLOCK_HEIGHT + 1,
-        BLOCK_GAS_LIMIT,
-        vec![to_slash],
-        None,
-    )
-    .expect("to work");
+    tc.slash(BLOCK_HEIGHT + 1, vec![to_slash]).expect("to work");
 
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed");
@@ -360,15 +269,7 @@ pub async fn slash() -> Result<()> {
     let new_balance = rusk.contract_balance(&STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, contract_balance);
 
-    generator_procedure(
-        &rusk,
-        &[],
-        9000,
-        BLOCK_GAS_LIMIT,
-        vec![to_slash],
-        None,
-    )
-    .expect("to work");
+    tc.slash(9000, vec![to_slash]).expect("to work");
 
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed");
@@ -401,17 +302,10 @@ pub async fn slash() -> Result<()> {
     let new_balance = rusk.contract_balance(&STAKE_CONTRACT).unwrap();
     assert_eq!(new_balance, contract_balance);
 
-    generator_procedure(
-        &rusk,
-        &[],
-        9001,
-        BLOCK_GAS_LIMIT,
-        vec![wallet.account_public_key(1).unwrap()],
-        None,
-    )
-    .expect_err("Slashing a public key that never staked must fail");
+    tc.slash(9001, vec![wallet.account_public_key(1).unwrap()])
+        .expect_err("Slashing a public key that never staked must fail");
 
-    //Ensure we still have previous changes, because generator procedure failed
+    // Ensure we still have previous changes, because generator procedure failed
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     let (_, prev) = last_changes.first().expect("Something changed");
     let prev = prev.expect("to have something");
@@ -425,8 +319,7 @@ pub async fn slash() -> Result<()> {
         })
     );
 
-    generator_procedure(&rusk, &[], 9001, BLOCK_GAS_LIMIT, vec![], None)
-        .expect("To work properly");
+    tc.slash(9001, vec![]).expect("To work properly");
     let last_changes = rusk.last_provisioners_change(None).unwrap();
     assert_eq!(0, last_changes.len(), "No changes expected");
 

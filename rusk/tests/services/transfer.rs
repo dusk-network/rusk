@@ -6,14 +6,12 @@
 
 use anyhow::Result;
 use dusk_rusk_test::TestContext;
-use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::RuskVmConfig;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::generator_procedure;
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
@@ -23,7 +21,6 @@ const MAX_NOTES: u64 = 10;
 /// block with a single transaction, checking balances are transferred
 /// successfully.
 fn wallet_transfer(tc: &TestContext, amount: u64, block_height: u64) {
-    let rusk = tc.rusk();
     let wallet = tc.wallet();
 
     // Generate a receiver pk
@@ -66,28 +63,12 @@ fn wallet_transfer(tc: &TestContext, amount: u64, block_height: u64) {
     let tx_id = dusk_vm::host_queries::hash(tx_hash_input_bytes);
 
     info!("Tx ID: {}", hex::encode(tx_id.to_bytes()));
-    let txs: Vec<SpentTransaction> = generator_procedure(
-        rusk,
-        &[tx],
-        block_height,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    let tx = txs.first().expect("tx to be processed");
+    let tx = tc.execute_transaction(tx, block_height, None);
     let gas_spent = tx.gas_spent;
     info!("Gas spent: {gas_spent}");
 
-    generator_procedure(
-        rusk,
-        &[],
-        block_height + 1,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("empty block generator procedure to succeed");
+    tc.empty_block(block_height + 1)
+        .expect("empty block generator procedure to succeed");
 
     // Check the receiver's balance is changed accordingly
     assert_eq!(
@@ -121,16 +102,15 @@ pub async fn wallet() -> Result<()> {
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
     let tc = TestContext::instantiate(state_toml, vm_config).await?;
-    let rusk = tc.rusk();
 
-    let original_root = rusk.state_root();
+    let original_root = tc.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     wallet_transfer(&tc, 1_000, 2);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = tc.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
@@ -138,31 +118,24 @@ pub async fn wallet() -> Result<()> {
     assert_ne!(original_root, new_root, "Root should have changed");
 
     // Revert the state
-    rusk.revert_to_base_root()
-        .expect("Reverting should succeed");
-    tc.wallet_cache().write().unwrap().clear();
+    tc.revert_to_base_root().expect("Reverting should succeed");
 
     // Check the state's root is back to the original one
-    info!("Root after reset: {:?}", hex::encode(rusk.state_root()));
-    assert_eq!(original_root, rusk.state_root(), "Root be the same again");
+    info!("Root after reset: {:?}", hex::encode(tc.state_root()));
+    assert_eq!(original_root, tc.state_root(), "Root be the same again");
 
     wallet_transfer(&tc, 1_000, 2);
 
     // Check the state's root is back to the original one
     info!(
         "New root after the 2nd transfer: {:?}",
-        hex::encode(rusk.state_root())
+        hex::encode(tc.state_root())
     );
     assert_eq!(
         new_root,
-        rusk.state_root(),
+        tc.state_root(),
         "Root is the same compare to the first transfer"
     );
-
-    // let recv = kadcast_recv.try_recv();
-    // let (tx, _, h) = recv.expect("Transaction has not been locally
-    // propagated"); info!("Tx Wire Message {}", hex::encode(tx));
-    // assert_eq!(h, 0, "Transaction locally propagated with wrong height");
 
     Ok(())
 }

@@ -45,7 +45,6 @@ pub async fn stake_from_contract_direct() -> Result<()> {
     logger();
 
     let tc = stake_state().await?;
-    let rusk = tc.rusk();
     let wallet = tc.wallet();
 
     deploy_proxy_contract(&tc);
@@ -70,12 +69,10 @@ pub async fn stake_from_contract_direct() -> Result<()> {
             Some(call),
         )
         .expect("stake to be successful");
-    let _tx = execute_transaction(
+    let _ = tc.execute_transaction(
         stake_from_contract,
-        &rusk,
         1,
         "Panic: Cannot be called by a root ICC",
-        None,
     );
     Ok(())
 }
@@ -117,7 +114,7 @@ pub async fn stake_from_contract() -> Result<()> {
             Some(call.clone()),
         )
         .expect("stake to be successful");
-    let tx = execute_transaction(stake_from_contract, &rusk, 1, None, None);
+    let tx = tc.execute_transaction(stake_from_contract, 1, None);
     info!("Stake from contract - gas spent {:?}", tx.gas_spent);
 
     let stake = wallet.get_stake(0).expect("stake to be found");
@@ -136,7 +133,7 @@ pub async fn stake_from_contract() -> Result<()> {
             Some(call.clone()),
         )
         .expect("stake to be successful");
-    let tx = execute_transaction(stake_from_contract, &rusk, 2, None, None);
+    let tx = tc.execute_transaction(stake_from_contract, 2, None);
     info!("Stake from contract - gas spent {:?}", tx.gas_spent);
 
     let stake = wallet.get_stake(0).expect("stake to be found");
@@ -178,25 +175,13 @@ pub async fn stake_from_contract() -> Result<()> {
     let stake_from_account = wallet
         .moonlight_stake(0, 0, 1000, GAS_LIMIT, 1)
         .expect("stake to be successful");
-    execute_transaction(
-        stake_from_account,
-        &rusk,
-        1,
-        "Panic: Keys mismatch",
-        None,
-    );
+    tc.execute_transaction(stake_from_account, 1, "Panic: Keys mismatch");
 
     let unstake = wallet
         .moonlight_unstake(&mut rng, 0, 0, GAS_LIMIT, 1)
         .expect("stake to be successful");
 
-    execute_transaction(
-        unstake,
-        &rusk,
-        1,
-        "Panic: expect StakeFundOwner::Account",
-        None,
-    );
+    tc.execute_transaction(unstake, 1, "Panic: expect StakeFundOwner::Account");
 
     let unstake = stake::Withdraw::new(
         &sk,
@@ -227,7 +212,7 @@ pub async fn stake_from_contract() -> Result<()> {
     let unstake_from_contract = wallet
         .moonlight_execute(0, 0, 0, GAS_LIMIT, GAS_PRICE, Some(call.clone()))
         .expect("unstakes to be successful");
-    let tx = execute_transaction(unstake_from_contract, &rusk, 1, None, None);
+    let tx = tc.execute_transaction(unstake_from_contract, 1, None);
     info!("UnStake from contract - gas spent {:?}", tx.gas_spent);
 
     assert_eq!(wallet.get_stake(0).expect("stake to exists").amount, None);
@@ -261,7 +246,7 @@ pub async fn stake_from_contract() -> Result<()> {
     let withdraw_from_contract = wallet
         .moonlight_execute(0, 0, 0, GAS_LIMIT, GAS_PRICE, Some(call.clone()))
         .expect("unstakes to be successful");
-    let tx = execute_transaction(withdraw_from_contract, &rusk, 1, None, None);
+    let tx = tc.execute_transaction(withdraw_from_contract, 1, None);
     info!("Withdraw from contract - gas spent {:?}", tx.gas_spent);
 
     assert_eq!(wallet.get_stake(0).expect("stake to exists").reward, 1);
@@ -270,7 +255,6 @@ pub async fn stake_from_contract() -> Result<()> {
 }
 
 fn deploy_proxy_contract(tc: &TestContext) -> ContractId {
-    let rusk = tc.rusk();
     let wallet = tc.wallet();
 
     let deploy_nonce = 0u64;
@@ -291,7 +275,7 @@ fn deploy_proxy_contract(tc: &TestContext) -> ContractId {
         )
         .expect("Failed to create a deploy transaction");
 
-    execute_transaction(tx, rusk, BLOCK_HEIGHT, None, None);
+    tc.execute_transaction(tx, BLOCK_HEIGHT, None);
     contract_id
 }
 

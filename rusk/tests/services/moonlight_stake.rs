@@ -4,16 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
-
-use anyhow::Result;
-use dusk_rusk_test::TestContext;
+use dusk_core::stake::{StakeData, DEFAULT_MINIMUM_STAKE};
+use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
 use tracing::info;
 
-use crate::common::state::generator_procedure;
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
@@ -32,7 +28,6 @@ async fn stake_state() -> Result<TestContext> {
 /// checking the stake is set successfully. It then proceeds to withdraw the
 /// stake and checking it is correctly withdrawn.
 fn wallet_stake(tc: &TestContext, value: u64) {
-    let rusk = tc.rusk();
     let wallet = tc.wallet();
 
     let mut rng = StdRng::seed_from_u64(0xdead);
@@ -55,22 +50,7 @@ fn wallet_stake(tc: &TestContext, value: u64) {
     let tx = wallet
         .moonlight_stake(0, 2, value, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to create a stake transaction");
-    let executed_txs = generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    if let Some(e) = &executed_txs
-        .first()
-        .expect("Transaction must be executed")
-        .err
-    {
-        panic!("Stake transaction failed due to {e}")
-    }
+    let _ = tc.execute_transaction(tx, BLOCK_HEIGHT, None);
 
     let stake = wallet.get_stake(2).expect("stake to be found");
     let stake_value = stake.amount.expect("stake should have an amount").value;
@@ -86,33 +66,15 @@ fn wallet_stake(tc: &TestContext, value: u64) {
     let tx = wallet
         .moonlight_unstake(&mut rng, 0, 0, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to unstake");
-    let spent_txs = generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    let spent_tx = spent_txs.first().expect("Unstake tx to be included");
-    assert_eq!(spent_tx.err, None, "unstake to be successfull");
+    let _ = tc.execute_transaction(tx, BLOCK_HEIGHT, None);
 
     let stake = wallet.get_stake(0).expect("stake should still be state");
-    assert_eq!(stake.amount, None);
+    assert_eq!(stake, StakeData::default());
 
     let tx = wallet
         .moonlight_stake_withdraw(&mut rng, 0, 1, GAS_LIMIT, GAS_PRICE)
         .expect("failed to withdraw reward");
-    generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
+    let _ = tc.execute_transaction(tx, BLOCK_HEIGHT, None);
 
     let stake = wallet.get_stake(1).expect("stake should still be state");
     assert_eq!(stake.reward, 0);
@@ -147,7 +109,6 @@ pub async fn stake() -> Result<()> {
 /// the reward amount remains unchanged and confirm that the transaction indeed
 /// fails
 fn wallet_reward(tc: &TestContext) {
-    let rusk = tc.rusk();
     let wallet = tc.wallet();
 
     let mut rng = StdRng::seed_from_u64(0xdead);
@@ -159,21 +120,12 @@ fn wallet_reward(tc: &TestContext) {
         .moonlight_stake_withdraw(&mut rng, 0, 2, GAS_LIMIT, GAS_PRICE)
         .expect("Creating reward transaction should succeed");
 
-    let executed_txs = generator_procedure(
-        rusk,
-        &[tx],
+    let _ = tc.execute_transaction(
+        tx,
         BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    let _ = executed_txs
-        .first()
-        .expect("Transaction must be executed")
-        .err
-        .as_ref()
-        .expect("reward transaction to fail");
+        "Panic: A stake should exist in the map to get rewards!",
+    );
+
     let stake = wallet.get_stake(2).expect("stake to be found");
     assert_eq!(stake.reward, 0, "stake reward must be empty");
 }
