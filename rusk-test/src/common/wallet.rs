@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod stream;
 pub mod test_wallet;
 
 use std::collections::HashMap;
@@ -19,6 +20,7 @@ use dusk_core::{
     transfer::{
         moonlight::AccountData,
         phoenix::{Note, NoteOpening, ViewKey},
+        TRANSFER_CONTRACT,
     },
     BlsScalar,
 };
@@ -71,10 +73,12 @@ impl wallet::StateClient for TestStateClient {
         info!("Requesting notes from height {}", vk_cache.last_height);
         let vk_bytes = vk.to_bytes();
 
-        let stream = self
-            .rusk
-            .get_notes(vk_bytes.as_ref(), vk_cache.last_height)
-            .wait()?;
+        let stream = stream::get_notes(
+            &self.rusk,
+            vk_bytes.as_ref(),
+            vk_cache.last_height,
+        )
+        .wait()?;
 
         let response_notes = stream.collect::<Vec<(Note, u64)>>().wait();
 
@@ -93,7 +97,7 @@ impl wallet::StateClient for TestStateClient {
 
     /// Fetch the current root of the state.
     fn fetch_root(&self) -> Result<BlsScalar, Self::Error> {
-        self.rusk.tree_root()
+        self.rusk.query(TRANSFER_CONTRACT, "root", &())
     }
 
     fn fetch_existing_nullifiers(
@@ -105,9 +109,7 @@ impl wallet::StateClient for TestStateClient {
 
     /// Queries the node to find the opening for a specific note.
     fn fetch_opening(&self, note: &Note) -> Result<NoteOpening, Self::Error> {
-        self.rusk
-            .tree_opening(*note.pos())?
-            .ok_or(Error::OpeningPositionNotFound(*note.pos()))
+        self.rusk.query(TRANSFER_CONTRACT, "opening", note.pos())
     }
 
     fn fetch_stake(&self, pk: &BlsPublicKey) -> Result<StakeData, Self::Error> {

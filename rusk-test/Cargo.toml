@@ -10,7 +10,7 @@ keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
 license = "MPL-2.0"
 
 [dependencies]
-dusk-rusk = { path = "../rusk", features = ["testwallet"] }
+dusk-rusk = { path = "../rusk" }
 dusk-core = { workspace = true, features = ["zk"] }
 node-data = { workspace = true }
 node = { workspace = true }
@@ -33,8 +33,10 @@ criterion = { workspace = true }
 rand = { workspace = true }
 rkyv = { workspace = true, features = ["size_32"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "fs", "macros"] }
+tokio-stream = { workspace = true, features = ["sync"] }
 tempfile = { workspace = true }
 futures-util = { workspace = true }
+futures = { workspace = true }
 toml = { workspace = true }
 
 [features]
