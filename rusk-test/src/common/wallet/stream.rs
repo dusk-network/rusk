@@ -68,18 +68,3 @@ pub async fn get_notes(
 
     Ok(Box::pin(stream) as GetNotesStream)
 }
-
-// fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
-//     let (sender, receiver) = mpsc::channel();
-//     rusk.feeder_query(
-//         TRANSFER_CONTRACT,
-//         "leaves_from_height",
-//         &height,
-//         sender,
-//         None,
-//     )?;
-//     Ok(receiver
-//         .into_iter()
-//         .map(|bytes| rkyv::from_bytes(&bytes).unwrap())
-//         .collect())
-// }
