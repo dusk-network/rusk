@@ -1762,11 +1762,14 @@ dependencies = [
 
 [[package]]
 name = "dusk-data-driver"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "484ce5eaa7a61160468f84a71d14fc6dfcecc6d416a7a42d5139ea8178703b78"
+checksum = "e71f4ace4e6187127e28dd71d55f8f54fdbc5e1ae7c4af521bedffafedb24e5e"
 dependencies = [
  "bytecheck",
+ "dusk-core 1.4.1",
+ "dusk-wasmtime",
+ "parking_lot",
  "rkyv",
  "serde",
  "serde_json",
@@ -1774,7 +1777,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-data-driver"
-version = "0.3.1"
+version = "0.3.2-alpha.1"
 dependencies = [
  "base64 0.22.1",
  "bytecheck",
@@ -2093,7 +2096,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "663066363a8445cef95aeea0adc6f08fbadd635d6476149dac50058ae9c74a2a"
 dependencies = [
  "dusk-core 1.4.1",
- "dusk-data-driver 0.3.0",
+ "dusk-data-driver 0.3.1",
 ]
 
 [[package]]
@@ -2111,7 +2114,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce738f97c0e00fe40357b2c7327f21a68adc840a4b5336f4e2bf488849f72fc7"
 dependencies = [
  "dusk-core 1.4.1",
- "dusk-data-driver 0.3.0",
+ "dusk-data-driver 0.3.1",
 ]
 
 [[package]]
