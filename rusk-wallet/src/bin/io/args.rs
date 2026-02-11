@@ -6,7 +6,7 @@
 
 use std::path::PathBuf;
 
-use clap::{arg, Parser};
+use clap::Parser;
 
 use crate::settings::{LogFormat, LogLevel};
 use crate::Command;
