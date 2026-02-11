@@ -1,6 +1,6 @@
 [package]
 name = "dusk-rusk-test"
-version = "1.4.5-alpha.1"
+version = "1.4.4-rc.0"
 edition = "2021"
 
 description = "Test utilities for Rusk"
@@ -10,7 +10,7 @@ keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
 license = "MPL-2.0"
 
 [dependencies]
-dusk-rusk = { path = "../rusk" }
+dusk-rusk = "1.4.4"
 dusk-core = { workspace = true, features = ["zk"] }
 node-data = { workspace = true }
 node = { workspace = true }

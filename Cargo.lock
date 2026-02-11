@@ -1992,6 +1992,65 @@ dependencies = [
 
 [[package]]
 name = "dusk-rusk"
+version = "1.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0418fb98ce52a7fa76af0e3b4dffeaa07ff7d3636a15d58014b8c616ee2bdca8"
+dependencies = [
+ "anyhow",
+ "async-graphql",
+ "async-trait",
+ "base64 0.22.1",
+ "blake3",
+ "bs58",
+ "bytecheck",
+ "clap",
+ "dirs",
+ "dusk-bytes",
+ "dusk-consensus 1.4.0",
+ "dusk-core 1.4.1",
+ "dusk-data-driver 0.3.1",
+ "dusk-node 1.4.2",
+ "dusk-node-data 1.4.0",
+ "dusk-stake-contract-dd 0.3.0",
+ "dusk-transfer-contract-dd 0.3.0",
+ "dusk-vm 1.4.3",
+ "dusk-wasmtime",
+ "futures-util",
+ "hex",
+ "http-body-util",
+ "humantime-serde",
+ "hyper",
+ "hyper-tungstenite",
+ "hyper-util",
+ "kadcast",
+ "parking_lot",
+ "pin-project",
+ "rand 0.8.5",
+ "reqwest",
+ "rkyv",
+ "rusk-profile 1.4.0",
+ "rusk-prover 1.3.0",
+ "rusk-recovery 1.4.1",
+ "rustc_tools_util",
+ "rustls-pemfile",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha3",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-rustls",
+ "tokio-stream",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "tungstenite",
+]
+
+[[package]]
+name = "dusk-rusk"
 version = "1.4.5-alpha.1"
 dependencies = [
  "anyhow",
@@ -2053,7 +2112,7 @@ dependencies = [
 
 [[package]]
 name = "dusk-rusk-test"
-version = "1.4.5-alpha.1"
+version = "1.4.4-rc.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -2062,7 +2121,7 @@ dependencies = [
  "dusk-core 1.4.1",
  "dusk-node 1.4.2",
  "dusk-node-data 1.4.0",
- "dusk-rusk",
+ "dusk-rusk 1.4.4",
  "dusk-wallet-core 1.4.0",
  "ff",
  "futures",
