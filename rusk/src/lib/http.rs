@@ -217,7 +217,7 @@ impl HandleRequest for DataSources {
             let _ = path;
         }
 
-        Err(ExecutionError::Generic(anyhow::anyhow!("Unsupported path")))
+        Err(ExecutionError::Other("Unsupported path".to_string()))
     }
 }
 
@@ -642,12 +642,14 @@ async fn handle_request_rues<H: HandleRequest>(
     }
 }
 
-fn validate_rusk_version_headers(headers: &HeaderMap) -> anyhow::Result<()> {
+fn validate_rusk_version_headers(headers: &HeaderMap) -> Result<(), HttpError> {
     let strict = headers.contains_key(RUSK_VERSION_STRICT_HEADER);
     let version = match headers.get(RUSK_VERSION_HEADER) {
         Some(value) => {
             let value_str = value.to_str().map_err(|_| {
-                anyhow::anyhow!("Invalid Rusk-Version header encoding")
+                HttpError::VersionMismatch(
+                    "Invalid Rusk-Version header encoding".to_string(),
+                )
             })?;
             Some(serde_json::Value::String(value_str.to_owned()))
         }
@@ -868,7 +870,7 @@ pub trait HandleRequest: Send + Sync + 'static {
         req: Request<Incoming>,
     ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
         let _ = req;
-        Err(ExecutionError::Generic(anyhow::anyhow!("Unsupported path")))
+        Err(ExecutionError::Other("Unsupported path".to_string()))
     }
 }
 

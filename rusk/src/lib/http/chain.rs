@@ -175,14 +175,11 @@ impl RuskNode {
         let gql_res = schema.execute(gql_query).await;
         let async_graphql::Response { data, errors, .. } = gql_res;
         if !errors.is_empty() {
-            return Err(HttpError::generic(
-                serde_json::to_value(&errors)
-                    .map_err(|e| anyhow::anyhow!("cannot encode errors: {e}"))?
-                    .to_string(),
+            return Err(HttpError::internal(
+                serde_json::to_value(&errors)?.to_string(),
             ));
         }
-        let data = serde_json::to_value(&data)
-            .map_err(|e| anyhow::anyhow!("Cannot parse response {e}"))?;
+        let data = serde_json::to_value(&data)?;
         Ok(ResponseData::new(data))
     }
 
@@ -199,7 +196,7 @@ impl RuskNode {
                 let err_msg =
                     format!("Tx {} not accepted: {e}", hex::encode(tx.id()));
                 error!("{err_msg}");
-                HttpError::generic(err_msg)
+                HttpError::internal(err_msg)
             })?;
 
         Ok(ResponseData::new(DataType::None))
@@ -220,9 +217,7 @@ impl RuskNode {
     async fn alive_nodes(&self, amount: usize) -> HttpResult<ResponseData> {
         let nodes = self.network().read().await.alive_nodes(amount).await;
         let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
-        Ok(ResponseData::new(serde_json::to_value(nodes).map_err(
-            |e| anyhow::anyhow!("cannot encode alive_nodes: {e}"),
-        )?))
+        Ok(ResponseData::new(serde_json::to_value(nodes)?))
     }
 
     async fn get_info(&self) -> HttpResult<ResponseData> {
@@ -240,10 +235,7 @@ impl RuskNode {
         let vm_conf = serde_json::to_value(vm_conf).unwrap_or_default();
         info.insert("vm_config", vm_conf);
 
-        Ok(ResponseData::new(
-            serde_json::to_value(&info)
-                .map_err(|e| anyhow::anyhow!("cannot encode info: {e}"))?,
-        ))
+        Ok(ResponseData::new(serde_json::to_value(&info)?))
     }
 
     /// Calculates various statistics for gas prices of transactions in the
@@ -264,16 +256,17 @@ impl RuskNode {
         &self,
         max_transactions: usize,
     ) -> HttpResult<ResponseData> {
-        let gas_prices: Vec<u64> =
-            self.db()
-                .read()
-                .await
-                .view(|t| -> anyhow::Result<Vec<u64>> {
-                    Ok(t.mempool_txs_ids_sorted_by_fee()
-                        .take(max_transactions)
-                        .map(|(gas_price, _)| gas_price)
-                        .collect())
-                })?;
+        let gas_prices: Vec<u64> = self
+            .db()
+            .read()
+            .await
+            .view(|t| -> anyhow::Result<Vec<u64>> {
+                Ok(t.mempool_txs_ids_sorted_by_fee()
+                    .take(max_transactions)
+                    .map(|(gas_price, _)| gas_price)
+                    .collect())
+            })
+            .map_err(|e| HttpError::database(e.to_string()))?;
 
         if gas_prices.is_empty() {
             let stats = serde_json::json!({ "average": 1, "max": 1, "median": 1, "min": 1 });
@@ -307,30 +300,33 @@ impl RuskNode {
             "min": min_gas_price
         });
 
-        Ok(ResponseData::new(serde_json::to_value(stats).map_err(
-            |e| anyhow::anyhow!("cannot encode stats: {e}"),
-        )?))
+        Ok(ResponseData::new(serde_json::to_value(stats)?))
     }
 
     async fn simulate_tx(&self, tx: &[u8]) -> HttpResult<ResponseData> {
-        let tx = ProtocolTransaction::from_slice(tx)
-            .map_err(|e| anyhow::anyhow!("Invalid transaction: {e:?}"))?;
+        let tx = ProtocolTransaction::from_slice(tx).map_err(|e| {
+            HttpError::invalid_input(format!("Invalid transaction: {e:?}"))
+        })?;
         let (config, mut session) = {
             let vm_handler = self.inner().vm_handler();
             let vm_handler = vm_handler.read().await;
             if tx.gas_limit() > vm_handler.get_block_gas_limit() {
-                return Err(HttpError::generic("Gas limit is too high."));
+                return Err(HttpError::invalid_input("Gas limit is too high."));
             }
             let tip = load_tip(&self.db())
                 .await
-                .map_err(|e| anyhow::anyhow!("Failed to load the tip: {e}"))?
-                .ok_or_else(|| anyhow::anyhow!("Could not find the tip"))?;
+                .map_err(|e| {
+                    HttpError::database(format!("Failed to load the tip: {e}"))
+                })?
+                .ok_or_else(|| HttpError::database("Could not find the tip"))?;
             let height = tip.header.height;
             let config = vm_handler.vm_config.to_execution_config(height);
             let session = vm_handler
                 .new_block_session(height, vm_handler.tip.read().current)
                 .map_err(|e| {
-                    anyhow::anyhow!("Failed to initialize a session: {e}")
+                    HttpError::vm(format!(
+                        "Failed to initialize a session: {e}"
+                    ))
                 })?;
             (config, session)
         };
@@ -353,19 +349,24 @@ impl RuskNode {
         hash: &[u8; 32],
         as_json: bool,
     ) -> HttpResult<ResponseData> {
-        let blob = self.db().read().await.view(|t| {
-            t.blob_data_by_hash(hash)?.ok_or(anyhow::anyhow!(
+        let blob = self
+            .db()
+            .read()
+            .await
+            .view(|t| t.blob_data_by_hash(hash))
+            .map_err(|e| HttpError::database(e.to_string()))?
+            .ok_or(HttpError::not_found(format!(
                 "Blob with versioned hash {} not found",
                 hex::encode(hash)
-            ))
-        })?;
+            )))?;
         let response = if as_json {
             let sidecar =
                 BlobSidecar::from_buf(&mut &blob[..]).map_err(|e| {
-                    anyhow::anyhow!("Failed to parse blob sidecar: {e:?}")
+                    HttpError::internal(format!(
+                        "Failed to parse blob sidecar: {e:?}"
+                    ))
                 })?;
-            let json = serde_json::to_value(sidecar)
-                .map_err(|e| anyhow::anyhow!("cannot encode sidecar: {e}"))?;
+            let json = serde_json::to_value(sidecar)?;
             ResponseData::new(json)
         } else {
             ResponseData::new(blob)
@@ -383,11 +384,9 @@ impl RuskNode {
         let db = self.inner().database();
         let vm = self.inner().vm_handler();
 
-        let account = vm
-            .read()
-            .await
-            .account(&pk)
-            .map_err(|e| anyhow::anyhow!("Cannot query the state {e:?}"))?;
+        let account = vm.read().await.account(&pk).map_err(|e| {
+            HttpError::vm(format!("Cannot query the state: {e:?}"))
+        })?;
 
         // Determine the next available nonce not already used in the mempool.
         // This ensures that any in-flight transactions using sequential nonces
@@ -450,7 +449,9 @@ impl RuskNode {
                 .await
                 .contract_balance(&contract_id)
                 .map_err(|e| {
-                    anyhow::anyhow!("Failed to query contract balance {e:?}")
+                    HttpError::vm(format!(
+                        "Failed to query contract balance: {e:?}"
+                    ))
                 })?;
 
         Ok(ResponseData::new(serde_json::json!({
@@ -469,15 +470,17 @@ impl RuskNode {
     async fn get_account_count(&self) -> HttpResult<ResponseData> {
         #[cfg(feature = "archive")]
         {
-            let count = self.archive().fetch_active_accounts().await?;
+            let count = self
+                .archive()
+                .fetch_active_accounts()
+                .await
+                .map_err(|e| HttpError::database(e.to_string()))?;
             let body = serde_json::json!({ "public_accounts": count });
             Ok(ResponseData::new(body))
         }
 
         #[cfg(not(feature = "archive"))]
-        Err(HttpError::generic(
-            "The archive feature is required for this endpoint.",
-        ))
+        Err(HttpError::Unsupported)
     }
 
     /// Returns the total number of finalized transactions observed in the
@@ -492,7 +495,11 @@ impl RuskNode {
     async fn get_tx_count(&self) -> HttpResult<ResponseData> {
         #[cfg(feature = "archive")]
         {
-            let (moonlight, phoenix) = self.archive().fetch_tx_count().await?;
+            let (moonlight, phoenix) = self
+                .archive()
+                .fetch_tx_count()
+                .await
+                .map_err(|e| HttpError::database(e.to_string()))?;
             let total = moonlight + phoenix;
             let body = serde_json::json!({
                 "public": moonlight,
@@ -503,9 +510,7 @@ impl RuskNode {
         }
 
         #[cfg(not(feature = "archive"))]
-        Err(HttpError::generic(
-            "The archive feature is required for this endpoint.",
-        ))
+        Err(HttpError::Unsupported)
     }
 }
 

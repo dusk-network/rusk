@@ -7,7 +7,6 @@
 use super::*;
 
 use crate::BlsPublicKey;
-use anyhow::anyhow;
 use dusk_bytes::{DeserializableSlice, ParseHexStr, Serializable};
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::Signature;
@@ -95,10 +94,10 @@ impl Rusk {
     fn data_driver<C: TryInto<ContractId>>(
         &self,
         contract_id: C,
-    ) -> anyhow::Result<Option<Box<dyn ConvertibleContract>>> {
+    ) -> Result<Option<Box<dyn ConvertibleContract>>, HttpError> {
         let contract_id = contract_id
             .try_into()
-            .map_err(|_| anyhow::anyhow!("Invalid contractId"))?;
+            .map_err(|_| HttpError::invalid_input("Invalid contractId"))?;
 
         Ok(match contract_id {
             TRANSFER_CONTRACT => {
@@ -114,7 +113,7 @@ impl Rusk {
     fn get_driver_executor(
         &self,
         contract_id: &ContractId,
-    ) -> anyhow::Result<Option<Box<dyn ConvertibleContract>>> {
+    ) -> Result<Option<Box<dyn ConvertibleContract>>, HttpError> {
         let cached_instance = {
             let instance_cache = self.instance_cache.read();
             instance_cache.get(contract_id).cloned()
@@ -147,36 +146,38 @@ impl Rusk {
         data: &RequestData,
     ) -> HttpResult<ResponseData> {
         let (method, target) = method.split_once(':').unwrap_or((method, ""));
-        let driver = self
-            .data_driver(contract_id.to_string())?
-            .ok_or(anyhow::anyhow!("Unsupported contractId {contract_id}"))?;
+        let driver = self.data_driver(contract_id.to_string())?.ok_or(
+            HttpError::not_found(format!(
+                "Unsupported contractId {contract_id}"
+            )),
+        )?;
         let result = match method {
             "decode_event" => ResponseData::new(
                 driver
                     .decode_event(target, data.as_bytes())
-                    .map_err(|e| anyhow::anyhow!("{e}"))?,
+                    .map_err(|e| HttpError::data_driver(e.to_string()))?,
             ),
             "decode_input_fn" => ResponseData::new(
                 driver
                     .decode_input_fn(target, data.as_bytes())
-                    .map_err(|e| anyhow::anyhow!("{e}"))?,
+                    .map_err(|e| HttpError::data_driver(e.to_string()))?,
             ),
             "decode_output_fn" => ResponseData::new(
                 driver
                     .decode_output_fn(target, data.as_bytes())
-                    .map_err(|e| anyhow::anyhow!("{e}"))?,
+                    .map_err(|e| HttpError::data_driver(e.to_string()))?,
             ),
             "encode_input_fn" => ResponseData::new(
                 driver
                     .encode_input_fn(target, &data.as_string())
-                    .map_err(|e| anyhow::anyhow!("{e}"))?,
+                    .map_err(|e| HttpError::data_driver(e.to_string()))?,
             ),
             "get_schema" => ResponseData::new(driver.get_schema().to_string()),
             "get_version" => {
                 ResponseData::new(driver.get_version().to_string())
             }
             method => {
-                return Err(HttpError::generic(format!(
+                return Err(HttpError::not_found(format!(
                     "Unsupported data driver method {method}"
                 )))
             }
@@ -193,7 +194,7 @@ impl Rusk {
         self.query_metadata(&contract_id)
             .map(|metadata| ResponseData::new(metadata.owner))
             .map_err(|e| {
-                HttpError::generic(format!("Contract owner not found: {e}"))
+                HttpError::not_found(format!("Contract owner not found: {e}"))
             })
     }
 
@@ -216,14 +217,21 @@ impl Rusk {
         let owner = self
             .query_metadata(&contract_id)
             .map(|m| m.owner)
-            .map_err(|e| anyhow::anyhow!("Contract owner not found: {e}"))?;
+            .map_err(|e| {
+                HttpError::not_found(format!("Contract owner not found: {e}"))
+            })?;
         let pk = BlsPublicKey::from_slice(&owner).map_err(|e| {
-            anyhow::anyhow!("Invalid owner public key found: {e:?}")
+            HttpError::verification(format!(
+                "Invalid owner public key found: {e:?}"
+            ))
         })?;
-        let signature = Signature::from_hex_str(sig.as_ref())
-            .map_err(|e| anyhow::anyhow!("Invalid signature: {e}"))?;
+        let signature = Signature::from_hex_str(sig.as_ref()).map_err(|e| {
+            HttpError::invalid_input(format!("Invalid signature: {e}"))
+        })?;
         pk.verify(&signature, &hash).map_err(|e| {
-            anyhow::anyhow!("Signature verification failed: {e}")
+            HttpError::verification(format!(
+                "Signature verification failed: {e}"
+            ))
         })?;
 
         let mut driver_store = self.driver_store.write();
@@ -234,7 +242,9 @@ impl Rusk {
                 signature.to_bytes(),
             )
             .map_err(|e| {
-                anyhow::anyhow!("Cannot store bytecode and signature: {e:?}")
+                HttpError::database(format!(
+                    "Cannot store bytecode and signature: {e:?}"
+                ))
             })?;
         let mut instance_cache = self.instance_cache.write();
         instance_cache.remove(&contract_id);
@@ -247,8 +257,8 @@ impl Rusk {
         let driver_store = self.driver_store.read();
         let driver_bytecode = driver_store
             .get_bytecode(&contract_id)
-            .map_err(|_| anyhow::anyhow!("Driver not registered"))?
-            .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+            .map_err(|_| HttpError::not_found("Driver not registered"))?
+            .ok_or_else(|| HttpError::not_found("Driver not found"))?;
         Ok(ResponseData::new(driver_bytecode)
             .with_force_binary(true)
             .with_header("content-type", "application/wasm"))
@@ -256,7 +266,7 @@ impl Rusk {
 
     fn metadata(&self, contract_id: &str) -> HttpResult<ResponseData> {
         let contract_id = ContractId::try_from(contract_id.to_string())
-            .map_err(|_| anyhow::anyhow!("Invalid contract id"))?;
+            .map_err(|_| HttpError::invalid_input("Invalid contract id"))?;
         let owner = self
             .query_metadata(&contract_id)
             .map(|metadata| metadata.owner)
@@ -271,8 +281,7 @@ impl Rusk {
             driver_signature: driver_signature.map(hex::encode),
             created_at: None,
         };
-        let response_value = serde_json::to_value(&response)
-            .map_err(|_| anyhow::anyhow!("Metadata conversion error"))?;
+        let response_value = serde_json::to_value(&response)?;
         Ok(ResponseData::new(DataType::Json(response_value)))
     }
 
@@ -294,9 +303,13 @@ impl Rusk {
             driver = self.data_driver(contract_id)?;
             driver
                 .as_ref()
-                .ok_or(anyhow::anyhow!("Unsupported contract {contract}"))?
+                .ok_or(HttpError::not_found(format!(
+                    "Unsupported contract {contract}"
+                )))?
                 .encode_input_fn(fn_name, &json)
-                .map_err(|e| anyhow::anyhow!("InvalidJson {e:?}"))?
+                .map_err(|e| {
+                    HttpError::invalid_input(format!("Invalid JSON: {e:?}"))
+                })?
         } else {
             data.as_bytes().to_vec()
         };
@@ -319,13 +332,13 @@ impl Rusk {
 
             if let Some(driver) = driver {
                 let (json_sender, json_receiver) = mpsc::channel();
-                thread::spawn(move || {
+                thread::spawn(move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     let mut first = true;
                     json_sender.send("[".as_bytes().to_vec())?;
                     while let Some(raw_output) = receiver.iter().next() {
                         let json = driver
                             .decode_output_fn(&fn_name, &raw_output)
-                            .map_err(|e| anyhow!("cannot decode {e}"))?;
+                            .map_err(|e| format!("cannot decode {e}"))?;
                         if first {
                             first = false;
                         } else {
@@ -335,7 +348,7 @@ impl Rusk {
                             .send(json.to_string().as_bytes().to_vec())?;
                     }
                     json_sender.send("]".as_bytes().to_vec())?;
-                    anyhow::Ok(())
+                    Ok(())
                 });
                 Ok(ResponseData::new(DataType::JsonChannel(json_receiver)))
             } else {
@@ -344,7 +357,7 @@ impl Rusk {
         } else {
             let raw_output = self
                 .query_raw(contract_id, &fn_name, call_arg)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+                .map_err(|e| HttpError::vm(e.to_string()))?;
             let response = if let Some(driver) = driver {
                 match driver.decode_output_fn(&fn_name, &raw_output) {
                     Ok(json) => ResponseData::new(json),
@@ -357,7 +370,7 @@ impl Rusk {
         }
     }
 
-    fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
+    fn get_provisioners(&self) -> Result<ResponseData, HttpError> {
         let prov: Vec<_> = self
             .provisioners(None)
             .expect("Cannot query state for provisioners")
@@ -382,7 +395,7 @@ impl Rusk {
         Ok(ResponseData::new(serde_json::to_value(prov)?))
     }
 
-    fn get_crs(&self) -> anyhow::Result<ResponseData> {
+    fn get_crs(&self) -> Result<ResponseData, HttpError> {
         let crs = rusk_profile::get_common_reference_string()?;
         Ok(ResponseData::new(crs).with_header("crs-hash", CRS_17_HASH))
     }
