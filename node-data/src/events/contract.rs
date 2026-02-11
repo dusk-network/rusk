@@ -8,6 +8,8 @@
 
 use dusk_core::abi::{ContractId, Event};
 use serde::{Deserialize, Serialize};
+use serde_with::hex::Hex;
+use serde_with::As;
 
 pub const ORIGIN_HASH_BYTES: usize = 32;
 /// Origin hash of a contract event. This is in most cases the transaction hash.
@@ -15,22 +17,20 @@ pub const ORIGIN_HASH_BYTES: usize = 32;
 pub type OriginHash = [u8; ORIGIN_HASH_BYTES];
 
 /// Contract event with origin `OriginHash`.
-#[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ContractTxEvent {
     pub event: ContractEvent,
-    #[serde_as(as = "serde_with::hex::Hex")]
+    #[serde(with = "As::<Hex>")]
     pub origin: OriginHash,
 }
 
 /// Wrapper around a contract event that is to be archived or sent to a
 /// websocket client.
-#[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ContractEvent {
     pub target: ContractId,
     pub topic: String,
-    #[serde_as(as = "serde_with::hex::Hex")]
+    #[serde(with = "As::<Hex>")]
     pub data: Vec<u8>,
 }
 
