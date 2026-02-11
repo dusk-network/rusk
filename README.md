@@ -40,6 +40,7 @@ For more information on **running a node for main- or testnet**, see our
   - [Setup script](#setup-script)
   - [Rust Installation](#rust-installation)
 - [Build and Tests](#️-build-and-tests)
+- [Make Commands](#-make-commands)
 - [Run a local node for development](#-run-a-local-node-for-development)
   - [Spin up local node](#spin-up-local-node)
     - [Prepare modules](#prepare-modules)
@@ -123,7 +124,30 @@ make test
 ```
 
 That will also compile all the genesis contracts and its associated circuits.
-See also `make help` for all the available commands
+See also `make help` for all the available commands.
+
+## 📋 Make Commands
+
+| Command | Description |
+|---------|-------------|
+| `make` | Build everything (keys, wasm, abi, state, rusk, rusk-wallet) |
+| `make help` | Display available make commands |
+| `make abi` | Build the ABI |
+| `make keys` | Generate ZK circuit proving keys |
+| `make state` | Create the network genesis state |
+| `make wasm` | Compile wallet-core to WASM |
+| `make data-drivers` | Build data-driver WASM files |
+| `make data-drivers-js` | Build data-driver WASM files with JS/alloc support |
+| `make rusk` | Build the rusk node binary |
+| `make rusk-wallet` | Build the CLI wallet binary |
+| `make test` | Run the full test suite |
+| `make clippy` | Run clippy on all crates (warnings = errors) |
+| `make doc` | Generate documentation for all crates |
+| `make bench` | Run benchmarks for node and rusk |
+| `make prepare-dev` | One-time setup for local development node |
+| `make run-dev` | Launch local ephemeral node |
+| `make run-dev-archive` | Launch local ephemeral archive node |
+| `make run` | Build and run the node (with keys and state) |
 
 ## 💻 Run a local node for development
 
