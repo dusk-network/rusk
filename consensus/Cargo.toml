@@ -6,8 +6,10 @@ repository = "https://github.com/dusk-network/rusk"
 description = "Implementation of Dusk Succinct Attestation consensus protocol"
 categories = ["cryptography", "cryptography::cryptocurrencies"]
 keywords = ["consensus", "dusk", "cryptocurrency", "blockchain"]
-license = "MPL-2.0"
 exclude = [".github/*", ".gitignore", ".env", ".vscode", "Cargo.lock"]
+
+license.workspace = true
+rust-version.workspace = true
 
 [lib]
 path = "src/lib.rs"
@@ -27,11 +29,10 @@ dusk-merkle = { workspace = true, features = ["size_32"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-node-data = { workspace = true, features = ["faker"]}
+node-data = { workspace = true, features = ["faker"] }
 criterion = { workspace = true }
 rand = { workspace = true, features = ["std_rng"] }
 
 [[bench]]
 name = "merkle"
 harness = false
-

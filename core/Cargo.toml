@@ -4,8 +4,10 @@ version = "1.4.2-alpha.1"
 edition = "2021"
 
 description = "Types used for interacting with Dusk's transfer and stake contracts."
-license = "MPL-2.0"
 repository = "https://github.com/dusk-network/rusk"
+
+license.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 dusk-bls12_381 = { workspace = true, features = ["rkyv-impl"] }
@@ -18,7 +20,7 @@ phoenix-circuits = { workspace = true }
 poseidon-merkle = { workspace = true, features = ["rkyv-impl"] }
 piecrust-uplink = { workspace = true }
 dusk-bytes = { workspace = true }
-rkyv = { workspace = true,  features = ["size_32"] }
+rkyv = { workspace = true, features = ["size_32"] }
 bytecheck = { workspace = true }
 rand = { workspace = true }
 ff = { workspace = true }
@@ -28,7 +30,10 @@ c-kzg = { workspace = true, optional = true }
 blake2b_simd = { workspace = true, default-features = false } # 1.0.4 requires rustc edition 2024
 
 # plonk dependencies
-dusk-plonk = { workspace = true, features = ["rkyv-impl", "alloc"], optional = true }
+dusk-plonk = { workspace = true, features = [
+    "rkyv-impl",
+    "alloc",
+], optional = true }
 
 # groth dependencies
 ark-groth16 = { workspace = true, optional = true }
@@ -47,7 +52,7 @@ serde_json = { workspace = true }
 [features]
 parallel = [
     # It enables parallel thread aggregation of BlsPublicKey
-    "bls12_381-bls/parallel", 
+    "bls12_381-bls/parallel",
 ]
 
 # These are the features available for when one wishes to build contracts and
@@ -57,25 +62,14 @@ abi-debug = ["abi", "piecrust-uplink/debug"]
 abi-dlmalloc = ["abi", "piecrust-uplink/dlmalloc"]
 
 # Enables all zero-knowledge proof system libraries supported
-zk = [
-    "plonk",
-    "groth16",
-]
+zk = ["plonk", "groth16"]
 
 # Enables kzg support
 kzg = ["c-kzg"]
 
-plonk = [
-    "dusk-plonk",
-    "phoenix-circuits/plonk",
-]
+plonk = ["dusk-plonk", "phoenix-circuits/plonk"]
 
-groth16 = [
-    "ark-groth16",
-    "ark-bn254",
-    "ark-relations",
-    "ark-serialize",
-]
+groth16 = ["ark-groth16", "ark-bn254", "ark-relations", "ark-serialize"]
 
 # Enables std feature for dusk-plonk
 std = ["dusk-plonk/std"]
@@ -86,5 +80,5 @@ serde = [
     "piecrust-uplink/serde",
     "bls12_381-bls/serde",
     "phoenix-core/serde",
-    "jubjub-schnorr/serde"
+    "jubjub-schnorr/serde",
 ]
