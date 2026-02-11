@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-02-11
+
 ### Added
 
 - Add export of `dusk_vm::Session`
@@ -49,7 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3407]: https://github.com/dusk-network/rusk/issues/3407
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.4.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.4.1...HEAD
+[1.4.0]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.4.0...rusk-recovery-1.4.1
 [1.4.0]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.3.0...rusk-recovery-1.4.0
 [1.3.0]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.0.3...rusk-recovery-1.3.0
 [1.0.3]: https://github.com/dusk-network/rusk/compare/rusk-recovery-1.0.2...rusk-recovery-1.0.3
