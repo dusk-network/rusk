@@ -17,12 +17,10 @@ impl RuskNode {
             None => self.update_cache().await?,
         };
 
-        Ok(ResponseData::new(serde_json::to_value(locations).map_err(
-            |e| anyhow::anyhow!("cannot encode locations: {e}"),
-        )?))
+        Ok(ResponseData::new(serde_json::to_value(locations)?))
     }
 
-    async fn update_cache(&self) -> anyhow::Result<Vec<Value>> {
+    async fn update_cache(&self) -> HttpResult<Vec<Value>> {
         let mut cache = CACHE.write().await;
         if !cache_expired(cache.0) {
             return Ok(cache.1.clone());
@@ -48,7 +46,11 @@ impl RuskNode {
                 Err(_) => format!("http://ip-api.com/json/{ip}"),
             };
             if let Ok(v) = client.get(url).send().await {
-                let resp = v.bytes().await?.to_vec();
+                let resp = v
+                    .bytes()
+                    .await
+                    .map_err(|e| HttpError::internal(e.to_string()))?
+                    .to_vec();
                 let resp: Value = serde_json::from_slice(&resp)?;
                 let mut object = Value::Object(Map::new());
                 object["lat"] = resp["lat"].clone();

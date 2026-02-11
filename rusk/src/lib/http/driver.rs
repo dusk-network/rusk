@@ -22,10 +22,10 @@ impl DriverExecutor {
     pub fn from_bytecode(
         contract_id: &ContractId,
         bytecode: impl AsRef<[u8]>,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self, super::HttpError> {
         let reader =
             DriverReader::with_contract_id(bytecode.as_ref(), *contract_id)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+                .map_err(|e| super::HttpError::data_driver(e.to_string()))?;
         Ok(Self { reader })
     }
 

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add feature activation flags for `sha256` and `verify_kzg_proof` host queries [#3993]
 - Add feature activation flag for `secp256k1_recover` host query [#4012]
 
+### Changed
+
+- Replace `anyhow` with typed `HttpError` in HTTP handlers for correct status codes [#2944]
+
 ## [1.4.4] - 2026-01-30
 
 ### Added
@@ -459,6 +463,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
 [#3341]: https://github.com/dusk-network/rusk/issues/3341
 [#3206]: https://github.com/dusk-network/rusk/issues/3206
+[#2944]: https://github.com/dusk-network/rusk/issues/2944
 [#2773]: https://github.com/dusk-network/rusk/issues/2773
 [#2597]: https://github.com/dusk-network/rusk/issues/2597
 [#2536]: https://github.com/dusk-network/rusk/issues/2536

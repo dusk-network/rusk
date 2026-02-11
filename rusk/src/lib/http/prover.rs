@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use anyhow::anyhow;
-
 use dusk_core::transfer::phoenix::Prove;
 use rusk_prover::LocalProver;
 
@@ -22,9 +20,9 @@ impl HandleRequest for LocalProver {
     ) -> HttpResult<ResponseData> {
         let data = request.data.as_bytes();
         let response = match request.uri.inner() {
-            ("prover", _, "prove") => {
-                LocalProver.prove(data).map_err(|e| anyhow!(e))?
-            }
+            ("prover", _, "prove") => LocalProver
+                .prove(data)
+                .map_err(|e| HttpError::prover(e.to_string()))?,
             _ => return Err(HttpError::Unsupported),
         };
         Ok(ResponseData::new(response))

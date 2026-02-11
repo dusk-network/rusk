@@ -42,7 +42,7 @@ impl MessageResponse {
     pub fn into_http(
         self,
         is_binary: bool,
-    ) -> anyhow::Result<Response<FullOrStreamBody>> {
+    ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
         if let Some((error, code)) = self.error {
             let code = hyper::StatusCode::from_u16(code)
                 .unwrap_or(hyper::StatusCode::INTERNAL_SERVER_ERROR);
@@ -155,7 +155,7 @@ pub struct BinaryOrTextStream {
 }
 
 impl Stream for BinaryOrTextStream {
-    type Item = anyhow::Result<Frame<Bytes>>;
+    type Item = Result<Frame<Bytes>, std::convert::Infallible>;
 
     fn poll_next(
         self: Pin<&mut Self>,
@@ -347,76 +347,39 @@ const ACCEPT: &str = "accept";
 const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
 const CONTENT_TYPE_JSON: &str = "application/json";
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ExecutionError {
-    Http(hyper::http::Error),
-    Hyper(hyper::Error),
-    Json(serde_json::Error),
-    Protocol(tungstenite::error::ProtocolError),
-    Tungstenite(tungstenite::Error),
-    Generic(anyhow::Error),
-}
-
-impl Display for ExecutionError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ExecutionError::Http(err) => write!(f, "{err}"),
-            ExecutionError::Hyper(err) => write!(f, "{err}"),
-            ExecutionError::Json(err) => write!(f, "{err}"),
-            ExecutionError::Protocol(err) => write!(f, "{err}"),
-            ExecutionError::Tungstenite(err) => write!(f, "{err}"),
-            ExecutionError::Generic(err) => write!(f, "{err}"),
-        }
-    }
-}
-
-impl std::error::Error for ExecutionError {}
-
-impl From<anyhow::Error> for ExecutionError {
-    fn from(err: anyhow::Error) -> Self {
-        Self::Generic(err)
-    }
-}
-
-impl From<hyper::http::Error> for ExecutionError {
-    fn from(err: hyper::http::Error) -> Self {
-        Self::Http(err)
-    }
-}
-
-impl From<hyper::Error> for ExecutionError {
-    fn from(err: hyper::Error) -> Self {
-        Self::Hyper(err)
-    }
-}
-
-impl From<serde_json::Error> for ExecutionError {
-    fn from(err: serde_json::Error) -> Self {
-        Self::Json(err)
-    }
+    #[error("{0}")]
+    Http(#[from] hyper::http::Error),
+    #[error("{0}")]
+    Hyper(#[from] hyper::Error),
+    #[error("{0}")]
+    Json(#[from] serde_json::Error),
+    #[error("{0}")]
+    Protocol(#[from] tungstenite::error::ProtocolError),
+    #[error("{0}")]
+    Tungstenite(#[from] tungstenite::Error),
+    #[error("Invalid header: {0}")]
+    InvalidHeader(String),
+    #[error("{0}")]
+    Other(String),
 }
 
 impl From<InvalidHeaderName> for ExecutionError {
     fn from(value: InvalidHeaderName) -> Self {
-        Self::Generic(value.into())
+        Self::InvalidHeader(value.to_string())
     }
 }
 
 impl From<InvalidHeaderValue> for ExecutionError {
     fn from(value: InvalidHeaderValue) -> Self {
-        Self::Generic(value.into())
+        Self::InvalidHeader(value.to_string())
     }
 }
 
-impl From<tungstenite::error::ProtocolError> for ExecutionError {
-    fn from(err: tungstenite::error::ProtocolError) -> Self {
-        Self::Protocol(err)
-    }
-}
-
-impl From<tungstenite::Error> for ExecutionError {
-    fn from(err: tungstenite::Error) -> Self {
-        Self::Tungstenite(err)
+impl From<super::HttpError> for ExecutionError {
+    fn from(e: super::HttpError) -> Self {
+        Self::Other(e.to_string())
     }
 }
 
@@ -607,7 +570,7 @@ impl RuesDispatchEvent {
             .find_map(|(k, v)| k.eq_ignore_ascii_case(name).then_some(v))
     }
 
-    pub fn check_rusk_version(&self) -> anyhow::Result<()> {
+    pub fn check_rusk_version(&self) -> Result<(), super::HttpError> {
         check_rusk_version(
             self.header(RUSK_VERSION_HEADER),
             self.header(RUSK_VERSION_STRICT_HEADER).is_some(),
@@ -630,11 +593,11 @@ impl RuesDispatchEvent {
     }
     pub async fn from_request(
         req: Request<Incoming>,
-    ) -> anyhow::Result<(Self, bool)> {
+    ) -> Result<(Self, bool), super::HttpError> {
         let (parts, body) = req.into_parts();
 
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
-            .ok_or(anyhow::anyhow!("Invalid URL path"))?;
+            .ok_or(super::HttpError::invalid_input("Invalid URL path"))?;
 
         let headers = parts
             .headers
@@ -669,12 +632,20 @@ impl RuesDispatchEvent {
                 .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
                 .unwrap_or_default();
 
-        let bytes = body.collect().await?.to_bytes().to_vec();
+        let bytes = body
+            .collect()
+            .await
+            .map_err(|e| super::HttpError::internal(e.to_string()))?
+            .to_bytes()
+            .to_vec();
         let data = match binary_request {
             true => bytes.into(),
             _ => {
-                let text = String::from_utf8(bytes)
-                    .map_err(|_| anyhow::anyhow!("Invalid utf8"))?;
+                let text = String::from_utf8(bytes).map_err(|_| {
+                    super::HttpError::InvalidEncoding(
+                        "Invalid utf8".to_string(),
+                    )
+                })?;
                 if let Some(hex) = text.strip_prefix("0x") {
                     if let Ok(bytes) = hex::decode(hex) {
                         bytes.into()
@@ -771,10 +742,11 @@ impl From<node_data::events::Event> for RuesEvent {
 pub fn check_rusk_version(
     version: Option<&serde_json::Value>,
     strict: bool,
-) -> anyhow::Result<()> {
+) -> Result<(), super::HttpError> {
     if strict && version.is_none() {
-        return Err(anyhow::anyhow!(
-            "Missing Rusk-Version header while Rusk-Version-Strict is set",
+        return Err(super::HttpError::VersionMismatch(
+            "Missing Rusk-Version header while Rusk-Version-Strict is set"
+                .to_string(),
         ));
     }
 
@@ -799,9 +771,9 @@ pub fn check_rusk_version(
         }
 
         if !req.matches(&current) {
-            return Err(anyhow::anyhow!(
+            return Err(super::HttpError::VersionMismatch(format!(
                 "Mismatched rusk version: requested {req} - current {current}",
-            ));
+            )));
         }
     }
     Ok(())
