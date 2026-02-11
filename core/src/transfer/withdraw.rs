@@ -6,15 +6,14 @@
 
 //! Types related to withdrawing funds into moonlight of phoenix Dusk.
 
-#[cfg(feature = "serde")]
-use serde_with::{serde_as, DisplayFromStr};
-
 use alloc::vec::Vec;
 
 use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
 use rand::{CryptoRng, RngCore};
 use rkyv::{Archive, Deserialize, Serialize};
+#[cfg(feature = "serde")]
+use serde_with::{As, DisplayFromStr};
 
 use crate::abi::ContractId;
 use crate::signatures::bls::{
@@ -38,11 +37,10 @@ use crate::BlsScalar;
 /// function
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Withdraw {
     pub(super) contract: ContractId,
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub(super) value: u64,
     pub(super) receiver: WithdrawReceiver,
     token: WithdrawReplayToken,
@@ -190,7 +188,6 @@ pub enum WithdrawReceiver {
 /// the encapsulating transaction's fields.
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum WithdrawReplayToken {
     /// The nullifiers of the encapsulating Phoenix transaction, when the
@@ -199,7 +196,8 @@ pub enum WithdrawReplayToken {
     /// The nonce of the encapsulating Moonlight transaction, when the
     /// transaction is paid for using a Moonlight account.
     Moonlight(
-        #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))] u64,
+        #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
+        u64,
     ),
 }
 

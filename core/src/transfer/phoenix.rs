@@ -637,8 +637,10 @@ impl Transaction {
             pis.push(note_pk.get_u());
             pis.push(note_pk.get_v());
         });
-        tx_skeleton.outputs().iter().for_each(|note| {
-            match note.sender() {
+        tx_skeleton
+            .outputs()
+            .iter()
+            .for_each(|note| match note.sender() {
                 Sender::Encryption(sender_enc) => {
                     pis.push(sender_enc[0].0.get_u());
                     pis.push(sender_enc[0].0.get_v());
@@ -652,8 +654,7 @@ impl Transaction {
                 Sender::ContractInfo(_) => {
                     panic!("All output-notes must provide a sender-encryption")
                 }
-            };
-        });
+            });
 
         pis
     }
@@ -878,7 +879,6 @@ impl Serializable<SIZE> for Fee {
     type Error = BytesError;
 
     /// Converts a Fee into it's byte representation
-    #[must_use]
     fn to_bytes(&self) -> [u8; Self::SIZE] {
         let mut buf = [0u8; Self::SIZE];
 

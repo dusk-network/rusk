@@ -6,9 +6,6 @@
 
 //! Types used by Dusk's stake contract.
 
-#[cfg(feature = "serde")]
-use serde_with::{hex::Hex, serde_as, DisplayFromStr};
-
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -16,6 +13,10 @@ use bytecheck::CheckBytes;
 use dusk_bytes::Serializable;
 use piecrust_uplink::CONTRACT_ID_BYTES;
 use rkyv::{Archive, Deserialize, Serialize};
+#[cfg(feature = "serde")]
+use serde_with::hex::Hex;
+#[cfg(feature = "serde")]
+use serde_with::{As, DisplayFromStr};
 
 use crate::abi::ContractId;
 use crate::signatures::bls::{
@@ -47,13 +48,12 @@ pub const DEFAULT_MINIMUM_STAKE: Dusk = dusk(1_000.0);
 /// Configuration for the stake contract
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StakeConfig {
     /// Number of warnings before being penalized
     pub warnings: u8,
     /// Minimum amount of Dusk that can be staked
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub minimum_stake: Dusk,
 }
 
@@ -84,12 +84,11 @@ pub const fn next_epoch(block_height: u64) -> u64 {
 /// Stake a value on the stake contract.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Stake {
     chain_id: u8,
     keys: StakeKeys,
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     value: u64,
     signature: DoubleSignature,
 }
@@ -224,14 +223,13 @@ impl Stake {
 /// and the name of the function to invoke on the target contract.
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WithdrawToContract {
     account: BlsPublicKey,
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     value: u64,
     fn_name: String,
-    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<Hex>"))]
     data: Vec<u8>,
 }
 
@@ -299,6 +297,8 @@ impl WithdrawToContract {
 /// This is used in both `unstake` and `withdraw`.
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
+// We need to keep field name `withdraw` for serde serialization compatibility
+#[allow(clippy::struct_field_names)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Withdraw {
     account: BlsPublicKey,
@@ -374,19 +374,18 @@ impl Withdraw {
 /// Event emitted after a stake contract operation is performed.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize, PartialEq)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StakeEvent {
     /// Keys associated to the event.
     pub keys: StakeKeys,
     /// Effective value of the relevant operation, be it `stake`,
     /// `unstake`,`withdraw`
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub value: u64,
     /// The locked amount involved in the operation (e.g., for `stake` or
     /// `unstake`). Defaults to zero for operations that do not involve
     /// locking.
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub locked: u64,
 }
 
@@ -421,16 +420,15 @@ impl StakeEvent {
 /// Event emitted after a slash operation is performed.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize, PartialEq)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SlashEvent {
     /// Account slashed.
     pub account: BlsPublicKey,
     /// Slashed amount
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub value: u64,
     /// New eligibility for the slashed account
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub next_eligibility: u64,
 }
 
@@ -449,13 +447,12 @@ pub struct SlashEvent {
     Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
 )]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StakeData {
     /// Amount staked and eligibility.
     pub amount: Option<StakeAmount>,
     /// The reward for participating in consensus.
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub reward: u64,
     /// Faults
     pub faults: u8,
@@ -638,17 +635,16 @@ impl StakeData {
     Debug, Default, Clone, Copy, PartialEq, Eq, Archive, Deserialize, Serialize,
 )]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StakeAmount {
     /// The value staked.
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub value: u64,
     /// The amount that has been locked (due to a soft slash).
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub locked: u64,
     /// The eligibility of the stake.
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub eligibility: u64,
 }
 
@@ -695,13 +691,12 @@ impl StakeAmount {
 /// and emitted as an event, once a reward succeeds.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Reward {
     /// The account to be rewarded.
     pub account: BlsPublicKey,
     /// The amount to reward.
-    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<DisplayFromStr>"))]
     pub value: u64,
     /// The reason for the reward.
     pub reason: RewardReason,
