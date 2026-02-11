@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Validate required WASM exports on data-driver load, rejecting invalid modules early with an actionable error message [#3990]
+
 ### Changed
 
 ### Removed
@@ -103,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3877]: https://github.com/dusk-network/rusk/issues/3877
 [#3901]: https://github.com/dusk-network/rusk/issues/3901
 [#3902]: https://github.com/dusk-network/rusk/issues/3902
+[#3990]: https://github.com/dusk-network/rusk/issues/3990
 
 <!-- VERSIONS -->
 
