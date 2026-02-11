@@ -148,7 +148,7 @@ impl Rusk {
         let (method, target) = method.split_once(':').unwrap_or((method, ""));
         let driver = self.data_driver(contract_id.to_string())?.ok_or(
             HttpError::not_found(format!(
-                "Unsupported contractId {contract_id}"
+                "No data driver for contract id {contract_id} found."
             )),
         )?;
         let result = match method {
