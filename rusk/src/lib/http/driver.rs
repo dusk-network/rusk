@@ -30,11 +30,13 @@ impl DriverExecutor {
     }
 
     /// Returns the associated contract ID.
+    #[allow(dead_code)]
     pub fn contract_id(&self) -> ContractId {
         self.reader.contract_id()
     }
 
     /// Returns the contract driver's version string.
+    #[allow(dead_code)]
     pub fn get_version(&self) -> Result<String, Error> {
         self.reader.get_version()
     }

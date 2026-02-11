@@ -15,6 +15,8 @@ use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use semver::{Prerelease, Version, VersionReq};
 use serde::{Deserialize, Serialize};
+use serde_with::hex::Hex;
+use serde_with::As;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::pin::Pin;
@@ -39,6 +41,9 @@ pub struct MessageResponse {
 }
 
 impl MessageResponse {
+    // ExecutionError is intentionally large; boxing it would add complexity
+    // without meaningful benefit here.
+    #[allow(clippy::result_large_err)]
     pub fn into_http(
         self,
         is_binary: bool,
@@ -334,11 +339,10 @@ impl From<mpsc::Receiver<Vec<u8>>> for DataType {
     }
 }
 
-#[serde_with::serde_as]
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(transparent)]
 pub struct BinaryWrapper {
-    #[serde_as(as = "serde_with::hex::Hex")]
+    #[serde(with = "As::<Hex>")]
     pub inner: Vec<u8>,
 }
 

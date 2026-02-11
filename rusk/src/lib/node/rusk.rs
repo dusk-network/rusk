@@ -65,13 +65,10 @@ impl Rusk {
 
         let base_commit_bytes = fs::read(commit_id_path)?;
         if base_commit_bytes.len() != 32 {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!(
-                    "Expected commit id to have 32 bytes, got {}",
-                    base_commit_bytes.len()
-                ),
-            )
+            return Err(io::Error::other(format!(
+                "Expected commit id to have 32 bytes, got {}",
+                base_commit_bytes.len()
+            ))
             .into());
         }
         let mut base_commit = [0u8; 32];

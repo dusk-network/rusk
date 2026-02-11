@@ -159,7 +159,7 @@ impl Config {
         }
     }
 
-    pub fn features(&self) -> Iter<String, FeatureActivation> {
+    pub fn features(&self) -> Iter<'_, String, FeatureActivation> {
         self.features.iter()
     }
 

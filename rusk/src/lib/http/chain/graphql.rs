@@ -130,16 +130,16 @@ impl Query {
 
     async fn mempool_txs(
         &self,
-        ctx: &Context<'_>,
-    ) -> FieldResult<Vec<Transaction>> {
+        ctx: &'_ Context<'_>,
+    ) -> FieldResult<Vec<Transaction<'_>>> {
         mempool(ctx).await
     }
 
     async fn mempool_tx(
         &self,
-        ctx: &Context<'_>,
+        ctx: &'_ Context<'_>,
         hash: String,
-    ) -> OptResult<Transaction> {
+    ) -> OptResult<Transaction<'_>> {
         mempool_by_hash(ctx, hash).await
     }
 

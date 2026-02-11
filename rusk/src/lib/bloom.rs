@@ -22,7 +22,7 @@ impl Bloom {
 
     /// Instantiate a new handle for IUF-style adding members, and membership
     /// checks.
-    pub fn iuf(&mut self) -> BloomIuf {
+    pub fn iuf(&mut self) -> BloomIuf<'_> {
         BloomIuf {
             hasher: Hasher::new(),
             bloom: self,
