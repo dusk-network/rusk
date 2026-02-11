@@ -108,13 +108,6 @@ impl Rusk {
                 .data;
         }
 
-        session.call::<_, ()>(
-            contract_id,
-            call_name,
-            call_arg,
-            self.get_block_gas_limit(),
-        )?;
-
         Ok(())
     }
 
