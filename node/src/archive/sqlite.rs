@@ -248,7 +248,7 @@ impl Archive {
     /// Fetch all unfinalized vm events for a block hash using an existing
     /// connection. This keeps finalize fully atomic and avoids mixing
     /// reader + writer pools.
-    pub async fn fetch_unfinalized_events_by_hash<'t>(
+    pub async fn fetch_unfinalized_events_by_hash(
         &self,
         conn: &mut SqliteConnection,
         hex_block_hash: &str,
@@ -652,10 +652,11 @@ mod data {
         ContractEvent, ContractTxEvent, ORIGIN_HASH_BYTES,
     };
     use serde::{Deserialize, Serialize};
+    use serde_with::hex::Hex;
+    use serde_with::As;
     use sqlx::FromRow;
 
     /// Data transfer object for GraphQL pagination
-    #[serde_with::serde_as]
     #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
     pub struct FinalizedEvent {
         pub id: i64,
@@ -664,7 +665,7 @@ mod data {
         pub origin: String,
         pub topic: String,
         pub source: String,
-        #[serde_as(as = "serde_with::hex::Hex")]
+        #[serde(with = "As::<Hex>")]
         pub data: Vec<u8>,
     }
 
@@ -679,13 +680,12 @@ mod data {
     /// - `source`: The source field is the hex encoded contract id of the
     ///   event.
     /// - `data`: The data field is the data of the event.
-    #[serde_with::serde_as]
     #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
     pub struct ArchivedEvent {
         pub origin: String,
         pub topic: String,
         pub source: String,
-        #[serde_as(as = "serde_with::hex::Hex")]
+        #[serde(with = "As::<Hex>")]
         pub data: Vec<u8>,
     }
 

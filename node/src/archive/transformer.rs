@@ -15,12 +15,13 @@ use dusk_core::transfer::{
 };
 use node_data::events::contract::{ContractEvent, ContractTxEvent, OriginHash};
 use serde::{Deserialize, Serialize};
+use serde_with::hex::Hex;
+use serde_with::As;
 
 /// A group of events that belong to the same transaction.
 ///
 /// This transaction is guaranteed to have changed the balance of at least one
 /// public account, therefore seen as a transfer.
-#[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub(super) struct MoonlightTransferEvents {
     events: Vec<ContractEvent>,
@@ -41,7 +42,6 @@ impl MoonlightTransferEvents {
 }
 
 /// Transaction hash and block height
-#[serde_with::serde_as]
 #[derive(
     Debug,
     Clone,
@@ -56,7 +56,7 @@ impl MoonlightTransferEvents {
 )]
 pub struct EventIdentifier {
     pub(super) block_height: u64,
-    #[serde_as(as = "serde_with::hex::Hex")]
+    #[serde(with = "As::<Hex>")]
     pub(super) tx_hash: OriginHash,
 }
 
