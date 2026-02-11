@@ -39,7 +39,7 @@ pub struct RuskTip {
 #[derive(Clone)]
 pub struct Rusk {
     pub tip: Arc<RwLock<RuskTip>>,
-    pub(crate) vm: Arc<VM>,
+    pub vm: Arc<VM>,
     dir: PathBuf,
     pub(crate) chain_id: u8,
     pub(crate) vm_config: RuskVmConfig,

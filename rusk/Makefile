@@ -6,7 +6,6 @@ help: ## Display this help screen
 test: ## Run Rusk tests
 	@cargo test \
 		--release \
-		--features testwallet \
 		-- --test-threads 8 \
 		--nocapture
 			
@@ -43,7 +42,7 @@ clippy: ## Run clippy
 		--features archive \
 		--release \
 		-- -D warnings
-	@cargo check --benches --features testwallet
+	@cargo check --benches
 
 doc: ## Run doc gen
 	@cargo doc --release
@@ -52,10 +51,10 @@ build: ## Build rusk binary
 	@cargo build --release
 
 build-bench: ## Build the benchmarks
-	@cargo bench --features testwallet --no-run
+	@cargo bench --no-run
 
 bench: ## Run the benchmarks
-	@cargo bench --features testwallet
+	@cargo bench
 
 run:
 	@cargo r --release --bin rusk

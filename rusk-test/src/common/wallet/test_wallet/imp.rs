@@ -764,12 +764,10 @@ where
         let mut sender_sk = derive_bls_sk(&seed, sender_index);
         let sender_account = BlsPublicKey::from(&sender_sk);
 
-        println!("before fetch_account");
         let account = self
             .state
             .fetch_account(&sender_account)
             .map_err(Error::from_state_err)?;
-        println!("after fetch_account");
 
         // technically this check is not necessary, but it's nice to not spam
         // the network with transactions that are unspendable.

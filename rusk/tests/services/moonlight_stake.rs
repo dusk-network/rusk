@@ -4,23 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
-use std::sync::{Arc, RwLock};
-
-use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
-
+use dusk_core::stake::{StakeData, DEFAULT_MINIMUM_STAKE};
+use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
-use rusk::{Result, Rusk};
-use std::collections::HashMap;
-use tempfile::tempdir;
 use tracing::info;
 
-use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
-};
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
@@ -29,22 +18,18 @@ const GAS_LIMIT: u64 = 10_000_000_000;
 const GAS_PRICE: u64 = 1;
 
 // Creates the Rusk initial state for the tests below
-async fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("../config/stake.toml"))
-        .expect("Cannot deserialize config");
+async fn stake_state() -> Result<TestContext> {
+    let state = include_str!("../config/stake.toml");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
+    TestContext::instantiate(state, vm_config).await
 }
 
 /// Stakes an amount Dusk and produces a block with this single transaction,
 /// checking the stake is set successfully. It then proceeds to withdraw the
 /// stake and checking it is correctly withdrawn.
-fn wallet_stake(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-    value: u64,
-) {
+fn wallet_stake(tc: &TestContext, value: u64) {
+    let wallet = tc.wallet();
+
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     wallet
@@ -65,22 +50,7 @@ fn wallet_stake(
     let tx = wallet
         .moonlight_stake(0, 2, value, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to create a stake transaction");
-    let executed_txs = generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    if let Some(e) = &executed_txs
-        .first()
-        .expect("Transaction must be executed")
-        .err
-    {
-        panic!("Stake transaction failed due to {e}")
-    }
+    let _ = tc.execute_transaction(tx, BLOCK_HEIGHT, None);
 
     let stake = wallet.get_stake(2).expect("stake to be found");
     let stake_value = stake.amount.expect("stake should have an amount").value;
@@ -96,33 +66,15 @@ fn wallet_stake(
     let tx = wallet
         .moonlight_unstake(&mut rng, 0, 0, GAS_LIMIT, GAS_PRICE)
         .expect("Failed to unstake");
-    let spent_txs = generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    let spent_tx = spent_txs.first().expect("Unstake tx to be included");
-    assert_eq!(spent_tx.err, None, "unstake to be successfull");
+    let _ = tc.execute_transaction(tx, BLOCK_HEIGHT, None);
 
     let stake = wallet.get_stake(0).expect("stake should still be state");
-    assert_eq!(stake.amount, None);
+    assert_eq!(stake, StakeData::default());
 
     let tx = wallet
         .moonlight_stake_withdraw(&mut rng, 0, 1, GAS_LIMIT, GAS_PRICE)
         .expect("failed to withdraw reward");
-    generator_procedure(
-        rusk,
-        &[tx],
-        BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
+    let _ = tc.execute_transaction(tx, BLOCK_HEIGHT, None);
 
     let stake = wallet.get_stake(1).expect("stake should still be state");
     assert_eq!(stake.reward, 0);
@@ -133,39 +85,22 @@ pub async fn stake() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let tc = stake_state().await?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
+    let original_root = tc.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     // Perform some staking actions.
-    wallet_stake(&rusk, &wallet, DEFAULT_MINIMUM_STAKE);
+    wallet_stake(&tc, DEFAULT_MINIMUM_STAKE);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = tc.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
     );
     assert_ne!(original_root, new_root, "Root should have changed");
-
-    // let recv = kadcast_recv.try_recv();
-    // let (_, _, h) = recv.expect("Transaction has not been locally
-    // propagated"); assert_eq!(h, 0, "Transaction locally propagated with
-    // wrong height");
 
     Ok(())
 }
@@ -173,10 +108,9 @@ pub async fn stake() -> Result<()> {
 /// Attempt to submit a management transaction intending it to fail. Verify that
 /// the reward amount remains unchanged and confirm that the transaction indeed
 /// fails
-fn wallet_reward(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-) {
+fn wallet_reward(tc: &TestContext) {
+    let wallet = tc.wallet();
+
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     let stake = wallet.get_stake(2).expect("stake to be found");
@@ -186,21 +120,12 @@ fn wallet_reward(
         .moonlight_stake_withdraw(&mut rng, 0, 2, GAS_LIMIT, GAS_PRICE)
         .expect("Creating reward transaction should succeed");
 
-    let executed_txs = generator_procedure(
-        rusk,
-        &[tx],
+    let _ = tc.execute_transaction(
+        tx,
         BLOCK_HEIGHT,
-        BLOCK_GAS_LIMIT,
-        vec![],
-        None,
-    )
-    .expect("generator procedure to succeed");
-    let _ = executed_txs
-        .first()
-        .expect("Transaction must be executed")
-        .err
-        .as_ref()
-        .expect("reward transaction to fail");
+        "Panic: A stake should exist in the map to get rewards!",
+    );
+
     let stake = wallet.get_stake(2).expect("stake to be found");
     assert_eq!(stake.reward, 0, "stake reward must be empty");
 }
@@ -210,29 +135,17 @@ pub async fn reward() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let tc = stake_state().await?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
+    let original_root = tc.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     // Perform some staking actions.
-    wallet_reward(&rusk, &wallet);
+    wallet_reward(&tc);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = tc.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)

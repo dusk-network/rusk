@@ -4,26 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::{Arc, RwLock};
-
 use dusk_core::transfer::{
     data::{ContractCall, TransactionData},
     TRANSFER_CONTRACT,
 };
+use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
-use rusk::{Result, Rusk};
-use tempfile::tempdir;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, new_state};
-use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
-};
+use crate::common::state::generator_procedure;
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
@@ -35,22 +26,12 @@ const GAS_LIMIT_1: u64 = 300_000_000;
 const GAS_PRICE: u64 = 1;
 const DEPOSIT: u64 = 0;
 
-// Creates the Rusk initial state for the tests below
-async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot = toml::from_str(include_str!("../config/gas-behavior.toml"))
-        .expect("Cannot deserialize config");
-    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
-
-    new_state(dir, &snapshot, vm_config).await
-}
-
 const SENDER_INDEX_0: u8 = 0;
 const SENDER_INDEX_1: u8 = 1;
 
-fn make_transactions(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-) {
+fn make_transactions(tc: &TestContext) {
+    let rusk = tc.rusk();
+    let wallet = tc.wallet();
     let initial_balance_0 = wallet
         .get_balance(SENDER_INDEX_0)
         .expect("Getting initial balance should succeed")
@@ -137,38 +118,23 @@ pub async fn erroring_tx_charged_full() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = initial_state(&tmp).await?;
+    let state = include_str!("../config/gas-behavior.toml");
+    let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
+    let tc = TestContext::instantiate(state, vm_config).await?;
 
-    let cache = Arc::new(RwLock::new(HashMap::new()));
-
-    // Create a wallet
-    let wallet = wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache,
-        },
-    );
-
-    let original_root = rusk.state_root();
+    let original_root = tc.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    make_transactions(&rusk, &wallet);
+    make_transactions(&tc);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state_root();
+    let new_root = tc.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
     );
     assert_ne!(original_root, new_root, "Root should have changed");
-
-    // let recv = kadcast_recv.try_recv();
-    // let (_, _, h) = recv.expect("Transaction has not been locally
-    // propagated"); assert_eq!(h, 0, "Transaction locally propagated with
-    // wrong height");
 
     Ok(())
 }

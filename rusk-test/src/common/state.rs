@@ -12,11 +12,6 @@ use node::archive::Archive;
 use tempfile::tempdir;
 
 use dusk_bytes::Serializable;
-use node::vm::VMExecution;
-use rusk::node::{driverstore::DriverStore, RuskVmConfig};
-use rusk::{Result, Rusk, DUSK_CONSENSUS_KEY};
-use rusk_recovery_tools::state::{self, Snapshot};
-
 use dusk_consensus::{
     config::{RATIFICATION_COMMITTEE_CREDITS, VALIDATION_COMMITTEE_CREDITS},
     operations::StateTransitionData,
@@ -24,6 +19,7 @@ use dusk_consensus::{
 use dusk_core::{
     signatures::bls::PublicKey as BlsPublicKey, transfer::Transaction,
 };
+use node::vm::VMExecution;
 use node_data::{
     bls::PublicKeyBytes,
     ledger::{
@@ -31,11 +27,15 @@ use node_data::{
     },
     message::payload::Vote,
 };
+use rusk::node::{driverstore::DriverStore, RuskVmConfig};
+use rusk::{Rusk, DUSK_CONSENSUS_KEY};
+use rusk_recovery_tools::state::{self, Session, Snapshot};
 
+use anyhow::Result;
 use tokio::sync::broadcast;
 use tracing::info;
 
-const CHAIN_ID: u8 = 0xFA;
+pub const LOCAL_TEST_CHAIN_ID: u8 = 0xFA;
 pub const DEFAULT_MIN_GAS_LIMIT: u64 = 75000;
 
 // Creates a Rusk initial state in the given directory
@@ -44,20 +44,24 @@ pub async fn new_state<P: AsRef<Path>>(
     snapshot: &Snapshot,
     vm_config: RuskVmConfig,
 ) -> Result<Rusk> {
-    new_state_with_chainid(dir, snapshot, vm_config, CHAIN_ID).await
+    new_state_with(dir, snapshot, vm_config, LOCAL_TEST_CHAIN_ID, |_| {}).await
 }
 
 // Creates a Rusk initial state in the given directory
-pub async fn new_state_with_chainid<P: AsRef<Path>>(
+pub async fn new_state_with<P: AsRef<Path>, F>(
     dir: P,
     snapshot: &Snapshot,
     vm_config: RuskVmConfig,
     chain_id: u8,
-) -> Result<Rusk> {
+    closure: F,
+) -> Result<Rusk>
+where
+    F: FnOnce(&mut Session),
+{
     let dir = dir.as_ref();
 
     let (_, commit_id) =
-        state::deploy(dir, snapshot, *DUSK_CONSENSUS_KEY, |_| {})
+        state::deploy(dir, snapshot, *DUSK_CONSENSUS_KEY, closure)
             .expect("Deploying initial state should succeed");
 
     let (sender, _) = broadcast::channel(10);

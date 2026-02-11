@@ -4,7 +4,6 @@ help: ## Display this help screen
 test: ## Run tests
 	@cargo test \
 		--release \
-		--features testwallet \
 		-- --test-threads 8 \
 		--nocapture
 			

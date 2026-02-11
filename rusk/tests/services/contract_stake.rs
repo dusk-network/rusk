@@ -4,31 +4,25 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
-use std::sync::{Arc, RwLock};
-
 use dusk_core::stake::{
     self, Stake, DEFAULT_MINIMUM_STAKE, EPOCH, STAKE_CONTRACT,
 };
 
+use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::ContractCall;
 use dusk_core::transfer::{self, ReceiveFromContract, Transaction};
+use dusk_rusk_test::TestContext;
 use dusk_vm::gen_contract_id;
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::node::RuskVmConfig;
-use rusk::{Result, Rusk};
-use std::collections::HashMap;
-use tempfile::tempdir;
+use rusk::Rusk;
 use tracing::info;
 
-use crate::common::state::{generator_procedure2, new_state};
-use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
-};
+use crate::common::state::generator_procedure2;
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
@@ -38,23 +32,11 @@ const GAS_LIMIT: u64 = 10_000_000_000;
 const GAS_PRICE: u64 = 1;
 
 // Creates the Rusk initial state for the tests below
-async fn stake_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot =
-        toml::from_str(include_str!("../config/stake_from_contract.toml"))
-            .expect("Cannot deserialize config");
+async fn stake_state() -> Result<TestContext> {
+    let state = include_str!("../config/stake_from_contract.toml");
     let vm_config = RuskVmConfig::new().with_block_gas_limit(BLOCK_GAS_LIMIT);
 
-    new_state(dir, &snapshot, vm_config).await
-}
-fn wallet(rusk: &Rusk) -> wallet::Wallet<TestStore, TestStateClient> {
-    // Create a wallet
-    wallet::Wallet::new(
-        TestStore,
-        TestStateClient {
-            rusk: rusk.clone(),
-            cache: Arc::new(RwLock::new(HashMap::new())),
-        },
-    )
+    TestContext::instantiate(state, vm_config).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -62,13 +44,10 @@ pub async fn stake_from_contract_direct() -> Result<()> {
     // Setup the logger
     logger();
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let tc = stake_state().await?;
+    let wallet = tc.wallet();
 
-    // Create a wallet
-    let wallet = wallet(&rusk);
-
-    deploy_proxy_contract(&rusk, &wallet);
+    deploy_proxy_contract(&tc);
 
     let wrong_call = ReceiveFromContract {
         contract: STAKE_CONTRACT,
@@ -90,12 +69,10 @@ pub async fn stake_from_contract_direct() -> Result<()> {
             Some(call),
         )
         .expect("stake to be successful");
-    let _tx = execute_transaction(
+    let _ = tc.execute_transaction(
         stake_from_contract,
-        &rusk,
         1,
         "Panic: Cannot be called by a root ICC",
-        None,
     );
     Ok(())
 }
@@ -107,13 +84,11 @@ pub async fn stake_from_contract() -> Result<()> {
 
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    let tmp = tempdir().expect("Should be able to create temporary directory");
-    let rusk = stake_state(&tmp).await?;
+    let tc = stake_state().await?;
+    let rusk = tc.rusk();
+    let wallet = tc.wallet();
 
-    // Create a wallet
-    let wallet = wallet(&rusk);
-
-    let contract_id = deploy_proxy_contract(&rusk, &wallet);
+    let contract_id = deploy_proxy_contract(&tc);
 
     info!("Contract ID: {:?}", contract_id);
 
@@ -139,7 +114,7 @@ pub async fn stake_from_contract() -> Result<()> {
             Some(call.clone()),
         )
         .expect("stake to be successful");
-    let tx = execute_transaction(stake_from_contract, &rusk, 1, None, None);
+    let tx = tc.execute_transaction(stake_from_contract, 1, None);
     info!("Stake from contract - gas spent {:?}", tx.gas_spent);
 
     let stake = wallet.get_stake(0).expect("stake to be found");
@@ -158,7 +133,7 @@ pub async fn stake_from_contract() -> Result<()> {
             Some(call.clone()),
         )
         .expect("stake to be successful");
-    let tx = execute_transaction(stake_from_contract, &rusk, 2, None, None);
+    let tx = tc.execute_transaction(stake_from_contract, 2, None);
     info!("Stake from contract - gas spent {:?}", tx.gas_spent);
 
     let stake = wallet.get_stake(0).expect("stake to be found");
@@ -200,25 +175,13 @@ pub async fn stake_from_contract() -> Result<()> {
     let stake_from_account = wallet
         .moonlight_stake(0, 0, 1000, GAS_LIMIT, 1)
         .expect("stake to be successful");
-    execute_transaction(
-        stake_from_account,
-        &rusk,
-        1,
-        "Panic: Keys mismatch",
-        None,
-    );
+    tc.execute_transaction(stake_from_account, 1, "Panic: Keys mismatch");
 
     let unstake = wallet
         .moonlight_unstake(&mut rng, 0, 0, GAS_LIMIT, 1)
         .expect("stake to be successful");
 
-    execute_transaction(
-        unstake,
-        &rusk,
-        1,
-        "Panic: expect StakeFundOwner::Account",
-        None,
-    );
+    tc.execute_transaction(unstake, 1, "Panic: expect StakeFundOwner::Account");
 
     let unstake = stake::Withdraw::new(
         &sk,
@@ -249,7 +212,7 @@ pub async fn stake_from_contract() -> Result<()> {
     let unstake_from_contract = wallet
         .moonlight_execute(0, 0, 0, GAS_LIMIT, GAS_PRICE, Some(call.clone()))
         .expect("unstakes to be successful");
-    let tx = execute_transaction(unstake_from_contract, &rusk, 1, None, None);
+    let tx = tc.execute_transaction(unstake_from_contract, 1, None);
     info!("UnStake from contract - gas spent {:?}", tx.gas_spent);
 
     assert_eq!(wallet.get_stake(0).expect("stake to exists").amount, None);
@@ -283,7 +246,7 @@ pub async fn stake_from_contract() -> Result<()> {
     let withdraw_from_contract = wallet
         .moonlight_execute(0, 0, 0, GAS_LIMIT, GAS_PRICE, Some(call.clone()))
         .expect("unstakes to be successful");
-    let tx = execute_transaction(withdraw_from_contract, &rusk, 1, None, None);
+    let tx = tc.execute_transaction(withdraw_from_contract, 1, None);
     info!("Withdraw from contract - gas spent {:?}", tx.gas_spent);
 
     assert_eq!(wallet.get_stake(0).expect("stake to exists").reward, 1);
@@ -291,10 +254,9 @@ pub async fn stake_from_contract() -> Result<()> {
     Ok(())
 }
 
-fn deploy_proxy_contract(
-    rusk: &Rusk,
-    wallet: &wallet::Wallet<TestStore, TestStateClient>,
-) -> ContractId {
+fn deploy_proxy_contract(tc: &TestContext) -> ContractId {
+    let wallet = tc.wallet();
+
     let deploy_nonce = 0u64;
     let owner = wallet.account_public_key(0).unwrap();
     let charlie_byte_code =
@@ -313,7 +275,7 @@ fn deploy_proxy_contract(
         )
         .expect("Failed to create a deploy transaction");
 
-    execute_transaction(tx, rusk, BLOCK_HEIGHT, None, None);
+    tc.execute_transaction(tx, BLOCK_HEIGHT, None);
     contract_id
 }
 

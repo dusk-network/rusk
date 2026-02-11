@@ -35,6 +35,3 @@ pub static DUSK_CONSENSUS_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
     BlsPublicKey::from_slice(dusk_cpk_bytes)
         .expect("Dusk consensus public key to be valid")
 });
-
-#[cfg(feature = "testwallet")]
-mod test_utils;

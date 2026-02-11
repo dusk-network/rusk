@@ -51,6 +51,7 @@ clippy: ## Run clippy
 	$(MAKE) -C ./node $@
 	$(MAKE) -C ./wallet-core $@
 	$(MAKE) -C ./rusk/ $@
+	$(MAKE) -C ./rusk-test/ $@
 	$(MAKE) -C ./rusk-wallet/ $@
 
 doc: ## Run doc gen

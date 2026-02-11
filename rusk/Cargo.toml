@@ -89,8 +89,6 @@ reqwest = { workspace = true }
 tempfile = { workspace = true, optional = true }
 rusk-recovery = { workspace = true, optional = true }
 
-## testwallet dependencies
-futures = { workspace = true, optional = true }
 
 [dev-dependencies]
 wallet-core = { workspace = true }
@@ -102,18 +100,11 @@ dusk-rusk-test = { path = "../rusk-test/" }
 rustc_tools_util = { workspace = true }
 
 [features]
-default = [
-    "ephemeral",
-    "recovery-state",
-    "prover",
-    "chain",
-    "http-wasm",
-]
+default = ["ephemeral", "recovery-state", "prover", "chain", "http-wasm"]
 ephemeral = ["recovery-state", "chain"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]
 prover = ["dep:rusk-prover", "recovery-keys"]
-testwallet = ["dep:futures"]
 chain = ["dep:node", "dep:dusk-consensus", "dep:node-data"]
 archive = ["chain", "node/archive", "dusk-core/serde"]
 network-trace = ["node/network-trace"]
@@ -123,4 +114,3 @@ dynamic-verifier = []
 [[bench]]
 name = "block_ingestion"
 harness = false
-required-features = ["testwallet"]
