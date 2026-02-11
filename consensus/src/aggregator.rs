@@ -16,7 +16,7 @@ use node_data::ledger::{to_str, StepVotes};
 use node_data::message::payload::Vote;
 use node_data::message::SignedStepMessage;
 use thiserror::Error;
-use tracing::{debug, error, warn};
+use tracing::{debug, warn};
 
 use crate::config::is_emergency_iter;
 use crate::user::cluster::Cluster;
