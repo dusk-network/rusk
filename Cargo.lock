@@ -1885,7 +1885,6 @@ dependencies = [
  "dusk-wallet-core",
  "dusk-wasmtime",
  "ff",
- "futures",
  "futures-util",
  "hex",
  "http-body-util",

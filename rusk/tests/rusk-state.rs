@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_rusk_test::common::{self, *};
-use dusk_rusk_test::TestContext;
+use dusk_rusk_test::{RuskVmConfig, TestContext};
 
 use std::sync::{mpsc, Arc};
 
@@ -25,7 +25,7 @@ use ff::Field;
 use parking_lot::RwLockWriteGuard;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::{Rusk, RuskTip, RuskVmConfig};
+use rusk::node::{Rusk, RuskTip};
 use tempfile::tempdir;
 use tracing::info;
 
@@ -46,8 +46,14 @@ async fn initial_state() -> Result<TestContext> {
 
 fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<NoteLeaf>> {
     let (sender, receiver) = mpsc::channel();
-    rusk.leaves_from_height(height, sender)
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    rusk.feeder_query(
+        TRANSFER_CONTRACT,
+        "leaves_from_height",
+        &height,
+        sender,
+        None,
+    )
+    .map_err(|err| anyhow::anyhow!("Feeder query failed: {err}"))?;
     Ok(receiver
         .into_iter()
         .map(|bytes| rkyv::from_bytes(&bytes).unwrap())
@@ -79,7 +85,7 @@ where
         sender_blinder,
     );
 
-    rusk.with_tip(|mut tip, vm| {
+    with_tip(&rusk, |mut tip, vm| {
         let current_commit = tip.current;
         let mut session = vm
             .session(current_commit, CHAIN_ID, BLOCK_HEIGHT)
@@ -290,4 +296,16 @@ async fn generate_moonlight_txs() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+/// Perform an action with the underlying data structure.
+///
+/// This should **not be used** internally, to avoid locking the structure
+/// for too long of a period of time.
+fn with_tip<'a, F, T>(rusk: &'a Rusk, closure: F) -> T
+where
+    F: FnOnce(RwLockWriteGuard<'a, RuskTip>, &'a VM) -> T,
+{
+    let tip = rusk.tip.write();
+    closure(tip, &rusk.vm)
 }
