@@ -2,6 +2,11 @@ name: Build and Upload Docker Image as Artifact
 
 on:
   workflow_dispatch:
+    inputs:
+      cargo_features:
+        description: "Cargo features to build with"
+        required: true
+        default: "archive"
 
 jobs:
   build-and-upload:
@@ -15,7 +20,15 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        run: docker build -t rusk --build-arg CARGO_FEATURES="archive" -f Dockerfile.ephemeral .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.ephemeral
+          tags: rusk:latest
+          build-args: CARGO_FEATURES=${{ github.event.inputs.cargo_features }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Save Docker image
         run: docker save rusk:latest -o rusk_image.tar
@@ -25,3 +38,4 @@ jobs:
         with:
           name: rusk-image
           path: rusk_image.tar
+          retention-days: 5

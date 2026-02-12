@@ -1,5 +1,9 @@
 name: rusk-wallet CI
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     types:
@@ -11,7 +15,7 @@ on:
 jobs:
   # JOB to run change detection
   changes:
-    runs-on: ubuntu-latest
+    runs-on: core
     # Required permissions
     permissions:
       pull-requests: read
