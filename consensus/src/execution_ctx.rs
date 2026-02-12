@@ -117,8 +117,8 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
     /// Runs a loop that collects both inbound messages and timeout event.
     ///
-    /// It accepts an instance of MsgHandler impl (phase var) and calls its
-    /// methods based on the occurred event.
+    /// It accepts an instance of MsgHandler impl (step_handler var) and calls
+    /// its methods based on the occurred event.
     ///
     /// In an event of timeout, it also increases the step timeout value
     /// accordingly.
@@ -126,7 +126,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// By design, the loop is terminated by aborting the consensus task.
     pub async fn event_loop<C: MsgHandler>(
         &mut self,
-        phase: Arc<Mutex<C>>,
+        step_handler: Arc<Mutex<C>>,
         additional_timeout: Option<Duration>,
     ) -> Message {
         let round = self.round_update.round;
@@ -163,7 +163,10 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                             // If we received a Step Message, we pass it on to
                             // the running step for processing.
                             if let Some(step_result) = self
-                                .process_inbound_msg(phase.clone(), msg.clone())
+                                .process_inbound_msg(
+                                    step_handler.clone(),
+                                    msg.clone(),
+                                )
                                 .await
                             {
                                 // In the normal case, we just return the result
@@ -351,7 +354,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                     warn!("Error while receiving msg: {e}");
                 }
 
-                // Timeout event. Phase could not reach its final goal.
+                // Timeout event. Step could not reach its final goal.
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
                     info!(event = "Step timeout expired", ?step, round, iter);
@@ -370,7 +373,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
                         open_consensus_mode = true;
                     } else {
-                        self.process_timeout_event(phase).await;
+                        self.process_timeout_event(step_handler).await;
                         return Message::empty();
                     }
                 }
@@ -524,7 +527,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         }
     }
 
-    /// Delegates the received message to the Phase handler for further
+    /// Delegates the received message to the step handler for further
     /// processing.
     ///
     /// Returning Option::Some here is interpreted as FinalMessage for the
@@ -534,7 +537,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// the message is processed due to emergency mode)
     async fn process_inbound_msg<C: MsgHandler>(
         &mut self,
-        phase: Arc<Mutex<C>>,
+        step_handler: Arc<Mutex<C>>,
         msg: Message,
     ) -> Option<Message> {
         // If it's a message from a future iteration of the current round, we
@@ -562,7 +565,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         let generator = self.get_curr_generator();
 
         // Check if message is valid in the context of current step
-        let valid = phase.lock().await.is_valid(
+        let valid = step_handler.lock().await.is_valid(
             &msg,
             &self.round_update,
             self.iteration,
@@ -630,7 +633,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             // An error here means this message is invalid due to failed
             // verification.
             Err(e) => {
-                error!("phase handler err: {:?}", e);
+                error!("step handler err: {:?}", e);
                 return None;
             }
         }
@@ -641,7 +644,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         let msg_height = msg.header.round;
         trace!("collecting msg {msg:#?}");
 
-        let collected = phase
+        let collected = step_handler
             .lock()
             .await
             .collect(
@@ -657,7 +660,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             // Fully valid state reached on this step. Return it as an output to
             // populate next step with it.
             Ok(StepOutcome::Ready(m)) => Some(m),
-            // Message collected but phase didn't reach a final result
+            // Message collected but step didn't reach a final result
             Ok(StepOutcome::Pending) => None,
             Err(err) => {
                 let event = "failed collect";
@@ -667,15 +670,15 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
         }
     }
 
-    /// Delegates the received event of timeout to the Phase handler for further
+    /// Delegates the received event of timeout to the step handler for further
     /// processing.
     async fn process_timeout_event<C: MsgHandler>(
         &mut self,
-        phase: Arc<Mutex<C>>,
+        step_handler: Arc<Mutex<C>>,
     ) {
         self.iter_ctx.on_timeout_event(self.step_name());
 
-        if let Some(msg) = phase
+        if let Some(msg) = step_handler
             .lock()
             .await
             .handle_timeout(&self.round_update, self.iteration)
@@ -691,7 +694,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     /// Returns the step result if the step is finalized.
     pub async fn handle_future_msgs<C: MsgHandler>(
         &self,
-        phase: Arc<Mutex<C>>,
+        step_handler: Arc<Mutex<C>>,
     ) -> StepOutcome {
         let committee = self
             .get_current_committee()
@@ -710,7 +713,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             }
 
             for msg in messages {
-                let ret = phase.lock().await.is_valid(
+                let ret = step_handler.lock().await.is_valid(
                     &msg,
                     &self.round_update,
                     self.iteration,
@@ -724,7 +727,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
 
                     self.outbound.try_send(msg.clone());
 
-                    match phase
+                    match step_handler
                         .lock()
                         .await
                         .collect(

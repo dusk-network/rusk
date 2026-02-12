@@ -268,7 +268,7 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
         match collect_vote {
             Ok((step_votes, validation_quorum_reached)) => {
                 // We ignore the result since it's not possible to have a full
-                // quorum in the validation phase
+                // quorum in the validation step
                 let _ = self.att_registry.lock().await.set_step_votes(
                     p.header().iteration,
                     &p.vote,

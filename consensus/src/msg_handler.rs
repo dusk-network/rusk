@@ -32,7 +32,7 @@ pub trait MsgHandler {
     /// is_valid checks a new message is valid in the first place.
     ///
     /// Only if the message has correct round and step and is signed by a
-    /// committee member then we delegate it to Phase::verify.
+    /// committee member then we delegate it to Step::verify.
     fn is_valid(
         &self,
         msg: &Message,
@@ -72,8 +72,8 @@ pub trait MsgHandler {
                     return Err(ConsensusError::NotCommitteeMember);
                 }
 
-                // Delegate message final verification to the phase instance.
-                // It is the phase that knows what message type to expect and if
+                // Delegate message final verification to the step instance.
+                // It is the step that knows what message type to expect and if
                 // it is valid or not.
                 self.verify(msg, round_committees)
             }
@@ -150,14 +150,14 @@ pub trait MsgHandler {
         Ok(())
     }
 
-    /// verify allows each Phase to fully verify the message payload.
+    /// verify allows each Step to fully verify the message payload.
     fn verify(
         &self,
         msg: &Message,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError>;
 
-    /// collect allows each Phase to process a verified inbound message.
+    /// collect allows each Step to process a verified inbound message.
     async fn collect(
         &mut self,
         msg: Message,
@@ -167,7 +167,7 @@ pub trait MsgHandler {
         round_committees: &RoundCommittees,
     ) -> Result<StepOutcome, ConsensusError>;
 
-    /// collect allows each Phase to process a verified message from a former
+    /// collect allows each Step to process a verified message from a former
     /// iteration
     async fn collect_from_past(
         &mut self,
@@ -176,7 +176,7 @@ pub trait MsgHandler {
         generator: Option<PublicKeyBytes>,
     ) -> Result<StepOutcome, ConsensusError>;
 
-    /// handle_timeout allows each Phase to handle a timeout event.
+    /// handle_timeout allows each Step to handle a timeout event.
     /// Returned Message here is sent to outboud queue.
     fn handle_timeout(
         &self,
