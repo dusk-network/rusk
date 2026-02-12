@@ -46,7 +46,7 @@ use async_graphql::{
 use async_trait::async_trait;
 
 use tokio::net::ToSocketAddrs;
-use tokio::sync::{broadcast, mpsc, RwLock};
+use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
 use tokio::{io, task};
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
@@ -367,8 +367,19 @@ where
 }
 
 enum SubscriptionAction {
-    Subscribe(RuesEventUri),
-    Unsubscribe(RuesEventUri),
+    Subscribe {
+        uri: RuesEventUri,
+        reply: oneshot::Sender<Result<(), SubscriptionError>>,
+    },
+    Unsubscribe {
+        uri: RuesEventUri,
+        reply: oneshot::Sender<Result<(), SubscriptionError>>,
+    },
+}
+
+#[derive(Debug)]
+enum SubscriptionError {
+    NotFound,
 }
 
 async fn handle_stream_rues(
@@ -451,11 +462,16 @@ async fn handle_stream_rues(
                 };
 
                 match subscription {
-                    SubscriptionAction::Subscribe(subscription) => {
-                        subscription_set.insert(subscription);
+                    SubscriptionAction::Subscribe { uri, reply } => {
+                        subscription_set.insert(uri);
+                        let _ = reply.send(Ok(()));
                     },
-                    SubscriptionAction::Unsubscribe(subscription) => {
-                        subscription_set.remove(&subscription);
+                    SubscriptionAction::Unsubscribe { uri, reply } => {
+                        if subscription_set.remove(&uri) {
+                            let _ = reply.send(Ok(()));
+                        } else {
+                            let _ = reply.send(Err(SubscriptionError::NotFound));
+                        }
                     },
                 }
             }
@@ -625,9 +641,15 @@ async fn handle_request_rues<H: HandleRequest>(
             }
         };
 
-        let action = match *req.method() {
-            Method::GET => SubscriptionAction::Subscribe(uri),
-            Method::DELETE => SubscriptionAction::Unsubscribe(uri),
+        let (action, reply) = match *req.method() {
+            Method::GET => {
+                let (reply, receiver) = oneshot::channel();
+                (SubscriptionAction::Subscribe { uri, reply }, receiver)
+            }
+            Method::DELETE => {
+                let (reply, receiver) = oneshot::channel();
+                (SubscriptionAction::Unsubscribe { uri, reply }, receiver)
+            }
             _ => {
                 return response(
                     StatusCode::METHOD_NOT_ALLOWED,
@@ -643,7 +665,19 @@ async fn handle_request_rues<H: HandleRequest>(
             );
         }
 
-        response(StatusCode::OK, "")
+        match reply.await {
+            Ok(Ok(())) => response(StatusCode::OK, ""),
+            Ok(Err(SubscriptionError::NotFound)) => response(
+                StatusCode::NOT_FOUND,
+                "{\"error\":\"Subscription not found\"}",
+            ),
+            // TODO: consider returning 424 instead of 500 for reply channel
+            // closure during session teardown
+            Err(_) => response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "{\"error\":\"Failed consuming request\"}",
+            ),
+        }
     }
 }
 
@@ -1408,6 +1442,35 @@ mod tests {
             response.status(),
             StatusCode::NOT_FOUND,
             "Contracts without entity should return NOT_FOUND"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_rues_unsubscribe_not_found() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+        let (_stream, sid) = connect_ws(local_addr);
+
+        let contract_id_hex = hex::encode(ContractId::from_bytes([9; 32]));
+        let client = reqwest::Client::new();
+
+        let response = client
+            .delete(format!(
+                "http://{local_addr}/on/contracts:{contract_id_hex}/topic",
+            ))
+            .header("Rusk-Session-Id", sid.to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body = response
+            .text()
+            .await
+            .expect("Reading response body should succeed");
+        assert!(
+            body.contains("Subscription not found"),
+            "Expected missing subscription error, got: {body}"
         );
     }
 
