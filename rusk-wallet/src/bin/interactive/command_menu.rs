@@ -209,8 +209,7 @@ pub(crate) async fn online(
                         .iter()
                         .map(|p| Address::Public(p.public_addr))
                         .collect();
-
-                    prompt::request_address(stake_idx, choices)?
+                    prompt::request_owner_key(stake_idx, choices)?
                 }
                 e => e?,
             };
