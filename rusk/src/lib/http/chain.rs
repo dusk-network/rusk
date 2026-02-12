@@ -532,9 +532,10 @@ async fn load_tip<DB: database::DB>(
     db: &Arc<RwLock<DB>>,
 ) -> anyhow::Result<Option<LightBlock>> {
     db.read().await.view(|t| {
-        anyhow::Ok(t.op_read(MD_HASH_KEY)?.and_then(|tip_hash| {
-            t.light_block(&tip_hash[..])
-                .expect("block to be found if metadata is set")
-        }))
+        let tip = match t.op_read(MD_HASH_KEY)? {
+            Some(tip_hash) => t.light_block(&tip_hash[..])?,
+            None => None,
+        };
+        anyhow::Ok(tip)
     })
 }

@@ -373,7 +373,11 @@ impl Rusk {
     fn get_provisioners(&self) -> Result<ResponseData, HttpError> {
         let prov: Vec<_> = self
             .provisioners(None)
-            .expect("Cannot query state for provisioners")
+            .map_err(|e| {
+                HttpError::vm(format!(
+                    "Cannot query state for provisioners: {e}"
+                ))
+            })?
             .map(|(key, stake)| {
                 let owner = StakeOwner::from(&key.owner);
                 let key = bs58::encode(key.account.to_bytes()).into_string();

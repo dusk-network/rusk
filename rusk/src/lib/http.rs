@@ -84,8 +84,8 @@ pub use error::Error as HttpError;
 pub use policy::HttpPolicyConfig;
 
 use self::event::{
-    check_rusk_version, RequestParseError, ResponseData, RuesEventUri,
-    SessionId,
+    RequestParseError, ResponseData, RuesEventUri, SessionId,
+    check_rusk_version,
 };
 use self::policy::HttpRequestPolicy;
 use self::stream::Listener;
@@ -745,10 +745,16 @@ async fn handle_request_rues<H: HandleRequest>(
         let (responder, mut receiver) = mpsc::unbounded_channel();
         handle_execution_rues(handler, event, responder).await;
 
-        let execution_response = receiver
-            .recv()
-            .await
-            .expect("An execution should always return a response");
+        let execution_response = match receiver.recv().await {
+            Some(response) => response,
+            None => {
+                error!("RUES execution response channel closed unexpectedly");
+                return api_error_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Internal server error",
+                );
+            }
+        };
         resp_headers.extend(execution_response.headers.clone());
         let binary_response = binary_request || execution_response.force_binary;
         let is_empty = execution_response.error.is_none()
