@@ -15,7 +15,7 @@ use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
 
 use crate::command::BalanceType;
 use crate::io::prompt::{EXIT_HELP, MOVE_HELP, SELECT_HELP};
-use crate::io::{self, prompt};
+use crate::io::{self, prompt, status};
 use crate::prompt::Prompter;
 use crate::settings::Settings;
 use crate::{Command, GraphQL, RunResult, WalletFile};
@@ -47,6 +47,9 @@ pub(crate) async fn run_loop(
                         wallet.get_moonlight_balance(profile_index).await?;
                     let phoenix_bal =
                         wallet.get_phoenix_balance(profile_index).await?;
+
+                    status::clear_rem_interactive_status(true);
+
                     let phoenix_spendable = phoenix_bal.spendable.into();
                     let phoenix_total: Dusk = phoenix_bal.value.into();
 
@@ -119,12 +122,25 @@ pub(crate) async fn run_loop(
                             Ok(res) => res,
                             Err(err) => {
                                 match err.downcast_ref::<InquireError>() {
-                                    Some(InquireError::OperationCanceled) => (),
-                                    _ => println!("{err}\n"),
+                                    Some(InquireError::OperationCanceled) => {
+                                        status::clear_rem_interactive_status(
+                                            true,
+                                        )
+                                    }
+                                    _ => {
+                                        // Don't clear the status stdout if the
+                                        // command failed.
+                                        // Only clear the buffer.
+                                        status::clear_rem_interactive_status(
+                                            false,
+                                        );
+                                        println!("{err}\n");
+                                    }
                                 }
                                 continue;
                             }
                         };
+                        status::clear_rem_interactive_status(true);
                         prompt::show_cursor()?;
 
                         // output results
@@ -140,6 +156,7 @@ pub(crate) async fn run_loop(
                                     io::status::interactive,
                                 )?;
                                 gql.wait_for(&tx_id).await?;
+                                status::clear_rem_interactive_status(true);
 
                                 if let Some(explorer) = &settings.explorer {
                                     let url = format!("{explorer}{tx_id}");

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add global config hierarchy with auto-creation at `~/.config/rusk-wallet/` [#2518]
 - Add config to change the default wallet directory [#3775]
 - Add support for blob transaction
+- Add interactive status output [#3397]
 - Add check to ensure the wallet can cover max fee in interactive mode [#3695]
 
 ### Changed
@@ -122,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3597]: https://github.com/dusk-network/rusk/issues/3597
 [#3593]: https://github.com/dusk-network/rusk/issues/3593
 [#3405]: https://github.com/dusk-network/rusk/issues/3405
+[#3397]: https://github.com/dusk-network/rusk/issues/3397
 [#3394]: https://github.com/dusk-network/rusk/issues/3394
 [#3391]: https://github.com/dusk-network/rusk/issues/3391
 [#3292]: https://github.com/dusk-network/rusk/issues/3292

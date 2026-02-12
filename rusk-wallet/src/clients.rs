@@ -137,13 +137,10 @@ impl State {
         self.sync_rx = Some(sync_rx);
 
         let cache = self.cache();
-        let status = self.status;
         let client = self.client.clone();
         let mut store = self.store.clone();
         let shutdown = Arc::new(Notify::new());
         let shutdown_signal = shutdown.clone();
-
-        status("Starting Sync..");
 
         let handle = tokio::spawn(async move {
             tracing::debug!("Starting background sync loop");
@@ -154,7 +151,7 @@ impl State {
                     () = sleep(Duration::from_secs(SYNC_INTERVAL_SECONDS)) => {
                         let _ = sync_tx.send("Syncing..".to_string());
 
-                        let _ = match sync_db(&client, &cache, &store, status).await {
+                        let _ = match sync_db(&client, &cache, &store, |_| {}).await {
                             Ok(()) => sync_tx.send("Syncing Complete".to_string()),
                             Err(e) => sync_tx.send(format!("Error during sync:.. {e}")),
                         };
