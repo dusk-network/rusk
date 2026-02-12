@@ -5,7 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::fmt::Display;
+use std::io::stdout;
 
+use crossterm::cursor::MoveUp;
+use crossterm::execute;
+use crossterm::terminal::{Clear, ClearType};
 use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 use dusk_core::transfer::data::MAX_MEMO_SIZE;
 use inquire::{InquireError, Select};
@@ -25,22 +29,15 @@ use crate::io::prompt::{
 use crate::settings::Settings;
 use crate::{prompt, Command, WalletFile};
 
-/// The command-menu items
+/// The top-level command-menu items
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 enum MenuItem {
     History,
     Transfer,
-    Stake,
-    Unstake,
-    ClaimRewards,
-    ContractDeploy,
-    ContractCall,
-    DriverDeploy,
     Unshield,
     Shield,
-    CalculateContractId,
-    StakeInfo,
-    Export,
+    Staking,
+    Contracts,
     Back,
 }
 
@@ -49,22 +46,71 @@ impl Display for MenuItem {
         match self {
             MenuItem::History => write!(f, "Show Transactions History"),
             MenuItem::Transfer => write!(f, "Transfer Dusk"),
-            MenuItem::Stake => write!(f, "Stake"),
-            MenuItem::Unstake => write!(f, "Unstake"),
-            MenuItem::ClaimRewards => write!(f, "Claim Stake Rewards"),
-            MenuItem::ContractDeploy => write!(f, "Deploy a Contract"),
-            MenuItem::ContractCall => write!(f, "Call a Contract"),
-            MenuItem::DriverDeploy => write!(f, "Deploy a Contract's Driver"),
             MenuItem::Unshield => {
                 write!(f, "Convert Shielded Dusk to Public Dusk")
             }
             MenuItem::Shield => {
                 write!(f, "Convert Public Dusk to Shielded Dusk")
             }
-            MenuItem::CalculateContractId => write!(f, "Calculate Contract ID"),
-            MenuItem::StakeInfo => write!(f, "Stake Info"),
-            MenuItem::Export => write!(f, "Export Provisioner Key-Pair"),
+            MenuItem::Staking => write!(f, "Staking"),
+            MenuItem::Contracts => write!(f, "Contracts"),
             MenuItem::Back => write!(f, "Back"),
+        }
+    }
+}
+
+/// Staking submenu items
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+enum StakingMenuItem {
+    Stake,
+    Unstake,
+    ClaimRewards,
+    StakeInfo,
+    Export,
+    Back,
+}
+
+impl Display for StakingMenuItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StakingMenuItem::Stake => write!(f, "Stake"),
+            StakingMenuItem::Unstake => write!(f, "Unstake"),
+            StakingMenuItem::ClaimRewards => {
+                write!(f, "Claim Stake Rewards")
+            }
+            StakingMenuItem::StakeInfo => write!(f, "Stake Info"),
+            StakingMenuItem::Export => {
+                write!(f, "Export Provisioner Key-Pair")
+            }
+            StakingMenuItem::Back => write!(f, "Back"),
+        }
+    }
+}
+
+/// Contract submenu items
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+enum ContractsMenuItem {
+    ContractDeploy,
+    ContractCall,
+    DriverDeploy,
+    CalculateContractId,
+    Back,
+}
+
+impl Display for ContractsMenuItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ContractsMenuItem::ContractDeploy => {
+                write!(f, "Deploy a Contract")
+            }
+            ContractsMenuItem::ContractCall => write!(f, "Call a Contract"),
+            ContractsMenuItem::DriverDeploy => {
+                write!(f, "Deploy a Contract's Driver")
+            }
+            ContractsMenuItem::CalculateContractId => {
+                write!(f, "Calculate Contract ID")
+            }
+            ContractsMenuItem::Back => write!(f, "Back"),
         }
     }
 }
@@ -83,15 +129,8 @@ pub(crate) async fn online(
         MenuItem::Transfer,
         MenuItem::Unshield,
         MenuItem::Shield,
-        MenuItem::StakeInfo,
-        MenuItem::Stake,
-        MenuItem::Unstake,
-        MenuItem::ClaimRewards,
-        MenuItem::ContractCall,
-        MenuItem::ContractDeploy,
-        MenuItem::DriverDeploy,
-        MenuItem::CalculateContractId,
-        MenuItem::Export,
+        MenuItem::Staking,
+        MenuItem::Contracts,
         MenuItem::Back,
     ];
 
@@ -106,9 +145,7 @@ pub(crate) async fn online(
         return Ok(ProfileOp::Back);
     }
 
-    let select = select?;
-
-    let res = match select {
+    let res = match select? {
         MenuItem::Transfer => {
             let rcvr = prompt::request_rcvr_addr("recipient")?;
 
@@ -154,7 +191,150 @@ pub(crate) async fn online(
                 )?,
             }))
         }
-        MenuItem::Stake => {
+        MenuItem::History => ProfileOp::Run(Box::new(Command::History {
+            profile_idx: Some(profile_idx),
+        })),
+        MenuItem::Shield => {
+            if check_min_gas_balance(
+                moonlight_balance,
+                DEFAULT_LIMIT_CALL,
+                "convert DUSK from public to shielded",
+            )
+            .is_err()
+            {
+                return Ok(ProfileOp::Stay);
+            }
+
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
+            ProfileOp::Run(Box::new(Command::Shield {
+                profile_idx: Some(profile_idx),
+                amt: prompt::request_token_amt("convert", moonlight_balance)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price(
+                    DEFAULT_PRICE,
+                    mempool_gas_prices,
+                )?,
+            }))
+        }
+        MenuItem::Unshield => {
+            if check_min_gas_balance(
+                phoenix_spendable,
+                DEFAULT_LIMIT_CALL,
+                "convert DUSK from shielded to public",
+            )
+            .is_err()
+            {
+                return Ok(ProfileOp::Stay);
+            }
+
+            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
+
+            ProfileOp::Run(Box::new(Command::Unshield {
+                profile_idx: Some(profile_idx),
+                amt: prompt::request_token_amt("convert", phoenix_spendable)?,
+                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
+                gas_price: prompt::request_gas_price(
+                    DEFAULT_PRICE,
+                    mempool_gas_prices,
+                )?,
+            }))
+        }
+        MenuItem::Staking => {
+            let _ =
+                execute!(stdout(), MoveUp(1), Clear(ClearType::CurrentLine));
+            return staking_menu(
+                profile_idx,
+                wallet,
+                phoenix_spendable,
+                moonlight_balance,
+                settings,
+            )
+            .await;
+        }
+        MenuItem::Contracts => {
+            let _ =
+                execute!(stdout(), MoveUp(1), Clear(ClearType::CurrentLine));
+            return contracts_menu(
+                profile_idx,
+                wallet,
+                phoenix_spendable,
+                moonlight_balance,
+            )
+            .await;
+        }
+        MenuItem::Back => ProfileOp::Back,
+    };
+
+    Ok(res)
+}
+
+/// Allows the user to choose the operation to perform for the
+/// selected profile while in offline mode
+pub(crate) fn offline(
+    profile_idx: u8,
+    settings: &Settings,
+) -> anyhow::Result<ProfileOp> {
+    let cmd_menu = vec![StakingMenuItem::Export, StakingMenuItem::Back];
+
+    let select = Select::new("[OFFLINE] What would you like to do?", cmd_menu)
+        .with_help_message(
+            &[MOVE_HELP, SELECT_HELP, GO_BACK_HELP, EXIT_HELP].join(", "),
+        )
+        .prompt();
+
+    if let Err(InquireError::OperationCanceled) = select {
+        return Ok(ProfileOp::Back);
+    }
+
+    let res = match select? {
+        StakingMenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
+            profile_idx: Some(profile_idx),
+            name: None,
+            dir: prompt::request_dir(
+                "export keys",
+                settings.wallet_dir.clone(),
+            )?,
+            export_pwd: None,
+        })),
+        StakingMenuItem::Back => ProfileOp::Back,
+        _ => unreachable!(),
+    };
+
+    Ok(res)
+}
+
+/// Displays the staking operations submenu
+async fn staking_menu(
+    profile_idx: u8,
+    wallet: &Wallet<WalletFile>,
+    phoenix_spendable: Dusk,
+    moonlight_balance: Dusk,
+    settings: &Settings,
+) -> anyhow::Result<ProfileOp> {
+    let menu = vec![
+        StakingMenuItem::Stake,
+        StakingMenuItem::Unstake,
+        StakingMenuItem::ClaimRewards,
+        StakingMenuItem::StakeInfo,
+        StakingMenuItem::Export,
+        StakingMenuItem::Back,
+    ];
+
+    let select =
+        Select::new("What staking operation would you like to do?", menu)
+            .with_help_message(
+                &[MOVE_HELP, SELECT_HELP, FILTER_HELP, GO_BACK_HELP, EXIT_HELP]
+                    .join(", "),
+            )
+            .prompt();
+
+    if let Err(InquireError::OperationCanceled) = select {
+        return Ok(ProfileOp::Stay);
+    }
+
+    let res = match select? {
+        StakingMenuItem::Stake => {
             let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
@@ -225,7 +405,7 @@ pub(crate) async fn online(
                 )?,
             }))
         }
-        MenuItem::Unstake => {
+        StakingMenuItem::Unstake => {
             let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
@@ -254,7 +434,7 @@ pub(crate) async fn online(
                 )?,
             }))
         }
-        MenuItem::ClaimRewards => {
+        StakingMenuItem::ClaimRewards => {
             let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
@@ -289,7 +469,56 @@ pub(crate) async fn online(
                 )?,
             }))
         }
-        MenuItem::ContractDeploy => {
+        StakingMenuItem::StakeInfo => {
+            ProfileOp::Run(Box::new(Command::StakeInfo {
+                profile_idx: Some(profile_idx),
+                reward: false,
+            }))
+        }
+        StakingMenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
+            profile_idx: Some(profile_idx),
+            name: None,
+            dir: prompt::request_dir(
+                "export keys",
+                settings.wallet_dir.clone(),
+            )?,
+            export_pwd: None,
+        })),
+        StakingMenuItem::Back => ProfileOp::Stay,
+    };
+
+    Ok(res)
+}
+
+/// Displays the contract operations submenu
+async fn contracts_menu(
+    profile_idx: u8,
+    wallet: &Wallet<WalletFile>,
+    phoenix_spendable: Dusk,
+    moonlight_balance: Dusk,
+) -> anyhow::Result<ProfileOp> {
+    let menu = vec![
+        ContractsMenuItem::ContractDeploy,
+        ContractsMenuItem::ContractCall,
+        ContractsMenuItem::DriverDeploy,
+        ContractsMenuItem::CalculateContractId,
+        ContractsMenuItem::Back,
+    ];
+
+    let select =
+        Select::new("What contract operation would you like to do?", menu)
+            .with_help_message(
+                &[MOVE_HELP, SELECT_HELP, FILTER_HELP, GO_BACK_HELP, EXIT_HELP]
+                    .join(", "),
+            )
+            .prompt();
+
+    if let Err(InquireError::OperationCanceled) = select {
+        return Ok(ProfileOp::Stay);
+    }
+
+    let res = match select? {
+        ContractsMenuItem::ContractDeploy => {
             let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
@@ -330,7 +559,7 @@ pub(crate) async fn online(
                 gas_price,
             }))
         }
-        MenuItem::ContractCall => {
+        ContractsMenuItem::ContractCall => {
             let (addr, balance) = pick_transaction_model(
                 wallet,
                 profile_idx,
@@ -370,119 +599,21 @@ pub(crate) async fn online(
                 )?,
             }))
         }
-        MenuItem::DriverDeploy => {
+        ContractsMenuItem::DriverDeploy => {
             ProfileOp::Run(Box::new(Command::DriverDeploy {
                 code: prompt::request_driver_code()?,
                 profile_idx: Some(profile_idx),
                 contract_id: prompt::request_bytes("contract id")?,
             }))
         }
-        MenuItem::History => {
-            let profile_idx = Some(profile_idx);
-
-            ProfileOp::Run(Box::new(Command::History { profile_idx }))
-        }
-        MenuItem::StakeInfo => ProfileOp::Run(Box::new(Command::StakeInfo {
-            profile_idx: Some(profile_idx),
-            reward: false,
-        })),
-        MenuItem::Shield => {
-            if check_min_gas_balance(
-                moonlight_balance,
-                DEFAULT_LIMIT_CALL,
-                "convert DUSK from public to shielded",
-            )
-            .is_err()
-            {
-                return Ok(ProfileOp::Stay);
-            }
-
-            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
-
-            ProfileOp::Run(Box::new(Command::Shield {
-                profile_idx: Some(profile_idx),
-                amt: prompt::request_token_amt("convert", moonlight_balance)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price(
-                    DEFAULT_PRICE,
-                    mempool_gas_prices,
-                )?,
-            }))
-        }
-        MenuItem::Unshield => {
-            if check_min_gas_balance(
-                phoenix_spendable,
-                DEFAULT_LIMIT_CALL,
-                "convert DUSK from shielded to public",
-            )
-            .is_err()
-            {
-                return Ok(ProfileOp::Stay);
-            }
-
-            let mempool_gas_prices = wallet.get_mempool_gas_prices().await?;
-
-            ProfileOp::Run(Box::new(Command::Unshield {
-                profile_idx: Some(profile_idx),
-                amt: prompt::request_token_amt("convert", phoenix_spendable)?,
-                gas_limit: prompt::request_gas_limit(gas::DEFAULT_LIMIT_CALL)?,
-                gas_price: prompt::request_gas_price(
-                    DEFAULT_PRICE,
-                    mempool_gas_prices,
-                )?,
-            }))
-        }
-        MenuItem::CalculateContractId => {
+        ContractsMenuItem::CalculateContractId => {
             ProfileOp::Run(Box::new(Command::CalculateContractId {
                 profile_idx: Some(profile_idx),
                 deploy_nonce: prompt::request_nonce()?,
                 code: prompt::request_contract_code()?,
             }))
         }
-        MenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
-            profile_idx: Some(profile_idx),
-            name: None,
-            dir: prompt::request_dir(
-                "export keys",
-                settings.wallet_dir.clone(),
-            )?,
-            export_pwd: None,
-        })),
-        MenuItem::Back => ProfileOp::Back,
-    };
-
-    Ok(res)
-}
-
-/// Allows the user to choose the operation to perform for the
-/// selected profile while in offline mode
-pub(crate) fn offline(
-    profile_idx: u8,
-    settings: &Settings,
-) -> anyhow::Result<ProfileOp> {
-    let cmd_menu = vec![MenuItem::Export];
-
-    let select = Select::new("[OFFLINE] What would you like to do?", cmd_menu)
-        .with_help_message(
-            &[MOVE_HELP, SELECT_HELP, GO_BACK_HELP, EXIT_HELP].join(", "),
-        )
-        .prompt();
-
-    if let Err(InquireError::OperationCanceled) = select {
-        return Ok(ProfileOp::Back);
-    }
-
-    let res = match select? {
-        MenuItem::Export => ProfileOp::Run(Box::new(Command::Export {
-            profile_idx: Some(profile_idx),
-            name: None,
-            dir: prompt::request_dir(
-                "export keys",
-                settings.wallet_dir.clone(),
-            )?,
-            export_pwd: None,
-        })),
-        _ => unreachable!(),
+        ContractsMenuItem::Back => ProfileOp::Stay,
     };
 
     Ok(res)

@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change withdraw command to claim rewards [#3077]
 - Ensure zeroize is called for secret info [#3687]
 - Change default transfer gas limit to a safer value [#3948]
+- Add staking and contract submenus to interactive mode [#3645]
 
 ### Fixed
 
@@ -116,6 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#3695]: https://github.com/dusk-network/rusk/issues/3695
 [#3687]: https://github.com/dusk-network/rusk/issues/3687
 [#3650]: https://github.com/dusk-network/rusk/issues/3650
+[#3645]: https://github.com/dusk-network/rusk/issues/3645
 [#3623]: https://github.com/dusk-network/rusk/issues/3623
 [#3602]: https://github.com/dusk-network/rusk/issues/3602
 [#3600]: https://github.com/dusk-network/rusk/issues/3600
