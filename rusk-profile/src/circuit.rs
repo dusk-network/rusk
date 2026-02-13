@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::fs::{self, read, File};
+use std::fs::{self, File, read};
 use std::io::prelude::*;
 use std::io::{self, ErrorKind};
 use std::path::PathBuf;
@@ -15,8 +15,8 @@ use tracing::info;
 use version_check::Version;
 
 use crate::{
-    extension, file_name, file_stem, get_rusk_circuits_dir, get_rusk_keys_dir,
-    Theme,
+    Theme, extension, file_name, file_stem, get_rusk_circuits_dir,
+    get_rusk_keys_dir,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -343,7 +343,7 @@ fn compute_id(circuit: &[u8], plonk_version: &str) -> io::Result<[u8; 32]> {
             return Err(io::Error::new(
                 ErrorKind::InvalidInput,
                 format!("couldn't parse plonk version: {plonk_version}"),
-            ))
+            ));
         }
     };
 

@@ -115,7 +115,9 @@ pub fn get_rusk_keys_dir() -> io::Result<PathBuf> {
         )
         .and_then(|p| fs::create_dir_all(&p).map(|_| p))
         .map_err(|e| {
-            warn!("rusk-profile key's dir not found and impossible to create: {e}");
+            warn!(
+                "rusk-profile key's dir not found and impossible to create: {e}"
+            );
             e
         })
 }
@@ -140,7 +142,9 @@ pub fn get_rusk_state_dir() -> io::Result<PathBuf> {
         )
         .and_then(|p| fs::create_dir_all(&p).map(|_| p))
         .map_err(|e| {
-            warn!("rusk-profile state dir not found and impossible to create: {e}");
+            warn!(
+                "rusk-profile state dir not found and impossible to create: {e}"
+            );
             e
         })
 }
