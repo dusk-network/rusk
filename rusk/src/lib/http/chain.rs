@@ -13,11 +13,11 @@ use std::sync::Arc;
 use dusk_bytes::DeserializableSlice;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::transfer::data::{BlobData, BlobSidecar};
 use dusk_core::transfer::Transaction as ProtocolTransaction;
+use dusk_core::transfer::data::{BlobData, BlobSidecar};
 use dusk_vm::execute;
 use node::database::rocksdb::MD_HASH_KEY;
-use node::database::{self, Ledger, LightBlock, Mempool, Metadata, DB};
+use node::database::{self, DB, Ledger, LightBlock, Mempool, Metadata};
 use node::mempool::MempoolSrv;
 use node::vm::VMExecution;
 use node_data::ledger::{SpendingId, Transaction};
@@ -27,7 +27,7 @@ use async_graphql::{
     Schema, Variables,
 };
 use graphql::Query;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 use tracing::error;
 
 use super::event::RequestData;

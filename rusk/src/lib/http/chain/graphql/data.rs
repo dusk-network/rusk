@@ -8,7 +8,7 @@ use std::ops::Deref;
 
 use async_graphql::{FieldError, FieldResult, Json, Object, SimpleObject};
 use dusk_vm::gen_contract_id;
-use node::database::{Ledger, LightBlock, DB};
+use node::database::{DB, Ledger, LightBlock};
 use node_data::ledger::Label;
 use serde::{Deserialize, Serialize};
 

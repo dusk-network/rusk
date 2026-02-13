@@ -17,7 +17,7 @@ use dusk_rusk_test::{
 };
 
 use dusk_core::abi::ContractId;
-use dusk_vm::{gen_contract_id, ContractData};
+use dusk_vm::{ContractData, gen_contract_id};
 use tracing::info;
 
 use crate::common::logger;
@@ -41,7 +41,7 @@ impl Fixture {
         let owner = owner.as_ref();
         let bob_bytecode = include_bytes!("../../../contracts/bin/bob.wasm");
         let mut rng = StdRng::from_entropy();
-        let nonce = rng.gen();
+        let nonce = rng.r#gen();
         let contract_id = gen_contract_id(bob_bytecode, nonce, owner);
         let deploy_data = ContractData::builder()
             .owner(owner)

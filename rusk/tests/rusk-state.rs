@@ -7,18 +7,18 @@
 use dusk_rusk_test::common::{self, *};
 use dusk_rusk_test::{RuskVmConfig, TestContext};
 
-use std::sync::{mpsc, Arc};
+use std::sync::{Arc, mpsc};
 
 use anyhow::Result;
 use dusk_core::{
+    JubJubScalar, LUX,
     transfer::{
+        TRANSFER_CONTRACT,
         phoenix::{
             Note, NoteLeaf, PublicKey as PhoenixPublicKey,
             SecretKey as PhoenixSecretKey,
         },
-        TRANSFER_CONTRACT,
     },
-    JubJubScalar, LUX,
 };
 use dusk_vm::VM;
 use ff::Field;

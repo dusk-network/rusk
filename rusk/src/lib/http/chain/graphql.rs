@@ -18,7 +18,7 @@ use async_graphql::{Context, FieldError, FieldResult, Object};
 use dusk_core::abi::ContractId;
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use node::database::rocksdb::Backend;
-use node::database::{Ledger, DB};
+use node::database::{DB, Ledger};
 use node_data::ledger::Label;
 #[cfg(feature = "archive")]
 use {

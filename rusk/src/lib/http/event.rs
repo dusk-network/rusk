@@ -5,18 +5,18 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use futures_util::stream::Iter as StreamIter;
-use futures_util::{stream, Stream};
+use futures_util::{Stream, stream};
 use http_body_util::{BodyExt, Either, Full, StreamBody};
 use hyper::body::{Body, Bytes, Frame, Incoming};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
 use hyper::{Request, Response};
 use pin_project::pin_project;
-use rand::distributions::{Distribution, Standard};
 use rand::Rng;
+use rand::distributions::{Distribution, Standard};
 use semver::{Prerelease, Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use serde_with::hex::Hex;
 use serde_with::As;
+use serde_with::hex::Hex;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::pin::Pin;
@@ -400,7 +400,7 @@ impl Display for SessionId {
 
 impl Distribution<SessionId> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> SessionId {
-        SessionId(rng.gen())
+        SessionId(rng.r#gen())
     }
 }
 

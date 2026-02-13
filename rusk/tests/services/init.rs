@@ -29,9 +29,9 @@ use tracing::info;
 
 use crate::common::logger;
 use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
-use crate::common::state::{generator_procedure, ExecuteResult};
+use crate::common::state::{ExecuteResult, generator_procedure};
 use crate::common::wallet::{
-    test_wallet as wallet, TestStateClient, TestStore,
+    TestStateClient, TestStore, test_wallet as wallet,
 };
 
 const BLOCK_HEIGHT: u64 = 1;

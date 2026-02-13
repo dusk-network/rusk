@@ -28,7 +28,9 @@ pub(crate) fn configure(state_zip: &PathBuf) -> Result<Option<TempDir>> {
         return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, ""));
     }
 
-    env::set_var("RUSK_STATE_PATH", state_dir.as_os_str());
+    // SAFETY: Called during single-threaded startup before any threads
+    // that read this variable are spawned.
+    unsafe { env::set_var("RUSK_STATE_PATH", state_dir.as_os_str()) };
 
     Ok(Some(tmpdir))
 }

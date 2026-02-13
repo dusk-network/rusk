@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_core::stake::{
-    self, Stake, DEFAULT_MINIMUM_STAKE, EPOCH, STAKE_CONTRACT,
+    self, DEFAULT_MINIMUM_STAKE, EPOCH, STAKE_CONTRACT, Stake,
 };
 
 use anyhow::Result;
@@ -18,8 +18,8 @@ use dusk_vm::gen_contract_id;
 use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::node::RuskVmConfig;
 use rusk::Rusk;
+use rusk::node::RuskVmConfig;
 use tracing::info;
 
 use crate::common::state::generator_procedure2;

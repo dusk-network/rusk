@@ -11,13 +11,13 @@ use dusk_core::abi::ContractId;
 use dusk_core::transfer::data::{
     ContractBytecode, ContractDeploy, TransactionData,
 };
-use dusk_vm::{gen_contract_id, ContractData, Error as VMError};
+use dusk_vm::{ContractData, Error as VMError, gen_contract_id};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, ExecuteResult};
+use crate::common::state::{ExecuteResult, generator_procedure};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;

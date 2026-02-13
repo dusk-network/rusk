@@ -6,8 +6,8 @@
 
 use anyhow::Result;
 use dusk_core::transfer::{
-    data::{ContractCall, TransactionData},
     TRANSFER_CONTRACT,
+    data::{ContractCall, TransactionData},
 };
 use dusk_rusk_test::TestContext;
 use rand::prelude::*;
@@ -16,7 +16,7 @@ use rusk::node::RuskVmConfig;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, ExecuteResult};
+use crate::common::state::{ExecuteResult, generator_procedure};
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;

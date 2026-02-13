@@ -90,8 +90,8 @@ pub mod translator {
     use dusk_transfer_contract_dd::ContractDriver as TransferContractDriver;
     use node_data::events::contract::{ContractEvent, OriginHash};
     use serde::{Deserialize, Serialize};
-    use serde_with::hex::Hex;
     use serde_with::As;
+    use serde_with::hex::Hex;
 
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     pub(super) struct IntermediateMoonlightGroup {

@@ -13,16 +13,16 @@ use std::sync::Arc;
 
 use criterion::measurement::WallTime;
 use criterion::{
-    criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
+    BenchmarkGroup, BenchmarkId, Criterion, criterion_group, criterion_main,
 };
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Header, Transaction};
+use rand::SeedableRng;
 use rand::prelude::StdRng;
 use rand::seq::SliceRandom;
-use rand::SeedableRng;
 use rusk::node::RuskVmConfig;
-use rusk::{Rusk, DUSK_CONSENSUS_KEY};
+use rusk::{DUSK_CONSENSUS_KEY, Rusk};
 use tempfile::tempdir;
 
 use common::state::new_state;

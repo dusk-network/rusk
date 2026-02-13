@@ -12,7 +12,7 @@ use dusk_vm::FeatureActivation;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
-use super::{known::WellKnownConfig, Config};
+use super::{Config, known::WellKnownConfig};
 
 /// Configuration for the execution of a transaction.
 ///
@@ -120,7 +120,9 @@ impl OptionalConfig {
                             Self::OVERRIDE_INFO
                         );
                     } else {
-                        warn!("[vm].feature {feature} set to {v} (overriding the default config value of {activation})");
+                        warn!(
+                            "[vm].feature {feature} set to {v} (overriding the default config value of {activation})"
+                        );
                     }
                 }
             } else {
@@ -138,7 +140,9 @@ impl OptionalConfig {
                         Self::OVERRIDE_INFO
                     );
                 } else {
-                    warn!("[vm].feature {feature} is not recognized in the well-known network config");
+                    warn!(
+                        "[vm].feature {feature} is not recognized in the well-known network config"
+                    );
                 }
             }
         }
@@ -153,10 +157,12 @@ impl OptionalConfig {
                 if Self::is_strict() {
                     panic!(
                         "[vm].{field_name} set to {current} (overriding the default config value of {config_value}). {}",
-                            Self::OVERRIDE_INFO
+                        Self::OVERRIDE_INFO
                     );
                 } else {
-                    warn!("[vm].{field_name} set to {current} (overriding the default config value of {config_value})");
+                    warn!(
+                        "[vm].{field_name} set to {current} (overriding the default config value of {config_value})"
+                    );
                 }
             }
         } else {

@@ -6,11 +6,11 @@
 
 use tracing::subscriber::SetGlobalDefaultError;
 use tracing_subscriber::{
-    fmt::{
-        format::{DefaultFields, Format},
-        SubscriberBuilder,
-    },
     EnvFilter,
+    fmt::{
+        SubscriberBuilder,
+        format::{DefaultFields, Format},
+    },
 };
 
 pub struct Log {
