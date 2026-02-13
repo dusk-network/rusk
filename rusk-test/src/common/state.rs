@@ -27,8 +27,8 @@ use node_data::{
     },
     message::payload::Vote,
 };
-use rusk::node::{driverstore::DriverStore, RuskVmConfig};
-use rusk::{Rusk, DUSK_CONSENSUS_KEY};
+use rusk::node::{RuskVmConfig, driverstore::DriverStore};
+use rusk::{DUSK_CONSENSUS_KEY, Rusk};
 use rusk_recovery_tools::state::{self, Session, Snapshot};
 
 use anyhow::Result;
@@ -222,7 +222,9 @@ pub fn generator_procedure2(
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
-    info!("accept_state_transition (block {block_height}) result: {transition_result}");
+    info!(
+        "accept_state_transition (block {block_height}) result: {transition_result}"
+    );
 
     Ok((accept_txs, transition_result.state_root))
 }

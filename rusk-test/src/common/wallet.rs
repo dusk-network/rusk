@@ -15,14 +15,14 @@ use crate::common::block::Block as BlockAwait;
 
 use dusk_bytes::Serializable;
 use dusk_core::{
+    BlsScalar,
     signatures::bls::PublicKey as BlsPublicKey,
     stake::StakeData,
     transfer::{
+        TRANSFER_CONTRACT,
         moonlight::AccountData,
         phoenix::{Note, NoteOpening, ViewKey},
-        TRANSFER_CONTRACT,
     },
-    BlsScalar,
 };
 use futures_util::StreamExt;
 use rusk::{Error, Result, Rusk};

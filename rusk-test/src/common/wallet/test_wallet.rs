@@ -16,6 +16,7 @@ mod imp;
 
 use alloc::vec::Vec;
 
+use dusk_core::BlsScalar;
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
@@ -25,7 +26,6 @@ use dusk_core::transfer::phoenix::{
     Note, NoteOpening, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use dusk_core::BlsScalar;
 use zeroize::Zeroize;
 
 pub use wallet_core::keys::{

@@ -24,8 +24,8 @@ use tempfile::tempdir;
 
 use common::{
     state::{
-        generator_procedure, generator_procedure2, new_state_with,
-        ExecuteResult, LOCAL_TEST_CHAIN_ID,
+        ExecuteResult, LOCAL_TEST_CHAIN_ID, generator_procedure,
+        generator_procedure2, new_state_with,
     },
     wallet::{self, DummyCacheItem, TestStateClient, TestStore, Wallet},
 };

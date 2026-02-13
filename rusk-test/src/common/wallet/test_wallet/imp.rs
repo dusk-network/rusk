@@ -12,6 +12,7 @@ use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use dusk_core::stake::StakeData;
+use dusk_core::transfer::Transaction;
 use dusk_core::transfer::data::TransactionData;
 use dusk_core::transfer::moonlight::{
     AccountData, Transaction as MoonlightTransaction,
@@ -20,7 +21,6 @@ use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, NoteOpening, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use dusk_core::transfer::Transaction;
 use dusk_core::{BlsScalar, Error as ExecutionError};
 use rand::{CryptoRng, Error as RngError, RngCore};
 use rkyv::ser::serializers::{
@@ -36,7 +36,7 @@ use wallet_core::transaction::{
     phoenix_deployment, phoenix_stake, phoenix_stake_reward,
     phoenix_to_moonlight, phoenix_unstake,
 };
-use wallet_core::{phoenix_balance, BalanceInfo};
+use wallet_core::{BalanceInfo, phoenix_balance};
 use zeroize::Zeroize;
 
 use super::{StateClient, Store};
