@@ -507,10 +507,10 @@ impl Transaction {
         }
 
         let min_charge = self.blob_charge(gas_per_blob);
-        if let Some(min_charge) = min_charge {
-            if self.gas_limit() < min_charge {
-                return Err(TxPreconditionError::BlobLowLimit(min_charge));
-            }
+        if let Some(min_charge) = min_charge
+            && self.gas_limit() < min_charge
+        {
+            return Err(TxPreconditionError::BlobLowLimit(min_charge));
         }
         Ok(min_charge)
     }
