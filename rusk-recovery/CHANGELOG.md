@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update MSRV to 1.85
+
+### Fixed
+
+- Fix clippy `io_other_error` warning
+
 ## [1.4.1] - 2026-02-11
 
 ### Added
