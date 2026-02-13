@@ -8,10 +8,10 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 
+use node_data::StepName;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Attestation, IterationInfo, StepVotes};
 use node_data::message::payload::{RatificationResult, Vote};
-use node_data::StepName;
 use tokio::sync::Mutex;
 use tracing::{debug, warn};
 

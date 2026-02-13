@@ -7,9 +7,9 @@
 use std::fmt;
 use std::time::Duration;
 
+use node_data::StepName;
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::{Block, Fault, Header, Slash, SpentTransaction};
-use node_data::StepName;
 
 use crate::errors::*;
 

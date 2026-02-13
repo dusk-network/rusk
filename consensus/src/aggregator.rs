@@ -12,9 +12,9 @@ use dusk_core::signatures::bls::{
     Error as BlsSigError, MultisigSignature as BlsMultisigSignature,
 };
 use node_data::bls::{PublicKey, PublicKeyBytes};
-use node_data::ledger::{to_str, StepVotes};
-use node_data::message::payload::Vote;
+use node_data::ledger::{StepVotes, to_str};
 use node_data::message::SignedStepMessage;
+use node_data::message::payload::Vote;
 use thiserror::Error;
 use tracing::{debug, warn};
 
@@ -131,7 +131,7 @@ impl<V: StepVote> Aggregator<V> {
                 Some(prev_vote) => {
                     return Err(AggregatorError::ConflictingVote(
                         prev_vote.clone(),
-                    ))
+                    ));
                 }
             };
         }
@@ -247,7 +247,7 @@ mod tests {
     use crate::aggregator::Aggregator;
     use crate::commons::RoundUpdate;
     use crate::user::committee::Committee;
-    use crate::user::provisioners::{Provisioners, DUSK};
+    use crate::user::provisioners::{DUSK, Provisioners};
     use crate::user::sortition::Config;
 
     impl<V> Aggregator<V> {

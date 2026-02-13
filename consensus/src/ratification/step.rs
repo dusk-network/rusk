@@ -10,7 +10,7 @@ use node_data::message::payload::{self, QuorumType, ValidationResult};
 use node_data::message::{AsyncQueue, Message, Payload, SignedStepMessage};
 use node_data::{get_current_timestamp, message};
 use tokio::sync::Mutex;
-use tracing::{info, warn, Instrument};
+use tracing::{Instrument, info, warn};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;
