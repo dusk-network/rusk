@@ -93,16 +93,14 @@ pub fn execute(
         }?
     }
 
-    if config.disable_3rd_party {
-        if let Some(call) = tx.call() {
-            if call.contract != TRANSFER_CONTRACT
-                && call.contract != STAKE_CONTRACT
-            {
-                return Err(Error::Panic(
-                    "3rd party contracts are not enabled in the VM".into(),
-                ));
-            }
-        }
+    if config.disable_3rd_party
+        && let Some(call) = tx.call()
+        && call.contract != TRANSFER_CONTRACT
+        && call.contract != STAKE_CONTRACT
+    {
+        return Err(Error::Panic(
+            "3rd party contracts are not enabled in the VM".into(),
+        ));
     }
 
     let blob_min_charge = tx
@@ -140,10 +138,10 @@ pub fn execute(
 
     // If this is a blob transaction, ensure the gas spent is at least the
     // minimum charge.
-    if let Some(blob_min_charge) = blob_min_charge {
-        if receipt.gas_spent < blob_min_charge {
-            receipt.gas_spent = blob_min_charge;
-        }
+    if let Some(blob_min_charge) = blob_min_charge
+        && receipt.gas_spent < blob_min_charge
+    {
+        receipt.gas_spent = blob_min_charge;
     }
 
     // Ensure all gas is consumed if there's an error in the contract call
