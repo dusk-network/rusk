@@ -37,11 +37,11 @@ use alloc::{format, string::String};
 
 use bytecheck::CheckBytes;
 use rkyv::validation::validators::DefaultValidator;
-use rkyv::{check_archived_root, Archive, Deserialize, Infallible};
+use rkyv::{Archive, Deserialize, Infallible, check_archived_root};
 
 pub use error::Error;
-pub use serde_json::to_value as to_json;
 pub use serde_json::Value as JsonValue;
+pub use serde_json::to_value as to_json;
 
 /// A trait for converting between JSON and native RKYV formats in a contract.
 ///

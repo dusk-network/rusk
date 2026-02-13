@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 
 /// Allocate memory inside WASM for JS to write into.
 /// Returns a pointer to a buffer of size `size`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn alloc(size: usize) -> *mut u8 {
     let mut buf = Vec::with_capacity(size);
     let ptr = buf.as_mut_ptr();
@@ -22,7 +22,9 @@ pub extern "C" fn alloc(size: usize) -> *mut u8 {
 /// The pointer must have been returned by `alloc` with the same `size`.
 /// The memory must not have been previously deallocated.
 /// After calling this function, the pointer must no longer be used.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn dealloc(ptr: *mut u8, size: usize) {
-    drop(Vec::from_raw_parts(ptr, size, size));
+    // SAFETY: The caller guarantees `ptr` was returned by `alloc` with
+    // the same `size`, and has not been previously deallocated.
+    drop(unsafe { Vec::from_raw_parts(ptr, size, size) });
 }
