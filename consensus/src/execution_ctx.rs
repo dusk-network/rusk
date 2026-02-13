@@ -424,25 +424,25 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
     ) {
         let step = StepName::Ratification.to_step(msg_iteration);
 
-        if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
-            if self.am_member(committee) {
-                debug!(
-                    event = "Cast past vote",
-                    step = "Ratification",
-                    mode = "emergency",
-                    round = self.round_update.round,
-                    iter = msg_iteration
-                );
+        if let Some(committee) = self.iter_ctx.committees.get_committee(step)
+            && self.am_member(committee)
+        {
+            debug!(
+                event = "Cast past vote",
+                step = "Ratification",
+                mode = "emergency",
+                round = self.round_update.round,
+                iter = msg_iteration
+            );
 
-                // Should we collect our own vote?
-                let _msg = RatificationStep::try_vote(
-                    &self.round_update,
-                    msg_iteration,
-                    validation,
-                    self.outbound.clone(),
-                )
-                .await;
-            }
+            // Should we collect our own vote?
+            let _msg = RatificationStep::try_vote(
+                &self.round_update,
+                msg_iteration,
+                validation,
+                self.outbound.clone(),
+            )
+            .await;
         }
     }
 
@@ -587,17 +587,15 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
             // same round/step.
             Err(ConsensusError::FutureEvent) => {
                 const SRC: &str = "inbound future message";
-                if !same_prev_hash {
-                    if let Some(signer) = msg.get_signer() {
-                        if !self
-                            .provisioners
-                            .eligibles(msg.header.round)
-                            .any(|(p, _)| p == &signer)
-                        {
-                            log_msg("discarded msg (not eligible)", SRC, &msg);
-                            return None;
-                        }
-                    }
+                if !same_prev_hash
+                    && let Some(signer) = msg.get_signer()
+                    && !self
+                        .provisioners
+                        .eligibles(msg.header.round)
+                        .any(|(p, _)| p == &signer)
+                {
+                    log_msg("discarded msg (not eligible)", SRC, &msg);
+                    return None;
                 }
 
                 // We verify message signatures only for the next 10 round
