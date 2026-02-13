@@ -284,7 +284,7 @@ impl RuskNode {
 
         let median_gas_price = {
             let mid = gas_prices.len() / 2;
-            if gas_prices.len() % 2 == 0 {
+            if gas_prices.len().is_multiple_of(2) {
                 (gas_prices[mid - 1] + gas_prices[mid]) / 2
             } else {
                 gas_prices[mid]

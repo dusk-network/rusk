@@ -32,10 +32,10 @@ impl<N: Network, DB: database::DB, VM: node::vm::VMExecution>
         _: Arc<tokio::sync::RwLock<VM>>,
     ) -> anyhow::Result<usize> {
         loop {
-            if let Some(msg) = self.node_receiver.recv().await {
-                if let Err(e) = self.rues_sender.send(msg.clone().into()) {
-                    error!("Cannot send to rues {e:?}");
-                }
+            if let Some(msg) = self.node_receiver.recv().await
+                && let Err(e) = self.rues_sender.send(msg.clone().into())
+            {
+                error!("Cannot send to rues {e:?}");
             }
         }
     }
