@@ -8,6 +8,7 @@ use std::io::{self, Read, Write};
 
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 
+use crate::Serializable;
 use crate::bls::PublicKeyBytes;
 use crate::ledger::{
     Attestation, Block, Fault, Header, IterationsInfo, Label, Signature,
@@ -18,9 +19,8 @@ use crate::message::payload::{
     ValidationResult, Vote,
 };
 use crate::message::{
-    ConsensusHeader, SignInfo, MESSAGE_MAX_FAILED_ITERATIONS,
+    ConsensusHeader, MESSAGE_MAX_FAILED_ITERATIONS, SignInfo,
 };
-use crate::Serializable;
 
 impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
@@ -308,7 +308,7 @@ impl Serializable for IterationsInfo {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
                         "Invalid option",
-                    ))
+                    ));
                 }
             };
             att_list.push(att)

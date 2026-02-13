@@ -27,8 +27,8 @@ use std::io::{self, Read, Write};
 use fake::{Dummy, Fake, Faker};
 use sha3::Digest;
 
-use crate::bls::PublicKeyBytes;
 use crate::Serializable;
+use crate::bls::PublicKeyBytes;
 
 /// Encode a byte array into a shortened HEX representation.
 pub fn to_str(bytes: &[u8]) -> String {

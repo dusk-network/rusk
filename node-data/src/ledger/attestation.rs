@@ -119,7 +119,7 @@ pub mod faker {
 
     impl<T> Dummy<T> for PublicKeyBytes {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
-            let rand_val = rng.gen::<[u8; 32]>();
+            let rand_val = rng.r#gen::<[u8; 32]>();
             let mut bls_key = [0u8; 96];
             bls_key[..32].copy_from_slice(&rand_val);
             bls::PublicKeyBytes(bls_key)
@@ -128,14 +128,14 @@ pub mod faker {
 
     impl<T> Dummy<T> for bls::PublicKey {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
-            let rand_val = rng.gen();
+            let rand_val = rng.r#gen();
             bls::PublicKey::from_sk_seed_u64(rand_val)
         }
     }
 
     impl<T> Dummy<T> for Signature {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
-            let rand_val = rng.gen::<[u8; 32]>();
+            let rand_val = rng.r#gen::<[u8; 32]>();
             let mut rand_signature = Self::EMPTY;
             rand_signature[..32].copy_from_slice(&rand_val);
 

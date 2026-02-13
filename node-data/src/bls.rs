@@ -18,12 +18,12 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use rand::rngs::{OsRng, StdRng};
 use rand::RngCore;
 use rand::SeedableRng;
+use rand::rngs::{OsRng, StdRng};
 use serde::{Deserialize, Serialize};
-use serde_with::base64::Base64;
 use serde_with::As;
+use serde_with::base64::Base64;
 use sha2::{Digest, Sha256};
 use tracing::{error, info};
 use zeroize::Zeroize;
@@ -199,7 +199,10 @@ fn read_from_file(
         .map_err(|e| anyhow::anyhow!("pk should be valid {e:?}"))?;
 
     if file_format_is_old {
-        info!("Your consensus keys are in the old format. Migrating to the new format and saving the old file as {}.old", path.display());
+        info!(
+            "Your consensus keys are in the old format. Migrating to the new format and saving the old file as {}.old",
+            path.display()
+        );
         let _ =
             migrate_file_to_new_format(&path, &pk, &sk, pwd).inspect_err(|e| {
                 error!(
@@ -415,8 +418,8 @@ mod tests {
     }
 
     #[test]
-    fn test_can_still_load_keys_saved_by_wallet_impl(
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_can_still_load_keys_saved_by_wallet_impl()
+    -> Result<(), Box<dyn std::error::Error>> {
         // test-data/wallet-generated-consensus-keys contains consensus keys
         // exported by the former rusk-wallet implementation to save consensus
         // keys.

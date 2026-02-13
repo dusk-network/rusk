@@ -8,8 +8,8 @@
 
 use dusk_core::abi::{ContractId, Event};
 use serde::{Deserialize, Serialize};
-use serde_with::hex::Hex;
 use serde_with::As;
+use serde_with::hex::Hex;
 
 pub const ORIGIN_HASH_BYTES: usize = 32;
 /// Origin hash of a contract event. This is in most cases the transaction hash.
