@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change `lru` dependency to `0.16.3`
-- Update MSRV to 1.85
+- Update MSRV to 1.87
 
 ## [1.4.3] - 2026-01-07
 
