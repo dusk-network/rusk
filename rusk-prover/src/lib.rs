@@ -16,10 +16,10 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use dusk_bytes::Serializable;
-use dusk_core::transfer::phoenix::{
-    Prove, TxCircuit, TxCircuitVec, NOTES_TREE_DEPTH,
-};
 use dusk_core::Error;
+use dusk_core::transfer::phoenix::{
+    NOTES_TREE_DEPTH, Prove, TxCircuit, TxCircuitVec,
+};
 use dusk_plonk::prelude::Prover as PlonkProver;
 use once_cell::sync::Lazy;
 
@@ -46,7 +46,7 @@ impl Prove for LocalProver {
         let rng = &mut rand::rngs::OsRng;
 
         #[cfg(feature = "no_random")]
-        use rand::{rngs::StdRng, SeedableRng};
+        use rand::{SeedableRng, rngs::StdRng};
         #[cfg(feature = "no_random")]
         let rng = &mut StdRng::seed_from_u64(0xbeef);
 
