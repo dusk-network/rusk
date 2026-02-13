@@ -9,6 +9,7 @@ mod panic_handling {
 
     #[panic_handler]
     #[allow(unused)]
+    #[cfg(target_family = "wasm")]
     fn panic(info: &PanicInfo) -> ! {
         #[cfg(debug_assertions)]
         eprintln!("{}", info);

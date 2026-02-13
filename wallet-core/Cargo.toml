@@ -34,3 +34,4 @@ tiny-bip39 = { workspace = true }
 
 [features]
 debug = []
+ffi = []
