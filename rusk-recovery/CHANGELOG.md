@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update to edition 2024
 - Update `cargo_toml` dependency to 0.22
-- Update MSRV to 1.85
+- Update MSRV to 1.87
 
 ### Fixed
 
