@@ -104,7 +104,9 @@ impl Archive {
             Err(e) => {
                 // If the error is sqlx::Error::RowNotFound then it is fine
                 // during sync from scratch
-                debug!("Error fetching last finalized block height during archive initialization: {e}");
+                debug!(
+                    "Error fetching last finalized block height during archive initialization: {e}"
+                );
                 0
             }
         };

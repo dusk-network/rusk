@@ -6,13 +6,13 @@
 
 use std::cmp::Ordering;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use node_data::ledger::Header;
 use tracing::info;
 
 use super::acceptor::{Acceptor, RevertTarget};
 use crate::database::{self};
-use crate::{vm, Network};
+use crate::{Network, vm};
 
 /// Wraps up any handlers or data needed by fallback to complete.
 pub(crate) struct WithContext<

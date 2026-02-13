@@ -9,14 +9,14 @@ use std::collections::BTreeMap;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::withdraw::WithdrawReceiver;
 use dusk_core::transfer::{
-    ContractToAccountEvent, ConvertEvent, MoonlightTransactionEvent,
-    WithdrawEvent, CONTRACT_TO_ACCOUNT_TOPIC, CONVERT_TOPIC, MINT_TOPIC,
-    MOONLIGHT_TOPIC, TRANSFER_CONTRACT, WITHDRAW_TOPIC,
+    CONTRACT_TO_ACCOUNT_TOPIC, CONVERT_TOPIC, ContractToAccountEvent,
+    ConvertEvent, MINT_TOPIC, MOONLIGHT_TOPIC, MoonlightTransactionEvent,
+    TRANSFER_CONTRACT, WITHDRAW_TOPIC, WithdrawEvent,
 };
 use node_data::events::contract::{ContractEvent, ContractTxEvent, OriginHash};
 use serde::{Deserialize, Serialize};
-use serde_with::hex::Hex;
 use serde_with::As;
+use serde_with::hex::Hex;
 
 /// A group of events that belong to the same transaction.
 ///

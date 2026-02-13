@@ -10,7 +10,7 @@ use std::cmp::min;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use node_data::message::payload::{self, GetResource, InvParam, InvType};
 use node_data::message::{AsyncQueue, Payload, Topics};
@@ -19,7 +19,7 @@ use tokio::sync::{RwLock, Semaphore};
 use tracing::{debug, info, warn};
 
 use crate::database::{ConsensusStorage, Ledger, Mempool};
-use crate::{database, vm, LongLivedService, Message, Network};
+use crate::{LongLivedService, Message, Network, database, vm};
 
 const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,

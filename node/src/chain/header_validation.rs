@@ -10,8 +10,8 @@ use std::sync::Arc;
 
 use dusk_bytes::Serializable;
 use dusk_consensus::config::{
-    is_emergency_block, is_emergency_iter, CONSENSUS_MAX_ITER,
-    MINIMUM_BLOCK_TIME, MIN_EMERGENCY_BLOCK_TIME, RELAX_ITERATION_THRESHOLD,
+    CONSENSUS_MAX_ITER, MIN_EMERGENCY_BLOCK_TIME, MINIMUM_BLOCK_TIME,
+    RELAX_ITERATION_THRESHOLD, is_emergency_block, is_emergency_iter,
 };
 use dusk_consensus::errors::{
     AttestationError, FailedIterationError, HeaderError,
@@ -28,8 +28,8 @@ use hex;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Fault, InvalidFault, Seed};
 use node_data::message::payload::{RatificationResult, Vote};
-use node_data::message::{ConsensusHeader, BLOCK_HEADER_VERSION};
-use node_data::{get_current_timestamp, ledger, StepName};
+use node_data::message::{BLOCK_HEADER_VERSION, ConsensusHeader};
+use node_data::{StepName, get_current_timestamp, ledger};
 use tokio::sync::RwLock;
 use tracing::{debug, error};
 
@@ -435,7 +435,11 @@ pub async fn verify_att(
                 RatificationResult::Success(Vote::Valid(e_hash)),
             ) => {
                 if r_hash != e_hash {
-                    error!("Invalid Attestation. Expected: Valid({:?}), got: Valid({:?})", hex::encode(e_hash), hex::encode(r_hash));
+                    error!(
+                        "Invalid Attestation. Expected: Valid({:?}), got: Valid({:?})",
+                        hex::encode(e_hash),
+                        hex::encode(r_hash)
+                    );
                     return Err(AttestationError::InvalidHash(e_hash, r_hash));
                 }
             }

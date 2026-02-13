@@ -10,7 +10,7 @@ use std::time::Duration;
 use criterion::async_executor::FuturesExecutor;
 use criterion::measurement::WallTime;
 use criterion::{
-    criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
+    BenchmarkGroup, BenchmarkId, Criterion, criterion_group, criterion_main,
 };
 use dusk_bytes::Serializable;
 use dusk_consensus::commons::RoundUpdate;
@@ -24,13 +24,13 @@ use dusk_core::signatures::bls::{
 };
 use dusk_node::chain;
 use node_data::ledger::{Attestation, StepVotes};
+use node_data::message::ConsensusHeader;
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
 };
-use node_data::message::ConsensusHeader;
-use node_data::{ledger, StepName};
-use rand::rngs::StdRng;
+use node_data::{StepName, ledger};
 use rand::SeedableRng;
+use rand::rngs::StdRng;
 
 fn create_step_votes(
     tip_header: &ledger::Header,

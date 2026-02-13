@@ -16,28 +16,28 @@ use conf::{
 };
 use dusk_consensus::config::MAX_BLOCK_SIZE;
 use dusk_consensus::errors::BlobError;
+use dusk_core::TxPreconditionError;
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::TRANSFER_CONTRACT;
-use dusk_core::TxPreconditionError;
 use node_data::events::{Event, TransactionEvent};
 use node_data::get_current_timestamp;
 use node_data::ledger::{Header, SpendingId, Transaction};
-use node_data::message::{payload, AsyncQueue, Payload, Topics};
+use node_data::message::{AsyncQueue, Payload, Topics, payload};
+use rkyv::Infallible;
+use rkyv::ser::Serializer;
 use rkyv::ser::serializers::{
     BufferScratch, BufferSerializer, BufferSerializerError,
     CompositeSerializer, CompositeSerializerError,
 };
-use rkyv::ser::Serializer;
-use rkyv::Infallible;
 use thiserror::Error;
-use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
+use tokio::sync::mpsc::Sender;
 use tracing::{error, info, warn};
 
 use crate::database::{Ledger, Mempool};
 use crate::mempool::conf::Params;
 use crate::vm::PreverificationResult;
-use crate::{database, vm, LongLivedService, Message, Network};
+use crate::{LongLivedService, Message, Network, database, vm};
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
 
@@ -519,8 +519,8 @@ fn check_tx_serialization(
 #[cfg(test)]
 mod tests {
     use dusk_core::signatures::bls::{PublicKey, SecretKey};
-    use rand::rngs::StdRng;
     use rand::Rng;
+    use rand::rngs::StdRng;
     use rand::{CryptoRng, RngCore, SeedableRng};
     use wallet_core::transaction::moonlight_deployment;
 
@@ -535,10 +535,10 @@ mod tests {
         let sk = SecretKey::random(rng);
         let pk = PublicKey::from(&SecretKey::random(rng));
 
-        let gas_limit: u64 = rng.gen();
-        let gas_price: u64 = rng.gen();
-        let nonce: u64 = rng.gen();
-        let deploy_nonce: u64 = rng.gen();
+        let gas_limit: u64 = rng.r#gen();
+        let gas_price: u64 = rng.r#gen();
+        let nonce: u64 = rng.r#gen();
+        let deploy_nonce: u64 = rng.r#gen();
 
         moonlight_deployment(
             &sk,

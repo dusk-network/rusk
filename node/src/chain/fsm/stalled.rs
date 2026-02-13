@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use node_data::ledger::Header;
 use node_data::message::payload;
 

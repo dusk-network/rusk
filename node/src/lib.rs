@@ -24,7 +24,7 @@ use std::time::{Duration, Instant};
 use async_trait::async_trait;
 use node_data::message::payload::Inv;
 use node_data::message::{AsyncQueue, Message};
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::unix::{SignalKind, signal};
 use tokio::sync::RwLock;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};

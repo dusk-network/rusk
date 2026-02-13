@@ -7,8 +7,8 @@
 use std::cmp::Ordering;
 use std::ops::Deref;
 
-use node_data::message::payload::{GetResource, Inv, Quorum};
 use node_data::message::Message;
+use node_data::message::payload::{GetResource, Inv, Quorum};
 
 use super::*;
 use crate::chain::fallback;
@@ -240,7 +240,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     if let Some(meta) = metadata {
                         let remote_source = meta.src_addr;
 
-                        debug!("sending our lower-iteration block at height {local_height} to {remote_source}");
+                        debug!(
+                            "sending our lower-iteration block at height {local_height} to {remote_source}"
+                        );
 
                         let msg = Message::from(local_blk);
                         let net = self.network.read().await;
@@ -255,7 +257,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     // means two conflicting candidates have been generated
                     let local_hash = to_str(&local_header.hash);
                     let remote_hash = to_str(&remote_header.hash);
-                    warn!("Double candidate detected. Local block: {local_hash}, remote block {remote_hash}");
+                    warn!(
+                        "Double candidate detected. Local block: {local_hash}, remote block {remote_hash}"
+                    );
                 }
             }
 
