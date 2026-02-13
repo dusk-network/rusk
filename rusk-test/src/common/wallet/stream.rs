@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey};
 use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::phoenix::{Note, NoteLeaf, ViewKey};
 use futures_util::Stream;
 use rusk::{Error, Result, Rusk};
 use tracing::info;

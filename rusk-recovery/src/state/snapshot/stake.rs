@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable;
+use dusk_core::Dusk;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::StakeKeys;
-use dusk_core::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
 use super::wrapper::Wrapper;

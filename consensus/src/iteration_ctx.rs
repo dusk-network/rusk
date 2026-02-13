@@ -10,17 +10,17 @@ use std::ops::Add;
 use std::sync::Arc;
 use std::time::Duration;
 
+use node_data::StepName;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Seed;
 use node_data::message::{Message, Topics};
-use node_data::StepName;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tracing::debug;
 
 use crate::commons::{Database, TimeoutSet};
 use crate::config::{
-    exclude_next_generator, MAX_STEP_TIMEOUT, TIMEOUT_INCREASE,
+    MAX_STEP_TIMEOUT, TIMEOUT_INCREASE, exclude_next_generator,
 };
 use crate::msg_handler::{MsgHandler, StepOutcome};
 use crate::user::committee::Committee;

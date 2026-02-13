@@ -12,8 +12,8 @@ use bls12_381_bls::{
 use dusk_core::stake::{
     Reward, RewardReason, SlashEvent, StakeEvent, StakeFundOwner, StakeKeys,
 };
-use dusk_core::transfer::withdraw::WithdrawReceiver;
 use dusk_core::transfer::WithdrawEvent;
+use dusk_core::transfer::withdraw::WithdrawReceiver;
 use dusk_core::transfer::{
     ContractToAccountEvent, ContractToContractEvent, ConvertEvent,
     DepositEvent, MoonlightTransactionEvent, PhoenixTransactionEvent,
@@ -23,9 +23,9 @@ use ff::Field;
 use phoenix_core::{
     Note, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
 };
-use piecrust_uplink::{ContractId, CONTRACT_ID_BYTES};
-use rand::rngs::StdRng;
+use piecrust_uplink::{CONTRACT_ID_BYTES, ContractId};
 use rand::Rng;
+use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 use serde::Serialize;
 
@@ -351,8 +351,8 @@ fn serde_phoenix_transaction_event() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn serde_moonlight_transaction_event_serde(
-) -> Result<(), Box<dyn std::error::Error>> {
+fn serde_moonlight_transaction_event_serde()
+-> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(42);
     let mut memo = vec![0; 50];
     rng.fill_bytes(&mut memo);

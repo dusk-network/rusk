@@ -6,14 +6,14 @@
 
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
-use std::sync::{mpsc, Arc};
+use std::sync::{Arc, mpsc};
 use std::time::Instant;
 use std::{fs, io};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::config::{
-    ratification_extra, ratification_quorum, validation_extra,
-    validation_quorum, MAX_NUMBER_OF_TRANSACTIONS, TOTAL_COMMITTEES_CREDITS,
+    MAX_NUMBER_OF_TRANSACTIONS, TOTAL_COMMITTEES_CREDITS, ratification_extra,
+    ratification_quorum, validation_extra, validation_quorum,
 };
 use dusk_consensus::errors::StateTransitionError;
 use dusk_consensus::operations::{
@@ -22,19 +22,19 @@ use dusk_consensus::operations::{
 use dusk_core::abi::{ContractId, Event};
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{
-    Reward, RewardReason, StakeData, StakeKeys, STAKE_CONTRACT,
+    Reward, RewardReason, STAKE_CONTRACT, StakeData, StakeKeys,
 };
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::{
-    Transaction as ProtocolTransaction, PANIC_NONCE_NOT_READY,
-    TRANSFER_CONTRACT,
+    PANIC_NONCE_NOT_READY, TRANSFER_CONTRACT,
+    Transaction as ProtocolTransaction,
 };
 use dusk_core::{BlsScalar, Dusk};
-use dusk_vm::{execute, CallReceipt, Error as VMError, Session, VM};
+use dusk_vm::{CallReceipt, Error as VMError, Session, VM, execute};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
-use node_data::ledger::{to_str, Block, Slash, SpentTransaction, Transaction};
+use node_data::ledger::{Block, Slash, SpentTransaction, Transaction, to_str};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
@@ -43,8 +43,8 @@ use tracing::info;
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
-use crate::node::{get_block_rewards, RuesEvent, Rusk, RuskTip};
-use crate::{Error as RuskError, Result, DUSK_CONSENSUS_KEY};
+use crate::node::{RuesEvent, Rusk, RuskTip, get_block_rewards};
+use crate::{DUSK_CONSENSUS_KEY, Error as RuskError, Result};
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]

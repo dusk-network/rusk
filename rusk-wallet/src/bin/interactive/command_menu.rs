@@ -19,7 +19,7 @@ use rusk_wallet::gas::{
     DEFAULT_PRICE, GAS_PER_DEPLOY_BYTE, MIN_PRICE_DEPLOYMENT,
 };
 use rusk_wallet::{
-    Address, Error, Wallet, MAX_FUNCTION_NAME_SIZE, MIN_CONVERTIBLE,
+    Address, Error, MAX_FUNCTION_NAME_SIZE, MIN_CONVERTIBLE, Wallet,
 };
 
 use super::ProfileOp;
@@ -27,7 +27,7 @@ use crate::io::prompt::{
     EXIT_HELP, FILTER_HELP, GO_BACK_HELP, MOVE_HELP, SELECT_HELP,
 };
 use crate::settings::Settings;
-use crate::{prompt, Command, WalletFile};
+use crate::{Command, WalletFile, prompt};
 
 /// The top-level command-menu items
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
@@ -377,7 +377,9 @@ async fn staking_menu(
             };
 
             if balance < min_val {
-                println!("The stake must be at least {min_val}, but your balance is only {balance}\n");
+                println!(
+                    "The stake must be at least {min_val}, but your balance is only {balance}\n"
+                );
                 return Ok(ProfileOp::Stay);
             }
 

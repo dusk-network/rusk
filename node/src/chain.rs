@@ -26,12 +26,12 @@ use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 pub use header_validation::verify_att;
 use node_data::events::Event;
-use node_data::ledger::{to_str, BlockWithLabel, Label};
+use node_data::ledger::{BlockWithLabel, Label, to_str};
 use node_data::message::payload::RatificationResult;
 use node_data::message::{AsyncQueue, Payload, Topics};
-use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
-use tokio::time::{sleep_until, Instant};
+use tokio::sync::mpsc::Sender;
+use tokio::time::{Instant, sleep_until};
 use tracing::{debug, error, info, warn};
 
 use self::acceptor::Acceptor;
@@ -40,7 +40,7 @@ use self::fsm::SimpleFSM;
 use crate::archive::Archive;
 use crate::database::rocksdb::MD_HASH_KEY;
 use crate::database::{Ledger, Metadata};
-use crate::{database, vm, LongLivedService, Message, Network};
+use crate::{LongLivedService, Message, Network, database, vm};
 
 const TOPICS: &[u8] = &[
     Topics::Block as u8,

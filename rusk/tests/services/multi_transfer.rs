@@ -10,7 +10,7 @@ use rand::rngs::StdRng;
 use tracing::info;
 
 use crate::common::logger;
-use crate::common::state::{generator_procedure, ExecuteResult};
+use crate::common::state::{ExecuteResult, generator_procedure};
 
 const BLOCK_HEIGHT: u64 = 1;
 // This is purposefully chosen to be low to trigger the discarding of a

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update to edition 2024
 - Replace `serde_as` with stable `serde(with)` attributes
 - Gate driver module behind `chain` feature
 - Replace `anyhow` with typed `HttpError` in HTTP handlers for correct status codes [#2944]

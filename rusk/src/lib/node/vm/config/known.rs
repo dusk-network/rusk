@@ -18,7 +18,7 @@ use super::feature::{
 };
 use super::{
     DEFAULT_BLOCK_GAS_LIMIT, DEFAULT_GAS_PER_BLOB, DEFAULT_GAS_PER_DEPLOY_BYTE,
-    DEFAULT_MIN_DEPLOYMENT_GAS_PRICE, DEFAULT_MIN_DEPLOY_POINTS,
+    DEFAULT_MIN_DEPLOY_POINTS, DEFAULT_MIN_DEPLOYMENT_GAS_PRICE,
 };
 
 pub const MAINNET_ID: u8 = 1;
@@ -105,7 +105,10 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
             (
                 "shade_6fdfdc713a18fc6ca2ad20eb2b4a3305a935ef47d6a872d9a4df8bc9fd9d169e",
-                FeatureActivation::Ranges(vec![(MAINNET_DISABLED_3D_PARTY_END, MAINNET_AT_17_12_2025_AT_09_00_UTC)]),
+                FeatureActivation::Ranges(vec![(
+                    MAINNET_DISABLED_3D_PARTY_END,
+                    MAINNET_AT_17_12_2025_AT_09_00_UTC,
+                )]),
             ),
         ],
     }

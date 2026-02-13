@@ -20,8 +20,8 @@
 //! cp target/.../dusk_stake_contract_dd_opt.wasm ../data-driver/tests/stake_driver.wasm
 //! ```
 
-use base64::prelude::*;
 use base64::Engine as _;
+use base64::prelude::*;
 use dusk_data_driver::reader::DriverReader;
 use dusk_wasmtime::{Engine, Instance, Module, Store};
 

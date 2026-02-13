@@ -10,8 +10,8 @@ use std::path::Path;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_core::transfer::phoenix::NoteLeaf;
 use dusk_core::{
-    transfer::phoenix::Note, transfer::phoenix::PublicKey as PhoenixPublicKey,
-    BlsScalar,
+    BlsScalar, transfer::phoenix::Note,
+    transfer::phoenix::PublicKey as PhoenixPublicKey,
 };
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 

@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::{mpsc, LazyLock, Mutex};
+use std::sync::{LazyLock, Mutex, mpsc};
 use std::{io, thread};
 
 use dusk_core::transfer::phoenix::TRANSCRIPT_LABEL;

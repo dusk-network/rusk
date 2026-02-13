@@ -21,16 +21,16 @@ use crate::signatures::schnorr::{
     SecretKey as SchnorrSecretKey, Signature as SchnorrSignature,
 };
 use crate::transfer::data::{
-    BlobData, ContractBytecode, ContractCall, ContractDeploy, TransactionData,
-    MAX_MEMO_SIZE,
+    BlobData, ContractBytecode, ContractCall, ContractDeploy, MAX_MEMO_SIZE,
+    TransactionData,
 };
 use crate::{BlsScalar, Error, JubJubAffine, JubJubScalar};
 
 // phoenix types
 pub use phoenix_circuits::{InputNoteInfo, OutputNoteInfo, TxCircuit};
 pub use phoenix_core::{
-    value_commitment, Error as CoreError, Note, PublicKey, SecretKey, Sender,
-    StealthAddress, TxSkeleton, ViewKey, NOTE_VAL_ENC_SIZE, OUTPUT_NOTES,
+    Error as CoreError, NOTE_VAL_ENC_SIZE, Note, OUTPUT_NOTES, PublicKey,
+    SecretKey, Sender, StealthAddress, TxSkeleton, ViewKey, value_commitment,
 };
 
 /// The depth of the merkle tree of notes stored in the transfer-contract.
@@ -425,7 +425,7 @@ impl Transaction {
     pub fn call(&self) -> Option<&ContractCall> {
         #[allow(clippy::match_wildcard_for_single_variants)]
         match self.data()? {
-            TransactionData::Call(ref c) => Some(c),
+            TransactionData::Call(c) => Some(c),
             _ => None,
         }
     }
@@ -435,7 +435,7 @@ impl Transaction {
     pub fn deploy(&self) -> Option<&ContractDeploy> {
         #[allow(clippy::match_wildcard_for_single_variants)]
         match self.data()? {
-            TransactionData::Deploy(ref d) => Some(d),
+            TransactionData::Deploy(d) => Some(d),
             _ => None,
         }
     }
@@ -445,7 +445,7 @@ impl Transaction {
     pub fn blob(&self) -> Option<&Vec<BlobData>> {
         #[allow(clippy::match_wildcard_for_single_variants)]
         match self.data()? {
-            TransactionData::Blob(ref d) => Some(d),
+            TransactionData::Blob(d) => Some(d),
             _ => None,
         }
     }

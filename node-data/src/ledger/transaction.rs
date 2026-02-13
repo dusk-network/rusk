@@ -6,9 +6,9 @@
 
 use dusk_bytes::Serializable as DuskSerializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
+use dusk_core::transfer::Transaction as ProtocolTransaction;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::Transaction as PhoenixTransaction;
-use dusk_core::transfer::Transaction as ProtocolTransaction;
 use serde::Serialize;
 use sha3::Digest;
 

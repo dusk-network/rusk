@@ -18,10 +18,10 @@ use dusk_consensus::queue::MsgRegistry;
 use dusk_consensus::user::provisioners::ContextProvisioners;
 use metrics::gauge;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block, Fault, Hash, Header, SpentTransaction};
-use node_data::message::{payload, AsyncQueue, ConsensusHeader};
-use node_data::{ledger, Serializable, StepName};
-use tokio::sync::{oneshot, Mutex, RwLock};
+use node_data::ledger::{Block, Fault, Hash, Header, SpentTransaction, to_str};
+use node_data::message::{AsyncQueue, ConsensusHeader, payload};
+use node_data::{Serializable, StepName, ledger};
+use tokio::sync::{Mutex, RwLock, oneshot};
 use tokio::task::JoinHandle;
 use tracing::{debug, info, trace, warn};
 
@@ -31,7 +31,7 @@ use crate::database::rocksdb::{
     MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_LAST_ITER,
 };
 use crate::database::{self, ConsensusStorage, Mempool, Metadata};
-use crate::{vm, Message};
+use crate::{Message, vm};
 
 /// Consensus Service Task is responsible for running the consensus layer.
 ///

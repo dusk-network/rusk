@@ -9,9 +9,9 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use dusk_bytes::Serializable;
-use node_data::ledger::{to_str, Block, Fault, IterationsInfo, Seed, Slash};
+use node_data::ledger::{Block, Fault, IterationsInfo, Seed, Slash, to_str};
 use node_data::message::payload::Candidate;
-use node_data::message::{Message, SignedStepMessage, BLOCK_HEADER_VERSION};
+use node_data::message::{BLOCK_HEADER_VERSION, Message, SignedStepMessage};
 use node_data::{get_current_timestamp, ledger};
 use tracing::{debug, info};
 

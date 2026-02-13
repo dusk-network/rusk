@@ -22,6 +22,11 @@ extern crate alloc;
 
 #[cfg(target_family = "wasm")]
 #[macro_use]
+// The FFI module consists entirely of `unsafe extern "C"` functions whose
+// bodies are inherently unsafe. Annotating every function body with an
+// additional `unsafe` block would add noise without improving clarity, so we
+// allow unsafe operations directly within unsafe fns at the module level.
+#[allow(unsafe_op_in_unsafe_fn)]
 mod ffi;
 
 pub mod keys;
@@ -38,7 +43,7 @@ pub mod prelude {
 }
 
 pub use notes::balance::{
-    calculate as phoenix_balance, TotalAmount as BalanceInfo,
+    TotalAmount as BalanceInfo, calculate as phoenix_balance,
 };
 pub use notes::owned::map as map_owned;
 pub use notes::pick::notes as pick_notes;

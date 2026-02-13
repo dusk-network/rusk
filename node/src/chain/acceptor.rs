@@ -10,11 +10,11 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{cmp, env};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use dusk_consensus::commons::TimeoutSet;
 use dusk_consensus::config::{
-    is_emergency_block, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
-    MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
+    CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE, MAX_STEP_TIMEOUT, MIN_STEP_TIMEOUT,
+    is_emergency_block,
 };
 use dusk_consensus::errors::{ConsensusError, HeaderError};
 use dusk_consensus::operations::Voter;
@@ -29,12 +29,12 @@ use node_data::bls::PublicKey;
 use node_data::events::contract::ContractEvent;
 use node_data::events::{BlockEvent, BlockState, Event, TransactionEvent};
 use node_data::ledger::{
-    self, to_str, Block, BlockWithLabel, Label, Seed, Slash,
+    self, Block, BlockWithLabel, Label, Seed, Slash, to_str,
 };
 use node_data::message::payload::{GetBlocks, Vote};
 use node_data::message::{AsyncQueue, Payload, Status};
-use node_data::{get_current_timestamp, Serializable, StepName};
-use rkyv::{check_archived_root, Deserialize, Infallible};
+use node_data::{Serializable, StepName, get_current_timestamp};
+use rkyv::{Deserialize, Infallible, check_archived_root};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{RwLock, RwLockReadGuard};
 use tracing::{debug, error, info, trace, warn};
@@ -42,16 +42,16 @@ use tracing::{debug, error, info, trace, warn};
 use super::consensus::Task;
 #[cfg(feature = "archive")]
 use crate::archive::Archive;
-use crate::chain::header_validation::{verify_att, verify_faults, Validator};
+use crate::chain::header_validation::{Validator, verify_att, verify_faults};
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
     Backend, MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION,
     MD_HASH_KEY, MD_STATE_ROOT_KEY,
 };
 use crate::database::{
-    self, ConsensusStorage, DatabaseOptions, Ledger, Mempool, Metadata, DB,
+    self, ConsensusStorage, DB, DatabaseOptions, Ledger, Mempool, Metadata,
 };
-use crate::{vm, Message, Network};
+use crate::{Message, Network, vm};
 
 const CANDIDATES_DELETION_OFFSET: u64 = 10;
 
@@ -293,7 +293,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 .height;
 
             if tip_ext > tip_height {
-                info!("detected ext db at height {tip_ext}. Syncing local db starting from {tip_height}" );
+                info!(
+                    "detected ext db at height {tip_ext}. Syncing local db starting from {tip_height}"
+                );
 
                 for height in tip_height + 1..=tip_ext {
                     let blk = db_ext
@@ -359,7 +361,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             tokio::time::sleep(chunk).await;
             now = SystemTime::now();
         }
-        env::remove_var("RUSK_CONSENSUS_SPIN_TIME");
+        // SAFETY: This is only called during initialization, before any
+        // threads that read this variable are spawned.
+        unsafe { env::remove_var("RUSK_CONSENSUS_SPIN_TIME") };
     }
 
     pub async fn spawn_task(&self) {
@@ -550,7 +554,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                                         }
                                     }
                                 } else {
-                                    warn!("Could not check candidate in DB. Skipping Quorum rebroadcast");
+                                    warn!(
+                                        "Could not check candidate in DB. Skipping Quorum rebroadcast"
+                                    );
                                 };
                             }
 
@@ -1140,9 +1146,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Iterate from TIP to LFB to set Label::Confirmed
         for (&height, (hash, label)) in labels.iter_mut().rev() {
             match label {
-                Label::Accepted(ref confirmed_after)
-                | Label::Attested(ref confirmed_after) => {
-                    if &stable_count >= confirmed_after {
+                Label::Accepted(confirmed_after)
+                | Label::Attested(confirmed_after) => {
+                    let confirmed_after = *confirmed_after;
+                    if stable_count >= confirmed_after {
                         info!(
                             event = "block confirmed",
                             src = "rolling_finality",
@@ -1172,7 +1179,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     continue;
                 }
                 Label::Final(_) => {
-                    warn!("Found a final block during rolling finality scan. This should be a bug");
+                    warn!(
+                        "Found a final block during rolling finality scan. This should be a bug"
+                    );
                     break;
                 }
             }
@@ -1182,7 +1191,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         for (height, (hash, mut label)) in labels.into_iter() {
             match label {
                 Label::Final(_) => {
-                    warn!("Found a final block during rolling finality. This should be a bug")
+                    warn!(
+                        "Found a final block during rolling finality. This should be a bug"
+                    )
                 }
                 Label::Accepted(_) | Label::Attested(_) => break,
                 Label::Confirmed(_) => {

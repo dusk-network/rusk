@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::node::Rusk;
 use crate::Result;
+use crate::node::Rusk;
 
 use std::sync::mpsc;
 

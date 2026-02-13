@@ -116,7 +116,9 @@ impl From<&Args> for Config {
         if let Some(profile) = &args.profile {
             // Since the profile path is resolved by the rusk_profile library,
             // there is the need to set the env variable
-            env::set_var("RUSK_PROFILE_PATH", profile);
+            // SAFETY: Called during single-threaded startup before
+            // any threads that read this variable are spawned.
+            unsafe { env::set_var("RUSK_PROFILE_PATH", profile) };
         }
 
         rusk_config.http.merge(args);

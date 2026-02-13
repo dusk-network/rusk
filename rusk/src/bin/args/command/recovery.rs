@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use clap::builder::BoolishValueParser;
 use clap::Subcommand;
+use clap::builder::BoolishValueParser;
 use rusk_recovery_tools::Theme;
 use std::io;
 use tracing::info;

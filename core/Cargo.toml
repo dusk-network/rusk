@@ -1,13 +1,13 @@
 [package]
 name = "dusk-core"
 version = "1.4.2-alpha.1"
-edition = "2021"
 
 description = "Types used for interacting with Dusk's transfer and stake contracts."
 repository = "https://github.com/dusk-network/rusk"
 
 license.workspace = true
 rust-version.workspace = true
+edition.workspace = true
 
 [dependencies]
 dusk-bls12_381 = { workspace = true, features = ["rkyv-impl"] }

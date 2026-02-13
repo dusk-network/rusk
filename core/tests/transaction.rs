@@ -7,12 +7,12 @@
 use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
-use dusk_core::transfer::data::{ContractCall, TransactionData, MAX_MEMO_SIZE};
+use dusk_core::transfer::Transaction;
+use dusk_core::transfer::data::{ContractCall, MAX_MEMO_SIZE, TransactionData};
 use dusk_core::transfer::phoenix::{
     Note, NoteOpening, NoteTreeItem, NotesTree, Prove,
     PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey, TxCircuitVec,
 };
-use dusk_core::transfer::Transaction;
 use dusk_core::{Error, JubJubScalar};
 use ff::Field;
 use rand::rngs::StdRng;
@@ -297,9 +297,9 @@ fn new_moonlight_tx(
         Some(AccountPublicKey::from(&AccountSecretKey::random(&mut rng)));
 
     // generate random transaction values
-    let transfer_value: u64 = rng.gen();
-    let deposit: u64 = rng.gen();
-    let nonce: u64 = rng.gen();
+    let transfer_value: u64 = rng.r#gen();
+    let deposit: u64 = rng.r#gen();
+    let nonce: u64 = rng.r#gen();
 
     Transaction::moonlight(
         &sender_sk,

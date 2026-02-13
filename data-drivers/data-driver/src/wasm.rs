@@ -78,8 +78,12 @@ unsafe fn write_to_wasm_buffer(
         return Err(ErrorCode::BufferTooSmall);
     }
     let len_bytes = len.to_le_bytes();
-    ptr::copy_nonoverlapping(len_bytes.as_ptr(), out_ptr, 4);
-    ptr::copy_nonoverlapping(data.as_ptr(), out_ptr.add(4), data.len());
+    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size`
+    // bytes, and we verified `data.len() + 4 <= out_buf_size` above.
+    unsafe {
+        ptr::copy_nonoverlapping(len_bytes.as_ptr(), out_ptr, 4);
+        ptr::copy_nonoverlapping(data.as_ptr(), out_ptr.add(4), data.len());
+    }
     Ok(())
 }
 
@@ -97,19 +101,24 @@ unsafe fn run_wasm_export<F>(
 where
     F: FnOnce(&dyn ConvertibleContract) -> Result<Vec<u8>, String>,
 {
-    let Some(driver) = CONTRACT_DRIVER else {
+    // SAFETY: Single-threaded WASM — no concurrent access to the global.
+    let Some(driver) = (unsafe { CONTRACT_DRIVER }) else {
         set_last_error("Contract driver not initialized".into());
         return ErrorCode::DriverNotInitialized;
     };
 
     match f(driver) {
-        Ok(data) => match write_to_wasm_buffer(&data, out_ptr, out_buf_size) {
-            Ok(()) => ErrorCode::Ok,
-            Err(e) => {
-                set_last_error("Output buffer too small".into());
-                e
+        Ok(data) => {
+            // SAFETY: Forwarding the caller's guarantee on `out_ptr`.
+            match unsafe { write_to_wasm_buffer(&data, out_ptr, out_buf_size) }
+            {
+                Ok(()) => ErrorCode::Ok,
+                Err(e) => {
+                    set_last_error("Output buffer too small".into());
+                    e
+                }
             }
-        },
+        }
         Err(msg) => {
             set_last_error(msg);
             ErrorCode::OperationError
@@ -122,13 +131,15 @@ where
 /// # Safety
 /// Caller must ensure that `out_ptr` points to a valid buffer of at least
 /// `out_buf_size` bytes.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn get_last_error(
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
     let err = take_last_error().unwrap_or_default();
-    match write_to_wasm_buffer(err.as_bytes(), out_ptr, out_buf_size) {
+    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size` bytes.
+    match unsafe { write_to_wasm_buffer(err.as_bytes(), out_ptr, out_buf_size) }
+    {
         Ok(()) => ErrorCode::Ok,
         Err(e) => e,
     }
@@ -138,7 +149,7 @@ pub unsafe extern "C" fn get_last_error(
 ///
 /// # Safety
 /// Caller must ensure that all pointers are valid and null-terminated.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn encode_input_fn(
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
@@ -147,20 +158,23 @@ pub unsafe extern "C" fn encode_input_fn(
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
-    run_wasm_export(out_ptr, out_buf_size, |driver| {
-        let fn_name_slice =
-            core::slice::from_raw_parts(fn_name_ptr, fn_name_size);
-        let fn_name = core::str::from_utf8(fn_name_slice)
-            .map_err(|e| format!("Invalid fn_name UTF-8: {e}"))?;
+    // SAFETY: The caller guarantees all pointers are valid and correctly sized.
+    unsafe {
+        run_wasm_export(out_ptr, out_buf_size, |driver| {
+            let fn_name_slice =
+                core::slice::from_raw_parts(fn_name_ptr, fn_name_size);
+            let fn_name = core::str::from_utf8(fn_name_slice)
+                .map_err(|e| format!("Invalid fn_name UTF-8: {e}"))?;
 
-        let json_slice = core::slice::from_raw_parts(json_ptr, json_size);
-        let json = core::str::from_utf8(json_slice)
-            .map_err(|e| format!("Invalid json UTF-8: {e}"))?;
+            let json_slice = core::slice::from_raw_parts(json_ptr, json_size);
+            let json = core::str::from_utf8(json_slice)
+                .map_err(|e| format!("Invalid json UTF-8: {e}"))?;
 
-        driver
-            .encode_input_fn(fn_name, json)
-            .map_err(|e| format!("{e:?}"))
-    })
+            driver
+                .encode_input_fn(fn_name, json)
+                .map_err(|e| format!("{e:?}"))
+        })
+    }
 }
 
 /// Decodes input function parameters from a serialized format.
@@ -168,7 +182,7 @@ pub unsafe extern "C" fn encode_input_fn(
 /// # Safety
 /// Caller must ensure that all pointers are valid and buffers are properly
 /// sized.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn decode_input_fn(
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
@@ -177,18 +191,21 @@ pub unsafe extern "C" fn decode_input_fn(
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
-    run_wasm_export(out_ptr, out_buf_size, |driver| {
-        let fn_name_slice =
-            core::slice::from_raw_parts(fn_name_ptr, fn_name_size);
-        let fn_name = core::str::from_utf8(fn_name_slice)
-            .map_err(|e| format!("Invalid fn_name UTF-8: {e}"))?;
+    // SAFETY: The caller guarantees all pointers are valid and correctly sized.
+    unsafe {
+        run_wasm_export(out_ptr, out_buf_size, |driver| {
+            let fn_name_slice =
+                core::slice::from_raw_parts(fn_name_ptr, fn_name_size);
+            let fn_name = core::str::from_utf8(fn_name_slice)
+                .map_err(|e| format!("Invalid fn_name UTF-8: {e}"))?;
 
-        let rkyv = slice::from_raw_parts(rkyv_ptr, rkyv_len);
-        driver
-            .decode_input_fn(fn_name, rkyv)
-            .map(|v| v.to_string().into_bytes())
-            .map_err(|e| format!("{e:?}"))
-    })
+            let rkyv = slice::from_raw_parts(rkyv_ptr, rkyv_len);
+            driver
+                .decode_input_fn(fn_name, rkyv)
+                .map(|v| v.to_string().into_bytes())
+                .map_err(|e| format!("{e:?}"))
+        })
+    }
 }
 
 /// Decodes output function results from a serialized format.
@@ -196,7 +213,7 @@ pub unsafe extern "C" fn decode_input_fn(
 /// # Safety
 /// Caller must ensure that all pointers are valid and buffers are properly
 /// sized.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn decode_output_fn(
     fn_name_ptr: *mut u8,
     fn_name_size: usize,
@@ -205,18 +222,21 @@ pub unsafe extern "C" fn decode_output_fn(
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
-    run_wasm_export(out_ptr, out_buf_size, |driver| {
-        let fn_name_slice =
-            core::slice::from_raw_parts(fn_name_ptr, fn_name_size);
-        let fn_name = core::str::from_utf8(fn_name_slice)
-            .map_err(|e| format!("Invalid fn_name UTF-8: {e}"))?;
+    // SAFETY: The caller guarantees all pointers are valid and correctly sized.
+    unsafe {
+        run_wasm_export(out_ptr, out_buf_size, |driver| {
+            let fn_name_slice =
+                core::slice::from_raw_parts(fn_name_ptr, fn_name_size);
+            let fn_name = core::str::from_utf8(fn_name_slice)
+                .map_err(|e| format!("Invalid fn_name UTF-8: {e}"))?;
 
-        let rkyv = slice::from_raw_parts(rkyv_ptr, rkyv_len);
-        driver
-            .decode_output_fn(fn_name, rkyv)
-            .map(|v| v.to_string().into_bytes())
-            .map_err(|e| format!("{e:?}"))
-    })
+            let rkyv = slice::from_raw_parts(rkyv_ptr, rkyv_len);
+            driver
+                .decode_output_fn(fn_name, rkyv)
+                .map(|v| v.to_string().into_bytes())
+                .map_err(|e| format!("{e:?}"))
+        })
+    }
 }
 
 /// Decodes an event from a serialized format.
@@ -224,7 +244,7 @@ pub unsafe extern "C" fn decode_output_fn(
 /// # Safety
 /// Caller must ensure that all pointers are valid and buffers are properly
 /// sized.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn decode_event(
     event_name_ptr: *mut u8,
     event_name_size: usize,
@@ -233,18 +253,21 @@ pub unsafe extern "C" fn decode_event(
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
-    run_wasm_export(out_ptr, out_buf_size, |driver| {
-        let event_name_slice =
-            core::slice::from_raw_parts(event_name_ptr, event_name_size);
-        let event_name = core::str::from_utf8(event_name_slice)
-            .map_err(|e| format!("Invalid event_name UTF-8: {e}"))?;
+    // SAFETY: The caller guarantees all pointers are valid and correctly sized.
+    unsafe {
+        run_wasm_export(out_ptr, out_buf_size, |driver| {
+            let event_name_slice =
+                core::slice::from_raw_parts(event_name_ptr, event_name_size);
+            let event_name = core::str::from_utf8(event_name_slice)
+                .map_err(|e| format!("Invalid event_name UTF-8: {e}"))?;
 
-        let rkyv = slice::from_raw_parts(rkyv_ptr, rkyv_len);
-        driver
-            .decode_event(event_name, rkyv)
-            .map(|v| v.to_string().into_bytes())
-            .map_err(|e| format!("{e:?}"))
-    })
+            let rkyv = slice::from_raw_parts(rkyv_ptr, rkyv_len);
+            driver
+                .decode_event(event_name, rkyv)
+                .map(|v| v.to_string().into_bytes())
+                .map_err(|e| format!("{e:?}"))
+        })
+    }
 }
 
 /// Retrieves the contract schema as a serialized string.
@@ -252,14 +275,17 @@ pub unsafe extern "C" fn decode_event(
 /// # Safety
 /// Caller must ensure that `out_ptr` points to a valid buffer of at least
 /// `out_buf_size` bytes.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn get_schema(
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
-    run_wasm_export(out_ptr, out_buf_size, |driver| {
-        Ok(driver.get_schema().into_bytes())
-    })
+    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size` bytes.
+    unsafe {
+        run_wasm_export(out_ptr, out_buf_size, |driver| {
+            Ok(driver.get_schema().into_bytes())
+        })
+    }
 }
 
 /// Retrieves the data driver version as a serialized string.
@@ -267,14 +293,17 @@ pub unsafe extern "C" fn get_schema(
 /// # Safety
 /// Caller must ensure that `out_ptr` points to a valid buffer of at least
 /// `out_buf_size` bytes.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn get_version(
     out_ptr: *mut u8,
     out_buf_size: usize,
 ) -> ErrorCode {
-    run_wasm_export(out_ptr, out_buf_size, |driver| {
-        Ok(driver.get_version().to_string().into_bytes())
-    })
+    // SAFETY: The caller guarantees `out_ptr` is valid for `out_buf_size` bytes.
+    unsafe {
+        run_wasm_export(out_ptr, out_buf_size, |driver| {
+            Ok(driver.get_version().to_string().into_bytes())
+        })
+    }
 }
 
 /// Generates a WASM `init` entrypoint for a given contract driver type.
@@ -286,7 +315,7 @@ pub unsafe extern "C" fn get_version(
 ///
 /// This will create:
 /// ```ignore
-/// #[no_mangle]
+/// #[unsafe(no_mangle)]
 /// pub unsafe extern "C" fn init() {
 ///     static INSTANCE: MyDriver = MyDriver;
 ///     dusk_data_driver::init_contract_driver(&INSTANCE);
@@ -296,13 +325,17 @@ pub unsafe extern "C" fn get_version(
 macro_rules! generate_wasm_entrypoint {
     ($driver_type:ty) => {
         static mut INSTANCE: Option<$driver_type> = None;
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         #[doc = "Initializes and registers the contract driver.\n\n\
                  # Safety\n\
                  Must be called exactly once at module startup before using any FFI functions."]
         pub unsafe extern "C" fn init() {
-            INSTANCE = Some(<$driver_type>::default());
-            $crate::wasm::init_contract_driver(INSTANCE.as_ref().unwrap());
+            // SAFETY: Called exactly once at module startup in
+            // single-threaded WASM — no concurrent access.
+            unsafe {
+                INSTANCE = Some(<$driver_type>::default());
+                $crate::wasm::init_contract_driver(INSTANCE.as_ref().unwrap());
+            }
         }
     };
 }
@@ -314,6 +347,7 @@ macro_rules! generate_wasm_entrypoint {
 pub unsafe fn init_contract_driver(
     driver: &'static dyn ConvertibleContract,
 ) -> ErrorCode {
-    CONTRACT_DRIVER = Some(driver);
+    // SAFETY: Single-threaded WASM — no concurrent access to the global.
+    unsafe { CONTRACT_DRIVER = Some(driver) };
     ErrorCode::Ok
 }

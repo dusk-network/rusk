@@ -1,7 +1,6 @@
 [package]
 name = "rusk-wallet"
 version = "0.2.1-dev"
-edition = "2021"
 autobins = false
 description = "A library providing functionalities to create wallets compatible with Dusk"
 categories = ["cryptography", "cryptography::cryptocurrencies"]
@@ -11,6 +10,7 @@ exclude = [".github/*", ".gitignore"]
 
 license.workspace = true
 rust-version.workspace = true
+edition.workspace = true
 
 [[bin]]
 name = "rusk-wallet"

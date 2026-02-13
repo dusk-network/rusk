@@ -1,7 +1,6 @@
 [package]
 name = "dusk-rusk"
 version = "1.4.5-alpha.1"
-edition = "2021"
 autobins = false
 exclude = ["tests/assets/*"]
 
@@ -12,6 +11,7 @@ keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
 
 license.workspace = true
 rust-version.workspace = true
+edition.workspace = true
 
 
 [lib]

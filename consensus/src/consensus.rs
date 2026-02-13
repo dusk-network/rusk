@@ -8,9 +8,9 @@ use std::cmp;
 use std::sync::Arc;
 
 use node_data::message::{AsyncQueue, Message, Payload};
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::{Mutex, oneshot};
 use tokio::task::JoinHandle;
-use tracing::{debug, error, warn, Instrument};
+use tracing::{Instrument, debug, error, warn};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::{CONSENSUS_MAX_ITER, EMERGENCY_MODE_ITERATION_THRESHOLD};
@@ -270,7 +270,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 }
 
                 if iter >= CONSENSUS_MAX_ITER - 1 {
-                    error!("Trying to increase iteration over the maximum. This should be a bug");
+                    error!(
+                        "Trying to increase iteration over the maximum. This should be a bug"
+                    );
                     warn!("Sticking to the same iter {iter}");
                 } else {
                     iter_ctx.on_close();

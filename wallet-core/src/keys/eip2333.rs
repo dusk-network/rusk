@@ -58,8 +58,8 @@
 //!  - `HKDF-Extract`: defined in RFC5869, instantiated with SHA256
 //!  - `HKDF-Expand`: defined in RFC5869, instantiated with SHA256
 
-use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
 use dusk_core::BlsScalar;
+use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
 
 use hkdf::Hkdf;
 use sha2::{Digest, Sha256};
@@ -505,32 +505,32 @@ mod tests {
     #[test]
     fn test_child_derivation() {
         // All test cases are taken from the EIP2333 specification
-        let test_cases = vec!(
-            TestCase{
-                seed : "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
-                master_sk : "6083874454709270928345386274498605044986640685124978867557563392430687146096",
-                child_index : "0",
-                child_sk : "20397789859736650942317412262472558107875392172444076792671091975210932703118",
+        let test_cases = vec![
+            TestCase {
+                seed: "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
+                master_sk: "6083874454709270928345386274498605044986640685124978867557563392430687146096",
+                child_index: "0",
+                child_sk: "20397789859736650942317412262472558107875392172444076792671091975210932703118",
             },
-            TestCase{
+            TestCase {
                 seed: "0099FF991111002299DD7744EE3355BBDD8844115566CC55663355668888CC00",
                 master_sk: "27580842291869792442942448775674722299803720648445448686099262467207037398656",
                 child_index: "4294967295",
                 child_sk: "29358610794459428860402234341874281240803786294062035874021252734817515685787",
             },
-            TestCase{
+            TestCase {
                 seed: "3141592653589793238462643383279502884197169399375105820974944592",
                 master_sk: "29757020647961307431480504535336562678282505419141012933316116377660817309383",
                 child_index: "3141592653",
                 child_sk: "25457201688850691947727629385191704516744796114925897962676248250929345014287",
             },
-            TestCase{
+            TestCase {
                 seed: "d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3",
                 master_sk: "19022158461524446591288038168518313374041767046816487870552872741050760015818",
                 child_index: "42",
                 child_sk: "31372231650479070279774297061823572166496564838472787488249775572789064611981",
-            }
-        );
+            },
+        ];
 
         for t in test_cases.iter() {
             let seed = decode(t.seed).unwrap();
@@ -583,11 +583,17 @@ mod tests {
         // Test Cases Set
         // Format: (path, expected_derived_key)
         let test_cases = vec![
-          // Test case from Ethereum's reference implementation
-          // https://github.com/ethereum/staking-deposit-cli
-          ("m/0","20397789859736650942317412262472558107875392172444076792671091975210932703118"),
-          // This case has no external reference and only serves as flag for potential breaking changes
-          ("m/12381/3600/0/0/0", "1438960529079439298020003172973761593698584351192884838483126814052706935030"),
+            // Test case from Ethereum's reference implementation
+            // https://github.com/ethereum/staking-deposit-cli
+            (
+                "m/0",
+                "20397789859736650942317412262472558107875392172444076792671091975210932703118",
+            ),
+            // This case has no external reference and only serves as flag for potential breaking changes
+            (
+                "m/12381/3600/0/0/0",
+                "1438960529079439298020003172973761593698584351192884838483126814052706935030",
+            ),
         ];
 
         for test in test_cases {

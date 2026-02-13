@@ -24,16 +24,17 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::{ptr, slice};
 
+use crate::Seed;
 use crate::keys::{
     derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
     derive_phoenix_vk,
 };
 use crate::notes::{self, balance, owned, pick};
-use crate::Seed;
 use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_core::BlsScalar;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
-use dusk_core::stake::{Stake, STAKE_CONTRACT};
+use dusk_core::stake::{STAKE_CONTRACT, Stake};
 use dusk_core::transfer::data::{ContractCall, TransactionData};
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::{
@@ -41,21 +42,20 @@ use dusk_core::transfer::phoenix::{
     PublicKey as PhoenixPublicKey,
 };
 use dusk_core::transfer::withdraw::WithdrawReplayToken;
-use dusk_core::transfer::{phoenix, Transaction};
-use dusk_core::BlsScalar;
-use rand_chacha::rand_core::SeedableRng;
+use dusk_core::transfer::{Transaction, phoenix};
 use rand_chacha::ChaCha12Rng;
+use rand_chacha::rand_core::SeedableRng;
 use rkyv::to_bytes;
 use zeroize::Zeroize;
 
 use error::ErrorCode;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 static KEY_SIZE: usize = BlsScalar::SIZE;
-#[no_mangle]
+#[unsafe(no_mangle)]
 static ITEM_SIZE: usize = core::mem::size_of::<ArchivedNoteLeaf>();
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 static MINIMUM_STAKE: u64 = dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 
 /// The size of the scratch buffer used for parsing the notes.
@@ -96,7 +96,7 @@ where
 }
 
 /// Generate a profile (account / address pair) for the given seed and index.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn generate_profile(
     seed: &Seed,
     index: u8,
@@ -122,7 +122,7 @@ pub unsafe extern "C" fn generate_profile(
 
 /// Filter all notes and their block height that are owned by the given keys,
 /// mapped to their nullifiers.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn map_owned(
     seed: &Seed,
     indexes: *const u8,
@@ -176,7 +176,7 @@ pub unsafe fn map_owned(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn display_scalar(
     scalar_ptr: &[u8; 32],
     output: &mut [u8; 64],
@@ -191,7 +191,7 @@ pub unsafe fn display_scalar(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn accounts_into_raw(
     accounts_ptr: *const u8,
     raws_ptr: *mut *mut u8,
@@ -225,7 +225,7 @@ pub unsafe fn accounts_into_raw(
 
 /// Calculate the balance info for the phoenix address at the given index for
 /// the given seed.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn balance(
     seed: &Seed,
     index: u8,
@@ -248,7 +248,7 @@ pub unsafe fn balance(
 }
 
 /// Pick the notes to be used in a transaction from an owned notes list.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn pick_notes(
     seed: &Seed,
     index: u8,
@@ -273,7 +273,7 @@ pub unsafe fn pick_notes(
 }
 
 /// Gets the bookmark from the given note.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn bookmarks(
     notes_ptr: *const u8,
     bookmarks_ptr: *mut *mut u8,
@@ -311,7 +311,7 @@ impl Prove for NoOpProver {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn into_proven(
     tx_ptr: *const u8,
     proof_ptr: *const u8,
@@ -344,7 +344,7 @@ pub unsafe fn into_proven(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn phoenix(
     rng: &[u8; 32],
     seed: &Seed,
@@ -439,7 +439,7 @@ pub unsafe fn phoenix(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn moonlight(
     seed: &Seed,
     sender_index: u8,
@@ -507,7 +507,7 @@ pub unsafe fn moonlight(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn phoenix_to_moonlight(
     rng: &[u8; 32],
     seed: &Seed,
@@ -588,7 +588,7 @@ pub unsafe fn phoenix_to_moonlight(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn moonlight_to_phoenix(
     rng: &[u8; 32],
     seed: &Seed,
@@ -637,7 +637,7 @@ pub unsafe fn moonlight_to_phoenix(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn moonlight_stake(
     seed: &Seed,
     sender_index: u8,
@@ -693,7 +693,7 @@ pub unsafe fn moonlight_stake(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn moonlight_unstake(
     rng: &[u8; 32],
     seed: &Seed,
@@ -758,7 +758,7 @@ pub unsafe fn moonlight_unstake(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn moonlight_stake_reward(
     rng: &[u8; 32],
     seed: &Seed,
@@ -823,7 +823,7 @@ pub unsafe fn moonlight_stake_reward(
     ErrorCode::Ok
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe fn create_tx_data(
     fn_name_len: *const u32,
     fn_name_buf: *mut u8,

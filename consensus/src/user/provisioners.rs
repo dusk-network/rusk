@@ -9,9 +9,9 @@ use std::mem;
 
 use dusk_core::dusk;
 use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
+use node_data::StepName;
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::Seed;
-use node_data::StepName;
 use num_bigint::BigInt;
 
 use super::committee::Committee;
@@ -252,12 +252,11 @@ impl Provisioners {
         );
         let committee_keys = Committee::new(self, &cfg);
 
-        let generator = *committee_keys
+        *committee_keys
             .iter()
             .next()
             .expect("committee to have 1 entry")
-            .bytes();
-        generator
+            .bytes()
     }
 }
 

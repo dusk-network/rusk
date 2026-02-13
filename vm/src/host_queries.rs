@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 
 use c_kzg::{Bytes32 as KzgBytes32, Bytes48};
 use dusk_bytes::DeserializableSlice;
+use dusk_core::BlsScalar;
 use dusk_core::groth16::bn254::{Bn254, G1Projective};
 use dusk_core::groth16::serialize::CanonicalDeserialize;
 use dusk_core::groth16::{
@@ -24,11 +25,10 @@ use dusk_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
 };
 use dusk_core::transfer::data::BlobData;
-use dusk_core::BlsScalar;
 use dusk_poseidon::{Domain, Hash as PoseidonHash};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
-use secp256k1::{ecdsa::RecoverableSignature, Message, Secp256k1};
+use secp256k1::{Message, Secp256k1, ecdsa::RecoverableSignature};
 use sha2::{Digest as Sha2Digest, Sha256};
 use sha3::Keccak256;
 use tracing::warn;

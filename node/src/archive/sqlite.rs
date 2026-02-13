@@ -18,8 +18,8 @@ use sqlx::sqlite::{
 use sqlx::{Pool, Sqlite, SqliteConnection};
 use tracing::{error, info, warn};
 
-use crate::archive::transformer;
 use crate::archive::Archive;
+use crate::archive::transformer;
 
 /// The name of the archive SQLite database.
 const SQLITEARCHIVE_DB_NAME: &str = "archive.sqlite3";
@@ -40,7 +40,7 @@ impl Archive {
             .pragma("temp_store", "MEMORY") // keep temporary tables/indexes in RAM
             .pragma("mmap_size", "536870912") // enable memory-mapped I/O up to 512 MiB
             .pragma("cache_size", "-24576") // set page cache to 24 MiB
-                                            // (negative value = KiB)
+        // (negative value = KiB)
     }
 
     /// Create the single connection writer pool (WAL, FULL, foreign_keys,
@@ -508,8 +508,7 @@ impl Archive {
         if existed && affected == 1 {
             error!(
                 "archive: finalized_blocks upsert used DO UPDATE (unexpected path) for height {} hash {}",
-                finalized_block_height,
-                hex_block_hash
+                finalized_block_height, hex_block_hash
             );
         }
 
@@ -652,8 +651,8 @@ mod data {
         ContractEvent, ContractTxEvent, ORIGIN_HASH_BYTES,
     };
     use serde::{Deserialize, Serialize};
-    use serde_with::hex::Hex;
     use serde_with::As;
+    use serde_with::hex::Hex;
     use sqlx::FromRow;
 
     /// Data transfer object for GraphQL pagination
@@ -746,8 +745,8 @@ mod tests {
 
     use dusk_core::abi::ContractId;
     use node_data::events::contract::ContractEvent;
-    use rand::distributions::Alphanumeric;
     use rand::Rng;
+    use rand::distributions::Alphanumeric;
     use util::truncate_string;
 
     use super::*;
@@ -853,10 +852,12 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(archive
-            .remove_block_and_events(blk_height, &hex_blk_hash)
-            .await
-            .unwrap());
+        assert!(
+            archive
+                .remove_block_and_events(blk_height, &hex_blk_hash)
+                .await
+                .unwrap()
+        );
 
         let fetched_events = archive
             .fetch_events_by_height(blk_height as i64)
@@ -874,10 +875,12 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(!archive
-            .remove_block_and_events(blk_height, &hex_blk_hash)
-            .await
-            .unwrap());
+        assert!(
+            !archive
+                .remove_block_and_events(blk_height, &hex_blk_hash)
+                .await
+                .unwrap()
+        );
 
         let (blk_height, blk_hash) =
             archive.fetch_last_finalized_block().await.unwrap();

@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_core::stake::{StakeData, DEFAULT_MINIMUM_STAKE};
+use dusk_core::stake::{DEFAULT_MINIMUM_STAKE, StakeData};
 use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use rand::prelude::*;
 use rand::rngs::StdRng;

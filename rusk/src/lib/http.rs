@@ -37,7 +37,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "chain")]
 use async_graphql::http::{
-    parse_query_string, receive_batch_body, MultipartOptions,
+    MultipartOptions, parse_query_string, receive_batch_body,
 };
 #[cfg(feature = "chain")]
 use async_graphql::{
@@ -47,10 +47,10 @@ use async_graphql::{
 use async_trait::async_trait;
 
 use tokio::net::ToSocketAddrs;
-use tokio::sync::{broadcast, mpsc, oneshot, RwLock};
+use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
 use tokio::{io, task};
-use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
+use tokio_stream::wrappers::BroadcastStream;
 
 #[cfg(feature = "chain")]
 use futures_util::io::Cursor;
@@ -62,10 +62,10 @@ use hyper::header::{ALLOW, CONTENT_TYPE};
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::service::Service;
 use hyper::{
-    body::{Bytes, Incoming},
     HeaderMap, Method, Request, Response, StatusCode,
+    body::{Bytes, Incoming},
 };
-use hyper_tungstenite::{tungstenite, HyperWebsocket};
+use hyper_tungstenite::{HyperWebsocket, tungstenite};
 use hyper_util::server::conn::auto::Builder as HttpBuilder;
 
 use tungstenite::protocol::frame::coding::CloseCode;
@@ -75,13 +75,13 @@ use futures_util::SinkExt;
 
 use hyper_util::rt::TokioIo;
 
-use crate::http::event::FullOrStreamBody;
 use crate::VERSION;
+use crate::http::event::FullOrStreamBody;
 
-pub use self::event::{RuesDispatchEvent, RuesEvent, RUES_LOCATION_PREFIX};
+pub use self::event::{RUES_LOCATION_PREFIX, RuesDispatchEvent, RuesEvent};
 pub use error::Error as HttpError;
 
-use self::event::{check_rusk_version, ResponseData, RuesEventUri, SessionId};
+use self::event::{ResponseData, RuesEventUri, SessionId, check_rusk_version};
 use self::stream::Listener;
 
 pub type HttpResult<T> = std::result::Result<T, HttpError>;

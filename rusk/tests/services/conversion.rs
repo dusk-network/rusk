@@ -66,11 +66,13 @@ fn wallet_convert_to_moonlight(tc: &TestContext, block_height: u64) {
         .expect("Getting account data should succeed");
 
     assert_eq!(
-        phoenix_balance.value, INITIAL_PHOENIX_BALANCE - CONVERT_VALUE - gas_spent,
+        phoenix_balance.value,
+        INITIAL_PHOENIX_BALANCE - CONVERT_VALUE - gas_spent,
         "The Phoenix notes must be of their initial value minus the converted amount and gas spent"
     );
     assert_eq!(
-        moonlight_account.balance, INITIAL_MOONLIGHT_BALANCE + CONVERT_VALUE,
+        moonlight_account.balance,
+        INITIAL_MOONLIGHT_BALANCE + CONVERT_VALUE,
         "The Moonlight account should have its initial balance plus the converted amount"
     );
 }
@@ -116,11 +118,13 @@ fn wallet_convert_to_phoenix(tc: &TestContext, block_height: u64) {
         .expect("Getting phoenix balance should succeed");
 
     assert_eq!(
-        moonlight_account.balance, INITIAL_MOONLIGHT_BALANCE - CONVERT_VALUE - gas_spent,
+        moonlight_account.balance,
+        INITIAL_MOONLIGHT_BALANCE - CONVERT_VALUE - gas_spent,
         "The Moonlight account must have its initial value minus the converted amount and gas spent"
     );
     assert_eq!(
-        phoenix_balance.value, INITIAL_PHOENIX_BALANCE + CONVERT_VALUE,
+        phoenix_balance.value,
+        INITIAL_PHOENIX_BALANCE + CONVERT_VALUE,
         "The Phoenix notes must be of their initial value minus plus the converted amount"
     );
 }

@@ -18,8 +18,8 @@ use dusk_core::transfer::phoenix::{
     PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
     ViewKey as PhoenixViewKey,
 };
-use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha12Rng;
+use rand_chacha::rand_core::SeedableRng;
 use sha2::{Digest, Sha256};
 use zeroize::Zeroize;
 

@@ -13,7 +13,7 @@ use anyhow::Result;
 use node_data::ledger::{
     Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
 };
-use node_data::message::{payload, ConsensusHeader};
+use node_data::message::{ConsensusHeader, payload};
 use serde::{Deserialize, Serialize};
 
 pub struct LightBlock {

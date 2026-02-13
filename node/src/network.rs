@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::net::{AddrParseError, SocketAddr};
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use async_trait::async_trait;
 use kadcast::config::Config;
@@ -14,7 +14,7 @@ use kadcast::{MessageInfo, Peer};
 use metrics::counter;
 use node_data::message::payload::{GetResource, Inv, Nonce};
 use node_data::message::{AsyncQueue, Metadata, PROTOCOL_VERSION};
-use node_data::{get_current_timestamp, Serializable};
+use node_data::{Serializable, get_current_timestamp};
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, trace, warn};
 

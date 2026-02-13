@@ -13,7 +13,7 @@ use wallet_core::Seed;
 use zeroize::Zeroize;
 
 use crate::crypto::{decrypt_aes_cbc, decrypt_aes_gcm};
-use crate::{Error, WalletPath, IV_SIZE, SALT_SIZE};
+use crate::{Error, IV_SIZE, SALT_SIZE, WalletPath};
 
 /// Binary prefix for old Dusk wallet files
 pub const OLD_MAGIC: u32 = 0x1d_0c15;

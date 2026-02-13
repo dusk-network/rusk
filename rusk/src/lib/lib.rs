@@ -4,6 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+// ExecutionError is intentionally large; boxing it would add complexity
+// without meaningful benefit here.
+#![allow(clippy::result_large_err)]
+
 mod bloom;
 mod error;
 pub mod http;

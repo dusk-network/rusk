@@ -11,11 +11,11 @@ use std::fmt::Debug;
 
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::StakeFundOwner;
+use dusk_core::transfer::Transaction;
 use dusk_core::transfer::data::TransactionData;
 use dusk_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
-use dusk_core::transfer::Transaction;
-use rand::rngs::StdRng;
 use rand::SeedableRng;
+use rand::rngs::StdRng;
 use wallet_core::transaction::{
     moonlight, moonlight_deployment, moonlight_stake, moonlight_stake_reward,
     moonlight_to_phoenix, moonlight_unstake, phoenix, phoenix_deployment,
@@ -24,10 +24,10 @@ use wallet_core::transaction::{
 use zeroize::Zeroize;
 
 use super::{Address, SecureWalletFile, Wallet};
+use crate::Error;
 use crate::clients::Prover;
 use crate::currency::Dusk;
 use crate::gas::Gas;
-use crate::Error;
 
 impl<F: SecureWalletFile + Debug> Wallet<F> {
     /// Transfers funds between shielded accounts.

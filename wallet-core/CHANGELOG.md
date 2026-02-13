@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update to edition 2024
 - Gate `try_trait_v2` feature behind wasm target
 - Use nightly toolchain with `panic=immediate-abort` for WASM builds
 - Update MSRV to 1.85

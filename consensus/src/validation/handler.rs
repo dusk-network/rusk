@@ -7,15 +7,15 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use node_data::StepName;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block, StepVotes};
+use node_data::ledger::{Block, StepVotes, to_str};
 use node_data::message::payload::{
     GetResource, Inv, QuorumType, Validation, Vote,
 };
 use node_data::message::{
-    payload, ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
+    ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage, payload,
 };
-use node_data::StepName;
 use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 

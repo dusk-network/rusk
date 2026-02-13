@@ -20,22 +20,22 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
+use dusk_core::BlsScalar;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::{
-    withdraw::Withdraw, ContractToAccount, ContractToAccountEvent,
-    ContractToContract, ContractToContractEvent, ConvertEvent, DepositEvent,
-    MoonlightTransactionEvent, PhoenixTransactionEvent, WithdrawEvent,
     CONTRACT_TO_ACCOUNT_TOPIC, CONTRACT_TO_CONTRACT_TOPIC, CONVERT_TOPIC,
-    DEPOSIT_TOPIC, MINT_CONTRACT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC,
-    PHOENIX_TOPIC, WITHDRAW_TOPIC,
+    ContractToAccount, ContractToAccountEvent, ContractToContract,
+    ContractToContractEvent, ConvertEvent, DEPOSIT_TOPIC, DepositEvent,
+    MINT_CONTRACT_TOPIC, MINT_TOPIC, MOONLIGHT_TOPIC,
+    MoonlightTransactionEvent, PHOENIX_TOPIC, PhoenixTransactionEvent,
+    WITHDRAW_TOPIC, WithdrawEvent, withdraw::Withdraw,
 };
-use dusk_core::BlsScalar;
 use dusk_data_driver::{
-    from_rkyv, json_to_rkyv, json_to_rkyv_pair_u64, json_to_rkyv_u64,
-    rkyv_to_json, rkyv_to_json_pair_u64, rkyv_to_json_u64, to_json,
-    ConvertibleContract, Error, JsonValue,
+    ConvertibleContract, Error, JsonValue, from_rkyv, json_to_rkyv,
+    json_to_rkyv_pair_u64, json_to_rkyv_u64, rkyv_to_json,
+    rkyv_to_json_pair_u64, rkyv_to_json_u64, to_json,
 };
 
 /// The contract driver for encoding and decoding transactions.

@@ -11,10 +11,10 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use dusk_core::signatures::bls::SecretKey as BlsSecretKey;
+use node_data::StepName;
 use node_data::bls::PublicKey;
 use node_data::ledger::*;
-use node_data::message::{payload, ConsensusHeader};
-use node_data::StepName;
+use node_data::message::{ConsensusHeader, payload};
 
 use crate::operations::Voter;
 

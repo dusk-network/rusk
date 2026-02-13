@@ -7,8 +7,8 @@
 //! The Application Binary Interface (ABI) for the Dusk network.
 
 pub use piecrust_uplink::{
-    ContractError, ContractId, Event, StandardBufSerializer, ARGBUF_LEN,
-    CONTRACT_ID_BYTES,
+    ARGBUF_LEN, CONTRACT_ID_BYTES, ContractError, ContractId, Event,
+    StandardBufSerializer,
 };
 
 #[cfg(feature = "abi")]
@@ -70,6 +70,7 @@ pub(crate) mod host_queries {
     use dusk_bytes::Serializable;
     use piecrust_uplink::{host_query, meta_data};
 
+    use crate::BlsScalar;
     use crate::abi::{ContractId, Metadata, Query};
     use crate::signatures::bls::{
         MultisigSignature, PublicKey as BlsPublicKey, Signature as BlsSignature,
@@ -77,7 +78,6 @@ pub(crate) mod host_queries {
     use crate::signatures::schnorr::{
         PublicKey as SchnorrPublicKey, Signature as SchnorrSignature,
     };
-    use crate::BlsScalar;
 
     /// Compute the blake2b hash of the given bytes, returning the resulting
     /// scalar. The output of the hasher is truncated (last nibble) to fit

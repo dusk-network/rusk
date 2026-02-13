@@ -17,20 +17,20 @@ use alloc::{format, vec};
 use bytecheck::CheckBytes;
 use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
 use piecrust_uplink::StandardBufSerializer;
+use rkyv::ser::Serializer;
 use rkyv::ser::serializers::{
     BufferScratch, BufferSerializer, CompositeSerializer,
 };
-use rkyv::ser::Serializer;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 #[cfg(feature = "serde")]
-use serde_with::hex::Hex;
-#[cfg(feature = "serde")]
 use serde_with::As;
+#[cfg(feature = "serde")]
+use serde_with::hex::Hex;
 use sha2::{Digest, Sha256};
 
-use crate::abi::ContractId;
 use crate::Error;
+use crate::abi::ContractId;
 
 /// The maximum size of a memo.
 pub const MAX_MEMO_SIZE: usize = 512;

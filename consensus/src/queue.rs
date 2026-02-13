@@ -188,8 +188,8 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_msgs_out_of_range(
-    ) -> Result<(), super::MsgRegistryError<Item>> {
+    fn test_remove_msgs_out_of_range()
+    -> Result<(), super::MsgRegistryError<Item>> {
         let round = 100;
 
         let mut reg = MsgRegistry::<Item>::default();

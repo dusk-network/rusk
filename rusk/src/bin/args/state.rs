@@ -8,8 +8,8 @@ use super::*;
 
 use std::{env, fs, io};
 
-use rusk_recovery_tools::state::{deploy, restore_state, tar};
 use rusk_recovery_tools::Theme;
+use rusk_recovery_tools::state::{deploy, restore_state, tar};
 use tracing::info;
 
 pub fn recovery_state(
@@ -28,7 +28,9 @@ pub fn recovery_state(
         Some(output) if output.exists() => Err("Output already exists")?,
         Some(_) => {
             let tmp_dir = tempfile::tempdir()?;
-            env::set_var("RUSK_STATE_PATH", tmp_dir.path());
+            // SAFETY: Called during single-threaded startup before
+            // any threads that read this variable are spawned.
+            unsafe { env::set_var("RUSK_STATE_PATH", tmp_dir.path()) };
             Some(tmp_dir)
         }
         None => None,

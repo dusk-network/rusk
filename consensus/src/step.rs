@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node_data::message::Message;
 use node_data::StepName;
+use node_data::message::Message;
 use tracing::{info, trace};
 
 use crate::commons::Database;

@@ -6,7 +6,7 @@
 
 use super::*;
 use node::database::rocksdb::MD_HASH_KEY;
-use node::database::{into_array, Metadata};
+use node::database::{Metadata, into_array};
 
 pub async fn block_by_height(
     ctx: &Context<'_>,

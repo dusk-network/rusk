@@ -15,9 +15,9 @@ use std::time::Duration;
 
 use dusk_consensus::config::is_emergency_block;
 use metrics::counter;
-use node_data::ledger::{to_str, Attestation, Block};
-use node_data::message::payload::{Inv, Quorum, RatificationResult, Vote};
+use node_data::ledger::{Attestation, Block, to_str};
 use node_data::message::Metadata;
+use node_data::message::payload::{Inv, Quorum, RatificationResult, Vote};
 use tokio::sync::RwLock;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace, warn};
@@ -27,9 +27,9 @@ use self::outofsync::OutOfSyncImpl;
 use self::stalled::StalledChainFSM;
 use super::acceptor::{Acceptor, RevertTarget};
 use crate::database::{ConsensusStorage, Ledger};
-use crate::{database, vm, Network};
+use crate::{Network, database, vm};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 const DEFAULT_ATT_CACHE_EXPIRY: Duration = Duration::from_secs(60);
 
@@ -203,7 +203,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         }
 
         let fsm_res = match &mut self.curr {
-            State::InSync(ref mut curr) => {
+            State::InSync(curr) => {
                 if let Some(presync) =
                     curr.on_block_event(&blk, metadata).await?
                 {
@@ -221,7 +221,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 }
                 anyhow::Ok(())
             }
-            State::OutOfSync(ref mut curr) => {
+            State::OutOfSync(curr) => {
                 if curr.on_block_event(&blk).await? {
                     // Transition from OutOfSync to InSync state
                     curr.on_exiting().await;
@@ -434,7 +434,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         self.stalled_sm.on_heartbeat_event().await;
 
         match &mut self.curr {
-            State::InSync(ref mut curr) => {
+            State::InSync(curr) => {
                 if curr.on_heartbeat().await? {
                     // Transition from InSync to OutOfSync state
                     curr.on_exiting().await;
@@ -448,7 +448,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     self.curr = State::OutOfSync(next);
                 }
             }
-            State::OutOfSync(ref mut curr) => {
+            State::OutOfSync(curr) => {
                 if curr.on_heartbeat().await? {
                     // Transition from OutOfSync to InSync state
                     curr.on_exiting().await;

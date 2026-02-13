@@ -16,7 +16,7 @@ use tracing::{debug, info, warn};
 
 use super::PresyncInfo;
 use crate::chain::acceptor::Acceptor;
-use crate::{database, vm, Network};
+use crate::{Network, database, vm};
 
 const MAX_POOL_BLOCKS_SIZE: usize = 1000;
 const MAX_BLOCKS_TO_REQUEST: u64 = 100;

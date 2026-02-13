@@ -19,8 +19,8 @@ use tracing::info;
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::{
-    is_emergency_iter, MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS,
-    MAX_NUMBER_OF_TRANSACTIONS,
+    MAX_BLOCK_SIZE, MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS,
+    is_emergency_iter,
 };
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::RoundCommittees;

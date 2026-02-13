@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use dusk_bytes::Serializable;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use node_data::events::contract::{ContractEvent, OriginHash};
@@ -18,15 +18,15 @@ use rocksdb::{
     LogLevel, OptimisticTransactionDB, Options,
 };
 use serde::{Deserialize, Serialize};
-use serde_with::hex::Hex;
 use serde_with::As;
+use serde_with::hex::Hex;
 use tracing::{debug, error, info, warn};
 
+use crate::archive::Archive;
 use crate::archive::conf::Params as ArchiveParams;
 use crate::archive::transformer::{
     self, EventIdentifier, MoonlightTransferEvents, MoonlightTransferMapping,
 };
-use crate::archive::Archive;
 
 /// Subfolder containing the moonlight database.
 const MOONLIGHT_DB_FOLDER_NAME: &str = "moonlight.db";
@@ -767,7 +767,9 @@ mod util {
         }
 
         if len_before != deduped.len() {
-            warn!("Found duplicates in address mappings for transactions. Duplicates have been removed. This is a bug.");
+            warn!(
+                "Found duplicates in address mappings for transactions. Duplicates have been removed. This is a bug."
+            );
         }
 
         deduped
@@ -779,7 +781,7 @@ mod tests {
     use std::env;
     use std::path::PathBuf;
 
-    use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
+    use dusk_core::abi::{CONTRACT_ID_BYTES, ContractId};
     use dusk_core::signatures::bls::SecretKey;
     use dusk_core::transfer::withdraw::WithdrawReceiver;
     use dusk_core::transfer::{
@@ -792,7 +794,7 @@ mod tests {
     use rand::rngs::StdRng;
     use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
-    use super::transformer::{self, filter_and_convert, TransormerResult};
+    use super::transformer::{self, TransormerResult, filter_and_convert};
     use super::{
         AccountPublicKey, Archive, EventIdentifier, MoonlightTransferEvents,
     };
@@ -1003,7 +1005,7 @@ mod tests {
                 };
             };
 
-            let rand_hash = r_tx_hash.gen::<[u8; 32]>();
+            let rand_hash = r_tx_hash.r#gen::<[u8; 32]>();
 
             let event = vec![moonlight_event(
                 rand_hash,
@@ -1066,10 +1068,12 @@ mod tests {
         let archive = Archive::create_or_open(path).await;
 
         let pk = AccountPublicKey::default();
-        assert!(archive
-            .full_moonlight_history(pk, None, None, None)
-            .unwrap()
-            .is_none());
+        assert!(
+            archive
+                .full_moonlight_history(pk, None, None, None)
+                .unwrap()
+                .is_none()
+        );
 
         let block_events = block_events();
 
@@ -1155,10 +1159,12 @@ mod tests {
         let path = test_dir();
         let archive = Archive::create_or_open(path).await;
         let pk = AccountPublicKey::default();
-        assert!(archive
-            .full_moonlight_history(pk, None, None, None)
-            .unwrap()
-            .is_none());
+        assert!(
+            archive
+                .full_moonlight_history(pk, None, None, None)
+                .unwrap()
+                .is_none()
+        );
 
         let block_events = block_events();
         let event_groups = transformer::group_by_origins(block_events, 1);
@@ -1287,7 +1293,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(1618u64);
 
         for (i, moonlight_tx) in moonlight_txs.iter().enumerate() {
-            assert_eq!(moonlight_tx.origin(), &rng.gen::<[u8; 32]>());
+            assert_eq!(moonlight_tx.origin(), &rng.r#gen::<[u8; 32]>());
 
             assert_eq!(moonlight_tx.block_height(), (i + 1) as u64);
         }
@@ -1474,17 +1480,19 @@ mod tests {
         assert_eq!(moonlight_txs, moonlight_txs_both);
 
         // Limit from block height 100 to 150 but max_count is 0
-        assert!(archive
-            .fetch_moonlight_event_ident(
-                Some(senders[num]),
-                None,
-                Some((num + 1) as u64),
-                Some((num + 51) as u64),
-                Some(0),
-                None,
-            )
-            .unwrap()
-            .is_none());
+        assert!(
+            archive
+                .fetch_moonlight_event_ident(
+                    Some(senders[num]),
+                    None,
+                    Some((num + 1) as u64),
+                    Some((num + 51) as u64),
+                    Some(0),
+                    None,
+                )
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[tokio::test]
@@ -1493,10 +1501,12 @@ mod tests {
         let archive = Archive::create_or_open(path).await;
 
         let pk = AccountPublicKey::default();
-        assert!(archive
-            .full_moonlight_history(pk, None, None, None)
-            .unwrap()
-            .is_none());
+        assert!(
+            archive
+                .full_moonlight_history(pk, None, None, None)
+                .unwrap()
+                .is_none()
+        );
 
         let block_events = block_events();
 

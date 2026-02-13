@@ -7,11 +7,11 @@
 use futures::StreamExt;
 
 use dusk_bytes::Serializable;
+use dusk_core::BlsScalar;
 use dusk_core::transfer::phoenix::{
     NoteLeaf, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
     ViewKey as PhoenixViewKey,
 };
-use dusk_core::BlsScalar;
 use wallet_core::keys::{
     derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
 };
@@ -19,9 +19,9 @@ use zeroize::Zeroize;
 
 use super::{LocalStore, MAX_PROFILES, TREE_LEAF};
 
-use crate::clients::{Cache, TRANSFER_CONTRACT};
-use crate::rues::{HttpClient as RuesHttpClient, CONTRACTS_TARGET};
 use crate::Error;
+use crate::clients::{Cache, TRANSFER_CONTRACT};
+use crate::rues::{CONTRACTS_TARGET, HttpClient as RuesHttpClient};
 
 pub(crate) async fn sync_db(
     client: &RuesHttpClient,

@@ -8,7 +8,7 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
-use flate2::{read, write, Compression};
+use flate2::{Compression, read, write};
 use tar::Archive;
 
 use super::zip;

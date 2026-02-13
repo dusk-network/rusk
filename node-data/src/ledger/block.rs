@@ -121,9 +121,9 @@ pub mod faker {
         /// Creates a block with 3 transactions and a random header.
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
             let txs = vec![
-                gen_dummy_tx(rng.gen()),
-                gen_dummy_tx(rng.gen()),
-                gen_dummy_tx(rng.gen()),
+                gen_dummy_tx(rng.r#gen()),
+                gen_dummy_tx(rng.r#gen()),
+                gen_dummy_tx(rng.r#gen()),
             ];
             let header: Header = Faker.fake();
             let faults = vec![Faker.fake(), Faker.fake(), Faker.fake()];

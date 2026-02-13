@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-use crate::settings::{LogFormat, LogLevel};
 use crate::Command;
+use crate::settings::{LogFormat, LogLevel};
 
 #[derive(Parser, Debug)]
 #[command(

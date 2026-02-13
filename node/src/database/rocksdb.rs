@@ -13,11 +13,11 @@ use std::{io, vec};
 
 use anyhow::Result;
 use dusk_core::transfer::data::BlobSidecar;
+use node_data::Serializable;
 use node_data::ledger::{
     Block, Fault, Header, Label, SpendingId, SpentTransaction, Transaction,
 };
-use node_data::message::{payload, ConsensusHeader};
-use node_data::Serializable;
+use node_data::message::{ConsensusHeader, payload};
 use rocksdb::{
     AsColumnFamilyRef, BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor,
     DBAccess, DBRawIteratorWithThreadMode, IteratorMode, LogLevel,
@@ -27,8 +27,8 @@ use rocksdb::{
 use tracing::info;
 
 use super::{
-    ConsensusStorage, DatabaseOptions, Ledger, LightBlock, Metadata, Persist,
-    DB,
+    ConsensusStorage, DB, DatabaseOptions, Ledger, LightBlock, Metadata,
+    Persist,
 };
 use crate::database::Mempool;
 
@@ -1451,8 +1451,8 @@ mod tests {
 
             let hash = b.header().hash;
 
-            assert!(db
-                .update(|txn| {
+            assert!(
+                db.update(|txn| {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
@@ -1461,7 +1461,8 @@ mod tests {
                     )?;
                     Ok(())
                 })
-                .is_ok());
+                .is_ok()
+            );
 
             db.view(|txn| {
                 // Assert block header is fully fetched from ledger
@@ -1484,18 +1485,18 @@ mod tests {
                 }
             });
 
-            assert!(db
-                .update(|txn| {
+            assert!(
+                db.update(|txn| {
                     txn.clear_database()?;
                     Ok(())
                 })
-                .is_ok());
+                .is_ok()
+            );
 
             db.view(|txn| {
-                assert!(txn
-                    .block(&hash)
-                    .expect("block to be fetched")
-                    .is_none());
+                assert!(
+                    txn.block(&hash).expect("block to be fetched").is_none()
+                );
             });
         });
     }
@@ -1515,10 +1516,11 @@ mod tests {
             })
             .expect("block to be stored");
             db.view(|txn| {
-                assert!(txn
-                    .block(&b.header().hash)
-                    .expect("block to be fetched")
-                    .is_none());
+                assert!(
+                    txn.block(&b.header().hash)
+                        .expect("block to be fetched")
+                        .is_none()
+                );
             });
         });
     }
@@ -1533,8 +1535,8 @@ mod tests {
             db.view(|txn| {
                 // Simulate a concurrent update is committed during read-only
                 // transaction
-                assert!(db
-                    .update(|inner| {
+                assert!(
+                    db.update(|inner| {
                         inner
                             .store_block(
                                 b.header(),
@@ -1551,14 +1553,14 @@ mod tests {
                         assert!(txn.block(&hash)?.is_none());
                         Ok(())
                     })
-                    .is_ok());
+                    .is_ok()
+                );
 
                 // Asserts that the read-only/view transaction get the updated
                 // data after the tx is committed
-                assert!(txn
-                    .block(&hash)
-                    .expect("block to be fetched")
-                    .is_some());
+                assert!(
+                    txn.block(&hash).expect("block to be fetched").is_some()
+                );
             });
 
             // Asserts that update was done
@@ -1769,8 +1771,8 @@ mod tests {
             assert!(!b.txs().is_empty());
 
             // Store a block
-            assert!(db
-                .update(|txn| {
+            assert!(
+                db.update(|txn| {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
@@ -1779,18 +1781,20 @@ mod tests {
                     )?;
                     Ok(())
                 })
-                .is_ok());
+                .is_ok()
+            );
 
             // Assert all transactions of the accepted (stored) block are
             // accessible by hash.
             db.view(|v| {
                 for t in b.txs().iter() {
-                    assert!(v
-                        .ledger_tx(&t.id())
-                        .expect("should not return error")
-                        .expect("should find a transaction")
-                        .inner
-                        .eq(t));
+                    assert!(
+                        v.ledger_tx(&t.id())
+                            .expect("should not return error")
+                            .expect("should find a transaction")
+                            .inner
+                            .eq(t)
+                    );
                 }
             });
         });
@@ -1803,8 +1807,8 @@ mod tests {
             let b: Block = Faker.fake();
 
             // Store a block
-            assert!(db
-                .update(|txn| {
+            assert!(
+                db.update(|txn| {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
@@ -1813,15 +1817,17 @@ mod tests {
                     )?;
                     Ok(())
                 })
-                .is_ok());
+                .is_ok()
+            );
 
             // Assert block hash is accessible by height.
             db.view(|v| {
-                assert!(v
-                    .block_hash_by_height(b.header().height)
-                    .expect("should not return error")
-                    .expect("should find a block")
-                    .eq(&b.header().hash));
+                assert!(
+                    v.block_hash_by_height(b.header().height)
+                        .expect("should not return error")
+                        .expect("should find a block")
+                        .eq(&b.header().hash)
+                );
             });
         });
     }
@@ -1833,8 +1839,8 @@ mod tests {
             let b: Block = Faker.fake();
 
             // Store a block
-            assert!(db
-                .update(|txn| {
+            assert!(
+                db.update(|txn| {
                     txn.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
@@ -1843,16 +1849,18 @@ mod tests {
                     )?;
                     Ok(())
                 })
-                .is_ok());
+                .is_ok()
+            );
 
             // Assert block hash is accessible by height.
             db.view(|v| {
-                assert!(v
-                    .block_label_by_height(b.header().height)
-                    .expect("should not return error")
-                    .expect("should find a block")
-                    .1
-                    .eq(&Label::Attested(3)));
+                assert!(
+                    v.block_label_by_height(b.header().height)
+                        .expect("should not return error")
+                        .expect("should find a block")
+                        .1
+                        .eq(&Label::Attested(3))
+                );
             });
         });
     }
@@ -1865,8 +1873,8 @@ mod tests {
             let db = Backend::create_or_open(path, DatabaseOptions::default());
             let b: ledger::Block = Faker.fake();
 
-            assert!(db
-                .update(|ut| {
+            assert!(
+                db.update(|ut| {
                     ut.store_block(
                         b.header(),
                         &to_spent_txs(b.txs()),
@@ -1875,14 +1883,16 @@ mod tests {
                     )?;
                     Ok(())
                 })
-                .is_ok());
+                .is_ok()
+            );
 
-            assert!(db
-                .update(|ut| {
+            assert!(
+                db.update(|ut| {
                     ut.delete_block(&b)?;
                     Ok(())
                 })
-                .is_ok());
+                .is_ok()
+            );
         });
 
         let path = t.get_path();

@@ -12,7 +12,7 @@ use std::time::Duration;
 use inquire::Text;
 use rusk_wallet::GraphQL;
 use serde::Deserialize;
-use tempfile::{tempdir, TempDir};
+use tempfile::{TempDir, tempdir};
 use tokio::sync::{Mutex, OnceCell};
 use tracing_subscriber::EnvFilter;
 use url::Url;
@@ -20,7 +20,7 @@ use url::Url;
 use super::*;
 use crate::command::history::TransactionDirection;
 use crate::settings::{LogLevel, Logging};
-use crate::{connect, status, LogFormat};
+use crate::{LogFormat, connect, status};
 
 #[derive(Default)]
 struct FakePrompter {
@@ -111,8 +111,8 @@ pub async fn wait_for_nodes_to_start() -> anyhow::Result<()> {
     Err(anyhow::anyhow!("Nodes never started"))
 }
 
-async fn faucet_wallet(
-) -> anyhow::Result<&'static Mutex<(Wallet<WalletFile>, Settings)>> {
+async fn faucet_wallet()
+-> anyhow::Result<&'static Mutex<(Wallet<WalletFile>, Settings)>> {
     // Faucet wallet has to be in a mutex because most tests have to
     // transfer from it to another wallet and they have to be done
     // one by one to avoid reusing nonces.
@@ -344,7 +344,9 @@ async fn block_is_finalized(
         #[serde(alias = "checkBlock", default)]
         pub is_finalized: bool,
     }
-    let query = format!("query {{ checkBlock(height: {block_height}, hash: \"{block_hash}\", onlyFinalized: true) }}");
+    let query = format!(
+        "query {{ checkBlock(height: {block_height}, hash: \"{block_hash}\", onlyFinalized: true) }}"
+    );
     let resp = gql.query_archiver(&query).await?;
     let CheckBlockResponse { is_finalized } = serde_json::from_slice(&resp)?;
     Ok(is_finalized)
@@ -365,7 +367,9 @@ async fn get_tx_info(tx_id: &str, gql: &GraphQL) -> anyhow::Result<TxInfo> {
     struct SpentTxResponse {
         tx: TxInfo,
     }
-    let query = format!("query {{ tx(hash: \"{tx_id}\") {{ blockHash, blockHeight, gasSpent }} }}");
+    let query = format!(
+        "query {{ tx(hash: \"{tx_id}\") {{ blockHash, blockHeight, gasSpent }} }}"
+    );
     let resp = gql.query_archiver(&query).await?;
     let SpentTxResponse { tx } =
         serde_json::from_slice::<SpentTxResponse>(&resp)?;

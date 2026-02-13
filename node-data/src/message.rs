@@ -21,8 +21,8 @@ use tracing::{error, warn};
 
 use self::payload::{Candidate, Ratification, Validation};
 use crate::bls::PublicKey;
-use crate::ledger::{to_str, Hash, Signature};
-use crate::{bls, ledger, Serializable, StepName};
+use crate::ledger::{Hash, Signature, to_str};
+use crate::{Serializable, StepName, bls, ledger};
 
 /// Topic field position in the message binary representation
 pub const TOPIC_FIELD_POS: usize = 1 + 2 + 2;
@@ -508,8 +508,8 @@ pub mod payload {
     use serde::Serialize;
 
     use super::{ConsensusHeader, SignInfo};
-    use crate::ledger::{self, to_str, Attestation, Block, Hash, StepVotes};
-    use crate::{get_current_timestamp, Serializable};
+    use crate::ledger::{self, Attestation, Block, Hash, StepVotes, to_str};
+    use crate::{Serializable, get_current_timestamp};
 
     #[derive(Debug, Clone)]
     #[cfg_attr(
@@ -1111,7 +1111,9 @@ pub mod payload {
                     4 => InvType::CandidateFromIteration,
                     5 => InvType::ValidationResult,
                     _ => {
-                        return Err(io::Error::from(io::ErrorKind::InvalidData))
+                        return Err(io::Error::from(
+                            io::ErrorKind::InvalidData,
+                        ));
                     }
                 };
 
@@ -1332,7 +1334,7 @@ pub mod payload {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
                         "Invalid IP type",
-                    ))
+                    ));
                 }
             };
             Ok(ip)
@@ -1632,7 +1634,7 @@ mod tests {
     use self::payload::ValidationResult;
     use super::*;
     use crate::ledger::*;
-    use crate::{ledger, Serializable};
+    use crate::{Serializable, ledger};
 
     #[test]
     fn test_serialize() {

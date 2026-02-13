@@ -12,15 +12,15 @@ use dusk_consensus::operations::StateTransitionData;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls;
 use dusk_core::stake::{
-    Stake, StakeAmount, StakeData, StakeKeys, DEFAULT_MINIMUM_STAKE,
-    STAKE_CONTRACT,
+    DEFAULT_MINIMUM_STAKE, STAKE_CONTRACT, Stake, StakeAmount, StakeData,
+    StakeKeys,
 };
-use dusk_core::transfer::data::ContractCall;
 use dusk_core::transfer::TRANSFER_CONTRACT;
+use dusk_core::transfer::data::ContractCall;
 use dusk_vm::ContractData;
 use node_data::ledger::Transaction as NodeTransaction;
-use rusk::node::{DriverStore, RuskVmConfig, FEATURE_ABI_PUBLIC_SENDER};
-use rusk::{Error, Result, Rusk, DUSK_CONSENSUS_KEY};
+use rusk::node::{DriverStore, FEATURE_ABI_PUBLIC_SENDER, RuskVmConfig};
+use rusk::{DUSK_CONSENSUS_KEY, Error, Result, Rusk};
 use rusk_recovery_tools::state::restore_state;
 use tempfile::TempDir;
 use tokio::sync::broadcast;
@@ -30,7 +30,7 @@ use wallet_core::transaction::{moonlight, moonlight_stake_reward};
 use crate::common::logger;
 use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
 use crate::common::wallet::{
-    test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
+    TestStateClient, TestStore, test_wallet as wallet, test_wallet::Wallet,
 };
 
 const GAS_LIMIT: u64 = 0x10000000;

@@ -10,21 +10,21 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use dusk_bytes::Serializable;
+use dusk_core::BlsScalar;
+use dusk_core::Error as ExecutionCoreError;
 use dusk_core::signatures::bls::PublicKey as BlsPublicKey;
 use dusk_core::stake::{StakeData, StakeFundOwner, StakeKeys};
+use dusk_core::transfer::Transaction;
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::{
     ArchivedNoteLeaf, Note, NoteLeaf, NoteOpening, Prove,
     PublicKey as PhoenixPublicKey,
 };
-use dusk_core::transfer::Transaction;
-use dusk_core::BlsScalar;
-use dusk_core::Error as ExecutionCoreError;
 use flume::Receiver;
 use futures::executor::block_on;
 use tokio::sync::Notify;
 use tokio::task::JoinHandle;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 use wallet_core::keys::{
     derive_phoenix_pk, derive_phoenix_sk, derive_phoenix_vk,
 };

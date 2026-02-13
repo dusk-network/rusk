@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use async_trait::async_trait;
+use node_data::StepName;
 use node_data::bls::PublicKeyBytes;
 use node_data::message::{Message, Payload, Status};
-use node_data::StepName;
 use tracing::{debug, warn};
 
 use crate::commons::RoundUpdate;
@@ -144,7 +144,10 @@ pub trait MsgHandler {
                     }
                 }
             } else {
-                warn!("{status:?} committee for step {step} not generated; skipping pre-verification for {:?} message", msg.topic());
+                warn!(
+                    "{status:?} committee for step {step} not generated; skipping pre-verification for {:?} message",
+                    msg.topic()
+                );
             }
         }
         Ok(())

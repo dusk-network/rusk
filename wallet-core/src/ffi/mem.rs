@@ -4,13 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use alloc::alloc::{alloc, dealloc, Layout};
+use alloc::alloc::{Layout, alloc, dealloc};
 use core::slice;
 
 use bytecheck::CheckBytes;
 use rkyv::de::deserializers::SharedDeserializeMap;
 use rkyv::validation::validators::DefaultValidator;
-use rkyv::{check_archived_root, Archive, Deserialize};
+use rkyv::{Archive, Deserialize, check_archived_root};
 
 use crate::ffi::error::ErrorCode;
 
@@ -21,7 +21,7 @@ use crate::ffi::error::ErrorCode;
 const ALIGNMENT: usize = 1;
 
 /// Allocates a buffer of `len` bytes on the WASM memory.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn malloc(len: u32) -> u32 {
     unsafe {
         let layout = Layout::from_size_align_unchecked(len as usize, ALIGNMENT);
@@ -31,7 +31,7 @@ pub fn malloc(len: u32) -> u32 {
 }
 
 /// Frees a previously allocated buffer on the WASM memory.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn free(ptr: u32, len: u32) {
     unsafe {
         let layout = Layout::from_size_align_unchecked(len as usize, ALIGNMENT);

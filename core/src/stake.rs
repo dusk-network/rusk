@@ -24,7 +24,7 @@ use crate::signatures::bls::{
     Signature as BlsSignature,
 };
 use crate::transfer::withdraw::Withdraw as TransferWithdraw;
-use crate::{dusk, Dusk};
+use crate::{Dusk, dusk};
 
 /// ID of the genesis stake contract
 pub const STAKE_CONTRACT: ContractId = crate::reserved(0x2);

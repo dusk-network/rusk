@@ -14,7 +14,7 @@
 extern crate alloc;
 
 pub use self::execute::feature::Activation as FeatureActivation;
-pub use self::execute::{execute, gen_contract_id, Config as ExecutionConfig};
+pub use self::execute::{Config as ExecutionConfig, execute, gen_contract_id};
 pub use piecrust::{
     CallReceipt, CallTree, CallTreeElem, ContractData, Error, PageOpening,
     Session,
@@ -166,7 +166,7 @@ impl VM {
         let host_query = host_query.into();
         if self.inner.host_queries().get(&host_query).is_none() {
             panic!(
-                "Host query '{host_query}' must be registered before setting activation"            
+                "Host query '{host_query}' must be registered before setting activation"
             );
         }
         self.hq_activation.insert(host_query, activation);

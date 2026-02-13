@@ -8,14 +8,14 @@ use std::sync::Arc;
 
 use dusk_core::transfer::data::BlobData;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block, Transaction};
+use node_data::ledger::{Block, Transaction, to_str};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
     AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, SignedStepMessage,
 };
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-use tracing::{debug, error, info, warn, Instrument};
+use tracing::{Instrument, debug, error, info, warn};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::is_emergency_iter;

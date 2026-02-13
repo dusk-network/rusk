@@ -13,13 +13,13 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use dusk_core::{dusk, Dusk};
+use dusk_core::{Dusk, dusk};
 
 use dusk_core::abi::ContractId;
 use dusk_vm::VM;
+use node::LongLivedService;
 use node::database::rocksdb::{self, Backend};
 use node::network::Kadcast;
-use node::LongLivedService;
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
 pub use vm::*;

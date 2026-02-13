@@ -34,9 +34,9 @@ use self::data::{
 };
 use self::moonlight::Transaction as MoonlightTransaction;
 use self::phoenix::{
-    Note, Prove, PublicKey as PhoenixPublicKey, SecretKey as PhoenixSecretKey,
-    Sender, StealthAddress, Transaction as PhoenixTransaction,
-    NOTES_TREE_DEPTH,
+    NOTES_TREE_DEPTH, Note, Prove, PublicKey as PhoenixPublicKey,
+    SecretKey as PhoenixSecretKey, Sender, StealthAddress,
+    Transaction as PhoenixTransaction,
 };
 use self::withdraw::{Withdraw, WithdrawReceiver};
 

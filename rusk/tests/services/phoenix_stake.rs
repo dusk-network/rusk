@@ -7,7 +7,7 @@
 use dusk_core::stake::DEFAULT_MINIMUM_STAKE;
 use dusk_core::{
     dusk,
-    stake::{StakeAmount, STAKE_CONTRACT},
+    stake::{STAKE_CONTRACT, StakeAmount},
 };
 
 use anyhow::Result;

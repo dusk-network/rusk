@@ -8,9 +8,11 @@
 
 use std::sync::OnceLock;
 
-use c_kzg::{Blob as KzgBlob, Bytes32 as KzgBytes32, BYTES_PER_BLOB};
+use c_kzg::{BYTES_PER_BLOB, Blob as KzgBlob, Bytes32 as KzgBytes32};
 use dusk_bytes::{ParseHexStr, Serializable};
+use dusk_core::BlsScalar;
 use dusk_core::abi::ContractId;
+use dusk_core::groth16::Groth16;
 use dusk_core::groth16::bn254::{Bn254, Fr as Bn254Fr};
 use dusk_core::groth16::relations::lc;
 use dusk_core::groth16::relations::r1cs::{
@@ -19,7 +21,6 @@ use dusk_core::groth16::relations::r1cs::{
 };
 use dusk_core::groth16::serialize::{CanonicalSerialize, Compress};
 use dusk_core::groth16::verifier::prepare_verifying_key;
-use dusk_core::groth16::Groth16;
 use dusk_core::plonk::{
     Circuit, Compiler, Composer, Constraint, Error as PlonkError,
     PublicParameters,
@@ -31,7 +32,6 @@ use dusk_core::signatures::schnorr::{
     PublicKey as SchnorrPublicKey, SecretKey as SchnorrSecretKey,
 };
 use dusk_core::transfer::data::BlobData;
-use dusk_core::BlsScalar;
 use dusk_vm::{ContractData, Session, VM};
 use ff::Field;
 use rand::rngs::OsRng;

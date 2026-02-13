@@ -7,9 +7,9 @@
 use std::fmt::Debug;
 
 use dusk_bytes::Serializable;
+use dusk_core::Dusk;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
 use dusk_core::transfer::phoenix::PublicKey as PhoenixPublicKey;
-use dusk_core::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
 mod stake;

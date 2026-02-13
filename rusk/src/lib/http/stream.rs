@@ -15,10 +15,10 @@ use std::task::{Context, Poll};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use tokio::io::{self, AsyncRead, AsyncWrite, ReadBuf};
 use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
-use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
-use tokio_rustls::rustls::ServerConfig;
-use tokio_rustls::server::TlsStream;
 use tokio_rustls::TlsAcceptor;
+use tokio_rustls::rustls::ServerConfig;
+use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
+use tokio_rustls::server::TlsStream;
 
 pub struct Listener {
     acceptor: Option<TlsAcceptor>,

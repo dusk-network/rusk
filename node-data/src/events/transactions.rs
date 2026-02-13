@@ -67,8 +67,8 @@ impl EventSource for TransactionEvent<'_> {
         hex::encode(hash)
     }
 }
-use base64::engine::general_purpose::STANDARD as BASE64_ENGINE;
 use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_ENGINE;
 use dusk_bytes::Serializable;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use serde::ser::{Serialize, SerializeStruct, Serializer};

@@ -8,10 +8,10 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 use anyhow::Result;
 use dusk_core::dusk;
-use dusk_core::stake::{StakeData, StakeKeys, STAKE_CONTRACT};
+use dusk_core::stake::{STAKE_CONTRACT, StakeData, StakeKeys};
+use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_core::transfer::moonlight::AccountData;
 use dusk_core::transfer::phoenix::NoteLeaf;
-use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_rusk_test::TestContext;
 use rusk::node::RuskVmConfig;
 

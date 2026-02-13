@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use dusk_consensus::config::MAX_NUMBER_OF_TRANSACTIONS;
 use dusk_consensus::merkle::merkle_root;
 use rand::rngs::StdRng;

@@ -15,7 +15,7 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
-use crate::{database, vm, LongLivedService, Network};
+use crate::{LongLivedService, Network, database, vm};
 
 #[derive(Default)]
 pub struct TelemetrySrv {

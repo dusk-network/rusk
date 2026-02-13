@@ -10,7 +10,7 @@ use crate::BlsPublicKey;
 use dusk_bytes::{DeserializableSlice, ParseHexStr, Serializable};
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::Signature;
-use dusk_core::stake::{StakeFundOwner, STAKE_CONTRACT};
+use dusk_core::stake::{STAKE_CONTRACT, StakeFundOwner};
 use dusk_core::transfer::TRANSFER_CONTRACT;
 use dusk_data_driver::ConvertibleContract;
 use event::RequestData;
@@ -179,7 +179,7 @@ impl Rusk {
             method => {
                 return Err(HttpError::not_found(format!(
                     "Unsupported data driver method {method}"
-                )))
+                )));
             }
         };
         Ok(result)

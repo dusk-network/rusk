@@ -7,13 +7,13 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use node_data::StepName;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Block;
 use node_data::message::payload::{
     QuorumType, RatificationResult, ValidationResult, Vote,
 };
 use node_data::message::{AsyncQueue, Message, Payload, Topics};
-use node_data::StepName;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
@@ -21,7 +21,7 @@ use tracing::{debug, error, info, trace, warn};
 
 use crate::commons::{Database, RoundUpdate};
 use crate::config::{
-    is_emergency_iter, CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE,
+    CONSENSUS_MAX_ITER, MAX_ROUND_DISTANCE, is_emergency_iter,
 };
 use crate::errors::ConsensusError;
 use crate::iteration_ctx::IterationCtx;
@@ -521,7 +521,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                 _ => {
                     // Validation and Ratification messages should never be
                     // returned by process_past_msg
-                    warn!("Invalid message returned by process_past_msg. This should be a bug.")
+                    warn!(
+                        "Invalid message returned by process_past_msg. This should be a bug."
+                    )
                 }
             }
         }
@@ -740,7 +742,7 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                         .await
                     {
                         Ok(StepOutcome::Ready(msg)) => {
-                            return StepOutcome::Ready(msg)
+                            return StepOutcome::Ready(msg);
                         }
                         Ok(_) => {}
                         Err(e) => warn!("error in collecting message {e:?}"),

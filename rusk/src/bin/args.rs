@@ -10,8 +10,8 @@ mod state;
 
 use std::path::PathBuf;
 
-use clap::builder::PossibleValuesParser;
 use clap::Parser;
+use clap::builder::PossibleValuesParser;
 
 #[derive(Parser, Debug)]
 #[command(

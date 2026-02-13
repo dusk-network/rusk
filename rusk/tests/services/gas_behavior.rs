@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_core::transfer::{
-    data::{ContractCall, TransactionData},
     TRANSFER_CONTRACT,
+    data::{ContractCall, TransactionData},
 };
 use dusk_rusk_test::{Result, RuskVmConfig, TestContext};
 use rand::prelude::*;

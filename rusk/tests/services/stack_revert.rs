@@ -7,12 +7,12 @@
 use dusk_consensus::operations::StateTransitionData;
 use dusk_core::signatures::bls;
 use node_data::ledger::Transaction;
-use rusk::node::{DriverStore, RuskVmConfig, FEATURE_ABI_PUBLIC_SENDER};
+use rusk::node::{DriverStore, FEATURE_ABI_PUBLIC_SENDER, RuskVmConfig};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use rusk::{Error, Result, Rusk, DUSK_CONSENSUS_KEY};
+use rusk::{DUSK_CONSENSUS_KEY, Error, Result, Rusk};
 use rusk_recovery_tools::state::restore_state;
 use tempfile::TempDir;
 use tokio::sync::broadcast;
@@ -21,7 +21,7 @@ use tracing::info;
 use crate::common::logger;
 use crate::common::state::DEFAULT_MIN_GAS_LIMIT;
 use crate::common::wallet::{
-    test_wallet as wallet, test_wallet::Wallet, TestStateClient, TestStore,
+    TestStateClient, TestStore, test_wallet as wallet, test_wallet::Wallet,
 };
 
 const CHAIN_ID: u8 = 0x01;

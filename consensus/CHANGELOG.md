@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update to edition 2024
 - Update MSRV to 1.85
 
 ### Fixed

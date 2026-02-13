@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use async_trait::async_trait;
+use node_data::StepName;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::Attestation;
 use node_data::message::payload::{
@@ -13,7 +14,6 @@ use node_data::message::payload::{
 use node_data::message::{
     ConsensusHeader, Message, Payload, SignedStepMessage, StepMessage,
 };
-use node_data::StepName;
 
 use tracing::{debug, error, info, warn};
 
