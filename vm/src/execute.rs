@@ -8,10 +8,10 @@ mod config;
 pub mod feature;
 
 use blake2b_simd::Params;
-use dusk_core::abi::{ContractError, ContractId, Metadata, CONTRACT_ID_BYTES};
+use dusk_core::abi::{CONTRACT_ID_BYTES, ContractError, ContractId, Metadata};
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::data::ContractBytecode;
-use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use piecrust::{CallReceipt, Error, Session};
 use wasmparser::*;
 
