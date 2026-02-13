@@ -201,17 +201,16 @@ pub(crate) async fn transaction_from_notes(
                 let note_creator = moonlight_history.json
                     .iter()
                     .find_map(|history_info| history_info.events.iter().find_map(|event| {
-                        if let BlockData::ConvertEvent(ref event) = event.data {
-                            if let WithdrawReceiver::Phoenix(receiver_address) = event.receiver {
-                                if decoded_note.note.stealth_address() == &receiver_address {
-                                    // The note is the output of a moonlight
-                                    // to phoenix conversion.
-                                    let tx = txs.iter().find(|block_tx| {
-                                        block_tx.id == history_info.origin
-                                    }).expect("The transaction should be in this list since it's the list of all transactions at its block height.");
-                                    return Some(tx);
-                                }
-                            }
+                        if let BlockData::ConvertEvent(ref event) = event.data
+                            && let WithdrawReceiver::Phoenix(receiver_address) = event.receiver
+                            && decoded_note.note.stealth_address() == &receiver_address
+                        {
+                            // The note is the output of a moonlight
+                            // to phoenix conversion.
+                            let tx = txs.iter().find(|block_tx| {
+                                block_tx.id == history_info.origin
+                            }).expect("The transaction should be in this list since it's the list of all transactions at its block height.");
+                            return Some(tx);
                         }
                         None
                     }))

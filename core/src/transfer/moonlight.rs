@@ -137,10 +137,10 @@ impl Transaction {
         sender_sk: &AccountSecretKey,
         payload: Payload,
     ) -> Result<Self, Error> {
-        if let Some(TransactionData::Memo(memo)) = payload.data.as_ref() {
-            if memo.len() > MAX_MEMO_SIZE {
-                return Err(Error::MemoTooLarge(memo.len()));
-            }
+        if let Some(TransactionData::Memo(memo)) = payload.data.as_ref()
+            && memo.len() > MAX_MEMO_SIZE
+        {
+            return Err(Error::MemoTooLarge(memo.len()));
         }
 
         let digest = payload.signature_message();

@@ -31,10 +31,11 @@ where
     if sc.is_success() {
         return Ok(buffer);
     }
-    if sc.is_redirect() && redirect_left > 1 {
-        if let Some(uri) = response.headers().get("location") {
-            return download_with_redirect(uri, redirect_left - 1);
-        }
+    if sc.is_redirect()
+        && redirect_left > 1
+        && let Some(uri) = response.headers().get("location")
+    {
+        return download_with_redirect(uri, redirect_left - 1);
     }
 
     Err(format!("State download error: {response:?}").into())

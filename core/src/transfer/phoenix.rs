@@ -127,10 +127,10 @@ impl Transaction {
     ) -> Result<Self, Error> {
         let data = data.map(Into::into);
 
-        if let Some(TransactionData::Memo(memo)) = data.as_ref() {
-            if memo.len() > MAX_MEMO_SIZE {
-                return Err(Error::MemoTooLarge(memo.len()));
-            }
+        if let Some(TransactionData::Memo(memo)) = data.as_ref()
+            && memo.len() > MAX_MEMO_SIZE
+        {
+            return Err(Error::MemoTooLarge(memo.len()));
         }
 
         let sender_pk = PublicKey::from(sender_sk);

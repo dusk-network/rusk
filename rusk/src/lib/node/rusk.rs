@@ -166,15 +166,15 @@ impl Rusk {
         while let Some(unspent_tx) =
             unblocked_txs.pop_front().or_else(|| mempool_txs.next())
         {
-            if let Some(timeout) = self.vm_config.generation_timeout {
-                if started.elapsed() > timeout {
-                    info!(
-                        event = "Stop creating state transition",
-                        reason = "timeout expired",
-                        ?timeout
-                    );
-                    break;
-                }
+            if let Some(timeout) = self.vm_config.generation_timeout
+                && started.elapsed() > timeout
+            {
+                info!(
+                    event = "Stop creating state transition",
+                    reason = "timeout expired",
+                    ?timeout
+                );
+                break;
             }
 
             // Limit execution to the block transactions limit

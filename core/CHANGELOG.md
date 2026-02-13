@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update to edition 2024
 - Replace nightly `cfg_eval`/`serde_as` with stable `serde(with)` attributes
 - Remove nightly `#![feature(cfg_eval)]` and `#![feature(const_fn_floating_point_arithmetic)]`
-- Update MSRV to 1.85
+- Update MSRV to 1.87
 
 ### Added
 

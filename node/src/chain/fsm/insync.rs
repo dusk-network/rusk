@@ -340,11 +340,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     }
 
     pub async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
-        if let Some(pre_sync) = &mut self.presync {
-            if pre_sync.expiry <= Instant::now() {
-                // Reset presync if it timed out
-                self.presync = None;
-            }
+        if let Some(pre_sync) = &mut self.presync
+            && pre_sync.expiry <= Instant::now()
+        {
+            // Reset presync if it timed out
+            self.presync = None;
         }
 
         Ok(false)

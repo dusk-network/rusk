@@ -239,12 +239,12 @@ fn record_flows(
                                 handle_inflow(moonlight_event.sender);
                             }
 
-                            if let Some((key, amt)) = refund {
-                                if amt > 0 {
-                                    // We rely on the fact, that refund only
-                                    // exists if different from sender
-                                    handle_inflow(key);
-                                }
+                            if let Some((key, amt)) = refund
+                                && amt > 0
+                            {
+                                // We rely on the fact, that refund only
+                                // exists if different from sender
+                                handle_inflow(key);
                             }
                         }
                         (Some(receiver), None) => {
