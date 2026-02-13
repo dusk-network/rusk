@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use cargo_toml::{Dependency, DependencyDetail, Manifest};
+use cargo_toml::{Dependency, Manifest};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Ensure we run the build script again even if we change just the build.rs
@@ -32,9 +32,9 @@ fn parse_plonk_version() -> String {
 
     let mut version = match plonk_dep {
         Dependency::Simple(v) => v.clone(),
-        Dependency::Detailed(DependencyDetail {
-            version: Some(v), ..
-        }) => v.clone(),
+        Dependency::Detailed(d) if d.version.is_some() => {
+            d.version.clone().unwrap()
+        }
         _ => {
             // Dependency not found in the current crate, try to find it in the
             // workspace
@@ -58,10 +58,9 @@ fn parse_plonk_version() -> String {
                 .dependencies["dusk-plonk"];
             match plonk_dep {
                 Dependency::Simple(v) => v.clone(),
-                Dependency::Detailed(DependencyDetail {
-                    version: Some(v),
-                    ..
-                }) => v.clone(),
+                Dependency::Detailed(d) if d.version.is_some() => {
+                    d.version.clone().unwrap()
+                }
                 _ => {
                     panic!("Couldn't find plonk version",)
                 }

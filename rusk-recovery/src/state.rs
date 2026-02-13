@@ -8,17 +8,17 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
+use dusk_core::JubJubScalar;
 use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::PublicKey as AccountPublicKey;
-use dusk_core::stake::{StakeAmount, StakeData, StakeKeys, STAKE_CONTRACT};
-use dusk_core::transfer::phoenix::{Note, Sender};
+use dusk_core::stake::{STAKE_CONTRACT, StakeAmount, StakeData, StakeKeys};
 use dusk_core::transfer::TRANSFER_CONTRACT;
-use dusk_core::JubJubScalar;
+use dusk_core::transfer::phoenix::{Note, Sender};
 pub use dusk_vm::Session;
 use dusk_vm::{ContractData, VM};
 use ff::Field;
-use rand::rngs::StdRng;
 use rand::SeedableRng;
+use rand::rngs::StdRng;
 
 use tracing::info;
 use url::Url;
