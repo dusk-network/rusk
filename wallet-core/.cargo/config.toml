@@ -3,8 +3,11 @@
 #
 # See: <https://github.com/rust-lang/cargo/issues/6784>
 [alias]
-wasm = "build --release --target wasm32-unknown-unknown -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort"
+wasm = "build --release --target wasm32-unknown-unknown -Z build-std=std,panic_abort"
 wasm-debug = "build --target wasm32-unknown-unknown -Z build-std=std,panic_abort"
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-Zunstable-options", "-Cpanic=immediate-abort"]
 
 [profile.release]
 opt-level = "z"

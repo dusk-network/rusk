@@ -9,7 +9,8 @@ test:
 
 
 wasm: ## Build the WASM files
-	@cargo wasm
+	@rustup component add rust-src --toolchain nightly 2>/dev/null || true
+	@cargo +nightly wasm
 
 clippy: ## Run clippy
 	@cargo clippy --release -- -D warnings

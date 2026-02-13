@@ -59,8 +59,8 @@ impl BlockState {
 ///
 /// - `Reverted`
 ///
-///     Indicates that a block has been removed from the chain because it got
-///     reverted during consensus.
+///   Indicates that a block has been removed from the chain because it got
+///   reverted during consensus.
 #[derive(Clone, Debug)]
 pub enum BlockEvent<'b> {
     Accepted(&'b Block),

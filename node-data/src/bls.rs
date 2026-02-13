@@ -23,7 +23,7 @@ use rand::RngCore;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use serde_with::base64::Base64;
-use serde_with::serde_as;
+use serde_with::As;
 use sha2::{Digest, Sha256};
 use tracing::{error, info};
 use zeroize::Zeroize;
@@ -279,22 +279,20 @@ pub fn save_consensus_keys(
     Ok((path.with_extension("keys"), path.with_extension("cpk")))
 }
 
-#[serde_as]
 #[derive(Serialize, Deserialize)]
 struct ProvisionerFileContents {
-    #[serde_as(as = "Base64")]
+    #[serde(with = "As::<Base64>")]
     salt: [u8; SALT_SIZE],
-    #[serde_as(as = "Base64")]
+    #[serde(with = "As::<Base64>")]
     iv: [u8; IV_SIZE],
     key_pair: Vec<u8>,
 }
 
-#[serde_as]
 #[derive(Serialize, Deserialize)]
 struct BlsKeyPair {
-    #[serde_as(as = "Base64")]
+    #[serde(with = "As::<Base64>")]
     secret_key_bls: Vec<u8>,
-    #[serde_as(as = "Base64")]
+    #[serde(with = "As::<Base64>")]
     public_key_bls: Vec<u8>,
 }
 

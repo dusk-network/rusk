@@ -707,7 +707,7 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         // we only subtract if number of notes is higher
         // than 1 to avoid overflow
-        let network_last_pos = if num_notes > 1 { num_notes - 1 } else { 0 };
+        let network_last_pos = num_notes.saturating_sub(1);
 
         Ok(network_last_pos == db_pos)
     }

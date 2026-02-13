@@ -18,7 +18,7 @@ use dusk_core::transfer::{
 use serde::Deserialize;
 use serde_json::Value;
 use serde_with::hex::Hex;
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{As, DisplayFromStr};
 use tokio::time::{sleep, Duration};
 
 use crate::rues::HttpClient as RuesHttpClient;
@@ -68,7 +68,6 @@ struct BlockResponse {
 
 // See `PhoenixTransactionEventSubset` for the reason for this struct
 // and allowing dead code here.
-#[serde_as]
 #[derive(Deserialize, Debug, Clone)]
 #[allow(dead_code)]
 struct NoteAddress {
@@ -80,7 +79,6 @@ struct NoteAddress {
 // the `dusk_core::transfer::phoenix::Note` https://github.com/dusk-network/phoenix/issues/274.
 // Dead code is allowed to avoid catch-alls, so that the case in which an
 // unexpected event is received, an appropriate error will be thrown.
-#[serde_as]
 #[derive(serde::Deserialize, Debug)]
 #[allow(dead_code)]
 pub struct PhoenixTransactionEventSubset {
@@ -88,10 +86,10 @@ pub struct PhoenixTransactionEventSubset {
     #[serde(rename(deserialize = "notes"))]
     note_addresses: Vec<NoteAddress>,
     /// The memo included in the transaction.
-    #[serde_as(as = "Hex")]
+    #[serde(with = "As::<Hex>")]
     memo: Vec<u8>,
     /// Gas spent by the transaction.
-    #[serde_as(as = "DisplayFromStr")]
+    #[serde(with = "As::<DisplayFromStr>")]
     gas_spent: u64,
     /// Optional gas-refund note if the refund is positive.
     #[serde(rename(deserialize = "refund_note"))]
@@ -99,14 +97,13 @@ pub struct PhoenixTransactionEventSubset {
 }
 
 /// Deserialized block data in the full moonlight history.
-#[serde_as]
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
 pub enum BlockData {
     /// For the moonlight transaction event.
     MoonlightTransactionEvent(MoonlightTransactionEvent),
-    /// For the PhoenixTransactionEvent.
+    /// For the `PhoenixTransactionEvent`.
     /// In the case where a conversion is made from phoenix to
     /// moonlight, this appears.
     PhoenixTransactionEvent(PhoenixTransactionEventSubset),

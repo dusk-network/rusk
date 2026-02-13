@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Replace `serde_as` with stable `serde(with)` attributes
+- Update MSRV to 1.85
+
 ### Added
 
 - Add global config hierarchy with auto-creation at `~/.config/rusk-wallet/` [#2518]

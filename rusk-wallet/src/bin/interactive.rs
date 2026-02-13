@@ -248,7 +248,9 @@ async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
 
 /// Allows the user to choose a profile from the selected wallet
 /// to start performing operations.
-fn menu_profile(wallet: &Wallet<WalletFile>) -> anyhow::Result<ProfileSelect> {
+fn menu_profile(
+    wallet: &Wallet<WalletFile>,
+) -> anyhow::Result<ProfileSelect<'_>> {
     let mut menu_items = Vec::new();
     let profiles = wallet.profiles();
 

@@ -687,9 +687,7 @@ impl<DB: DBAccess> Ledger for DBTransaction<'_, DB> {
         let mut spent_transactions =
             Vec::with_capacity(multi_get_results.len());
         for result in multi_get_results.into_iter() {
-            let opt_blob = result.map_err(|e| {
-                std::io::Error::new(std::io::ErrorKind::Other, e)
-            })?;
+            let opt_blob = result.map_err(std::io::Error::other)?;
 
             let Some(blob) = opt_blob else {
                 return Err(anyhow::anyhow!(

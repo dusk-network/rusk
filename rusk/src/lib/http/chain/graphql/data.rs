@@ -82,7 +82,7 @@ impl Deref for TransactionData<'_> {
 #[Object]
 impl Block {
     #[graphql(name = "header")]
-    pub async fn gql_header(&self) -> Header {
+    pub async fn gql_header(&self) -> Header<'_> {
         Header(&self.header)
     }
 
@@ -207,7 +207,7 @@ impl Header<'_> {
 
 #[Object]
 impl SpentTransaction {
-    pub async fn tx(&self) -> Transaction {
+    pub async fn tx(&self) -> Transaction<'_> {
         let inner = &self.0.inner;
         inner.into()
     }

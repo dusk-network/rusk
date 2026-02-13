@@ -6,6 +6,7 @@
 
 #[cfg(feature = "chain")]
 mod chain;
+#[cfg(feature = "chain")]
 mod driver;
 mod error;
 mod event;
@@ -524,6 +525,9 @@ async fn handle_stream_rues(
     sockets.remove(&sid);
 }
 
+// ExecutionError is intentionally large; boxing it would add complexity
+// without meaningful benefit here.
+#[allow(clippy::result_large_err)]
 fn response(
     status: StatusCode,
     body: impl Into<Bytes>,
@@ -760,6 +764,9 @@ fn is_graphql_path(path: &str) -> bool {
     matches!(path, "/graphql" | "/graphql/")
 }
 
+// ExecutionError is intentionally large; boxing it would add complexity
+// without meaningful benefit here.
+#[allow(clippy::result_large_err)]
 #[cfg(feature = "chain")]
 fn graphql_batch_response(
     status: StatusCode,
@@ -777,6 +784,9 @@ fn graphql_batch_response(
     Ok(response)
 }
 
+// ExecutionError is intentionally large; boxing it would add complexity
+// without meaningful benefit here.
+#[allow(clippy::result_large_err)]
 #[cfg(feature = "chain")]
 fn graphql_error_response(
     status: StatusCode,
@@ -1561,7 +1571,9 @@ mod tests {
     }
 
     type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
-    pub(crate) fn parse_header(bytes: &[u8]) -> anyhow::Result<Header> {
+    pub(crate) fn parse_header<'a>(
+        bytes: &'a [u8],
+    ) -> anyhow::Result<Header<'a>> {
         let (len, bytes) = parse_len(bytes)?;
         if bytes.len() < len {
             return Err(anyhow::anyhow!(

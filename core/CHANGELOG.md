@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Replace nightly `cfg_eval`/`serde_as` with stable `serde(with)` attributes
+- Remove nightly `#![feature(cfg_eval)]` and `#![feature(const_fn_floating_point_arithmetic)]`
+- Update MSRV to 1.85
+
 ### Added
 
 - Add `sha256` and `verify_kzg_proof` ABI host queries [#3993]

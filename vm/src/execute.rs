@@ -175,7 +175,7 @@ fn is_wasm64(bytecode: &[u8]) -> bool {
         if let Payload::MemorySection(section) = payload {
             return section
                 .into_iter()
-                .any(|memory| memory.map_or(false, |m| m.memory64));
+                .any(|memory| memory.is_ok_and(|m| m.memory64));
         }
     }
     false

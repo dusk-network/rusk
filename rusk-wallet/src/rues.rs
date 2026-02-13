@@ -173,7 +173,7 @@ impl HttpClient {
         let target = "contract";
         let entity = hex::encode(contract_id.as_bytes());
         let entity = if entity.is_empty() {
-            entity.to_string()
+            entity.clone()
         } else {
             format!(":{entity}")
         };

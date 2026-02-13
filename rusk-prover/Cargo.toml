@@ -6,7 +6,9 @@ autobins = false
 
 repository = "https://github.com/dusk-network/rusk"
 description = "Local prover for Dusk Network"
-license = "MPL-2.0"
+
+license.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 dusk-bytes = { workspace = true }
@@ -25,7 +27,5 @@ hex = { workspace = true }
 
 [features]
 no_random = []
-std = [
-    "dusk-plonk/std"
-]
+std = ["dusk-plonk/std"]
 debug = ["hex", "tracing"]

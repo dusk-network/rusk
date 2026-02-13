@@ -18,6 +18,8 @@ use rocksdb::{
     LogLevel, OptimisticTransactionDB, Options,
 };
 use serde::{Deserialize, Serialize};
+use serde_with::hex::Hex;
+use serde_with::As;
 use tracing::{debug, error, info, warn};
 
 use crate::archive::conf::Params as ArchiveParams;
@@ -63,11 +65,10 @@ pub enum Order {
 ///
 /// This can be a "moonlight" event or
 /// a "withdraw", "contract_to_account", "mint", or "convert" event
-#[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MoonlightGroup {
     events: Vec<ContractEvent>,
-    #[serde_as(as = "serde_with::hex::Hex")]
+    #[serde(with = "As::<Hex>")]
     origin: OriginHash,
     block_height: u64,
 }
@@ -623,7 +624,7 @@ impl Archive {
     fn multi_get_moonlight_events(
         &self,
         moonlight_txs: &[EventIdentifier],
-    ) -> Vec<CoreResult<Option<DBPinnableSlice>, rocksdb::Error>> {
+    ) -> Vec<CoreResult<Option<DBPinnableSlice<'_>>, rocksdb::Error>> {
         let cf = match self.cf_txhash_moonlight_events() {
             Ok(cf) => cf,
             Err(e) => {

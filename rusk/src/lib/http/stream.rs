@@ -92,6 +92,9 @@ impl Listener {
     }
 }
 
+// TlsStream is inherently larger than TcpStream; boxing would add
+// indirection on every read/write for marginal memory savings.
+#[allow(clippy::large_enum_variant)]
 pub enum Stream {
     Raw(TcpStream),
     Tls(TlsStream<TcpStream>),

@@ -7,14 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Replace `serde_as` with stable `serde(with)` attributes
+- Gate driver module behind `chain` feature
+- Replace `anyhow` with typed `HttpError` in HTTP handlers for correct status codes [#2944]
+- Update MSRV to 1.85
+
 ### Added
 
 - Add feature activation flags for `sha256` and `verify_kzg_proof` host queries [#3993]
 - Add feature activation flag for `secp256k1_recover` host query [#4012]
-
-### Changed
-
-- Replace `anyhow` with typed `HttpError` in HTTP handlers for correct status codes [#2944]
 
 ## [1.4.4] - 2026-01-30
 

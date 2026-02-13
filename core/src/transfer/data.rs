@@ -10,9 +10,6 @@
 #[cfg(feature = "kzg")]
 mod kzg_blob;
 
-#[cfg(feature = "serde")]
-use serde_with::{hex::Hex, serde_as};
-
 use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{format, vec};
@@ -26,6 +23,10 @@ use rkyv::ser::serializers::{
 use rkyv::ser::Serializer;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
+#[cfg(feature = "serde")]
+use serde_with::hex::Hex;
+#[cfg(feature = "serde")]
+use serde_with::As;
 use sha2::{Digest, Sha256};
 
 use crate::abi::ContractId;
@@ -242,11 +243,10 @@ pub struct ContractDeploy {
 /// sidecar.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BlobData {
     /// Versioned hash of the KZG commitment: 0x01 ‖ SHA256(commitment)[1..]
-    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<Hex>"))]
     pub hash: [u8; 32],
 
     /// Optional sidecar containing the full blob, commitment, and proof.
@@ -259,19 +259,18 @@ pub struct BlobData {
 /// proof.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BlobSidecar {
     /// KZG commitment to the blob (compressed G₁ point, 48 bytes)
-    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<Hex>"))]
     pub commitment: [u8; 48],
 
     /// KZG proof for evaluation correctness (compressed G₁ point, 48 bytes)
-    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<Hex>"))]
     pub proof: [u8; 48],
 
     /// Blob data: 4096 field elements, each 32 bytes (128 KiB total)
-    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<Hex>"))]
     pub data: BlobDataPart,
 }
 
@@ -283,7 +282,6 @@ pub type BlobDataPart = [u8; BYTES_PER_BLOB];
 /// All the data the transfer-contract needs to perform a contract-call.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-#[cfg_attr(feature = "serde", cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ContractCall {
     /// The unique ID of the contract to be called.
@@ -291,7 +289,7 @@ pub struct ContractCall {
     /// The function of the contract that should be called.
     pub fn_name: String,
     /// The function arguments for the contract call, in bytes.
-    #[cfg_attr(feature = "serde", serde_as(as = "Hex"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<Hex>"))]
     pub fn_args: Vec<u8>,
 }
 

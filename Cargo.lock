@@ -750,28 +750,13 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "bls12_381-bls"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a38440ec581131c35809ddb8554f63ede8a051d238cfe974ff21c5aa6ee47a36"
-dependencies = [
- "bytecheck",
- "dusk-bls12_381 0.13.0",
- "dusk-bytes",
- "ff",
- "rand_core 0.6.4",
- "rkyv",
- "zeroize",
-]
-
-[[package]]
-name = "bls12_381-bls"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4e6b7c24701ff5167f336478ec29dc176455f5396f62b8f0951cc1fdddf249b"
 dependencies = [
  "bs58",
  "bytecheck",
- "dusk-bls12_381 0.14.2",
+ "dusk-bls12_381",
  "dusk-bytes",
  "ff",
  "rand_core 0.6.4",
@@ -1341,9 +1326,9 @@ dependencies = [
 
 [[package]]
 name = "crumbles"
-version = "0.3.1"
+version = "0.4.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90e660ac9c1d7549c850b4cbf31c06bd7e452879b55296554d5c85e25a26fefe"
+checksum = "fa36f7c3da98787ecf897b22f4bc2f77c9f0f2c47d4bdc9630870b4eba8a7724"
 dependencies = [
  "libc",
  "rangemap",
@@ -1479,7 +1464,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b42b6fa04a440b495c8b04d0e71b707c585f83cb9cb28cf8cd0d976c315e31b4"
 dependencies = [
  "powerfmt",
- "serde",
 ]
 
 [[package]]
@@ -1610,24 +1594,6 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 
 [[package]]
 name = "dusk-bls12_381"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc2bd68f9bed48c2e64860e1fd1f5dbb7733eb07d0288fbdcc3763678c742139"
-dependencies = [
- "blake2b_simd",
- "bytecheck",
- "dusk-bytes",
- "ff",
- "group",
- "pairing",
- "rand_core 0.6.4",
- "rkyv",
- "subtle",
- "zeroize",
-]
-
-[[package]]
-name = "dusk-bls12_381"
 version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "633aa835dd9e4db7ad5dc94a3f95d44ff5c6856ec3c83c15eb75366cfb5ee68a"
@@ -1665,8 +1631,8 @@ dependencies = [
  "async-trait",
  "criterion",
  "dusk-bytes",
- "dusk-core 1.4.2-alpha.1",
- "dusk-merkle",
+ "dusk-core",
+ "dusk-merkle 0.6.0-rc.0",
  "dusk-node-data",
  "hex",
  "num-bigint",
@@ -1679,32 +1645,6 @@ dependencies = [
 
 [[package]]
 name = "dusk-core"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27c7f082e93ac1976697518c968a8d4d8ed8607bec2d910a244e66765871c73a"
-dependencies = [
- "blake2b_simd",
- "bls12_381-bls 0.5.1",
- "bytecheck",
- "dusk-bls12_381 0.14.2",
- "dusk-bytes",
- "dusk-jubjub",
- "dusk-poseidon",
- "ff",
- "jubjub-schnorr",
- "phoenix-circuits",
- "phoenix-core",
- "piecrust-uplink",
- "poseidon-merkle",
- "rand 0.8.5",
- "rkyv",
- "serde",
- "serde_with",
- "sha2 0.10.8",
-]
-
-[[package]]
-name = "dusk-core"
 version = "1.4.2-alpha.1"
 dependencies = [
  "ark-bn254",
@@ -1712,10 +1652,10 @@ dependencies = [
  "ark-relations",
  "ark-serialize",
  "blake2b_simd",
- "bls12_381-bls 0.5.1",
+ "bls12_381-bls",
  "bytecheck",
  "c-kzg",
- "dusk-bls12_381 0.14.2",
+ "dusk-bls12_381",
  "dusk-bytes",
  "dusk-jubjub",
  "dusk-plonk",
@@ -1736,26 +1676,11 @@ dependencies = [
 
 [[package]]
 name = "dusk-data-driver"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e71f4ace4e6187127e28dd71d55f8f54fdbc5e1ae7c4af521bedffafedb24e5e"
-dependencies = [
- "bytecheck",
- "dusk-core 1.4.1",
- "dusk-wasmtime",
- "parking_lot",
- "rkyv",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "dusk-data-driver"
 version = "0.3.2-alpha.1"
 dependencies = [
  "base64 0.22.1",
  "bytecheck",
- "dusk-core 1.4.2-alpha.1",
+ "dusk-core",
  "dusk-wasmtime",
  "parking_lot",
  "rkyv",
@@ -1765,14 +1690,14 @@ dependencies = [
 
 [[package]]
 name = "dusk-jubjub"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d0e6995ff48af44bbcb810e4a49ed4ddb0800601c9c9722fd00d7f7e0b77c3a"
+checksum = "128c27bc829702d8e418eda75908234783db295ba19de45cf9b5133aa2e0f0b6"
 dependencies = [
  "bitvec",
  "blake2b_simd",
  "bytecheck",
- "dusk-bls12_381 0.14.2",
+ "dusk-bls12_381",
  "dusk-bytes",
  "ff",
  "group",
@@ -1797,6 +1722,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dusk-merkle"
+version = "0.6.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11c6efdb0a21d8a10d3c345f1e60f44fac4d1ddda2c1e3b56f7817308ee99078"
+dependencies = [
+ "dusk-bytes",
+ "rkyv",
+]
+
+[[package]]
 name = "dusk-node"
 version = "1.4.3-alpha.1"
 dependencies = [
@@ -1807,7 +1742,7 @@ dependencies = [
  "criterion",
  "dusk-bytes",
  "dusk-consensus",
- "dusk-core 1.4.2-alpha.1",
+ "dusk-core",
  "dusk-node-data",
  "dusk-wallet-core",
  "fake",
@@ -1847,7 +1782,7 @@ dependencies = [
  "bs58",
  "chrono",
  "dusk-bytes",
- "dusk-core 1.4.2-alpha.1",
+ "dusk-core",
  "fake",
  "hex",
  "pbkdf2 0.12.2",
@@ -1865,13 +1800,14 @@ dependencies = [
 
 [[package]]
 name = "dusk-plonk"
-version = "0.21.0"
+version = "0.22.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c425aa88fb1fd44c4bb72c0fe6abd37eae9de5b1f42d375d16c95aa1efceb327"
+checksum = "c5bc834a6dbda93813268eb1df189712f07c1380ba9060b159157dd618cc6b1e"
 dependencies = [
+ "blake2b_simd",
  "bytecheck",
  "cfg-if",
- "dusk-bls12_381 0.14.2",
+ "dusk-bls12_381",
  "dusk-bytes",
  "dusk-jubjub",
  "ff",
@@ -1889,11 +1825,11 @@ dependencies = [
 
 [[package]]
 name = "dusk-poseidon"
-version = "0.41.0"
+version = "0.42.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f66925505adc9db3671ebed59f5f2f196306efbe6ede8de9761e7830af5ddb84"
+checksum = "fb428dc6d7aac399fd2c5929fd6e0b2c7b83392d3eb8c9a7b29a916d0087063d"
 dependencies = [
- "dusk-bls12_381 0.14.2",
+ "dusk-bls12_381",
  "dusk-jubjub",
  "dusk-plonk",
  "dusk-safe",
@@ -1915,13 +1851,13 @@ dependencies = [
  "dirs",
  "dusk-bytes",
  "dusk-consensus",
- "dusk-core 1.4.2-alpha.1",
- "dusk-data-driver 0.3.1",
+ "dusk-core",
+ "dusk-data-driver",
  "dusk-node",
  "dusk-node-data",
  "dusk-rusk-test",
- "dusk-stake-contract-dd 0.3.0",
- "dusk-transfer-contract-dd 0.3.0",
+ "dusk-stake-contract-dd",
+ "dusk-transfer-contract-dd",
  "dusk-vm",
  "dusk-wallet-core",
  "dusk-wasmtime",
@@ -1968,7 +1904,7 @@ dependencies = [
  "criterion",
  "dusk-bytes",
  "dusk-consensus",
- "dusk-core 1.4.2-alpha.1",
+ "dusk-core",
  "dusk-node",
  "dusk-node-data",
  "dusk-rusk",
@@ -2000,38 +1936,18 @@ dependencies = [
 
 [[package]]
 name = "dusk-stake-contract-dd"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "663066363a8445cef95aeea0adc6f08fbadd635d6476149dac50058ae9c74a2a"
-dependencies = [
- "dusk-core 1.4.1",
- "dusk-data-driver 0.3.1",
-]
-
-[[package]]
-name = "dusk-stake-contract-dd"
 version = "0.3.1-alpha.1"
 dependencies = [
- "dusk-core 1.4.2-alpha.1",
- "dusk-data-driver 0.3.1",
-]
-
-[[package]]
-name = "dusk-transfer-contract-dd"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce738f97c0e00fe40357b2c7327f21a68adc840a4b5336f4e2bf488849f72fc7"
-dependencies = [
- "dusk-core 1.4.1",
- "dusk-data-driver 0.3.1",
+ "dusk-core",
+ "dusk-data-driver",
 ]
 
 [[package]]
 name = "dusk-transfer-contract-dd"
 version = "0.3.1-alpha.1"
 dependencies = [
- "dusk-core 1.4.2-alpha.1",
- "dusk-data-driver 0.3.1",
+ "dusk-core",
+ "dusk-data-driver",
 ]
 
 [[package]]
@@ -2042,7 +1958,7 @@ dependencies = [
  "blake3",
  "c-kzg",
  "dusk-bytes",
- "dusk-core 1.4.2-alpha.1",
+ "dusk-core",
  "dusk-poseidon",
  "ff",
  "hex",
@@ -2068,7 +1984,7 @@ dependencies = [
  "bytecheck",
  "dlmalloc",
  "dusk-bytes",
- "dusk-core 1.4.2-alpha.1",
+ "dusk-core",
  "ff",
  "hex",
  "hkdf",
@@ -3244,23 +3160,24 @@ dependencies = [
 
 [[package]]
 name = "jubjub-elgamal"
-version = "0.2.0"
+version = "0.5.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c2b02b5859a6ebd729e4b7f9970963d3f3be4f0aebc700d0b2d392b9fd8201c"
+checksum = "02f67cc40c4ca93d8059fb399afd0a250d6c1f5980fbbb9762ee62019fd0ddd2"
 dependencies = [
+ "dusk-bytes",
  "dusk-jubjub",
  "dusk-plonk",
 ]
 
 [[package]]
 name = "jubjub-schnorr"
-version = "0.6.0"
+version = "0.7.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "008885a6d1b73ef18a827ad0faf7cf48d1c5a28d52a9e863b90a421a92799443"
+checksum = "97a7208d3397238bd5fce848642b923f7aebed6d58cd472ad72027ba68167167"
 dependencies = [
  "bs58",
  "bytecheck",
- "dusk-bls12_381 0.14.2",
+ "dusk-bls12_381",
  "dusk-bytes",
  "dusk-jubjub",
  "dusk-plonk",
@@ -3269,22 +3186,20 @@ dependencies = [
  "rand_core 0.6.4",
  "rkyv",
  "serde",
- "serde_json",
  "zeroize",
 ]
 
 [[package]]
 name = "kadcast"
-version = "0.7.0"
+version = "0.8.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4601099051bf0c911a7e3644e78313acf2fd41600d34eaf7906d65ae647035a5"
+checksum = "91dfb0f34289d216d9478751be8a562ebec45dbdc5ae446af347d7040f311746"
 dependencies = [
  "arrayvec",
  "blake2",
  "hex",
  "humantime-serde",
  "itertools 0.10.5",
- "konst 0.2.19",
  "rand 0.8.5",
  "raptorq",
  "semver",
@@ -3306,23 +3221,13 @@ dependencies = [
 
 [[package]]
 name = "konst"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "330f0e13e6483b8c34885f7e6c9f19b1a7bd449c673fbb948a51c99d66ef74f4"
-dependencies = [
- "konst_macro_rules",
- "konst_proc_macros 0.2.11",
-]
-
-[[package]]
-name = "konst"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50a0ba6de5f7af397afff922f22c149ff605c766cd3269cf6c1cd5e466dbe3b9"
 dependencies = [
  "const_panic",
  "konst_kernel",
- "konst_proc_macros 0.3.0",
+ "konst_proc_macros",
  "typewit",
 ]
 
@@ -3334,18 +3239,6 @@ checksum = "be0a455a1719220fd6adf756088e1c69a85bf14b6a9e24537a5cc04f503edb2b"
 dependencies = [
  "typewit",
 ]
-
-[[package]]
-name = "konst_macro_rules"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4933f3f57a8e9d9da04db23fb153356ecaf00cbd14aee46279c33dc80925c37"
-
-[[package]]
-name = "konst_proc_macros"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "984e109462d46ad18314f10e392c286c3d47bce203088a09012de1015b45b737"
 
 [[package]]
 name = "konst_proc_macros"
@@ -3659,9 +3552,9 @@ dependencies = [
 
 [[package]]
 name = "msgpacker"
-version = "0.4.3"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79f77b4108a99ed7e834b46df33537a644ea94863a98a9140017eda1d08249f6"
+checksum = "134a72ec3a6d034e9c767344ce8aebde228eef4e1343fff3ea209993f12920b3"
 dependencies = [
  "msgpacker-derive",
 ]
@@ -4045,11 +3938,11 @@ dependencies = [
 
 [[package]]
 name = "phoenix-circuits"
-version = "0.6.0"
+version = "0.8.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d42a8482526bf7bcb3a6d34ad171a26f495319a520b9eb8a68837d837e3b0cf9"
+checksum = "4af1a5e8e584c55c1656e5c5bb85fcf28c6b475217e775b84040235946306ccb"
 dependencies = [
- "dusk-bls12_381 0.14.2",
+ "dusk-bls12_381",
  "dusk-bytes",
  "dusk-jubjub",
  "dusk-plonk",
@@ -4062,16 +3955,15 @@ dependencies = [
 
 [[package]]
 name = "phoenix-core"
-version = "0.34.0"
+version = "0.35.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b45ed942d9d166f7a45d16630529d68d68cfde7f37191d4646dfbe4b350b9cc"
+checksum = "111d0214d771e7fb7ea1ca806be7fb37208fb3712d34e07ba8a36e688a194699"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
- "bls12_381-bls 0.4.0",
  "bs58",
  "bytecheck",
- "dusk-bls12_381 0.14.2",
+ "dusk-bls12_381",
  "dusk-bytes",
  "dusk-jubjub",
  "dusk-poseidon",
@@ -4083,7 +3975,7 @@ dependencies = [
  "rand 0.8.5",
  "rkyv",
  "serde",
- "serde_json",
+ "serde_with",
  "sha2 0.10.8",
  "subtle",
  "zeroize",
@@ -4091,15 +3983,15 @@ dependencies = [
 
 [[package]]
 name = "piecrust"
-version = "0.29.0-rc.3"
+version = "0.30.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15c38e9e4914aed3e4ce5e5c8d48df1114e675879c20055064e00608893ca2c6"
+checksum = "1ed7d0263733babd45afa1f36f0ed6dc697f0ba9a5152ded2ed24f97988f7e15"
 dependencies = [
  "blake3",
  "bytecheck",
  "const-decoder",
  "crumbles",
- "dusk-merkle",
+ "dusk-merkle 0.5.3",
  "dusk-wasmtime",
  "hex",
  "indexmap 2.11.4",
@@ -4114,9 +4006,9 @@ dependencies = [
 
 [[package]]
 name = "piecrust-uplink"
-version = "0.19.0-rc.0"
+version = "0.20.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49671c8d75a8c55fc4aff276729ac2e653596e74934fe7c72b592b6b868ad897"
+checksum = "7e0d33327abf097fb1cd6defa82117204d2629e962e7d588272e0b8afc7a8c1c"
 dependencies = [
  "bytecheck",
  "dlmalloc",
@@ -4232,14 +4124,14 @@ checksum = "cc9c68a3f6da06753e9335d63e27f6b9754dd1920d941135b7ea8224f141adb2"
 
 [[package]]
 name = "poseidon-merkle"
-version = "0.8.0"
+version = "0.9.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6316347b2cf759ff0303ad280008ac89a36ed9f970e4cdfd1585d8ba5ed60134"
+checksum = "95e801b94d059823f3dc9d2af14e2a7438863e4b23736e324ebb368991545d52"
 dependencies = [
  "bytecheck",
- "dusk-bls12_381 0.14.2",
+ "dusk-bls12_381",
  "dusk-bytes",
- "dusk-merkle",
+ "dusk-merkle 0.5.3",
  "dusk-plonk",
  "dusk-poseidon",
  "rkyv",
@@ -4711,7 +4603,7 @@ name = "rusk-prover"
 version = "1.4.1-alpha.1"
 dependencies = [
  "dusk-bytes",
- "dusk-core 1.4.2-alpha.1",
+ "dusk-core",
  "dusk-plonk",
  "hex",
  "once_cell",
@@ -4727,7 +4619,7 @@ dependencies = [
  "bs58",
  "cargo_toml",
  "dusk-bytes",
- "dusk-core 1.4.2-alpha.1",
+ "dusk-core",
  "dusk-plonk",
  "dusk-vm",
  "ff",
@@ -4764,14 +4656,14 @@ dependencies = [
  "crossterm",
  "dirs",
  "dusk-bytes",
- "dusk-core 1.4.2-alpha.1",
+ "dusk-core",
  "dusk-node-data",
  "dusk-wallet-core",
  "flume 0.10.14",
  "futures",
  "hex",
  "inquire",
- "konst 0.3.9",
+ "konst",
  "open",
  "pbkdf2 0.12.2",
  "rand 0.8.5",
@@ -5043,25 +4935,10 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "hex",
- "indexmap 1.9.3",
- "indexmap 2.11.4",
  "serde",
  "serde_derive",
  "serde_json",
- "serde_with_macros",
  "time",
-]
-
-[[package]]
-name = "serde_with_macros"
-version = "3.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8fee4991ef4f274617a51ad4af30519438dacb2f56ac773b08a1922ff743350"
-dependencies = [
- "darling 0.20.10",
- "proc-macro2",
- "quote",
- "syn 2.0.96",
 ]
 
 [[package]]
@@ -5665,12 +5542,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
 dependencies = [
  "deranged",
- "itoa",
  "num-conv",
  "powerfmt",
  "serde",
  "time-core",
- "time-macros",
 ]
 
 [[package]]
@@ -5678,16 +5553,6 @@ name = "time-core"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
-
-[[package]]
-name = "time-macros"
-version = "0.2.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
-dependencies = [
- "num-conv",
- "time-core",
-]
 
 [[package]]
 name = "time-util"

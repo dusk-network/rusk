@@ -226,11 +226,11 @@ pub(crate) fn check_version(
 
                 if file_type != u64::from(FILE_TYPE) {
                     return Err(Error::WalletFileCorrupted);
-                };
+                }
 
                 if reserved != u64::from(RESERVED) {
                     return Err(Error::WalletFileCorrupted);
-                };
+                }
 
                 let version_bytes = bytes[8..12]
                     .try_into()

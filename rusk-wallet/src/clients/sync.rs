@@ -111,7 +111,7 @@ pub(crate) async fn sync_db(
                     fetch_existing_nullifiers_remote(client, &[nullifier])
                         .await
                         .and_then(|fetch_res| {
-                            let spent = fetch_res.first().is_some();
+                            let spent = !fetch_res.is_empty();
                             let note = (note.clone(), nullifier);
                             if spent {
                                 cache.insert_spent(

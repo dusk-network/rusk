@@ -39,7 +39,7 @@ where
         Some(weight)
     }
 
-    pub fn iter(&self) -> Iter<T, usize> {
+    pub fn iter(&self) -> Iter<'_, T, usize> {
         self.0.iter()
     }
 

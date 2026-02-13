@@ -7,7 +7,9 @@ description = "Tool to restore Rusk to factory settings"
 repository = "https://github.com/dusk-network/rusk"
 categories = ["cryptography", "cryptography::cryptocurrencies"]
 keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
-license = "MPL-2.0"
+
+license.workspace = true
+rust-version.workspace = true
 
 [lib]
 name = "rusk_recovery_tools"
@@ -25,7 +27,7 @@ tracing = { workspace = true, features = ["log"], optional = true }
 serde_derive = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 toml = { workspace = true, optional = true }
-indexmap = { workspace = true, optional = true } # 2.12 requires rustc edition 2024
+indexmap = { workspace = true, optional = true }     # 2.12 requires rustc edition 2024
 bs58 = { workspace = true, optional = true }
 dusk-bytes = { workspace = true, optional = true }
 ff = { workspace = true, optional = true }

@@ -9,7 +9,9 @@ description = "Rusk is the Dusk Network node implementation"
 repository = "https://github.com/dusk-network/rusk"
 categories = ["cryptography", "cryptography::cryptocurrencies"]
 keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
-license = "MPL-2.0"
+
+license.workspace = true
+rust-version.workspace = true
 
 
 [lib]

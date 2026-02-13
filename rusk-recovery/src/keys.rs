@@ -93,14 +93,11 @@ fn check_circuits_cache(
                     compressed,
                 )
                 .map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::Other,
-                        format!(
-                            "Couldn't compile keys for {}: {}",
-                            circuit.name(),
-                            e
-                        ),
-                    )
+                    io::Error::other(format!(
+                        "Couldn't compile keys for {}: {}",
+                        circuit.name(),
+                        e
+                    ))
                 })?;
                 circuit.add_keys(pk.to_bytes(), vd.to_bytes())?;
                 info!("{}   {}.vd", theme.info("Cached"), circuit.id_str());

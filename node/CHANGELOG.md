@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Replace `serde_as` with stable `serde(with)` attributes
+- Remove unused lifetime in `fetch_unfinalized_events_by_hash`
+- Update MSRV to 1.85
+
 ## [1.4.2] - 2025-12-13
 
 ### Added

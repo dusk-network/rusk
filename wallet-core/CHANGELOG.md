@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Gate `try_trait_v2` feature behind wasm target
+- Use nightly toolchain with `panic=immediate-abort` for WASM builds
+- Update MSRV to 1.85
+
 ## [1.4.0] - 2025-11-06
 
 - Added support for generic TransactionData into FFI [#3750]

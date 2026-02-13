@@ -20,14 +20,14 @@ impl BlobData {
     /// operations. If no `precompute` value is provided, the default value
     /// of `0` is used, which is recommended for Ethereum's KZG settings.
     ///
-    /// **Note:**  
+    /// **Note:**\
     /// This function uses [`once_cell::race::OnceBox`] for lazy
     /// initialization, ensuring that the settings are created only once and
     /// reused across calls. If called multiple times with different
     /// `precompute` values, only the first invocation takes effect, and
     /// subsequent calls will return the already-initialized settings.
     ///
-    /// See also:  
+    /// See also:\
     /// <https://github.com/ethereum/c-kzg-4844?tab=readme-ov-file#precompute>
     ///
     /// # Arguments

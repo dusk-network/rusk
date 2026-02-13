@@ -182,7 +182,7 @@ impl Cache {
                 let id = BlsScalar::from_slice(&id)?;
                 notes.push(id);
             }
-        };
+        }
 
         Ok(notes)
     }
@@ -208,7 +208,7 @@ impl Cache {
 
                 notes.insert(note);
             }
-        };
+        }
 
         Ok(notes)
     }
@@ -237,7 +237,7 @@ impl Cache {
 
                 notes.push((key, note));
             }
-        };
+        }
 
         Ok(notes)
     }
