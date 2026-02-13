@@ -1,7 +1,6 @@
 [package]
 name = "dusk-vm"
 version = "1.4.4-alpha.1"
-edition = "2021"
 
 repository = "https://github.com/dusk-network/rusk"
 description = "The VM to run smart contracts on the Dusk network"
@@ -9,6 +8,7 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 
 license.workspace = true
 rust-version.workspace = true
+edition.workspace = true
 
 [dependencies]
 dusk-core = { workspace = true, features = ["zk", "kzg"] }

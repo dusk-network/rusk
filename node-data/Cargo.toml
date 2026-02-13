@@ -1,13 +1,13 @@
 [package]
 name = "dusk-node-data"
 version = "1.4.1-alpha.1"
-edition = "2021"
 
 description = "Types used for interacting with Dusk node."
 repository = "https://github.com/dusk-network/rusk"
 
 license.workspace = true
 rust-version.workspace = true
+edition.workspace = true
 
 [dependencies]
 dusk-bytes = { workspace = true }

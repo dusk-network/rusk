@@ -1,7 +1,6 @@
 [package]
 name = "dusk-rusk-test"
 version = "1.4.5-alpha.1"
-edition = "2021"
 
 description = "Test utilities for Rusk"
 repository = "https://github.com/dusk-network/rusk"
@@ -10,6 +9,7 @@ keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
 
 license.workspace = true
 rust-version.workspace = true
+edition.workspace = true
 
 [dependencies]
 dusk-rusk = { path = "../rusk" }

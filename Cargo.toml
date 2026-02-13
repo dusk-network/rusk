@@ -26,6 +26,7 @@ resolver = "2"
 [workspace.package]
 rust-version = "1.85"
 license = "MPL-2.0"
+edition = "2024"
 
 [workspace.dependencies]
 # Workspace internal dependencies

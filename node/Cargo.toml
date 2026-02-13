@@ -1,7 +1,6 @@
 [package]
 name = "dusk-node"
 version = "1.4.3-alpha.1"
-edition = "2021"
 autobins = false
 repository = "https://github.com/dusk-network/rusk"
 description = "An implementation of dusk-blockchain node in pure Rust"
@@ -10,6 +9,7 @@ keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
 
 license.workspace = true
 rust-version.workspace = true
+edition.workspace = true
 
 [dependencies]
 tracing = { workspace = true }
