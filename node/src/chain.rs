@@ -187,18 +187,18 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             // from a peer only after explicit request (on demand).
                             match fsm.on_block_event(*blk, msg.metadata.clone()).await {
                                 Ok(res) => {
-                                    if let Some(accepted_blk) = res {
+                                    if let Some(accepted_blk) = res
+                                        && is_emergency_block(accepted_blk.header().iteration)
+                                    {
                                         // Repropagate Emergency Blocks
                                         // We already know it's valid because we accepted it
-                                        if is_emergency_block(accepted_blk.header().iteration){
-                                            // We build a new `msg` to avoid cloning `blk` when
-                                            // passing it to `on_block_event`.
-                                            // We copy the metadata to keep the original ray_id.
-                                            let mut eb_msg = Message::from(accepted_blk);
-                                            eb_msg.metadata = msg.metadata;
-                                            if let Err(e) = network.read().await.broadcast(&eb_msg).await {
-                                                warn!("Unable to re-broadcast Emergency Block: {e}");
-                                            }
+                                        // We build a new `msg` to avoid cloning `blk` when
+                                        // passing it to `on_block_event`.
+                                        // We copy the metadata to keep the original ray_id.
+                                        let mut eb_msg = Message::from(accepted_blk);
+                                        eb_msg.metadata = msg.metadata;
+                                        if let Err(e) = network.read().await.broadcast(&eb_msg).await {
+                                            warn!("Unable to re-broadcast Emergency Block: {e}");
                                         }
                                     }
                                 }
@@ -221,10 +221,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     // Handle quorum messages from Consensus layer.
                     // If the associated candidate block already exists,
                     // the winner block will be compiled and redirected to the Acceptor.
-                    if let Payload::Quorum(quorum) = &msg.payload {
-                      if let RatificationResult::Success(_) = quorum.att.result {
-                          fsm.on_success_quorum(quorum, msg.metadata.clone()).await;
-                      }
+                    if let Payload::Quorum(quorum) = &msg.payload
+                        && let RatificationResult::Success(_) = quorum.att.result
+                    {
+                        fsm.on_success_quorum(quorum, msg.metadata.clone()).await;
                     }
 
                     if let Payload::GetResource(res) = &msg.payload {

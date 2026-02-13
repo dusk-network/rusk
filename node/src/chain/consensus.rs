@@ -173,10 +173,10 @@ impl Task {
     }
 
     pub(crate) fn abort(&mut self) {
-        if let Some((_, cancel_chan)) = self.running_task.take() {
-            if cancel_chan.send(0).is_err() {
-                warn!("Unable to send cancel for abort")
-            };
+        if let Some((_, cancel_chan)) = self.running_task.take()
+            && cancel_chan.send(0).is_err()
+        {
+            warn!("Unable to send cancel for abort");
         }
     }
 

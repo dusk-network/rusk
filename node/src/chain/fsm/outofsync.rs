@@ -344,27 +344,26 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
 
         // If we almost dequeued all requested blocks (2/3)
-        if self.last_request < current_height + (MAX_BLOCKS_TO_REQUEST / 3) {
-            if let Some(last_request) = self.request_pool_missing_blocks().await
-            {
-                self.last_request = last_request
-            }
+        if self.last_request < current_height + (MAX_BLOCKS_TO_REQUEST / 3)
+            && let Some(last_request) = self.request_pool_missing_blocks().await
+        {
+            self.last_request = last_request;
         }
 
         // if the pool is full, check if the new block has higher priority
-        if pool_len >= MAX_POOL_BLOCKS_SIZE {
-            if let Some(entry) = self.pool.last_entry() {
-                let stored_height = *entry.key();
-                if stored_height > block_height {
-                    debug!(
-                        event = "block removed",
-                        block_height, stored_height, pool_len,
-                    );
-                    entry.remove();
-                } else {
-                    debug!(event = "block skipped", block_height, pool_len);
-                    return Ok(false);
-                }
+        if pool_len >= MAX_POOL_BLOCKS_SIZE
+            && let Some(entry) = self.pool.last_entry()
+        {
+            let stored_height = *entry.key();
+            if stored_height > block_height {
+                debug!(
+                    event = "block removed",
+                    block_height, stored_height, pool_len,
+                );
+                entry.remove();
+            } else {
+                debug!(event = "block skipped", block_height, pool_len);
+                return Ok(false);
             }
         }
 

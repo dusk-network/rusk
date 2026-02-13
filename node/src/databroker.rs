@@ -357,45 +357,45 @@ impl DataBrokerSrv {
                 debug!(event = "handle_inv", ?i);
                 match i.inv_type {
                     InvType::BlockFromHeight => {
-                        if let InvParam::Height(height) = &i.param {
-                            if db.block_by_height(*height)?.is_none() {
-                                inv.add_block_from_height(*height);
-                            }
+                        if let InvParam::Height(height) = &i.param
+                            && db.block_by_height(*height)?.is_none()
+                        {
+                            inv.add_block_from_height(*height);
                         }
                     }
                     InvType::BlockFromHash => {
-                        if let InvParam::Hash(hash) = &i.param {
-                            if db.block(hash)?.is_none() {
-                                inv.add_block_from_hash(*hash);
-                            }
+                        if let InvParam::Hash(hash) = &i.param
+                            && db.block(hash)?.is_none()
+                        {
+                            inv.add_block_from_hash(*hash);
                         }
                     }
                     InvType::CandidateFromHash => {
-                        if let InvParam::Hash(hash) = &i.param {
-                            if db.candidate(hash)?.is_none() {
-                                inv.add_candidate_from_hash(*hash);
-                            }
+                        if let InvParam::Hash(hash) = &i.param
+                            && db.candidate(hash)?.is_none()
+                        {
+                            inv.add_candidate_from_hash(*hash);
                         }
                     }
                     InvType::MempoolTx => {
-                        if let InvParam::Hash(tx_id) = &i.param {
-                            if db.mempool_tx(*tx_id)?.is_none() {
-                                inv.add_tx_id(*tx_id);
-                            }
+                        if let InvParam::Hash(tx_id) = &i.param
+                            && db.mempool_tx(*tx_id)?.is_none()
+                        {
+                            inv.add_tx_id(*tx_id);
                         }
                     }
                     InvType::CandidateFromIteration => {
-                        if let InvParam::Iteration(ch) = &i.param {
-                            if db.candidate_by_iteration(ch)?.is_none() {
-                                inv.add_candidate_from_iteration(*ch);
-                            }
+                        if let InvParam::Iteration(ch) = &i.param
+                            && db.candidate_by_iteration(ch)?.is_none()
+                        {
+                            inv.add_candidate_from_iteration(*ch);
                         }
                     }
                     InvType::ValidationResult => {
-                        if let InvParam::Iteration(ch) = &i.param {
-                            if db.validation_result(ch)?.is_none() {
-                                inv.add_validation_result(*ch);
-                            }
+                        if let InvParam::Iteration(ch) = &i.param
+                            && db.validation_result(ch)?.is_none()
+                        {
+                            inv.add_validation_result(*ch);
                         }
                     }
                 }

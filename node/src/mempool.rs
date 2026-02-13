@@ -312,16 +312,14 @@ impl MempoolSrv {
                 }?
             }
 
-            if disable_3rd_party {
-                if let Some(call) = tx.inner.call() {
-                    if call.contract != TRANSFER_CONTRACT
-                        && call.contract != STAKE_CONTRACT
-                    {
-                        Err(TxAcceptanceError::Generic(anyhow::anyhow!(
-                            "3rd party contracts are not enabled in the VM"
-                        )))?;
-                    }
-                }
+            if disable_3rd_party
+                && let Some(call) = tx.inner.call()
+                && call.contract != TRANSFER_CONTRACT
+                && call.contract != STAKE_CONTRACT
+            {
+                Err(TxAcceptanceError::Generic(anyhow::anyhow!(
+                    "3rd party contracts are not enabled in the VM"
+                )))?;
             }
 
             // Check deployment tx
@@ -453,11 +451,9 @@ impl MempoolSrv {
 
             events.push(TransactionEvent::Included(tx));
 
-            if !replaced {
-                if let Some(to_delete) = tx_to_delete {
-                    for deleted in db.delete_mempool_tx(to_delete, true)? {
-                        events.push(TransactionEvent::Removed(deleted));
-                    }
+            if !replaced && let Some(to_delete) = tx_to_delete {
+                for deleted in db.delete_mempool_tx(to_delete, true)? {
+                    events.push(TransactionEvent::Removed(deleted));
                 }
             }
             // Persist transaction in mempool storage

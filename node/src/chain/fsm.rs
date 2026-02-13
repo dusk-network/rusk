@@ -195,11 +195,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         // unless it's an Emergency Blocks, which have no Attestation
         if !Self::is_block_attested(&blk)
             && !is_emergency_block(blk.header().iteration)
+            && let Err(err) = self.attach_blk_att(&mut blk)
         {
-            if let Err(err) = self.attach_blk_att(&mut blk) {
-                warn!(event = "block discarded", ?err);
-                return Ok(None);
-            }
+            warn!(event = "block discarded", ?err);
+            return Ok(None);
         }
 
         let fsm_res = match &mut self.curr {
@@ -364,12 +363,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             // Check if we already accepted this block
             if let Ok(blk_exists) =
                 db.read().await.view(|t| t.block_exists(&candidate))
+                && blk_exists
             {
-                if blk_exists {
-                    warn!("skipping Quorum for known block");
-                    return;
-                }
-            };
+                warn!("skipping Quorum for known block");
+                return;
+            }
 
             let quorum_blk = if quorum_height > tip_height + 1 {
                 // Quorum from future
