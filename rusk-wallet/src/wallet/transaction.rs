@@ -287,10 +287,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let stake_pk = self.public_key(profile_idx)?;
         let stake_owner_idx = match self.find_stake_owner_idx(stake_pk).await {
             Ok(state_idx) => {
-                if let Some(owner_idx) = owner_idx {
-                    if state_idx != owner_idx {
-                        return Err(Error::Unauthorized);
-                    }
+                if let Some(owner_idx) = owner_idx
+                    && state_idx != owner_idx
+                {
+                    return Err(Error::Unauthorized);
                 }
                 state_idx
             }
@@ -368,10 +368,10 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
 
         let stake_owner_idx = match self.find_stake_owner_idx(stake_pk).await {
             Ok(state_idx) => {
-                if let Some(owner_idx) = owner_idx {
-                    if state_idx != owner_idx {
-                        return Err(Error::Unauthorized);
-                    }
+                if let Some(owner_idx) = owner_idx
+                    && state_idx != owner_idx
+                {
+                    return Err(Error::Unauthorized);
                 }
                 state_idx
             }

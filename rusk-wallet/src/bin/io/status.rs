@@ -62,7 +62,7 @@ impl InteractiveStatus {
                 // flush_buffer_to_stdout
                 let printed_len = line.len() + 2;
                 let (mut num_lines, a_partially_filled_line) =
-                    (printed_len / width, printed_len % width != 0);
+                    (printed_len / width, !printed_len.is_multiple_of(width));
                 if a_partially_filled_line {
                     num_lines += 1;
                 }
