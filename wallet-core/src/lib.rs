@@ -38,7 +38,7 @@ pub mod prelude {
 }
 
 pub use notes::balance::{
-    calculate as phoenix_balance, TotalAmount as BalanceInfo,
+    TotalAmount as BalanceInfo, calculate as phoenix_balance,
 };
 pub use notes::owned::map as map_owned;
 pub use notes::pick::notes as pick_notes;

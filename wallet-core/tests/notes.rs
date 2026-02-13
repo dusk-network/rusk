@@ -4,15 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_core::JubJubScalar;
 use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use dusk_core::JubJubScalar;
 use dusk_wallet_core::keys::{derive_multiple_phoenix_sk, derive_phoenix_sk};
 use dusk_wallet_core::notes::owned::NoteList;
 use dusk_wallet_core::{
-    map_owned, phoenix_balance, pick_notes, BalanceInfo, Seed,
+    BalanceInfo, Seed, map_owned, phoenix_balance, pick_notes,
 };
 use ff::Field;
 use rand::rngs::StdRng;

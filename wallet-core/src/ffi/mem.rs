@@ -4,13 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use alloc::alloc::{alloc, dealloc, Layout};
+use alloc::alloc::{Layout, alloc, dealloc};
 use core::slice;
 
 use bytecheck::CheckBytes;
 use rkyv::de::deserializers::SharedDeserializeMap;
 use rkyv::validation::validators::DefaultValidator;
-use rkyv::{check_archived_root, Archive, Deserialize};
+use rkyv::{Archive, Deserialize, check_archived_root};
 
 use crate::ffi::error::ErrorCode;
 

@@ -13,7 +13,7 @@ use dusk_core::abi::ContractId;
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
-use dusk_core::stake::{Stake, Withdraw as StakeWithdraw, STAKE_CONTRACT};
+use dusk_core::stake::{STAKE_CONTRACT, Stake, Withdraw as StakeWithdraw};
 use dusk_core::transfer::data::{
     ContractBytecode, ContractCall, ContractDeploy, TransactionData,
 };
@@ -25,7 +25,7 @@ use dusk_core::transfer::phoenix::{
 use dusk_core::transfer::withdraw::{
     Withdraw, WithdrawReceiver, WithdrawReplayToken,
 };
-use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use dusk_core::{BlsScalar, Error, JubJubScalar};
 use ff::Field;
 use rand::{CryptoRng, RngCore};

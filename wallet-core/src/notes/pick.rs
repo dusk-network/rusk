@@ -8,11 +8,11 @@
 
 use alloc::vec::Vec;
 
-use dusk_core::transfer::phoenix::{NoteLeaf, ViewKey as PhoenixViewKey};
 use dusk_core::BlsScalar;
+use dusk_core::transfer::phoenix::{NoteLeaf, ViewKey as PhoenixViewKey};
 
-use crate::notes::owned::NoteList;
 use crate::notes::MAX_INPUT_NOTES;
+use crate::notes::owned::NoteList;
 
 /// Pick up to [`MAX_INPUT_NOTES`] notes to be used as input-notes in a
 /// transaction from a list of owned notes.
