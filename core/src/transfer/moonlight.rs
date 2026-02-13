@@ -20,8 +20,8 @@ use crate::signatures::bls::{
     Signature as AccountSignature,
 };
 use crate::transfer::data::{
-    BlobData, ContractBytecode, ContractCall, ContractDeploy, TransactionData,
-    MAX_MEMO_SIZE,
+    BlobData, ContractBytecode, ContractCall, ContractDeploy, MAX_MEMO_SIZE,
+    TransactionData,
 };
 use crate::{BlsScalar, Error};
 
@@ -219,7 +219,7 @@ impl Transaction {
     pub fn call(&self) -> Option<&ContractCall> {
         #[allow(clippy::match_wildcard_for_single_variants)]
         match self.data()? {
-            TransactionData::Call(ref c) => Some(c),
+            TransactionData::Call(c) => Some(c),
             _ => None,
         }
     }
@@ -229,7 +229,7 @@ impl Transaction {
     pub fn deploy(&self) -> Option<&ContractDeploy> {
         #[allow(clippy::match_wildcard_for_single_variants)]
         match self.data()? {
-            TransactionData::Deploy(ref d) => Some(d),
+            TransactionData::Deploy(d) => Some(d),
             _ => None,
         }
     }
@@ -248,7 +248,7 @@ impl Transaction {
     pub fn blob(&self) -> Option<&Vec<BlobData>> {
         #[allow(clippy::match_wildcard_for_single_variants)]
         match self.data()? {
-            TransactionData::Blob(ref d) => Some(d),
+            TransactionData::Blob(d) => Some(d),
             _ => None,
         }
     }

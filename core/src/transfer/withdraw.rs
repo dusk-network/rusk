@@ -15,6 +15,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(feature = "serde")]
 use serde_with::{As, DisplayFromStr};
 
+use crate::BlsScalar;
 use crate::abi::ContractId;
 use crate::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
@@ -24,7 +25,6 @@ use crate::signatures::schnorr::{
     SecretKey as NoteSecretKey, Signature as NoteSignature,
 };
 use crate::transfer::phoenix::StealthAddress;
-use crate::BlsScalar;
 
 /// Withdrawal information, proving the intent of a user to withdraw from a
 /// contract.

@@ -26,15 +26,15 @@ mod error;
 pub use error::{Error, TxPreconditionError};
 
 mod dusk;
-pub use dusk::{dusk, from_dusk, Dusk, LUX};
+pub use dusk::{Dusk, LUX, dusk, from_dusk};
 
 use blake2b_simd as _; // Required to satisfy unused_crate_dependencies
 
 // elliptic curve types
 pub use dusk_bls12_381::BlsScalar;
 pub use dusk_jubjub::{
-    JubJubAffine, JubJubExtended, JubJubScalar, GENERATOR_EXTENDED,
-    GENERATOR_NUMS_EXTENDED,
+    GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED, JubJubAffine, JubJubExtended,
+    JubJubScalar,
 };
 
 /// Signatures used in the Dusk protocol.
@@ -70,9 +70,9 @@ pub mod plonk {
 pub mod groth16 {
     pub use ark_bn254 as bn254;
     pub use ark_groth16::{
+        Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey,
         data_structures, generator, prepare_verifying_key, prover, r1cs_to_qap,
-        verifier, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
-        VerifyingKey,
+        verifier,
     };
     pub use ark_relations as relations;
     pub use ark_serialize as serialize;

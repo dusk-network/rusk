@@ -8,7 +8,7 @@
 //! type.
 
 use alloc::string::ToString;
-use c_kzg::{ethereum_kzg_settings, Blob as KzgBlob, Bytes48};
+use c_kzg::{Blob as KzgBlob, Bytes48, ethereum_kzg_settings};
 
 use super::{BlobData, BlobSidecar, Error};
 

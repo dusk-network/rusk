@@ -7,6 +7,7 @@
 use dusk_core::signatures::bls::{
     PublicKey as AccountPublicKey, SecretKey as AccountSecretKey,
 };
+use dusk_core::transfer::Transaction;
 use dusk_core::transfer::data::{
     ContractBytecode, ContractCall, ContractDeploy, TransactionData,
 };
@@ -14,7 +15,6 @@ use dusk_core::transfer::phoenix::{
     Note, NoteTreeItem, NotesTree, Prove, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, TxCircuitVec,
 };
-use dusk_core::transfer::Transaction;
 use dusk_core::{BlsScalar, Error, JubJubScalar};
 use ff::Field;
 use rand::rngs::StdRng;
@@ -133,11 +133,11 @@ fn new_moonlight_tx<R: RngCore + CryptoRng>(
     let receiver_pk =
         Some(AccountPublicKey::from(&AccountSecretKey::random(rng)));
 
-    let value: u64 = rng.gen();
-    let deposit: u64 = rng.gen();
-    let gas_limit: u64 = rng.gen();
-    let gas_price: u64 = rng.gen();
-    let nonce: u64 = rng.gen();
+    let value: u64 = rng.r#gen();
+    let deposit: u64 = rng.r#gen();
+    let gas_limit: u64 = rng.r#gen();
+    let gas_price: u64 = rng.r#gen();
+    let nonce: u64 = rng.r#gen();
 
     Transaction::moonlight(
         &sender_sk,
