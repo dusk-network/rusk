@@ -73,13 +73,13 @@ impl Circuit {
             metadata: Metadata::from_stored(&id)?,
         };
 
-        if let Some(result) = circuit.check_id() {
-            if !result {
-                return Err(io::Error::new(
-                    ErrorKind::InvalidData,
-                    "The stored circuit id is incorrect",
-                ));
-            }
+        if let Some(result) = circuit.check_id()
+            && !result
+        {
+            return Err(io::Error::new(
+                ErrorKind::InvalidData,
+                "The stored circuit id is incorrect",
+            ));
         }
 
         Ok(circuit)
