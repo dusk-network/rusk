@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT block_height, total_supply, circulating_supply, max_supply, burned, updated_at as \"updated_at: String\"\n            FROM supply_info\n            WHERE id = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "block_height",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "total_supply",
+        "ordinal": 1,
+        "type_info": "Float"
+      },
+      {
+        "name": "circulating_supply",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "max_supply",
+        "ordinal": 3,
+        "type_info": "Float"
+      },
+      {
+        "name": "burned",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "updated_at: String",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "abd18d06a7da9d6b3f2daa50050bfaf689f8464a21c85b7131bf854f5d2b1bb7"
+}
