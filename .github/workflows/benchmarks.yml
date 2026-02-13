@@ -1,5 +1,9 @@
 name: Benchmark CI
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -15,8 +19,13 @@ jobs:
     runs-on: core
     steps:
       - uses: actions/checkout@v4
+        with:
+          clean: false
       - uses: dsherret/rust-toolchain-file@v1
       - run: make bench
+      - name: sccache stats
+        if: always()
+        run: sccache -s || true
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v4
         with:

@@ -1,5 +1,9 @@
 name: w3sper.js CI
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   pull_request:
@@ -12,17 +16,18 @@ on:
 jobs:
   # JOB to run change detection
   changes:
-    runs-on: ubuntu-latest
+    runs-on: core
     # Required permissions
     permissions:
       pull-requests: read
     # Set job outputs to values from filter step
     outputs:
-      run-ci: ${{ steps.filter.outputs.run-ci }}
+      run-ci: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.run-ci }}
     steps:
       # For pull requests it's not necessary to checkout the code
       - uses: dorny/paths-filter@v3
         id: filter
+        if: github.event_name != 'workflow_dispatch'
         with:
           filters: |
             run-ci:
@@ -30,28 +35,6 @@ jobs:
               - 'wallet-core/**'
               - 'w3sper.js/**'
               - '.github/workflows/w3sperjs_ci.yml'
-
-  deno_lint_fmt:
-    needs: changes
-    # Skip lint check, see issue #2891
-    if: false
-    name: Deno lint check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Setup deno
-        uses: denoland/setup-deno@v2
-        with: 
-          deno-version: v2.x
-      
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run deno lint        
-        run: |
-          cd w3sper.js
-          deno lint
-          deno fmt --check
 
   w3sper_test:
     needs: changes
@@ -65,9 +48,23 @@ jobs:
 
       - name: Run Docker container
         run: |
-          mkdir /opt/rusk
+          mkdir -p /opt/rusk
           docker run --name rusk -d -e RUSK_MINIMUM_BLOCK_TIME=1 -p 9000:9000/udp -p 8080:8080/tcp -v ./w3sper.js/tests/assets/genesis.toml:/opt/rusk/state.toml dusknode/rusk
-      
+
+      - name: Wait for Rusk node
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf -X POST -H 'Content-Type: application/json' -d '{"query":"{ block(height: 0) { header { height } } }"}' http://localhost:8080/graphql > /dev/null 2>&1; then
+              echo "Rusk node ready"
+              exit 0
+            fi
+            echo "Waiting for Rusk node... ($i/30)"
+            sleep 2
+          done
+          echo "Rusk node failed to start"
+          docker logs rusk
+          exit 1
+
       - name: Setup Rust
         uses: dsherret/rust-toolchain-file@v1
 

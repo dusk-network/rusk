@@ -9,6 +9,10 @@ on:
 
 name: Rusk CI
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # JOB to run change detection
   changes:
@@ -18,11 +22,12 @@ jobs:
       pull-requests: read
     # Set job outputs to values from filter step
     outputs:
-      run-ci: ${{ steps.filter.outputs.run-ci }}
+      run-ci: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.run-ci }}
     steps:
       # For pull requests it's not necessary to checkout the code
       - uses: dorny/paths-filter@v3
         id: filter
+        if: github.event_name != 'workflow_dispatch'
         with:
           filters: |
             run-ci:
@@ -42,6 +47,8 @@ jobs:
     runs-on: core
     steps:
       - uses: actions/checkout@v4
+        with:
+          clean: false
       - uses: dsherret/rust-toolchain-file@v1
       - run: cargo fmt --all -- --check
 
@@ -54,8 +61,13 @@ jobs:
       RUSK_PROFILE_PATH: "/var/opt/build-cache"
     steps:
       - uses: actions/checkout@v4
+        with:
+          clean: false
       - uses: dsherret/rust-toolchain-file@v1
       - run: make clippy
+      - name: sccache stats
+        if: always()
+        run: sccache -s || true
 
   test_nightly:
     needs: changes
@@ -66,5 +78,10 @@ jobs:
       RUSK_MINIMUM_BLOCK_TIME: 1
     steps:
       - uses: actions/checkout@v4
+        with:
+          clean: false
       - uses: dsherret/rust-toolchain-file@v1
       - run: make test
+      - name: sccache stats
+        if: always()
+        run: sccache -s || true

@@ -17,33 +17,13 @@ on:
         default: "[\"default\", \"archive\", \"prover\"]"
 
 jobs:
-  config:
-    runs-on: ubuntu-latest
-    name: Show configuration
-    outputs:
-      archs: ${{steps.final.outputs.archs}}
-    steps:
-      - name: get archs
-        run: |
-          echo "# Parameters"         | tee -a $GITHUB_STEP_SUMMARY
-          echo                        | tee -a $GITHUB_STEP_SUMMARY
-          echo "features = $FEATURES" | tee -a $GITHUB_STEP_SUMMARY
-          echo                        | tee -a $GITHUB_STEP_SUMMARY
-          echo "runner = $RUNNER"     | tee -a $GITHUB_STEP_SUMMARY
-        env:
-          FEATURES: ${{github.event.inputs.features}}
-          RUNNER: ${{github.event.inputs.runner}}
-      
   build_and_publish:
     name: Build Rusk binaries for ${{ matrix.os }} (${{ matrix.feature }})
     runs-on: ${{ matrix.os }}
-    needs:
-      - config
     continue-on-error: ${{ !contains(fromJson(github.event.inputs.runner), matrix.os) }}
     strategy:
       matrix:
         feature: ${{ fromJson(github.event.inputs.features) }}
-        compiler: [cargo]
         os: [ubuntu-24.04, ubuntu-22.04, macos-15, arm-linux]
         include:
           - os: ubuntu-24.04
