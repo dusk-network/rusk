@@ -23,20 +23,20 @@ use aes_gcm::AeadCore;
 use aes_gcm::Aes256Gcm;
 use bip39::{Language, Mnemonic, MnemonicType};
 use clap::Subcommand;
-use dusk_core::abi::{ContractId, CONTRACT_ID_BYTES};
+use dusk_core::BlsScalar;
+use dusk_core::abi::{CONTRACT_ID_BYTES, ContractId};
 use dusk_core::stake::StakeData;
 use dusk_core::transfer::data::ContractCall;
-use dusk_core::BlsScalar;
-use rand::rngs::OsRng;
 use rand::RngCore;
+use rand::rngs::OsRng;
 use rusk_wallet::currency::{Dusk, Lux};
 use rusk_wallet::dat::{self, LATEST_VERSION};
 use rusk_wallet::gas::{
-    Gas, DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
-    DEFAULT_PRICE, MIN_PRICE_DEPLOYMENT,
+    DEFAULT_LIMIT_CALL, DEFAULT_LIMIT_DEPLOYMENT, DEFAULT_LIMIT_TRANSFER,
+    DEFAULT_PRICE, Gas, MIN_PRICE_DEPLOYMENT,
 };
 use rusk_wallet::{
-    Address, Error, Profile, Wallet, EPOCH, IV_SIZE, MAX_PROFILES, SALT_SIZE,
+    Address, EPOCH, Error, IV_SIZE, MAX_PROFILES, Profile, SALT_SIZE, Wallet,
 };
 use wallet_core::BalanceInfo;
 
@@ -428,7 +428,8 @@ impl Command {
                 if new {
                     if wallet.profiles().len() >= MAX_PROFILES {
                         println!(
-                            "Cannot create more profiles, this wallet only supports up to {MAX_PROFILES} profiles. You have {} profiles already.", wallet.profiles().len()
+                            "Cannot create more profiles, this wallet only supports up to {MAX_PROFILES} profiles. You have {} profiles already.",
+                            wallet.profiles().len()
                         );
                         std::process::exit(0);
                     }
@@ -550,7 +551,9 @@ impl Command {
                 gas_price,
             } => {
                 if is_withdraw {
-                    println!("`withdraw` is deprecated. Please use `claim_rewards` instead.");
+                    println!(
+                        "`withdraw` is deprecated. Please use `claim_rewards` instead."
+                    );
                 }
                 let address = address.unwrap_or(wallet.default_address());
                 let addr_idx = wallet.find_index(&address)?;
@@ -1130,7 +1133,10 @@ impl fmt::Display for RunResult<'_> {
 
                     writeln!(f, "> Eligible stake: {amount} DUSK")?;
                     writeln!(f, "> Reclaimable slashed stake: {locked} DUSK")?;
-                    writeln!(f, "> Stake active from block #{eligibility} (Epoch {epoch})")?;
+                    writeln!(
+                        f,
+                        "> Stake active from block #{eligibility} (Epoch {epoch})"
+                    )?;
                 } else {
                     writeln!(f, "> No active stake found for this key")?;
                 }

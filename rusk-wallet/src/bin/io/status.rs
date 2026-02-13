@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::io::{stdout, Stdout};
+use std::io::{Stdout, stdout};
 use std::sync::Mutex;
 
 use crossterm::cursor::{self, MoveUp};

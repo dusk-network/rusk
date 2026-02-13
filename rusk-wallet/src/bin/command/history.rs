@@ -4,13 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::{self, Display};
 
 use dusk_core::stake::STAKE_CONTRACT;
 use dusk_core::transfer::withdraw::WithdrawReceiver;
-use dusk_core::transfer::{Transaction, TRANSFER_CONTRACT};
+use dusk_core::transfer::{TRANSFER_CONTRACT, Transaction};
 use dusk_core::{dusk, from_dusk};
 use rusk_wallet::{Address, BlockData, BlockTransaction, DecodedNote, GraphQL};
 
@@ -345,7 +345,9 @@ pub(crate) async fn moonlight_history(
                     // In both cases, the moonlight transaction event
                     // and deposit/withdraw event handle everything so
                     // there is no need to do anything here.
-                    unreachable!("Because all non-transfer contract events are filtered out.")
+                    unreachable!(
+                        "Because all non-transfer contract events are filtered out."
+                    )
                 }
                 BlockData::WithdrawEvent(event) => {
                     // This event is emitted when funds are withdrawn

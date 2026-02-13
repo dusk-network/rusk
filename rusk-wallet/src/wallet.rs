@@ -18,6 +18,7 @@ use std::path::{Path, PathBuf};
 
 use bip39::{Language, Mnemonic, Seed};
 use dusk_bytes::Serializable;
+use dusk_core::BlsScalar;
 use dusk_core::abi::CONTRACT_ID_BYTES;
 use dusk_core::signatures::bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey, Signature,
@@ -27,25 +28,24 @@ use dusk_core::transfer::phoenix::{
     Note, NoteLeaf, PublicKey as PhoenixPublicKey,
     SecretKey as PhoenixSecretKey, ViewKey as PhoenixViewKey,
 };
-use dusk_core::BlsScalar;
 use wallet_core::prelude::keys::{
     derive_bls_pk, derive_bls_sk, derive_phoenix_pk, derive_phoenix_sk,
     derive_phoenix_vk,
 };
-use wallet_core::{phoenix_balance, BalanceInfo};
+use wallet_core::{BalanceInfo, phoenix_balance};
 use zeroize::Zeroize;
 
+use crate::Error;
 use crate::clients::State;
 use crate::crypto::encrypt;
 use crate::currency::Dusk;
 use crate::dat::{
-    self, version_bytes, FileVersion as DatFileVersion, FILE_TYPE,
-    LATEST_VERSION, MAGIC, RESERVED,
+    self, FILE_TYPE, FileVersion as DatFileVersion, LATEST_VERSION, MAGIC,
+    RESERVED, version_bytes,
 };
 use crate::gas::MempoolGasPrices;
 use crate::rues::HttpClient as RuesHttpClient;
 use crate::store::LocalStore;
-use crate::Error;
 
 /// The interface to the Dusk Network
 ///
@@ -287,10 +287,16 @@ impl<F: SecureWalletFile + Debug> Wallet<F> {
         let archiver_status = http_archiver.check_connection().await;
 
         match (&state_status, prover_status, archiver_status) {
-            (Err(e),_, _)=> println!("Connection to Rusk Failed, some operations won't be available: {e}"),
-            (_,Err(e), _)=> println!("Connection to Prover Failed, some operations won't be available: {e}"),
-            (_, _, Err(e)) => println!("Connection to Archiver Failed, some operations won't be available: {e}"),
-            _=> {},
+            (Err(e), _, _) => println!(
+                "Connection to Rusk Failed, some operations won't be available: {e}"
+            ),
+            (_, Err(e), _) => println!(
+                "Connection to Prover Failed, some operations won't be available: {e}"
+            ),
+            (_, _, Err(e)) => println!(
+                "Connection to Archiver Failed, some operations won't be available: {e}"
+            ),
+            _ => {}
         }
 
         let cache_dir = self.cache_path()?;
@@ -789,8 +795,8 @@ pub struct DecodedNote {
 #[cfg(test)]
 mod tests {
     use aes_gcm::{AeadCore, Aes256Gcm};
-    use rand::rngs::OsRng;
     use rand::RngCore;
+    use rand::rngs::OsRng;
     use tempfile::tempdir;
 
     use crate::{IV_SIZE, SALT_SIZE};
@@ -832,7 +838,9 @@ mod tests {
     #[test]
     fn wallet_basics() -> Result<(), Box<dyn std::error::Error>> {
         // create a wallet from a mnemonic phrase
-        let mut wallet: Wallet<WalletFile> = Wallet::new("uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic")?;
+        let mut wallet: Wallet<WalletFile> = Wallet::new(
+            "uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic",
+        )?;
 
         // check address generation
         let default_addr = wallet.default_shielded_account();
@@ -845,7 +853,9 @@ mod tests {
         assert_eq!(wallet.profiles.len(), 2);
 
         // create another wallet with different mnemonic
-        let wallet: Wallet<WalletFile> = Wallet::new("demise monitor elegant cradle squeeze cheap parrot venture stereo humor scout denial action receive flat")?;
+        let wallet: Wallet<WalletFile> = Wallet::new(
+            "demise monitor elegant cradle squeeze cheap parrot venture stereo humor scout denial action receive flat",
+        )?;
 
         // check addresses are different
         let addr = wallet.default_shielded_account();
@@ -870,7 +880,9 @@ mod tests {
         let key = blake3::hash("mypassword".as_bytes()).as_bytes().to_vec();
 
         // create and save
-        let mut wallet: Wallet<WalletFile> = Wallet::new("uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic")?;
+        let mut wallet: Wallet<WalletFile> = Wallet::new(
+            "uphold stove tennis fire menu three quick apple close guilt poem garlic volcano giggle comic",
+        )?;
         let salt = gen_salt();
         let iv = gen_iv();
         let file = WalletFile {

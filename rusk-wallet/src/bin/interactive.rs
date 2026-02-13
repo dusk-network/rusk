@@ -11,7 +11,7 @@ use std::fmt::Display;
 use inquire::{InquireError, Select};
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat;
-use rusk_wallet::{Address, Error, Profile, Wallet, WalletPath, MAX_PROFILES};
+use rusk_wallet::{Address, Error, MAX_PROFILES, Profile, Wallet, WalletPath};
 
 use crate::command::BalanceType;
 use crate::io::prompt::{EXIT_HELP, MOVE_HELP, SELECT_HELP};
@@ -98,7 +98,9 @@ pub(crate) async fn run_loop(
                         phoenix_spendable,
                         cmd.max_deduction(),
                     ) {
-                        println!("Balance is not enough to cover the transaction max fee. You need {more_dusk_needed} more Dusk.\n");
+                        println!(
+                            "Balance is not enough to cover the transaction max fee. You need {more_dusk_needed} more Dusk.\n"
+                        );
                         continue;
                     }
                     // request confirmation before running
@@ -169,13 +171,19 @@ pub(crate) async fn run_loop(
                                     crate::prompt::tx_history_list(history)
                                 {
                                     match err.downcast_ref::<InquireError>() {
-                                        Some(InquireError::OperationInterrupted) => {
+                                        Some(
+                                            InquireError::OperationInterrupted,
+                                        ) => {
                                             return Err(err);
-                                        },
-                                        Some(InquireError::OperationCanceled) => {
+                                        }
+                                        Some(
+                                            InquireError::OperationCanceled,
+                                        ) => {
                                             continue;
-                                        },
-                                        _ => println!("Failed to output transaction history with error {err}"),
+                                        }
+                                        _ => println!(
+                                            "Failed to output transaction history with error {err}"
+                                        ),
                                     }
                                 }
 
@@ -230,8 +238,8 @@ async fn profile_idx(wallet: &mut Wallet<WalletFile>) -> anyhow::Result<u8> {
         ProfileSelect::New => {
             if wallet.profiles().len() >= MAX_PROFILES {
                 println!(
-                        "Cannot create more profiles, this wallet only supports up to {MAX_PROFILES} profiles"
-                    );
+                    "Cannot create more profiles, this wallet only supports up to {MAX_PROFILES} profiles"
+                );
 
                 return Err(InquireError::OperationCanceled.into());
             }

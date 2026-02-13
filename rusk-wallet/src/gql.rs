@@ -19,7 +19,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use serde_with::hex::Hex;
 use serde_with::{As, DisplayFromStr};
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 
 use crate::rues::HttpClient as RuesHttpClient;
 use crate::{Address, Error};

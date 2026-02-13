@@ -10,8 +10,8 @@ use std::str::FromStr;
 use std::{io::stdout, println};
 
 use crossterm::{
-    cursor::{Hide, Show},
     ExecutableCommand,
+    cursor::{Hide, Show},
 };
 
 use anyhow::Result;
@@ -26,10 +26,10 @@ use inquire::{
 };
 use rusk_wallet::dat::version_without_pre_higher;
 use rusk_wallet::{
+    Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE,
     currency::{Dusk, Lux},
     dat::FileVersion as DatFileVersion,
     gas::{self, MempoolGasPrices},
-    Address, Error, MAX_CONVERTIBLE, MIN_CONVERTIBLE,
 };
 use rusk_wallet::{PBKDF2_ROUNDS, SALT_SIZE};
 use sha2::{Digest, Sha256};
@@ -60,26 +60,22 @@ pub(crate) const SELECT_HELP: &str = "enter to select";
 pub(crate) const FILTER_HELP: &str = "type to filter";
 
 pub(crate) fn ask_pwd(msg: &str) -> Result<String, InquireError> {
-    let pwd = Password::new(msg)
+    Password::new(msg)
         .with_display_toggle_enabled()
         .without_confirmation()
         .with_display_mode(PasswordDisplayMode::Masked)
         .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", "))
-        .prompt();
-
-    pwd
+        .prompt()
 }
 
 pub(crate) fn create_new_password() -> Result<String, InquireError> {
-    let pwd = Password::new("Password:")
+    Password::new("Password:")
         .with_display_toggle_enabled()
         .with_display_mode(PasswordDisplayMode::Hidden)
         .with_custom_confirmation_message("Confirm password: ")
         .with_custom_confirmation_error_message("The passwords doesn't match")
         .with_help_message(&[GO_BACK_HELP, EXIT_HELP].join(", "))
-        .prompt();
-
-    pwd
+        .prompt()
 }
 
 /// Request the user to authenticate with a password and return the derived key
@@ -123,7 +119,10 @@ where
     S: std::fmt::Display,
 {
     // inform the user about the mnemonic phrase
-    let msg = format!("The following phrase is essential for you to regain access to your wallet\nin case you lose access to this computer. Please print it or write it down and store it somewhere safe.\n> {} \nHave you backed up this phrase?", phrase);
+    let msg = format!(
+        "The following phrase is essential for you to regain access to your wallet\nin case you lose access to this computer. Please print it or write it down and store it somewhere safe.\n> {} \nHave you backed up this phrase?",
+        phrase
+    );
 
     // let the user confirm they have backed up their phrase
     let confirm = Confirm::new(&msg)
@@ -156,7 +155,7 @@ pub(crate) fn request_mnemonic_phrase(
 
             Err(err) if attempt > 2 => match err.downcast_ref::<ErrorKind>() {
                 Some(ErrorKind::InvalidWord) => {
-                    return Err(Error::AttemptsExhausted)?
+                    Err(Error::AttemptsExhausted)?;
                 }
                 _ => return Err(err),
             },

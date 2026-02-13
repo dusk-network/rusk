@@ -10,9 +10,9 @@ mod interactive;
 mod io;
 mod settings;
 
-use command::{gen_iv, gen_salt};
 pub(crate) use command::{Command, RunResult};
-use io::prompt::{ask_pwd, derive_key, Prompter};
+use command::{gen_iv, gen_salt};
+use io::prompt::{Prompter, ask_pwd, derive_key};
 use zeroize::Zeroize;
 
 use std::fs;
@@ -24,15 +24,15 @@ use rocksdb::ErrorKind;
 use rusk_wallet::currency::Dusk;
 use rusk_wallet::dat::{self, FileVersion as DatFileVersion, LATEST_VERSION};
 use rusk_wallet::{
-    Error, GraphQL, Profile, SecureWalletFile, Wallet, WalletPath, EPOCH,
-    IV_SIZE, SALT_SIZE,
+    EPOCH, Error, GraphQL, IV_SIZE, Profile, SALT_SIZE, SecureWalletFile,
+    Wallet, WalletPath,
 };
-use tracing::{error, info, warn, Level};
+use tracing::{Level, error, info, warn};
 
 use crate::settings::{LogFormat, Settings};
 
 use config::Config;
-use io::{prompt, status, WalletArgs};
+use io::{WalletArgs, prompt, status};
 
 #[derive(Debug, Clone)]
 pub(crate) struct WalletFile {
@@ -105,33 +105,43 @@ where
 
             let msg = match e.kind() {
                 ErrorKind::InvalidArgument => {
-                    format!("You seem to try access a wallet with a different mnemonic phrase\n\r\n\r{0: <1} delete the cache? (Alternatively specify the --wallet-dir flag to add a new wallet under the given path)", "[ALERT]")
-                },
+                    format!(
+                        "You seem to try access a wallet with a different mnemonic phrase\n\r\n\r{0: <1} delete the cache? (Alternatively specify the --wallet-dir flag to add a new wallet under the given path)",
+                        "[ALERT]"
+                    )
+                }
                 ErrorKind::Corruption => {
-                       format!("The database appears to be corrupted \n\r\n\r{0: <1} delete the cache?", "[ALERT]")
-                },
+                    format!(
+                        "The database appears to be corrupted \n\r\n\r{0: <1} delete the cache?",
+                        "[ALERT]"
+                    )
+                }
                 _ => {
-                    format!("Unknown database error {:?} \n\r\n\r{1: <1} delete the cache?", e, "[ALERT]")
+                    format!(
+                        "Unknown database error {:?} \n\r\n\r{1: <1} delete the cache?",
+                        e, "[ALERT]"
+                    )
                 }
             };
 
-             match prompt::ask_confirm_erase_cache(&msg)? {
+            match prompt::ask_confirm_erase_cache(&msg)? {
                 true => {
                     if let Some(io_err) = wallet.delete_cache().err() {
                         error!("Error while deleting the cache: {io_err}");
                     }
 
                     info!("Restart the application to create new wallet.");
-                },
+                }
                 false => {
                     info!("Wallet cannot proceed will now exit");
-                },
-
+                }
             }
 
             return Err(anyhow::anyhow!("Wallet cannot proceed will now exit"));
-        },
-        Err(ref e) => warn!("[OFFLINE MODE]: Unable to connect to Rusk, limited functionality available: {e}"),
+        }
+        Err(ref e) => warn!(
+            "[OFFLINE MODE]: Unable to connect to Rusk, limited functionality available: {e}"
+        ),
         _ => {}
     };
 
@@ -337,7 +347,9 @@ async fn run_command_or_enter_loop(
                             println!(
                                 "Reclaimable slashed stake: {locked} DUSK"
                             );
-                            println!("Stake active from block #{eligibility} (Epoch {epoch})");
+                            println!(
+                                "Stake active from block #{eligibility} (Epoch {epoch})"
+                            );
                         } else {
                             println!("No active stake found for this key");
                         }
@@ -356,8 +368,13 @@ async fn run_command_or_enter_loop(
                 RunResult::History(txns) => {
                     if let Err(err) = crate::prompt::tx_history_list(&txns) {
                         match err.downcast_ref::<InquireError>() {
-                            Some(InquireError::OperationInterrupted | InquireError::OperationCanceled) => (),
-                            _ => println!("Failed to output transaction history with error {err}"),
+                            Some(
+                                InquireError::OperationInterrupted
+                                | InquireError::OperationCanceled,
+                            ) => (),
+                            _ => println!(
+                                "Failed to output transaction history with error {err}"
+                            ),
                         }
                     }
                 }
@@ -384,7 +401,7 @@ async fn get_wallet(
         // wallet from file
         None => interactive::load_wallet(wallet_path, settings).await?,
         // else we check if we need to replace the wallet and then load it
-        Some(ref cmd) => match cmd {
+        Some(cmd) => match cmd {
             Command::Create {
                 skip_recovery,
                 seed_file,
@@ -470,7 +487,9 @@ fn update_wallet_file(
     let iv = gen_iv();
     let pwd = match password.as_ref() {
         Some(p) => p.to_string(),
-        None => ask_pwd("Updating your wallet data file, please enter your wallet password ")?,
+        None => ask_pwd(
+            "Updating your wallet data file, please enter your wallet password ",
+        )?,
     };
 
     let old_wallet_file = wallet

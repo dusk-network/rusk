@@ -59,8 +59,8 @@ pub(crate) fn decrypt_aes_gcm(
 #[cfg(test)]
 mod tests {
     use aes_gcm::AeadCore;
-    use rand::rngs::OsRng;
     use rand::RngCore;
+    use rand::rngs::OsRng;
 
     use crate::IV_SIZE;
 
