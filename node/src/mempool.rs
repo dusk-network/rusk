@@ -392,7 +392,7 @@ impl MempoolSrv {
 
         // VM Preverify call
         let preverification_data =
-            vm.read().await.preverify(tx).map_err(|e| {
+            vm.read().await.preverify(tx, tip_height).map_err(|e| {
                 TxAcceptanceError::VerificationFailed(format!("{e}"))
             })?;
 

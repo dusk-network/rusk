@@ -8,6 +8,8 @@
 
 use alloc::vec::Vec;
 
+use core::cell::Cell;
+
 use c_kzg::{Bytes32 as KzgBytes32, Bytes48};
 use dusk_bytes::DeserializableSlice;
 use dusk_core::BlsScalar;
@@ -16,7 +18,7 @@ use dusk_core::groth16::serialize::CanonicalDeserialize;
 use dusk_core::groth16::{
     Groth16, PreparedVerifyingKey, Proof as Groth16Proof,
 };
-use dusk_core::plonk::{Proof as PlonkProof, Verifier};
+use dusk_core::plonk::{PlonkVersion, Proof as PlonkProof, Verifier};
 use dusk_core::signatures::bls::{
     MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
     Signature as BlsSignature,
@@ -34,6 +36,41 @@ use sha3::Keccak256;
 use tracing::warn;
 
 use crate::cache;
+
+thread_local! {
+    // Default to V2 for safety: if the node forgets to set a version for a
+    // consensus-critical call path, we'd rather reject than accept.
+    static PLONK_VERSION: Cell<PlonkVersion> = Cell::new(PlonkVersion::V2);
+}
+
+/// Guard that restores the previous PLONK version when dropped.
+#[derive(Debug)]
+pub struct PlonkVersionGuard {
+    prev: PlonkVersion,
+}
+
+impl Drop for PlonkVersionGuard {
+    fn drop(&mut self) {
+        PLONK_VERSION.with(|m| m.set(self.prev));
+    }
+}
+
+/// Returns the current thread's PLONK version (defaults to `V2`).
+pub fn plonk_version() -> PlonkVersion {
+    PLONK_VERSION.with(|m| m.get())
+}
+
+/// Sets the current thread's PLONK version.
+///
+/// The previous version is restored when the returned guard is dropped.
+pub fn set_plonk_version(version: PlonkVersion) -> PlonkVersionGuard {
+    let prev = PLONK_VERSION.with(|m| {
+        let prev = m.get();
+        m.set(version);
+        prev
+    });
+    PlonkVersionGuard { prev }
+}
 
 /// Computes a cryptographic hash of a byte vector.
 ///
@@ -84,6 +121,7 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 /// zk-SNARKs.
 ///
 /// # Arguments
+/// * `version` - The PLONK version to use for verification.
 /// * `verifier_data` - A serialized representation of the verifier key.
 /// * `proof` - A serialized representation of the proof to be verified.
 /// * `public_inputs` - A vector of [`BlsScalar`] representing the public inputs
@@ -95,7 +133,8 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 ///
 /// # References
 /// <https://github.com/dusk-network/plonk>.
-pub fn verify_plonk(
+pub fn verify_plonk_with_version(
+    version: PlonkVersion,
     verifier_data: Vec<u8>,
     proof: Vec<u8>,
     public_inputs: Vec<BlsScalar>,
@@ -119,13 +158,33 @@ pub fn verify_plonk(
     };
 
     // Verify and return boolean result (map errors to false)
-    match verifier.verify(&proof, &public_inputs[..]) {
+    let result =
+        verifier.verify_with_version(&proof, &public_inputs[..], version);
+    match result {
         Ok(_) => true,
         Err(e) => {
-            warn!("vm: plonk verification failed: {e:?}");
+            warn!("vm: plonk verification failed ({version:?}): {e:?}");
             false
         }
     }
+}
+
+fn plonk_cache_key(
+    version: PlonkVersion,
+    arg_buf: &[u8],
+) -> [u8; blake2b_simd::OUTBYTES] {
+    // Domain-separate the cache key by PLONK version.
+    let mut state = blake2b_simd::Params::new()
+        .hash_length(blake2b_simd::OUTBYTES)
+        .to_state();
+    let cache_tag = match version {
+        PlonkVersion::V1 => 0,
+        PlonkVersion::V2 => 1,
+        _ => 2,
+    };
+    state.update(&[cache_tag]);
+    state.update(arg_buf);
+    *state.finalize().as_array()
 }
 
 /// Verifies a Groth16 zk-SNARK proof over the BN254 curve.
@@ -404,11 +463,13 @@ pub(crate) fn host_poseidon_hash(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 pub(crate) fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    let hash = *blake2b_simd::blake2b(&arg_buf[..arg_len as usize]).as_array();
+    let version = plonk_version();
+    let hash = plonk_cache_key(version, &arg_buf[..arg_len as usize]);
     let cached = cache::get_plonk_verification(hash);
 
     wrap_host_query(arg_buf, arg_len, |(vd, proof, pis)| {
-        let is_valid = cached.unwrap_or_else(|| verify_plonk(vd, proof, pis));
+        let is_valid =
+            cached.unwrap_or_else(|| verify_plonk_with_version(version, vd, proof, pis));
         cache::put_plonk_verification(hash, is_valid);
         is_valid
     })

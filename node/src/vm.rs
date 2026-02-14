@@ -59,6 +59,7 @@ pub trait VMExecution: Send + Sync + 'static {
     fn preverify(
         &self,
         tx: &Transaction,
+        tip_height: u64,
     ) -> anyhow::Result<PreverificationResult>;
 
     fn get_provisioners(

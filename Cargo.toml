@@ -76,7 +76,6 @@ dusk-wasmtime = { version = "21.0.0-alpha", default-features = false, features =
     "runtime",
     "parallel-compilation",
 ] }
-
 # External dependencies
 aes = "0.7.5"
 aes-gcm = "0.10.3"
@@ -188,3 +187,8 @@ codegen-units = 16
 
 [profile.release.package.rusk-wallet]
 overflow-checks = true
+
+[patch.crates-io]
+# Override crates.io `dusk-plonk` with the local soundness-fix checkout.
+dusk-plonk = { path = "/home/hein_/projects/plonk-ghsa-fj5j-x56q-cp8c" }
+# dusk-plonk = { git = "https://github.com/dusk-network/plonk-ghsa-fj5j-x56q-cp8c.git", branch = "fix-unbound-selector-evals" }

@@ -20,7 +20,7 @@ use dusk_core::Error;
 use dusk_core::transfer::phoenix::{
     NOTES_TREE_DEPTH, Prove, TxCircuit, TxCircuitVec,
 };
-use dusk_plonk::prelude::Prover as PlonkProver;
+use dusk_plonk::prelude::{PlonkVersion, Prover as PlonkProver};
 use once_cell::sync::Lazy;
 
 static TX_CIRCUIT_1_2_PROVER: Lazy<PlonkProver> =
@@ -42,6 +42,22 @@ impl Prove for LocalProver {
     fn prove(&self, tx_circuit_vec_bytes: &[u8]) -> Result<Vec<u8>, Error> {
         let tx_circuit_vec = TxCircuitVec::from_slice(tx_circuit_vec_bytes)?;
 
+        // Proving mode is chosen by the prover service. This is useful for
+        // fork rollouts where pre-activation blocks need legacy proofs, while
+        // post-activation blocks require fixed proofs.
+        #[cfg(feature = "std")]
+        let prove_legacy = std::env::var("RUSK_PLONK_PROVE_MODE")
+            .map(|v| v.eq_ignore_ascii_case("legacy"))
+            .unwrap_or(false);
+        #[cfg(not(feature = "std"))]
+        let prove_legacy = false;
+
+        let plonk_version = if prove_legacy {
+            PlonkVersion::V1
+        } else {
+            PlonkVersion::V2
+        };
+
         #[cfg(not(feature = "no_random"))]
         let rng = &mut rand::rngs::OsRng;
 
@@ -57,18 +73,30 @@ impl Prove for LocalProver {
         );
 
         let (proof, _pi) = match tx_circuit_vec.input_notes_info.len() {
-            1 => TX_CIRCUIT_1_2_PROVER
-                .prove(rng, &create_circuit::<1>(tx_circuit_vec)?)
-                .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?,
-            2 => TX_CIRCUIT_2_2_PROVER
-                .prove(rng, &create_circuit::<2>(tx_circuit_vec)?)
-                .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?,
-            3 => TX_CIRCUIT_3_2_PROVER
-                .prove(rng, &create_circuit::<3>(tx_circuit_vec)?)
-                .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?,
-            4 => TX_CIRCUIT_4_2_PROVER
-                .prove(rng, &create_circuit::<4>(tx_circuit_vec)?)
-                .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?,
+            1 => {
+                let circuit = create_circuit::<1>(tx_circuit_vec)?;
+                TX_CIRCUIT_1_2_PROVER
+                    .prove_with_version(rng, &circuit, plonk_version)
+                    .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?
+            }
+            2 => {
+                let circuit = create_circuit::<2>(tx_circuit_vec)?;
+                TX_CIRCUIT_2_2_PROVER
+                    .prove_with_version(rng, &circuit, plonk_version)
+                    .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?
+            }
+            3 => {
+                let circuit = create_circuit::<3>(tx_circuit_vec)?;
+                TX_CIRCUIT_3_2_PROVER
+                    .prove_with_version(rng, &circuit, plonk_version)
+                    .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?
+            }
+            4 => {
+                let circuit = create_circuit::<4>(tx_circuit_vec)?;
+                TX_CIRCUIT_4_2_PROVER
+                    .prove_with_version(rng, &circuit, plonk_version)
+                    .map_err(|e| Error::PhoenixProver(format!("{e:?}")))?
+            }
             _ => return Err(Error::InvalidData),
         };
 

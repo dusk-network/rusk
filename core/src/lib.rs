@@ -61,7 +61,7 @@ pub mod signatures {
 pub mod plonk {
     pub use dusk_plonk::prelude::{
         Circuit, Compiler, Composer, Constraint, Error, Proof, Prover,
-        PublicParameters, Verifier, Witness, WitnessPoint,
+        PlonkVersion, PublicParameters, Verifier, Witness, WitnessPoint,
     };
 }
 

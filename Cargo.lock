@@ -1801,8 +1801,6 @@ dependencies = [
 [[package]]
 name = "dusk-plonk"
 version = "0.22.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5bc834a6dbda93813268eb1df189712f07c1380ba9060b159157dd618cc6b1e"
 dependencies = [
  "blake2b_simd",
  "bytecheck",
@@ -1908,14 +1906,19 @@ dependencies = [
  "dusk-node",
  "dusk-node-data",
  "dusk-rusk",
+ "dusk-vm",
  "dusk-wallet-core",
  "ff",
  "futures",
  "futures-util",
+ "hex",
  "rand 0.8.5",
+ "reqwest",
  "rkyv",
  "rusk-prover",
  "rusk-recovery",
+ "serde",
+ "serde_json",
  "tempfile",
  "tokio",
  "tokio-stream",

@@ -9,6 +9,7 @@
 use crate::Result;
 use crate::error::Error;
 
+use dusk_core::plonk::PlonkVersion;
 use dusk_core::transfer::moonlight::Transaction as MoonlightTransaction;
 use dusk_core::transfer::phoenix::Transaction as PhoenixTransaction;
 use dusk_vm::host_queries;
@@ -67,7 +68,20 @@ mod runtime {
 use runtime::*;
 
 /// Verifies the proof of the incoming transaction.
-pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
+pub fn verify_proof_with_version(
+    tx: &PhoenixTransaction,
+    version: PlonkVersion,
+) -> Result<bool> {
+    let vd = vd_for_phoenix(tx)?;
+    Ok(host_queries::verify_plonk_with_version(
+        version,
+        vd.to_vec(),
+        tx.proof().to_vec(),
+        tx.public_inputs(),
+    ))
+}
+
+fn vd_for_phoenix(tx: &PhoenixTransaction) -> Result<&[u8]> {
     let inputs_len = tx.nullifiers().len();
 
     let vd = match inputs_len {
@@ -83,13 +97,7 @@ pub fn verify_proof(tx: &PhoenixTransaction) -> Result<bool> {
         }
     };
 
-    // Maybe we want to handle internal serialization error too,
-    // currently they map to `false`.
-    Ok(host_queries::verify_plonk(
-        vd.to_vec(),
-        tx.proof().to_vec(),
-        tx.public_inputs(),
-    ))
+    Ok(vd)
 }
 
 /// Verifies the signature of the incoming transaction.
