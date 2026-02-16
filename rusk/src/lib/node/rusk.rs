@@ -518,10 +518,7 @@ impl Rusk {
 
     /// Opens a session for query, setting a block height of zero since this
     /// doesn't affect the result.
-    pub(crate) fn query_session(
-        &self,
-        commit: Option<[u8; 32]>,
-    ) -> Result<Session> {
+    pub fn query_session(&self, commit: Option<[u8; 32]>) -> Result<Session> {
         self._session(0, commit)
     }
 
@@ -569,11 +566,11 @@ impl Rusk {
         tip.current = commit;
     }
 
-    pub fn commit_session(&self, session: Session) -> Result<()> {
+    pub fn commit_session(&self, session: Session) -> Result<[u8; 32]> {
         let commit = session.commit()?;
         self.set_current_commit(commit);
 
-        Ok(())
+        Ok(commit)
     }
 
     pub(crate) fn set_base_and_merge(
