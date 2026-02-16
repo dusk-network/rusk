@@ -86,6 +86,10 @@ static MAINNET_DISABLE_WASM_64: LazyLock<FeatureActivation> =
 const MAINNET_BLOB_ACTIVATION: FeatureActivation =
     FeatureActivation::Height(MAINNET_AT_10_12_2025_AT_09_00_UTC);
 
+/// Target activation: 17th February 2026, 12:00 UTC.
+const MAINNET_PLONK_V2_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(3_470_360);
+
 /// Mainnet VM configuration.
 static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
     WellKnownConfig {
@@ -101,9 +105,7 @@ static MAINNET_CONFIG: LazyLock<WellKnownConfig> = LazyLock::new(|| {
             (HQ_VERIFY_KZG_PROOF, NEVER),
             (HQ_SECP256K1_RECOVER, NEVER),
             (FEATURE_BLOB, MAINNET_BLOB_ACTIVATION),
-            // TODO: set this to the chosen mainnet activation height once the
-            // upgrade is scheduled.
-            (FEATURE_PLONK_V2, NEVER),
+            (FEATURE_PLONK_V2, MAINNET_PLONK_V2_ACTIVATION),
             (FEATURE_DISABLE_WASM64, MAINNET_DISABLE_WASM_64.clone()),
             (FEATURE_DISABLE_WASM32, MAINNET_3RD_PARTY_OFF.clone()),
             (FEATURE_DISABLE_3RD_PARTY, MAINNET_3RD_PARTY_OFF.clone()),
@@ -126,6 +128,10 @@ const TESTNET_AT_12_11_2025_AT_09_00_UTC: FeatureActivation =
 const TESTNET_AT_04_02_2026_AT_09_00_UTC: FeatureActivation =
     FeatureActivation::Height(2_539_820);
 
+/// Target activation: 17th February 2026, 12:00 UTC.
+const TESTNET_PLONK_V2_ACTIVATION: FeatureActivation =
+    FeatureActivation::Height(2_653_175);
+
 /// Testnet VM configuration.
 const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
     gas_per_blob: DEFAULT_GAS_PER_BLOB,
@@ -140,7 +146,7 @@ const TESTNET_CONFIG: WellKnownConfig = WellKnownConfig {
         (HQ_VERIFY_KZG_PROOF, NEVER),
         (HQ_SECP256K1_RECOVER, NEVER),
         (FEATURE_BLOB, TESTNET_AT_12_11_2025_AT_09_00_UTC),
-        (FEATURE_PLONK_V2, NEVER),
+        (FEATURE_PLONK_V2, TESTNET_PLONK_V2_ACTIVATION),
         (FEATURE_DISABLE_WASM64, TESTNET_AT_12_11_2025_AT_09_00_UTC),
         (FEATURE_DISABLE_WASM32, NEVER),
         (FEATURE_DISABLE_3RD_PARTY, NEVER),
