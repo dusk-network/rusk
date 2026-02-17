@@ -561,6 +561,25 @@ pub struct RuesDispatchEvent {
     pub data: RequestData,
 }
 
+#[derive(Debug)]
+pub enum RequestParseError {
+    InvalidPath,
+    InvalidPayload(String),
+    Other(anyhow::Error),
+}
+
+impl Display for RequestParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RequestParseError::InvalidPath => write!(f, "Invalid URL path"),
+            RequestParseError::InvalidPayload(msg) => write!(f, "{msg}"),
+            RequestParseError::Other(err) => write!(f, "{err}"),
+        }
+    }
+}
+
+impl std::error::Error for RequestParseError {}
+
 impl RuesDispatchEvent {
     pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
         let mut h = self.headers.clone();
@@ -597,27 +616,38 @@ impl RuesDispatchEvent {
     }
     pub async fn from_request(
         req: Request<Incoming>,
-    ) -> Result<(Self, bool), super::HttpError> {
+    ) -> Result<(Self, bool), RequestParseError> {
         let (parts, body) = req.into_parts();
 
         let uri = RuesEventUri::parse_from_path(parts.uri.path())
-            .ok_or(super::HttpError::invalid_input("Invalid URL path"))?;
+            .ok_or(RequestParseError::InvalidPath)?;
 
         let headers = parts
             .headers
             .iter()
             .map(|(k, v)| {
-                let v = if v.is_empty() {
+                let value = if v.is_empty() {
                     serde_json::Value::Null
-                } else {
+                } else if let Ok(parsed) =
                     serde_json::from_slice::<serde_json::Value>(v.as_bytes())
-                        .unwrap_or(serde_json::Value::String(
-                            v.to_str().unwrap().to_string(),
+                {
+                    parsed
+                } else {
+                    let as_str = v.to_str().map_err(|_| {
+                        RequestParseError::InvalidPayload(format!(
+                            "Invalid header encoding for {}",
+                            k.as_str()
                         ))
+                    })?;
+                    serde_json::Value::String(as_str.to_string())
                 };
-                (k.to_string().to_lowercase(), v)
+
+                Ok((k.to_string().to_lowercase(), value))
             })
-            .collect();
+            .collect::<Result<
+                serde_json::Map<String, serde_json::Value>,
+                RequestParseError,
+            >>()?;
 
         // HTTP REQUEST
         let content_type = parts
@@ -639,16 +669,14 @@ impl RuesDispatchEvent {
         let bytes = body
             .collect()
             .await
-            .map_err(|e| super::HttpError::internal(e.to_string()))?
+            .map_err(|e| RequestParseError::Other(e.into()))?
             .to_bytes()
             .to_vec();
         let data = match binary_request {
             true => bytes.into(),
             _ => {
                 let text = String::from_utf8(bytes).map_err(|_| {
-                    super::HttpError::InvalidEncoding(
-                        "Invalid utf8".to_string(),
-                    )
+                    RequestParseError::InvalidPayload("Invalid utf8".into())
                 })?;
                 if let Some(hex) = text.strip_prefix("0x") {
                     if let Ok(bytes) = hex::decode(hex) {
