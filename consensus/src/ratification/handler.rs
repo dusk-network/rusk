@@ -356,3 +356,335 @@ impl RatificationHandler {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
+    use dusk_core::signatures::bls::{
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    };
+    use node_data::StepName;
+    use node_data::ledger::{Header, Seed, StepVotes};
+    use node_data::message::payload::{QuorumType, ValidationResult, Vote};
+    use node_data::message::{Message, Payload};
+    use rand::SeedableRng;
+    use tokio::sync::Mutex;
+
+    use crate::commons::RoundUpdate;
+    use crate::errors::ConsensusError;
+    use crate::iteration_ctx::RoundCommittees;
+    use crate::msg_handler::MsgHandler;
+    use crate::ratification::handler::RatificationHandler;
+    use crate::step_votes_reg::{AttInfoRegistry, SafeAttestationInfoRegistry};
+    use crate::user::committee::Committee;
+    use crate::user::provisioners::{DUSK, Provisioners};
+    use crate::user::sortition::Config;
+
+    // Keep one deterministic seed per test setup to isolate key material.
+    const SEED_ACCEPT_MATCHING_RESULT: u64 = 1;
+    const SEED_ACCEPT_PAST_PENDING: u64 = 2;
+    const SEED_ACCEPT_PAST_READY: u64 = 3;
+    const SEED_REJECT_NOQUORUM: u64 = 4;
+    const SEED_REJECT_MISMATCH: u64 = 5;
+    const SEED_REJECT_PAST_INVALID_PAYLOAD: u64 = 6;
+
+    // Build a single-member ratification committee and matching signer.
+    fn setup_committee(
+        seed: Seed,
+        round: u64,
+        iteration: u8,
+        rng_seed: u64,
+    ) -> (Committee, RoundUpdate) {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(rng_seed);
+        let sk = BlsSecretKey::random(&mut rng);
+        let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+
+        let mut provisioners = Provisioners::empty();
+        provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
+
+        let mut tip_header = Header::default();
+        tip_header.height = round - 1;
+        tip_header.seed = seed;
+
+        let ru = RoundUpdate::new(
+            pk.clone(),
+            sk,
+            &tip_header,
+            HashMap::new(),
+            vec![],
+        );
+        let cfg =
+            Config::new(seed, round, iteration, StepName::Ratification, vec![]);
+        let committee = Committee::new(&provisioners, &cfg);
+
+        (committee, ru)
+    }
+
+    // Build a ratification handler initialized for one iteration.
+    fn build_handler(
+        iteration: u8,
+        validation_result: ValidationResult,
+    ) -> RatificationHandler {
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let mut handler = RatificationHandler::new(att_registry);
+        handler.reset(iteration, validation_result);
+        handler
+    }
+
+    // Build a ratification handler and expose its shared attestation registry.
+    fn build_handler_with_registry(
+        iteration: u8,
+        validation_result: ValidationResult,
+    ) -> (RatificationHandler, SafeAttestationInfoRegistry) {
+        let att_registry = Arc::new(Mutex::new(AttInfoRegistry::new()));
+        let mut handler = RatificationHandler::new(att_registry.clone());
+        handler.reset(iteration, validation_result);
+        (handler, att_registry)
+    }
+
+    // Collect one ratification message using the default round committees.
+    async fn collect_ratification_message(
+        handler: &mut RatificationHandler,
+        msg: Message,
+        ru: &RoundUpdate,
+        committee: &Committee,
+    ) -> Result<crate::msg_handler::StepOutcome, ConsensusError> {
+        handler
+            .collect(
+                msg,
+                ru,
+                committee,
+                Some(*ru.pubkey_bls.bytes()),
+                &RoundCommittees::default(),
+            )
+            .await
+    }
+
+    // Collect one ratification message from a past iteration.
+    async fn collect_ratification_message_from_past(
+        handler: &mut RatificationHandler,
+        msg: Message,
+        ru: &RoundUpdate,
+        committee: &Committee,
+    ) -> Result<crate::msg_handler::StepOutcome, ConsensusError> {
+        handler
+            .collect_from_past(msg, committee, Some(*ru.pubkey_bls.bytes()))
+            .await
+    }
+
+    #[tokio::test]
+    // Matching ratification and local validation results should be accepted.
+    async fn ratification_accepts_matching_local_validation_result() {
+        let (committee, ru) = setup_committee(
+            Seed::from([8u8; 48]),
+            1,
+            0,
+            SEED_ACCEPT_MATCHING_RESULT,
+        );
+
+        let local_validation = ValidationResult::new(
+            StepVotes::new([1u8; 48], 1),
+            Vote::NoCandidate,
+            QuorumType::NoCandidate,
+        );
+        let mut handler = build_handler(0, local_validation.clone());
+
+        let ratification =
+            crate::build_ratification_payload(&ru, 0, &local_validation);
+        let msg: Message = ratification.into();
+
+        let outcome =
+            collect_ratification_message(&mut handler, msg, &ru, &committee)
+                .await;
+        assert!(
+            matches!(outcome, Ok(crate::msg_handler::StepOutcome::Pending)),
+            "expected accepted vote to be collected"
+        );
+    }
+
+    #[tokio::test]
+    // Past ratification without validation quorum should remain pending.
+    async fn ratification_collect_from_past_stays_pending_without_validation_quorum()
+     {
+        let (committee, ru) = setup_committee(
+            Seed::from([10u8; 48]),
+            1,
+            0,
+            SEED_ACCEPT_PAST_PENDING,
+        );
+        let local_validation = ValidationResult::new(
+            StepVotes::new([1u8; 48], 1),
+            Vote::NoCandidate,
+            QuorumType::NoCandidate,
+        );
+        let mut handler = build_handler(0, local_validation.clone());
+
+        let ratification =
+            crate::build_ratification_payload(&ru, 0, &local_validation);
+        let msg: Message = ratification.into();
+
+        let outcome = collect_ratification_message_from_past(
+            &mut handler,
+            msg,
+            &ru,
+            &committee,
+        )
+        .await;
+
+        assert!(
+            matches!(outcome, Ok(crate::msg_handler::StepOutcome::Pending)),
+            "expected pending while validation quorum is missing"
+        );
+    }
+
+    #[tokio::test]
+    // Past ratification should emit Quorum once validation and ratification quorums are ready.
+    async fn ratification_collect_from_past_emits_quorum_when_ready() {
+        let (committee, ru) = setup_committee(
+            Seed::from([12u8; 48]),
+            1,
+            0,
+            SEED_ACCEPT_PAST_READY,
+        );
+        let (mut handler, att_registry) =
+            build_handler_with_registry(0, ValidationResult::default());
+
+        let vote = Vote::Valid([7u8; 32]);
+        let validation_votes = StepVotes::new([3u8; 48], 1);
+        att_registry.lock().await.set_step_votes(
+            0,
+            &vote,
+            validation_votes,
+            StepName::Validation,
+            true,
+            ru.pubkey_bls.bytes(),
+        );
+
+        let msg_validation = ValidationResult::new(
+            StepVotes::new([4u8; 48], 1),
+            vote,
+            QuorumType::Valid,
+        );
+        let ratification =
+            crate::build_ratification_payload(&ru, 0, &msg_validation);
+        let msg: Message = ratification.into();
+
+        let outcome = collect_ratification_message_from_past(
+            &mut handler,
+            msg,
+            &ru,
+            &committee,
+        )
+        .await
+        .expect("expected ready quorum output");
+
+        match outcome {
+            crate::msg_handler::StepOutcome::Ready(msg) => match msg.payload {
+                Payload::Quorum(q) => {
+                    assert_eq!(q.att.result.vote(), &vote);
+                }
+                _ => panic!("expected quorum payload"),
+            },
+            crate::msg_handler::StepOutcome::Pending => {
+                panic!("expected quorum-ready output")
+            }
+        }
+    }
+
+    #[tokio::test]
+    // NoQuorum ratification must not carry validation step votes.
+    async fn ratification_rejects_noquorum_with_validation_votes() {
+        let (committee, ru) =
+            setup_committee(Seed::from([4u8; 48]), 1, 0, SEED_REJECT_NOQUORUM);
+        let mut handler = build_handler(0, ValidationResult::default());
+
+        let validation = ValidationResult::new(
+            StepVotes::new([9u8; 48], 1),
+            Vote::NoQuorum,
+            QuorumType::NoQuorum,
+        );
+        let ratification =
+            crate::build_ratification_payload(&ru, 0, &validation);
+        let msg: Message = ratification.into();
+
+        let err = match collect_ratification_message(
+            &mut handler,
+            msg,
+            &ru,
+            &committee,
+        )
+        .await
+        {
+            Ok(_) => panic!("expected invalid noquorum rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::InvalidVote(Vote::NoQuorum)));
+    }
+
+    #[tokio::test]
+    // Ratification vote must match the node's stored local validation result.
+    async fn ratification_rejects_mismatched_local_validation_result() {
+        let (committee, ru) =
+            setup_committee(Seed::from([6u8; 48]), 1, 0, SEED_REJECT_MISMATCH);
+
+        let local_vote = Vote::Valid([2u8; 32]);
+        let local_validation = ValidationResult::new(
+            StepVotes::new([1u8; 48], 1),
+            local_vote,
+            QuorumType::Valid,
+        );
+        let mut handler = build_handler(0, local_validation);
+
+        let msg_validation = ValidationResult::new(
+            StepVotes::new([3u8; 48], 1),
+            Vote::NoCandidate,
+            QuorumType::NoCandidate,
+        );
+        let ratification =
+            crate::build_ratification_payload(&ru, 0, &msg_validation);
+        let msg: Message = ratification.into();
+
+        let err = match collect_ratification_message(
+            &mut handler,
+            msg,
+            &ru,
+            &committee,
+        )
+        .await
+        {
+            Ok(_) => panic!("expected vote mismatch rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::VoteMismatch(_, _)));
+    }
+
+    #[tokio::test]
+    // Past ratification handling must reject non-ratification payloads.
+    async fn ratification_collect_from_past_rejects_invalid_payload() {
+        let (committee, ru) = setup_committee(
+            Seed::from([14u8; 48]),
+            1,
+            0,
+            SEED_REJECT_PAST_INVALID_PAYLOAD,
+        );
+        let mut handler = build_handler(0, ValidationResult::default());
+
+        let err = match collect_ratification_message_from_past(
+            &mut handler,
+            Message::default(),
+            &ru,
+            &committee,
+        )
+        .await
+        {
+            Ok(_) => panic!("expected invalid payload rejection"),
+            Err(err) => err,
+        };
+
+        assert!(matches!(err, ConsensusError::InvalidMsgType));
+    }
+}
