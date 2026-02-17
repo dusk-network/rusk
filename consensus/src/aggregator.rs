@@ -240,12 +240,15 @@ mod tests {
         PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
     };
     use hex::FromHex;
-    use node_data::ledger::{Header, Seed};
+    use node_data::StepName;
+    use node_data::ledger::{Header, Seed, StepVotes};
     use node_data::message::StepMessage;
+    use rand::SeedableRng;
 
     use super::*;
     use crate::aggregator::Aggregator;
     use crate::commons::RoundUpdate;
+    use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
     use crate::user::committee::Committee;
     use crate::user::provisioners::{DUSK, Provisioners};
     use crate::user::sortition::Config;
@@ -259,7 +262,19 @@ mod tests {
         }
     }
 
+    // Decode deterministic secret keys used by vote-aggregation scenarios.
+    fn decode_secret_keys(hex_keys: &[&str]) -> Vec<BlsSecretKey> {
+        hex_keys
+            .iter()
+            .map(|hex| hex::decode(hex).expect("valid hex"))
+            .map(|data| {
+                BlsSecretKey::from_slice(&data[..]).expect("valid secret key")
+            })
+            .collect()
+    }
+
     #[test]
+    // Validation votes should aggregate quorum correctly and reject duplicates.
     fn test_collect_votes() {
         let sks = [
             "7f6f2ccdb23f2abb7b69278e947c01c6160a31cf02c19d06d0f6e5ab1d768b15",
@@ -273,13 +288,7 @@ mod tests {
             "b260b8a10343bf5a5dacb4f1d32d06c4fdddc9981a3619fbc0a5cd9eb30f3334",
             "87a9779748888da5d96bbbce041b5109c6ffc0c4f30561c0170384a5922d9e21",
         ];
-        let sks: Vec<_> = sks
-            .iter()
-            .map(|hex| hex::decode(hex).expect("valid hex"))
-            .map(|data| {
-                BlsSecretKey::from_slice(&data[..]).expect("valid secret key")
-            })
-            .collect();
+        let sks = decode_secret_keys(&sks);
 
         let round = 1;
         let iteration = 1;
@@ -332,8 +341,6 @@ mod tests {
 
         let mut a = Aggregator::default();
 
-        dbg!("{:?}", p);
-
         // Collect votes from expected committee members
         let expected_members = vec![1, 2, 3, 4];
         let expected_votes = vec![1, 1, 2, 1];
@@ -350,7 +357,6 @@ mod tests {
                 }
             },
         );
-        println!("winning index {winning_index}");
         let mut collected_votes = 0;
         for i in 0..expected_members.len() - 1 {
             // Select provisioner
@@ -377,7 +383,6 @@ mod tests {
                 break;
             }
 
-            println!("Collecting vote for index {i}");
             // Check collected votes
             let (_, quorum_reached) = a.collect_vote(&c, msg).unwrap();
 
@@ -407,5 +412,85 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    // In emergency mode, only Valid votes are aggregated into step votes.
+    fn test_emergency_mode_skips_non_valid_votes() {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(1);
+        let sk = BlsSecretKey::random(&mut rng);
+        let pk = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk));
+
+        let mut provisioners = Provisioners::empty();
+        provisioners.add_provisioner_with_value(pk.clone(), 1000 * DUSK);
+
+        let mut tip_header = Header::default();
+        tip_header.height = 0;
+
+        let ru = RoundUpdate::new(
+            pk.clone(),
+            sk,
+            &tip_header,
+            HashMap::new(),
+            vec![],
+        );
+
+        let iter = EMERGENCY_MODE_ITERATION_THRESHOLD;
+        let cfg = Config::new(
+            Seed::from([9u8; 48]),
+            1,
+            iter,
+            StepName::Validation,
+            vec![],
+        );
+        let committee = Committee::new(&provisioners, &cfg);
+
+        let vote = Vote::Invalid([4u8; 32]);
+        let msg = crate::build_validation_payload(vote, &ru, iter);
+
+        let mut aggr = Aggregator::default();
+        let (step_votes, quorum_reached) =
+            aggr.collect_vote(&committee, &msg).expect("vote collected");
+
+        assert_eq!(step_votes, StepVotes::default());
+        assert!(!quorum_reached);
+    }
+
+    #[test]
+    // Votes signed by non-committee members must always be rejected.
+    fn test_collect_vote_rejects_non_member() {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(2);
+        let sk_a = BlsSecretKey::random(&mut rng);
+        let pk_a = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk_a));
+        let sk_b = BlsSecretKey::random(&mut rng);
+        let pk_b = node_data::bls::PublicKey::new(BlsPublicKey::from(&sk_b));
+
+        let mut provisioners = Provisioners::empty();
+        provisioners.add_provisioner_with_value(pk_a.clone(), 1000 * DUSK);
+
+        let mut tip_header = Header::default();
+        tip_header.height = 0;
+        tip_header.seed = Seed::from([9u8; 48]);
+
+        let ru_b = RoundUpdate::new(
+            pk_b.clone(),
+            sk_b,
+            &tip_header,
+            HashMap::new(),
+            vec![],
+        );
+
+        let cfg =
+            Config::new(tip_header.seed, 1, 0, StepName::Validation, vec![]);
+        let committee = Committee::new(&provisioners, &cfg);
+
+        let vote = Vote::Valid([1u8; 32]);
+        let msg = crate::build_validation_payload(vote, &ru_b, 0);
+
+        let mut aggr = Aggregator::default();
+        let err = aggr
+            .collect_vote(&committee, &msg)
+            .expect_err("non member rejected");
+        assert!(matches!(err, AggregatorError::NotCommitteeMember));
     }
 }

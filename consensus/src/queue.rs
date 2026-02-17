@@ -124,12 +124,13 @@ mod tests {
     use node_data::bls::PUBLIC_BLS_SIZE;
 
     use super::QueueMessage;
-    use crate::queue::MsgRegistry;
+    use crate::queue::{MsgRegistry, MsgRegistryError};
 
     #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
     struct Item(u64, u8, i32, node_data::bls::PublicKeyBytes);
 
     impl Item {
+        // Encode test payload bytes into signer field for deterministic identity.
         fn new(round: u64, step: u8, data: i32) -> Self {
             let mut buf = [0u8; PUBLIC_BLS_SIZE];
             let data_bytes = data.to_le_bytes();
@@ -139,6 +140,22 @@ mod tests {
             buf[2] = data_bytes[2];
             buf[3] = data_bytes[3];
             Self(round, step, data, node_data::bls::PublicKeyBytes(buf))
+        }
+    }
+
+    #[derive(Clone, Debug, Default, PartialEq, Eq)]
+    struct NoSigner(u64, u8);
+
+    // Helper message type used to verify no-signer rejection paths.
+    impl QueueMessage for NoSigner {
+        fn round(&self) -> u64 {
+            self.0
+        }
+        fn step(&self) -> u8 {
+            self.1
+        }
+        fn signer(&self) -> Option<node_data::bls::PublicKeyBytes> {
+            None
         }
     }
 
@@ -154,6 +171,7 @@ mod tests {
         }
     }
     #[test]
+    // Registry should enqueue, drain, and purge messages by round/step.
     fn test_push_event() -> Result<(), super::MsgRegistryError<Item>> {
         let round = 55555;
 
@@ -188,6 +206,7 @@ mod tests {
     }
 
     #[test]
+    // Out-of-range cleanup should keep only rounds inside the configured window.
     fn test_remove_msgs_out_of_range()
     -> Result<(), super::MsgRegistryError<Item>> {
         let round = 100;
@@ -207,6 +226,65 @@ mod tests {
 
         assert!(reg.drain_msg_by_round_step(round + 1, 1).is_some());
         assert!(reg.drain_msg_by_round_step(round + 2, 1).is_some());
+        Ok(())
+    }
+
+    #[test]
+    // Registry should reject messages that do not expose a signer key.
+    fn test_rejects_no_signer() {
+        let mut reg = MsgRegistry::<NoSigner>::default();
+        let msg = NoSigner(42, 1);
+
+        match reg.put_msg(msg.clone()) {
+            Err(MsgRegistryError::NoSigner(returned)) => {
+                assert_eq!(returned, msg);
+            }
+            other => panic!("expected NoSigner error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    // Registry should keep only one queued message per signer per step.
+    fn test_rejects_duplicate_signer() {
+        let mut reg = MsgRegistry::<Item>::default();
+        let msg = Item::new(7, 3, 99);
+
+        reg.put_msg(msg).expect("first insert");
+        match reg.put_msg(msg) {
+            Err(MsgRegistryError::SignerAlreadyEnqueue(returned)) => {
+                assert_eq!(returned, msg);
+            }
+            other => panic!("expected SignerAlreadyEnqueue, got {other:?}"),
+        }
+    }
+
+    #[test]
+    // Queue keeps bounded size by dropping the oldest message on overflow.
+    fn test_queue_capacity_drops_oldest() -> Result<(), MsgRegistryError<Item>>
+    {
+        let round = 1;
+        let step = 1;
+        let mut reg = MsgRegistry::<Item>::default();
+
+        for i in 0..super::MAX_MESSAGES_PER_QUEUE {
+            reg.put_msg(Item::new(round, step, i as i32))?;
+        }
+
+        assert_eq!(reg.msg_count(), super::MAX_MESSAGES_PER_QUEUE);
+
+        reg.put_msg(Item::new(
+            round,
+            step,
+            super::MAX_MESSAGES_PER_QUEUE as i32,
+        ))?;
+
+        assert_eq!(reg.msg_count(), super::MAX_MESSAGES_PER_QUEUE);
+
+        let drained = reg
+            .drain_msg_by_round_step(round, step)
+            .expect("queue exists");
+        assert_eq!(drained.len(), super::MAX_MESSAGES_PER_QUEUE);
+        assert_eq!(drained.front().unwrap().2, 1);
         Ok(())
     }
 }

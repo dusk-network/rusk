@@ -152,6 +152,165 @@ pub struct AttInfoRegistry {
     att_list: HashMap<u8, IterationAtts>,
 }
 
+#[cfg(test)]
+mod tests {
+    use node_data::StepName;
+    use node_data::bls::PublicKeyBytes;
+    use node_data::ledger::{Attestation, StepVotes};
+    use node_data::message::payload::{RatificationResult, Vote};
+
+    use super::AttInfoRegistry;
+
+    // Build deterministic generator bytes from a compact test seed.
+    fn generator(seed: u64) -> PublicKeyBytes {
+        let generator = node_data::bls::PublicKey::from_sk_seed_u64(seed);
+        *generator.bytes()
+    }
+
+    #[test]
+    // Empty step votes must be ignored and should not produce attestations.
+    fn default_step_votes_are_ignored() {
+        let mut reg = AttInfoRegistry::new();
+        let generator = generator(1);
+
+        let att = reg.set_step_votes(
+            0,
+            &Vote::Valid([1u8; 32]),
+            StepVotes::default(),
+            StepName::Validation,
+            true,
+            &generator,
+        );
+        assert!(att.is_none(), "default step votes should be ignored");
+        assert!(
+            reg.get_fail_att(0).is_none(),
+            "ignored votes must not create failed attestations"
+        );
+    }
+
+    #[test]
+    // Valid/Invalid outcomes require both validation and ratification quorums.
+    fn attestation_ready_after_validation_and_ratification_quorum() {
+        let mut reg = AttInfoRegistry::new();
+        let generator = generator(2);
+
+        let iter = 0u8;
+        let vote = Vote::Valid([1u8; 32]);
+        let validation = StepVotes::new([3u8; 48], 1);
+        let ratification = StepVotes::new([4u8; 48], 1);
+
+        let att = reg.set_step_votes(
+            iter,
+            &vote,
+            validation,
+            StepName::Validation,
+            true,
+            &generator,
+        );
+        assert!(att.is_none(), "attestation should not be ready yet");
+
+        let att = reg
+            .set_step_votes(
+                iter,
+                &vote,
+                ratification,
+                StepName::Ratification,
+                true,
+                &generator,
+            )
+            .expect("attestation should be ready");
+
+        assert_eq!(att.result.vote(), &vote);
+        assert_eq!(att.validation, validation);
+        assert_eq!(att.ratification, ratification);
+    }
+
+    #[test]
+    // NoQuorum outcome is decided by ratification quorum only.
+    fn noquorum_attestation_requires_only_ratification() {
+        let mut reg = AttInfoRegistry::new();
+        let generator = generator(3);
+
+        let iter = 1u8;
+        let vote = Vote::NoQuorum;
+        let ratification = StepVotes::new([9u8; 48], 1);
+
+        let att = reg
+            .set_step_votes(
+                iter,
+                &vote,
+                ratification,
+                StepName::Ratification,
+                true,
+                &generator,
+            )
+            .expect("noquorum attestation should be ready");
+
+        assert_eq!(att.result.vote(), &vote);
+        assert_eq!(att.ratification, ratification);
+    }
+
+    #[test]
+    // Invalid vote should not produce an attestation until both steps agree.
+    fn invalid_vote_requires_both_quorums() {
+        let mut reg = AttInfoRegistry::new();
+        let generator = generator(4);
+
+        let iter = 2u8;
+        let vote = Vote::Invalid([3u8; 32]);
+        let validation = StepVotes::new([1u8; 48], 1);
+        let ratification = StepVotes::new([2u8; 48], 1);
+
+        let att = reg.set_step_votes(
+            iter,
+            &vote,
+            validation,
+            StepName::Validation,
+            true,
+            &generator,
+        );
+        assert!(att.is_none(), "needs ratification quorum too");
+
+        let att = reg
+            .set_step_votes(
+                iter,
+                &vote,
+                ratification,
+                StepName::Ratification,
+                true,
+                &generator,
+            )
+            .expect("attestation should be ready");
+
+        assert_eq!(att.result.vote(), &vote);
+        assert_eq!(att.validation, validation);
+        assert_eq!(att.ratification, ratification);
+    }
+
+    #[test]
+    // Explicit failed attestations should be retrievable in failed-atts history.
+    fn set_attestation_populates_failed_list() {
+        let mut reg = AttInfoRegistry::new();
+        let generator = generator(5);
+
+        let iter = 4u8;
+        let att = Attestation {
+            result: RatificationResult::Fail(Vote::NoQuorum),
+            validation: StepVotes::default(),
+            ratification: StepVotes::new([9u8; 48], 1),
+        };
+
+        reg.set_attestation(iter, att, &generator);
+
+        let stored = reg.get_fail_att(iter).expect("failed attestation");
+        assert_eq!(stored, att);
+
+        let list = reg.get_failed_atts(iter + 1);
+        assert_eq!(list.len(), (iter + 1) as usize);
+        assert_eq!(list[iter as usize], Some((att, generator)));
+    }
+}
+
 impl AttInfoRegistry {
     pub(crate) fn new() -> Self {
         Self {
