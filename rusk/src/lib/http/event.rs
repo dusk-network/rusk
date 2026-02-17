@@ -55,9 +55,14 @@ impl MessageResponse {
         if let Some((error, code)) = self.error {
             let code = hyper::StatusCode::from_u16(code)
                 .unwrap_or(hyper::StatusCode::INTERNAL_SERVER_ERROR);
+            let error_body = serde_json::json!({ "error": error }).to_string();
             return Ok(hyper::Response::builder()
                 .status(code)
-                .body(Full::new(error.into()).into())?);
+                .header(
+                    CONTENT_TYPE,
+                    HeaderValue::from_static(CONTENT_TYPE_JSON),
+                )
+                .body(Full::new(error_body.into()).into())?);
         }
 
         let mut headers = HashMap::new();
@@ -369,6 +374,8 @@ pub enum ExecutionError {
     Tungstenite(#[from] tungstenite::Error),
     #[error("Invalid header: {0}")]
     InvalidHeader(String),
+    #[error("Not found: {0}")]
+    NotFound(String),
     #[error("{0}")]
     Other(String),
 }

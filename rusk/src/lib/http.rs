@@ -24,7 +24,7 @@ pub(crate) use event::{
 };
 
 use tokio::task::JoinError;
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -58,8 +58,8 @@ use futures_util::io::Cursor;
 use http_body_util::Full;
 #[cfg(feature = "chain")]
 use http_body_util::{BodyExt, LengthLimitError, Limited};
-#[cfg(feature = "chain")]
-use hyper::header::{ALLOW, CONTENT_TYPE};
+use hyper::header::ALLOW;
+use hyper::header::CONTENT_TYPE;
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::service::Service;
 use hyper::{
@@ -245,7 +245,7 @@ impl HandleRequest for DataSources {
             let _ = path;
         }
 
-        Err(ExecutionError::Other("Unsupported path".to_string()))
+        Err(ExecutionError::NotFound("Path not found".to_string()))
     }
 }
 
@@ -363,6 +363,8 @@ where
     /// the former case, the request is handled on the spot, while in the
     /// latter task running the stream handler loop is spawned.
     fn call(&self, req: Request<Incoming>) -> Self::Future {
+        let method = req.method().clone();
+        let path = req.uri().path().to_string();
         let sources = self.sources.clone();
         let sockets_map = self.sockets_map.clone();
         let events = self.events.resubscribe();
@@ -409,11 +411,27 @@ where
                 rsp
             })
             .or_else(|error| {
-                Ok(response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    error.to_string(),
-                )
-                .expect("Failed to build response"))
+                match &error {
+                    ExecutionError::NotFound(_) => {
+                        debug!(
+                            %method,
+                            %path,
+                            error = %error,
+                            "HTTP request path not found"
+                        );
+                    }
+                    _ => {
+                        error!(
+                            %method,
+                            %path,
+                            error = %error,
+                            "HTTP request handling failed"
+                        );
+                    }
+                }
+
+                Ok(execution_error_response(&error)
+                    .expect("Failed to build response"))
             })
         })
     }
@@ -591,6 +609,83 @@ fn response(
         .expect("Failed to build response"))
 }
 
+fn api_error_response(
+    status: StatusCode,
+    message: impl Into<String>,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    let mut response = response(
+        status,
+        serde_json::json!({ "error": message.into() }).to_string(),
+    )?;
+    response
+        .headers_mut()
+        .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    Ok(response)
+}
+
+fn request_parse_error_response(
+    error: RequestParseError,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    let (status, message) = match error {
+        RequestParseError::InvalidPath => {
+            (StatusCode::NOT_FOUND, "Invalid URL path".to_string())
+        }
+        RequestParseError::InvalidPayload(msg) => {
+            (StatusCode::UNPROCESSABLE_ENTITY, msg)
+        }
+        RequestParseError::Other(err) => {
+            if let Some(http_err) = err.downcast_ref::<HttpError>() {
+                let status = StatusCode::from_u16(http_err.http_code())
+                    .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+                return api_error_response(status, http_err.to_string());
+            }
+            error!(error = %err, "Failed parsing RUES dispatch request");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed parsing request".to_string(),
+            )
+        }
+    };
+
+    api_error_response(status, message)
+}
+
+fn execution_error_response(
+    error: &ExecutionError,
+) -> Result<Response<FullOrStreamBody>, ExecutionError> {
+    let (status, message) = match error {
+        ExecutionError::NotFound(message) => {
+            (StatusCode::NOT_FOUND, message.clone())
+        }
+        ExecutionError::InvalidHeader(_) => (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Invalid header".to_string(),
+        ),
+        _ => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Internal server error".to_string(),
+        ),
+    };
+
+    api_error_response(status, message)
+}
+
+fn map_http_error_for_response(error: &HttpError) -> (u16, String) {
+    let status = error.http_code();
+    let message = match error {
+        HttpError::Serialization(_)
+        | HttpError::Vm(_)
+        | HttpError::Database(_)
+        | HttpError::DataDriver(_)
+        | HttpError::Io(_)
+        | HttpError::Prover(_)
+        | HttpError::Verification(_)
+        | HttpError::Internal(_) => "Internal server error".to_string(),
+        _ => error.to_string(),
+    };
+    (status, message)
+}
+
 async fn handle_request_rues<H: HandleRequest>(
     mut req: Request<Incoming>,
     handler: Arc<H>,
@@ -635,35 +730,16 @@ async fn handle_request_rues<H: HandleRequest>(
         Ok(response.map(Into::into))
     } else if req.method() == Method::POST {
         if let Err(err) = validate_rusk_version_headers(req.headers()) {
-            return response(StatusCode::BAD_REQUEST, err.to_string());
+            return api_error_response(
+                StatusCode::BAD_REQUEST,
+                err.to_string(),
+            );
         }
 
         let (event, binary_request) =
             match RuesDispatchEvent::from_request(req).await {
                 Ok(data) => data,
-                Err(RequestParseError::InvalidPath) => {
-                    return response(
-                        StatusCode::NOT_FOUND,
-                        "{\"error\":\"Invalid URL path\"}",
-                    );
-                }
-                Err(RequestParseError::InvalidPayload(msg)) => {
-                    return response(
-                        StatusCode::UNPROCESSABLE_ENTITY,
-                        serde_json::json!({ "error": msg }).to_string(),
-                    );
-                }
-                Err(RequestParseError::Other(err)) => {
-                    if let Some(http_err) = err.downcast_ref::<HttpError>() {
-                        let status = StatusCode::from_u16(http_err.http_code())
-                            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-                        return response(status, http_err.to_string());
-                    }
-                    return response(
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        err.to_string(),
-                    );
-                }
+                Err(err) => return request_parse_error_response(err),
             };
         let mut resp_headers = event.x_headers();
         let (responder, mut receiver) = mpsc::unbounded_channel();
@@ -695,14 +771,17 @@ async fn handle_request_rues<H: HandleRequest>(
         Ok(resp)
     } else {
         if let Err(err) = validate_rusk_version_headers(req.headers()) {
-            return response(StatusCode::BAD_REQUEST, err.to_string());
+            return api_error_response(
+                StatusCode::BAD_REQUEST,
+                err.to_string(),
+            );
         }
 
         let sid = match SessionId::parse_from_req(&req) {
             None => {
-                return response(
+                return api_error_response(
                     StatusCode::FAILED_DEPENDENCY,
-                    "{\"error\":\"Session ID not provided or invalid\"}",
+                    "Session ID not provided or invalid",
                 );
             }
             Some(sid) => sid,
@@ -710,9 +789,9 @@ async fn handle_request_rues<H: HandleRequest>(
 
         let uri = match RuesEventUri::parse_from_path(req.uri().path()) {
             None => {
-                return response(
+                return api_error_response(
                     StatusCode::NOT_FOUND,
-                    "{{\"error\":\"Invalid URL path\n\"}}",
+                    "Invalid URL path",
                 );
             }
             Some(s) => s,
@@ -721,9 +800,9 @@ async fn handle_request_rues<H: HandleRequest>(
         let action_sender = match sockets_map.read().await.get(&sid) {
             Some(sender) => sender.clone(),
             None => {
-                return response(
+                return api_error_response(
                     StatusCode::FAILED_DEPENDENCY,
-                    "{\"error\":\"Session ID not provided or invalid\"}",
+                    "Session ID not provided or invalid",
                 );
             }
         };
@@ -738,31 +817,34 @@ async fn handle_request_rues<H: HandleRequest>(
                 (SubscriptionAction::Unsubscribe { uri, reply }, receiver)
             }
             _ => {
-                return response(
+                let mut resp = api_error_response(
                     StatusCode::METHOD_NOT_ALLOWED,
-                    "{\"error\":\"Method not allowed\"}",
-                );
+                    "Method not allowed",
+                )?;
+                resp.headers_mut()
+                    .insert(ALLOW, HeaderValue::from_static("GET, DELETE"));
+                return Ok(resp);
             }
         };
 
         if action_sender.send(action).await.is_err() {
-            return response(
+            return api_error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "{\"error\":\"Failed consuming request\"}",
+                "Failed consuming request",
             );
         }
 
         match reply.await {
             Ok(Ok(())) => response(StatusCode::OK, ""),
-            Ok(Err(SubscriptionError::NotFound)) => response(
+            Ok(Err(SubscriptionError::NotFound)) => api_error_response(
                 StatusCode::NOT_FOUND,
-                "{\"error\":\"Subscription not found\"}",
+                "Subscription not found",
             ),
             // TODO: consider returning 424 instead of 500 for reply channel
             // closure during session teardown
-            Err(_) => response(
+            Err(_) => api_error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "{\"error\":\"Failed consuming request\"}",
+                "Failed consuming request",
             ),
         }
     }
@@ -1002,11 +1084,17 @@ async fn handle_execution_rues<H>(
                 force_binary,
             }
         })
-        .unwrap_or_else(|e| EventResponse {
-            headers: event.x_headers(),
-            data: DataType::None,
-            error: Some((e.to_string(), e.http_code())),
-            force_binary: false,
+        .unwrap_or_else(|e| {
+            let (status, message) = map_http_error_for_response(&e);
+            if status >= 500 {
+                error!(error = %e, "RUES handler failed");
+            }
+            EventResponse {
+                headers: event.x_headers(),
+                data: DataType::None,
+                error: Some((message, status)),
+                force_binary: false,
+            }
         });
 
     rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
@@ -1025,7 +1113,7 @@ pub trait HandleRequest: Send + Sync + 'static {
         req: Request<Incoming>,
     ) -> Result<Response<FullOrStreamBody>, ExecutionError> {
         let _ = req;
-        Err(ExecutionError::Other("Unsupported path".to_string()))
+        Err(ExecutionError::NotFound("Path not found".to_string()))
     }
 }
 
@@ -1085,6 +1173,13 @@ mod tests {
                 }
                 ("test", _, "no-content") => ResponseData::new(DataType::None),
                 ("contracts", Some(_), _) => ResponseData::new(DataType::None),
+                ("test", _, "internal-error") => {
+                    return Err(HttpError::internal("sensitive details"));
+                }
+                ("test", _, "invalid-header") => {
+                    ResponseData::new("ok".to_string())
+                        .with_header("bad\nheader", "value")
+                }
                 ("graphql", _, "query") => {
                     ResponseData::new(serde_json::json!({ "data": "ok" }))
                 }
@@ -1208,12 +1303,26 @@ mod tests {
         expected: &str,
     ) {
         assert_eq!(response.status(), status);
+
+        let content_type = response
+            .headers()
+            .get(CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(content_type, "application/json");
+
         let body = response
             .text()
             .await
             .expect("Reading response body should succeed");
+        let json: serde_json::Value = serde_json::from_str(&body)
+            .expect("Error body should be valid JSON");
+        let error_msg = json
+            .get("error")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
         assert!(
-            body.contains(expected),
+            error_msg.contains(expected),
             "Expected error containing '{expected}', got: {body}"
         );
     }
@@ -1253,6 +1362,26 @@ mod tests {
             request_bytes, response_bytes,
             "Data received the same as sent"
         );
+    }
+
+    #[tokio::test]
+    async fn unsupported_http_path_returns_not_found() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://{local_addr}/unsupported"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::NOT_FOUND,
+            "Path not found",
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -1582,6 +1711,66 @@ mod tests {
         .await;
     }
 
+    #[tokio::test]
+    async fn post_rues_unsupported_route_returns_json_error() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/unsupported"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::NOT_IMPLEMENTED,
+            "Unsupported operation",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_internal_handler_error_is_sanitized() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/internal-error"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Internal server error",
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn post_rues_invalid_response_header_returns_unprocessable_entity() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{local_addr}/on/test/invalid-header"))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Invalid header",
+        )
+        .await;
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn get_delete_rues_strict_without_version_returns_bad_request() {
         let (_server, local_addr, _event_sender) =
@@ -1618,6 +1807,62 @@ mod tests {
             "Missing Rusk-Version header while Rusk-Version-Strict is set",
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn get_rues_without_session_id_returns_failed_dependency() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+
+        let client = reqwest::Client::new();
+        let contract_id_hex = hex::encode(ContractId::from_bytes([8; 32]));
+        let path =
+            format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
+        let response = client
+            .get(path)
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        assert_status_contains(
+            response,
+            StatusCode::FAILED_DEPENDENCY,
+            "Session ID not provided or invalid",
+        )
+        .await;
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn put_rues_returns_method_not_allowed() {
+        let (_server, local_addr, _event_sender) =
+            bind_test_server(TestHandle).await;
+        let (_stream, sid) = connect_ws(local_addr);
+
+        let client = reqwest::Client::new();
+        let contract_id_hex = hex::encode(ContractId::from_bytes([7; 32]));
+        let path =
+            format!("http://{local_addr}/on/contracts:{contract_id_hex}/topic");
+        let response = client
+            .put(path)
+            .header("Rusk-Session-Id", sid.to_string())
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        let allow_header = response
+            .headers()
+            .get(ALLOW)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_string();
+
+        assert_status_contains(
+            response,
+            StatusCode::METHOD_NOT_ALLOWED,
+            "Method not allowed",
+        )
+        .await;
+        assert_eq!(allow_header, "GET, DELETE");
     }
 
     #[tokio::test]
