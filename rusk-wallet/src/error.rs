@@ -9,7 +9,6 @@ use std::str::Utf8Error;
 
 use hex::FromHexError;
 use inquire::InquireError;
-use node_data::bls::ConsensusKeysError;
 use rand::Error as RngError;
 
 use crate::gql::GraphQLError;
@@ -176,9 +175,9 @@ pub enum Error {
     /// Error while querying archival node
     #[error("Archive node query error: {0}")]
     ArchiveJsonError(String),
-    /// Consensus keys error
-    #[error("Error while saving consensus keys: {0}")]
-    ConsensusKeysError(ConsensusKeysError),
+    /// Wallet file error
+    #[error("Error carrying out file/keys operation: {0}")]
+    WalletFs(#[from] wallet_fs::Error),
     /// Trying to claim more reward than the person has
     #[error("Trying to claim more than existing reward")]
     NotEnoughReward,
@@ -235,11 +234,5 @@ impl From<GraphQLError> for Error {
 impl From<InquireError> for Error {
     fn from(e: InquireError) -> Self {
         Self::InquireError(e.to_string())
-    }
-}
-
-impl From<node_data::bls::ConsensusKeysError> for Error {
-    fn from(e: ConsensusKeysError) -> Self {
-        Self::ConsensusKeysError(e)
     }
 }
