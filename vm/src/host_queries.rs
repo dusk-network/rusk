@@ -468,8 +468,9 @@ pub(crate) fn host_verify_plonk(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     let cached = cache::get_plonk_verification(hash);
 
     wrap_host_query(arg_buf, arg_len, |(vd, proof, pis)| {
-        let is_valid =
-            cached.unwrap_or_else(|| verify_plonk_with_version(version, vd, proof, pis));
+        let is_valid = cached.unwrap_or_else(|| {
+            verify_plonk_with_version(version, vd, proof, pis)
+        });
         cache::put_plonk_verification(hash, is_valid);
         is_valid
     })

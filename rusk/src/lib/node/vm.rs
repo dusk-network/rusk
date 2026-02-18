@@ -170,7 +170,9 @@ impl VMExecution for Rusk {
                 let plonk_v2_active = self
                     .vm_config
                     .feature(FEATURE_PLONK_V2)
-                    .map(|activation| activation.is_active_at(next_block_height))
+                    .map(|activation| {
+                        activation.is_active_at(next_block_height)
+                    })
                     .unwrap_or(false);
 
                 let version = if plonk_v2_active {
