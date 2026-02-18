@@ -68,10 +68,9 @@ pub fn majority(value: usize) -> usize {
     value / 2 + 1
 }
 
-// Returns `ceil( value/3*2 )`
+// Returns `ceil(value * 2 / 3)` using integer arithmetic.
 pub fn supermajority(value: usize) -> usize {
-    let sm = value as f32 / 3.0 * 2.0;
-    sm.ceil() as usize
+    value - value / 3
 }
 
 /// Returns the quorum of a Ratification committee
@@ -120,6 +119,8 @@ mod tests {
         assert_eq!(supermajority(3), 2);
         assert_eq!(supermajority(9), 6);
         assert_eq!(supermajority(51), 34);
+        assert_eq!(supermajority(12_582_914), 8_388_610);
+        assert_eq!(supermajority(16_777_217), 11_184_812);
     }
 
     #[test]
