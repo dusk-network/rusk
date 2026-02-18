@@ -43,7 +43,9 @@ use tracing::info;
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
-use crate::node::{RuesEvent, Rusk, RuskTip, get_block_rewards};
+use crate::node::{
+    FEATURE_PLONK_V2, RuesEvent, Rusk, RuskTip, get_block_rewards,
+};
 use crate::{DUSK_CONSENSUS_KEY, Error as RuskError, Result};
 
 impl Rusk {
@@ -126,6 +128,18 @@ impl Rusk {
         let prev_state = transition_data.prev_state_root;
 
         let cert_voters = &transition_data.cert_voters[..];
+
+        let plonk_v2_active = self
+            .vm_config
+            .feature(FEATURE_PLONK_V2)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or(false);
+        let _plonk_version_guard =
+            dusk_vm::host_queries::set_plonk_version(if plonk_v2_active {
+                dusk_core::plonk::PlonkVersion::V2
+            } else {
+                dusk_core::plonk::PlonkVersion::V1
+            });
 
         info!(
             event = "Creating state transition",
@@ -614,6 +628,18 @@ impl Rusk {
         let block_hash = blk.header().hash;
         let gas_limit = blk.header().gas_limit;
         let txs = blk.txs();
+
+        let plonk_v2_active = self
+            .vm_config
+            .feature(FEATURE_PLONK_V2)
+            .map(|activation| activation.is_active_at(block_height))
+            .unwrap_or(false);
+        let _plonk_version_guard =
+            dusk_vm::host_queries::set_plonk_version(if plonk_v2_active {
+                dusk_core::plonk::PlonkVersion::V2
+            } else {
+                dusk_core::plonk::PlonkVersion::V1
+            });
 
         let generator_bytes = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator_bytes.0)

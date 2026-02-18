@@ -142,6 +142,7 @@ impl VMExecution for Rusk {
     fn preverify(
         &self,
         tx: &Transaction,
+        tip_height: u64,
     ) -> anyhow::Result<PreverificationResult> {
         info!("Received preverify request");
         let tx = &tx.inner;
@@ -165,7 +166,22 @@ impl VMExecution for Rusk {
                     return Err(anyhow::anyhow!("{err}"));
                 }
 
-                match crate::verifier::verify_proof(tx) {
+                let next_block_height = tip_height.saturating_add(1);
+                let plonk_v2_active = self
+                    .vm_config
+                    .feature(FEATURE_PLONK_V2)
+                    .map(|activation| {
+                        activation.is_active_at(next_block_height)
+                    })
+                    .unwrap_or(false);
+
+                let version = if plonk_v2_active {
+                    dusk_core::plonk::PlonkVersion::V2
+                } else {
+                    dusk_core::plonk::PlonkVersion::V1
+                };
+
+                match crate::verifier::verify_proof_with_version(tx, version) {
                     Ok(true) => Ok(PreverificationResult::Valid),
                     Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
                     Err(e) => {

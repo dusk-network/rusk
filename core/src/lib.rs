@@ -60,8 +60,8 @@ pub mod signatures {
 #[cfg(feature = "plonk")]
 pub mod plonk {
     pub use dusk_plonk::prelude::{
-        Circuit, Compiler, Composer, Constraint, Error, Proof, Prover,
-        PublicParameters, Verifier, Witness, WitnessPoint,
+        Circuit, Compiler, Composer, Constraint, Error, PlonkVersion, Proof,
+        Prover, PublicParameters, Verifier, Witness, WitnessPoint,
     };
 }
 

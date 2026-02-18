@@ -1,2 +1,7 @@
 [build]
 target-dir = "target"
+
+[net]
+# Use the system `git` for fetching git dependencies so CI/local builds can
+# reuse the credentials configured by the environment (e.g. GitHub Actions).
+git-fetch-with-cli = true
