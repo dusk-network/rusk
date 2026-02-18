@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix mismatched lifetime syntax in `Cluster::iter`
+- Broadcast the computed Quorum in open consensus mode instead of rebroadcasting the inbound message
 
 ## [1.4.0] - 2025-11-06
 
@@ -57,4 +58,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.2.0]: https://github.com/dusk-network/rusk/compare/dusk-consensus-1.0.1...dusk-consensus-1.2.0
 [1.0.1]: https://github.com/dusk-network/rusk/compare/consensus-1.0.0...dusk-consensus-1.0.1
 [0.1.0]: https://github.com/dusk-network/rusk/tree/consensus-1.0.0
-

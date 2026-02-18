@@ -194,8 +194,9 @@ impl<'a, T: Operations + 'static, DB: Database> ExecutionCtx<'a, T, DB> {
                                                 is_local = true
                                             );
 
-                                            // Broadcast Quorum
-                                            self.outbound.try_send(msg);
+                                            // Broadcast the computed Quorum.
+                                            self.outbound
+                                                .try_send(step_result.clone());
                                         }
                                         RatificationResult::Fail(vote) => {
                                             debug!(
