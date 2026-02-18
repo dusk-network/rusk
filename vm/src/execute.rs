@@ -69,6 +69,9 @@ pub fn execute(
     tx: &Transaction,
     config: &Config,
 ) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, Error> {
+    tx.phoenix_fee_check()
+        .map_err(|e| Error::Panic(e.legacy_to_string()))?;
+
     // Transaction will be discarded if it is a deployment transaction
     // with gas limit smaller than deploy charge.
     tx.deploy_check(
