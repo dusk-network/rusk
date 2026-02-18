@@ -51,7 +51,7 @@ pub async fn new_state<P: AsRef<Path>>(
 pub async fn new_state_with<P: AsRef<Path>, F>(
     dir: P,
     snapshot: &Snapshot,
-    vm_config: RuskVmConfig,
+    mut vm_config: RuskVmConfig,
     chain_id: u8,
     closure: F,
 ) -> Result<Rusk>
@@ -63,6 +63,15 @@ where
     let (_, commit_id) =
         state::deploy(dir, snapshot, *DUSK_CONSENSUS_KEY, closure)
             .expect("Deploying initial state should succeed");
+
+    // Mirror the node builder behavior: inject well-known network feature
+    // activations based on the chain id, unless explicitly overridden.
+    let known_conf = rusk::node::WellKnownVmConfig::from_chain_id(chain_id);
+    for (feature, activation) in known_conf.features {
+        if vm_config.feature(feature).is_none() {
+            vm_config.with_feature(feature, activation);
+        }
+    }
 
     let (sender, _) = broadcast::channel(10);
 
@@ -151,8 +160,11 @@ pub fn generator_procedure2(
     });
 
     let txs: Vec<_> = txs.iter().map(|t| t.clone().into()).collect();
+    // `preverify()` is meant to be called at the current tip height; it will
+    // validate the tx against rules that apply to the *next* block height.
+    let tip_height = block_height.saturating_sub(1);
     for tx in &txs {
-        rusk.preverify(tx)?;
+        rusk.preverify(tx, tip_height)?;
     }
 
     let generator = generator.unwrap_or(*DUSK_CONSENSUS_KEY);

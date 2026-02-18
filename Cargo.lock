@@ -1801,6 +1801,7 @@ dependencies = [
 [[package]]
 name = "dusk-plonk"
 version = "0.22.0-rc.0"
+source = "git+https://github.com/dusk-network/plonk-private.git?branch=fix-unbound-selector-evals#3fdbca22cea092d7e9e4b7a843c1ad550a084cf8"
 dependencies = [
  "blake2b_simd",
  "bytecheck",
@@ -1906,19 +1907,14 @@ dependencies = [
  "dusk-node",
  "dusk-node-data",
  "dusk-rusk",
- "dusk-vm",
  "dusk-wallet-core",
  "ff",
  "futures",
  "futures-util",
- "hex",
  "rand 0.8.5",
- "reqwest",
  "rkyv",
  "rusk-prover",
  "rusk-recovery",
- "serde",
- "serde_json",
  "tempfile",
  "tokio",
  "tokio-stream",

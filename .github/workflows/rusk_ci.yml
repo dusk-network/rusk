@@ -46,11 +46,55 @@ jobs:
     name: Rustfmt
     runs-on: core
     steps:
-      - uses: actions/checkout@v4
-        with:
-          clean: false
-      - uses: dsherret/rust-toolchain-file@v1
-      - run: cargo fmt --all -- --check
+      # NOTE: Our self-hosted runner performs periodic cleanup under
+      # `/home/docker/actions-runner/_work` (including `_actions`), which can
+      # break `uses: actions/checkout` post-steps mid-job. Do a manual checkout
+      # outside that directory.
+      - name: Prepare sources
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WORKDIR_BASE="/var/opt/build-cache/ci"
+          WORKDIR="${WORKDIR_BASE}/${GITHUB_RUN_ID}-${GITHUB_JOB}"
+          echo "WORKDIR=${WORKDIR}" >> "$GITHUB_ENV"
+
+          rm -rf "$WORKDIR"
+          mkdir -p "$WORKDIR"
+
+          REPO_URL="https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone "$REPO_URL" "$WORKDIR/repo"
+
+          cd "$WORKDIR/repo"
+          if [ -n "${GITHUB_REF:-}" ]; then
+            git fetch origin "+${GITHUB_REF}:ci_ref"
+            git checkout ci_ref
+          else
+            git checkout "${GITHUB_SHA}"
+          fi
+
+      - name: Add Rust tools to PATH
+        shell: bash
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup component add rust-src rustfmt clippy
+          rustup target add wasm32-unknown-unknown
+
+      - name: Rustfmt check
+        shell: bash
+        working-directory: ${{ env.WORKDIR }}/repo
+        run: cargo fmt --all -- --check
+
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: rm -rf "${WORKDIR:-}" || true
 
   clippy_check:
     needs: changes
@@ -60,14 +104,61 @@ jobs:
     env:
       RUSK_PROFILE_PATH: "/var/opt/build-cache"
     steps:
-      - uses: actions/checkout@v4
-        with:
-          clean: false
-      - uses: dsherret/rust-toolchain-file@v1
-      - run: make clippy
+      - name: Prepare sources
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WORKDIR_BASE="${RUSK_PROFILE_PATH}/ci"
+          WORKDIR="${WORKDIR_BASE}/${GITHUB_RUN_ID}-${GITHUB_JOB}"
+          echo "WORKDIR=${WORKDIR}" >> "$GITHUB_ENV"
+
+          rm -rf "$WORKDIR"
+          mkdir -p "$WORKDIR"
+
+          REPO_URL="https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone "$REPO_URL" "$WORKDIR/repo"
+
+          cd "$WORKDIR/repo"
+          if [ -n "${GITHUB_REF:-}" ]; then
+            git fetch origin "+${GITHUB_REF}:ci_ref"
+            git checkout ci_ref
+          else
+            git checkout "${GITHUB_SHA}"
+          fi
+
+      - name: Add Rust tools to PATH
+        shell: bash
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup component add rust-src rustfmt clippy
+          rustup target add wasm32-unknown-unknown
+      - name: Configure git auth for private dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Self-hosted runners share $HOME between jobs, which can leave stale
+          # `url.*.insteadOf` entries behind. Isolate the global git config per
+          # job to ensure the expected token is used.
+          export GIT_CONFIG_GLOBAL="${WORKDIR}/.gitconfig"
+          echo "GIT_CONFIG_GLOBAL=${GIT_CONFIG_GLOBAL}" >> "$GITHUB_ENV"
+          git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - name: Run clippy
+        working-directory: ${{ env.WORKDIR }}/repo
+        run: make clippy
       - name: sccache stats
         if: always()
         run: sccache -s || true
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: rm -rf "${WORKDIR:-}" || true
 
   test_nightly:
     needs: changes
@@ -77,11 +168,58 @@ jobs:
     env:
       RUSK_MINIMUM_BLOCK_TIME: 1
     steps:
-      - uses: actions/checkout@v4
-        with:
-          clean: false
-      - uses: dsherret/rust-toolchain-file@v1
-      - run: make test
+      - name: Prepare sources
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WORKDIR_BASE="/var/opt/build-cache/ci"
+          WORKDIR="${WORKDIR_BASE}/${GITHUB_RUN_ID}-${GITHUB_JOB}"
+          echo "WORKDIR=${WORKDIR}" >> "$GITHUB_ENV"
+
+          rm -rf "$WORKDIR"
+          mkdir -p "$WORKDIR"
+
+          REPO_URL="https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone "$REPO_URL" "$WORKDIR/repo"
+
+          cd "$WORKDIR/repo"
+          if [ -n "${GITHUB_REF:-}" ]; then
+            git fetch origin "+${GITHUB_REF}:ci_ref"
+            git checkout ci_ref
+          else
+            git checkout "${GITHUB_SHA}"
+          fi
+
+      - name: Add Rust tools to PATH
+        shell: bash
+        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup component add rust-src rustfmt clippy
+          rustup target add wasm32-unknown-unknown
+      - name: Configure git auth for private dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Self-hosted runners share $HOME between jobs, which can leave stale
+          # `url.*.insteadOf` entries behind. Isolate the global git config per
+          # job to ensure the expected token is used.
+          export GIT_CONFIG_GLOBAL="${WORKDIR}/.gitconfig"
+          echo "GIT_CONFIG_GLOBAL=${GIT_CONFIG_GLOBAL}" >> "$GITHUB_ENV"
+          git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - name: Run tests
+        working-directory: ${{ env.WORKDIR }}/repo
+        run: make test
       - name: sccache stats
         if: always()
         run: sccache -s || true
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: rm -rf "${WORKDIR:-}" || true

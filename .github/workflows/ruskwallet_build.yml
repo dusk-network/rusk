@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         uses: dsherret/rust-toolchain-file@v1
 
+      - name: Configure git auth for private dependencies
+        run: git config --global url."https://x-access-token:${{ secrets.PLONK_PRIVATE_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
       - name: Add arm target for Apple Silicon build
         run: rustup target add aarch64-apple-darwin
         if: ${{ matrix.os == 'macos-15' }}

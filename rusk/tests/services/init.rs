@@ -68,10 +68,20 @@ async fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     #[cfg(feature = "archive")]
     let archive = Archive::create_or_open(archive_dir.path()).await;
 
+    // Mirror the node builder behavior: inject well-known network feature
+    // activations based on the chain id, unless explicitly overridden.
+    let mut vm_config = RuskVmConfig::new();
+    let known_conf = rusk::node::WellKnownVmConfig::from_chain_id(CHAIN_ID);
+    for (feature, activation) in known_conf.features {
+        if vm_config.feature(feature).is_none() {
+            vm_config.with_feature(feature, activation);
+        }
+    }
+
     let rusk = Rusk::new(
         dir,
         CHAIN_ID,
-        RuskVmConfig::new(),
+        vm_config,
         DEFAULT_MIN_GAS_LIMIT,
         u64::MAX,
         sender,

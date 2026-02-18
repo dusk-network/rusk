@@ -189,6 +189,5 @@ codegen-units = 16
 overflow-checks = true
 
 [patch.crates-io]
-# Override crates.io `dusk-plonk` with the local soundness-fix checkout.
-dusk-plonk = { path = "/home/hein_/projects/plonk-ghsa-fj5j-x56q-cp8c" }
-# dusk-plonk = { git = "https://github.com/dusk-network/plonk-ghsa-fj5j-x56q-cp8c.git", branch = "fix-unbound-selector-evals" }
+# Override crates.io `dusk-plonk` with the private mirror that contains the fix.
+dusk-plonk = { git = "https://github.com/dusk-network/plonk-private.git", branch = "fix-unbound-selector-evals" }

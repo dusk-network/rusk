@@ -40,7 +40,7 @@ use crate::cache;
 thread_local! {
     // Default to V2 for safety: if the node forgets to set a version for a
     // consensus-critical call path, we'd rather reject than accept.
-    static PLONK_VERSION: Cell<PlonkVersion> = Cell::new(PlonkVersion::V2);
+    static PLONK_VERSION: Cell<PlonkVersion> = const { Cell::new(PlonkVersion::V2) };
 }
 
 /// Guard that restores the previous PLONK version when dropped.
