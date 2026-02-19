@@ -115,9 +115,8 @@ impl MsgHandler for RatificationHandler {
             return Err(ConsensusError::InvalidMsgIteration(iteration));
         }
 
-        // Ensure the vote matches the msg ValidationResult
-        let vr_vote = *p.validation_result.vote();
-        if vr_vote != vote {
+        // Ensure message vote is coherent with the attached ValidationResult.
+        if let Err(err) = Self::verify_msg_validation_result(&p) {
             warn!(
                 event = "Vote discarded",
                 step = "Ratification",
@@ -125,23 +124,10 @@ impl MsgHandler for RatificationHandler {
                 round = ru.round,
                 iter = iteration
             );
-
-            return Err(ConsensusError::VoteMismatch(vr_vote, vote));
+            return Err(err);
         }
 
-        if vote == Vote::NoQuorum {
-            // If the vote is NoQuorum, ensure StepVotes is empty
-            if !p.validation_result.step_votes().is_empty() {
-                warn!(
-                    event = "Vote discarded",
-                    step = "Ratification",
-                    reason = "mismatch with msg ValidationResult",
-                    round = ru.round,
-                    iter = iteration
-                );
-                return Err(ConsensusError::InvalidVote(vote));
-            }
-        } else {
+        if vote != Vote::NoQuorum {
             // If the vote is a Quorum, check it against our Validation result
             let local_vote = *self.validation_result().vote();
             match local_vote {
@@ -243,6 +229,18 @@ impl MsgHandler for RatificationHandler {
     ) -> Result<StepOutcome, ConsensusError> {
         let p = Self::unwrap_msg(msg)?;
 
+        // Ensure message vote is coherent with the attached ValidationResult.
+        if let Err(err) = Self::verify_msg_validation_result(&p) {
+            warn!(
+                event = "Vote discarded",
+                step = "Ratification",
+                reason = "mismatch with msg ValidationResult",
+                round = p.header.round,
+                iter = p.header.iteration
+            );
+            return Err(err);
+        }
+
         // Collect vote, if msg payload is ratification type
         let collect_vote = self.aggregator.collect_vote(committee, &p);
 
@@ -324,6 +322,27 @@ impl RatificationHandler {
         );
 
         self.validation_result = vr;
+    }
+
+    fn verify_msg_validation_result(
+        msg: &Ratification,
+    ) -> Result<(), ConsensusError> {
+        let vote = msg.vote;
+        let vr_vote = *msg.validation_result.vote();
+
+        // ValidationResult vote must match the ratification vote.
+        if vr_vote != vote {
+            return Err(ConsensusError::VoteMismatch(vr_vote, vote));
+        }
+
+        // NoQuorum must carry empty step votes.
+        if vote == Vote::NoQuorum
+            && !msg.validation_result.step_votes().is_empty()
+        {
+            return Err(ConsensusError::InvalidVote(vote));
+        }
+
+        Ok(())
     }
 
     fn unwrap_msg(msg: Message) -> Result<Ratification, ConsensusError> {
