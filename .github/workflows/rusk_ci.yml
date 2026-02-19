@@ -82,7 +82,6 @@ jobs:
         run: |
           set -euo pipefail
           rustup toolchain install stable --profile minimal
-          rustup toolchain install nightly --profile minimal --component rust-src
           rustup default stable
           rustup component add rust-src rustfmt clippy
           rustup target add wasm32-unknown-unknown
