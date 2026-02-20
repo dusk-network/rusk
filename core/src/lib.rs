@@ -45,6 +45,84 @@ pub mod signatures {
             Error, MultisigPublicKey, MultisigSignature, PublicKey, SecretKey,
             Signature,
         };
+
+        /// BLS signature scheme version.
+        #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+        pub enum BlsVersion {
+            /// Insecure v1 (pre-fork historical compatibility).
+            V1,
+            /// Secure v2 using RFC 9380 hash-to-curve.
+            V2,
+        }
+
+        /// Verify a single BLS signature.
+        ///
+        /// # Errors
+        /// Returns an error if the signature is invalid.
+        pub fn verify(
+            pk: &PublicKey,
+            sig: &Signature,
+            msg: &[u8],
+            v: BlsVersion,
+        ) -> Result<(), Error> {
+            match v {
+                BlsVersion::V2 => pk.verify(sig, msg),
+                BlsVersion::V1 => pk.verify_insecure(sig, msg),
+            }
+        }
+
+        /// Verify a BLS multi-signature.
+        ///
+        /// # Errors
+        /// Returns an error if the signature is invalid.
+        pub fn verify_multisig(
+            apk: &MultisigPublicKey,
+            sig: &MultisigSignature,
+            msg: &[u8],
+            v: BlsVersion,
+        ) -> Result<(), Error> {
+            match v {
+                BlsVersion::V2 => apk.verify(sig, msg),
+                BlsVersion::V1 => apk.verify_insecure(sig, msg),
+            }
+        }
+
+        /// Aggregate public keys for multi-signature verification.
+        ///
+        /// # Errors
+        /// Returns an error if the key list is empty.
+        pub fn aggregate(
+            pks: &[PublicKey],
+            v: BlsVersion,
+        ) -> Result<MultisigPublicKey, Error> {
+            match v {
+                BlsVersion::V2 => MultisigPublicKey::aggregate(pks),
+                BlsVersion::V1 => MultisigPublicKey::aggregate_insecure(pks),
+            }
+        }
+
+        /// Sign a message using the multi-signature scheme.
+        #[must_use]
+        pub fn sign_multisig(
+            sk: &SecretKey,
+            pk: &PublicKey,
+            msg: &[u8],
+            v: BlsVersion,
+        ) -> MultisigSignature {
+            match v {
+                BlsVersion::V2 => sk.sign_multisig(pk, msg),
+                BlsVersion::V1 => sk.sign_multisig_insecure(pk, msg),
+            }
+        }
+
+        /// Sign a message using the single-signature scheme.
+        #[must_use]
+        pub fn sign(sk: &SecretKey, msg: &[u8], v: BlsVersion) -> Signature {
+            match v {
+                BlsVersion::V2 => sk.sign(msg),
+                BlsVersion::V1 => sk.sign_insecure(msg),
+            }
+        }
     }
 
     /// Types for the schnorr-signature scheme operating on the `jubjub` curve.
