@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use dusk_core::transfer::data::BlobData;
 use node_data::bls::PublicKeyBytes;
-use node_data::hard_fork::hard_fork_at;
 use node_data::ledger::{Block, Transaction, to_str};
 use node_data::message::payload::{Validation, Vote};
 use node_data::message::{
@@ -252,11 +251,7 @@ pub fn build_validation_payload(
         vote,
         sign_info,
     };
-    validation.sign(
-        &ru.secret_key,
-        ru.pubkey_bls.inner(),
-        hard_fork_at(ru.round),
-    );
+    validation.sign(&ru.secret_key, ru.pubkey_bls.inner());
     validation
 }
 

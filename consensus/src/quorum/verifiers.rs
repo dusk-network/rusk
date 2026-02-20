@@ -6,11 +6,11 @@
 
 use dusk_bytes::Serializable as BytesSerializable;
 use dusk_core::signatures::bls::{
-    MultisigPublicKey as BlsMultisigPublicKey,
+    self as core_bls, MultisigPublicKey as BlsMultisigPublicKey,
     MultisigSignature as BlsMultisigSignature,
 };
 use node_data::bls::PublicKey;
-use node_data::hard_fork::{HardFork, hard_fork_at};
+use node_data::hard_fork::bls_version_at;
 use node_data::ledger::{Seed, StepVotes, to_str};
 use node_data::message::payload::{self, Vote};
 use node_data::message::{ConsensusHeader, SignedStepMessage};
@@ -107,12 +107,7 @@ impl Cluster<PublicKey> {
     ) -> Result<BlsMultisigPublicKey, StepSigError> {
         let pks: Vec<_> =
             self.iter().map(|(pubkey, _)| *pubkey.inner()).collect();
-        Ok(match hard_fork_at(block_height) {
-            HardFork::Aegis => BlsMultisigPublicKey::aggregate(&pks)?,
-            HardFork::PreFork => {
-                BlsMultisigPublicKey::aggregate_insecure(&pks)?
-            }
-        })
+        Ok(core_bls::aggregate(&pks, bls_version_at(block_height))?)
     }
 
     pub fn to_voters(self) -> Vec<Voter> {
@@ -139,10 +134,7 @@ fn verify_step_signature(
     let mut msg = header.signable();
     msg.extend_from_slice(sign_seed);
     vote.write(&mut msg).expect("Writing to vec should succeed");
-    match hard_fork_at(block_height) {
-        HardFork::Aegis => apk.verify(&sig, &msg)?,
-        HardFork::PreFork => apk.verify_insecure(&sig, &msg)?,
-    }
+    core_bls::verify_multisig(apk, &sig, &msg, bls_version_at(block_height))?;
     Ok(())
 }
 
