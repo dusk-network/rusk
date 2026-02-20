@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use node_data::bls::PublicKeyBytes;
+use node_data::hard_fork::{HardFork, hard_fork_at};
 use node_data::ledger::to_str;
 use node_data::message::payload::{Candidate, GetResource, Inv};
 use node_data::message::{
@@ -45,7 +46,8 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         let generator = round_committees
             .get_generator(iteration)
             .expect("committee to be created before run");
-        super::handler::verify_candidate_msg(p, &generator)?;
+        let hard_fork = hard_fork_at(p.header().round);
+        super::handler::verify_candidate_msg(p, &generator, hard_fork)?;
 
         Ok(())
     }
@@ -153,6 +155,7 @@ impl<D: Database> ProposalHandler<D> {
 fn verify_candidate_msg(
     p: &Candidate,
     expected_generator: &PublicKeyBytes,
+    hard_fork: HardFork,
 ) -> Result<(), ConsensusError> {
     if expected_generator != p.sign_info().signer.bytes() {
         return Err(ConsensusError::NotCommitteeMember);
@@ -167,7 +170,7 @@ fn verify_candidate_msg(
     }
 
     // Verify msg signature
-    p.verify_signature()?;
+    p.verify_signature(hard_fork)?;
 
     if p.consensus_header().prev_block_hash
         != p.candidate.header().prev_block_hash
@@ -220,7 +223,8 @@ pub fn verify_stateless(
     let generator = round_committees
         .get_generator(iteration)
         .expect("committee to be created before run");
-    verify_candidate_msg(c, &generator)?;
+    let hard_fork = hard_fork_at(c.header().round);
+    verify_candidate_msg(c, &generator, hard_fork)?;
 
     Ok(())
 }

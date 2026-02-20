@@ -10,6 +10,7 @@ use dusk_core::signatures::bls::{
     MultisigSignature as BlsMultisigSignature,
 };
 use node_data::bls::PublicKey;
+use node_data::hard_fork::{HardFork, hard_fork_at};
 use node_data::ledger::{Seed, StepVotes, to_str};
 use node_data::message::payload::{self, Vote};
 use node_data::message::{ConsensusHeader, SignedStepMessage};
@@ -66,6 +67,7 @@ pub fn verify_quorum_votes(
     step_votes: &StepVotes,
     committee: &Committee,
 ) -> Result<Vec<Voter>, StepSigError> {
+    let round = header.round;
     let bitset = step_votes.bitset;
     let signature = step_votes.aggregate_signature().inner();
     let sub_committee = committee.intersect(bitset);
@@ -92,17 +94,25 @@ pub fn verify_quorum_votes(
     }
 
     // Verify aggregated signature
-    let apk = sub_committee.aggregate_pks()?;
-    verify_step_signature(header, step, vote, apk, signature)?;
+    let apk = sub_committee.aggregate_pks(round)?;
+    verify_step_signature(header, step, vote, &apk, signature, round)?;
 
     Ok(sub_committee.to_voters())
 }
 
 impl Cluster<PublicKey> {
-    fn aggregate_pks(&self) -> Result<BlsMultisigPublicKey, StepSigError> {
+    fn aggregate_pks(
+        &self,
+        block_height: u64,
+    ) -> Result<BlsMultisigPublicKey, StepSigError> {
         let pks: Vec<_> =
             self.iter().map(|(pubkey, _)| *pubkey.inner()).collect();
-        Ok(BlsMultisigPublicKey::aggregate(&pks)?)
+        Ok(match hard_fork_at(block_height) {
+            HardFork::Aegis => BlsMultisigPublicKey::aggregate(&pks)?,
+            HardFork::PreFork => {
+                BlsMultisigPublicKey::aggregate_insecure(&pks)?
+            }
+        })
     }
 
     pub fn to_voters(self) -> Vec<Voter> {
@@ -114,8 +124,9 @@ fn verify_step_signature(
     header: &ConsensusHeader,
     step: StepName,
     vote: &Vote,
-    apk: BlsMultisigPublicKey,
+    apk: &BlsMultisigPublicKey,
     signature: &[u8; 48],
+    block_height: u64,
 ) -> Result<(), StepSigError> {
     // Compile message to verify
     let sign_seed = match step {
@@ -128,7 +139,10 @@ fn verify_step_signature(
     let mut msg = header.signable();
     msg.extend_from_slice(sign_seed);
     vote.write(&mut msg).expect("Writing to vec should succeed");
-    apk.verify(&sig, &msg)?;
+    match hard_fork_at(block_height) {
+        HardFork::Aegis => apk.verify(&sig, &msg)?,
+        HardFork::PreFork => apk.verify_insecure(&sig, &msg)?,
+    }
     Ok(())
 }
 

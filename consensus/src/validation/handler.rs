@@ -9,6 +9,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use node_data::StepName;
 use node_data::bls::PublicKeyBytes;
+use node_data::hard_fork::hard_fork_at;
 use node_data::ledger::{Block, StepVotes, to_str};
 use node_data::message::payload::{
     GetResource, Inv, QuorumType, Validation, Vote,
@@ -49,7 +50,8 @@ pub fn verify_stateless(
 ) -> Result<(), ConsensusError> {
     match &msg.payload {
         Payload::Validation(p) => {
-            p.verify_signature()?;
+            let hard_fork = hard_fork_at(p.header().round);
+            p.verify_signature(hard_fork)?;
 
             let signer = &p.sign_info.signer;
             let committee = round_committees
@@ -139,7 +141,8 @@ impl<D: Database> MsgHandler for ValidationHandler<D> {
                     return Err(ConsensusError::VoteAlreadyCollected);
                 }
 
-                p.verify_signature()?
+                let hard_fork = hard_fork_at(p.header().round);
+                p.verify_signature(hard_fork)?
             }
             Payload::Empty => (),
             _ => Err(ConsensusError::InvalidMsgType)?,

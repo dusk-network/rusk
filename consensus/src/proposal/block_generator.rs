@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use dusk_bytes::Serializable;
+use node_data::hard_fork::{HardFork, hard_fork_at};
 use node_data::ledger::{Block, Fault, IterationsInfo, Seed, Slash, to_str};
 use node_data::message::payload::Candidate;
 use node_data::message::{BLOCK_HEADER_VERSION, Message, SignedStepMessage};
@@ -41,7 +42,8 @@ impl<T: Operations> Generator<T> {
 
         let mut candidate_msg = Candidate { candidate };
 
-        candidate_msg.sign(&ru.secret_key, ru.pubkey_bls.inner());
+        let hard_fork = hard_fork_at(ru.round);
+        candidate_msg.sign(&ru.secret_key, ru.pubkey_bls.inner(), hard_fork);
 
         debug!(event = "Candidate signed", header = ?candidate_msg.candidate.header());
 
@@ -58,10 +60,20 @@ impl<T: Operations> Generator<T> {
         let start = Instant::now();
 
         // Sign seed
-        let seed_sig: [u8; 48] = ru
-            .secret_key
-            .sign_multisig(ru.pubkey_bls.inner(), &ru.seed().inner()[..])
-            .to_bytes();
+        let block_height = ru.round;
+        let seed_sig: [u8; 48] = match hard_fork_at(block_height) {
+            HardFork::Aegis => ru
+                .secret_key
+                .sign_multisig(ru.pubkey_bls.inner(), &ru.seed().inner()[..])
+                .to_bytes(),
+            HardFork::PreFork => ru
+                .secret_key
+                .sign_multisig_insecure(
+                    ru.pubkey_bls.inner(),
+                    &ru.seed().inner()[..],
+                )
+                .to_bytes(),
+        };
         let seed = Seed::from(seed_sig);
 
         // Limit number of faults in the block

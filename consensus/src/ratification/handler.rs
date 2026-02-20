@@ -7,6 +7,7 @@
 use async_trait::async_trait;
 use node_data::StepName;
 use node_data::bls::PublicKeyBytes;
+use node_data::hard_fork::hard_fork_at;
 use node_data::ledger::Attestation;
 use node_data::message::payload::{
     Quorum, Ratification, ValidationResult, Vote,
@@ -49,7 +50,8 @@ impl RatificationHandler {
     ) -> Result<(), ConsensusError> {
         match &msg.payload {
             Payload::Ratification(p) => {
-                p.verify_signature()?;
+                let hard_fork = hard_fork_at(p.header().round);
+                p.verify_signature(hard_fork)?;
                 let signer = &p.sign_info.signer;
                 let committee = round_committees
                     .get_committee(msg.get_step())
@@ -88,7 +90,8 @@ impl MsgHandler for RatificationHandler {
                 return Err(ConsensusError::VoteAlreadyCollected);
             }
 
-            p.verify_signature()?;
+            let hard_fork = hard_fork_at(p.header().round);
+            p.verify_signature(hard_fork)?;
 
             return Ok(());
         }

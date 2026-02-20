@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use node_data::hard_fork::hard_fork_at;
 use node_data::message::payload::{self, QuorumType, ValidationResult};
 use node_data::message::{AsyncQueue, Message, Payload, SignedStepMessage};
 use node_data::{get_current_timestamp, message};
@@ -76,7 +77,11 @@ pub fn build_ratification_payload(
         validation_result: result.clone(),
         timestamp: get_current_timestamp(),
     };
-    ratification.sign(&ru.secret_key, ru.pubkey_bls.inner());
+    ratification.sign(
+        &ru.secret_key,
+        ru.pubkey_bls.inner(),
+        hard_fork_at(ru.round),
+    );
     ratification
 }
 
