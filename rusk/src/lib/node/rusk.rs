@@ -38,7 +38,7 @@ use node_data::ledger::{Block, Slash, SpentTransaction, Transaction, to_str};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
 use tokio::sync::broadcast;
-use tracing::info;
+use tracing::{info, warn};
 
 use super::RuskVmConfig;
 use crate::bloom::Bloom;
@@ -904,7 +904,8 @@ fn slash(session: &mut Session, slashes: Vec<Slash>) -> Result<Vec<Event>> {
     let mut events = vec![];
     for s in slashes {
         let provisioner = s.provisioner.into_inner();
-        let r = match s.r#type {
+        let slash_type = format!("{:?}", s.r#type);
+        let call = match s.r#type {
             node_data::ledger::SlashType::Soft => session.call::<_, ()>(
                 STAKE_CONTRACT,
                 "slash",
@@ -928,8 +929,25 @@ fn slash(session: &mut Session, slashes: Vec<Slash>) -> Result<Vec<Event>> {
                     u64::MAX,
                 )
             }
-        }?;
-        events.extend(r.events);
+        };
+
+        match call {
+            Ok(r) => events.extend(r.events),
+            Err(VMError::Panic(msg)) if is_missing_stake_slash_panic(&msg) => {
+                warn!(
+                    event = "Slash skipped",
+                    reason = "missing stake for slash target",
+                    slash_type = %slash_type,
+                    panic = %msg
+                );
+            }
+            Err(err) => return Err(err.into()),
+        }
     }
     Ok(events)
+}
+
+fn is_missing_stake_slash_panic(msg: &str) -> bool {
+    msg.contains("The stake to slash should exist")
+        || msg.contains("The stake to hard slash should exist")
 }
