@@ -13,7 +13,7 @@ edition.workspace = true
 dusk-bls12_381 = { workspace = true, features = ["rkyv-impl"] }
 dusk-jubjub = { workspace = true, features = ["rkyv-impl"] }
 dusk-poseidon = { workspace = true }
-bls12_381-bls = { workspace = true, features = ["rkyv-impl"] }
+bls12_381-bls = { workspace = true, features = ["rkyv-impl", "insecure-v1-signing"] }
 jubjub-schnorr = { workspace = true, features = ["rkyv-impl"] }
 phoenix-core = { workspace = true, features = ["rkyv-impl", "alloc"] }
 phoenix-circuits = { workspace = true }

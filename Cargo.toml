@@ -57,7 +57,7 @@ dusk-stake-contract-dd = { version = "0.3.1-alpha.1", path = "./data-drivers/sta
 # dusk-stake-contract-dd = "0.3.0"
 
 # Dusk dependencies outside the workspace
-bls12_381-bls = { version = "0.5.1", default-features = false }
+bls12_381-bls = { version = "0.6.0-rc.0", default-features = false }
 dusk-bls12_381 = { version = "0.14", default-features = false }
 dusk-bytes = "0.1.7"
 dusk-jubjub = { version = "0.15.1", default-features = false }
@@ -191,3 +191,5 @@ overflow-checks = true
 [patch.crates-io]
 # Override crates.io `dusk-plonk` with the private mirror that contains the fix.
 dusk-plonk = { git = "https://github.com/dusk-network/plonk-private.git", branch = "fix-unbound-selector-evals" }
+# Override crates.io `bls12_381-bls` with the private mirror that contains the BLS fix.
+bls12_381-bls = { git = "ssh://git@github.com/dusk-network/bls12_381-bls-private.git", branch = "fix/bls-v2-h2c" }
