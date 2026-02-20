@@ -15,6 +15,7 @@ use tracing::error;
 
 use super::*;
 use crate::bls::PublicKey;
+use crate::hard_fork::{HardFork, hard_fork_at};
 use crate::message::payload::{
     Candidate, Ratification, RatificationResult, Validation, Vote,
 };
@@ -218,38 +219,51 @@ impl Fault {
             Fault::DoubleCandidate(a, b) => {
                 let seed = Candidate::SIGN_SEED;
                 let msg = a.get_signed_data(seed);
-                Self::verify_signature(&a.sig, &msg)?;
+                Self::verify_signature(a.header.round, &a.sig, &msg)?;
                 let msg = b.get_signed_data(seed);
-                Self::verify_signature(&b.sig, &msg)?;
+                Self::verify_signature(b.header.round, &b.sig, &msg)?;
                 Ok(())
             }
             Fault::DoubleRatificationVote(a, b) => {
                 let seed = Ratification::SIGN_SEED;
                 let msg = a.get_signed_data(seed);
-                Self::verify_signature(&a.sig, &msg)?;
+                Self::verify_signature(a.header.round, &a.sig, &msg)?;
                 let msg = b.get_signed_data(seed);
-                Self::verify_signature(&b.sig, &msg)?;
+                Self::verify_signature(b.header.round, &b.sig, &msg)?;
                 Ok(())
             }
             Fault::DoubleValidationVote(a, b) => {
                 let seed = Validation::SIGN_SEED;
                 let msg = a.get_signed_data(seed);
-                Self::verify_signature(&a.sig, &msg)?;
+                Self::verify_signature(a.header.round, &a.sig, &msg)?;
                 let msg = b.get_signed_data(seed);
-                Self::verify_signature(&b.sig, &msg)?;
+                Self::verify_signature(b.header.round, &b.sig, &msg)?;
                 Ok(())
             }
         }
     }
 
     fn verify_signature(
+        block_height: u64,
         sign_info: &SignInfo,
         msg: &[u8],
     ) -> Result<(), BlsSigError> {
         let signature = sign_info.signature.inner();
         let sig = BlsMultisigSignature::from_bytes(signature)?;
-        let pk = BlsMultisigPublicKey::aggregate(&[*sign_info.signer.inner()])?;
-        pk.verify(&sig, msg)
+        let pk = match hard_fork_at(block_height) {
+            HardFork::Aegis => {
+                BlsMultisigPublicKey::aggregate(&[*sign_info.signer.inner()])?
+            }
+            HardFork::PreFork => {
+                BlsMultisigPublicKey::aggregate_insecure(&[*sign_info
+                    .signer
+                    .inner()])?
+            }
+        };
+        match hard_fork_at(block_height) {
+            HardFork::Aegis => pk.verify(&sig, msg),
+            HardFork::PreFork => pk.verify_insecure(&sig, msg),
+        }
     }
 }
 
