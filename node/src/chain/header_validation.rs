@@ -21,12 +21,13 @@ use dusk_consensus::quorum::verifiers;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use dusk_core::signatures::bls::{
-    MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
+    self as core_bls, MultisigPublicKey, MultisigSignature,
+    PublicKey as BlsPublicKey,
 };
 use dusk_core::stake::EPOCH;
 use hex;
 use node_data::bls::PublicKeyBytes;
-use node_data::hard_fork::{HardFork, hard_fork_at};
+use node_data::hard_fork::bls_version_at;
 use node_data::ledger::{Fault, InvalidFault, Seed};
 use node_data::message::payload::{RatificationResult, Vote};
 use node_data::message::{BLOCK_HEADER_VERSION, ConsensusHeader};
@@ -124,17 +125,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 "invalid pk bytes: {err:?}"
             ))
         })?;
-        let generator = match hard_fork_at(header.height) {
-            HardFork::Aegis => MultisigPublicKey::aggregate(&[generator]),
-            HardFork::PreFork => {
-                MultisigPublicKey::aggregate_insecure(&[generator])
-            }
-        }
-        .map_err(|err| {
-            HeaderError::InvalidBlockSignature(format!(
-                "failed aggregating single key: {err:?}"
-            ))
-        })?;
+        let bls_version = bls_version_at(header.height);
+        let generator = core_bls::aggregate(&[generator], bls_version)
+            .map_err(|err| {
+                HeaderError::InvalidBlockSignature(format!(
+                    "failed aggregating single key: {err:?}"
+                ))
+            })?;
 
         // Verify block signature
         let block_sig = MultisigSignature::from_bytes(header.signature.inner())
@@ -143,12 +140,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     "invalid block signature bytes: {err:?}"
                 ))
             })?;
-        match hard_fork_at(header.height) {
-            HardFork::Aegis => generator.verify(&block_sig, &header.hash),
-            HardFork::PreFork => {
-                generator.verify_insecure(&block_sig, &header.hash)
-            }
-        }
+        core_bls::verify_multisig(
+            &generator,
+            &block_sig,
+            &header.hash,
+            bls_version,
+        )
         .map_err(|err| {
             HeaderError::InvalidBlockSignature(format!(
                 "invalid block signature: {err:?}"
@@ -247,14 +244,12 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             ))
         })?;
 
-        match hard_fork_at(block_height) {
-            HardFork::Aegis => {
-                pk.verify(&signature, self.prev_header.seed.inner())
-            }
-            HardFork::PreFork => {
-                pk.verify_insecure(&signature, self.prev_header.seed.inner())
-            }
-        }
+        core_bls::verify_multisig(
+            pk,
+            &signature,
+            self.prev_header.seed.inner(),
+            bls_version_at(block_height),
+        )
         .map_err(|err| {
             HeaderError::InvalidSeed(format!("invalid seed: {err:?}"))
         })?;
