@@ -6,6 +6,11 @@
 
 use std::sync::OnceLock;
 
+use dusk_core::signatures::bls::BlsVersion;
+
+/// Activation height value that means "never activate".
+const NEVER: u64 = u64::MAX;
+
 /// Active protocol hardfork.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum HardFork {
@@ -15,8 +20,20 @@ pub enum HardFork {
     Aegis,
 }
 
-/// Activation height value that means "never activate".
-const NEVER: u64 = u64::MAX;
+impl HardFork {
+    /// Returns the BLS signature version for this hardfork.
+    pub fn bls_version(&self) -> BlsVersion {
+        match self {
+            HardFork::Aegis => BlsVersion::V2,
+            HardFork::PreFork => BlsVersion::V1,
+        }
+    }
+}
+
+/// Returns the BLS version for the given block height.
+pub fn bls_version_at(block_height: u64) -> BlsVersion {
+    hard_fork_at(block_height).bls_version()
+}
 
 static AEGIS_ACTIVATION_HEIGHT: OnceLock<u64> = OnceLock::new();
 

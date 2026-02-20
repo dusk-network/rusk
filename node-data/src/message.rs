@@ -12,7 +12,7 @@ use std::net::SocketAddr;
 use async_channel::TrySendError;
 use dusk_bytes::Serializable as DuskSerializable;
 use dusk_core::signatures::bls::{
-    Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
+    self as core_bls, Error as BlsSigError,
     MultisigSignature as BlsMultisigSignature, PublicKey as BlsPublicKey,
     SecretKey as BlsSecretKey,
 };
@@ -21,7 +21,7 @@ use tracing::{error, warn};
 
 use self::payload::{Candidate, Ratification, Validation};
 use crate::bls::PublicKey;
-use crate::hard_fork::HardFork;
+use crate::hard_fork::bls_version_at;
 use crate::ledger::{Hash, Signature, to_str};
 use crate::{Serializable, StepName, bls, ledger};
 
@@ -1480,40 +1480,29 @@ pub trait SignedStepMessage: StepMessage {
     fn sign_info(&self) -> SignInfo;
     fn sign_info_mut(&mut self) -> &mut SignInfo;
 
-    fn verify_signature(&self, hard_fork: HardFork) -> Result<(), BlsSigError> {
-        let signature = self.sign_info().signature;
-        let sig = BlsMultisigSignature::from_bytes(signature.inner())?;
-        let pk = match hard_fork {
-            HardFork::Aegis => BlsMultisigPublicKey::aggregate(&[*self
-                .sign_info()
-                .signer
-                .inner()])?,
-            HardFork::PreFork => {
-                BlsMultisigPublicKey::aggregate_insecure(&[*self
-                    .sign_info()
-                    .signer
-                    .inner()])?
-            }
-        };
+    fn verify_signature(&self) -> Result<(), BlsSigError> {
+        let bls_version = bls_version_at(self.header().round);
+        let sig = BlsMultisigSignature::from_bytes(
+            self.sign_info().signature.inner(),
+        )?;
+        let apk = core_bls::aggregate(
+            &[*self.sign_info().signer.inner()],
+            bls_version,
+        )?;
         let msg = self.signable();
-        match hard_fork {
-            HardFork::Aegis => pk.verify(&sig, &msg),
-            HardFork::PreFork => pk.verify_insecure(&sig, &msg),
-        }
+        core_bls::verify_multisig(&apk, &sig, &msg, bls_version)
     }
 
-    fn sign(
-        &mut self,
-        sk: &BlsSecretKey,
-        pk: &BlsPublicKey,
-        hard_fork: HardFork,
-    ) {
+    fn sign(&mut self, sk: &BlsSecretKey, pk: &BlsPublicKey) {
         let msg = self.signable();
+        let signature = core_bls::sign_multisig(
+            sk,
+            pk,
+            &msg,
+            bls_version_at(self.header().round),
+        )
+        .to_bytes();
         let sign_info = self.sign_info_mut();
-        let signature = match hard_fork {
-            HardFork::Aegis => sk.sign_multisig(pk, &msg).to_bytes(),
-            HardFork::PreFork => sk.sign_multisig_insecure(pk, &msg).to_bytes(),
-        };
         sign_info.signature = signature.into();
         sign_info.signer = PublicKey::new(*pk)
     }
@@ -1601,17 +1590,15 @@ impl SignedStepMessage for Candidate {
         self.candidate.header().hash.to_vec()
     }
 
-    fn sign(
-        &mut self,
-        sk: &BlsSecretKey,
-        pk: &BlsPublicKey,
-        hard_fork: HardFork,
-    ) {
+    fn sign(&mut self, sk: &BlsSecretKey, pk: &BlsPublicKey) {
         let msg = self.signable();
-        let signature = match hard_fork {
-            HardFork::Aegis => sk.sign_multisig(pk, &msg).to_bytes(),
-            HardFork::PreFork => sk.sign_multisig_insecure(pk, &msg).to_bytes(),
-        };
+        let signature = core_bls::sign_multisig(
+            sk,
+            pk,
+            &msg,
+            bls_version_at(self.candidate.header().height),
+        )
+        .to_bytes();
         self.candidate.set_signature(signature.into());
     }
 }
@@ -1677,7 +1664,9 @@ mod tests {
 
     use self::payload::ValidationResult;
     use super::*;
-    use crate::hard_fork::{HardFork, hard_fork_at_with_activation};
+    use crate::hard_fork::{
+        HardFork, hard_fork_at_with_activation, set_aegis_activation_height,
+    };
     use crate::ledger::*;
     use crate::{MAX_INV_ITEMS, Serializable, ledger};
 
@@ -1765,6 +1754,7 @@ mod tests {
     #[test]
     fn insecure_validation_signature_rejected_after_aegis_activation() {
         let aegis_activation_height = 10;
+        set_aegis_activation_height(aegis_activation_height);
         assert_eq!(
             hard_fork_at_with_activation(9, aegis_activation_height),
             HardFork::PreFork
@@ -1796,14 +1786,7 @@ mod tests {
             signer: signer.clone(),
             signature: prefork_sig.into(),
         };
-        assert!(
-            prefork
-                .verify_signature(hard_fork_at_with_activation(
-                    prefork.header.round,
-                    aegis_activation_height
-                ))
-                .is_ok()
-        );
+        assert!(prefork.verify_signature().is_ok());
 
         let mut postfork_insecure = payload::Validation {
             header: ConsensusHeader {
@@ -1822,36 +1805,15 @@ mod tests {
             signer: signer.clone(),
             signature: postfork_sig.into(),
         };
-        assert!(
-            postfork_insecure
-                .verify_signature(hard_fork_at_with_activation(
-                    postfork_insecure.header.round,
-                    aegis_activation_height
-                ))
-                .is_err()
-        );
+        assert!(postfork_insecure.verify_signature().is_err());
 
         let mut postfork_secure = payload::Validation {
             header: postfork_insecure.header,
             vote: postfork_insecure.vote,
             sign_info: SignInfo::default(),
         };
-        postfork_secure.sign(
-            &sk,
-            signer.inner(),
-            hard_fork_at_with_activation(
-                postfork_secure.header.round,
-                aegis_activation_height,
-            ),
-        );
-        assert!(
-            postfork_secure
-                .verify_signature(hard_fork_at_with_activation(
-                    postfork_secure.header.round,
-                    aegis_activation_height
-                ))
-                .is_ok()
-        );
+        postfork_secure.sign(&sk, signer.inner());
+        assert!(postfork_secure.verify_signature().is_ok());
     }
 
     fn assert_serialize<S: Serializable + PartialEq + core::fmt::Debug>(v: S) {

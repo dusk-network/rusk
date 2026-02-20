@@ -6,7 +6,8 @@
 
 use dusk_bytes::Serializable as DuskSerializeble;
 use dusk_core::signatures::bls::{
-    Error as BlsSigError, MultisigPublicKey as BlsMultisigPublicKey,
+    self as core_bls, Error as BlsSigError,
+    MultisigPublicKey as BlsMultisigPublicKey,
     MultisigSignature as BlsMultisigSignature,
 };
 use dusk_core::stake::EPOCH;
@@ -15,7 +16,7 @@ use tracing::error;
 
 use super::*;
 use crate::bls::PublicKey;
-use crate::hard_fork::{HardFork, hard_fork_at};
+use crate::hard_fork::bls_version_at;
 use crate::message::payload::{
     Candidate, Ratification, RatificationResult, Validation, Vote,
 };
@@ -248,22 +249,12 @@ impl Fault {
         sign_info: &SignInfo,
         msg: &[u8],
     ) -> Result<(), BlsSigError> {
-        let signature = sign_info.signature.inner();
-        let sig = BlsMultisigSignature::from_bytes(signature)?;
-        let pk = match hard_fork_at(block_height) {
-            HardFork::Aegis => {
-                BlsMultisigPublicKey::aggregate(&[*sign_info.signer.inner()])?
-            }
-            HardFork::PreFork => {
-                BlsMultisigPublicKey::aggregate_insecure(&[*sign_info
-                    .signer
-                    .inner()])?
-            }
-        };
-        match hard_fork_at(block_height) {
-            HardFork::Aegis => pk.verify(&sig, msg),
-            HardFork::PreFork => pk.verify_insecure(&sig, msg),
-        }
+        let bls_version = bls_version_at(block_height);
+        let sig =
+            BlsMultisigSignature::from_bytes(sign_info.signature.inner())?;
+        let apk =
+            core_bls::aggregate(&[*sign_info.signer.inner()], bls_version)?;
+        core_bls::verify_multisig(&apk, &sig, msg, bls_version)
     }
 }
 
