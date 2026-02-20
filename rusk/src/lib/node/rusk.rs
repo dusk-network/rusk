@@ -45,9 +45,22 @@ use super::RuskVmConfig;
 use crate::bloom::Bloom;
 use crate::node::driverstore::DriverStore;
 use crate::node::{
-    FEATURE_PLONK_V2, RuesEvent, Rusk, RuskTip, get_block_rewards,
+    FEATURE_HARDFORK_AEGIS, FEATURE_PLONK_V2, RuesEvent, Rusk, RuskTip,
+    get_block_rewards,
 };
 use crate::{DUSK_CONSENSUS_KEY, Error as RuskError, Result};
+
+fn hard_fork_aegis_activation(vm_config: &RuskVmConfig) -> u64 {
+    match vm_config.feature(FEATURE_HARDFORK_AEGIS) {
+        Some(dusk_vm::FeatureActivation::Height(height)) => *height,
+        Some(dusk_vm::FeatureActivation::Ranges(ranges)) => ranges
+            .iter()
+            .map(|(start, _)| *start)
+            .min()
+            .unwrap_or(u64::MAX),
+        None => u64::MAX,
+    }
+}
 
 impl Rusk {
     #[allow(clippy::too_many_arguments)]
@@ -63,6 +76,11 @@ impl Rusk {
     ) -> Result<Self> {
         let dir = dir.as_ref();
         info!("Using state from {dir:?}");
+
+        let hard_fork_aegis_activation = hard_fork_aegis_activation(&vm_config);
+        node_data::hard_fork::set_aegis_activation_height(
+            hard_fork_aegis_activation,
+        );
 
         let commit_id_path = to_rusk_state_id_path(dir);
 
