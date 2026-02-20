@@ -34,6 +34,7 @@ use dusk_vm::{CallReceipt, Error as VMError, Session, VM, execute};
 #[cfg(feature = "archive")]
 use node::archive::Archive;
 use node_data::events::contract::ContractTxEvent;
+use node_data::hard_fork::{HardFork, hard_fork_at};
 use node_data::ledger::{Block, Slash, SpentTransaction, Transaction, to_str};
 use parking_lot::RwLock;
 use rusk_profile::to_rusk_state_id_path;
@@ -140,6 +141,12 @@ impl Rusk {
             } else {
                 dusk_core::plonk::PlonkVersion::V1
             });
+        let vm_hard_fork = match hard_fork_at(block_height) {
+            HardFork::PreFork => dusk_vm::host_queries::HardFork::PreFork,
+            HardFork::Aegis => dusk_vm::host_queries::HardFork::Aegis,
+        };
+        let _hard_fork_guard =
+            dusk_vm::host_queries::set_hard_fork(vm_hard_fork);
 
         info!(
             event = "Creating state transition",
@@ -640,6 +647,12 @@ impl Rusk {
             } else {
                 dusk_core::plonk::PlonkVersion::V1
             });
+        let vm_hard_fork = match hard_fork_at(block_height) {
+            HardFork::PreFork => dusk_vm::host_queries::HardFork::PreFork,
+            HardFork::Aegis => dusk_vm::host_queries::HardFork::Aegis,
+        };
+        let _hard_fork_guard =
+            dusk_vm::host_queries::set_hard_fork(vm_hard_fork);
 
         let generator_bytes = blk.header().generator_bls_pubkey;
         let generator = BlsPublicKey::from_slice(&generator_bytes.0)

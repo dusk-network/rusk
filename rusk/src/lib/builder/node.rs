@@ -248,6 +248,19 @@ impl RuskNodeBuilder {
         self.vm_config.inject_network_conf(known_conf);
 
         let vm_config = RuskVmConfig::try_from(self.vm_config)?;
+        let hard_fork_aegis_activation =
+            match vm_config.feature(crate::node::FEATURE_HARDFORK_AEGIS) {
+                Some(dusk_vm::FeatureActivation::Height(height)) => *height,
+                Some(dusk_vm::FeatureActivation::Ranges(ranges)) => ranges
+                    .iter()
+                    .map(|(start, _)| *start)
+                    .min()
+                    .unwrap_or(u64::MAX),
+                None => u64::MAX,
+            };
+        node_data::hard_fork::set_aegis_activation_height(
+            hard_fork_aegis_activation,
+        );
 
         #[cfg(feature = "archive")]
         let archive = Archive::create_or_open_with_conf(

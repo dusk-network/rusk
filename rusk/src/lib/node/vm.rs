@@ -22,6 +22,7 @@ use dusk_core::stake::StakeData;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
+use node_data::hard_fork::{HardFork, hard_fork_at};
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
 use super::{RuesEvent, Rusk};
@@ -190,6 +191,7 @@ impl VMExecution for Rusk {
                 }
             }
             ProtocolTransaction::Moonlight(tx) => {
+                let next_block_height = tip_height.saturating_add(1);
                 let account_data = self.account(tx.sender()).map_err(|e| {
                     anyhow::anyhow!("Cannot check account: {e}")
                 })?;
@@ -225,9 +227,18 @@ impl VMExecution for Rusk {
                     PreverificationResult::Valid
                 };
 
-                match crate::verifier::verify_signature(
-                    tx.blob_to_memo().as_ref().unwrap_or(tx),
-                ) {
+                let verify_result = match hard_fork_at(next_block_height) {
+                    HardFork::PreFork => {
+                        crate::verifier::verify_signature_insecure(
+                            tx.blob_to_memo().as_ref().unwrap_or(tx),
+                        )
+                    }
+                    HardFork::Aegis => crate::verifier::verify_signature(
+                        tx.blob_to_memo().as_ref().unwrap_or(tx),
+                    ),
+                };
+
+                match verify_result {
                     Ok(true) => Ok(result),
                     Ok(false) => Err(anyhow::anyhow!("Invalid signature")),
                     Err(e) => {

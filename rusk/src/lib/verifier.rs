@@ -108,3 +108,11 @@ pub fn verify_signature(tx: &MoonlightTransaction) -> Result<bool> {
         *tx.signature(),
     ))
 }
+
+/// Verifies the signature of the incoming transaction using pre-fork rules.
+pub fn verify_signature_insecure(tx: &MoonlightTransaction) -> Result<bool> {
+    Ok(tx
+        .sender()
+        .verify_insecure(tx.signature(), &tx.signature_message())
+        .is_ok())
+}
