@@ -751,7 +751,7 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 [[package]]
 name = "bls12_381-bls"
 version = "0.6.0-rc.0"
-source = "git+ssh://git@github.com/dusk-network/bls12_381-bls-private.git?branch=fix%2Fbls-v2-h2c#e24797a943d56a3f1d8d0a2bb7590ba30bf2c02d"
+source = "git+https://github.com/dusk-network/bls12_381-bls-private.git?branch=fix%2Fbls-v2-h2c#e24797a943d56a3f1d8d0a2bb7590ba30bf2c02d"
 dependencies = [
  "bs58",
  "bytecheck",
