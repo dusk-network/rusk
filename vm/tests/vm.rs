@@ -191,6 +191,9 @@ fn schnorr_signature() {
 fn bls_signature() {
     let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
+    let _hard_fork_guard = dusk_vm::host_queries::set_hard_fork(
+        dusk_vm::host_queries::HardFork::Aegis,
+    );
 
     let message = b"some-message".to_vec();
 
@@ -223,6 +226,9 @@ fn bls_signature() {
 fn bls_multisig_signature() {
     let vm = VM::ephemeral().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
+    let _hard_fork_guard = dusk_vm::host_queries::set_hard_fork(
+        dusk_vm::host_queries::HardFork::Aegis,
+    );
 
     let message = b"some-message".to_vec();
 
