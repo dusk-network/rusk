@@ -22,7 +22,7 @@ use dusk_core::stake::StakeData;
 use dusk_core::transfer::Transaction as ProtocolTransaction;
 use node::vm::{PreverificationResult, VMExecution};
 use node_data::bls::PublicKey;
-use node_data::hard_fork::{HardFork, hard_fork_at};
+use node_data::hard_fork::bls_version_at;
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
 use super::{RuesEvent, Rusk};
@@ -227,23 +227,18 @@ impl VMExecution for Rusk {
                     PreverificationResult::Valid
                 };
 
-                let verify_result = match hard_fork_at(next_block_height) {
-                    HardFork::PreFork => {
-                        crate::verifier::verify_signature_insecure(
-                            tx.blob_to_memo().as_ref().unwrap_or(tx),
-                        )
-                    }
-                    HardFork::Aegis => crate::verifier::verify_signature(
-                        tx.blob_to_memo().as_ref().unwrap_or(tx),
-                    ),
-                };
+                let blob_converted = tx.blob_to_memo();
+                let verify_tx = blob_converted.as_ref().unwrap_or(tx);
+                let verify_result = dusk_core::signatures::bls::verify(
+                    verify_tx.sender(),
+                    verify_tx.signature(),
+                    &verify_tx.signature_message(),
+                    bls_version_at(next_block_height),
+                );
 
                 match verify_result {
-                    Ok(true) => Ok(result),
-                    Ok(false) => Err(anyhow::anyhow!("Invalid signature")),
-                    Err(e) => {
-                        Err(anyhow::anyhow!("Cannot verify the signature: {e}"))
-                    }
+                    Ok(()) => Ok(result),
+                    Err(_) => Err(anyhow::anyhow!("Invalid signature")),
                 }
             }
         }
