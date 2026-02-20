@@ -20,7 +20,7 @@ use dusk_core::groth16::{
 };
 use dusk_core::plonk::{PlonkVersion, Proof as PlonkProof, Verifier};
 use dusk_core::signatures::bls::{
-    MultisigPublicKey, MultisigSignature, PublicKey as BlsPublicKey,
+    self as bls, BlsVersion, MultisigSignature, PublicKey as BlsPublicKey,
     Signature as BlsSignature,
 };
 use dusk_core::signatures::schnorr::{
@@ -51,6 +51,16 @@ pub enum HardFork {
     PreFork,
     /// Behavior after Aegis activation.
     Aegis,
+}
+
+impl HardFork {
+    /// Returns the BLS signature version for this hardfork.
+    pub fn bls_version(&self) -> BlsVersion {
+        match self {
+            HardFork::Aegis => BlsVersion::V2,
+            HardFork::PreFork => BlsVersion::V1,
+        }
+    }
 }
 
 /// Guard that restores the previous PLONK version when dropped.
@@ -346,10 +356,7 @@ pub fn verify_schnorr(
 /// For more details about BLS signatures and their implementation, refer to:
 /// <https://github.com/dusk-network/bls12_381-bls>.
 pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
-    match hard_fork() {
-        HardFork::Aegis => pk.verify(&sig, &msg).is_ok(),
-        HardFork::PreFork => pk.verify_insecure(&sig, &msg).is_ok(),
-    }
+    bls::verify(&pk, &sig, &msg, hard_fork().bls_version()).is_ok()
 }
 
 /// Verifies a BLS multi-signature.
@@ -382,22 +389,15 @@ pub fn verify_bls_multisig(
         return false;
     }
 
-    let akey = match hard_fork() {
-        HardFork::Aegis => MultisigPublicKey::aggregate(&keys),
-        HardFork::PreFork => MultisigPublicKey::aggregate_insecure(&keys),
-    };
-    let akey = match akey {
+    let bls_version = hard_fork().bls_version();
+    let akey = match bls::aggregate(&keys, bls_version) {
         Ok(k) => k,
         Err(e) => {
             warn!("vm: couldn't aggregate bls public-keys due to {e}");
             return false;
         }
     };
-
-    match hard_fork() {
-        HardFork::Aegis => akey.verify(&sig, &msg).is_ok(),
-        HardFork::PreFork => akey.verify_insecure(&sig, &msg).is_ok(),
-    }
+    bls::verify_multisig(&akey, &sig, &msg, bls_version).is_ok()
 }
 
 /// Computes keccak256 hash of a byte vector.
