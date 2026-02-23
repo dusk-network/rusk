@@ -108,6 +108,16 @@ impl From<TxPreconditionError> for TxAcceptanceError {
             TxPreconditionError::BlobTooMany(n) => {
                 TxAcceptanceError::BlobTooMany(n)
             }
+            TxPreconditionError::PhoenixFeeOverflow => {
+                TxAcceptanceError::VerificationFailed(
+                    "phoenix fee overflow".into(),
+                )
+            }
+            TxPreconditionError::PhoenixFeeTampered => {
+                TxAcceptanceError::VerificationFailed(
+                    "phoenix fee tampered".into(),
+                )
+            }
         }
     }
 }
@@ -323,6 +333,8 @@ impl MempoolSrv {
                     }
                 }
             }
+
+            tx.inner.phoenix_fee_check()?;
 
             // Check deployment tx
             if tx.inner.deploy().is_some() {

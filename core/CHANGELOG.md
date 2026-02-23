@@ -7,17 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `sha256` and `verify_kzg_proof` ABI host queries [#3993]
+- Add `secp256k1_recover` ABI host query (EVM `ecrecover` primitive) [#4012]
+- Add `transfer::phoenix_fee_check`
+
 ### Changed
 
 - Update to edition 2024
 - Replace nightly `cfg_eval`/`serde_as` with stable `serde(with)` attributes
 - Remove nightly `#![feature(cfg_eval)]` and `#![feature(const_fn_floating_point_arithmetic)]`
 - Update MSRV to 1.85
-
-### Added
-
-- Add `sha256` and `verify_kzg_proof` ABI host queries [#3993]
-- Add `secp256k1_recover` ABI host query (EVM `ecrecover` primitive) [#4012]
 
 ## [1.4.1] - 2026-01-23
 

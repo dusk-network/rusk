@@ -8,6 +8,8 @@ pub mod contract_deployment;
 pub mod contract_stake;
 pub mod conversion;
 //pub mod deploy;
+pub mod fee_inflation;
+pub mod fee_tampered;
 pub mod finalization;
 pub mod gas_behavior;
 pub mod init;

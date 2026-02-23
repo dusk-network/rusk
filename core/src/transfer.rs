@@ -449,6 +449,28 @@ impl Transaction {
         self.blob().map(|blobs| blobs.len() as u64 * gas_per_blob)
     }
 
+    /// Check the validity of the phoenix fee and return an error if it is
+    /// invalid.
+    ///
+    /// # Errors
+    /// Returns an error if the transaction is a Phoenix transaction and:
+    /// - the fee overflows when calculating `gas_limit * gas_price`
+    /// - the fee does not match the proven `max_fee`
+    pub fn phoenix_fee_check(&self) -> Result<(), TxPreconditionError> {
+        if let Transaction::Phoenix(tx) = self {
+            let max_fee = tx
+                .fee()
+                .gas_limit
+                .checked_mul(tx.fee().gas_price)
+                .ok_or(TxPreconditionError::PhoenixFeeOverflow)?;
+
+            if max_fee != tx.max_fee() {
+                return Err(TxPreconditionError::PhoenixFeeTampered);
+            }
+        }
+        Ok(())
+    }
+
     /// Check if the transaction is a deployment transaction and if it
     /// meets the minimum requirements for gas price and gas limit.
     ///

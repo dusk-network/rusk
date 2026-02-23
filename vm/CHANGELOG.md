@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `sha256` and `verify_kzg_proof` host queries [#3993]
 - Add `secp256k1_recover` host query (EVM `ecrecover` primitive) [#4012]
+- Add phoenix fee check
 
 ### Changed
 
