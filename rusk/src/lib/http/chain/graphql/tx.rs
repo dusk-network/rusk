@@ -25,6 +25,11 @@ pub async fn last_transactions(
     if count < 1 {
         return Err(FieldError::new("count must be positive"));
     }
+    if count > MAX_GRAPHQL_TXS_PER_QUERY as usize {
+        return Err(FieldError::new(format!(
+            "count too large (max {MAX_GRAPHQL_TXS_PER_QUERY})"
+        )));
+    }
 
     let (db, _) = ctx.data::<DBContext>()?;
     let transactions = db.read().await.view(|t| {

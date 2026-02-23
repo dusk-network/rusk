@@ -60,6 +60,11 @@ pub async fn last_blocks(
     if count < 1 {
         return Err(FieldError::new("count must be positive"));
     }
+    if count > MAX_GRAPHQL_BLOCKS_PER_QUERY {
+        return Err(FieldError::new(format!(
+            "count too large (max {MAX_GRAPHQL_BLOCKS_PER_QUERY})"
+        )));
+    }
     let (db, _) = ctx.data::<DBContext>()?;
     let last_block = last_block(ctx).await?;
     let mut hash_to_search = last_block.header().prev_block_hash;
@@ -86,6 +91,16 @@ pub async fn blocks_range(
     from: u64,
     to: u64,
 ) -> FieldResult<Vec<Block>> {
+    let span = to
+        .checked_sub(from)
+        .and_then(|diff| diff.checked_add(1))
+        .ok_or_else(|| FieldError::new("Invalid range"))?;
+    if span > MAX_GRAPHQL_BLOCKS_PER_QUERY {
+        return Err(FieldError::new(format!(
+            "range too large (max {MAX_GRAPHQL_BLOCKS_PER_QUERY} blocks)"
+        )));
+    }
+
     let (db, _) = ctx.data::<DBContext>()?;
     let mut blocks = db.read().await.view(|t| {
         let mut blocks = vec![];
