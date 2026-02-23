@@ -16,14 +16,17 @@ pub mod message;
 use std::io::{self, Read, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Keep in sync with `dusk-consensus::config::MAX_NUMBER_OF_TRANSACTIONS`.
-pub(crate) const MAX_BLOCK_TRANSACTIONS: u32 = 1_000;
+/// Maximum number of transactions allowed in a block.
+pub const MAX_NUMBER_OF_TRANSACTIONS: usize = 1_000;
 
-/// Keep in sync with `dusk-consensus::config::MAX_NUMBER_OF_FAULTS`.
-pub(crate) const MAX_BLOCK_FAULTS: u32 = 100;
+/// Maximum number of faults allowed in a block.
+pub const MAX_NUMBER_OF_FAULTS: usize = 100;
 
 /// Covers mempool inventory exchanges while preventing unbounded allocation.
 pub(crate) const MAX_INV_ITEMS: u32 = 10_000;
+
+/// Maximum serialized error-string length in `SpentTransaction`.
+pub(crate) const MAX_SPENT_TX_ERROR_BYTES: usize = 2 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepName {

@@ -21,7 +21,9 @@ use crate::message::payload::{
 use crate::message::{
     ConsensusHeader, MESSAGE_MAX_FAILED_ITERATIONS, SignInfo,
 };
-use crate::{MAX_BLOCK_FAULTS, MAX_BLOCK_TRANSACTIONS};
+use crate::{
+    MAX_NUMBER_OF_FAULTS, MAX_NUMBER_OF_TRANSACTIONS, MAX_SPENT_TX_ERROR_BYTES,
+};
 
 const MAX_TX_LENGTH_BYTES: usize = 2 * 1024 * 1024;
 
@@ -53,11 +55,11 @@ impl Serializable for Block {
 
         // Read transactions count
         let tx_len = Self::read_u32_le(r)?;
-        if tx_len > MAX_BLOCK_TRANSACTIONS {
+        if tx_len as usize > MAX_NUMBER_OF_TRANSACTIONS {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 format!(
-                    "too many block transactions: {tx_len} > {MAX_BLOCK_TRANSACTIONS}"
+                    "too many block transactions: {tx_len} > {MAX_NUMBER_OF_TRANSACTIONS}"
                 ),
             ));
         }
@@ -68,11 +70,11 @@ impl Serializable for Block {
 
         // Read faults count
         let faults_len = Self::read_u32_le(r)?;
-        if faults_len > MAX_BLOCK_FAULTS {
+        if faults_len as usize > MAX_NUMBER_OF_FAULTS {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 format!(
-                    "too many block faults: {faults_len} > {MAX_BLOCK_FAULTS}"
+                    "too many block faults: {faults_len} > {MAX_NUMBER_OF_FAULTS}"
                 ),
             ));
         }
@@ -135,7 +137,7 @@ impl Serializable for SpentTransaction {
                 w.write_all(b)?;
             }
             None => {
-                w.write_all(&0_u64.to_le_bytes())?;
+                w.write_all(&0_u32.to_le_bytes())?;
             }
         }
 
@@ -151,6 +153,14 @@ impl Serializable for SpentTransaction {
         let block_height = Self::read_u64_le(r)?;
         let gas_spent = Self::read_u64_le(r)?;
         let error_len = Self::read_u32_le(r)?;
+        if error_len as usize > MAX_SPENT_TX_ERROR_BYTES {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "SpentTransaction error string too large: {error_len} > {MAX_SPENT_TX_ERROR_BYTES}"
+                ),
+            ));
+        }
 
         let err = if error_len > 0 {
             let mut buf = vec![0u8; error_len as usize];
@@ -526,20 +536,48 @@ mod tests {
     }
 
     #[test]
-    fn test_spent_transaction_rejects_invalid_utf8_error_string() {
+    fn test_spent_transaction_rejects_malformed_error_string() {
+        fn decode_err(
+            tx: &Transaction,
+            error_len: u32,
+            error_bytes: &[u8],
+        ) -> io::Result<SpentTransaction> {
+            let mut bytes = vec![];
+            tx.write(&mut bytes)
+                .expect("transaction encoding should succeed");
+            bytes.extend_from_slice(&123_u64.to_le_bytes()); // block_height
+            bytes.extend_from_slice(&456_u64.to_le_bytes()); // gas_spent
+            bytes.extend_from_slice(&error_len.to_le_bytes());
+            bytes.extend_from_slice(error_bytes);
+            SpentTransaction::read(&mut &bytes[..])
+        }
+
         let tx: Transaction = Faker.fake();
 
-        let mut bytes = vec![];
-        tx.write(&mut bytes)
-            .expect("transaction encoding should succeed");
-        bytes.extend_from_slice(&123_u64.to_le_bytes()); // block_height
-        bytes.extend_from_slice(&456_u64.to_le_bytes()); // gas_spent
-        bytes.extend_from_slice(&2_u32.to_le_bytes()); // error_len
-        bytes.extend_from_slice(&[0xFF, 0xFF]); // invalid utf-8
-
-        let err = SpentTransaction::read(&mut &bytes[..])
+        let err = decode_err(&tx, 2, &[0xFF, 0xFF])
             .expect_err("invalid utf-8 error bytes must be rejected");
         assert_eq!(err.kind(), io::ErrorKind::InvalidData);
+
+        let err = decode_err(&tx, (MAX_SPENT_TX_ERROR_BYTES as u32) + 1, &[])
+            .expect_err("oversized error string must be rejected");
+        assert_eq!(err.kind(), io::ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn test_spent_transaction_none_error_encoding_has_no_trailing_bytes() {
+        let mut spent_tx: SpentTransaction = Faker.fake();
+        spent_tx.err = None;
+
+        let mut bytes = vec![];
+        spent_tx
+            .write(&mut bytes)
+            .expect("spent transaction encoding should succeed");
+
+        let mut slice = &bytes[..];
+        let decoded = SpentTransaction::read(&mut slice)
+            .expect("spent transaction decoding should succeed");
+        assert!(decoded.err.is_none());
+        assert!(slice.is_empty(), "deserializer left trailing bytes");
     }
 
     #[test]
@@ -588,8 +626,9 @@ mod tests {
         Header::default()
             .write(&mut block_txs_bytes)
             .expect("header encoding should succeed");
-        block_txs_bytes
-            .extend_from_slice(&(MAX_BLOCK_TRANSACTIONS + 1).to_le_bytes());
+        block_txs_bytes.extend_from_slice(
+            &((MAX_NUMBER_OF_TRANSACTIONS as u32) + 1).to_le_bytes(),
+        );
         assert_invalid_data(
             Block::read(&mut &block_txs_bytes[..]),
             "block with too many transactions must be rejected",
@@ -600,8 +639,9 @@ mod tests {
             .write(&mut block_faults_bytes)
             .expect("header encoding should succeed");
         block_faults_bytes.extend_from_slice(&0_u32.to_le_bytes()); // tx_len
-        block_faults_bytes
-            .extend_from_slice(&(MAX_BLOCK_FAULTS + 1).to_le_bytes());
+        block_faults_bytes.extend_from_slice(
+            &((MAX_NUMBER_OF_FAULTS as u32) + 1).to_le_bytes(),
+        );
         assert_invalid_data(
             Block::read(&mut &block_faults_bytes[..]),
             "block with too many faults must be rejected",
