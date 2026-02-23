@@ -156,7 +156,12 @@ impl Serializable for SpentTransaction {
             let mut buf = vec![0u8; error_len as usize];
             r.read_exact(&mut buf[..])?;
 
-            Some(String::from_utf8(buf).expect("Cannot from_utf8"))
+            Some(String::from_utf8(buf).map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "invalid utf-8 in SpentTransaction error string",
+                )
+            })?)
         } else {
             None
         };
@@ -518,6 +523,23 @@ mod tests {
     #[test]
     fn test_encoding_spent_transaction() {
         assert_serializable::<SpentTransaction>();
+    }
+
+    #[test]
+    fn test_spent_transaction_rejects_invalid_utf8_error_string() {
+        let tx: Transaction = Faker.fake();
+
+        let mut bytes = vec![];
+        tx.write(&mut bytes)
+            .expect("transaction encoding should succeed");
+        bytes.extend_from_slice(&123_u64.to_le_bytes()); // block_height
+        bytes.extend_from_slice(&456_u64.to_le_bytes()); // gas_spent
+        bytes.extend_from_slice(&2_u32.to_le_bytes()); // error_len
+        bytes.extend_from_slice(&[0xFF, 0xFF]); // invalid utf-8
+
+        let err = SpentTransaction::read(&mut &bytes[..])
+            .expect_err("invalid utf-8 error bytes must be rejected");
+        assert_eq!(err.kind(), io::ErrorKind::InvalidData);
     }
 
     #[test]
