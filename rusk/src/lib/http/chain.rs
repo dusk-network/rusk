@@ -206,6 +206,19 @@ impl RuskNode {
         let tx: Transaction = ProtocolTransaction::from_slice(tx)
             .map_err(|e| HttpError::invalid_input(format!("Data: {e:?}")))?
             .into();
+
+        let db = self.inner().database();
+        let vm = self.inner().vm_handler();
+
+        MempoolSrv::check_tx(&db, &vm, &tx, true, usize::MAX)
+            .await
+            .map_err(|e| {
+                let err_msg =
+                    format!("Tx {} not accepted: {e}", hex::encode(tx.id()));
+                error!("{err_msg}");
+                HttpError::internal(err_msg)
+            })?;
+
         let tx_message = tx.into();
 
         let network = self.network();
