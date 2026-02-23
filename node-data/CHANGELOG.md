@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace `serde_as` with stable `serde(with)` attributes
 - Update MSRV to 1.85
 - Reject double-candidate and double-vote faults signed by different validators
+- Bound deserialization lengths for `Transaction`, `Block`, and `Inv` payloads
 
 ## [1.4.0] - 2025-11-06
 

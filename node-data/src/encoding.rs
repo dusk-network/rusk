@@ -21,6 +21,9 @@ use crate::message::payload::{
 use crate::message::{
     ConsensusHeader, MESSAGE_MAX_FAILED_ITERATIONS, SignInfo,
 };
+use crate::{MAX_BLOCK_FAULTS, MAX_BLOCK_TRANSACTIONS};
+
+const MAX_TX_LENGTH_BYTES: usize = 2 * 1024 * 1024;
 
 impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
@@ -50,6 +53,14 @@ impl Serializable for Block {
 
         // Read transactions count
         let tx_len = Self::read_u32_le(r)?;
+        if tx_len > MAX_BLOCK_TRANSACTIONS {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "too many block transactions: {tx_len} > {MAX_BLOCK_TRANSACTIONS}"
+                ),
+            ));
+        }
 
         let txs = (0..tx_len)
             .map(|_| Transaction::read(r))
@@ -57,6 +68,14 @@ impl Serializable for Block {
 
         // Read faults count
         let faults_len = Self::read_u32_le(r)?;
+        if faults_len > MAX_BLOCK_FAULTS {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "too many block faults: {faults_len} > {MAX_BLOCK_FAULTS}"
+                ),
+            ));
+        }
 
         let faults = (0..faults_len)
             .map(|_| Fault::read(r))
@@ -89,7 +108,7 @@ impl Serializable for Transaction {
         let version = Self::read_u32_le(r)?;
         let tx_type = Self::read_u32_le(r)?;
 
-        let protocol_tx = Self::read_var_le_bytes32(r)?;
+        let protocol_tx = Self::read_var_le_bytes32(r, MAX_TX_LENGTH_BYTES)?;
         let tx_size = protocol_tx.len();
         let inner = ProtocolTransaction::from_slice(&protocol_tx[..])
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
@@ -450,6 +469,8 @@ impl Serializable for QuorumType {
 
 #[cfg(test)]
 mod tests {
+    use std::io;
+
     use fake::{Dummy, Fake, Faker};
 
     use super::*;
@@ -517,5 +538,51 @@ mod tests {
     #[test]
     fn test_encoding_fault() {
         assert_serializable::<Fault>();
+    }
+
+    #[test]
+    fn test_rejects_oversized_lengths() {
+        fn assert_invalid_data<T>(result: io::Result<T>, reason: &str) {
+            match result {
+                Ok(_) => panic!("{reason}"),
+                Err(err) => {
+                    assert_eq!(err.kind(), io::ErrorKind::InvalidData);
+                }
+            }
+        }
+
+        let mut tx_bytes = vec![];
+        tx_bytes.extend_from_slice(&1_u32.to_le_bytes()); // version
+        tx_bytes.extend_from_slice(&1_u32.to_le_bytes()); // tx type
+        tx_bytes.extend_from_slice(
+            &((MAX_TX_LENGTH_BYTES as u32) + 1).to_le_bytes(),
+        );
+        assert_invalid_data(
+            Transaction::read(&mut &tx_bytes[..]),
+            "oversized length-prefixed tx payload must be rejected",
+        );
+
+        let mut block_txs_bytes = vec![];
+        Header::default()
+            .write(&mut block_txs_bytes)
+            .expect("header encoding should succeed");
+        block_txs_bytes
+            .extend_from_slice(&(MAX_BLOCK_TRANSACTIONS + 1).to_le_bytes());
+        assert_invalid_data(
+            Block::read(&mut &block_txs_bytes[..]),
+            "block with too many transactions must be rejected",
+        );
+
+        let mut block_faults_bytes = vec![];
+        Header::default()
+            .write(&mut block_faults_bytes)
+            .expect("header encoding should succeed");
+        block_faults_bytes.extend_from_slice(&0_u32.to_le_bytes()); // tx_len
+        block_faults_bytes
+            .extend_from_slice(&(MAX_BLOCK_FAULTS + 1).to_le_bytes());
+        assert_invalid_data(
+            Block::read(&mut &block_faults_bytes[..]),
+            "block with too many faults must be rejected",
+        );
     }
 }

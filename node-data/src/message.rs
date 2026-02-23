@@ -509,7 +509,7 @@ pub mod payload {
 
     use super::{ConsensusHeader, SignInfo};
     use crate::ledger::{self, Attestation, Block, Hash, StepVotes, to_str};
-    use crate::{Serializable, get_current_timestamp};
+    use crate::{MAX_INV_ITEMS, Serializable, get_current_timestamp};
 
     #[derive(Debug, Clone)]
     #[cfg_attr(
@@ -1098,6 +1098,14 @@ pub mod payload {
             Self: Sized,
         {
             let items_len = Self::read_u32_le(r)?;
+            if items_len > MAX_INV_ITEMS {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!(
+                        "too many inv items: {items_len} > {MAX_INV_ITEMS}"
+                    ),
+                ));
+            }
 
             let mut inv = Inv::default();
             for _ in 0..items_len {
@@ -1631,10 +1639,12 @@ impl std::fmt::Debug for SignInfo {
 #[cfg(test)]
 #[allow(unused)]
 mod tests {
+    use std::io;
+
     use self::payload::ValidationResult;
     use super::*;
     use crate::ledger::*;
-    use crate::{Serializable, ledger};
+    use crate::{MAX_INV_ITEMS, Serializable, ledger};
 
     #[test]
     fn test_serialize() {
@@ -1727,5 +1737,15 @@ mod tests {
             "failed to (de)serialize {}",
             std::any::type_name::<S>()
         );
+    }
+
+    #[test]
+    fn test_rejects_inv_with_too_many_items() {
+        let mut bytes = vec![];
+        bytes.extend_from_slice(&(MAX_INV_ITEMS + 1).to_le_bytes());
+
+        let err = payload::Inv::read(&mut &bytes[..])
+            .expect_err("oversized inv list must be rejected");
+        assert_eq!(err.kind(), io::ErrorKind::InvalidData);
     }
 }

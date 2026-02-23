@@ -16,6 +16,15 @@ pub mod message;
 use std::io::{self, Read, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Keep in sync with `dusk-consensus::config::MAX_NUMBER_OF_TRANSACTIONS`.
+pub(crate) const MAX_BLOCK_TRANSACTIONS: u32 = 1_000;
+
+/// Keep in sync with `dusk-consensus::config::MAX_NUMBER_OF_FAULTS`.
+pub(crate) const MAX_BLOCK_FAULTS: u32 = 100;
+
+/// Covers mempool inventory exchanges while preventing unbounded allocation.
+pub(crate) const MAX_INV_ITEMS: u32 = 10_000;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepName {
     Proposal = 0,
@@ -69,9 +78,18 @@ pub trait Serializable {
         Ok(())
     }
 
-    /// Reads length-prefixed fields
-    fn read_var_le_bytes32<R: Read>(r: &mut R) -> io::Result<Vec<u8>> {
+    /// Reads length-prefixed fields with a caller-provided size cap.
+    fn read_var_le_bytes32<R: Read>(
+        r: &mut R,
+        max_size: usize,
+    ) -> io::Result<Vec<u8>> {
         let len = Self::read_u32_le(r)? as usize;
+        if len > max_size {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("length-prefixed field too large: {len} > {max_size}"),
+            ));
+        }
 
         let mut buf = vec![0u8; len];
         r.read_exact(&mut buf)?;
